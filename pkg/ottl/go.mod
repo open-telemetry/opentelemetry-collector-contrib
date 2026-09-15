@@ -22,7 +22,6 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.161.0
 	go.opentelemetry.io/collector/featuregate v1.67.0
 	go.opentelemetry.io/collector/pdata v1.67.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.161.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.161.0
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
