@@ -73,6 +73,30 @@ func (p *pc) cancelContext(err error) {
 	p.cancel(err)
 }
 
+// Cancellation causes for a partition consumer. lost() picks one when it
+// cancels, so the reason cannot change afterwards.
+var (
+	errPartitionRevoked = errors.New("stopping processing: partition reassigned or lost")
+	errReceiverStopping = errors.New("stopping processing: receiver shutting down")
+)
+
+// revoked reports whether a revocation, not receiver shutdown, cancelled the
+// partition consumer. Both cancel p.ctx, but only a revocation gives the
+// partition to another member, which redelivers what is left unmarked.
+//
+// Any other cause, including a cancellation from closing the client, counts as
+// shutdown: no one takes the remaining records over, so the batch is finished.
+func (p *pc) revoked() bool {
+	select {
+	case <-p.ctx.Done():
+	default:
+		// Fast path for the common case, so a live partition never reads the
+		// cause.
+		return false
+	}
+	return errors.Is(context.Cause(p.ctx), errPartitionRevoked)
+}
+
 // addPauseReason records why fetching must remain paused.
 func (p *pc) addPauseReason(reason partitionPauseReason) {
 	p.pauseReasons.Or(uint32(reason))
@@ -170,6 +194,21 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
 	for _, msg := range p.Records {
+		// Stop before marking once the partition is revoked. lost() commits the
+		// marks, so a record marked here is never redelivered even though nothing
+		// processed it. It also keeps the wait in lost() down to the in-flight
+		// record instead of the whole batch, and that wait has to fit in the
+		// re-balance timeout. Shutdown cancels the same context, but no one takes
+		// the rest over, so finish the batch in that case.
+		//
+		// break, not return, so processed records still get their After mark and
+		// lag telemetry below.
+		if pc.revoked() {
+			pc.logger.Debug("leaving remaining records to the next partition owner",
+				zap.Int64("offset", msg.Offset),
+			)
+			break
+		}
 		if !c.config.MessageMarking.After {
 			c.markCommitRecords(pc, p.Topic, p.Partition, msg)
 		}

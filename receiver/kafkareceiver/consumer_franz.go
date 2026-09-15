@@ -576,6 +576,18 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	independent := c.config.PartitionProcessing.Independent
 
 	c.mu.Lock()
+	// Pick the cause here, under the lock that also serializes triggerShutdown.
+	// triggerShutdown closes c.closing before it closes the client, so a revoke
+	// the close triggers always sees it closed. Workers read the cause instead
+	// of c.closing, which can be closed after the cancellation and would make a
+	// revoked partition look like a shutdown.
+	cause := errPartitionRevoked
+	select {
+	case <-c.closing:
+		cause = errReceiverStopping
+	default:
+	}
+
 	stopping := make(map[topicPartition]*pc)
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
@@ -591,9 +603,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			if !ok {
 				continue
 			}
-			pc.cancelContext(errors.New(
-				"stopping processing: partition reassigned or lost",
-			))
+			pc.cancelContext(cause)
 			// Discard the queue at cancel time. Fatal loss can return while
 			// the worker is still inside consumeMessage, and the wait helper
 			// keeps pc reachable until that call ends. The in-flight batch
