@@ -134,6 +134,7 @@ func TestFirehoseRequest(t *testing.T) {
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
+		config           *Config
 		headers          map[string]string
 		commonAttributes map[string]string
 		body             any
@@ -224,6 +225,25 @@ func TestFirehoseRequest(t *testing.T) {
 			}),
 			wantStatusCode: http.StatusOK,
 		},
+		"WithGzipRecordExceedingDecompressionLimit": {
+			config: &Config{
+				AccessKey: testFirehoseAccessKey,
+				ServerConfig: confighttp.ServerConfig{
+					MaxRequestBodySize: 4,
+				},
+			},
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				testFirehoseRecordFromBytes(newGzipRecord(t, []byte("this decompresses to more than four bytes"))),
+			}),
+			consumer: firehoseConsumerFunc(func(_ context.Context, next nextRecordFunc, _ map[string]string) (int, error) {
+				if _, err := next(); err != nil {
+					return http.StatusRequestEntityTooLarge, err
+				}
+				return http.StatusOK, nil
+			}),
+			wantStatusCode: http.StatusRequestEntityTooLarge,
+			wantErr:        fmt.Errorf("unable to decompress the record at index 0: %w", errDecompressedRecordTooLarge),
+		},
 		"WithValidRecords": {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("test"),
@@ -263,7 +283,11 @@ func TestFirehoseRequest(t *testing.T) {
 			if consumer == nil {
 				consumer = defaultConsumer
 			}
-			r := testFirehoseReceiver(cfg, consumer)
+			config := testCase.config
+			if config == nil {
+				config = cfg
+			}
+			r := testFirehoseReceiver(config, consumer)
 
 			got := httptest.NewRecorder()
 			r.ServeHTTP(got, request)
@@ -296,6 +320,41 @@ func TestFirehoseRequestInvalidJSON(t *testing.T) {
 	require.NoError(t, json.Unmarshal(got.Body.Bytes(), &gotResponse))
 	require.Equal(t, testFirehoseRequestID, gotResponse.RequestID)
 	require.Regexp(t, gotResponse.ErrorMessage, `awsfirehosereceiver\.firehoseRequest\.ReadStringAsSlice: expects .*`)
+}
+
+func TestGunzipRecordIfNeeded(t *testing.T) {
+	t.Run("NonGzipPassesThroughUnbounded", func(t *testing.T) {
+		var decompressedSize int64
+		got, err := gunzipRecordIfNeeded([]byte("plain text"), 1, &decompressedSize)
+		require.NoError(t, err)
+		require.Equal(t, []byte("plain text"), got)
+		require.Zero(t, decompressedSize)
+	})
+
+	t.Run("GzipWithinLimit", func(t *testing.T) {
+		var decompressedSize int64
+		got, err := gunzipRecordIfNeeded(newGzipRecord(t, []byte("hello")), 5, &decompressedSize)
+		require.NoError(t, err)
+		require.Equal(t, []byte("hello"), got)
+		require.EqualValues(t, 5, decompressedSize)
+	})
+
+	t.Run("GzipExceedingLimit", func(t *testing.T) {
+		var decompressedSize int64
+		_, err := gunzipRecordIfNeeded(newGzipRecord(t, []byte("hello")), 4, &decompressedSize)
+		require.ErrorIs(t, err, errDecompressedRecordTooLarge)
+	})
+
+	t.Run("GzipExceedingCumulativeLimit", func(t *testing.T) {
+		var decompressedSize int64
+		got, err := gunzipRecordIfNeeded(newGzipRecord(t, []byte("hello")), 8, &decompressedSize)
+		require.NoError(t, err)
+		require.Equal(t, []byte("hello"), got)
+		require.EqualValues(t, 5, decompressedSize)
+
+		_, err = gunzipRecordIfNeeded(newGzipRecord(t, []byte("world")), 8, &decompressedSize)
+		require.ErrorIs(t, err, errDecompressedRecordTooLarge)
+	})
 }
 
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
