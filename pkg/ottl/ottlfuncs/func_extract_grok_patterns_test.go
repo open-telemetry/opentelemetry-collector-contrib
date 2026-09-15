@@ -309,3 +309,29 @@ func Test_ExtractGrokPatternsFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ExtractGrokPatternsFactory args must be of type *ExtractGrokPatternsArguments[K]")
 	})
 }
+
+func BenchmarkExtractGrokPatterns(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "http://user:password@example.com:80/path?query=string", nil
+		},
+	}
+	pattern, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "%{URI}", nil
+		},
+	})
+	require.NoError(b, err)
+	nco := ottl.NewTestingOptional(false)
+	patternDefinitions := ottl.NewTestingOptional[[]string](nil)
+
+	exprFunc, err := extractGrokPatterns[any](target, pattern, nco, patternDefinitions)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

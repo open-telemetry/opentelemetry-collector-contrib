@@ -396,3 +396,19 @@ func Test_ParseSeverityFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ParseSeverityFactory args must be of type *ParseSeverityArguments[K")
 	})
 }
+
+func BenchmarkParseSeverity(b *testing.B) {
+	target := ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return int64(400), nil
+		},
+	}
+	mapping := getTestingGetter().(ottl.PMapGetter[any])
+	exprFunc := parseSeverity[any](target, mapping)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

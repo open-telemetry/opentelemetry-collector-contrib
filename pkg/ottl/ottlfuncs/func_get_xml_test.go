@@ -183,3 +183,17 @@ func Test_GetXMLFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "GetXML args must be of type *GetXMLAguments[K]")
 	})
 }
+
+func BenchmarkGetXML(b *testing.B) {
+	exprFunc := getXML[any](ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a><x>1</x><b><x>2</x></b><d><e><f><x>3</x></f></e></d></a>`, nil
+		},
+	}, "/a//x")
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

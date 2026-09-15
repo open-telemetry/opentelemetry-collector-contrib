@@ -219,3 +219,26 @@ func Test_SetFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "SetFactory args must be of type *SetArguments[K]")
 	})
 }
+
+func BenchmarkSet(b *testing.B) {
+	target := &ottl.StandardGetSetter[any]{
+		Setter: func(context.Context, any, any) error {
+			return nil
+		},
+	}
+	getter := &ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "new value", nil
+		},
+	}
+	fCtx := ottl.FunctionContext{
+		Set: componenttest.NewNopTelemetrySettings(),
+	}
+	exprFunc := set[any](target, getter, fCtx)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

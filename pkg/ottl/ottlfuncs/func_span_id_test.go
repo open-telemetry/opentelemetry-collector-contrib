@@ -89,3 +89,18 @@ func Test_SpanIDFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "SpanIDFactory args must be of type *SpanIDArguments[K]")
 	})
 }
+
+func BenchmarkSpanID(b *testing.B) {
+	exprFunc, err := spanID[any](&ottl.StandardByteSliceLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []byte{1, 2, 3, 4, 5, 6, 7, 8}, nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

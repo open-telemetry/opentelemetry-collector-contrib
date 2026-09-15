@@ -164,3 +164,18 @@ func Test_Base64EncodeFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "Base64EncodeFactory args must be of type *Base64EncodeArguments[K]")
 	})
 }
+
+func BenchmarkBase64Encode(b *testing.B) {
+	var nilVariant ottl.Optional[ottl.StringGetter[any]]
+	exprFunc := base64Encode[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "the quick brown fox jumps over the lazy dog", nil
+		},
+	}, nilVariant)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

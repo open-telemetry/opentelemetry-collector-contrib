@@ -89,3 +89,18 @@ func Test_SecondFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "SecondFactory args must be of type *SecondArguments[K]")
 	})
 }
+
+func BenchmarkSecond(b *testing.B) {
+	exprFunc, err := Second[any](&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC), nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

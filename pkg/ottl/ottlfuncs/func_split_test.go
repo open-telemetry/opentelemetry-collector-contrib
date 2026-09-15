@@ -159,3 +159,24 @@ func Test_SplitFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "SplitFactory args must be of type *SplitArguments[K]")
 	})
 }
+
+func BenchmarkSplit(b *testing.B) {
+	exprFunc := split[any](
+		&ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "A|B|C|D|E", nil
+			},
+		},
+		&ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "|", nil
+			},
+		},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

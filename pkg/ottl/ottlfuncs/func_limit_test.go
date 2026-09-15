@@ -231,3 +231,35 @@ func Test_LimitFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "LimitFactory args must be of type *LimitArguments[K]")
 	})
 }
+
+func BenchmarkLimit(b *testing.B) {
+	input := pcommon.NewMap()
+	input.PutStr("test", "hello world")
+	input.PutInt("test2", 3)
+	input.PutBool("test3", true)
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			v, ok := m.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	exprFunc, err := limit(target, int64(2), []string{"test3"}, zap.NewNop())
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		input.CopyTo(scenarioMap)
+		_, err := exprFunc(ctx, scenarioMap)
+		require.NoError(b, err)
+	}
+}

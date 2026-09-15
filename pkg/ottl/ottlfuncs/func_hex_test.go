@@ -111,3 +111,18 @@ func Test_HexFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "HexFactory args must be of type *HexArguments[K]")
 	})
 }
+
+func BenchmarkHex(b *testing.B) {
+	exprFunc, err := Hex[any](&ottl.StandardByteSliceLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []byte("hello world"), nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

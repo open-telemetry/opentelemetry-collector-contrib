@@ -181,3 +181,23 @@ func Test_WhenFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "WhenFactory args must be of type *WhenArguments[K]")
 	})
 }
+
+func BenchmarkWhen(b *testing.B) {
+	condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		return true, nil
+	})
+	trueValue := &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+		return "true", nil
+	}}
+	falseValue := &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+		return "false", nil
+	}}
+	exprFunc, err := whenFunction(condition, trueValue, falseValue)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

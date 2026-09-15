@@ -143,3 +143,19 @@ func Test_WeekdayFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "WeekdayFactory args must be of type *WeekdayArguments[K]")
 	})
 }
+
+func BenchmarkWeekday(b *testing.B) {
+	inputTime := time.Date(2025, time.February, 24, 15, 4, 5, 0, time.UTC)
+	exprFunc, err := Weekday(&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return inputTime, nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

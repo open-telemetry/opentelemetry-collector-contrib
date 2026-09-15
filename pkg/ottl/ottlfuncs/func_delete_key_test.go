@@ -184,3 +184,36 @@ func Test_DeleteKeyFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "DeleteKeysFactory args must be of type *DeleteKeyArguments[K]")
 	})
 }
+
+func BenchmarkDeleteKey(b *testing.B) {
+	key := ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+			return "test2", nil
+		},
+	}
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, val any) error {
+			v, ok := val.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	exprFunc := deleteKey(target, key)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		m := pcommon.NewMap()
+		m.PutStr("test", "hello world")
+		m.PutInt("test2", 3)
+		m.PutBool("test3", true)
+		_, err := exprFunc(ctx, m)
+		require.NoError(b, err)
+	}
+}

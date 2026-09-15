@@ -124,3 +124,17 @@ func Test_IsIntFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsIntFactory args must be of type *IsIntArguments[K]")
 	})
 }
+
+func BenchmarkIsInt(b *testing.B) {
+	exprFunc := isInt[any](&ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(42), nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

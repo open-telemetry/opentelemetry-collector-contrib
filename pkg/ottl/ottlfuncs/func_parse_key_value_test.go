@@ -410,3 +410,19 @@ func Test_ParseKeyValueFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ParseKeyValueFactory args must be of type *ParseKeyValueArguments[K]")
 	})
 }
+
+func BenchmarkParseKeyValue(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "name=ottl func=key_value", nil
+		},
+	}
+	exprFunc, err := parseKeyValue[any](target, ottl.Optional[string]{}, ottl.Optional[string]{})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

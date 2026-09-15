@@ -144,3 +144,15 @@ func Test_ToSnakeCaseFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ToSnakeCaseFactory args must be of type *ToSnakeCaseArguments[K]")
 	})
 }
+
+func BenchmarkToSnakeCase(b *testing.B) {
+	exprFunc := toSnakeCase[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "CPUUtilizationMetric", nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

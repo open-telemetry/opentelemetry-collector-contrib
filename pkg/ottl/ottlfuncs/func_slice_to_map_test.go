@@ -468,3 +468,29 @@ func Test_SliceToMapFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "SliceToMapFactory args must be of type *SliceToMapArguments[K")
 	})
 }
+
+func BenchmarkSliceToMap(b *testing.B) {
+	sl := pcommon.NewSlice()
+	thing1 := sl.AppendEmpty().SetEmptyMap()
+	thing1.PutStr("name", "foo")
+	thing1.PutInt("value", 2)
+	thing2 := sl.AppendEmpty().SetEmptyMap()
+	thing2.PutStr("name", "bar")
+	thing2.PutInt("value", 5)
+
+	exprFunc := getSliceToMapFunc[any](
+		ottl.StandardPSliceGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return sl, nil
+			},
+		},
+		ottl.NewTestingOptional[[]string]([]string{"name"}),
+		ottl.NewTestingOptional[[]string]([]string{"value"}),
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}
