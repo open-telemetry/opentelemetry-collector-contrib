@@ -15,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilesample"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_newPathGetSetter_Cache(t *testing.T) {
@@ -57,7 +56,7 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 				N: "cache",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("temp"),
+						S: new("temp"),
 					},
 				},
 			},
@@ -90,13 +89,13 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 			profileSample, profile := createProfileSampleTelemetry()
 
-			tCtx := NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profile, profileSample, pprofile.NewProfilesDictionary())
+			tCtx := NewTransformContext(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profile, profileSample, pprofile.NewProfilesDictionary())
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 			tCtx.Close()
 
-			tCtx = NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profile, profileSample, pprofile.NewProfilesDictionary())
+			tCtx = NewTransformContext(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profile, profileSample, pprofile.NewProfilesDictionary())
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			require.NoError(t, err)
 			tCtx.Close()
@@ -122,7 +121,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	scopeProfile := pprofile.NewScopeProfiles()
 	scopeProfile.Scope().SetName("instrumentation_scope")
 
-	ctx := NewTransformContextPtr(resourceProfile, scopeProfile, profile, pprofile.NewSample(), pprofile.NewProfilesDictionary())
+	ctx := NewTransformContext(resourceProfile, scopeProfile, profile, pprofile.NewSample(), pprofile.NewProfilesDictionary())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -136,7 +135,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("foo"),
+						S: new("foo"),
 					},
 				},
 			}},
@@ -146,7 +145,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			name: "resource with context",
 			path: &pathtest.Path[*TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[*TransformContext]{
 				&pathtest.Key[*TransformContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			}},
 			expected: "bar",

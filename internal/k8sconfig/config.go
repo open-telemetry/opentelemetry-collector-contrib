@@ -145,14 +145,9 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 		}
 	}
 
-	authConf.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		// Don't use system proxy settings since the API is local to the
-		// cluster
-		if t, ok := rt.(*http.Transport); ok {
-			t.Proxy = nil
-		}
-		return rt
-	}
+	// Don't use system proxy settings since the API is local to the
+	// cluster
+	authConf.Proxy = http.ProxyURL(nil)
 
 	if apiConf.KubeAPIQPS > 0 {
 		authConf.QPS = apiConf.KubeAPIQPS
@@ -265,13 +260,17 @@ func MakeOpenShiftQuotaClient(apiConf APIConfig) (quotaclientset.Interface, erro
 func NewNodeSharedInformer(client k8s.Interface, nodeName string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
-			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).ListFunc is deprecated: use ListWithContext instead.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
+			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) { //nolint:staticcheck
 				if nodeName != "" {
 					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 				}
 				return client.CoreV1().Nodes().List(context.Background(), opts)
 			},
-			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
+			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) { //nolint:staticcheck
 				if nodeName != "" {
 					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 				}

@@ -200,8 +200,7 @@ func ValidateLocale(locale string) error {
 		return nil
 	}
 
-	var e *lunes.ErrUnsupportedLocale
-	if errors.As(err, &e) {
+	if _, ok := errors.AsType[*lunes.ErrUnsupportedLocale](err); ok {
 		return fmt.Errorf("unsupported locale '%s', value must be a supported BCP 47 language tag", locale)
 	}
 

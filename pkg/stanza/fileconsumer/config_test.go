@@ -42,6 +42,7 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFilePermissions)
 	assert.False(t, cfg.IncludeFileRecordNumber)
 	assert.False(t, cfg.AcquireFSLock)
+	assert.False(t, cfg.SkipUnmodifiedFiles)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -585,6 +586,16 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		{
+			"SkipUnmodifiedFiles",
+			func(cfg *Config) {
+				cfg.SkipUnmodifiedFiles = true
+			},
+			require.NoError,
+			func(t *testing.T, m *Manager) {
+				require.True(t, m.skipUnmodifiedFiles)
+			},
+		},
+		{
 			"HeaderConfigNoFlag",
 			func(cfg *Config) {
 				cfg.Header = &HeaderConfig{}
@@ -818,8 +829,8 @@ func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
 	}
 }
 
-// This function is impelmented for compatibility with operatortest
+// This function is implemented for compatibility with operatortest
 // but is not meant to be used directly
 func (*mockOperatorConfig) Build(_ component.TelemetrySettings) (operator.Operator, error) {
-	panic("not impelemented")
+	panic("not implemented")
 }

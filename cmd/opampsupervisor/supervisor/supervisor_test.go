@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
@@ -60,7 +61,6 @@ capabilities:
   reports_own_traces: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:
@@ -81,7 +81,6 @@ capabilities:
   reports_own_metrics: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:
@@ -1365,7 +1364,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1469,7 +1468,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1544,7 +1543,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       defaultPIDProvider{},
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1667,7 +1666,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -2130,7 +2129,13 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			},
 		})
 
-		assert.Equal(t, "test", s.effectiveConfig.Load())
+		assert.Equal(t, &protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte("test")},
+				},
+			},
+		}, s.effectiveConfig.Load())
 		assert.True(t, updatedClientEffectiveConfig)
 	})
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient; client returns error", func(t *testing.T) {
@@ -2172,7 +2177,13 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			},
 		})
 
-		assert.Equal(t, "test", s.effectiveConfig.Load())
+		assert.Equal(t, &protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte("test")},
+				},
+			},
+		}, s.effectiveConfig.Load())
 		assert.True(t, updatedClientEffectiveConfig)
 	})
 	t.Run("EffectiveConfig - Effective config message contains an empty config", func(t *testing.T) {
@@ -2210,8 +2221,154 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 			},
 		})
 
-		assert.Empty(t, s.effectiveConfig.Load())
+		assert.Nil(t, s.effectiveConfig.Load())
 		assert.False(t, updatedClientEffectiveConfig)
+	})
+
+	t.Run("EffectiveConfig - Effective config message contains multiple named files", func(t *testing.T) {
+		updatedClientEffectiveConfig := false
+		mc := &mockOpAMPClient{
+			updateEffectiveConfigFunc: func(context.Context) error {
+				updatedClientEffectiveConfig = true
+				return nil
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
+		s := Supervisor{
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			EffectiveConfig: &protobufs.EffectiveConfig{
+				ConfigMap: &protobufs.AgentConfigMap{
+					ConfigMap: map[string]*protobufs.AgentConfigFile{
+						"":           {Body: []byte("instance config")},
+						"other.yaml": {Body: []byte("other config")},
+					},
+				},
+			},
+		})
+
+		stored := s.effectiveConfig.Load().(*protobufs.EffectiveConfig)
+		assert.Equal(t, []byte("instance config"), stored.ConfigMap.ConfigMap[""].Body)
+		assert.Equal(t, []byte("other config"), stored.ConfigMap.ConfigMap["other.yaml"].Body)
+		assert.True(t, updatedClientEffectiveConfig)
+	})
+
+	t.Run("EffectiveConfig - only named files, no empty-string key", func(t *testing.T) {
+		updatedClientEffectiveConfig := false
+		mc := &mockOpAMPClient{
+			updateEffectiveConfigFunc: func(context.Context) error {
+				updatedClientEffectiveConfig = true
+				return nil
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
+		s := Supervisor{
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			EffectiveConfig: &protobufs.EffectiveConfig{
+				ConfigMap: &protobufs.AgentConfigMap{
+					ConfigMap: map[string]*protobufs.AgentConfigFile{
+						"collector.yaml": {Body: []byte("a config"), ContentType: "text/yaml"},
+					},
+				},
+			},
+		})
+
+		stored := s.effectiveConfig.Load().(*protobufs.EffectiveConfig)
+		assert.Equal(t, []byte("a config"), stored.ConfigMap.ConfigMap["collector.yaml"].Body)
+		assert.Equal(t, "text/yaml", stored.ConfigMap.ConfigMap["collector.yaml"].ContentType)
+		_, hasEmptyKey := stored.ConfigMap.ConfigMap[""]
+		assert.False(t, hasEmptyKey, "no empty-string key should be present")
+		assert.True(t, updatedClientEffectiveConfig)
+	})
+
+	t.Run("EffectiveConfig - full round-trip preserves all config map keys", func(t *testing.T) {
+		mc := &mockOpAMPClient{
+			updateEffectiveConfigFunc: func(context.Context) error {
+				return nil
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
+		s := Supervisor{
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
+		}
+
+		// Step 1: Agent reports effective config with multiple named files.
+		// This simulates what happens when the collector's OpAMP extension
+		// sends its full effective config to the supervisor's internal OpAMP server.
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			EffectiveConfig: &protobufs.EffectiveConfig{
+				ConfigMap: &protobufs.AgentConfigMap{
+					ConfigMap: map[string]*protobufs.AgentConfigFile{
+						"":           {Body: []byte("instance config")},
+						"other.yaml": {Body: []byte("other config")},
+						"extra.yaml": {Body: []byte("extra config")},
+					},
+				},
+			},
+		})
+
+		// Step 2: Supervisor builds the effective config message for the
+		// remote OpAMP server. This is what the old code would reconstruct
+		// with only the "" key, silently dropping "other.yaml" and "extra.yaml".
+		msg := s.createEffectiveConfigMsg()
+
+		// Step 3: Verify every key the agent reported is preserved in the
+		// message the supervisor forwards upstream.
+		require.NotNil(t, msg)
+		require.NotNil(t, msg.ConfigMap)
+		assert.Len(t, msg.ConfigMap.ConfigMap, 3,
+			"all named config files must be preserved in the round-trip")
+		assert.Equal(t, []byte("instance config"), msg.ConfigMap.ConfigMap[""].Body)
+		assert.Equal(t, []byte("other config"), msg.ConfigMap.ConfigMap["other.yaml"].Body)
+		assert.Equal(t, []byte("extra config"), msg.ConfigMap.ConfigMap["extra.yaml"].Body)
 	})
 
 	t.Run("ComponentHealth - Component health from agent is set in OpAmpClient", func(t *testing.T) {
@@ -2347,7 +2504,7 @@ func TestSupervisor_saveAndReportConfigStatus(t *testing.T) {
 				AutomaticConfigRollback: true,
 			},
 			Capabilities: config.Capabilities{
-				ReportsRemoteConfig: true,
+				AcceptsRemoteConfig: true,
 			},
 			Storage: config.Storage{
 				Directory: filepath.Dir(persistentState.configPath),
@@ -2414,7 +2571,7 @@ func TestSupervisor_reportLastWorkingRemoteConfigStatus(t *testing.T) {
 		telemetrySettings: newNopTelemetrySettings(),
 		config: config.Supervisor{
 			Capabilities: config.Capabilities{
-				ReportsRemoteConfig: true,
+				AcceptsRemoteConfig: true,
 			},
 		},
 		persistentState: persistentState,
@@ -2798,7 +2955,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 		}
 		got := s.createEffectiveConfigMsg()
 
-		assert.Empty(t, got.ConfigMap.ConfigMap[""].Body)
+		assert.Nil(t, got)
 	})
 	t.Run("effective and merged config set - prefer effective config", func(t *testing.T) {
 		s := Supervisor{
@@ -2807,7 +2964,13 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 			telemetrySettings: newNopTelemetrySettings(),
 		}
 
-		s.effectiveConfig.Store("effective")
+		s.effectiveConfig.Store(&protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte("effective")},
+				},
+			},
+		})
 		s.cfgState.Store("merged")
 
 		got := s.createEffectiveConfigMsg()
@@ -2826,6 +2989,51 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 		got := s.createEffectiveConfigMsg()
 
 		assert.Equal(t, []byte("merged"), got.ConfigMap.ConfigMap[""].Body)
+	})
+	t.Run("stored effective config has multiple keys - preserve all", func(t *testing.T) {
+		s := Supervisor{
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
+		}
+
+		s.effectiveConfig.Store(&protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"":           {Body: []byte("instance config")},
+					"other.yaml": {Body: []byte("other config")},
+				},
+			},
+		})
+
+		got := s.createEffectiveConfigMsg()
+
+		assert.Equal(t, []byte("instance config"), got.ConfigMap.ConfigMap[""].Body)
+		assert.Equal(t, []byte("other config"), got.ConfigMap.ConfigMap["other.yaml"].Body)
+	})
+	t.Run("only named files, no empty-string key", func(t *testing.T) {
+		s := Supervisor{
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
+		}
+
+		s.effectiveConfig.Store(&protobufs.EffectiveConfig{
+			ConfigMap: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"collector.yaml": {Body: []byte("a config"), ContentType: "text/yaml"},
+				},
+			},
+		})
+
+		got := s.createEffectiveConfigMsg()
+
+		require.NotNil(t, got)
+		require.NotNil(t, got.ConfigMap)
+		assert.Equal(t, []byte("a config"), got.ConfigMap.ConfigMap["collector.yaml"].Body)
+		assert.Equal(t, "text/yaml", got.ConfigMap.ConfigMap["collector.yaml"].ContentType)
+		_, hasEmptyKey := got.ConfigMap.ConfigMap[""]
+		assert.False(t, hasEmptyKey, "no empty-string key should be present")
 	})
 }
 
@@ -3206,6 +3414,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3254,6 +3464,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3309,6 +3521,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3377,7 +3591,6 @@ capabilities:
   reports_own_metrics: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:
@@ -3434,6 +3647,38 @@ telemetry:
 	})
 
 	supervisor.Shutdown()
+}
+
+func TestSupervisor_composeNoopConfigDisablesInternalMetrics(t *testing.T) {
+	// The bootstrap Collector's internal metrics must stay disabled, otherwise its
+	// default reader binds localhost:8888 and the bootstrap fails when that port
+	// is already in use.
+	s := Supervisor{
+		persistentState: &persistentState{
+			InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
+		},
+		pidProvider: staticPIDProvider(1234),
+	}
+
+	require.NoError(t, s.createTemplates())
+
+	noopConfigBytes, err := s.composeNoopConfig()
+	require.NoError(t, err)
+
+	conf, err := config.NewConfFromYAML(noopConfigBytes)
+	require.NoError(t, err)
+
+	telemetryConf, err := conf.Sub("service::telemetry")
+	require.NoError(t, err)
+
+	telemetryCfg, ok := otelconftelemetry.NewFactory().CreateDefaultConfig().(*otelconftelemetry.Config)
+	require.True(t, ok)
+	require.NoError(t, telemetryConf.Unmarshal(telemetryCfg))
+
+	// Metrics must be disabled with `level: none` rather than an empty readers
+	// list: validation rejects an empty list while the level is not none.
+	require.NoError(t, telemetryCfg.Validate())
+	require.Equal(t, configtelemetry.LevelNone, telemetryCfg.Metrics.Level)
 }
 
 func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
@@ -3549,8 +3794,8 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: "tcp",
 			Endpoint:  "localhost:23233",
@@ -3635,8 +3880,8 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: "tcp",
 			Endpoint:  "localhost:23233",

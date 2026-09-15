@@ -5,11 +5,11 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"bytes"
+	"cmp"
 	"reflect"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"golang.org/x/exp/constraints"
 )
 
 // ValueComparator defines methods for comparing values using the OTTL comparison rules
@@ -53,7 +53,7 @@ func (*ottlValueComparator) invalidComparison(op compareOp) bool {
 
 // comparePrimitives implements a generic comparison helper for all Ordered types (derived from Float, Int, or string).
 // According to benchmarks, it's faster than explicit comparison functions for these types.
-func comparePrimitives[T constraints.Ordered](a, b T, op compareOp) bool {
+func comparePrimitives[T cmp.Ordered](a, b T, op compareOp) bool {
 	switch op {
 	case eq:
 		return a == b

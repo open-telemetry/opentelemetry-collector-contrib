@@ -24,7 +24,6 @@ feature_gates:
     stage: beta
     from_version: "v0.89.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
-    skip_strict_validation: true
 
   - id: receiver.postgresql.connectionPool
     description: Use of connection pooling
@@ -41,11 +40,11 @@ feature_gates:
   - id: receiver.postgresql.useOTelSemconv
     stage: alpha
     description: >-
-      When enabled, uses a single resource per server with server.address, server.port,
-      and service.instance.id (UUID v5) resource attributes, aligning with OpenTelemetry
-      semantic conventions. When disabled, uses the legacy per-entity resource model with
-      postgresql.database.name, postgresql.table.name, postgresql.index.name, and
-      postgresql.schema.name resource attributes.
+      When enabled, uses a single resource per server with a service.instance.id (UUID v5)
+      resource attribute, aligning with OpenTelemetry semantic conventions. When disabled,
+      uses the legacy per-entity resource model with postgresql.database.name,
+      postgresql.table.name, postgresql.index.name, and postgresql.schema.name resource
+      attributes.
     from_version: "v0.156.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347
 
@@ -67,7 +66,10 @@ resource_attributes:
     enabled: true
     type: string
   server.address:
-    description: The address of the PostgreSQL server.
+    description: >-
+      The address of the PostgreSQL server. A loopback endpoint is reported as the name of the
+      machine running the collector, because the server is then co-located with it. With transport
+      `unix` the socket path is reported instead.
     enabled: true
     type: string
   server.port:
@@ -254,7 +256,7 @@ attributes:
     description: The type of event for which the backend is waiting, if any; otherwise NULL.
     type: string
   relation:
-    description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
+    description: The name of the relation (table, index, view, etc.) targeted by the lock, or empty if the target is not a relation or part of a relation.
     type: string
     requirement_level: recommended
   replication_client:
@@ -456,7 +458,7 @@ metrics:
     unit: "{databases}"
   postgresql.database.locks:
     enabled: false
-    description: The number of database locks.
+    description: The number of database locks, including those held by the receiver's own connections.
     stability: development
     unit: "{lock}"
     gauge:
@@ -589,7 +591,7 @@ metrics:
     unit: "{table}"
     attributes: [db.namespace]
   postgresql.table.size:
-    description: Disk space used by a table.
+    description: Total disk space used by a table, including its indexes and TOAST data.
     stability: development
     enabled: true
     unit: By

@@ -21,8 +21,11 @@ resourceLogs:
                   stringValue: ba0801a1-87ec-4d26-be87-EXAMPLE75bbb
               - key: rpc.method
                 value:
-                  stringValue: CreateUser
+                  stringValue: iam.amazonaws.com/CreateUser
               - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
               - key: rpc.service

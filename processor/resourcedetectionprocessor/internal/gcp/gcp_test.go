@@ -67,6 +67,54 @@ func TestDetect(t *testing.T) {
 				cloudPlatform:       gcp.GKE,
 				gceHostName:         "my-gke-node-1234",
 				gkeHostID:           "1472385723456792345",
+				gkeHostType:         "e2-standard-4",
+				gkeClusterName:      "my-cluster",
+				gkeAvailabilityZone: "us-central1-c",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":          "gcp",
+				"cloud.account.id":        "my-project",
+				"cloud.platform":          "gcp_kubernetes_engine",
+				"k8s.cluster.name":        "my-cluster",
+				"cloud.availability_zone": "us-central1-c",
+				"cloud.region":            "us-central1",
+				"host.id":                 "1472385723456792345",
+				"host.name":               "my-gke-node-1234",
+				"host.type":               "e2-standard-4",
+			},
+		},
+		{
+			desc: "zonal GKE cluster with host.type disabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:           "my-project",
+				cloudPlatform:       gcp.GKE,
+				gceHostName:         "my-gke-node-1234",
+				gkeHostID:           "1472385723456792345",
+				gkeHostType:         "e2-standard-4",
+				gkeClusterName:      "my-cluster",
+				gkeAvailabilityZone: "us-central1-c",
+			}, func(cfg *localMetadata.ResourceAttributesConfig) {
+				cfg.HostType.Enabled = false
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":          "gcp",
+				"cloud.account.id":        "my-project",
+				"cloud.platform":          "gcp_kubernetes_engine",
+				"k8s.cluster.name":        "my-cluster",
+				"cloud.availability_zone": "us-central1-c",
+				"cloud.region":            "us-central1",
+				"host.id":                 "1472385723456792345",
+				"host.name":               "my-gke-node-1234",
+			},
+		},
+		{
+			desc: "zonal GKE cluster with host type fetch error",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:           "my-project",
+				cloudPlatform:       gcp.GKE,
+				gceHostName:         "my-gke-node-1234",
+				gkeHostID:           "1472385723456792345",
+				gkeHostTypeErr:      errors.New("compute instances.get returned 403 Forbidden"),
 				gkeClusterName:      "my-cluster",
 				gkeAvailabilityZone: "us-central1-c",
 			}),
@@ -88,6 +136,7 @@ func TestDetect(t *testing.T) {
 				cloudPlatform:  gcp.GKE,
 				gceHostName:    "my-gke-node-1234",
 				gkeHostID:      "1472385723456792345",
+				gkeHostTypeErr: errors.New("compute instances.get returned 403 Forbidden"),
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
 			}),
@@ -108,6 +157,7 @@ func TestDetect(t *testing.T) {
 				cloudPlatform:  gcp.GKE,
 				gceHostNameErr: errors.New("metadata endpoint is concealed"),
 				gkeHostID:      "1472385723456792345",
+				gkeHostTypeErr: errors.New("compute instances.get returned 403 Forbidden"),
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
 			}),
@@ -402,9 +452,10 @@ func newTestDetector(gcpDetector *fakeGCPDetector, opts ...func(*localMetadata.R
 		opt(&cfg)
 	}
 	return &detector{
-		logger:   zap.NewNop(),
-		detector: gcpDetector,
-		rb:       localMetadata.NewResourceBuilder(cfg),
+		logger:          zap.NewNop(),
+		detector:        gcpDetector,
+		rb:              localMetadata.NewResourceBuilder(cfg),
+		hostTypeEnabled: cfg.HostType.Enabled,
 	}
 }
 
@@ -417,6 +468,8 @@ type fakeGCPDetector struct {
 	gkeRegion                       string
 	gkeClusterName                  string
 	gkeHostID                       string
+	gkeHostType                     string
+	gkeHostTypeErr                  error
 	faaSName                        string
 	faaSVersion                     string
 	faaSID                          string
@@ -581,6 +634,16 @@ func (f *fakeGCPDetector) GKEHostID() (string, error) {
 		return "", f.err
 	}
 	return f.gkeHostID, nil
+}
+
+func (f *fakeGCPDetector) GKEHostType() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	if f.gkeHostTypeErr != nil {
+		return "", f.gkeHostTypeErr
+	}
+	return f.gkeHostType, nil
 }
 
 func (f *fakeGCPDetector) FaaSName() (string, error) {

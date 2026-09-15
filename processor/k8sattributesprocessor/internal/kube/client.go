@@ -47,6 +47,7 @@ type WatchClient struct {
 	statefulsetInformer    cache.SharedInformer
 	daemonsetInformer      cache.SharedInformer
 	jobInformer            cache.SharedInformer
+	cronJobInformer        cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
 	cronJobRegex           *regexp.Regexp
 	deleteQueue            []deleteRequest
@@ -87,6 +88,10 @@ type WatchClient struct {
 	// A map containing job related data, used to associate them with resources.
 	// Key is job uid
 	Jobs map[string]*Job
+
+	// A map containing CronJob related data, used to associate them with resources.
+	// Key is cronjob uid
+	CronJobs map[string]*CronJob
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -166,6 +171,7 @@ func New(
 	c.StatefulSets = map[string]*StatefulSet{}
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
+	c.CronJobs = map[string]*CronJob{}
 
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClientBundle
@@ -229,13 +235,14 @@ func New(
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.mc)
 
 	// Enable the ReplicaSet informer when any of the following applies:
-	//   1) DeploymentName is enabled and DeploymentNameFromReplicaSet flag is false
-	//   2) DeploymentUID is enabled
-	//   3) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
+	//   1) DeploymentUID is enabled
+	//   2) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
 	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
-	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
-		c.Rules.DeploymentUID ||
-		c.extractDeploymentLabelsAnnotations()
+	// For DeploymentName only, deployment names are always derived from the ReplicaSet name heuristic,
+	// so no informer is needed.
+	needReplicaSetInformer := c.Rules.DeploymentUID ||
+		c.extractDeploymentLabelsAnnotations() ||
+		c.extractReplicaSetLabelsAnnotations()
 
 	if needReplicaSetInformer {
 		if informersFactory.newReplicaSetInformer == nil {
@@ -266,8 +273,14 @@ func New(
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
-	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
+	// The Job informer is also required to resolve CronJob label/annotation extraction, since a
+	// Pod's CronJob UID is only available via the owning Job's owner references.
+	if c.extractJobLabelsAnnotations() || rules.CronJobUID || c.extractCronJobLabelsAnnotations() {
 		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
+	}
+
+	if c.extractCronJobLabelsAnnotations() {
+		c.cronJobInformer = newCronJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 	return c, err
 }
@@ -367,6 +380,19 @@ func (c *WatchClient) Start() error {
 		}
 		synced = append(synced, reg.HasSynced)
 		go c.jobInformer.Run(c.stopCh)
+	}
+
+	if c.cronJobInformer != nil {
+		reg, err = c.cronJobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleCronJobAdd,
+			UpdateFunc: c.handleCronJobUpdate,
+			DeleteFunc: c.handleCronJobDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.cronJobInformer.Run(c.stopCh)
 	}
 
 	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -749,6 +775,37 @@ func (c *WatchClient) handleJobDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleCronJobAdd(obj any) {
+	c.telemetryBuilder.K8sWatcherCronjobAdded.Add(context.Background(), 1)
+	if cronJob, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
+		c.addOrUpdateCronJob(cronJob)
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for CronJob", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleCronJobUpdate(_, newCronJob any) {
+	c.telemetryBuilder.K8sWatcherCronjobUpdated.Add(context.Background(), 1)
+	if cronJob, ok := newCronJob.(*meta_v1.PartialObjectMetadata); ok {
+		c.addOrUpdateCronJob(cronJob)
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for CronJob", zap.Any("received", newCronJob))
+	}
+}
+
+func (c *WatchClient) handleCronJobDelete(obj any) {
+	c.telemetryBuilder.K8sWatcherCronjobDeleted.Add(context.Background(), 1)
+	if cronJob, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
+		c.m.Lock()
+		if n, ok := c.CronJobs[string(cronJob.UID)]; ok {
+			delete(c.CronJobs, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for CronJob", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -902,6 +959,16 @@ func (c *WatchClient) GetJob(jobUID string) (*Job, bool) {
 	return nil, false
 }
 
+func (c *WatchClient) GetCronJob(cronJobUID string) (*CronJob, bool) {
+	c.m.RLock()
+	cronJob, ok := c.CronJobs[cronJobUID]
+	c.m.RUnlock()
+	if ok {
+		return cronJob, ok
+	}
+	return nil, false
+}
+
 func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
@@ -965,7 +1032,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
 					// Attempt to use the ReplicaSet informer when it is running (e.g. DeploymentUID,
-					// deployment_name_from_replicaset: false, or from: deployment label/annotation extraction).
+					// or from: deployment label/annotation extraction).
 					// Otherwise fall back to heuristics using the ReplicaSet name and pod-template-hash label.
 					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						deploymentName = replicaset.Deployment.Name
@@ -1424,6 +1491,20 @@ func (c *WatchClient) extractDaemonSetAttributes(d *meta_v1.PartialObjectMetadat
 	return tags
 }
 
+func (c *WatchClient) extractReplicaSetAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromReplicaSetMetadata(d.Labels, tags, conventions.K8SReplicaSetLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromReplicaSetMetadata(d.Annotations, tags, conventions.K8SReplicaSetAnnotation)
+	}
+
+	return tags
+}
+
 func (c *WatchClient) extractJobAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
 	tags := map[string]string{}
 
@@ -1433,6 +1514,20 @@ func (c *WatchClient) extractJobAttributes(d *meta_v1.PartialObjectMetadata) map
 
 	for _, r := range c.Rules.Annotations {
 		r.extractFromJobMetadata(d.Annotations, tags, conventions.K8SJobAnnotation)
+	}
+
+	return tags
+}
+
+func (c *WatchClient) extractCronJobAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromCronJobMetadata(d.Labels, tags, conventions.K8SCronJobLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromCronJobMetadata(d.Annotations, tags, conventions.K8SCronJobAnnotation)
 	}
 
 	return tags
@@ -1453,7 +1548,8 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		StartTime:      pod.Status.StartTime,
 	}
 
-	if replicaset, ok := c.GetReplicaSet(getPodReplicaSetUID(pod)); ok {
+	newPod.ReplicaSetUID = getPodReplicaSetUID(pod)
+	if replicaset, ok := c.GetReplicaSet(newPod.ReplicaSetUID); ok {
 		if replicaset.Deployment.UID != "" {
 			newPod.DeploymentUID = replicaset.Deployment.UID
 		}
@@ -1469,6 +1565,9 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 
 	if job, ok := c.GetJob(getPodJobUID(pod)); ok {
 		newPod.JobUID = job.UID
+		if job.CronJob.UID != "" {
+			newPod.CronJobUID = job.CronJob.UID
+		}
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -1873,6 +1972,22 @@ func (c *WatchClient) extractDaemonSetLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractReplicaSetLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromReplicaSet {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromReplicaSet {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractJobLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromJob {
@@ -1882,6 +1997,22 @@ func (c *WatchClient) extractJobLabelsAnnotations() bool {
 
 	for _, r := range c.Rules.Annotations {
 		if r.From == MetadataFromJob {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *WatchClient) extractCronJobLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromCronJob {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromCronJob {
 			return true
 		}
 	}
@@ -1989,6 +2120,20 @@ func (c *WatchClient) addOrUpdateJob(job *meta_v1.PartialObjectMetadata) {
 	c.m.Unlock()
 }
 
+func (c *WatchClient) addOrUpdateCronJob(cronJob *meta_v1.PartialObjectMetadata) {
+	newCronJob := &CronJob{
+		Name: cronJob.Name,
+		UID:  string(cronJob.UID),
+	}
+	newCronJob.Attributes = c.extractCronJobAttributes(cronJob)
+
+	c.m.Lock()
+	if cronJob.UID != "" {
+		c.CronJobs[string(cronJob.UID)] = newCronJob
+	}
+	c.m.Unlock()
+}
+
 func needContainerAttributes(rules ExtractionRules) bool {
 	return rules.ContainerImageName ||
 		rules.ContainerName ||
@@ -2071,6 +2216,10 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaSet *meta_v1.PartialObjectMet
 			}
 			break
 		}
+	}
+
+	if c.extractReplicaSetLabelsAnnotations() {
+		newReplicaSet.Attributes = c.extractReplicaSetAttributes(replicaSet)
 	}
 
 	c.m.Lock()
