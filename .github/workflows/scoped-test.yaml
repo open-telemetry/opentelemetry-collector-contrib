@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   changedfiles:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: ${{ github.actor != 'dependabot[bot]' }}
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
@@ -122,7 +122,7 @@ jobs:
   scoped-tests:
     # Keeps the name of the job required for merging in the GH configuration, make it
     # wait for all runners completion
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [scoped-tests-matrix]
     steps:
       - name: Print result

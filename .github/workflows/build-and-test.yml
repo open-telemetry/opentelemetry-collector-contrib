@@ -66,7 +66,7 @@ jobs:
   # `mode` is a derived output (skip / full / scoped) used by cross-compile,
   # which doesn't fit the group-matrix shape.
   ci-scope:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     outputs:
       matrix: ${{ steps.post.outputs.matrix }}
@@ -406,7 +406,7 @@ jobs:
             false
           fi
   coverage:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [unittest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -657,7 +657,7 @@ jobs:
 
   publish-check:
     if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full')) }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [lint, unittest, integration-tests, cross-compile]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -773,7 +773,7 @@ jobs:
     # named "next release" in its place
     permissions:
       issues: write # required for managing milestones
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [publish-stable]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
