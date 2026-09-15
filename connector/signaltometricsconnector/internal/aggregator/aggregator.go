@@ -16,7 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/model"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // FilterAttrsFunc is a lazy function that produces a filtered attribute map.
@@ -55,11 +54,15 @@ func NewAggregator[K any](metrics pmetric.Metrics, errorMode ottl.ErrorMode, log
 	}
 }
 
+// Aggregate updates the in-memory metrics for md.
+// resID must be pdatautil.MapHash(resAttrs). The aggregator groups by that
+// id and does not compute it.
 func (a *Aggregator[K]) Aggregate(
 	ctx context.Context,
 	tCtx K,
 	md model.MetricDef[K],
 	resAttrs pcommon.Map,
+	resID [16]byte,
 	attrID [16]byte,
 	filterAttrs FilterAttrsFunc,
 	defaultCount int64,
@@ -75,7 +78,7 @@ func (a *Aggregator[K]) Aggregate(
 		if err != nil {
 			return a.handleError(err)
 		}
-		if err := a.aggregateValueCount(md, resAttrs, attrID, filterAttrs, val, count); err != nil {
+		if err := a.aggregateValueCount(md, resAttrs, resID, attrID, filterAttrs, val, count); err != nil {
 			return a.handleError(err)
 		}
 	case pmetric.MetricTypeHistogram:
@@ -88,7 +91,7 @@ func (a *Aggregator[K]) Aggregate(
 		if err != nil {
 			return a.handleError(err)
 		}
-		if err := a.aggregateValueCount(md, resAttrs, attrID, filterAttrs, val, count); err != nil {
+		if err := a.aggregateValueCount(md, resAttrs, resID, attrID, filterAttrs, val, count); err != nil {
 			return a.handleError(err)
 		}
 	case pmetric.MetricTypeSum:
@@ -98,11 +101,11 @@ func (a *Aggregator[K]) Aggregate(
 		}
 		switch v := raw.(type) {
 		case int64:
-			if err := a.aggregateInt(md, resAttrs, attrID, filterAttrs, v); err != nil {
+			if err := a.aggregateInt(md, resAttrs, resID, attrID, filterAttrs, v); err != nil {
 				return a.handleError(err)
 			}
 		case float64:
-			if err := a.aggregateDouble(md, resAttrs, attrID, filterAttrs, v); err != nil {
+			if err := a.aggregateDouble(md, resAttrs, resID, attrID, filterAttrs, v); err != nil {
 				return a.handleError(err)
 			}
 		default:
@@ -125,7 +128,7 @@ func (a *Aggregator[K]) Aggregate(
 		}
 		switch v := raw.(type) {
 		case int64, float64:
-			if err := a.aggregateGauge(md, resAttrs, attrID, filterAttrs, v); err != nil {
+			if err := a.aggregateGauge(md, resAttrs, resID, attrID, filterAttrs, v); err != nil {
 				return a.handleError(err)
 			}
 		default:
@@ -236,11 +239,12 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 func (a *Aggregator[K]) aggregateInt(
 	md model.MetricDef[K],
 	resAttrs pcommon.Map,
+	resID [16]byte,
 	attrID [16]byte,
 	filterAttrs FilterAttrsFunc,
 	v int64,
 ) error {
-	resID := a.getResourceID(resAttrs)
+	a.ensureResource(resAttrs, resID)
 	if _, ok := a.sums[md.Key]; !ok {
 		a.sums[md.Key] = make(map[[16]byte]map[[16]byte]*sumDP)
 	}
@@ -261,11 +265,12 @@ func (a *Aggregator[K]) aggregateInt(
 func (a *Aggregator[K]) aggregateDouble(
 	md model.MetricDef[K],
 	resAttrs pcommon.Map,
+	resID [16]byte,
 	attrID [16]byte,
 	filterAttrs FilterAttrsFunc,
 	v float64,
 ) error {
-	resID := a.getResourceID(resAttrs)
+	a.ensureResource(resAttrs, resID)
 	if _, ok := a.sums[md.Key]; !ok {
 		a.sums[md.Key] = make(map[[16]byte]map[[16]byte]*sumDP)
 	}
@@ -286,11 +291,12 @@ func (a *Aggregator[K]) aggregateDouble(
 func (a *Aggregator[K]) aggregateGauge(
 	md model.MetricDef[K],
 	resAttrs pcommon.Map,
+	resID [16]byte,
 	attrID [16]byte,
 	filterAttrs FilterAttrsFunc,
 	v any,
 ) error {
-	resID := a.getResourceID(resAttrs)
+	a.ensureResource(resAttrs, resID)
 	if _, ok := a.gauges[md.Key]; !ok {
 		a.gauges[md.Key] = make(map[[16]byte]map[[16]byte]*gaugeDP)
 	}
@@ -311,6 +317,7 @@ func (a *Aggregator[K]) aggregateGauge(
 func (a *Aggregator[K]) aggregateValueCount(
 	md model.MetricDef[K],
 	resAttrs pcommon.Map,
+	resID [16]byte,
 	attrID [16]byte,
 	filterAttrs FilterAttrsFunc,
 	value float64, count int64,
@@ -319,7 +326,7 @@ func (a *Aggregator[K]) aggregateValueCount(
 		// Nothing to record as count is zero
 		return nil
 	}
-	resID := a.getResourceID(resAttrs)
+	a.ensureResource(resAttrs, resID)
 	if _, ok := a.valueCounts[md.Key]; !ok {
 		a.valueCounts[md.Key] = make(map[[16]byte]map[[16]byte]*valueCountDP)
 	}
@@ -337,18 +344,18 @@ func (a *Aggregator[K]) aggregateValueCount(
 	return nil
 }
 
-func (a *Aggregator[K]) getResourceID(resourceAttrs pcommon.Map) [16]byte {
-	resID := pdatautil.MapHash(resourceAttrs)
-	if _, ok := a.smLookup[resID]; !ok {
-		destResourceMetric := a.result.ResourceMetrics().AppendEmpty()
-		destResAttrs := destResourceMetric.Resource().Attributes()
-		destResAttrs.EnsureCapacity(resourceAttrs.Len() + 1)
-		resourceAttrs.CopyTo(destResAttrs)
-		destScopeMetric := destResourceMetric.ScopeMetrics().AppendEmpty()
-		destScopeMetric.Scope().SetName(metadata.ScopeName)
-		a.smLookup[resID] = destScopeMetric
+// ensureResource adds resourceAttrs to the result the first time resID is seen.
+func (a *Aggregator[K]) ensureResource(resourceAttrs pcommon.Map, resID [16]byte) {
+	if _, ok := a.smLookup[resID]; ok {
+		return
 	}
-	return resID
+	destResourceMetric := a.result.ResourceMetrics().AppendEmpty()
+	destResAttrs := destResourceMetric.Resource().Attributes()
+	destResAttrs.EnsureCapacity(resourceAttrs.Len() + 1)
+	resourceAttrs.CopyTo(destResAttrs)
+	destScopeMetric := destResourceMetric.ScopeMetrics().AppendEmpty()
+	destScopeMetric.Scope().SetName(metadata.ScopeName)
+	a.smLookup[resID] = destScopeMetric
 }
 
 // getValueCount evaluates OTTL to get count and value respectively. Count is

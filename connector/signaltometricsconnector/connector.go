@@ -23,7 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
+
+// mapHashSize is the length of the array returned by pdatautil.MapHash.
+const mapHashSize = 16
 
 type signalToMetrics struct {
 	next                  consumer.Metrics
@@ -60,6 +64,10 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	// clear(). A zero-value pcommon.Map entry indicates it has not been
 	// computed yet for the current resource.
 	var resAttrsCache []pcommon.Map
+	// resIDCache stores pdatautil.MapHash of each cached resource attribute
+	// map. An entry is written with the matching resAttrsCache entry, so
+	// resIDCache does not need its own clear.
+	var resIDCache [][mapHashSize]byte
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
@@ -98,6 +106,7 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 					if len(resAttrsCache) == 0 {
 						resAttrsCache = make([]pcommon.Map, len(sm.spanMetricDefs))
+						resIDCache = make([][mapHashSize]byte, len(sm.spanMetricDefs))
 					}
 					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
 						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
@@ -106,12 +115,13 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 							return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
 						}
 						resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
+						resIDCache[mdIdx] = pdatautil.MapHash(resAttrsCache[mdIdx])
 					}
 
 					filterAttrs := func() (pcommon.Map, error) {
 						return md.FilterAttributes(spanAttrs, resolvedAttrs), nil
 					}
-					err = aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], attrID, filterAttrs, 1)
+					err = aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], resIDCache[mdIdx], attrID, filterAttrs, 1)
 					tCtx.Close()
 					if err != nil {
 						return err
@@ -140,6 +150,10 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 	// clear(). A zero-value pcommon.Map entry indicates it has not been
 	// computed yet for the current resource.
 	var resAttrsCache []pcommon.Map
+	// resIDCache stores pdatautil.MapHash of each cached resource attribute
+	// map. An entry is written with the matching resAttrsCache entry, so
+	// resIDCache does not need its own clear.
+	var resIDCache [][mapHashSize]byte
 
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {
 		resourceMetric := m.ResourceMetrics().At(i)
@@ -177,6 +191,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 
 						if len(resAttrsCache) == 0 {
 							resAttrsCache = make([]pcommon.Map, len(sm.dpMetricDefs))
+							resIDCache = make([][mapHashSize]byte, len(sm.dpMetricDefs))
 						}
 						if resAttrsCache[mdIdx] == (pcommon.Map{}) {
 							resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
@@ -184,12 +199,13 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 								return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
 							}
 							resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
+							resIDCache[mdIdx] = pdatautil.MapHash(resAttrsCache[mdIdx])
 						}
 
 						filterAttrs := func() (pcommon.Map, error) {
 							return md.FilterAttributes(dpAttrs, resolvedAttrs), nil
 						}
-						return aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], attrID, filterAttrs, 1)
+						return aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], resIDCache[mdIdx], attrID, filterAttrs, 1)
 					}
 
 					//exhaustive:enforce
@@ -256,6 +272,10 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 	// clear(). A zero-value pcommon.Map entry indicates it has not been
 	// computed yet for the current resource.
 	var resAttrsCache []pcommon.Map
+	// resIDCache stores pdatautil.MapHash of each cached resource attribute
+	// map. An entry is written with the matching resAttrsCache entry, so
+	// resIDCache does not need its own clear.
+	var resIDCache [][mapHashSize]byte
 
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		resourceLog := logs.ResourceLogs().At(i)
@@ -294,6 +314,7 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 
 					if len(resAttrsCache) == 0 {
 						resAttrsCache = make([]pcommon.Map, len(sm.logMetricDefs))
+						resIDCache = make([][mapHashSize]byte, len(sm.logMetricDefs))
 					}
 					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
 						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
@@ -302,12 +323,13 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 							return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
 						}
 						resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
+						resIDCache[mdIdx] = pdatautil.MapHash(resAttrsCache[mdIdx])
 					}
 
 					filterAttrs := func() (pcommon.Map, error) {
 						return md.FilterAttributes(logAttrs, resolvedAttrs), nil
 					}
-					err = aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], attrID, filterAttrs, 1)
+					err = aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], resIDCache[mdIdx], attrID, filterAttrs, 1)
 					tCtx.Close()
 					if err != nil {
 						return err
@@ -336,6 +358,10 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 	// clear(). A zero-value pcommon.Map entry indicates it has not been
 	// computed yet for the current resource.
 	var resAttrsCache []pcommon.Map
+	// resIDCache stores pdatautil.MapHash of each cached resource attribute
+	// map. An entry is written with the matching resAttrsCache entry, so
+	// resIDCache does not need its own clear.
+	var resIDCache [][mapHashSize]byte
 
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		resourceProfile := profiles.ResourceProfiles().At(i)
@@ -378,6 +404,7 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 
 					if len(resAttrsCache) == 0 {
 						resAttrsCache = make([]pcommon.Map, len(sm.profileMetricDefs))
+						resIDCache = make([][mapHashSize]byte, len(sm.profileMetricDefs))
 					}
 					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
 						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
@@ -386,12 +413,13 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 							return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
 						}
 						resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
+						resIDCache[mdIdx] = pdatautil.MapHash(resAttrsCache[mdIdx])
 					}
 
 					filterAttrs := func() (pcommon.Map, error) {
 						return md.FilterAttributes(profileAttrs, resolvedAttrs), nil
 					}
-					if err := aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], attrID, filterAttrs, 1); err != nil {
+					if err := aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], resIDCache[mdIdx], attrID, filterAttrs, 1); err != nil {
 						tCtx.Close()
 						return err
 					}
