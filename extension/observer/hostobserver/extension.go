@@ -109,7 +109,7 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 			cd := collectConnectionDetails(&c)
 			id := observer.EndpointID(
 				fmt.Sprintf(
-					"(%s)%s-%d-%s", e.observerName, cd.ip, cd.port, cd.transport,
+					"(%s)%s-%s", e.observerName, cd.target, cd.transport,
 				),
 			)
 
@@ -150,8 +150,8 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 
 			id := observer.EndpointID(
 				fmt.Sprintf(
-					"(%s)%s-%d-%s-%d",
-					e.observerName, cd.ip, cd.port, cd.transport, pid,
+					"(%s)%s-%s-%d",
+					e.observerName, cd.target, cd.transport, pid,
 				),
 			)
 
@@ -176,7 +176,6 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 }
 
 type connectionDetails struct {
-	ip        string
 	isIPv6    bool
 	port      uint16
 	target    string
@@ -204,7 +203,6 @@ func collectConnectionDetails(c *net.ConnectionStat) connectionDetails {
 	protocol := portTypeToProtocol(c.Type)
 
 	return connectionDetails{
-		ip:        ip,
 		isIPv6:    isIPv6,
 		port:      port,
 		target:    target,

@@ -99,7 +99,7 @@ func TestHostObserver(t *testing.T) {
 				host = getExpectedHost(host, isIPv6)
 				expectedID := observer.EndpointID(
 					fmt.Sprintf(
-						"(host_observer/1)%s-%s-%s-%d", host, port, tt.protocol, selfPid,
+						"(host_observer/1)%s:%s-%s-%d", host, port, tt.protocol, selfPid,
 					),
 				)
 
@@ -319,7 +319,6 @@ func TestCollectConnectionDetails(t *testing.T) {
 				},
 			},
 			want: connectionDetails{
-				ip:        "123.123.99.0",
 				isIPv6:    false,
 				port:      uint16(8080),
 				target:    "123.123.99.0:8080",
@@ -337,7 +336,6 @@ func TestCollectConnectionDetails(t *testing.T) {
 				},
 			},
 			want: connectionDetails{
-				ip:        "[123.123.99.0]",
 				isIPv6:    true,
 				port:      uint16(8080),
 				target:    "[123.123.99.0]:8080",
@@ -355,7 +353,6 @@ func TestCollectConnectionDetails(t *testing.T) {
 				},
 			},
 			want: connectionDetails{
-				ip:        "127.0.0.1",
 				isIPv6:    false,
 				port:      uint16(8080),
 				target:    "127.0.0.1:8080",
@@ -373,7 +370,6 @@ func TestCollectConnectionDetails(t *testing.T) {
 				},
 			},
 			want: connectionDetails{
-				ip:        "123.123.99.0",
 				isIPv6:    false,
 				port:      uint16(8080),
 				target:    "123.123.99.0:8080",
@@ -391,7 +387,6 @@ func TestCollectConnectionDetails(t *testing.T) {
 				},
 			},
 			want: connectionDetails{
-				ip:        "[123.123.99.0]",
 				isIPv6:    true,
 				port:      uint16(8080),
 				target:    "[123.123.99.0]:8080",
@@ -409,7 +404,6 @@ func TestCollectConnectionDetails(t *testing.T) {
 				},
 			},
 			want: connectionDetails{
-				ip:        "127.0.0.1",
 				isIPv6:    false,
 				port:      uint16(8080),
 				target:    "127.0.0.1:8080",
@@ -448,7 +442,7 @@ func TestCollectEndpoints(t *testing.T) {
 			},
 			want: []observer.Endpoint{
 				{
-					ID:     observer.EndpointID("()123.345.567.789-80-TCP"),
+					ID:     observer.EndpointID("()123.345.567.789:80-TCP"),
 					Target: "123.345.567.789:80",
 					Details: &observer.HostPort{
 						ProcessName: "",
