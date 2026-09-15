@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"hash"
 	"math/big"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -76,10 +77,10 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 		data["body"] = rawValue(lr.Body())
 	}
 	if lr.Timestamp() != 0 {
-		data["timestamp"] = lr.Timestamp().AsTime().UnixNano()
+		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 	}
 	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = lr.ObservedTimestamp().AsTime().UnixNano()
+		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
 	}
 	if lr.SeverityNumber() != 0 {
 		data["severity_number"] = lr.SeverityNumber()
@@ -96,7 +97,7 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	attrs := make(map[string]any)
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if !strings.HasPrefix(k, "audit.integrity.") {
-			attrs[k] = v.Str()
+			attrs[k] = rawValue(v)
 		}
 		return true
 	})
@@ -297,7 +298,7 @@ func rawValue(v pcommon.Value) any {
 	case pcommon.ValueTypeStr:
 		return v.Str()
 	case pcommon.ValueTypeInt:
-		return v.Int()
+		return strconv.FormatInt(v.Int(), 10)
 	case pcommon.ValueTypeDouble:
 		return v.Double()
 	case pcommon.ValueTypeBool:
