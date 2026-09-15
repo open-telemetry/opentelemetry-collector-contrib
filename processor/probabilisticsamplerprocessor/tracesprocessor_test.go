@@ -25,11 +25,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadatatest"
-
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadatatest"
 )
 
 // defaultHashSeed is used throughout to ensure that the HashSeed is real
@@ -1146,7 +1145,7 @@ func Test_tracesamplerprocessor_SamplingMetricsCountSpans(t *testing.T) {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
 	traceID := pcommon.TraceID([16]byte{1})
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := scopeSpans.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID{byte(i + 1)})
