@@ -21,8 +21,8 @@ subtext: |
   responds with HTTP 404, the detector logs at debug level and returns an empty resource. Any other error is still
   returned, since it might be transient. When the flag is `true` the error is returned as before.
 
-  The hostname lookup honors the flag as well: when `fail_on_missing_metadata` is `false`, the detector logs a
-  warning and returns the resource without the `host.name` attribute, instead of failing the detection or skipping
+  The hostname lookup honors the flag as well: when `fail_on_missing_metadata` is `false`, the detector logs at
+  debug level and returns the resource without the `host.name` attribute, instead of failing the detection or skipping
   the instance tags. When it is `true`, the error is returned.
 
 change_logs: [user]

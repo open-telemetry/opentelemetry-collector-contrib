@@ -121,7 +121,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", hostnameErr)
 		}
-		d.logger.Warn("EC2 hostname unavailable", zap.Error(hostnameErr))
+		d.logger.Debug("EC2 hostname unavailable", zap.Error(hostnameErr))
 		// Continue without the hostname, the remaining attributes and the tags below are still worth reporting.
 	}
 
@@ -144,19 +144,19 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			// Use IMDS: no IAM permissions needed, requires InstanceMetadataTags=enabled on the instance
 			tags, err = fetchIMDSTags(ctx, d.metadataProvider, d.tagKeyRegexes)
 			if err != nil {
-				d.logger.Warn("failed to fetch tags from IMDS", zap.Error(err))
+				d.logger.Debug("failed to fetch tags from IMDS", zap.Error(err))
 			}
 		} else {
 			// Use EC2 DescribeTags API (default): requires ec2:DescribeTags IAM permission
 			httpClient := getClientConfig(ctx, d.logger)
 			ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
 			if err != nil {
-				d.logger.Warn("failed to build ec2 client", zap.Error(err))
+				d.logger.Debug("failed to build ec2 client", zap.Error(err))
 				return res, conventions.SchemaURL, nil
 			}
 			tags, err = fetchEC2Tags(ctx, ec2Client, meta.InstanceID, d.tagKeyRegexes)
 			if err != nil {
-				d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
+				d.logger.Debug("failed fetching ec2 instance tags", zap.Error(err))
 			}
 		}
 		for key, val := range tags {
