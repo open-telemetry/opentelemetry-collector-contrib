@@ -4,6 +4,8 @@
 package k8sobjectsreceiver
 
 import (
+	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -23,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
@@ -827,4 +831,185 @@ func TestReceiverStorageClientInitializedWhenConfigured(t *testing.T) {
 
 	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
+}
+
+func TestLeaderCallbacksAreRaceFree(t *testing.T) {
+	// Race the OnLeading callback against Shutdown. Under `-race`, unsynchronized
+	// access to kr.registry / kr.cancel / kr.stopped would trip the detector.
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: k8sinventory.PullMode, Interval: 30 * time.Second},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), fakeHost))
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		fakeLeaderElection.InvokeOnLeading()
+	}()
+	go func() {
+		defer wg.Done()
+		_ = r.Shutdown(t.Context())
+	}()
+	wg.Wait()
+}
+
+func TestCacheSyncTimeoutFailsStart(t *testing.T) {
+	t.Parallel()
+
+	// Force every List against pods to fail so the informer cache never syncs.
+	mockClient := newMockDynamicClient()
+	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("simulated apiserver failure")
+	})
+
+	// Tight timeout keeps the test fast.
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.CacheSyncTimeout = 50 * time.Millisecond
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: k8sinventory.WatchMode},
+	}
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = r.Shutdown(t.Context()) })
+
+	// Start must surface the timeout with the failing GVR named.
+	err = r.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "informer cache")
+	assert.Contains(t, err.Error(), "pods")
+}
+
+func TestSharedInformerFactoryDedupesListAndWatch(t *testing.T) {
+	t.Parallel()
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(
+		generatePod("pod1", "default", nil, "1"),
+	)
+
+	// Count List and Watch hits against the fake apiserver.
+	var (
+		listCalls  int
+		watchCalls int
+		mu         sync.Mutex
+	)
+	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+		mu.Lock()
+		listCalls++
+		mu.Unlock()
+		return false, nil, nil
+	})
+	mockClient.client.(*fake.FakeDynamicClient).PrependWatchReactor("pods", func(_ k8s_testing.Action) (bool, apiWatch.Interface, error) {
+		mu.Lock()
+		watchCalls++
+		mu.Unlock()
+		return false, nil, nil
+	})
+
+	// Two objects, same scope (cluster-wide, no selectors), pull + watch.
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: k8sinventory.PullMode, Interval: 30 * time.Second},
+		{Name: "pods", Mode: k8sinventory.WatchMode},
+	}
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = r.Shutdown(t.Context()) })
+
+	// Wait until both calls have been observed.
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return listCalls >= 1 && watchCalls >= 1
+	}, time.Second, 10*time.Millisecond, "pull + watch should each fire at least once")
+
+	// Keep watching for a bit to catch a late second List/Watch that would
+	// indicate the informer factory wasn't actually shared. Never() fails if
+	// the condition becomes true within the window.
+	require.Never(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return listCalls > 1 || watchCalls > 1
+	}, 300*time.Millisecond, 20*time.Millisecond, "pull + watch on the same scope should share one List and one Watch")
+}
+
+func TestStoragePersistenceSuppressesReDelivery(t *testing.T) {
+	// Seed the fake apiserver with two objects at RV 10 and 20.
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(
+		generatePod("pod1", "default", nil, "10"),
+		generatePod("pod2", "default", nil, "20"),
+	)
+
+	// File-backed storage persists across storage-client instances (unlike the
+	// in-memory variant, which resets per client).
+	storageID := storagetest.NewStorageID("file_storage")
+	host := storagetest.NewStorageHost().WithFileBackedStorageExtension("file_storage", t.TempDir())
+
+	// Pre-populate the checkpoint above the seeded RVs, using the same
+	// settings.ID the receiver will use (NewNopSettings randomizes the name).
+	settings := receivertest.NewNopSettings(metadata.Type)
+	primeStorage(t, host, storageID, settings.ID, "default", "pods", "25")
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.IncludeInitialState = true
+	rCfg.Storage = &storageID
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: k8sinventory.WatchMode, Namespaces: []string{"default"}},
+	}
+
+	consumer := newMockLogConsumer()
+	r, err := newReceiver(settings, rCfg, consumer)
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), host))
+	t.Cleanup(func() { _ = r.Shutdown(t.Context()) })
+
+	// Initial-list events for pod1/pod2 (RV 10, 20) are below the checkpoint (25) → suppressed.
+	assert.Equal(t, 0, consumer.Count())
+
+	// A newer object (RV 30) is above the checkpoint → delivered.
+	mockClient.createPods(generatePod("pod3", "default", nil, "30"))
+	require.Eventually(t, func() bool { return consumer.Count() == 1 }, time.Second, 10*time.Millisecond)
+}
+
+// primeStorage seeds a resourceVersion checkpoint for (namespace, resource)
+// under the storage-client identity the receiver will use at runtime.
+func primeStorage(t *testing.T, host component.Host, storageID, receiverID component.ID, namespace, resource, rv string) {
+	t.Helper()
+	ext, ok := host.GetExtensions()[storageID]
+	require.True(t, ok)
+	storageExt, ok := ext.(storage.Extension)
+	require.True(t, ok)
+	// Mirror the normalization getStorageClient applies to the receiver ID.
+	normalizedID := component.MustNewIDWithName(strings.ReplaceAll(receiverID.Type().String(), "_", ""), receiverID.Name())
+	client, err := storageExt.GetClient(t.Context(), component.KindReceiver, normalizedID, "")
+	require.NoError(t, err)
+	require.NoError(t, client.Set(t.Context(), checkpoint.CheckpointKey(namespace, resource), []byte(rv)))
+	require.NoError(t, client.Close(t.Context()))
 }
