@@ -194,3 +194,18 @@ func Test_UserAgentFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "URLFactory args must be of type *URLArguments[K]")
 	})
 }
+
+func BenchmarkUserAgent(b *testing.B) {
+	source := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36", nil
+		},
+	}
+	exprFunc := userAgent[any](source) //revive:disable-line:var-naming
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

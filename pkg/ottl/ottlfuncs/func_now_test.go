@@ -45,3 +45,14 @@ func Test_NowFactory(t *testing.T) {
 		assert.NotNil(t, fn)
 	})
 }
+
+func BenchmarkNow(b *testing.B) {
+	exprFunc, err := now[any]()
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

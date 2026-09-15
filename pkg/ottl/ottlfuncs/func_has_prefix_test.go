@@ -134,3 +134,19 @@ func Test_HasPrefixFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "HasPrefixFactory args must be of type *HasPrefixArguments[K]")
 	})
 }
+
+func BenchmarkHasPrefix(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "hello world", nil },
+	}
+	prefix := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "hello ", nil },
+	}
+	exprFunc := HasPrefix[any](target, prefix)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

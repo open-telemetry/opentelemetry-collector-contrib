@@ -103,3 +103,18 @@ func Test_MinutesFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "MinutesFactory args must be of type *MinutesArguments[K]")
 	})
 }
+
+func BenchmarkMinutes(b *testing.B) {
+	exprFunc, err := Minutes[any](&ottl.StandardDurationGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.ParseDuration("1h40m3s30ms100us1ns")
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

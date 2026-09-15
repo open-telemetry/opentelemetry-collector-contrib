@@ -109,3 +109,15 @@ func Test_IsBoolFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsBoolFactory args must be of type *IsBoolArguments[K]")
 	})
 }
+
+func BenchmarkIsBool(b *testing.B) {
+	exprFunc := isBool[any](&ottl.StandardBoolGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return true, nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

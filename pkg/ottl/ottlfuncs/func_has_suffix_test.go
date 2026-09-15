@@ -134,3 +134,19 @@ func Test_HasSuffixFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "HasSuffixFactory args must be of type *HasSuffixArguments[K]")
 	})
 }
+
+func BenchmarkHasSuffix(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "hello world", nil },
+	}
+	suffix := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return " world", nil },
+	}
+	exprFunc := HasSuffix[any](target, suffix)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

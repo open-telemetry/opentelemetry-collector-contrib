@@ -212,3 +212,18 @@ func Test_URLFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "URLFactory args must be of type *URLArguments[K]")
 	})
 }
+
+func BenchmarkURL(b *testing.B) {
+	source := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment", nil
+		},
+	}
+	exprFunc := url(source) //revive:disable-line:var-naming
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

@@ -186,3 +186,41 @@ func Test_KeepKeysFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "KeepKeysFactory args must be of type *KeepKeysArguments[K]")
 	})
 }
+
+func BenchmarkKeepKeys(b *testing.B) {
+	input := pcommon.NewMap()
+	input.PutStr("test", "hello world")
+	input.PutInt("test2", 3)
+	input.PutBool("test3", true)
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			v, ok := m.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	keys := []ottl.StringGetter[pcommon.Map]{
+		ottl.StandardStringGetter[pcommon.Map]{
+			Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+				return "test", nil
+			},
+		},
+	}
+	exprFunc := keepKeys(target, keys)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		input.CopyTo(scenarioMap)
+		_, err := exprFunc(ctx, scenarioMap)
+		require.NoError(b, err)
+	}
+}

@@ -104,3 +104,19 @@ func Test_UnixSecondsFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "UnixSecondsFactory args must be of type *UnixSecondsArguments[K]")
 	})
 }
+
+func BenchmarkUnixSeconds(b *testing.B) {
+	inputTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
+	exprFunc, err := UnixSeconds(&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return inputTime, nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

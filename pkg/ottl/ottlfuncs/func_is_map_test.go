@@ -109,3 +109,17 @@ func Test_IsMapFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsMapFactory args must be of type *IsMapArguments[K]")
 	})
 }
+
+func BenchmarkIsMap(b *testing.B) {
+	exprFunc := isMap[any](&ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return map[string]any{"key": "value"}, nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

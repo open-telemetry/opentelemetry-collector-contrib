@@ -156,3 +156,40 @@ func Test_StringifyAllFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "StringifyAllFactory args must be of type *StringifyAllArguments[K]")
 	})
 }
+
+func BenchmarkStringifyAll(b *testing.B) {
+	base := pcommon.NewMap()
+	base.PutStr("already_string", "hello")
+	base.PutInt("int_val", 42)
+	base.PutDouble("double_val", 3.14)
+	base.PutBool("bool_val", true)
+	base.PutEmptyBytes("bytes_val").FromRaw([]byte{1, 2, 3})
+	m := base.PutEmptyMap("map_val")
+	m.PutStr("nested", "value")
+	s := base.PutEmptySlice("slice_val")
+	s.AppendEmpty().SetInt(1)
+	s.AppendEmpty().SetInt(2)
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			v, ok := m.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	exprFunc := stringifyAll(target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		base.CopyTo(scenarioMap)
+		_, err := exprFunc(ctx, scenarioMap)
+		require.NoError(b, err)
+	}
+}

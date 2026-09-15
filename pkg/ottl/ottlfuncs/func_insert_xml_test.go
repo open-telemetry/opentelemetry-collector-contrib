@@ -237,3 +237,21 @@ func Test_InsertXMLFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "InsertXML args must be of type *InsertXMLAguments[K]")
 	})
 }
+
+func BenchmarkInsertXML(b *testing.B) {
+	exprFunc := insertXML[any](
+		ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return `<a></a>`, nil },
+		},
+		"/a",
+		ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return `<b/>`, nil },
+		},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

@@ -94,3 +94,21 @@ func Test_KeysFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "KeysFactory args must be of type *KeysArguments[K]")
 	})
 }
+
+func BenchmarkKeys(b *testing.B) {
+	m := pcommon.NewMap()
+	m.PutStr("name", "test")
+	m.PutStr("value", "test2")
+	target := ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return m, nil
+		},
+	}
+	exprFunc := keys[any](target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

@@ -143,3 +143,17 @@ func Test_LogFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "LogFactory args must be of type *LogArguments[K]")
 	})
 }
+
+func BenchmarkLog(b *testing.B) {
+	exprFunc := logFunc[any](&ottl.StandardFloatLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return float64(50), nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

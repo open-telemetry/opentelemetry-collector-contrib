@@ -52,3 +52,14 @@ func Test_UUIDv7Factory(t *testing.T) {
 		assert.NotNil(t, fn)
 	})
 }
+
+func BenchmarkUUIDv7(b *testing.B) {
+	exprFunc, err := uuidV7[any]()
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

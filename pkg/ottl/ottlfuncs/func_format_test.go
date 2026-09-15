@@ -116,3 +116,22 @@ func Test_FormatFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "FormatFactory args must be of type *FormatArguments[K]")
 	})
 }
+
+func BenchmarkFormat(b *testing.B) {
+	vals := []ottl.Getter[any]{
+		getterFunc[any](func(context.Context, any) (any, error) {
+			return 2, nil
+		}),
+		getterFunc[any](func(context.Context, any) (any, error) {
+			return "te", nil
+		}),
+	}
+	exprFunc := format[any]("test-%04d-%4s", vals)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

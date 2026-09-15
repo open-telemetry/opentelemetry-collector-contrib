@@ -213,3 +213,20 @@ func Test_IsInCIDRFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsInCIDRFactory args must be of type *IsInCIDRArguments[K]")
 	})
 }
+
+func BenchmarkIsInCIDR(b *testing.B) {
+	exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "192.0.2.1", nil },
+	}, []ottl.StringGetter[any]{
+		ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

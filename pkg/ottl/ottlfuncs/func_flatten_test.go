@@ -630,3 +630,42 @@ func Test_FlattenFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "FlattenFactory args must be of type *FlattenArguments[K]")
 	})
 }
+
+func BenchmarkFlatten(b *testing.B) {
+	var current pcommon.Map
+	target := ottl.StandardPMapGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Map, error) {
+			return current, nil
+		},
+		Setter: func(_ context.Context, _ any, val any) error {
+			v, ok := val.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(current)
+			return nil
+		},
+	}
+
+	exprFunc, err := flatten[any](target, ottl.Optional[string]{}, ottl.Optional[int64]{}, ottl.NewTestingOptional[bool](false))
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		current = pcommon.NewMap()
+		require.NoError(b, current.FromRaw(map[string]any{
+			"name": "test",
+			"address": map[string]any{
+				"street": "first",
+				"house":  int64(1234),
+			},
+			"occupants": []any{
+				"user 1",
+				"user 2",
+			},
+		}))
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

@@ -221,3 +221,17 @@ func Test_IsMatchFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsMatchFactory args must be of type *IsMatchArguments[K]")
 	})
 }
+
+func BenchmarkIsMatch(b *testing.B) {
+	exprFunc, err := isMatch[any](
+		ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "payment-service-42", nil }},
+		ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return `^[a-z-]+-\d+$`, nil }},
+	)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

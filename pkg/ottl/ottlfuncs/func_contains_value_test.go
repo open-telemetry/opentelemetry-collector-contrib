@@ -237,3 +237,23 @@ func Test_ContainsValueFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ContainsValueFactory args must be of type *ContainsValueArguments[K]")
 	})
 }
+
+func BenchmarkContainsValue(b *testing.B) {
+	target := ottl.StandardPSliceGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{"hello", "world", "foo", "bar"}, nil
+		},
+	}
+	item := ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "bar", nil
+		},
+	}
+	exprFunc := containsValue(target, item)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}

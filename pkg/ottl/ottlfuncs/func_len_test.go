@@ -353,3 +353,15 @@ func Test_LenFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "LenFactory args must be of type *LenArguments[K]")
 	})
 }
+
+func BenchmarkLen(b *testing.B) {
+	exprFunc := computeLen[any](ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "abcdefghij", nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := exprFunc(ctx, nil)
+		require.NoError(b, err)
+	}
+}
