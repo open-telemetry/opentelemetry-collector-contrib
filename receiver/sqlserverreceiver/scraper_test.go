@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -136,6 +137,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled = enabled
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = enabled
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = enabled
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled = enabled
 	// cfg.TopQueryCollection.Enabled = enabled
@@ -171,7 +173,9 @@ func TestEmptyScrape(t *testing.T) {
 
 func TestSuccessfulScrape(t *testing.T) {
 	tests := []struct {
-		name                  string
+		name string
+		// propertiesFixtureFile overrides the fixture returned for the server properties
+		// query. Empty means the default on-prem fixture (propertyQueryData.txt).
 		propertiesFixtureFile string
 	}{
 		{
@@ -392,10 +396,20 @@ type mockClient struct {
 	// server properties query. Used to exercise the reduced Azure SQL Managed
 	// Instance column shape.
 	propertiesFixtureFile string
+	// procedureFixtureFile, when set, overrides the fixture returned for the stored
+	// top procedure query.
+	procedureFixtureFile string
 }
 
 type mockInvalidClient struct {
 	mockClient
+}
+
+// mockEmptyResultClient returns no rows for every query, so a scrape records nothing.
+type mockEmptyResultClient struct{}
+
+func (mockEmptyResultClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
+	return nil, nil
 }
 
 type mockMultiStatementProcClient struct {
@@ -505,6 +519,12 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
+	case getSQLServerTopProcedureQuery(mc.instanceName):
+		fixture := "topProcedureQueryData.txt"
+		if mc.procedureFixtureFile != "" {
+			fixture = mc.procedureFixtureFile
+		}
+		queryResults, err = readFile(fixture)
 	default:
 		return nil, errors.New("No valid query found")
 	}
@@ -685,6 +705,186 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 	assert.NoError(t, errs)
+}
+
+func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	const totalElapsedTime = "total_elapsed_time"
+	const rowsReturned = "total_rows"
+	const totalWorkerTime = "total_worker_time"
+	const logicalReads = "total_logical_reads"
+	const logicalWrites = "total_logical_writes"
+	const physicalReads = "total_physical_reads"
+	const executionCount = "execution_count"
+	const totalGrant = "total_grant_kb"
+	const procedureExecutionCount = "procedure_execution_count"
+
+	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	logRecords := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	assert.Equal(t, 2, logRecords.Len())
+
+	var topQueryRecord, queryPlanRecord plog.LogRecord
+	for i := 0; i < logRecords.Len(); i++ {
+		switch logRecords.At(i).EventName() {
+		case "db.server.top_query":
+			topQueryRecord = logRecords.At(i)
+		case "db.server.query_plan":
+			queryPlanRecord = logRecords.At(i)
+		}
+	}
+
+	_, hasQueryPlanOnTopQuery := topQueryRecord.Attributes().Get("sqlserver.query_plan")
+	assert.False(t, hasQueryPlanOnTopQuery, "with db.server.query_plan enabled, the plan moves off db.server.top_query and onto the dedicated event")
+
+	queryHashAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_hash")
+	assert.True(t, ok)
+	assert.Equal(t, queryHash, queryHashAttr.Str())
+
+	queryPlanHashAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_plan_hash")
+	assert.True(t, ok)
+	assert.Equal(t, queryPlanHash, queryPlanHashAttr.Str())
+
+	queryPlanAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_plan")
+	assert.True(t, ok)
+	assert.NotEmpty(t, queryPlanAttr.Str())
+}
+
+// TestQueryTextAndPlanQueryDbServerQueryPlanEventDisabled covers the default configuration, where
+// db.server.query_plan is off and db.server.top_query keeps carrying the plan as it always has.
+func TestQueryTextAndPlanQueryDbServerQueryPlanEventDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = false
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	const totalElapsedTime = "total_elapsed_time"
+	const rowsReturned = "total_rows"
+	const totalWorkerTime = "total_worker_time"
+	const logicalReads = "total_logical_reads"
+	const logicalWrites = "total_logical_writes"
+	const physicalReads = "total_physical_reads"
+	const executionCount = "execution_count"
+	const totalGrant = "total_grant_kb"
+	const procedureExecutionCount = "procedure_execution_count"
+
+	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	logRecords := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	assert.Equal(t, 1, logRecords.Len(), "only db.server.top_query is emitted while db.server.query_plan is disabled")
+
+	topQueryRecord := logRecords.At(0)
+	assert.Equal(t, "db.server.top_query", topQueryRecord.EventName())
+
+	queryPlanAttr, ok := topQueryRecord.Attributes().Get("sqlserver.query_plan")
+	assert.True(t, ok, "db.server.top_query keeps carrying the plan by default")
+	assert.NotEmpty(t, queryPlanAttr.Str())
+}
+
+// TestQueryTextAndPlanQueryDbServerQueryPlanEventNoRows covers a scrape that records nothing, which
+// emits no resource at all. db.server.query_plan is enabled, so the plan removal still runs and has
+// to cope with empty logs.
+func TestQueryTextAndPlanQueryDbServerQueryPlanEventNoRows(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	scraper.client = mockEmptyResultClient{}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, actualLogs.ResourceLogs().Len())
 }
 
 func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
@@ -1106,9 +1306,11 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 
 func TestSetupResourceBuilder(t *testing.T) {
 	tests := []struct {
-		name             string
-		config           *Config
-		expectedHostName string
+		name                  string
+		config                *Config
+		expectedHostName      string
+		expectedServerAddress string
+		expectedServerPort    int64
 	}{
 		{
 			name: "with server configuration",
@@ -1119,7 +1321,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "testserver.example.com",
+			expectedHostName:      "testserver.example.com",
+			expectedServerAddress: "testserver.example.com",
+			expectedServerPort:    1433,
 		},
 		{
 			name: "with datasource configuration",
@@ -1129,7 +1333,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "datasource-host.example.com",
+			expectedHostName:      "datasource-host.example.com",
+			expectedServerAddress: "datasource-host.example.com",
+			expectedServerPort:    1434,
 		},
 		{
 			name: "with datasource default port",
@@ -1139,7 +1345,24 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "datasource-host2.example.com",
+			expectedHostName:      "datasource-host2.example.com",
+			expectedServerAddress: "datasource-host2.example.com",
+			expectedServerPort:    defaultSQLServerPort,
+		},
+		{
+			// A loopback target is only reachable when the instance is co-located with the
+			// collector, so server.address reports the collector's host name instead.
+			name: "with loopback server configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Server = "localhost"
+				cfg.Port = 1433
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName:      "localhost",
+			expectedServerAddress: getTestHostname(),
+			expectedServerPort:    1433,
 		},
 	}
 
@@ -1171,6 +1394,14 @@ func TestSetupResourceBuilder(t *testing.T) {
 			hostName, exists := resource.Attributes().Get("host.name")
 			assert.True(t, exists)
 			assert.Equal(t, tt.expectedHostName, hostName.AsString())
+
+			serverAddress, exists := resource.Attributes().Get("server.address")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerAddress, serverAddress.AsString())
+
+			serverPort, exists := resource.Attributes().Get("server.port")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerPort, serverPort.Int())
 		})
 	}
 }
@@ -1587,4 +1818,215 @@ func TestIsDiskIOQueryEnabled(t *testing.T) {
 	metrics.SqlserverDiskOperations.Enabled = false
 	metrics.SqlserverDiskIo.Enabled = true
 	assert.True(t, isDiskIOQueryEnabled(metrics))
+}
+
+// newTopProcedureScraper builds a logs scraper with only the top procedure
+// event enabled, so scrapers[0] is always the top procedure scraper.
+func newTopProcedureScraper(t *testing.T) *sqlServerScraperHelper {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	require.NotEmpty(t, scrapers)
+
+	scraper := scrapers[0]
+	require.NotNil(t, scraper.cache)
+	scraper.client = mockClient{
+		instanceName: scraper.config.InstanceName,
+		SQL:          scraper.sqlQuery,
+	}
+	return scraper
+}
+
+// seedProcedureCache primes the delta cache so the next scrape produces deltas rather
+// than only seeding. Mirrors the key layout used by recordDatabaseTopProcedure; the
+// fixture's procedures all live in database 5.
+func seedProcedureCache(scraper *sqlServerScraperHelper, procedureID string, values map[string]int64) {
+	const fixtureDatabaseID = "5"
+	for column, value := range values {
+		scraper.cacheAndDiff(fixtureDatabaseID, procedureID, "0", column, value)
+	}
+}
+
+func TestTopProcedureQuery(t *testing.T) {
+	scraper := newTopProcedureScraper(t)
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1000,
+		"total_worker_time":    30_000_000,
+		"total_elapsed_time":   60_000_000,
+		"total_physical_reads": 100,
+		"total_logical_reads":  400_000,
+		"total_logical_writes": 500,
+		"total_spills":         20,
+	})
+	seedProcedureCache(scraper, "7654321", map[string]int64{
+		"execution_count":      200,
+		"total_worker_time":    4_000_000,
+		"total_elapsed_time":   8_000_000,
+		"total_physical_reads": 5,
+		"total_logical_reads":  15_000,
+		"total_logical_writes": 3_000,
+		"total_spills":         0,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "expectedTopProcedureQuery.yaml")
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, actualLogs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp()))
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	assert.Equal(t, "db.server.top_procedure", records.At(0).EventName())
+}
+
+// The first scrape has nothing to diff against, so it must only prime the cache.
+func TestTopProcedureFirstScrapeSeedsCacheOnly(t *testing.T) {
+	scraper := newTopProcedureScraper(t)
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 0, actualLogs.ResourceLogs().Len(), "first scrape should only seed the cache")
+	assert.Positive(t, scraper.cache.Len(), "first scrape should have cached the procedure counters")
+	assert.True(t, scraper.lastExecutionTimestamp.After(time.Unix(0, 0)),
+		"a seeding scrape should still record its execution time")
+}
+
+// A scrape arriving before the interval elapses is skipped even when it has data to report.
+func TestTopProcedureRespectsCollectionInterval(t *testing.T) {
+	seed := func(scraper *sqlServerScraperHelper) {
+		seedProcedureCache(scraper, "1234567", map[string]int64{
+			"execution_count":      1000,
+			"total_worker_time":    30_000_000,
+			"total_elapsed_time":   60_000_000,
+			"total_physical_reads": 100,
+			"total_logical_reads":  400_000,
+			"total_logical_writes": 500,
+			"total_spills":         20,
+		})
+	}
+
+	t.Run("skipped within the interval", func(t *testing.T) {
+		scraper := newTopProcedureScraper(t)
+		scraper.config.TopProcedureCollection.CollectionInterval = time.Minute
+		seed(scraper)
+		scraper.lastExecutionTimestamp = time.Now()
+
+		actualLogs, err := scraper.ScrapeLogs(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, 0, actualLogs.ResourceLogs().Len(), "scrape within the collection interval should be skipped")
+	})
+
+	t.Run("runs once the interval has elapsed", func(t *testing.T) {
+		scraper := newTopProcedureScraper(t)
+		scraper.config.TopProcedureCollection.CollectionInterval = time.Minute
+		seed(scraper)
+		scraper.lastExecutionTimestamp = time.Now().Add(-2 * time.Minute)
+
+		actualLogs, err := scraper.ScrapeLogs(t.Context())
+		require.NoError(t, err)
+		assert.Positive(t, actualLogs.ResourceLogs().Len(), "scrape after the collection interval should run")
+	})
+}
+
+// A procedure that has not executed since the last scrape has a zero execution delta
+// and must be dropped rather than emitted with empty counters.
+func TestTopProcedureSkipsUnexecutedProcedures(t *testing.T) {
+	scraper := newTopProcedureScraper(t)
+
+	// Seed with the fixture's own cumulative values so every delta is zero.
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1500,
+		"total_worker_time":    45_000_000,
+		"total_elapsed_time":   90_000_000,
+		"total_physical_reads": 120,
+		"total_logical_reads":  480_000,
+		"total_logical_writes": 600,
+		"total_spills":         24,
+	})
+	seedProcedureCache(scraper, "7654321", map[string]int64{
+		"execution_count":      300,
+		"total_worker_time":    6_000_000,
+		"total_elapsed_time":   12_000_000,
+		"total_physical_reads": 10,
+		"total_logical_reads":  20_000,
+		"total_logical_writes": 4_000,
+		"total_spills":         0,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 0, actualLogs.ResourceLogs().Len(), "procedures with no new executions should not be reported")
+}
+
+// Procedures must be ranked by elapsed time accrued since the last scrape, not by the
+// cumulative total the query orders on. usp_UpdateInventory has the smaller lifetime
+// total but the larger delta here, so it is the one that survives a top count of 1.
+func TestTopProcedureRanksByElapsedTimeDelta(t *testing.T) {
+	scraper := newTopProcedureScraper(t)
+	scraper.config.TopProcedureCollection.TopProcedureCount = 1
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1499,
+		"total_worker_time":    44_999_000,
+		"total_elapsed_time":   89_999_000, // delta of 1ms despite the largest total
+		"total_physical_reads": 119,
+		"total_logical_reads":  479_999,
+		"total_logical_writes": 599,
+		"total_spills":         23,
+	})
+	seedProcedureCache(scraper, "7654321", map[string]int64{
+		"execution_count":      100,
+		"total_worker_time":    1_000_000,
+		"total_elapsed_time":   2_000_000, // delta of 10s
+		"total_physical_reads": 1,
+		"total_logical_reads":  1_000,
+		"total_logical_writes": 100,
+		"total_spills":         0,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 1, records.Len(), "top_procedure_count should cap the reported procedures")
+
+	name, ok := records.At(0).Attributes().Get("sqlserver.procedure_name")
+	require.True(t, ok)
+	assert.Equal(t, "[sales].[usp_UpdateInventory]", name.Str(),
+		"the procedure with the largest elapsed-time delta should win, not the largest cumulative total")
+}
+
+// procedureLookbackSeconds has no config knob of its own: on the first scrape it falls back to
+// CollectionInterval, and afterwards it tracks the actual time since the last successful scrape
+// (plus a fixed scheduling buffer), mirroring how oracledbreceiver derives its own lookback window.
+func TestProcedureLookbackSeconds(t *testing.T) {
+	t.Run("falls back to the collection interval on the first scrape", func(t *testing.T) {
+		scraper := newTopProcedureScraper(t)
+		scraper.config.TopProcedureCollection.CollectionInterval = 90 * time.Second
+
+		assert.Equal(t, 90, scraper.procedureLookbackSeconds())
+	})
+
+	t.Run("tracks elapsed time since the last scrape plus the scheduling buffer", func(t *testing.T) {
+		scraper := newTopProcedureScraper(t)
+		scraper.lastExecutionTimestamp = time.Now().Add(-65 * time.Second)
+
+		got := scraper.procedureLookbackSeconds()
+		assert.GreaterOrEqual(t, got, 75, "expected roughly 65s elapsed plus a 10s buffer")
+		assert.LessOrEqual(t, got, 80, "expected roughly 65s elapsed plus a 10s buffer, with some slack for test timing")
+	})
 }
