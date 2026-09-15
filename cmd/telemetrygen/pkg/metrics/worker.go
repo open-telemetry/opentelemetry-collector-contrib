@@ -103,12 +103,19 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 
 	var i int64
 	for w.running.Load() {
+		// Build per-iteration attrs without mutating the shared base slice.
+		// Previously we did `signalAttrs = append(signalAttrs, tb.getAttribute())`,
+		// which grew unboundedly and made attribute.NewSet progressively slower
+		// (throughput decay under --unique-timeseries). See #49950.
+		attrs := signalAttrs
 		if w.enforceUnique {
-			signalAttrs = append(signalAttrs, tb.getAttribute())
+			attrs = make([]attribute.KeyValue, len(signalAttrs), len(signalAttrs)+1)
+			copy(attrs, signalAttrs)
+			attrs = append(attrs, tb.getAttribute())
 		}
 
 		// Add load size attributes if specified
-		loadAttrs := signalAttrs
+		loadAttrs := attrs
 		if w.loadSize > 0 {
 			for j := 0; j < w.loadSize; j++ {
 				loadAttrs = append(loadAttrs, config.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
@@ -195,7 +202,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 			dp := &metricdata.ExponentialHistogramDataPoint[int64]{
 				StartTime:  startTime,
 				Time:       now,
-				Attributes: attribute.NewSet(signalAttrs...),
+				Attributes: attribute.NewSet(loadAttrs...),
 				Exemplars:  w.exemplars,
 			}
 			expoHistToSDKExponentialDataPoint(hist, dp)
