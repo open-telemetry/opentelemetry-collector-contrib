@@ -5,6 +5,7 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
@@ -39,7 +40,7 @@ func collectExemplars(
 	req *writev2.Request,
 	settings receiver.Settings,
 	stats *promremote.WriteResponseStats,
-) map[uint64]pmetric.ExemplarSlice {
+) (map[uint64]pmetric.ExemplarSlice, error) {
 	result := make(map[uint64]pmetric.ExemplarSlice)
 	builder := labels.NewScratchBuilder(0)
 	stats.Exemplars = 0
@@ -79,8 +80,9 @@ func collectExemplars(
 		for _, ex := range ts.Exemplars {
 			promExemplar, err := ex.ToExemplar(&builder, req.Symbols)
 			if err != nil {
-				settings.Logger.Warn("error converting exemplar label refs", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-				continue
+				// Nothing looks at this exemplar again, so skipping it is the one drop that
+				// would still leave the request answered as written.
+				return nil, fmt.Errorf("exemplar of %q cannot be read: %w", metadata.Name, err)
 			}
 
 			exemplar := slice.AppendEmpty()
@@ -95,7 +97,7 @@ func collectExemplars(
 		result[key.hash()] = slice
 	}
 
-	return result
+	return result, nil
 }
 
 func extractScopeFromLabels(settings receiver.Settings, ls labels.Labels) (string, string) {
