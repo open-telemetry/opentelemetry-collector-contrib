@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -91,16 +92,54 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 					event := span.Events().At(l)
 					if event.Name() == eventNameExc {
 						eventAttrs := event.Attributes()
+						spanName := span.Name()
+						spanKind := traceutil.SpanKindStr(span.Kind())
+						statusCode := traceutil.StatusCodeStr(span.Status().Code())
 
 						c.keyBuf.Reset()
-						buildKey(c.keyBuf, serviceName, span, c.dimensions, eventAttrs, resourceAttr)
+						buildKey(c.keyBuf, serviceName, spanName, spanKind, statusCode, c.dimensions, span.Attributes(), eventAttrs, resourceAttr)
 						key := c.keyBuf.String()
 
-						attrs := buildDimensionKVs(c.dimensions, serviceName, span, eventAttrs, resourceAttr)
+						attrs := buildDimensionKVs(c.dimensions, serviceName, spanName, spanKind, statusCode, span.Attributes(), eventAttrs, resourceAttr)
 						exc := c.addException(key, attrs)
 						c.addExemplar(exc, span.TraceID(), span.SpanID())
 					}
 				}
+			}
+		}
+	}
+	return c.exportMetrics(ctx)
+}
+
+// ConsumeLogs implements the consumer.Logs interface: aggregates records with
+// event.name == "exception" into the same "exceptions" metric ConsumeTraces produces. There's no
+// span to read span.name/span.kind/status.code from, so those dimensions are omitted.
+func (c *metricsConnector) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		rlogs := logs.ResourceLogs().At(i)
+		resourceAttr := rlogs.Resource().Attributes()
+		serviceAttr, ok := resourceAttr.Get(string(conventions.ServiceNameKey))
+		if !ok {
+			continue
+		}
+		serviceName := serviceAttr.Str()
+		slSlice := rlogs.ScopeLogs()
+		for j := 0; j < slSlice.Len(); j++ {
+			records := slSlice.At(j).LogRecords()
+			for k := 0; k < records.Len(); k++ {
+				lr := records.At(k)
+				if lr.EventName() != eventNameExc {
+					continue
+				}
+				lrAttrs := lr.Attributes()
+
+				c.keyBuf.Reset()
+				buildKey(c.keyBuf, serviceName, "", "", "", c.dimensions, lrAttrs, resourceAttr)
+				key := c.keyBuf.String()
+
+				attrs := buildDimensionKVs(c.dimensions, serviceName, "", "", "", lrAttrs, resourceAttr)
+				exc := c.addException(key, attrs)
+				c.addExemplar(exc, lr.TraceID(), lr.SpanID())
 			}
 		}
 	}
@@ -176,34 +215,46 @@ func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, 
 	e.SetDoubleValue(float64(exc.count))
 }
 
-func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName string, span ptrace.Span, eventAttrs, resourceAttrs pcommon.Map) pcommon.Map {
+// buildDimensionKVs builds the dimensions/attributes for an exception metric data point.
+// spanName/spanKind/statusCode are omitted when empty (logs-sourced exceptions have none).
+func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName, spanName, spanKind, statusCode string, attrSets ...pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.EnsureCapacity(3 + len(dimensions))
+	dims.EnsureCapacity(4 + len(dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
-	dims.PutStr(spanNameKey, span.Name())
-	dims.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
-	dims.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	if spanName != "" {
+		dims.PutStr(spanNameKey, spanName)
+	}
+	if spanKind != "" {
+		dims.PutStr(spanKindKey, spanKind)
+	}
+	if statusCode != "" {
+		dims.PutStr(statusCodeKey, statusCode)
+	}
 	for _, d := range dimensions {
-		if v, ok := pdatautil.GetDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
+		if v, ok := pdatautil.GetDimensionValue(d, attrSets...); ok {
 			v.CopyTo(dims.PutEmpty(d.Name))
 		}
 	}
 	return dims
 }
 
-// buildKey builds the metric key from the service name and span metadata such as kind, status_code and
-// will attempt to add any additional dimensions the user has configured that match the span's attributes
-// or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
-//
-// The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []pdatautil.Dimension, eventAttrs, resourceAttrs pcommon.Map) {
+// buildKey builds the metric key: service name, span metadata, then any configured dimensions
+// found in attrSets (searched in order, earlier sets take precedence). Values are concatenated,
+// delimited by a null character. spanName/spanKind/statusCode are omitted when empty.
+func buildKey(dest *bytes.Buffer, serviceName, spanName, spanKind, statusCode string, optionalDims []pdatautil.Dimension, attrSets ...pcommon.Map) {
 	concatDimensionValue(dest, serviceName, false)
-	concatDimensionValue(dest, span.Name(), true)
-	concatDimensionValue(dest, traceutil.SpanKindStr(span.Kind()), true)
-	concatDimensionValue(dest, traceutil.StatusCodeStr(span.Status().Code()), true)
+	if spanName != "" {
+		concatDimensionValue(dest, spanName, true)
+	}
+	if spanKind != "" {
+		concatDimensionValue(dest, spanKind, true)
+	}
+	if statusCode != "" {
+		concatDimensionValue(dest, statusCode, true)
+	}
 
 	for _, d := range optionalDims {
-		if v, ok := pdatautil.GetDimensionValue(d, span.Attributes(), eventAttrs, resourceAttrs); ok {
+		if v, ok := pdatautil.GetDimensionValue(d, attrSets...); ok {
 			concatDimensionValue(dest, v.AsString(), true)
 		}
 	}
