@@ -6,6 +6,7 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"regexp"
+	"strings"
 	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
@@ -160,7 +161,16 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPComputeEngine.Value.AsString())
 		errs = multierr.Combine(errs,
 			d.rb.SetZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion),
-			d.rb.SetFromCallable(d.rb.SetHostType, d.detector.GCEHostType),
+			d.rb.SetFromCallable(d.rb.SetHostType, func() (string, error) {
+				hostType, err := d.detector.GCEHostType()
+				if err != nil {
+					return "", err
+				}
+				if idx := strings.LastIndex(hostType, "/"); idx != -1 {
+					hostType = hostType[idx+1:]
+				}
+				return hostType, nil
+			}),
 			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GCEHostID),
 			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.GCEHostName),
 			d.rb.SetFromCallable(d.rb.SetGcpGceInstanceHostname, d.detector.GCEInstanceHostname),
