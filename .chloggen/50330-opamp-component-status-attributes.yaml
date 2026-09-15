@@ -1,0 +1,11 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+
+component: extension/opamp
+
+note: Report component status attributes in OpAMP health messages.
+
+issues: [50330]
+
+change_logs: [user]

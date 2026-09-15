@@ -466,7 +466,7 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 		return nil
 	}
 
-	configMap := map[string]*protobufs.AgentConfigFile{
+	configMap := map[string]*protobufs.AgentConfigObject{
 		"": {
 			Body:        conf,
 			ContentType: "text/yaml",
@@ -481,7 +481,7 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 		if err != nil {
 			o.logger.Error("cannot marshal raw config", zap.Any("conf", o.rawConfig), zap.Error(err))
 		} else {
-			configMap[rawConfigMapKey] = &protobufs.AgentConfigFile{
+			configMap[rawConfigMapKey] = &protobufs.AgentConfigObject{
 				Body:        rawConf,
 				ContentType: "text/yaml",
 			}
@@ -761,6 +761,10 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 
 	if statusUpdate.Err() != nil {
 		componentHealth.LastError = statusUpdate.Err().Error()
+	}
+
+	if attrs := pcommonMapToKeyValues(statusUpdate.Attributes()); len(attrs) > 0 {
+		componentHealth.Attributes = attrs
 	}
 
 	if len(statusUpdate.ComponentStatusMap) > 0 {
