@@ -88,6 +88,7 @@ For more information about the maintainer role, see the [community repository](h
 - [David Ashpole](https://github.com/dashpole), Google
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [Joshua MacDonald](https://github.com/jmacd), Microsoft
+- [Mike Goldsmith](https://github.com/MikeGoldsmith), Honeycomb
 - [Paulo Dias](https://github.com/paulojmdias), Five9
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
@@ -107,7 +108,6 @@ For more information about the approver role, see the [community repository](htt
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Khushi Jain](https://github.com/khushijain21), Elastic
-- [Mike Goldsmith](https://github.com/MikeGoldsmith), Honeycomb
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Roger Coll](https://github.com/rogercoll), Elastic

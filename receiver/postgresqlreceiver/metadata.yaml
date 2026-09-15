@@ -588,7 +588,7 @@ metrics:
     unit: "{table}"
     attributes: [db.namespace]
   postgresql.table.size:
-    description: Disk space used by a table.
+    description: Total disk space used by a table, including its indexes and TOAST data.
     stability: development
     enabled: true
     unit: By
