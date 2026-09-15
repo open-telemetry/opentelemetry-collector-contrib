@@ -6,8 +6,10 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	_ "embed"
 	"fmt"
+	"math"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 //go:embed sql/metrics_histogram_ddl.sql
@@ -50,10 +52,49 @@ func (m *metricModelHistogram) add(pm pmetric.Metric, dm *dMetric, e *metricsExp
 	for i := 0; i < dataPoints.Len(); i++ {
 		dp := dataPoints.At(i)
 
+		if dp.Flags().NoRecordedValue() {
+			e.logger.Warn("dropping histogram datapoint with NoRecordedValue flag", zap.String("metric_name", dm.MetricName))
+			continue
+		}
+
+		if dp.HasSum() && (math.IsNaN(dp.Sum()) || math.IsInf(dp.Sum(), 0)) {
+			e.logger.Warn("dropping histogram datapoint with non-finite sum", zap.String("metric_name", dm.MetricName), zap.Float64("sum", dp.Sum()))
+			continue
+		}
+		if dp.HasMin() && (math.IsNaN(dp.Min()) || math.IsInf(dp.Min(), 0)) {
+			e.logger.Warn("dropping histogram datapoint with non-finite min", zap.String("metric_name", dm.MetricName), zap.Float64("min", dp.Min()))
+			continue
+		}
+		if dp.HasMax() && (math.IsNaN(dp.Max()) || math.IsInf(dp.Max(), 0)) {
+			e.logger.Warn("dropping histogram datapoint with non-finite max", zap.String("metric_name", dm.MetricName), zap.Float64("max", dp.Max()))
+			continue
+		}
+
+		explicitBounds := dp.ExplicitBounds()
+		hasInvalidBound := false
+		for j := 0; j < explicitBounds.Len(); j++ {
+			v := explicitBounds.At(j)
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				e.logger.Warn("dropping histogram datapoint with non-finite explicit bound", zap.String("metric_name", dm.MetricName), zap.Float64("bound", v))
+				hasInvalidBound = true
+				break
+			}
+		}
+		if hasInvalidBound {
+			continue
+		}
+
 		exemplars := dp.Exemplars()
 		newExemplars := make([]*dExemplar, 0, exemplars.Len())
 		for j := 0; j < exemplars.Len(); j++ {
 			exemplar := exemplars.At(j)
+			if exemplar.ValueType() == pmetric.ExemplarValueTypeDouble {
+				v := exemplar.DoubleValue()
+				if math.IsNaN(v) || math.IsInf(v, 0) {
+					e.logger.Warn("dropping exemplar with non-finite value", zap.String("metric_name", dm.MetricName), zap.Float64("value", v))
+					continue
+				}
+			}
 
 			newExemplar := &dExemplar{
 				FilteredAttributes: exemplar.FilteredAttributes().AsRaw(),
@@ -72,7 +113,6 @@ func (m *metricModelHistogram) add(pm pmetric.Metric, dm *dMetric, e *metricsExp
 			newBucketCounts = append(newBucketCounts, int64(bucketCounts.At(j)))
 		}
 
-		explicitBounds := dp.ExplicitBounds()
 		newExplicitBounds := make([]float64, 0, explicitBounds.Len())
 		for j := 0; j < explicitBounds.Len(); j++ {
 			newExplicitBounds = append(newExplicitBounds, explicitBounds.At(j))
