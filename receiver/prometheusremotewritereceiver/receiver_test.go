@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -4251,6 +4252,162 @@ func TestExponentialHistogramSpanExpansionIsBounded(t *testing.T) {
 	assert.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(8<<20))
 }
 
+func TestTranslatedHistogramsSatisfyTheDataModel(t *testing.T) {
+	// The checks a custom bucket histogram goes through are written here rather than borrowed, so
+	// this drives random shapes past them and asserts the OTLP rules on whatever comes out: the
+	// bounds increase, there is one more bucket than bounds, and the count is the bucket total.
+	prwReceiver := setupMetricsReceiver(t)
+	random := rand.New(rand.NewPCG(20260916, 20260916))
+	stale := math.Float64frombits(value.StaleNaN)
+
+	emitted := 0
+	for n := range 50000 {
+		bounds := make([]float64, random.IntN(6))
+		for i := range bounds {
+			bounds[i] = float64(i) + random.Float64()
+		}
+		// Every so often, break one of the rules the bounds have to follow.
+		if len(bounds) > 1 {
+			switch random.IntN(20) {
+			case 0:
+				bounds[0], bounds[1] = bounds[1], bounds[0]
+			case 1:
+				bounds[1] = bounds[0]
+			case 2:
+				bounds[random.IntN(len(bounds))] = math.NaN()
+			case 3:
+				bounds[random.IntN(len(bounds))] = math.Inf(random.IntN(2)*2 - 1)
+			}
+		}
+
+		spans := make([]writev2.BucketSpan, random.IntN(4))
+		declared := 0
+		for i := range spans {
+			spans[i] = writev2.BucketSpan{Offset: int32(random.IntN(5)) - 1, Length: uint32(random.IntN(5))}
+			declared += int(spans[i].Length)
+		}
+		// Sometimes send a number of values the spans did not ask for.
+		if random.IntN(3) == 0 {
+			declared = random.IntN(8)
+		}
+		deltas := make([]int64, declared)
+		for i := range deltas {
+			deltas[i] = int64(random.IntN(11)) - 3
+		}
+
+		histogram := writev2.Histogram{
+			Schema:         -53,
+			Count:          &writev2.Histogram_CountInt{CountInt: uint64(random.IntN(50))},
+			Sum:            1,
+			Timestamp:      1,
+			CustomValues:   bounds,
+			PositiveSpans:  spans,
+			PositiveDeltas: deltas,
+		}
+		if random.IntN(8) == 0 {
+			histogram.Sum = stale
+		}
+		if random.IntN(30) == 0 {
+			histogram.ZeroCount = &writev2.Histogram_ZeroCountInt{ZeroCountInt: uint64(random.IntN(3))}
+		}
+
+		metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_metric", // 1, 2
+				"job", "service-x/test", // 3, 4
+				"instance", "107cn001", // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Histograms: []writev2.Histogram{histogram},
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		// Worked out from the request on its own, so that a shape the converter should have
+		// refused cannot pass by producing output that is merely self consistent.
+		translatable := true
+		previous := math.Inf(-1)
+		for _, bound := range bounds {
+			if math.IsNaN(bound) || math.IsInf(bound, 0) || bound <= previous {
+				translatable = false
+			}
+			previous = bound
+		}
+		if !value.IsStaleNaN(histogram.Sum) {
+			described, dense := 0, 0
+			for _, span := range spans {
+				if span.Offset < 0 {
+					translatable = false
+				}
+				described += int(span.Length)
+				dense += int(span.Offset) + int(span.Length)
+			}
+			if described != len(deltas) || dense > len(bounds)+1 {
+				translatable = false
+			}
+			running := int64(0)
+			for _, delta := range deltas {
+				running += delta
+				if running < 0 {
+					translatable = false
+				}
+			}
+			if histogram.GetZeroCountInt() != 0 {
+				translatable = false
+			}
+		}
+
+		rms := metrics.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				ms := sms.At(j).Metrics()
+				for k := 0; k < ms.Len(); k++ {
+					if ms.At(k).Type() != pmetric.MetricTypeHistogram {
+						continue
+					}
+					dps := ms.At(k).Histogram().DataPoints()
+					for d := 0; d < dps.Len(); d++ {
+						emitted++
+						require.True(t, translatable,
+							"iteration %d: a shape the converter cannot represent was published", n)
+						dp := dps.At(d)
+						buckets := dp.BucketCounts().AsRaw()
+						explicit := dp.ExplicitBounds().AsRaw()
+						require.Len(t, buckets, len(explicit)+1,
+							"iteration %d: one more bucket than bounds", n)
+
+						previous := math.Inf(-1)
+						for b, bound := range explicit {
+							require.False(t, math.IsNaN(bound) || math.IsInf(bound, 0),
+								"iteration %d: bound %d is %v", n, b, bound)
+							require.Greater(t, bound, previous, "iteration %d: bound %d", n, b)
+							previous = bound
+						}
+
+						var population uint64
+						for _, bucket := range buckets {
+							population += bucket
+						}
+						require.Equal(t, population, dp.Count(),
+							"iteration %d: count is the bucket total", n)
+						if dp.Count() == 0 {
+							require.False(t, dp.HasSum(), "iteration %d: no sum without a count", n)
+						}
+					}
+				}
+			}
+		}
+	}
+	// A run that rejected everything would satisfy the assertions above without testing them.
+	require.Greater(t, emitted, 1000, "the shapes generated here have to reach the converter")
+}
+
 func TestCustomBoundsThatCannotDescribeABucketAreRejected(t *testing.T) {
 	// The bounds are copied into ExplicitBounds unchanged, and a bucket between two bounds that
 	// do not increase, or either side of an infinity, can hold nothing. A stale marker copies
@@ -4298,6 +4455,50 @@ func TestCustomBoundsThatCannotDescribeABucketAreRejected(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
 			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "bounds are checked before anything is built")
+		})
+	}
+}
+
+func TestBoundsOnASchemaWithoutThemAreRejected(t *testing.T) {
+	// Only the custom bucket schema separates its buckets with explicit bounds. On any other one
+	// they are wire data the translation never looks at, so the histogram is refused rather than
+	// carried across without them.
+	for _, tc := range []struct {
+		name   string
+		bounds []float64
+	}{
+		{name: "finite bounds on the standard schema", bounds: []float64{1, 2}},
+		{name: "a NaN bound on the standard schema", bounds: []float64{math.NaN()}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Schema:         0,
+							Count:          &writev2.Histogram_CountInt{CountInt: 2},
+							Sum:            1,
+							Timestamp:      1,
+							CustomValues:   tc.bounds,
+							PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+							PositiveDeltas: []int64{1, 0},
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "the schema is checked before anything is built")
 		})
 	}
 }

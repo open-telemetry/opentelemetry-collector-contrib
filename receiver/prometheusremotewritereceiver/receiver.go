@@ -593,11 +593,16 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 
 		// A stale marker leaves the rest of the histogram unread, but its bounds are copied to
 		// the data point either way, so they are checked before the marker takes the short cut.
+		// Only the custom bucket schema has bounds; on any other one they are wire data nothing
+		// would go looking for.
 		if histogramType == "nhcb" {
 			if err := validateCustomBounds(histogram.CustomValues); err != nil {
 				dropped(err)
 				continue
 			}
+		} else if len(histogram.CustomValues) > 0 {
+			dropped(fmt.Errorf("schema %d has no custom bounds, %d were sent", histogram.Schema, len(histogram.CustomValues)))
+			continue
 		}
 
 		// Checked before anything is built, so a histogram that is going to be dropped never
