@@ -17,6 +17,8 @@
 The `k8s_observer` is a [Receiver Creator](../../../receiver/receivercreator/README.md)-compatible "watch observer" that will detect and report
 Kubernetes pod, port, container, service, ingress and node endpoints via the Kubernetes API.
 
+IPv6 port endpoints are formatted as `[address]:port`.
+
 ## Example Config
 
 ```yaml
