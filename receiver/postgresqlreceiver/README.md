@@ -97,7 +97,14 @@ The following settings are optional:
 
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases. This list applies to metrics only; the query sample and top query collectors ignore it and are filtered solely by `exclude_databases`.
 
-- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the default `postgres` database for discovery and server-level queries, even if it is listed here.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the configured `connect_database` (default `postgres`) for discovery and server-level queries, even if it is listed here.
+
+- `connect_database` (default = `postgres`): The database the receiver connects to for discovery and server-level queries, including `pg_stat_statements`. Independent of `databases` — `pg_stat_statements` is tracked cluster-wide, so any database with the extension installed works as the connection target, regardless of which databases are being monitored. Use this if `pg_stat_statements` lives outside `postgres`, or if you connect through a dedicated monitoring-only database:
+  ```yaml
+  connect_database: "mon"   # extension lives here
+  databases:
+    - "landonline"          # database being monitored
+  ```
 
 > [!NOTE]
 > Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:
