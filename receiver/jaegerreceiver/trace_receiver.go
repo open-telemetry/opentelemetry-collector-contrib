@@ -303,15 +303,17 @@ func (*jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpErr
 
 // deserializeThriftBatch decodes a Thrift-binary-encoded Jaeger batch from body.
 //
-// It bounds the Thrift decoder's MaxMessageSize to the length of the payload
-// that was actually received. A valid message can never require more wire bytes
-// than the payload provides, so this bound is transparent to legitimate
-// requests. It does, however, reject a malicious payload that declares a
-// container (e.g. a list of spans) whose element count is far larger than the
-// bytes provided. Without it, a tiny request can force the generated Thrift code
-// to pre-allocate a huge slice (CWE-789, memory-amplification DoS), because the
-// decoder's default MaxMessageSize of 100MB is orders of magnitude larger than a
-// typical request body.
+// deserializeThriftBatch decodes a Thrift-binary-encoded Jaeger batch from body.
+//
+// The Thrift decoder pre-allocates _each collection_ to its _declared_ element
+// count, and rejects the collection only when count * size_of(element)
+// exceeds MaxMessageSize (100MB by default). A tiny payload can therefore
+// declare millions of elements and force a large allocation before the read
+// fails. Bounding MaxMessageSize to the body length rejects any collection that
+// declares more elements than the payload could hold, and never rejects a valid
+// message, whose elements are all present in the payload. Residual amplification
+// is analyzed in
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/50628.
 func deserializeThriftBatch(ctx context.Context, body []byte, batch *jaeger.Batch) error {
 	cfg := &apacheThrift.TConfiguration{
 		MaxMessageSize: boundedThriftMessageSize(len(body)),
