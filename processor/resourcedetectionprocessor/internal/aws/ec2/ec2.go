@@ -112,9 +112,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", nil
 	}
 
-	hostname, err := d.metadataProvider.Hostname(ctx)
-	if err != nil {
-		d.logger.Warn("EC2 hostname unavailable", zap.Error(err))
+	hostname, hostnameErr := d.metadataProvider.Hostname(ctx)
+	if hostnameErr != nil {
+		d.logger.Warn("EC2 hostname unavailable", zap.Error(hostnameErr))
 		// Continue without the hostname, the remaining attributes and the tags below are still worth reporting.
 	}
 
@@ -126,7 +126,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetHostID(meta.InstanceID)
 	d.rb.SetHostImageID(meta.ImageID)
 	d.rb.SetHostType(meta.InstanceType)
-	if hostname != "" {
+	if hostnameErr == nil {
 		d.rb.SetHostName(hostname)
 	}
 	res := d.rb.Emit()
