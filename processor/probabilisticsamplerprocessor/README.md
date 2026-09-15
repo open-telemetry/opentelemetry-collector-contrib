@@ -5,6 +5,7 @@
 | Stability     | [alpha]: logs   |
 |               | [beta]: traces   |
 | Distributions | [core], [contrib], [k8s] |
+| Warnings      | [Orphaned Telemetry, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fprobabilisticsampler%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fprobabilisticsampler) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fprobabilisticsampler%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fprobabilisticsampler) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_probabilisticsampler)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_probabilisticsampler&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jmacd](https://www.github.com/jmacd) \| Seeking more code owners! |
@@ -349,3 +350,41 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples
 on using the processor.
+
+## Warnings
+
+Sampling reduces the volume of telemetry that reaches your backend, which
+necessarily means information is lost.  In general, understand the shape of your
+data and how it will be consumed before configuring this processor.
+
+- [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry):
+  The processor drops spans and log records.  Dropping a span may lead to
+  orphaned spans, if the dropped span is the parent of a span that was sampled,
+  and may lead to orphaned logs, if a sampled log record references a dropped
+  span.  Because this processor makes an independent decision for each item
+  rather than for a whole trace, traces may be incomplete even though every mode
+  is consistent; see [Consistency guarantee](#consistency-guarantee) and
+  [Completeness property](#completeness-property) for how to minimize this.  For
+  whole-trace sampling, use the
+  [tailsamplingprocessor](../tailsamplingprocessor/README.md) instead.
+- Configuration consistency: in `hash_seed` mode, all collectors in a given tier
+  (e.g., behind the same load balancer) must be configured with the same
+  `hash_seed`, otherwise the sampling decisions made by those collectors are not
+  consistent with each other and sub-trace completeness is lost.  See
+  [Mode Selection](#mode-selection).
+- Data refusal: this processor treats an item with no source of randomness as an
+  error, including an invalid (all-zero) TraceID and a `from_attribute` value
+  with zero bytes of information.  By default (`fail_closed: true`) such data is
+  refused rather than passed through, which can result in data loss upstream of
+  the collector.  See [Error handling](#error-handling).
+- Reduced precision: the effective sampling probability recorded in the
+  telemetry is rounded to `sampling_precision` hexadecimal digits, and
+  `hash_seed` mode uses only 14 bits of information.  Consumers that compute
+  population estimates from the recorded threshold will see the rounded
+  probability, not the exact configured `sampling_percentage`.  See
+  [Sampling precision](#sampling-precision).
+- Biased counts: the [sampling priority](#sampling-priority) mechanism overrides
+  the probabilistic decision, forcing items to be kept or dropped.  Items kept
+  this way are recorded as 100% sampled even though they were not selected at
+  random, so population estimates computed from a pipeline that uses sampling
+  priority will be biased.
