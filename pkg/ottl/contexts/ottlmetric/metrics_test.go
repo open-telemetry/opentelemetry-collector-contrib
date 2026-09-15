@@ -194,7 +194,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			metric := createTelemetry()
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -221,7 +221,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := rm.ScopeMetrics().AppendEmpty().Scope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContextPtr(rm, rm.ScopeMetrics().At(0), pmetric.NewMetric())
+	ctx := NewTransformContext(rm, rm.ScopeMetrics().At(0), pmetric.NewMetric())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -330,7 +330,7 @@ func Test_newPathGetSetter_RelaxedNames(t *testing.T) {
 			metric := pmetric.NewMetric()
 			metric.SetName("original")
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			err := accessor.Set(t.Context(), ctx, name)

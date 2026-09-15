@@ -121,6 +121,9 @@ func TestClientConfig(t *testing.T) {
 		"sasl_plain_password_required": {
 			expectedErr: "auth::sasl: password is required",
 		},
+		"sasl_and_kerberos": {
+			expectedErr: "auth: only one of sasl or kerberos authentication can be configured",
+		},
 	})
 }
 

@@ -72,7 +72,6 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/mezmo
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -241,6 +240,7 @@ body:
       - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
+      - processor/rollingspanlatency
       - processor/schema
       - processor/signing
       - processor/span

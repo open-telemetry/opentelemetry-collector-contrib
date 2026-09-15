@@ -99,6 +99,15 @@ As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic 
 
 Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
 
+### Native Histogram expansion limits
+
+Prometheus sends Native Histogram buckets as spans of populated buckets separated by gaps, while OTLP wants one contiguous list, so a short list of spans can describe a very wide one. Two limits bound what that expansion is allowed to cost:
+
+    - A single histogram may expand to 16384 buckets, counting its positive and negative ranges together.
+    - All histograms in one request share a budget of 4194304 expanded buckets.
+
+Histograms past either limit are dropped, are not counted in the `X-Prometheus-Remote-Write-Histograms-Written` response header, and are logged. Both limits are hardcoded and not configurable for now.
+
 ### Resource Metrics Cache
 
 `target_info` metrics and "normal" metrics are a match when they have the same job/instance labels (Please read the [specification](https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1) for more details). But these metrics do not always come in the same Remote-Write request. For this reason, the receiver uses an internal LRU (Least Recently Used) and stateless cache implementation to store resource metrics across requests.

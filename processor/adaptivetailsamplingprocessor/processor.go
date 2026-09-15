@@ -273,8 +273,17 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 		// counter store each interval, rates recomputed from the merged
 		// totals. Without shared_counters the store is in-process, giving
 		// per-instance behavior through the same path.
+		//
+		// A throughput goal cannot be converted to a sample rate without
+		// observed volume, so the pre-warmup rate comes from the explicit
+		// initial_sampling_percentage bootstrap (default 10%, i.e. 1-in-10).
+		initialPct := 10.0
+		if sc.InitialSamplingPercentage != nil {
+			initialPct = *sc.InitialSamplingPercentage
+		}
 		stCfg := sampler.SharedThroughputConfig{
 			GoalThroughputPerSec: float64(sc.GoalThroughput),
+			InitialSamplingRate:  max(int(100.0/initialPct), 1),
 			MaxKeys:              sc.MaxKeys,
 			AdjustmentInterval:   sc.AdjustmentInterval,
 			Weight:               sc.Weight,
@@ -717,7 +726,7 @@ func (p *adaptiveTailSamplingProcessor) evalRootSpanCondition(ctx context.Contex
 	if p.rootSpanFastPath {
 		return span.ParentSpanID().IsEmpty()
 	}
-	tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+	tCtx := ottlspan.NewTransformContext(rs, ss, span)
 	ok, err := p.rootSpanCond.Eval(ctx, tCtx)
 	tCtx.Close()
 	if err != nil {

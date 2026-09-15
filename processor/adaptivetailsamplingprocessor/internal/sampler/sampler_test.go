@@ -71,6 +71,24 @@ func TestEMAPercentage_InvalidPercentage(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// zeroRateSampler stands in for a dynsampler sampler that returns 0 for keys
+// it has no computed rate for (cold start, untracked keys, max_keys overflow).
+type zeroRateSampler struct{}
+
+func (zeroRateSampler) Start() error                       { return nil }
+func (zeroRateSampler) Stop() error                        { return nil }
+func (zeroRateSampler) GetSampleRateMulti(string, int) int { return 0 }
+
+func TestDynsamplerWrapper_FallbackRateOnZero(t *testing.T) {
+	w := &dynsamplerWrapper{inner: zeroRateSampler{}, fallbackRate: 10}
+	assert.Equal(t, 10, w.GetSampleRate("any-key", 1),
+		"a non-positive inner rate must map to the bootstrap rate, not keep-everything")
+
+	// An unset fallback still never returns a non-positive rate.
+	w = &dynsamplerWrapper{inner: zeroRateSampler{}}
+	assert.Equal(t, 1, w.GetSampleRate("any-key", 1))
+}
+
 func TestDynsamplerWrapper_StopIsIdempotent(t *testing.T) {
 	s, err := NewEMAPercentage(EMAPercentageConfig{GoalSamplingPercentage: 10, AdjustmentInterval: 15 * time.Second, Weight: 0.5})
 	require.NoError(t, err)

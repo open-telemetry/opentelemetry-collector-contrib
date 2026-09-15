@@ -78,11 +78,18 @@ type dynsamplerImpl interface {
 // interface. Start/Stop are guarded by sync.Once so they are safe to call
 // multiple times.
 type dynsamplerWrapper struct {
-	inner     dynsamplerImpl
-	startOnce sync.Once
-	startErr  error
-	stopOnce  sync.Once
-	stopErr   error
+	inner dynsamplerImpl
+	// fallbackRate is applied when the inner sampler has no rate for a key
+	// and signals it by returning a non-positive rate. The windowed
+	// throughput sampler does this during cold start and for keys it is not
+	// tracking (including max_keys overflow); without the fallback those
+	// traces would all be kept. The EMA samplers return their own bootstrap
+	// rates instead, so the fallback never fires for them.
+	fallbackRate int
+	startOnce    sync.Once
+	startErr     error
+	stopOnce     sync.Once
+	stopErr      error
 }
 
 // GetSampleRate implements Sampler.
@@ -90,7 +97,11 @@ func (w *dynsamplerWrapper) GetSampleRate(key string, spanCount int) int {
 	if spanCount <= 0 {
 		spanCount = 1
 	}
-	return max(w.inner.GetSampleRateMulti(key, spanCount), 1)
+	rate := w.inner.GetSampleRateMulti(key, spanCount)
+	if rate <= 0 {
+		return max(w.fallbackRate, 1)
+	}
+	return rate
 }
 
 // Start implements Sampler.
@@ -126,10 +137,12 @@ func NewEMAPercentage(cfg EMAPercentageConfig) (Sampler, error) {
 			Weight:                     cfg.Weight,
 			MaxKeys:                    cfg.MaxKeys,
 		},
+		fallbackRate: goalRate,
 	}, nil
 }
 
 // Throughput samplers (adaptive_throughput) do not live here: they run
 // through SharedThroughput (shared_throughput.go), which recomputes rates
 // from counter-store merged counts rather than dynsampler-go's internal
-// update loop.
+// update loop. The initial_sampling_percentage bootstrap is applied via
+// SharedThroughputConfig.InitialSamplingRate.

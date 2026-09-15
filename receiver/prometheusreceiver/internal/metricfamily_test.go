@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
@@ -1181,6 +1182,228 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			got := ndpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestConvertExemplar(t *testing.T) {
+	const (
+		validTraceID = "0102030405060708090a0b0c0d0e0f10"
+		validSpanID  = "0102030405060708"
+	)
+	validTraceIDBytes := [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}
+	validSpanIDBytes := [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
+
+	tests := []struct {
+		name   string
+		labels labels.Labels
+		want   func() pmetric.Exemplar
+	}{
+		{
+			name: "valid ids are converted",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: validSpanID},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.SetTraceID(validTraceIDBytes)
+				e.SetSpanID(validSpanIDBytes)
+				return e
+			},
+		},
+		// Each trace: / span: case below only sets the ID it's testing (the other
+		// is either absent or a known-valid ID), so a copy-paste slip between the
+		// two near-identical branches in convertExemplar shows up as a failure in
+		// the right ID's own test, not silently masked by both branches always
+		// being exercised together with matching validity.
+		{
+			name: "trace: undersized id is not zero padded and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "174137cab66dc880"}, // 16 hex chars / 8 bytes
+				labels.Label{Name: "span_id", Value: validSpanID},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
+				e.SetSpanID(validSpanIDBytes)
+				return e
+			},
+		},
+		{
+			name: "trace: oversized id is not truncated and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, // 36 hex chars / 18 bytes
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
+				return e
+			},
+		},
+		{
+			name: "trace: odd length id is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "174137cab66dc88"}, // 15 hex chars, odd length
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "174137cab66dc88")
+				return e
+			},
+		},
+		{
+			name: "trace: non-hex id is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"}, // 32 chars, not hex
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")
+				return e
+			},
+		},
+		{
+			name: "trace: all-zero id is not a valid id and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "00000000000000000000000000000000"}, // 32 hex chars, all zero
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "00000000000000000000000000000000")
+				return e
+			},
+		},
+		{
+			name: "span: undersized id is not zero padded and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: "dfa4597a9d"}, // 10 hex chars / 5 bytes
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e.SetTraceID(validTraceIDBytes)
+				return e
+			},
+		},
+		{
+			name: "span: oversized id is not truncated and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "span_id", Value: "719cee4a669fd7d109ff"}, // 20 hex chars / 10 bytes
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				return e
+			},
+		},
+		{
+			name: "span: odd length id is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "span_id", Value: "dfa4597a9"}, // 9 hex chars, odd length
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "dfa4597a9")
+				return e
+			},
+		},
+		{
+			name: "span: non-hex id is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "span_id", Value: "zzzzzzzzzzzzzzzz"}, // 16 chars, not hex
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "zzzzzzzzzzzzzzzz")
+				return e
+			},
+		},
+		{
+			name: "span: all-zero id is not a valid id and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: "0000000000000000"}, // 16 hex chars, all zero
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "0000000000000000")
+				e.SetTraceID(validTraceIDBytes)
+				return e
+			},
+		},
+		{
+			name: "empty value is dropped entirely, matching absent label",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: ""},
+				labels.Label{Name: "span_id", Value: ""},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				return e
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pe := exemplar.Exemplar{
+				Value:  1,
+				Ts:     11,
+				Labels: tt.labels,
+			}
+			got := pmetric.NewExemplar()
+			convertExemplar(pe, got)
+			require.Equal(t, tt.want(), got)
 		})
 	}
 }

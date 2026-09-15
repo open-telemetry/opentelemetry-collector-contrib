@@ -45,14 +45,26 @@ all_set:
     mysql.innodb.data_file.io:
       enabled: true
       attributes: ["disk.io.direction"]
+    mysql.innodb.history_list.length:
+      enabled: true
     mysql.innodb.operation.pending:
       enabled: true
       attributes: ["operation"]
+    mysql.innodb.redo_log.checkpoint.age:
+      enabled: true
+    mysql.innodb.redo_log.lsn.checkpoint:
+      enabled: true
+    mysql.innodb.redo_log.lsn.current:
+      enabled: true
     mysql.innodb.row_lock.wait.count:
       enabled: true
     mysql.innodb.row_lock.wait.duration.avg:
       enabled: true
     mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
+    mysql.innodb.transaction.active.count:
+      enabled: true
+    mysql.innodb.transaction.active.duration.max:
       enabled: true
     mysql.joins:
       enabled: true
@@ -99,6 +111,8 @@ all_set:
       enabled: true
     mysql.query.count:
       enabled: true
+    mysql.query.execution.time:
+      enabled: true
     mysql.query.slow.count:
       enabled: true
     mysql.replica.sql_delay:
@@ -116,6 +130,10 @@ all_set:
     mysql.row_operations:
       enabled: true
       attributes: ["operation"]
+    mysql.server.healthy:
+      enabled: true
+    mysql.session.active.count:
+      enabled: true
     mysql.sorts:
       enabled: true
       attributes: ["kind"]
@@ -231,14 +249,26 @@ reaggregate_set:
     mysql.innodb.data_file.io:
       enabled: true
       attributes: []
+    mysql.innodb.history_list.length:
+      enabled: true
     mysql.innodb.operation.pending:
       enabled: true
       attributes: []
+    mysql.innodb.redo_log.checkpoint.age:
+      enabled: true
+    mysql.innodb.redo_log.lsn.checkpoint:
+      enabled: true
+    mysql.innodb.redo_log.lsn.current:
+      enabled: true
     mysql.innodb.row_lock.wait.count:
       enabled: true
     mysql.innodb.row_lock.wait.duration.avg:
       enabled: true
     mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
+    mysql.innodb.transaction.active.count:
+      enabled: true
+    mysql.innodb.transaction.active.duration.max:
       enabled: true
     mysql.joins:
       enabled: true
@@ -285,6 +315,8 @@ reaggregate_set:
       enabled: true
     mysql.query.count:
       enabled: true
+    mysql.query.execution.time:
+      enabled: true
     mysql.query.slow.count:
       enabled: true
     mysql.replica.sql_delay:
@@ -302,6 +334,10 @@ reaggregate_set:
     mysql.row_operations:
       enabled: true
       attributes: []
+    mysql.server.healthy:
+      enabled: true
+    mysql.session.active.count:
+      enabled: true
     mysql.sorts:
       enabled: true
       attributes: []
@@ -417,14 +453,26 @@ none_set:
     mysql.innodb.data_file.io:
       enabled: false
       attributes: ["disk.io.direction"]
+    mysql.innodb.history_list.length:
+      enabled: false
     mysql.innodb.operation.pending:
       enabled: false
       attributes: ["operation"]
+    mysql.innodb.redo_log.checkpoint.age:
+      enabled: false
+    mysql.innodb.redo_log.lsn.checkpoint:
+      enabled: false
+    mysql.innodb.redo_log.lsn.current:
+      enabled: false
     mysql.innodb.row_lock.wait.count:
       enabled: false
     mysql.innodb.row_lock.wait.duration.avg:
       enabled: false
     mysql.innodb.row_lock.wait.duration.max:
+      enabled: false
+    mysql.innodb.transaction.active.count:
+      enabled: false
+    mysql.innodb.transaction.active.duration.max:
       enabled: false
     mysql.joins:
       enabled: false
@@ -471,6 +519,8 @@ none_set:
       enabled: false
     mysql.query.count:
       enabled: false
+    mysql.query.execution.time:
+      enabled: false
     mysql.query.slow.count:
       enabled: false
     mysql.replica.sql_delay:
@@ -488,6 +538,10 @@ none_set:
     mysql.row_operations:
       enabled: false
       attributes: ["operation"]
+    mysql.server.healthy:
+      enabled: false
+    mysql.session.active.count:
+      enabled: false
     mysql.sorts:
       enabled: false
       attributes: ["kind"]

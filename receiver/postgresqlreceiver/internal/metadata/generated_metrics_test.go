@@ -857,7 +857,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.database.locks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of database locks.", mi.Description())
+						assert.Equal(t, "The number of database locks, including those held by the receiver's own connections.", mi.Description())
 						assert.Equal(t, "{lock}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -881,7 +881,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.database.locks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of database locks.", mi.Description())
+						assert.Equal(t, "The number of database locks, including those held by the receiver's own connections.", mi.Description())
 						assert.Equal(t, "{lock}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1531,7 +1531,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.table.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Disk space used by a table.", mi.Description())
+						assert.Equal(t, "Total disk space used by a table, including its indexes and TOAST data.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1551,7 +1551,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.table.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Disk space used by a table.", mi.Description())
+						assert.Equal(t, "Total disk space used by a table, including its indexes and TOAST data.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

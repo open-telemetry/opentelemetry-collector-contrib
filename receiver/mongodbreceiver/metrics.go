@@ -407,6 +407,126 @@ func (s *mongodbScraper) recordWTCacheBytes(now pcommon.Timestamp, doc bson.M, e
 	s.mb.RecordMongodbWtcacheBytesReadDataPoint(now, val)
 }
 
+const storageEngineWiredTiger = "wiredTiger"
+
+// isWiredTiger reports whether serverStatus indicates the WiredTiger storage engine.
+func isWiredTiger(doc bson.M) bool {
+	name, err := dig(doc, []string{"storageEngine", "name"})
+	if err != nil {
+		return false
+	}
+	return name == storageEngineWiredTiger
+}
+
+// wtLogOperationsMap keys are the serverStatus.wiredTiger.log.<key> field names; values
+// are the mdatagen-generated attribute enums for mongodb.wt.log.operation.type.
+var wtLogOperationsMap = map[string]metadata.AttributeMongodbWtLogOperationType{
+	"log write operations": metadata.AttributeMongodbWtLogOperationTypeWrite,
+	"log sync operations":  metadata.AttributeMongodbWtLogOperationTypeSync,
+	"log flush operations": metadata.AttributeMongodbWtLogOperationTypeFlush,
+}
+
+func (s *mongodbScraper) recordWTLogWrite(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	if !isWiredTiger(doc) {
+		return
+	}
+	metricPath := []string{"wiredTiger", "log", "log bytes written"}
+	metricName := "mongodb.wt.log.write"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbWtLogWriteDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordWTLogOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	if !isWiredTiger(doc) {
+		return
+	}
+	metricName := "mongodb.wt.log.operation.count"
+	for fieldKey, attr := range wtLogOperationsMap {
+		val, err := collectMetric(doc, []string{"wiredTiger", "log", fieldKey})
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, attr.String(), err))
+			continue
+		}
+		s.mb.RecordMongodbWtLogOperationCountDataPoint(now, val, attr)
+	}
+}
+
+func (s *mongodbScraper) recordWTLogSyncTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	if !isWiredTiger(doc) {
+		return
+	}
+	metricPath := []string{"wiredTiger", "log", "log sync time duration (usecs)"}
+	metricName := "mongodb.wt.log.sync.time"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	// Source field is microseconds; emit seconds.
+	seconds := float64(val) / 1_000_000.0
+	s.mb.RecordMongodbWtLogSyncTimeDataPoint(now, seconds)
+}
+
+func (s *mongodbScraper) recordWTFsyncCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	if !isWiredTiger(doc) {
+		return
+	}
+	metricPath := []string{"wiredTiger", "connection", "total fsync I/Os"}
+	metricName := "mongodb.wt.fsync.count"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbWtFsyncCountDataPoint(now, val)
+}
+
+// recordWTConcurrentTransactionsOut reads WiredTiger concurrent-transaction ticket usage,
+// with a version-gated dual-path read to handle the MongoDB 8.0 rename of
+// serverStatus.wiredTiger.concurrentTransactions.{read,write} to
+// serverStatus.queues.execution.{read,write}. On 8.0+ the legacy path is absent; on
+// pre-8.0 the new queues.execution path is absent. The receiver tries the new path
+// first (cheap probe) and falls back to the legacy WiredTiger path if needed.
+func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	// These are WiredTiger concurrency tickets, so only emit on the WiredTiger storage
+	// engine. The gate covers both version paths below: on 8.0+ the queues.execution
+	// section can also be present under non-WiredTiger engines (e.g. inMemory), and this
+	// metric should not be emitted there.
+	if !isWiredTiger(doc) {
+		return
+	}
+	metricName := "mongodb.wt.concurrent_transaction.ticket.in_use"
+	directions := map[string]metadata.AttributeMongodbWtConcurrentTransactionTicketType{
+		"read":  metadata.AttributeMongodbWtConcurrentTransactionTicketTypeRead,
+		"write": metadata.AttributeMongodbWtConcurrentTransactionTicketTypeWrite,
+	}
+	// MongoDB 8.0+ path
+	if _, err := dig(doc, []string{"queues", "execution"}); err == nil {
+		for dir, attr := range directions {
+			val, e := collectMetric(doc, []string{"queues", "execution", dir, "out"})
+			if e != nil {
+				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dir, e))
+				continue
+			}
+			s.mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(now, val, attr)
+		}
+		return
+	}
+	// Pre-8.0 path
+	for dir, attr := range directions {
+		val, e := collectMetric(doc, []string{"wiredTiger", "concurrentTransactions", dir, "out"})
+		if e != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dir, e))
+			continue
+		}
+		s.mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(now, val, attr)
+	}
+}
+
 func (s *mongodbScraper) recordPageFaults(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"extra_info", "page_faults"}
 	metricName := "mongodb.page_faults"
