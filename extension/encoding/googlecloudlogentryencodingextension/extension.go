@@ -39,6 +39,8 @@ func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 	// each line corresponds to a log
 	scanner := bufio.NewScanner(bytes.NewReader(buf))
+	const maxLogMessageSize = 10 * 1024 * 1024
+	scanner.Buffer(make([]byte, 0, 64*1024), maxLogMessageSize+1)
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		if err := ex.handleLogLine(logs, line); err != nil {
