@@ -42,13 +42,6 @@ const (
 	// Note: unlike V$SYSMETRIC, V$CON_SYSMETRIC only exposes short-interval (60s)
 	// rows, so no group_id filter is required.
 	sysmetricCDBSQL = "SELECT s.metric_name AS METRIC_NAME, s.value AS VALUE, c.name AS PDB_NAME FROM v$con_sysmetric s, v$containers c WHERE s.con_id = c.con_id(+)"
-	// sysmetricComputedSQL derives Shared Pool Free % from v$sgastat for PDB connections
-	// (e.g. RDS Oracle) where v$sysmetric is empty in PDB context.
-	sysmetricComputedSQL = `SELECT 'Shared Pool Free %' AS METRIC_NAME,
-		CASE WHEN NVL(SUM(bytes),0) > 0
-		     THEN NVL(SUM(CASE WHEN name = 'free memory' THEN bytes ELSE 0 END),0) / SUM(bytes) * 100
-		     ELSE 0 END AS VALUE
-	FROM v$sgastat WHERE pool = 'shared pool'`
 
 	// containerGrantsProbeSQL detects whether the user has the grants needed
 	// for per-PDB collection. On failure the receiver falls back to the
@@ -219,6 +212,12 @@ const (
 	// v$resource_limit returns no rows. Limits from v$parameter; usage from v$process, v$session,
 	// v$transaction, v$lock. enqueue_locks and enqueue_resources are auto-managed in Oracle 19c and
 	// not exposed as init parameters, so they are omitted.
+	//
+	// Caveat: transactions and dml_locks are auto-tuned when left at their
+	// Oracle-computed default, so v$resource_limit reports them as UNLIMITED
+	// (-1) from a root/standalone connection, while this query reports the
+	// real computed value (e.g. 354, 1416) from a PDB connection. Same metric
+	// name, different meaning depending on connection type.
 	systemResourceLimitsPDBSQL = `SELECT
     RESOURCE_NAME,
     CURRENT_UTILIZATION,
@@ -441,7 +440,6 @@ type oracleScraper struct {
 	asmDiskClient            dbClient
 	sysmetricClient          dbClient
 	sysmetricCDBClient       dbClient
-	sysmetricComputedClient  dbClient
 	db                       *sql.DB
 	clientProviderFunc       clientProviderFunc
 	mb                       *metadata.MetricsBuilder
@@ -625,10 +623,6 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	// For PDB connections (e.g. RDS Oracle), it returns the sysmetric metrics available in PDB context.
 	if s.isCDBRoot || (s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB) {
 		s.sysmetricCDBClient = s.clientProviderFunc(s.db, sysmetricCDBSQL, s.logger)
-	}
-	// PDB connection: V$SYSMETRIC is empty, so the remaining metrics must be computed from raw stats.
-	if s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB {
-		s.sysmetricComputedClient = s.clientProviderFunc(s.db, sysmetricComputedSQL, s.logger)
 	}
 	return nil
 }
@@ -1208,13 +1202,15 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksLimit.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksUsage.Enabled {
 		// For PDB connections (e.g. RDS), v$resource_limit returns no rows; use derived query instead.
+		resourceLimitsQueryName := systemResourceLimitsSQL
 		resourceLimitsClient := s.systemResourceLimitsClient
 		if s.instanceInfo.connectedToPDB && s.systemResourceLimitsPDBClient != nil {
+			resourceLimitsQueryName = systemResourceLimitsPDBSQL
 			resourceLimitsClient = s.systemResourceLimitsPDBClient
 		}
 		rows, err := resourceLimitsClient.metricRows(ctx)
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing resource limits query: %w", err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", resourceLimitsQueryName, err))
 		}
 		for _, row := range rows {
 			resourceName := row["RESOURCE_NAME"]
@@ -1642,10 +1638,14 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	now := pcommon.NewTimestampFromTime(time.Now())
 	seenInContainerMetrics := make(map[string]bool)
 
-	// Skip per-PDB rows when oracle.db.pdb is not enabled on any sysmetric
-	// metric; otherwise the rows collapse to an average instead of the
-	// instance-wide value.
-	if s.isCDBRoot && s.sysmetricCDBClient != nil && s.anySysmetricPdbAttrEnabled() {
+	// isCDBRoot: skip per-PDB rows when oracle.db.pdb is not enabled on any
+	// sysmetric metric; otherwise the rows collapse to an average instead of
+	// the instance-wide value. connectedToPDB (e.g. RDS Oracle): always query,
+	// since a direct-PDB connection only ever returns rows for its own
+	// container — there's no multi-PDB averaging risk to guard against.
+	if s.sysmetricCDBClient != nil &&
+		((s.isCDBRoot && s.anySysmetricPdbAttrEnabled()) ||
+			(s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB)) {
 		rows, err := s.sysmetricCDBClient.metricRows(ctx)
 		if err != nil {
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricCDBSQL, err))
@@ -1665,39 +1665,11 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 		}
 	}
 
-	// PDB connection (e.g. RDS Oracle): V$SYSMETRIC is empty in PDB context.
-	// sysmetricCDBClient (v$con_sysmetric) covers some metrics; sysmetricComputedClient
-	// derives Shared Pool Free % from v$sgastat. seenPDBMetrics prevents double-recording.
-	if s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB {
-		seenPDBMetrics := make(map[string]bool)
-		for _, client := range []dbClient{s.sysmetricCDBClient, s.sysmetricComputedClient} {
-			if client == nil {
-				continue
-			}
-			pdbRows, pdbErr := client.metricRows(ctx)
-			if pdbErr != nil {
-				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing sysmetric PDB query: %w", pdbErr))
-				continue
-			}
-			for _, row := range pdbRows {
-				metricName := row[colMetricName]
-				if seenPDBMetrics[metricName] {
-					continue
-				}
-				seenPDBMetrics[metricName] = true
-				rawVal := row[colValue]
-				val, parseErr := strconv.ParseFloat(rawVal, 64)
-				if parseErr != nil {
-					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("sysmetric %q: failed to parse float64 from %q: %w", metricName, rawVal, parseErr))
-					continue
-				}
-				s.recordSysmetric(now, metricName, val, s.pdbNameForRow(row))
-			}
-		}
-		return
-	}
-
 	// Query V$SYSMETRIC for metrics not already seen in V$CON_SYSMETRIC (or all 12 for non-CDB).
+	// On a direct-PDB connection (e.g. RDS Oracle) this returns 0 rows in PDB
+	// context; querying it anyway costs one empty round-trip but means a
+	// V$CON_SYSMETRIC error above still leaves a path to whatever V$SYSMETRIC
+	// can offer, instead of returning with no sysmetrics at all.
 	rows, err := s.sysmetricClient.metricRows(ctx)
 	if err != nil {
 		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricSQL, err))

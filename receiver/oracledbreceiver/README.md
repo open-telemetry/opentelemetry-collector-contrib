@@ -327,7 +327,6 @@ EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SYSSTAT',        '<username>', 
 EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CON_SYSSTAT',    '<username>', 'SELECT', false);
 EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$OSSTAT',         '<username>', 'SELECT', false);
 EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SGAINFO',        '<username>', 'SELECT', false);
-EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SGASTAT',        '<username>', 'SELECT', false);
 EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL',            '<username>', 'SELECT', false);
 EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL_PLAN',       '<username>', 'SELECT', false);
 EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL_PLAN_STATISTICS_ALL', '<username>', 'SELECT', false);
@@ -353,6 +352,12 @@ EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_TABLESPACES',              '<u
 EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_SERVICES',                 '<username>', 'SELECT', false);
 GRANT CREATE SESSION TO <username>;
 ```
+
+On a direct-PDB connection, `oracledb.transactions.limit` and `oracledb.dml_locks.limit`
+are derived from `v$parameter` rather than `v$resource_limit`. If those resources are
+left at Oracle's auto-tuned default, this reports the real computed value (e.g. `354`)
+instead of `-1` (unlimited) as a root/standalone connection would — the same metric name
+can carry a different meaning depending on connection type.
 
 ## Enabling metrics.
 

@@ -2491,9 +2491,11 @@ func TestScraper_StartCDBRoot_FallbackWhenGrantsMissing(t *testing.T) {
 
 // On a direct-PDB connection (e.g. RDS Oracle), V$SYSMETRIC returns no rows even
 // though CDB reads "yes" — RDS never grants access to the CDB root. The scraper
-// must route sysmetric collection through V$CON_SYSMETRIC and the V$SGASTAT-derived
-// query instead of the standalone V$SYSMETRIC client, and de-duplicate any metric
-// name the two PDB fallback queries both return.
+// must route sysmetric collection through V$CON_SYSMETRIC instead of relying on
+// the standalone V$SYSMETRIC client, and fall through to it harmlessly rather
+// than skip it outright. Shared Pool Free % is intentionally not recovered here:
+// V$SGASTAT is container-scoped, so a PDB-derived free % conflates CDB-wide
+// unclaimed memory with the PDB's own usage and comes out systematically wrong.
 func TestScraper_ScrapeSysMetrics_ConnectedToPDB_RDSFallback(t *testing.T) {
 	const floatDelta = 0.001
 
@@ -2510,13 +2512,11 @@ func TestScraper_ScrapeSysMetrics_ConnectedToPDB_RDSFallback(t *testing.T) {
 			{"METRIC_NAME": sysmetricCPUUsagePerSec, "VALUE": "150.00", "PDB_NAME": "PDB1"},
 			{"METRIC_NAME": sysmetricCursorCacheHitRatio, "VALUE": "96.40", "PDB_NAME": "PDB1"},
 			{"METRIC_NAME": sysmetricResponseTimePerTxn, "VALUE": "12.34", "PDB_NAME": "PDB1"},
-			// Deliberately overlaps with the sysmetricComputedSQL row below to
-			// exercise the seenPDBMetrics de-dup guard: this value must win.
-			{"METRIC_NAME": sysmetricSharedPoolFreePct, "VALUE": "30.20", "PDB_NAME": "PDB1"},
 		},
-		sysmetricComputedSQL: {
-			{"METRIC_NAME": sysmetricSharedPoolFreePct, "VALUE": "12.50"},
-		},
+		// V$SYSMETRIC genuinely returns 0 rows from a PDB connection; an empty
+		// response (not an error) reflects real RDS behavior after the scraper
+		// falls through to it.
+		sysmetricSQL: {},
 	}
 
 	scrpr := oracleScraper{
@@ -2526,11 +2526,6 @@ func TestScraper_ScrapeSysMetrics_ConnectedToPDB_RDSFallback(t *testing.T) {
 			return nil, nil
 		},
 		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-			// V$SYSMETRIC is empty from a PDB connection on RDS; trap it so the
-			// test fails if the scraper ever falls back to querying it.
-			if s == sysmetricSQL {
-				return &fakeDbClient{Err: errors.New("should not be called: v$sysmetric returns 0 rows from a PDB connection")}
-			}
 			if rows, ok := pdbResponses[s]; ok {
 				return &fakeDbClient{Responses: [][]metricRow{rows}}
 			}
@@ -2549,7 +2544,6 @@ func TestScraper_ScrapeSysMetrics_ConnectedToPDB_RDSFallback(t *testing.T) {
 
 	require.False(t, scrpr.isCDBRoot, "a direct-PDB connection must not use CDB-root queries")
 	require.NotNil(t, scrpr.sysmetricCDBClient)
-	require.NotNil(t, scrpr.sysmetricComputedClient)
 
 	m, err := scrpr.scrape(t.Context())
 	require.NoError(t, err)
@@ -2567,9 +2561,8 @@ func TestScraper_ScrapeSysMetrics_ConnectedToPDB_RDSFallback(t *testing.T) {
 	assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
 	assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
 	assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
-	// The v$con_sysmetric value (30.20) must win over v$sgastat's (12.50): the
-	// de-dup guard should have skipped the second, duplicate METRIC_NAME.
-	assert.InDelta(t, 30.20, metricMap["oracledb.shared_pool.utilization"], floatDelta)
+	_, hasSharedPool := metricMap["oracledb.shared_pool.utilization"]
+	assert.False(t, hasSharedPool, "Shared Pool Free % cannot be measured accurately from a PDB connection and must not be recorded")
 }
 
 // On a direct-PDB connection (e.g. RDS Oracle), V$RESOURCE_LIMIT returns no rows
