@@ -6,6 +6,7 @@ package statsdreceiver
 import (
 	"errors"
 	"fmt"
+	"math"
 	"path/filepath"
 	"testing"
 	"time"
@@ -400,6 +401,10 @@ func TestConfigValidateExplicitBucketBoundaries(t *testing.T) {
 				{name: "duplicate_middle", buckets: []float64{1, 2, 2, 3}},
 				{name: "duplicate_last", buckets: []float64{1, 2, 3, 3}},
 				{name: "all_equal", buckets: []float64{1, 1, 1}},
+				{name: "nan_first", buckets: []float64{math.NaN(), 1, 2}},
+				{name: "nan_middle", buckets: []float64{1, math.NaN(), 2}},
+				{name: "nan_last", buckets: []float64{1, 2, math.NaN()}},
+				{name: "nan_single", buckets: []float64{math.NaN()}},
 				{name: "increasing", buckets: []float64{1, 2, 3}, valid: true},
 				{name: "single", buckets: []float64{1}, valid: true},
 				{name: "negative_and_zero", buckets: []float64{-1, 0, 1}, valid: true},

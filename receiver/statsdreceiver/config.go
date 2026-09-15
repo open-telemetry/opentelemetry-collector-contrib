@@ -6,6 +6,7 @@ package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"time"
@@ -124,8 +125,8 @@ func (*Config) validateExplicitBuckets(explicitBuckets []protocol.ExplicitBucket
 		if len(eb.Buckets) == 0 {
 			return multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets must not be empty", i))
 		}
-		for j := 0; j < len(eb.Buckets)-1; j++ {
-			if eb.Buckets[j] >= eb.Buckets[j+1] {
+		for j, boundary := range eb.Buckets {
+			if math.IsNaN(boundary) || (j > 0 && eb.Buckets[j-1] >= boundary) {
 				errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets are not unique or not ascendingly sorted %+v", i, eb.Buckets))
 				break
 			}
