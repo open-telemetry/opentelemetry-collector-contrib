@@ -18,6 +18,8 @@ $defs:
         type: string
       streams:
         $ref: stream_config
+    allOf:
+      - $ref: log_group_tags_config
   group_config:
     description: GroupConfig is the configuration for log group collection
     type: object
@@ -29,6 +31,25 @@ $defs:
         type: object
         additionalProperties:
           $ref: stream_config
+  log_group_tags_config:
+    description: LogGroupTagsConfig configures optional enrichment of emitted log records with the source log group's CloudWatch tags. It is disabled by default; when enabled the receiver calls ListTagsForResource for each log group during discovery and attaches the selected tags as resource attributes.
+    type: object
+    properties:
+      include_tags:
+        description: IncludeTags gates tag enrichment. When false (default) the receiver behaves exactly as before and makes no tag API calls.
+        type: boolean
+      tag_attribute_prefix:
+        description: TagAttributePrefix is prepended to each tag key when creating the resource attribute. A nil pointer applies defaultTagAttributePrefix; an explicit empty string passes tags through as-is. Set via mapstructure so the distinction between "unset" and "empty" is preserved.
+        x-pointer: true
+        type: string
+      tag_names:
+        description: TagNames is an explicit allowlist of tag keys to include. Mutually exclusive with TagPrefix. When both TagNames and TagPrefix are empty all tags are included.
+        type: array
+        items:
+          type: string
+      tag_prefix:
+        description: TagPrefix includes only tags whose key starts with this prefix. Mutually exclusive with TagNames.
+        type: string
   logs_config:
     description: LogsConfig is the configuration for the logs portion of this receiver
     type: object
@@ -118,6 +139,8 @@ $defs:
         items:
           x-pointer: true
           type: string
+    allOf:
+      - $ref: log_group_tags_config
 description: Config is the overall config structure for the awscloudwatchreceiver
 type: object
 properties:
