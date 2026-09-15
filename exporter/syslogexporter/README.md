@@ -23,7 +23,7 @@ This means that syslog messages received via the Syslog receiver and exported vi
 
 - `endpoint` - (required) syslog endpoint
 - `network` - (default = `tcp`) tcp/udp/unix/unixgram
-- `port` - (default = `514`) A syslog port, ignored when `network` is set to `unix`
+- `port` - (default = `514`) A syslog port, ignored when `network` is set to `unix` or `unixgram`
 - `protocol` - (default = `rfc5424`) rfc5424/rfc3164
   - `rfc5424` - Expects the syslog messages to be rfc5424 compliant
   - `rfc3164` - Expects the syslog messages to be rfc3164 compliant
