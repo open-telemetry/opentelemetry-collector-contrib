@@ -466,6 +466,9 @@ func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	return uploadGroups(ctx, e, pipeline.SignalMetrics, e.partitionMetricsByBlobName(md),
 		e.marshaller.marshalMetrics,
 		func(err error, failed []pmetric.Metrics) error {
@@ -478,6 +481,9 @@ func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 }
 
 func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	return uploadGroups(ctx, e, pipeline.SignalLogs, e.partitionLogsByBlobName(ld),
 		e.marshaller.marshalLogs,
 		func(err error, failed []plog.Logs) error {
@@ -490,6 +496,9 @@ func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 }
 
 func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	return uploadGroups(ctx, e, pipeline.SignalTraces, e.partitionTracesByBlobName(td),
 		e.marshaller.marshalTraces,
 		func(err error, failed []ptrace.Traces) error {

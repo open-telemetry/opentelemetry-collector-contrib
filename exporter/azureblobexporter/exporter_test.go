@@ -996,6 +996,45 @@ func TestConsumeLogsPartialFailureRetriesOnlyFailedGroups(t *testing.T) {
 	require.Len(t, client.uploads, 2)
 }
 
+func TestPartitionWithExporterHelperRetry(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+		defaults := createDefaultConfig().(*Config)
+		cfg.BackOffConfig = defaults.BackOffConfig
+		cfg.TimeoutSettings = defaults.TimeoutSettings
+		qCfg := exporterhelper.NewDefaultQueueConfig()
+		qCfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
+		qCfg.WaitForResult = true
+		cfg.QueueSettings = configoptional.Some(qCfg)
+
+		ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
+			ae.ConsumeLogs,
+			exporterhelper.WithStart(ae.start),
+			exporterhelper.WithRetry(cfg.BackOffConfig),
+			exporterhelper.WithQueue(cfg.QueueSettings),
+			exporterhelper.WithTimeout(cfg.TimeoutSettings))
+		require.NoError(t, err)
+		require.NoError(t, le.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() { require.NoError(t, le.Shutdown(t.Context())) }()
+		client := newRecordingAzBlobClient(map[string]int{"activity-b.json": 1})
+		ae.client = client
+
+		logs := generateLogsWithActivities("activity-a", "activity-b", "activity-c")
+		require.NoError(t, le.ConsumeLogs(t.Context(), logs))
+
+		client.mu.Lock()
+		defer client.mu.Unlock()
+		require.Zero(t, client.remainingFailures["activity-b.json"])
+		require.Len(t, client.uploads, 3)
+		for _, activity := range []string{"activity-a", "activity-b", "activity-c"} {
+			payloads := client.uploads[activity+".json"]
+			require.Len(t, payloads, 1, "the retry chain must not replay a successful group")
+			assert.Equal(t, []string{"log for " + activity}, uploadedLogBodies(t, payloads))
+		}
+	})
+}
+
 func TestConsumeLogsAllGroupsUploadedDespiteFailure(t *testing.T) {
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 

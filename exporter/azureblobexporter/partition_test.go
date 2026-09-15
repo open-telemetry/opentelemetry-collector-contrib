@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"testing"
 	"testing/synctest"
+	"text/template"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -95,16 +96,22 @@ func TestPartitionCancellationPreservesUnsentLogs(t *testing.T) {
 			err := exporter.ConsumeLogs(ctx, logs)
 			require.ErrorIs(t, err, context.Canceled)
 			client.AssertNumberOfCalls(t, "AppendBlock", tc.wantCalls)
-			var partial consumererror.Logs
-			require.ErrorAs(t, err, &partial)
-			data, err := (&plog.JSONMarshaler{}).MarshalLogs(partial.Data())
+			retryLogs := logs
+			if tc.cancelBefore {
+				require.Equal(t, context.Canceled, err, "a whole-request error leaves all input available for retry")
+			} else {
+				var partial consumererror.Logs
+				require.ErrorAs(t, err, &partial)
+				retryLogs = partial.Data()
+			}
+			data, err := (&plog.JSONMarshaler{}).MarshalLogs(retryLogs)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantRetryLogs, uploadedLogBodies(t, [][]byte{data}))
 			assert.Equal(t, 3, logs.LogRecordCount(), "partitioning must not mutate the input")
 
 			retryClient := newRecordingAzBlobClient(nil)
 			exporter.client = retryClient
-			require.NoError(t, exporter.ConsumeLogs(t.Context(), partial.Data()))
+			require.NoError(t, exporter.ConsumeLogs(t.Context(), retryLogs))
 			assert.Len(t, retryClient.uploads, len(tc.wantRetryLogs))
 		})
 	}
@@ -134,6 +141,39 @@ func TestUploadGroupsCanceledBeforeMarshal(t *testing.T) {
 			require.ErrorIs(t, err, context.Canceled)
 			assert.NotErrorIs(t, err, marshalErr)
 			assert.Empty(t, client.uploads)
+		})
+	}
+}
+
+func TestConsumeCanceledBeforePartitioning(t *testing.T) {
+	for _, signal := range []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalMetrics, pipeline.SignalTraces} {
+		t.Run(signal.String(), func(t *testing.T) {
+			input := newPartitionSignalInput(signal, []int{1, 1, 2})
+			cfg := newPartitionTestConfig("logs.json", true)
+			exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
+			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+			client := newRecordingAzBlobClient(nil)
+			exporter.client = client
+			var renders int
+			tmpl, err := template.New("count_renders").Funcs(template.FuncMap{
+				"countRender": func() string {
+					renders++
+					return "logs.json"
+				},
+			}).Parse("{{ countRender }}")
+			require.NoError(t, err)
+			exporter.blobNameTemplate = &blobNameTemplate{logs: tmpl, metrics: tmpl, traces: tmpl}
+			before, err := input.marshal()
+			require.NoError(t, err)
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+
+			require.ErrorIs(t, input.consume(ctx, exporter), context.Canceled)
+			assert.Zero(t, renders, "canceled requests must not evaluate resource templates")
+			assert.Empty(t, client.uploads)
+			after, err := input.marshal()
+			require.NoError(t, err)
+			assert.JSONEq(t, string(before), string(after))
 		})
 	}
 }
@@ -205,11 +245,22 @@ func TestPartitionRenderedNamesAcrossSignals(t *testing.T) {
 				client := newRecordingAzBlobClient(nil)
 				exporter.client = client
 
+				before, err := input.marshal()
+				require.NoError(t, err)
+				wantFirst, err := input.marshal(0, 1)
+				require.NoError(t, err)
 				require.NoError(t, input.consume(t.Context(), exporter))
+				after, err := input.marshal()
+				require.NoError(t, err)
+				require.JSONEq(t, string(before), string(after), "export must not mutate the input")
 				require.Len(t, client.uploads["1.json"], 1)
+				assert.JSONEq(t, string(wantFirst), string(client.uploads["1.json"][0]))
 				if len(counts) == 3 {
 					require.Len(t, client.uploads, 2)
 					require.Len(t, client.uploads["2.json"], 1)
+					wantSecond, err := input.marshal(2)
+					require.NoError(t, err)
+					assert.JSONEq(t, string(wantSecond), string(client.uploads["2.json"][0]))
 				} else {
 					require.Len(t, client.uploads, 1)
 				}
@@ -235,9 +286,15 @@ func TestPartitionFallbackAcrossSignals(t *testing.T) {
 			client := newRecordingAzBlobClient(nil)
 			exporter.client = client
 
+			before, err := input.marshal()
+			require.NoError(t, err)
 			require.NoError(t, input.consume(t.Context(), exporter))
+			after, err := input.marshal()
+			require.NoError(t, err)
+			require.JSONEq(t, string(before), string(after), "fallback must not mutate the input")
 			require.Len(t, client.uploads, 1)
 			require.Len(t, client.uploads[input.failingTemplate], 1)
+			assert.JSONEq(t, string(before), string(client.uploads[input.failingTemplate][0]))
 			assert.Equal(t, 1, observed.FilterMessage(
 				"Failed to execute blob name template, using default blob name format",
 			).Len())
@@ -293,6 +350,7 @@ type partitionSignalInput struct {
 	failingTemplate string
 	attributes      []pcommon.Map
 	consume         func(context.Context, *azureBlobExporter) error
+	marshal         func(resourceIndices ...int) ([]byte, error)
 }
 
 func newPartitionSignalInput(signal pipeline.Signal, counts []int) partitionSignalInput {
@@ -300,12 +358,13 @@ func newPartitionSignalInput(signal pipeline.Signal, counts []int) partitionSign
 	switch signal {
 	case pipeline.SignalLogs:
 		logs := plog.NewLogs()
-		for _, count := range counts {
+		for i, count := range counts {
 			resource := logs.ResourceLogs().AppendEmpty()
+			resource.Resource().Attributes().PutInt("resource-index", int64(i))
 			input.attributes = append(input.attributes, resource.Resource().Attributes())
 			records := resource.ScopeLogs().AppendEmpty().LogRecords()
-			for range count {
-				records.AppendEmpty().Body().SetStr("log")
+			for j := range count {
+				records.AppendEmpty().Body().SetStr(fmt.Sprintf("log-%d-%d", i, j))
 			}
 		}
 		input.countTemplate = "{{ .LogRecordCount }}.json"
@@ -313,16 +372,28 @@ func newPartitionSignalInput(signal pipeline.Signal, counts []int) partitionSign
 		input.consume = func(ctx context.Context, exporter *azureBlobExporter) error {
 			return exporter.ConsumeLogs(ctx, logs)
 		}
+		input.marshal = func(indices ...int) ([]byte, error) {
+			marshaler := plog.JSONMarshaler{}
+			if len(indices) == 0 {
+				return marshaler.MarshalLogs(logs)
+			}
+			selected := plog.NewLogs()
+			for _, i := range indices {
+				logs.ResourceLogs().At(i).CopyTo(selected.ResourceLogs().AppendEmpty())
+			}
+			return marshaler.MarshalLogs(selected)
+		}
 	case pipeline.SignalMetrics:
 		metrics := pmetric.NewMetrics()
-		for _, count := range counts {
+		for i, count := range counts {
 			resource := metrics.ResourceMetrics().AppendEmpty()
+			resource.Resource().Attributes().PutInt("resource-index", int64(i))
 			input.attributes = append(input.attributes, resource.Resource().Attributes())
 			records := resource.ScopeMetrics().AppendEmpty().Metrics()
-			for range count {
+			for j := range count {
 				metric := records.AppendEmpty()
-				metric.SetName("metric")
-				metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+				metric.SetName(fmt.Sprintf("metric-%d-%d", i, j))
+				metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(int64(i*100 + j))
 			}
 		}
 		input.countTemplate = "{{ .MetricCount }}.json"
@@ -330,20 +401,43 @@ func newPartitionSignalInput(signal pipeline.Signal, counts []int) partitionSign
 		input.consume = func(ctx context.Context, exporter *azureBlobExporter) error {
 			return exporter.ConsumeMetrics(ctx, metrics)
 		}
+		input.marshal = func(indices ...int) ([]byte, error) {
+			marshaler := pmetric.JSONMarshaler{}
+			if len(indices) == 0 {
+				return marshaler.MarshalMetrics(metrics)
+			}
+			selected := pmetric.NewMetrics()
+			for _, i := range indices {
+				metrics.ResourceMetrics().At(i).CopyTo(selected.ResourceMetrics().AppendEmpty())
+			}
+			return marshaler.MarshalMetrics(selected)
+		}
 	case pipeline.SignalTraces:
 		traces := ptrace.NewTraces()
-		for _, count := range counts {
+		for i, count := range counts {
 			resource := traces.ResourceSpans().AppendEmpty()
+			resource.Resource().Attributes().PutInt("resource-index", int64(i))
 			input.attributes = append(input.attributes, resource.Resource().Attributes())
 			records := resource.ScopeSpans().AppendEmpty().Spans()
-			for range count {
-				records.AppendEmpty().SetName("span")
+			for j := range count {
+				records.AppendEmpty().SetName(fmt.Sprintf("span-%d-%d", i, j))
 			}
 		}
 		input.countTemplate = "{{ .SpanCount }}.json"
 		input.failingTemplate = `{{ index (getResourceSpanAttr . 0 "parts") 1 }}.json`
 		input.consume = func(ctx context.Context, exporter *azureBlobExporter) error {
 			return exporter.ConsumeTraces(ctx, traces)
+		}
+		input.marshal = func(indices ...int) ([]byte, error) {
+			marshaler := ptrace.JSONMarshaler{}
+			if len(indices) == 0 {
+				return marshaler.MarshalTraces(traces)
+			}
+			selected := ptrace.NewTraces()
+			for _, i := range indices {
+				traces.ResourceSpans().At(i).CopyTo(selected.ResourceSpans().AppendEmpty())
+			}
+			return marshaler.MarshalTraces(selected)
 		}
 	}
 	return input
