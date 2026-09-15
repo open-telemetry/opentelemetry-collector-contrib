@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap/zapcore"
@@ -480,21 +479,17 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_GAUGE, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
-			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
-			// Consuming the entry stops a second metric identity built from the same labels,
+			dataPoints := metric.Sum().DataPoints()
+			before := dataPoints.Len()
+			addNumberDatapoints(dataPoints, ls, ts, &stats)
+			// The first point this series appended is the one its exemplars belong to, and
+			// consuming the entry stops a second metric identity built from the same labels,
 			// differing only by type or unit, from taking a copy of the same exemplars.
-			if len(exemplarMap) > 0 {
+			if len(exemplarMap) > 0 && dataPoints.Len() > before {
 				key := makeExemplarKey(ls)
 				if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
-					attrsHash := xhash.MapHash(extractAttributes(ls))
-					dataPoints := metric.Sum().DataPoints()
-					for i := 0; i < dataPoints.Len(); i++ {
-						if xhash.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
-							ex.CopyTo(dataPoints.At(i).Exemplars())
-							delete(exemplarMap, key)
-							break
-						}
-					}
+					ex.CopyTo(dataPoints.At(before).Exemplars())
+					delete(exemplarMap, key)
 				}
 			}
 
