@@ -237,6 +237,38 @@ func TestCompilePatterns(t *testing.T) {
 	}
 }
 
+func TestConfigValidate(t *testing.T) {
+	cases := []struct {
+		name    string
+		cfg     Config
+		wantErr string
+	}{
+		{name: "zero value ok", cfg: Config{}},
+		{name: "nil slices ok", cfg: Config{Attributes: AttributesConfig{}}},
+		{name: "populated ok", cfg: Config{Attributes: AttributesConfig{Included: []string{"k8s.*"}, Excluded: []string{"k8s.pod.name"}}}},
+		{
+			name:    "empty included rejected",
+			cfg:     Config{Attributes: AttributesConfig{Included: []string{}}},
+			wantErr: "attributes.included must contain at least one entry when set",
+		},
+		{
+			name:    "empty excluded rejected",
+			cfg:     Config{Attributes: AttributesConfig{Excluded: []string{}}},
+			wantErr: "attributes.excluded must contain at least one entry when set",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := c.cfg.Validate()
+			if c.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, c.wantErr)
+			}
+		})
+	}
+}
+
 func TestInitializeAttributeMap(t *testing.T) {
 	cases := []struct {
 		name               string

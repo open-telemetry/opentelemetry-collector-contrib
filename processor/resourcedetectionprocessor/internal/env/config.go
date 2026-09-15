@@ -3,10 +3,23 @@
 
 package env // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 
+import "errors"
+
 // Config holds user-specified configuration for the env detector.
 type Config struct {
 	// Attributes filters the resource attributes emitted by the env detector.
 	Attributes AttributesConfig `mapstructure:"attributes"`
+}
+
+// Validate checks if the configuration is valid
+func (c *Config) Validate() error {
+	if c.Attributes.Included != nil && len(c.Attributes.Included) == 0 {
+		return errors.New("attributes.included must contain at least one entry when set")
+	}
+	if c.Attributes.Excluded != nil && len(c.Attributes.Excluded) == 0 {
+		return errors.New("attributes.excluded must contain at least one entry when set")
+	}
+	return nil
 }
 
 // AttributesConfig configures which resource attribute keys the env detector emits.
