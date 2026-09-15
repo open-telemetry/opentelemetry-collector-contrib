@@ -368,7 +368,7 @@ processors:
 > When `false` (default), those failures are logged and an empty resource is returned.
 > This matters on hosts whose metadata service implements the EC2-compatible `meta-data` tree but not the AWS-specific `dynamic/instance-identity` tree, such as OpenStack Nova based clouds.
 > A dedicated [OpenStack Nova detector](#openstack-nova) is also available.
-> The hostname is optional regardless of this setting: if it cannot be retrieved, the failure is logged and the resource is returned without the `host.name` attribute.
+> The same applies to the hostname: when `fail_on_missing_metadata` is `true`, a hostname that cannot be retrieved results in an error, otherwise the failure is logged and the resource is returned without the `host.name` attribute.
 
 ### Amazon ECS
 

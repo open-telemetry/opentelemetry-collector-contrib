@@ -2,7 +2,7 @@ change_type: bug_fix
 
 component: processor/resource_detection
 
-note: Honor `fail_on_missing_metadata` also for the instance identity document lookup of the `ec2` detector, and treat the hostname as optional
+note: Honor `fail_on_missing_metadata` also for the instance identity document and hostname lookups of the `ec2` detector
 
 issues: [50826]
 
@@ -17,11 +17,12 @@ subtext: |
   fail with HTTP 404. OpenStack Nova based clusters behave this way, so a collector configured with the `ec2` detector and
   `fail_on_missing_metadata: false` failed to start on those hosts rather than skipping the detector.
 
-  The identity document lookup now honors the flag: when `fail_on_missing_metadata` is `false`, the detector logs
-  at debug level and returns an empty resource. When it is `true` the error is returned as before.
+  The identity document lookup now honors the flag: when `fail_on_missing_metadata` is `false` and the endpoint
+  responds with HTTP 404, the detector logs at debug level and returns an empty resource. Any other error is still
+  returned, since it might be transient. When the flag is `true` the error is returned as before.
 
-  The hostname is now treated as optional regardless of the flag. If it cannot be retrieved, the detector logs a
+  The hostname lookup honors the flag as well: when `fail_on_missing_metadata` is `false`, the detector logs a
   warning and returns the resource without the `host.name` attribute, instead of failing the detection or skipping
-  the instance tags.
+  the instance tags. When it is `true`, the error is returned.
 
 change_logs: [user]

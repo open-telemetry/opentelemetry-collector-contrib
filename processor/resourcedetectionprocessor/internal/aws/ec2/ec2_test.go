@@ -572,8 +572,8 @@ func TestDetector_Detect(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			// The hostname is optional independently of fail_on_missing_metadata: a missing hostname never fails the
-			// detector, it only omits the host.name attribute.
+			// The hostname is only optional without fail_on_missing_metadata: with the flag set, a missing hostname
+			// fails the detector like any other missing metadata.
 			name: "hostname fails, with fail_on_missing_metadata",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc: imds.InstanceIdentityDocument{
@@ -588,21 +588,9 @@ func TestDetector_Detect(t *testing.T) {
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args: args{ctx: t.Context()},
-			want: func() pcommon.Resource {
-				res := pcommon.NewResource()
-				attr := res.Attributes()
-				attr.PutStr("cloud.account.id", "account1234")
-				attr.PutStr("cloud.provider", "aws")
-				attr.PutStr("cloud.platform", "aws_ec2")
-				attr.PutStr("cloud.region", "us-west-2")
-				attr.PutStr("cloud.availability_zone", "us-west-2a")
-				attr.PutStr("host.id", "i-abcd1234")
-				attr.PutStr("host.image.id", "abcdef")
-				attr.PutStr("host.type", "c4.xlarge")
-				return res
-			}(),
-			wantErr:               false,
+			args:                  args{ctx: t.Context()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
 			failOnMissingMetadata: true,
 		},
 	}

@@ -118,6 +118,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	hostname, hostnameErr := d.metadataProvider.Hostname(ctx)
 	if hostnameErr != nil {
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", hostnameErr)
+		}
 		d.logger.Warn("EC2 hostname unavailable", zap.Error(hostnameErr))
 		// Continue without the hostname, the remaining attributes and the tags below are still worth reporting.
 	}
