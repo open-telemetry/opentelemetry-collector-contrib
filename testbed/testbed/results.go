@@ -137,8 +137,7 @@ func (r *PerformanceResults) Add(_ string, result any) {
 		Value: testResult.cpuPercentageAvg,
 		Unit:  "%",
 		Extra: cpuChartName,
-	})
-	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+	}, &benchmarkResult{
 		Name:  fmt.Sprintf("cpu_percentage_max%s", runType),
 		Value: testResult.cpuPercentageMax,
 		Unit:  "%",
@@ -157,8 +156,7 @@ func (r *PerformanceResults) Add(_ string, result any) {
 		Value: float64(testResult.ramMibAvg),
 		Unit:  "MiB",
 		Extra: memoryChartName,
-	})
-	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+	}, &benchmarkResult{
 		Name:  fmt.Sprintf("ram_mib_max%s", runType),
 		Value: float64(testResult.ramMibMax),
 		Unit:  "MiB",
