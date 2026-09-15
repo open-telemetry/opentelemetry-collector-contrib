@@ -385,6 +385,13 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 				),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 0,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_spans"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
 
 		// Shut down and check that the partition close metric is updated.
 		err = r.Shutdown(t.Context())
@@ -401,14 +408,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 		metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
 			Value: 4, // offset of the final message
-			Attributes: attribute.NewSet(
-				attribute.String("topic", "otlp_spans"),
-				attribute.Int64("partition", 0),
-			),
-		}}, metricdatatest.IgnoreTimestamp())
-
-		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
-			Value: 0,
 			Attributes: attribute.NewSet(
 				attribute.String("topic", "otlp_spans"),
 				attribute.Int64("partition", 0),
