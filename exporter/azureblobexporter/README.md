@@ -65,6 +65,8 @@ When `template_enabled` is `true`, you can use Go templates in `metrics_format`,
 
 When a payload contains multiple resource entries, the exporter groups the resource entries by their rendered blob name and performs one upload per distinct name, so that each group is written to the blob it is addressed to. Groups are uploaded concurrently, bounded by `max_concurrent_uploads`. If some groups fail to upload, only the failed groups' data is retried, so data from succeeded groups is not uploaded twice. If rendering fails for any resource entry, the whole payload is uploaded once using the default (non-template) name format.
 
+Templates are evaluated with one resource entry at index zero. The rendered name is retained when entries are grouped; it is not evaluated again against the combined group. Time formatting, serial numbers, and compression extensions are then applied as configured. Grouping is per resource entry, not per individual log record, metric, or span.
+
 The following template functions are available:
 
 | Function                | Description                                                                 | Example                                                              |

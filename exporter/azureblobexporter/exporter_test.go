@@ -774,6 +774,7 @@ func TestConsumeLogsPartitionsByRenderedBlobName(t *testing.T) {
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	uploads := make(map[string]plog.Logs)
+	var uploadsMu sync.Mutex
 	mockClient := &mockAzBlobClient{url: "http://mock"}
 	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
@@ -782,7 +783,9 @@ func TestConsumeLogsPartitionsByRenderedBlobName(t *testing.T) {
 			unmarshaler := plog.JSONUnmarshaler{}
 			logs, err := unmarshaler.UnmarshalLogs(data)
 			require.NoError(t, err)
+			uploadsMu.Lock()
 			uploads[blobName] = logs
+			uploadsMu.Unlock()
 		}).
 		Return(nil)
 	ae.client = mockClient
@@ -851,10 +854,13 @@ func TestConsumeMetricsPartitionsByRenderedBlobName(t *testing.T) {
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	var blobNames []string
+	var blobNamesMu sync.Mutex
 	mockClient := &mockAzBlobClient{url: "http://mock"}
 	mockClient.On("AppendBlock", mock.Anything, "metrics", mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
+			blobNamesMu.Lock()
 			blobNames = append(blobNames, args.String(2))
+			blobNamesMu.Unlock()
 		}).
 		Return(nil)
 	ae.client = mockClient
@@ -879,10 +885,13 @@ func TestConsumeTracesPartitionsByRenderedBlobName(t *testing.T) {
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	var blobNames []string
+	var blobNamesMu sync.Mutex
 	mockClient := &mockAzBlobClient{url: "http://mock"}
 	mockClient.On("AppendBlock", mock.Anything, "traces", mock.Anything, mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
+			blobNamesMu.Lock()
 			blobNames = append(blobNames, args.String(2))
+			blobNamesMu.Unlock()
 		}).
 		Return(nil)
 	ae.client = mockClient
