@@ -221,6 +221,9 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 	data := make(map[string]any)
 
 	if lr.EventName() != "" {
+		if err := checkUTF8(lr.EventName(), "event name"); err != nil {
+			return nil, err
+		}
 		data["event_name"] = lr.EventName()
 	}
 
@@ -253,6 +256,10 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if strings.HasPrefix(k, "audit.integrity.") {
 			return true
+		}
+		if err := checkUTF8(k, "attribute key"); err != nil {
+			attrErr = err
+			return false
 		}
 		val, err := p.valueToInterface(v, 0)
 		if err != nil {
@@ -293,8 +300,8 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
 		s := v.Str()
-		if !utf8.ValidString(s) {
-			return nil, errors.New("string value contains invalid UTF-8")
+		if err := checkUTF8(s, "string value"); err != nil {
+			return nil, err
 		}
 		return map[string]any{"stringValue": s}, nil
 	case pcommon.ValueTypeInt:
@@ -319,6 +326,10 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 		m := make(map[string]any)
 		var mapErr error
 		v.Map().Range(func(k string, val pcommon.Value) bool {
+			if err := checkUTF8(k, "map key"); err != nil {
+				mapErr = err
+				return false
+			}
 			converted, err := p.valueToInterface(val, depth+1) // recursive call!
 			if err != nil {
 				mapErr = err
@@ -334,6 +345,18 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 	default:
 		return nil, nil
 	}
+}
+
+// checkUTF8 refuses a string that is not valid UTF-8. json.Marshal would
+// otherwise replace each invalid byte with U+FFFD, so two records that differ
+// only in such bytes would canonicalize to the same payload and share a
+// signature. Every string that reaches the payload passes through here: the
+// event name, attribute keys, nested map keys, and string values.
+func checkUTF8(s, what string) error {
+	if !utf8.ValidString(s) {
+		return fmt.Errorf("%s contains invalid UTF-8", what)
+	}
+	return nil
 }
 
 func (*signingProcessor) Start(_ context.Context, _ component.Host) error {
