@@ -2829,7 +2829,7 @@ type metricPostgresqlTableSize struct {
 // init fills postgresql.table.size metric with initial data.
 func (m *metricPostgresqlTableSize) init() {
 	m.data.SetName("postgresql.table.size")
-	m.data.SetDescription("Disk space used by a table.")
+	m.data.SetDescription("Total disk space used by a table, including its indexes and TOAST data.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
