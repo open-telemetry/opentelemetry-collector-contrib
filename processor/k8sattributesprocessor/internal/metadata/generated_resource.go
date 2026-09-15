@@ -147,6 +147,27 @@ func (rb *ResourceBuilder) SetK8sNodeUID(val string) {
 	}
 }
 
+// SetK8sOwnerKind sets provided value as "k8s.owner.kind" attribute.
+func (rb *ResourceBuilder) SetK8sOwnerKind(val string) {
+	if rb.config.K8sOwnerKind.Enabled {
+		rb.res.Attributes().PutStr("k8s.owner.kind", val)
+	}
+}
+
+// SetK8sOwnerName sets provided value as "k8s.owner.name" attribute.
+func (rb *ResourceBuilder) SetK8sOwnerName(val string) {
+	if rb.config.K8sOwnerName.Enabled {
+		rb.res.Attributes().PutStr("k8s.owner.name", val)
+	}
+}
+
+// SetK8sOwnerUID sets provided value as "k8s.owner.uid" attribute.
+func (rb *ResourceBuilder) SetK8sOwnerUID(val string) {
+	if rb.config.K8sOwnerUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.owner.uid", val)
+	}
+}
+
 // SetK8sPodHostname sets provided value as "k8s.pod.hostname" attribute.
 func (rb *ResourceBuilder) SetK8sPodHostname(val string) {
 	if rb.config.K8sPodHostname.Enabled {
