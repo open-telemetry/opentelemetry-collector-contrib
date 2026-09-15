@@ -118,6 +118,68 @@ func TestAttributeTypeConversion(t *testing.T) {
 	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le))
 }
 
+func TestNestedMapWithBinaryKey(t *testing.T) {
+	var b []byte
+
+	b = msgp.AppendArrayHeader(b, 3)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, 1)
+	b = msgp.AppendString(b, "nested")
+	b = msgp.AppendMapHeader(b, 1)
+	// fluentd/msgpack-ruby tags ASCII-8BIT strings as "bin" instead of "str",
+	// so a nested map key can arrive as a binary type.
+	b = msgp.AppendBytes(b, []byte("host"))
+	b = msgp.AppendString(b, "example.com")
+
+	reader := msgp.NewReader(bytes.NewReader(b))
+
+	var event messageEventLogRecord
+	err := event.DecodeMsg(reader)
+	require.NoError(t, err)
+
+	le := event.LogRecords().At(0)
+
+	require.NoError(t, plogtest.CompareLogRecord(logConstructor(
+		log{
+			Timestamp: 5000000000000,
+			Body:      pcommon.NewValueEmpty(),
+			Attributes: map[string]any{
+				"fluent.tag": "my-tag",
+				"nested": map[string]any{
+					"host": "example.com",
+				},
+			},
+		},
+	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le))
+}
+
+func TestDeeplyNestedRecordValueIsRejected(t *testing.T) {
+	var b []byte
+
+	b = msgp.AppendArrayHeader(b, 3)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, 1)
+	b = msgp.AppendString(b, "deep")
+
+	// A payload nested one level deeper than the reader's default recursion
+	// limit must be rejected rather than recursed into, to guard against a
+	// maliciously crafted, deeply-nested payload exhausting the call stack.
+	reader := msgp.NewReader(nil)
+	depth := reader.GetMaxRecursionDepth() + 1
+	for range depth {
+		b = msgp.AppendArrayHeader(b, 1)
+	}
+	b = msgp.AppendInt(b, 1)
+
+	reader = msgp.NewReader(bytes.NewReader(b))
+
+	var event messageEventLogRecord
+	err := event.DecodeMsg(reader)
+	require.ErrorContains(t, err, "recursion")
+}
+
 func TestEventMode(t *testing.T) {
 	require.Equal(t, "unknown", unknownMode.String())
 	require.Equal(t, "message", messageMode.String())
