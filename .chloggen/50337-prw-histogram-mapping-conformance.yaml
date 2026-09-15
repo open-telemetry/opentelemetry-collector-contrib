@@ -22,9 +22,13 @@ subtext: |
   large population, and a stale marker no longer carries the buckets its spans
   describe, since a data point that records nothing cannot hold observations.
   Spans and deltas that describe a different shape from the bounds are refused
-  the way Prometheus refuses them, rather than read as far as the shorter of the
-  two, which dropped observations while leaving a count that agreed with the
-  buckets it did emit.
+  rather than read as far as the shorter of the two, which dropped
+  observations while leaving a count that agreed with the buckets it did emit.
+  Bounds that are not finite and strictly increasing are refused as well, on a
+  stale marker too, since they reach the data point either way and describe a
+  bucket that can hold nothing. A count field left unset on the wire no longer
+  hides the float flavor, which the bucket lists and the zero count also
+  carry.
   The sum is now left unset when the count is zero, which OpenTelemetry
   requires.
 
