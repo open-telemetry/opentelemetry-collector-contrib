@@ -2039,6 +2039,7 @@ func scanTracesForAttributes(t *testing.T, ts *consumertest.TracesSink, expected
 	// Iterate over the received set of traces starting from the most recent entries due to a bug in the processor:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
 	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
+	var lastErr error
 	for i := len(ts.AllTraces()) - 1; i >= 0; i-- {
 		traces := ts.AllTraces()[i]
 		for i := 0; i < traces.ResourceSpans().Len(); i++ {
@@ -2048,9 +2049,18 @@ func scanTracesForAttributes(t *testing.T, ts *consumertest.TracesSink, expected
 			if service.AsString() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
-			return
+			err := resourceHasAttributes(resource, kvs)
+			if err == nil {
+				return
+			}
+			if lastErr == nil {
+				lastErr = err
+			}
 		}
+	}
+	if lastErr != nil {
+		assert.NoError(t, lastErr)
+		return
 	}
 	t.Fatalf("no spans found for service %s", expectedService)
 }
@@ -2061,6 +2071,7 @@ func scanMetricsForAttributes(t *testing.T, ms *consumertest.MetricsSink, expect
 	// Iterate over the received set of metrics starting from the most recent entries due to a bug in the processor:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
 	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
+	var lastErr error
 	for i := len(ms.AllMetrics()) - 1; i >= 0; i-- {
 		metrics := ms.AllMetrics()[i]
 		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
@@ -2070,9 +2081,18 @@ func scanMetricsForAttributes(t *testing.T, ms *consumertest.MetricsSink, expect
 			if service.AsString() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
-			return
+			err := resourceHasAttributes(resource, kvs)
+			if err == nil {
+				return
+			}
+			if lastErr == nil {
+				lastErr = err
+			}
 		}
+	}
+	if lastErr != nil {
+		assert.NoError(t, lastErr)
+		return
 	}
 	t.Fatalf("no metric found for service %s", expectedService)
 }
@@ -2083,6 +2103,7 @@ func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedServ
 	// Iterate over the received set of logs starting from the most recent entries due to a bug in the processor:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
 	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
+	var lastErr error
 	for i := len(ls.AllLogs()) - 1; i >= 0; i-- {
 		logs := ls.AllLogs()[i]
 		for i := 0; i < logs.ResourceLogs().Len(); i++ {
@@ -2092,9 +2113,18 @@ func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedServ
 			if service.AsString() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
-			return
+			err := resourceHasAttributes(resource, kvs)
+			if err == nil {
+				return
+			}
+			if lastErr == nil {
+				lastErr = err
+			}
 		}
+	}
+	if lastErr != nil {
+		assert.NoError(t, lastErr)
+		return
 	}
 	t.Fatalf("no logs found for service %s", expectedService)
 }
@@ -2110,6 +2140,7 @@ func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expe
 	// Iterate over the received set of profiles starting from the most recent entries due to a bug in the processor:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
 	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
+	var lastErr error
 	for i := len(ps.AllProfiles()) - 1; i >= 0; i-- {
 		profiles := ps.AllProfiles()[i]
 		for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
@@ -2119,9 +2150,18 @@ func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expe
 			if service.AsString() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
-			return
+			err := resourceHasAttributes(resource, kvs)
+			if err == nil {
+				return
+			}
+			if lastErr == nil {
+				lastErr = err
+			}
 		}
+	}
+	if lastErr != nil {
+		assert.NoError(t, lastErr)
+		return
 	}
 	t.Fatalf("no profiles found for service %s", expectedService)
 }
