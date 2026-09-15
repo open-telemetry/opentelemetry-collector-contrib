@@ -1,7 +1,7 @@
 change_type: enhancement
 component: receiver/google_cloud_spanner
 note: Add top minute split stats metrics to the Google Cloud Spanner receiver
-issues: []
+issues: [51026]
 subtext: |
   Brings parity with the GCP Query Insights Hotspot view by introducing the entirely new `database/spanner/split_stats/top/*` metrics family, mapped from the `SPANNER_SYS.SPLIT_STATS_TOP_MINUTE` table.
 change_logs: []
