@@ -305,10 +305,15 @@ The following metrics are version-gated:
 
 The `mongodb.oplog.*`, `mongodb.replica.*`, and `mongodb.replica_set.*` metrics are only emitted by a
 `mongod` that is a member of a replica set. They are skipped on a standalone deployment, on a `mongos` router, and
-wherever the `clusterMonitor` role or read access to the `local` database is unavailable, such as on
-MongoDB Atlas. `mongodb.replica_set.lag` and `mongodb.replica_set.headroom` are additionally only
+on a member whose replica set has not been initiated. They require the `clusterMonitor` role; if the
+configured user lacks it, each scrape reports an authorization error for the enabled metrics rather
+than skipping them. Where the role cannot be granted, such as on a managed service that restricts it,
+leave these metrics disabled. `mongodb.replica_set.lag` and `mongodb.replica_set.headroom` are additionally only
 emitted when the scraped member is the primary, which is the only member with an up-to-date view of
 every other member's replication progress.
+
+`mongodb.replica_set.member.count` describes the whole replica set, so every scraped member reports
+the same value. Do not sum it across members.
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 

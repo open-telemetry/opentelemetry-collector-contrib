@@ -620,11 +620,10 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 }
 
 // replicationUnavailableCodes are the server error codes returned when the deployment does not
-// expose replica set state: a standalone mongod, a mongos router, a member whose replica set has
-// not been initiated, or a deployment such as MongoDB Atlas that restricts access to the local
-// database.
+// expose replica set state: a standalone mongod, a mongos router, or a member whose replica set has
+// not been initiated. Unauthorized is deliberately absent: it means the configured user lacks a
+// privilege it can be granted, so it is reported rather than skipped.
 var replicationUnavailableCodes = []int{
-	13, // Unauthorized
 	26, // NamespaceNotFound
 	59, // CommandNotFound
 	76, // NoReplicationEnabled
@@ -652,6 +651,18 @@ func (s *mongodbScraper) reportReplicationError(err error, message string, faile
 	errs.AddPartial(failed, fmt.Errorf("%s: %w", message, err))
 }
 
+// countEnabled returns how many of the given metric enabled flags are set, which is the number of
+// metrics a failed server read leaves unrecorded.
+func countEnabled(enabled ...bool) int {
+	count := 0
+	for _, e := range enabled {
+		if e {
+			count++
+		}
+	}
+	return count
+}
+
 func (s *mongodbScraper) collectReplicaSetMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	metrics := s.config.MetricsBuilderConfig.Metrics
 
@@ -672,46 +683,55 @@ func (s *mongodbScraper) collectReplicaSetMetrics(ctx context.Context, now pcomm
 }
 
 func (s *mongodbScraper) collectOplogStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
 	oplogStats, err := s.client.OplogStats(ctx)
 	if err != nil {
-		s.reportReplicationError(err, "failed to fetch oplog stats metrics", 2, errs)
+		s.reportReplicationError(err, "failed to fetch oplog stats metrics", countEnabled(metrics.MongodbOplogUsage.Enabled, metrics.MongodbOplogLimit.Enabled), errs)
 		return
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.MongodbOplogUsage.Enabled {
+	if metrics.MongodbOplogUsage.Enabled {
 		s.recordOplogUsage(now, oplogStats, errs)
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.MongodbOplogLimit.Enabled {
+	if metrics.MongodbOplogLimit.Enabled {
 		s.recordOplogLimit(now, oplogStats, errs)
 	}
 }
 
 // collectOplogWindow returns the time span the oplog covers, which mongodb.replica_set.headroom
-// is measured against.
+// is measured against. A failure here is counted against both metrics, since neither can be
+// recorded without it.
 func (s *mongodbScraper) collectOplogWindow(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) (float64, bool) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
 	oldest, newest, err := s.client.OplogBounds(ctx)
 	if err != nil {
-		s.reportReplicationError(err, "failed to fetch oplog window metrics", 1, errs)
+		s.reportReplicationError(err, "failed to fetch oplog window and replica set headroom metrics",
+			countEnabled(metrics.MongodbOplogWindow.Enabled, metrics.MongodbReplicaSetHeadroom.Enabled), errs)
 		return 0, false
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.MongodbOplogWindow.Enabled {
+	if metrics.MongodbOplogWindow.Enabled {
 		s.recordOplogWindow(now, oldest, newest)
 	}
 	return oplogWindowSeconds(oldest, newest), true
 }
 
 func (s *mongodbScraper) collectReplicaSetStatus(ctx context.Context, now pcommon.Timestamp, oplogWindow float64, hasOplogWindow bool, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+	// Headroom is left out when the oplog window is missing, as collectOplogWindow already counted it.
+	failed := countEnabled(metrics.MongodbReplicaSetMemberCount.Enabled, metrics.MongodbReplicaStatus.Enabled,
+		metrics.MongodbReplicaSetLag.Enabled, metrics.MongodbReplicaSetHeadroom.Enabled && hasOplogWindow)
+
 	status, err := s.client.RunCommand(ctx, adminDatabase, bson.M{replSetGetStatusCommand: 1})
 	if err != nil {
-		s.reportReplicationError(err, "failed to fetch replica set status metrics", 4, errs)
+		s.reportReplicationError(err, "failed to fetch replica set status metrics", failed, errs)
 		return
 	}
 
 	members, ok := status[replicaSetMembersKey].(bson.A)
 	if !ok {
-		errs.AddPartial(4, fmt.Errorf("failed to fetch replica set members: expected %T, got %T", bson.A{}, status[replicaSetMembersKey]))
+		errs.AddPartial(failed, fmt.Errorf("failed to fetch replica set members: expected %T, got %T", bson.A{}, status[replicaSetMembersKey]))
 		return
 	}
 

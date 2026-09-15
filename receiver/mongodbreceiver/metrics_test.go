@@ -4,6 +4,7 @@
 package mongodbreceiver
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -581,6 +582,110 @@ func TestCollectReplicaSetMetricsWithoutReplication(t *testing.T) {
 	// A standalone or a mongos exposes no replica set state; the scrape must not fail over it.
 	require.NoError(t, errs.Combine())
 	require.Empty(t, metricNames(s.mb.Emit()))
+}
+
+func TestCollectReplicaSetMetricsUnauthorized(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	unauthorized := mongo.CommandError{Code: 13, Name: "Unauthorized", Message: "not authorized on admin to execute command"}
+
+	fc := &fakeClient{}
+	fc.On("OplogStats", mock.Anything).Return(nil, unauthorized)
+	fc.On("OplogBounds", mock.Anything).Return(bson.Timestamp{}, bson.Timestamp{}, unauthorized)
+	fc.On("RunCommand", mock.Anything, adminDatabase, bson.M{replSetGetStatusCommand: 1}).Return(nil, unauthorized)
+	s.client = fc
+
+	errs := &scrapererror.ScrapeErrors{}
+	s.collectReplicaSetMetrics(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	// The user opted in to these metrics, so a missing privilege must surface rather than be skipped.
+	var partial scrapererror.PartialScrapeError
+	require.ErrorAs(t, errs.Combine(), &partial)
+	require.Equal(t, 7, partial.Failed)
+	require.Empty(t, metricNames(s.mb.Emit()))
+}
+
+func TestCollectReplicaSetMetricsFailedCount(t *testing.T) {
+	status, err := loadTestFileAsMap("./testdata/replSetGetStatus.json")
+	require.NoError(t, err)
+	readErr := errors.New("connection reset")
+
+	tests := []struct {
+		name         string
+		enable       func(*metadata.MetricsConfig)
+		oplogWindow  bool
+		statusFails  bool
+		expectFailed int
+	}{
+		{
+			name:         "oplog limit only",
+			enable:       func(m *metadata.MetricsConfig) { m.MongodbOplogLimit.Enabled = true },
+			expectFailed: 1,
+		},
+		{
+			name:         "replica status only",
+			enable:       func(m *metadata.MetricsConfig) { m.MongodbReplicaStatus.Enabled = true },
+			statusFails:  true,
+			expectFailed: 1,
+		},
+		{
+			name: "lag and member count",
+			enable: func(m *metadata.MetricsConfig) {
+				m.MongodbReplicaSetLag.Enabled = true
+				m.MongodbReplicaSetMemberCount.Enabled = true
+			},
+			statusFails:  true,
+			expectFailed: 2,
+		},
+		{
+			// The failed oplog read counts headroom once; the failed status read must not count it again.
+			name:         "headroom only without oplog window",
+			enable:       func(m *metadata.MetricsConfig) { m.MongodbReplicaSetHeadroom.Enabled = true },
+			statusFails:  true,
+			expectFailed: 1,
+		},
+		{
+			name:         "headroom only with oplog window",
+			enable:       func(m *metadata.MetricsConfig) { m.MongodbReplicaSetHeadroom.Enabled = true },
+			oplogWindow:  true,
+			statusFails:  true,
+			expectFailed: 1,
+		},
+		{
+			name:         "oplog window without headroom",
+			enable:       func(m *metadata.MetricsConfig) { m.MongodbOplogWindow.Enabled = true },
+			expectFailed: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			tt.enable(&cfg.MetricsBuilderConfig.Metrics)
+			s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+
+			fc := &fakeClient{}
+			fc.On("OplogStats", mock.Anything).Return(nil, readErr)
+			if tt.oplogWindow {
+				fc.On("OplogBounds", mock.Anything).
+					Return(bson.Timestamp{T: oplogOldestSecond}, bson.Timestamp{T: oplogNewestSecond}, nil)
+			} else {
+				fc.On("OplogBounds", mock.Anything).Return(bson.Timestamp{}, bson.Timestamp{}, readErr)
+			}
+			if tt.statusFails {
+				fc.On("RunCommand", mock.Anything, adminDatabase, bson.M{replSetGetStatusCommand: 1}).Return(nil, readErr)
+			} else {
+				fc.On("RunCommand", mock.Anything, adminDatabase, bson.M{replSetGetStatusCommand: 1}).Return(status, nil)
+			}
+			s.client = fc
+
+			errs := &scrapererror.ScrapeErrors{}
+			s.collectReplicaSetMetrics(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
+
+			var partial scrapererror.PartialScrapeError
+			require.ErrorAs(t, errs.Combine(), &partial)
+			require.Equal(t, tt.expectFailed, partial.Failed)
+		})
+	}
 }
 
 func TestCollectReplicaSetMetricsDisabled(t *testing.T) {
