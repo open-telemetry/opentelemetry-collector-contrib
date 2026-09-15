@@ -40,7 +40,10 @@ func execAndCollect(ctx context.Context, t *testing.T, ctr testcontainers.Contai
 
 var baseImageOnce sync.Once
 
-// buildBaseImageOnce builds the shared base image for integration tests.
+// buildBaseImageOnce builds the otelcontribcol:latest image (which already
+// includes sdnotifyextension, built from the repo's own source tree) and
+// then the shared systemd-enabled base image layered on top of it, for use
+// by the integration tests below.
 func buildBaseImageOnce(t *testing.T) {
 	t.Helper()
 
@@ -48,12 +51,16 @@ func buildBaseImageOnce(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Minute)
 		defer cancel()
 
-		cmd := exec.CommandContext(ctx, "docker", "build",
+		makeCmd := exec.CommandContext(ctx, "make", "-C", "../..", "docker-otelcontribcol")
+		out, err := makeCmd.CombinedOutput()
+		require.NoError(t, err, "building otelcontribcol image failed:\n%s", out)
+
+		buildCmd := exec.CommandContext(ctx, "docker", "build",
 			"-f", "testdata/Dockerfile.base",
 			"-t", "otelcol-sdnotify-base:latest",
 			"../..",
 		)
-		out, err := cmd.CombinedOutput()
+		out, err = buildCmd.CombinedOutput()
 		require.NoError(t, err, "building shared base image failed:\n%s", out)
 	})
 }
