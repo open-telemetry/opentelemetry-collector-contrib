@@ -124,7 +124,7 @@ func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := hasAttributeKeyOnDatapoint(tt.key)
 			assert.NoError(t, err)
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
 			defer tCtx.Close()
 			result, err := exprFunc(t.Context(), tCtx)
 			assert.NoError(t, err)
@@ -351,7 +351,7 @@ func Test_HasAttrOnDatapoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := hasAttributeOnDatapoint(tt.key, tt.expectedVal)
 			assert.NoError(t, err)
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
 			defer tCtx.Close()
 			result, err := exprFunc(t.Context(), tCtx)
 			assert.NoError(t, err)

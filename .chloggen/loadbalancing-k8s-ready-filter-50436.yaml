@@ -1,0 +1,12 @@
+change_type: bug_fix
+
+component: exporter/load_balancing
+
+note: Skip endpoints whose `EndpointSlice` `conditions.ready` is explicitly `false` in the kubernetes resolver, so traffic is not routed to them.
+
+issues: [50436]
+
+subtext: |-
+  The Kubernetes resolver now excludes `EndpointSlice` endpoints whose `conditions.ready` field is `false`. To preserve the previous behaviour and keep not-ready endpoints in the routing ring, set `publishNotReadyAddresses: true` on the Service.
+
+change_logs: [user]

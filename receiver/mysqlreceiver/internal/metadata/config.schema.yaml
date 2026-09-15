@@ -343,6 +343,27 @@ $defs:
                 - "operation"
             default:
               - "operation"
+      mysql.innodb.redo_log.checkpoint.age:
+        description: "MysqlInnodbRedoLogCheckpointAgeMetricConfig provides config for the mysql.innodb.redo_log.checkpoint.age metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.innodb.redo_log.lsn.checkpoint:
+        description: "MysqlInnodbRedoLogLsnCheckpointMetricConfig provides config for the mysql.innodb.redo_log.lsn.checkpoint metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.innodb.redo_log.lsn.current:
+        description: "MysqlInnodbRedoLogLsnCurrentMetricConfig provides config for the mysql.innodb.redo_log.lsn.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.innodb.row_lock.wait.count:
         description: "MysqlInnodbRowLockWaitCountMetricConfig provides config for the mysql.innodb.row_lock.wait.count metric."
         type: object
@@ -673,6 +694,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      mysql.query.execution.time:
+        description: "MysqlQueryExecutionTimeMetricConfig provides config for the mysql.query.execution.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.query.slow.count:
         description: "MysqlQuerySlowCountMetricConfig provides config for the mysql.query.slow.count metric."
         type: object
@@ -772,6 +800,20 @@ $defs:
                 - "operation"
             default:
               - "operation"
+      mysql.server.healthy:
+        description: "MysqlServerHealthyMetricConfig provides config for the mysql.server.healthy metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.session.active.count:
+        description: "MysqlSessionActiveCountMetricConfig provides config for the mysql.session.active.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.sorts:
         description: "MysqlSortsMetricConfig provides config for the mysql.sorts metric."
         type: object
