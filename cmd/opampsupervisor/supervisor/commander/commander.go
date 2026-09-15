@@ -23,8 +23,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
-// defaultStopGracePeriod is how long Stop waits for the Agent process to exit
-// after the graceful shutdown signal before killing it forcibly.
+// defaultStopGracePeriod is the fallback used when agent::stop_grace_period is
+// not set: how long Stop waits for the Agent process to exit after the graceful
+// shutdown signal before killing it forcibly.
 const defaultStopGracePeriod = 10 * time.Second
 
 // AgentStartedLogMsg is logged every time an Agent process is started. Each site
@@ -57,6 +58,11 @@ type Commander struct {
 }
 
 func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
+	stopGracePeriod := cfg.StopGracePeriod
+	if stopGracePeriod <= 0 {
+		// Fall back to the default when unset, e.g. a config built without defaults.
+		stopGracePeriod = defaultStopGracePeriod
+	}
 	return &Commander{
 		logger:          logger,
 		logFilePath:     logFilePath,
@@ -64,7 +70,7 @@ func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args
 		args:            args,
 		outputDoneCh:    make(chan struct{}),
 		running:         &atomic.Int64{},
-		stopGracePeriod: defaultStopGracePeriod,
+		stopGracePeriod: stopGracePeriod,
 		// Buffer channels so we can send messages without blocking on listeners.
 		doneCh: make(chan struct{}, 1),
 		exitCh: make(chan struct{}, 1),
