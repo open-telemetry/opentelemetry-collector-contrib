@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -147,6 +148,7 @@ func newNopTelemetrySettings() telemetrySettings {
 		TelemetrySettings: component.TelemetrySettings{
 			Logger:         zap.NewNop(),
 			TracerProvider: noop.NewTracerProvider(),
+			Resource:       pcommon.NewResource(),
 		},
 	}
 }
@@ -856,13 +858,18 @@ service:
 			},
 		})
 
+		supervisorTelemetrySettings := newNopTelemetrySettings()
+		supervisorTelemetrySettings.Resource.Attributes().PutStr("service.instance.id", "supervisor-instance")
 		s := Supervisor{
-			telemetrySettings: newNopTelemetrySettings(),
+			telemetrySettings: supervisorTelemetrySettings,
 			config: config.Supervisor{
 				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
-				Agent: config.Agent{ConfigFiles: []string{
-					string(config.SpecialConfigFileRemoteConfig),
-				}},
+				Agent: config.Agent{
+					ConfigFiles: []string{
+						string(config.SpecialConfigFileRemoteConfig),
+					},
+					Description: config.AgentDescription{IncludeSupervisorInstanceID: true},
+				},
 			},
 			agentDescription: agentDesc,
 			persistentState:  &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
@@ -909,6 +916,7 @@ service:
 		assert.Equal(t, "remote-version", attrValues["service.version"])
 		assert.Equal(t, "remote-env", attrValues["deployment.environment"])
 		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
+		assert.Equal(t, "supervisor-instance", attrValues["supervisor.service.instance.id"])
 	})
 
 	t.Run("remote legacy attributes override stale agent description attributes", func(t *testing.T) {
@@ -1011,25 +1019,51 @@ func TestComposeExtraTelemetryConfigUsesDeclarativeResourceAttributes(t *testing
 		},
 	})
 
-	s := Supervisor{
-		telemetrySettings: newNopTelemetrySettings(),
-		agentDescription:  agentDesc,
+	for _, tc := range []struct {
+		name                        string
+		includeSupervisorInstanceID bool
+		expected                    []any
+	}{
+		{
+			name: "disabled",
+			expected: []any{
+				map[string]any{"name": "service.name", "value": "otelcol"},
+				map[string]any{"name": "service.version", "value": "0.152.0"},
+			},
+		},
+		{
+			name:                        "enabled",
+			includeSupervisorInstanceID: true,
+			expected: []any{
+				map[string]any{"name": "service.name", "value": "otelcol"},
+				map[string]any{"name": "service.version", "value": "0.152.0"},
+				map[string]any{"name": "supervisor.service.instance.id", "value": "supervisor-instance"},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			supervisorTelemetrySettings := newNopTelemetrySettings()
+			supervisorTelemetrySettings.Resource.Attributes().PutStr("service.instance.id", "supervisor-instance")
+			s := Supervisor{
+				telemetrySettings: supervisorTelemetrySettings,
+				config: config.Supervisor{Agent: config.Agent{
+					Description: config.AgentDescription{IncludeSupervisorInstanceID: tc.includeSupervisorInstanceID},
+				}},
+				agentDescription: agentDesc,
+			}
+			require.NoError(t, s.createTemplates())
+
+			conf, err := config.NewConfFromYAML(s.composeExtraTelemetryConfig())
+			require.NoError(t, err)
+
+			assert.False(t, conf.IsSet("service::telemetry::resource::service.name"))
+			assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
+
+			attrs, ok := conf.Get("service::telemetry::resource::attributes").([]any)
+			require.True(t, ok)
+			assert.Equal(t, tc.expected, attrs)
+		})
 	}
-	require.NoError(t, s.createTemplates())
-
-	conf, err := config.NewConfFromYAML(s.composeExtraTelemetryConfig())
-	require.NoError(t, err)
-
-	assert.False(t, conf.IsSet("service::telemetry::resource::service.name"))
-	assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
-
-	attrs, ok := conf.Get("service::telemetry::resource::attributes").([]any)
-	require.True(t, ok)
-	require.Len(t, attrs, 2)
-	assert.Equal(t, []any{
-		map[string]any{"name": "service.name", "value": "otelcol"},
-		map[string]any{"name": "service.version", "value": "0.152.0"},
-	}, attrs)
 }
 
 func TestComposeExtraTelemetryConfigTemplateError(t *testing.T) {
