@@ -17,7 +17,6 @@ issues: [50336]
 # Use pipe (|) for multiline entries.
 subtext: |
   Templates now evaluate against one resource entry at a time, including count-based expressions.
-  The new `max_concurrent_uploads` option (default 10) bounds parallel uploads per export.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

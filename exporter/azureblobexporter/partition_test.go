@@ -5,14 +5,18 @@ package azureblobexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -22,6 +26,117 @@ import (
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 )
+
+func TestUploadGroupsSequential(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := newPartitionTestConfig("logs.json", false)
+		exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+		exporter.client = newRecordingAzBlobClient(nil)
+
+		started := make(chan int, 3)
+		release := make(chan struct{})
+		defer close(release)
+		done := make(chan error, 1)
+		go func() {
+			done <- uploadGroups(t.Context(), exporter, pipeline.SignalLogs,
+				[]blobGroup[int]{{data: 1}, {data: 2}, {data: 3}},
+				func(data int) ([]byte, error) {
+					started <- data
+					<-release
+					return []byte("payload"), nil
+				},
+				func(err error, _ []int) error { return err })
+		}()
+
+		for want := 1; want <= 3; want++ {
+			synctest.Wait()
+			require.Len(t, started, 1, "only one group may be prepared at a time")
+			require.Equal(t, want, <-started)
+			release <- struct{}{}
+		}
+		synctest.Wait()
+		require.NoError(t, <-done)
+	})
+}
+
+func TestPartitionCancellationPreservesUnsentLogs(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		cancelBefore  bool
+		failUpload    bool
+		wantCalls     int
+		wantRetryLogs []string
+	}{
+		{"before_upload", true, false, 0, []string{"log for a", "log for b", "log for c"}},
+		{"after_success", false, false, 1, []string{"log for b", "log for c"}},
+		{"during_failure", false, true, 1, []string{"log for a", "log for b", "log for c"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+			exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			client := &mockAzBlobClient{url: "http://mock"}
+			var uploadErr error
+			if tc.failUpload {
+				uploadErr = context.Canceled
+			}
+			client.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).
+				Run(func(mock.Arguments) { cancel() }).
+				Return(uploadErr)
+			exporter.client = client
+			if tc.cancelBefore {
+				cancel()
+			}
+
+			logs := generateLogsWithActivities("a", "b", "c")
+			err := exporter.ConsumeLogs(ctx, logs)
+			require.ErrorIs(t, err, context.Canceled)
+			client.AssertNumberOfCalls(t, "AppendBlock", tc.wantCalls)
+			var partial consumererror.Logs
+			require.ErrorAs(t, err, &partial)
+			data, err := (&plog.JSONMarshaler{}).MarshalLogs(partial.Data())
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantRetryLogs, uploadedLogBodies(t, [][]byte{data}))
+			assert.Equal(t, 3, logs.LogRecordCount(), "partitioning must not mutate the input")
+
+			retryClient := newRecordingAzBlobClient(nil)
+			exporter.client = retryClient
+			require.NoError(t, exporter.ConsumeLogs(t.Context(), partial.Data()))
+			assert.Len(t, retryClient.uploads, len(tc.wantRetryLogs))
+		})
+	}
+}
+
+func TestUploadGroupsCanceledBeforeMarshal(t *testing.T) {
+	for _, count := range []int{1, 3} {
+		t.Run(fmt.Sprint(count), func(t *testing.T) {
+			cfg := newPartitionTestConfig("logs.json", false)
+			exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+			client := newRecordingAzBlobClient(nil)
+			exporter.client = client
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+			groups := make([]blobGroup[int], count)
+			for i := range groups {
+				groups[i].data = i
+			}
+			marshalErr := errors.New("must not marshal canceled data")
+			err := uploadGroups(ctx, exporter, pipeline.SignalLogs, groups,
+				func(int) ([]byte, error) { return nil, marshalErr },
+				func(err error, failed []int) error {
+					assert.Len(t, failed, count)
+					return err
+				})
+			require.ErrorIs(t, err, context.Canceled)
+			assert.NotErrorIs(t, err, marshalErr)
+			assert.Empty(t, client.uploads)
+		})
+	}
+}
 
 func TestPartitionKeepsRenderedName(t *testing.T) {
 	cfg := newPartitionTestConfig("{{ .LogRecordCount }}.json", true)

@@ -510,12 +510,9 @@ type blobGroup[T any] struct {
 
 // uploadGroups marshals and uploads each partitioned group. A single group is
 // uploaded synchronously and any error is returned as-is, preserving the
-// non-partitioned behavior. Multiple groups are uploaded concurrently since
-// each group addresses a distinct blob, bounded by max_concurrent_uploads. If
-// some groups fail, the returned error carries only the failed groups' data
-// (via wrapRetryable, which wraps it in the signal's consumererror type), so
-// that the retry sender re-sends only the failed data and succeeded groups are
-// not uploaded twice.
+// non-partitioned behavior. Groups are uploaded sequentially; exporterhelper
+// controls concurrency between export requests. If some groups fail, the error
+// carries only failed and unstarted data for exporterhelper to retry.
 func uploadGroups[T any](
 	ctx context.Context,
 	e *azureBlobExporter,
@@ -525,6 +522,9 @@ func uploadGroups[T any](
 	wrapRetryable func(err error, failed []T) error,
 ) error {
 	upload := func(group blobGroup[T]) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		data, err := marshal(group.data)
 		if err != nil {
 			return fmt.Errorf("failed to marshal %s: %w", signal.String(), err)
@@ -544,26 +544,18 @@ func uploadGroups[T any](
 		return upload(groups[0])
 	}
 
-	uploadErrs := make([]error, len(groups))
-	sem := make(chan struct{}, e.config.MaxConcurrentUploads)
-	var wg sync.WaitGroup
-	for i, group := range groups {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(i int, group blobGroup[T]) {
-			defer wg.Done()
-			defer func() { <-sem }()
-
-			uploadErrs[i] = upload(group)
-		}(i, group)
-	}
-	wg.Wait()
-
 	var failed []T
 	var errs []error
-	for i, err := range uploadErrs {
-		if err != nil {
-			failed = append(failed, groups[i].data)
+	for i, group := range groups {
+		if err := ctx.Err(); err != nil {
+			for _, unstarted := range groups[i:] {
+				failed = append(failed, unstarted.data)
+			}
+			errs = append(errs, err)
+			break
+		}
+		if err := upload(group); err != nil {
+			failed = append(failed, group.data)
 			errs = append(errs, err)
 		}
 	}
@@ -627,7 +619,8 @@ func (e *azureBlobExporter) partitionLogsByBlobName(ld plog.Logs) []blobGroup[pl
 		if !ok {
 			index = len(groups)
 			indices[name] = index
-			groups = append(groups, blobGroup[plog.Logs]{data: plog.NewLogs(), nameFormat: &name})
+			groups = append(groups, blobGroup[plog.Logs]{data: single, nameFormat: &name})
+			continue
 		}
 		single.ResourceLogs().At(0).MoveTo(groups[index].data.ResourceLogs().AppendEmpty())
 	}
@@ -663,7 +656,8 @@ func (e *azureBlobExporter) partitionMetricsByBlobName(md pmetric.Metrics) []blo
 		if !ok {
 			index = len(groups)
 			indices[name] = index
-			groups = append(groups, blobGroup[pmetric.Metrics]{data: pmetric.NewMetrics(), nameFormat: &name})
+			groups = append(groups, blobGroup[pmetric.Metrics]{data: single, nameFormat: &name})
+			continue
 		}
 		single.ResourceMetrics().At(0).MoveTo(groups[index].data.ResourceMetrics().AppendEmpty())
 	}
@@ -699,7 +693,8 @@ func (e *azureBlobExporter) partitionTracesByBlobName(td ptrace.Traces) []blobGr
 		if !ok {
 			index = len(groups)
 			indices[name] = index
-			groups = append(groups, blobGroup[ptrace.Traces]{data: ptrace.NewTraces(), nameFormat: &name})
+			groups = append(groups, blobGroup[ptrace.Traces]{data: single, nameFormat: &name})
+			continue
 		}
 		single.ResourceSpans().At(0).MoveTo(groups[index].data.ResourceSpans().AppendEmpty())
 	}

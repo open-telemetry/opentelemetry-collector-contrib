@@ -52,7 +52,6 @@ The following settings can be optionally configured and have default values:
 - append_blob: configures append blob behavior. When enabled, telemetry data is appended to a single blob instead of creating new blobs. This can be useful for aggregating data or reducing the number of blobs created.
   - enabled (default `false`): determines whether to use append blob mode.
   - separator (default `\n`): string to insert between appended data blocks.
-- max_concurrent_uploads (default `10`): maximum number of parallel uploads when an export is partitioned into multiple blobs by the blob name template.
 - `retry_on_failure`
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
@@ -63,7 +62,11 @@ The following settings can be optionally configured and have default values:
 
 When `template_enabled` is `true`, you can use Go templates in `metrics_format`, `logs_format`, and `traces_format` to create dynamic blob names based on telemetry data. The root object for the template is the telemetry data itself (`pmetric.Metrics`, `plog.Logs`, or `ptrace.Traces`).
 
-When a payload contains multiple resource entries, the exporter groups the resource entries by their rendered blob name and performs one upload per distinct name, so that each group is written to the blob it is addressed to. Groups are uploaded concurrently, bounded by `max_concurrent_uploads`. If some groups fail to upload, only the failed groups' data is retried, so data from succeeded groups is not uploaded twice. If rendering fails for any resource entry, the whole payload is uploaded once using the default (non-template) name format.
+When a payload contains multiple resource entries, the exporter groups the resource entries by their rendered blob name and performs one upload per distinct name, so that each group is written to the blob it is addressed to. All templates are evaluated before uploading; if rendering fails for any resource entry, the whole payload is uploaded once using the default (non-template) name format.
+
+Groups within an export request are uploaded sequentially. When the sending queue is enabled, `sending_queue.num_consumers` controls concurrency between export requests, not between groups within one request. All groups share the request's export attempt timeout, so large batches with many destinations may require smaller batches or a longer `timeout`.
+
+An upload failure does not prevent attempts to upload the remaining groups unless the request context is canceled. Only failed and unstarted groups are returned for retry; groups whose uploads succeeded are excluded. This does not guarantee exactly-once delivery when an upload's outcome is uncertain, such as a network failure after Azure accepted the data.
 
 Templates are evaluated with one resource entry at index zero. The rendered name is retained when entries are grouped; it is not evaluated again against the combined group. Time formatting, serial numbers, and compression extensions are then applied as configured. Grouping is per resource entry, not per individual log record, metric, or span.
 

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -751,8 +752,7 @@ func newPartitionTestConfig(logsFormat string, templateEnabled bool) *Config {
 			Enabled:   true,
 			Separator: "\n",
 		},
-		Encodings:            Encodings{},
-		MaxConcurrentUploads: 10,
+		Encodings: Encodings{},
 	}
 }
 
@@ -900,13 +900,11 @@ func TestConsumeLogsPartitionFallsBackOnTemplateError(t *testing.T) {
 
 // recordingAzBlobClient is a stateful azblobClient that records every uploaded
 // payload per blob name and can be programmed to fail a number of times per
-// blob. It is safe for concurrent use, matching the concurrent group uploads.
+// blob. It is safe for concurrent use by multiple export requests.
 type recordingAzBlobClient struct {
 	mu                sync.Mutex
 	remainingFailures map[string]int
 	uploads           map[string][][]byte
-	inflight          int
-	maxInflight       int
 }
 
 func newRecordingAzBlobClient(failures map[string]int) *recordingAzBlobClient {
@@ -920,18 +918,7 @@ func (*recordingAzBlobClient) URL() string { return "http://mock" }
 
 func (c *recordingAzBlobClient) record(blobName string, data []byte) error {
 	c.mu.Lock()
-	c.inflight++
-	if c.inflight > c.maxInflight {
-		c.maxInflight = c.inflight
-	}
-	c.mu.Unlock()
-	// Hold the upload open briefly so concurrent uploads overlap observably.
-	time.Sleep(time.Millisecond)
-	c.mu.Lock()
-	defer func() {
-		c.inflight--
-		c.mu.Unlock()
-	}()
+	defer c.mu.Unlock()
 	if c.remainingFailures[blobName] > 0 {
 		c.remainingFailures[blobName]--
 		return errors.New("injected failure for " + blobName)
@@ -974,7 +961,7 @@ func uploadedLogBodies(t *testing.T, payloads [][]byte) []string {
 	return bodies
 }
 
-func TestConsumeLogsPartialFailureRetriesExactlyOnce(t *testing.T) {
+func TestConsumeLogsPartialFailureRetriesOnlyFailedGroups(t *testing.T) {
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
@@ -1003,7 +990,7 @@ func TestConsumeLogsPartialFailureRetriesExactlyOnce(t *testing.T) {
 	// Second attempt with only the retry data, as the retry sender would send.
 	require.NoError(t, ae.ConsumeLogs(t.Context(), retryData))
 
-	// Exactly-once: each log message appears exactly once, in its own blob.
+	// Retrying a known failed group must not replay successful groups.
 	assert.Equal(t, []string{"log for activity-a"}, uploadedLogBodies(t, client.uploads["activity-a.json"]))
 	assert.Equal(t, []string{"log for activity-b"}, uploadedLogBodies(t, client.uploads["activity-b.json"]))
 	require.Len(t, client.uploads, 2)
@@ -1085,7 +1072,7 @@ func TestConsumeTracesPartialFailureCarriesOnlyFailedData(t *testing.T) {
 	assert.Equal(t, "svc-b", val.Str())
 }
 
-func TestConsumeLogsManyGroupsConcurrentUploads(t *testing.T) {
+func TestConsumeLogsManyGroups(t *testing.T) {
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
@@ -1094,7 +1081,6 @@ func TestConsumeLogsManyGroupsConcurrentUploads(t *testing.T) {
 	client := newRecordingAzBlobClient(nil)
 	ae.client = client
 
-	// More groups than maxConcurrentUploads to exercise the semaphore.
 	activities := make([]string, 0, 25)
 	for i := range 25 {
 		activities = append(activities, fmt.Sprintf("activity-%02d", i))
@@ -1163,24 +1149,52 @@ func TestPartitionWithQueueBatching(t *testing.T) {
 	}
 }
 
-func TestConsumeLogsHonorsMaxConcurrentUploads(t *testing.T) {
-	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
-	c.MaxConcurrentUploads = 1
+func TestPartitionWithConcurrentQueueConsumers(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+		qCfg := exporterhelper.NewDefaultQueueConfig()
+		qCfg.NumConsumers = 2
+		qCfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
+		cfg.QueueSettings = configoptional.Some(qCfg)
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
-	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+		ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
+			ae.ConsumeLogs,
+			exporterhelper.WithStart(ae.start),
+			exporterhelper.WithQueue(cfg.QueueSettings))
+		require.NoError(t, err)
+		require.NoError(t, le.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() { require.NoError(t, le.Shutdown(t.Context())) }()
 
-	client := newRecordingAzBlobClient(nil)
-	ae.client = client
+		started := make(chan string, 4)
+		release := make(map[string]chan struct{})
+		for _, name := range []string{"a.json", "b.json", "c.json", "d.json"} {
+			release[name] = make(chan struct{}, 1)
+		}
+		defer func() {
+			for _, ch := range release {
+				close(ch)
+			}
+		}()
+		client := &mockAzBlobClient{url: "http://mock"}
+		client.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).
+			Run(func(args mock.Arguments) {
+				started <- args.String(2)
+				<-release[args.String(2)]
+			}).Return(nil)
+		ae.client = client
 
-	activities := make([]string, 0, 8)
-	for i := range 8 {
-		activities = append(activities, fmt.Sprintf("activity-%d", i))
-	}
-	require.NoError(t, ae.ConsumeLogs(t.Context(), generateLogsWithActivities(activities...)))
-
-	client.mu.Lock()
-	defer client.mu.Unlock()
-	require.Len(t, client.uploads, 8)
-	assert.Equal(t, 1, client.maxInflight, "uploads must be serialized when max_concurrent_uploads is 1")
+		require.NoError(t, le.ConsumeLogs(t.Context(), generateLogsWithActivities("a", "b")))
+		require.NoError(t, le.ConsumeLogs(t.Context(), generateLogsWithActivities("c", "d")))
+		for _, want := range [][]string{{"a.json", "c.json"}, {"b.json", "d.json"}} {
+			synctest.Wait()
+			require.Len(t, started, 2, "queue consumers should upload separate requests concurrently")
+			require.ElementsMatch(t, want, []string{<-started, <-started})
+			for _, name := range want {
+				release[name] <- struct{}{}
+			}
+		}
+		synctest.Wait()
+		client.AssertNumberOfCalls(t, "AppendBlock", 4)
+	})
 }

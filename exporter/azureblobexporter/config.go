@@ -106,10 +106,6 @@ type Config struct {
 	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
 	Encodings Encodings `mapstructure:"encodings"`
 
-	// MaxConcurrentUploads is the maximum number of parallel uploads when an
-	// export is partitioned into multiple blobs by the blob name template.
-	MaxConcurrentUploads int `mapstructure:"max_concurrent_uploads"`
-
 	BackOffConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
@@ -149,10 +145,6 @@ func (c *Config) Validate() error {
 				configcompression.TypeGzip, configcompression.TypeZstd,
 			)
 		}
-	}
-
-	if c.MaxConcurrentUploads <= 0 {
-		return errors.New("max_concurrent_uploads must be positive")
 	}
 
 	return nil
