@@ -37,6 +37,22 @@ const (
 // replaced SHOW SLAVE STATUS. Initialized at package load; panics on bad literal.
 var minMySQLReplicaStatusVersion = version.Must(version.NewVersion("8.0.22"))
 
+// minMySQLPerfSchemaLogStatusVersion is the MySQL version at which
+// performance_schema.log_status was introduced.
+var minMySQLPerfSchemaLogStatusVersion = version.Must(version.NewVersion("8.0.11"))
+
+// minMySQLGlobalStatusRedoLogVersion is the MySQL version at which the
+// structured InnoDB redo-log status variables were added to SHOW GLOBAL STATUS.
+var minMySQLGlobalStatusRedoLogVersion = version.Must(version.NewVersion("8.0.30"))
+
+type innodbRedoLogStatsSource int
+
+const (
+	innodbRedoLogStatsSourceUnsupported innodbRedoLogStatsSource = iota
+	innodbRedoLogStatsSourceGlobalStatus
+	innodbRedoLogStatsSourceLogStatus
+)
+
 // dbVersion holds the parsed database version and product identity.
 // Capability predicates keep version-specific branching out of callers.
 type dbVersion struct {
@@ -111,12 +127,37 @@ func (v dbVersion) supportsProcesslist() bool {
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLReplicaStatusVersion)
 }
 
+func (v dbVersion) supportsInnodbRedoLogStats() bool {
+	return v.innodbRedoLogStatsSource() != innodbRedoLogStatsSourceUnsupported
+}
+
+func (v dbVersion) requiresBackupAdminForInnodbRedoLogStats() bool {
+	return v.innodbRedoLogStatsSource() == innodbRedoLogStatsSourceLogStatus
+}
+
+func (v dbVersion) innodbRedoLogStatsSource() innodbRedoLogStatsSource {
+	if !v.isValid() || v.product != dbProductMySQL {
+		return innodbRedoLogStatsSourceUnsupported
+	}
+	if !v.version.LessThan(minMySQLGlobalStatusRedoLogVersion) {
+		return innodbRedoLogStatsSourceGlobalStatus
+	}
+	if !v.version.LessThan(minMySQLPerfSchemaLogStatusVersion) {
+		return innodbRedoLogStatsSourceLogStatus
+	}
+	return innodbRedoLogStatsSourceUnsupported
+}
+
 type client interface {
 	Connect() error
+	checkDBAvailability() error
 	getDBVersion() dbVersion
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
 	getInnodbTransactionStats() (innodbTransactionStats, error)
+	getQueryExecutionTime() (float64, error)
+	getActiveSessionCount() (int64, error)
+	getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error)
 	getTableStats() ([]tableStats, error)
 	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
@@ -177,6 +218,12 @@ type innodbTransactionStats struct {
 	historyListLength            int64
 	activeTransactions           int64
 	maxActiveTransactionDuration int64
+}
+
+type innodbRedoLogStats struct {
+	currentLSN    int64
+	checkpointLSN int64
+	checkpointAge int64
 }
 
 type statementEventStats struct {
@@ -363,6 +410,21 @@ func (c *mySQLClient) populateDBVersion() {
 	}
 }
 
+func (c *mySQLClient) checkDBAvailability() error {
+	const healthCheckTimeout = 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), healthCheckTimeout)
+	defer cancel()
+
+	var result int
+	if err := c.client.QueryRowContext(ctx, "/* otel-collector-ignore */ SELECT 1 FROM DUAL").Scan(&result); err != nil {
+		return err
+	}
+	if result != 1 {
+		return fmt.Errorf("unexpected database availability query result: %d", result)
+	}
+	return nil
+}
+
 // fetchDBVersion queries the database for its version string and parses it
 // into a dbVersion. Called once during Connect. A short context timeout
 // prevents a blackholed or slow endpoint from stalling collector startup.
@@ -438,6 +500,32 @@ func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 	return query(*c, q)
 }
 
+// getQueryExecutionTime queries the db for cumulative SQL statement execution time in seconds.
+func (c *mySQLClient) getQueryExecutionTime() (float64, error) {
+	q := "SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
+		"FROM performance_schema.events_statements_summary_by_digest"
+
+	var executionTime float64
+	err := c.client.QueryRow(q).Scan(&executionTime)
+	return executionTime, err
+}
+
+// getActiveSessionCount queries the db for the number of active sessions.
+func (c *mySQLClient) getActiveSessionCount() (int64, error) {
+	q := "/* otel-collector-ignore */ SELECT COUNT(*) " +
+		"FROM performance_schema.threads " +
+		"WHERE PROCESSLIST_STATE IS NOT NULL " +
+		"AND TRIM(PROCESSLIST_STATE) != '' " +
+		"AND PROCESSLIST_COMMAND NOT IN ('Sleep', 'Daemon') " +
+		"AND PROCESSLIST_ID != CONNECTION_ID() " +
+		"AND COALESCE(PROCESSLIST_INFO, '') != '' " +
+		"AND COALESCE(PROCESSLIST_INFO, '') NOT LIKE '/* otel-collector-ignore */%'"
+
+	var activeSessionCount int64
+	err := c.client.QueryRow(q).Scan(&activeSessionCount)
+	return activeSessionCount, err
+}
+
 // getInnodbTransactionStats queries the db for InnoDB transaction metrics.
 func (c *mySQLClient) getInnodbTransactionStats() (innodbTransactionStats, error) {
 	q := "SELECT " +
@@ -452,6 +540,31 @@ func (c *mySQLClient) getInnodbTransactionStats() (innodbTransactionStats, error
 		&stats.maxActiveTransactionDuration,
 	)
 	return stats, err
+}
+
+// getInnodbRedoLogStatsFromLogStatus queries performance_schema.log_status for
+// InnoDB redo log metrics on MySQL versions before the structured global status
+// variables were introduced.
+func (c *mySQLClient) getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error) {
+	q := "SELECT " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED) " +
+		"FROM performance_schema.log_status"
+	var currentLSN, checkpointLSN sql.NullInt64
+	if err := c.client.QueryRow(q).Scan(&currentLSN, &checkpointLSN); err != nil {
+		return innodbRedoLogStats{}, err
+	}
+	if !currentLSN.Valid {
+		return innodbRedoLogStats{}, errors.New("missing InnoDB redo log current LSN in performance_schema.log_status")
+	}
+	if !checkpointLSN.Valid {
+		return innodbRedoLogStats{}, errors.New("missing InnoDB redo log checkpoint LSN in performance_schema.log_status")
+	}
+	return innodbRedoLogStats{
+		currentLSN:    currentLSN.Int64,
+		checkpointLSN: checkpointLSN.Int64,
+		checkpointAge: currentLSN.Int64 - checkpointLSN.Int64,
+	}, nil
 }
 
 // getTableStats queries the db for information_schema table size metrics.
