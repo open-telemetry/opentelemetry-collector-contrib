@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -20,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	"google.golang.org/grpc/encoding/gzip"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
@@ -38,39 +36,27 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
+	cfg := &Config{
 		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-		DomainSettings: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Compression: configcompression.TypeGzip,
-			},
-			AcceptEncoding: gzip.Name,
-		},
+		DomainSettings:  TransportConfig{},
 		// Traces GRPC client
 		Traces: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Endpoint:    "https://",
-				Compression: configcompression.TypeGzip,
+				Endpoint: "https://",
 			},
-			AcceptEncoding: gzip.Name,
 		},
 		Metrics: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Endpoint: "https://",
-				// Default to gzip compression
-				Compression:     configcompression.TypeGzip,
+				Endpoint:        "https://",
 				WriteBufferSize: 512 * 1024,
 			},
-			AcceptEncoding: gzip.Name,
 		},
 		Logs: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Endpoint:    "https://",
-				Compression: configcompression.TypeGzip,
+				Endpoint: "https://",
 			},
-			AcceptEncoding: gzip.Name,
 		},
 		PrivateKey: "",
 		AppName:    "",
@@ -81,6 +67,11 @@ func createDefaultConfig() component.Config {
 		},
 		Protocol: grpcProtocol,
 	}
+	applyTransportDefaults(&cfg.DomainSettings)
+	applyTransportDefaults(&cfg.Traces)
+	applyTransportDefaults(&cfg.Metrics)
+	applyTransportDefaults(&cfg.Logs)
+	return cfg
 }
 
 func createTraceExporter(

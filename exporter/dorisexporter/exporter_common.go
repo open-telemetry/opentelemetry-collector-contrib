@@ -89,7 +89,7 @@ func generateLabel(cfg *Config, table string) string {
 }
 
 func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []byte, label string) (*http.Request, error) {
-	url := streamLoadURL(cfg.Endpoint, cfg.Database, table)
+	url := streamLoadURL(cfg.ClientConfig.Endpoint, cfg.Database, table)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -98,12 +98,12 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
 	req.Header.Set("read_json_by_line", "true")
-	groupCommit, _ := cfg.Headers.Get("group_commit")
+	groupCommit, _ := cfg.ClientConfig.Headers.Get("group_commit")
 	if groupCommit == "" || groupCommit == "off_mode" {
 		req.Header.Set("label", label)
 	}
-	if cfg.Timeout != 0 {
-		req.Header.Set("timeout", fmt.Sprintf("%d", cfg.Timeout/time.Second))
+	if cfg.ClientConfig.Timeout != 0 {
+		req.Header.Set("timeout", fmt.Sprintf("%d", cfg.ClientConfig.Timeout/time.Second))
 	}
 	req.SetBasicAuth(cfg.Username, string(cfg.Password))
 
@@ -111,7 +111,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 }
 
 func createDorisHTTPClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	client, err := cfg.ToClient(ctx, host.GetExtensions(), settings)
+	client, err := cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
 	}

@@ -24,18 +24,18 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	BaseURL                        string                                `mapstructure:"base_url"`
-	PublicKey                      string                                `mapstructure:"public_key"`
-	PrivateKey                     configopaque.String                   `mapstructure:"private_key"`
-	Granularity                    string                                `mapstructure:"granularity"`
-	MetricsBuilderConfig           metadata.MetricsBuilderConfig         `mapstructure:",squash"`
-	Projects                       []ProjectConfig                       `mapstructure:"projects"`
-	Alerts                         AlertConfig                           `mapstructure:"alerts"`
-	Events                         configoptional.Optional[EventsConfig] `mapstructure:"events"`
-	Logs                           LogConfig                             `mapstructure:"logs"`
-	BackOffConfig                  configretry.BackOffConfig             `mapstructure:"retry_on_failure"`
-	StorageID                      *component.ID                         `mapstructure:"storage"`
+	ControllerConfig     scraperhelper.ControllerConfig        `mapstructure:",squash"`
+	BaseURL              string                                `mapstructure:"base_url"`
+	PublicKey            string                                `mapstructure:"public_key"`
+	PrivateKey           configopaque.String                   `mapstructure:"private_key"`
+	Granularity          string                                `mapstructure:"granularity"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig         `mapstructure:",squash"`
+	Projects             []ProjectConfig                       `mapstructure:"projects"`
+	Alerts               AlertConfig                           `mapstructure:"alerts"`
+	Events               configoptional.Optional[EventsConfig] `mapstructure:"events"`
+	Logs                 LogConfig                             `mapstructure:"logs"`
+	BackOffConfig        configretry.BackOffConfig             `mapstructure:"retry_on_failure"`
+	StorageID            *component.ID                         `mapstructure:"storage"`
 }
 
 type AlertConfig struct {
@@ -71,7 +71,7 @@ type EventsConfig struct {
 }
 
 type LogsProjectConfig struct {
-	ProjectConfig `mapstructure:",squash"`
+	ProjectConfig ProjectConfig `mapstructure:",squash"`
 
 	EnableAuditLogs bool              `mapstructure:"collect_audit_logs"`
 	EnableHostLogs  *bool             `mapstructure:"collect_host_logs"`
@@ -175,7 +175,7 @@ func (l *LogConfig) validate() error {
 	}
 
 	for _, project := range l.Projects {
-		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
+		if len(project.ProjectConfig.ExcludeClusters) != 0 && len(project.ProjectConfig.IncludeClusters) != 0 {
 			errs = multierr.Append(errs, errClusterConfig)
 		}
 

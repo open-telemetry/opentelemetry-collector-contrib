@@ -52,7 +52,8 @@ func Test_HasPrefix(t *testing.T) {
 						},
 					},
 					Prefix: tt.prefix,
-				})
+				},
+			)
 			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
@@ -91,4 +92,45 @@ func Test_HasPrefix_Error_prefix(t *testing.T) {
 	exprFunc := HasPrefix[any](target, prefix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
+}
+
+func Test_HasPrefixFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewHasPrefixFactory[any]()
+		assert.Equal(t, "HasPrefix", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewHasPrefixFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &HasPrefixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Prefix"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewHasPrefixFactory[any]()
+		args := factory.CreateDefaultArguments()
+		hasPrefixArgs, ok := args.(*HasPrefixArguments[any])
+		require.True(t, ok)
+		hasPrefixArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		}
+		hasPrefixArgs.Prefix = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "val", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createHasPrefixFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "HasPrefixFactory args must be of type *HasPrefixArguments[K]")
+	})
 }

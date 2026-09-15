@@ -61,7 +61,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 func getPrometheusConfigWrapper(cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
 	if cfg.TLSEnabled {
 		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
-		cfg.TLS = configtls.ClientConfig{
+		cfg.ClientConfig.TLS = configtls.ClientConfig{
 			Config: configtls.Config{
 				CAFile:   cfg.TLSConfig.CAFile,
 				CertFile: cfg.TLSConfig.CertFile,
@@ -92,17 +92,17 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	scheme := "http"
 
-	tlsConfig, err := cfg.TLS.LoadTLSConfig(context.Background())
+	tlsConfig, err := cfg.ClientConfig.TLS.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("tls config is not valid: %w", err)
 	}
 	if tlsConfig != nil {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
-			CAFile:             cfg.TLS.CAFile,
-			CertFile:           cfg.TLS.CertFile,
-			KeyFile:            cfg.TLS.KeyFile,
-			InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
+			CAFile:             cfg.ClientConfig.TLS.CAFile,
+			CertFile:           cfg.ClientConfig.TLS.CertFile,
+			KeyFile:            cfg.ClientConfig.TLS.KeyFile,
+			InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
 		}
 	}
 
@@ -115,7 +115,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	jobName := cfg.JobName
 	if jobName == "" {
-		jobName = fmt.Sprintf("%s/%s", metadata.Type, cfg.Endpoint)
+		jobName = fmt.Sprintf("%s/%s", metadata.Type, cfg.ClientConfig.Endpoint)
 	}
 	scrapeConfig := &config.ScrapeConfig{
 		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
@@ -128,7 +128,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 		ServiceDiscoveryConfigs: discovery.Configs{
 			discovery.StaticConfig{
 				{
-					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.Endpoint)}},
+					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.ClientConfig.Endpoint)}},
 					Labels:  labels,
 				},
 			},

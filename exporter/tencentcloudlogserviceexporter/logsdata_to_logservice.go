@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-	"google.golang.org/protobuf/proto"
 
 	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/proto"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -86,16 +85,16 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 
 	return []*cls.Log_Content{
 		{
-			Key:   proto.String(clsLogHost),
-			Value: proto.String(hostname),
+			Key:   new(clsLogHost),
+			Value: new(hostname),
 		},
 		{
-			Key:   proto.String(clsLogService),
-			Value: proto.String(serviceName),
+			Key:   new(clsLogService),
+			Value: new(serviceName),
 		},
 		{
-			Key:   proto.String(clsLogResource),
-			Value: proto.String(string(attributeBuffer)),
+			Key:   new(clsLogResource),
+			Value: new(string(attributeBuffer)),
 		},
 	}
 }
@@ -103,12 +102,12 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 func instrumentationLibraryToLogContents(scope pcommon.InstrumentationScope) []*cls.Log_Content {
 	return []*cls.Log_Content{
 		{
-			Key:   proto.String(clsLogInstrumentationName),
-			Value: proto.String(scope.Name()),
+			Key:   new(clsLogInstrumentationName),
+			Value: new(scope.Name()),
 		},
 		{
-			Key:   proto.String(clsLogInstrumentationVersion),
-			Value: proto.String(scope.Version()),
+			Key:   new(clsLogInstrumentationVersion),
+			Value: new(scope.Version()),
 		},
 	}
 }
@@ -137,36 +136,36 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 
 	contentsBuffer := []*cls.Log_Content{
 		{
-			Key:   proto.String(clsLogTimeUnixNano),
-			Value: proto.String(strconv.FormatUint(uint64(lr.Timestamp()), 10)),
+			Key:   new(clsLogTimeUnixNano),
+			Value: new(strconv.FormatUint(uint64(lr.Timestamp()), 10)),
 		},
 		{
-			Key:   proto.String(clsLogSeverityNumber),
-			Value: proto.String(strconv.FormatInt(int64(lr.SeverityNumber()), 10)),
+			Key:   new(clsLogSeverityNumber),
+			Value: new(strconv.FormatInt(int64(lr.SeverityNumber()), 10)),
 		},
 		{
-			Key:   proto.String(clsLogSeverityText),
-			Value: proto.String(lr.SeverityText()),
+			Key:   new(clsLogSeverityText),
+			Value: new(lr.SeverityText()),
 		},
 		{
-			Key:   proto.String(clsLogAttribute),
-			Value: proto.String(string(attributeBuffer)),
+			Key:   new(clsLogAttribute),
+			Value: new(string(attributeBuffer)),
 		},
 		{
-			Key:   proto.String(clsLogContent),
-			Value: proto.String(lr.Body().AsString()),
+			Key:   new(clsLogContent),
+			Value: new(lr.Body().AsString()),
 		},
 		{
-			Key:   proto.String(clsLogFlags),
-			Value: proto.String(strconv.FormatUint(uint64(lr.Flags()), 16)),
+			Key:   new(clsLogFlags),
+			Value: new(strconv.FormatUint(uint64(lr.Flags()), 16)),
 		},
 		{
-			Key:   proto.String(traceIDField),
-			Value: proto.String(traceutil.TraceIDToHexOrEmptyString(lr.TraceID())),
+			Key:   new(traceIDField),
+			Value: new(traceutil.TraceIDToHexOrEmptyString(lr.TraceID())),
 		},
 		{
-			Key:   proto.String(spanIDField),
-			Value: proto.String(traceutil.SpanIDToHexOrEmptyString(lr.SpanID())),
+			Key:   new(spanIDField),
+			Value: new(traceutil.SpanIDToHexOrEmptyString(lr.SpanID())),
 		},
 	}
 
@@ -176,9 +175,9 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 
 	if lr.Timestamp() > 0 {
 		// convert time nano to time seconds
-		clsLog.Time = proto.Int64(int64(lr.Timestamp() / 1000000000))
+		clsLog.Time = new(int64(lr.Timestamp() / 1000000000))
 	} else {
-		clsLog.Time = proto.Int64(time.Now().Unix())
+		clsLog.Time = new(time.Now().Unix())
 	}
 
 	return &clsLog

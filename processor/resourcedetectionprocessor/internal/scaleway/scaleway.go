@@ -5,6 +5,8 @@ package scaleway // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 
 	instance "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
@@ -29,21 +31,23 @@ var newScalewayClient = instance.NewMetadataAPI
 
 // Detector is a Scaleway metadata detector.
 type Detector struct {
-	client *instance.MetadataAPI
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	client                *instance.MetadataAPI
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Scaleway metadata detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	cli := newScalewayClient()
 
 	return &Detector{
-		client: cli,
-		logger: p.Logger,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		client:                cli,
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
@@ -52,6 +56,12 @@ func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	md, err := d.client.GetMetadata()
 	if err != nil || md == nil {
 		d.logger.Debug("Scaleway detector: not running on Scaleway or metadata unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			if err == nil {
+				err = errors.New("scaleway metadata is nil")
+			}
+			return pcommon.NewResource(), "", fmt.Errorf("scaleway metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

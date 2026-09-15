@@ -50,8 +50,8 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					AddrConfig: confignet.AddrConfig{
-						Endpoint:  defaultConfig.Endpoint,
-						Transport: defaultConfig.Transport,
+						Endpoint:  defaultConfig.AddrConfig.Endpoint,
+						Transport: defaultConfig.AddrConfig.Transport,
 					},
 					TCPIdleTimeout: defaultConfig.TCPIdleTimeout,
 				},
@@ -174,7 +174,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			name: "default_config_udp",
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Transport = confignet.TransportTypeUDP
+				cfg.AddrConfig.Transport = confignet.TransportTypeUDP
 				return cfg
 			},
 			clientFn: func(t *testing.T, addr string) func(client.Metric) error {
@@ -189,7 +189,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			addr := testutil.GetAvailableLocalAddress(t)
 			cfg := tt.configFn()
-			cfg.Endpoint = addr
+			cfg.AddrConfig.Endpoint = addr
 
 			sink := new(consumertest.MetricsSink)
 			recorder := tracetest.NewSpanRecorder()

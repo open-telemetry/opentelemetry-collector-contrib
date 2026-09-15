@@ -2,28 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:generate make mdatagen
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/akamai/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/alibaba/ecs/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/aws/ec2/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/aws/ecs/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/aws/eks/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/aws/elasticbeanstalk/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/aws/lambda/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/azure/aks/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/azure/appservice/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/azure/containerapps/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/azure/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/consul/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/digitalocean/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/docker/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/dynatrace/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/gcp/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/heroku/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/hetzner/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/ibmcloud/classic/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/ibmcloud/vpc/metadata.yaml
-//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/openshift/metadata.yaml
-//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/system/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/k8sapi/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/kubeadm/metadata.yaml
-//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/dynatrace/metadata.yaml
-//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/akamai/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/openshift/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/openstack/nova/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/oraclecloud/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/scaleway/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/system/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/tencent/cvm/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/upcloud/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/vultr/metadata.yaml
 

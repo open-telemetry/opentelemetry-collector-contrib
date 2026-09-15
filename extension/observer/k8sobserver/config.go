@@ -11,7 +11,7 @@ import (
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// Node is the node name to limit the discovery of pod, port, and node endpoints.
 	// Providing no value (the default) results in discovering endpoints for all available nodes.

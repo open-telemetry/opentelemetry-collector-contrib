@@ -23,7 +23,7 @@ func TestPushTraceData(t *testing.T) {
 	require.NoError(t, err)
 
 	config := createDefaultConfig().(*Config)
-	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
+	config.ClientConfig.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
 	require.NoError(t, config.Validate())
 

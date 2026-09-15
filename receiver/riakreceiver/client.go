@@ -39,14 +39,14 @@ type riakCredentials struct {
 }
 
 func newClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
-	httpClient, err := cfg.ToClient(ctx, host.GetExtensions(), settings)
+	httpClient, err := cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
 
 	return &riakClient{
 		client:       httpClient,
-		hostEndpoint: cfg.Endpoint,
+		hostEndpoint: cfg.ClientConfig.Endpoint,
 		creds: riakCredentials{
 			username: cfg.Username,
 			password: string(cfg.Password),

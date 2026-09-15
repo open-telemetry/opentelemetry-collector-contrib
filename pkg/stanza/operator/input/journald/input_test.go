@@ -57,29 +57,7 @@ func (f *fakeJournaldCmd) Wait() error {
 
 func TestInputJournald(t *testing.T) {
 	cfg := NewConfigWithID("my_journald_input")
-	cfg.OutputIDs = []string{"output"}
-
-	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(set)
-	require.NoError(t, err)
-
-	mockOutput := testutil.NewMockOperator("output")
-	received := make(chan *entry.Entry)
-	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-		received <- args.Get(1).(*entry.Entry)
-	}).Return(nil)
-
-	err = op.SetOutputs([]operator.Operator{mockOutput})
-	require.NoError(t, err)
-
-	op.(*Input).newCmd = func(_ context.Context, _ []byte) cmd {
-		return &fakeJournaldCmd{}
-	}
-
-	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
-	defer func() {
-		require.NoError(t, op.Stop())
-	}()
+	received := startTestReceiver(t, cfg)
 
 	expected := map[string]any{
 		"_BOOT_ID":                   "c4fa36de06824d21835c05ff80c54468",
@@ -123,6 +101,71 @@ func TestInputJournald(t *testing.T) {
 		require.Equal(t, expected, e.Body)
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be read")
+	}
+}
+
+// startTestReceiver starts [Input] for testing, it is connected to a mock
+// output, all published entries are sent to the returned, unbuffered, channel.
+// It uses the [fakeJournaldCmd] to mock the Journald process.
+// t.Fatal is used on errors and the operator is correctly shutdown at the end
+// of the test.
+func startTestReceiver(t *testing.T, cfg *Config) <-chan *entry.Entry {
+	cfg.OutputIDs = []string{"output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.NewMockOperator("output")
+	outChan := make(chan *entry.Entry)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		outChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = op.SetOutputs([]operator.Operator{mockOutput})
+	require.NoError(t, err)
+
+	op.(*Input).newCmd = func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmd{}
+	}
+
+	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
+
+	t.Cleanup(func() {
+		require.NoError(t, op.Stop())
+	})
+
+	return outChan
+}
+
+func TestInputJournaldIncludeOriginal(t *testing.T) {
+	testCases := map[string]bool{
+		"Must include original record":     true,
+		"Must not include original record": false,
+	}
+
+	for name, include := range testCases {
+		t.Run(name, func(t *testing.T) {
+			cfg := NewConfigWithID("my_journald_input")
+			cfg.IncludeLogRecordOriginal = include
+
+			outChan := startTestReceiver(t, cfg)
+
+			select {
+			case e := <-outChan:
+				if include {
+					require.Contains(t, e.Attributes, "log.record.original", "must contain")
+					original, ok := e.Attributes["log.record.original"].(string)
+					require.True(t, ok, "'log.record.original' must be a string")
+					require.NotContains(t, original, "\n", "'log.record.original' must not contain the new line character")
+				} else {
+					require.NotContains(t, e.Attributes, "log.record.original", "must contain")
+				}
+
+			case <-time.After(time.Second):
+				require.FailNow(t, "Timed out waiting for entry to be read")
+			}
+		})
 	}
 }
 

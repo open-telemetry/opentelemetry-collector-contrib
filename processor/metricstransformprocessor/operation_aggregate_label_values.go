@@ -4,6 +4,8 @@
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -11,7 +13,10 @@ import (
 )
 
 // aggregateLabelValuesOp aggregates points that have the label values specified in aggregated_values
-func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp *internalOperation) {
+func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp *internalOperation) error {
+	if metric.Type() == pmetric.MetricTypeSummary {
+		return fmt.Errorf("aggregate_label_values is not supported for Summary metrics: %v", metric.Name())
+	}
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		val, ok := attrs.Get(mtpOp.configOperation.Label)
 		if !ok {
@@ -30,4 +35,5 @@ func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp *internalOperation) {
 	aggregateutil.GroupDataPoints(metric, &ag)
 	aggregateutil.MergeDataPoints(newMetric, mtpOp.configOperation.AggregationType, ag)
 	newMetric.MoveTo(metric)
+	return nil
 }

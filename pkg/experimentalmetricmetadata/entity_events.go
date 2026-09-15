@@ -8,20 +8,30 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata/internal/metadata"
 )
 
-// See entity event design document:
-// https://docs.google.com/document/d/1Tg18sIck3Nakxtd3TFFcIjrmRO_0GLMdHXylVqBQmJA/edit#heading=h.pokdp8i2dmxy
+// See entity event specification:
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/entities/entity-events.md
 
 const (
-	semconvOtelEntityEventName    = "otel.entity.event.type"
-	semconvEventEntityEventState  = "entity_state"
-	semconvEventEntityEventDelete = "entity_delete"
+	semconvEventEntityEventState  = "entity.state"
+	semconvEventEntityEventDelete = "entity.delete"
 
-	semconvOtelEntityID         = "otel.entity.id"
-	semconvOtelEntityType       = "otel.entity.type"
-	semconvOtelEntityInterval   = "otel.entity.interval"
-	semconvOtelEntityAttributes = "otel.entity.attributes"
+	semconvOtelEntityID             = "entity.id"
+	semconvOtelEntityType           = "entity.type"
+	semconvOtelEntityInterval       = "entity.report.interval"
+	semconvOtelEntityAttributes     = "entity.description"
+	semconvOtelEntityDeletionReason = "entity.delete.reason"
+
+	legacySemconvOtelEntityEventName    = "otel.entity.event.type"
+	legacySemconvEventEntityEventState  = "entity_state"
+	legacySemconvEventEntityEventDelete = "entity_delete"
+	legacySemconvOtelEntityID           = "otel.entity.id"
+	legacySemconvOtelEntityType         = "otel.entity.type"
+	legacySemconvOtelEntityInterval     = "otel.entity.interval"
+	legacySemconvOtelEntityAttributes   = "otel.entity.attributes"
 
 	SemconvOtelEntityEventAsScope = "otel.entity.event_as_log"
 )
@@ -95,16 +105,17 @@ func (e EntityEvent) SetTimestamp(timestamp pcommon.Timestamp) {
 
 // ID of the entity.
 func (e EntityEvent) ID() pcommon.Map {
-	m, ok := e.orig.Attributes().Get(semconvOtelEntityID)
+	name := entityIDAttributeName()
+	m, ok := e.orig.Attributes().Get(name)
 	if !ok {
-		return e.orig.Attributes().PutEmptyMap(semconvOtelEntityID)
+		return e.orig.Attributes().PutEmptyMap(name)
 	}
 	return m.Map()
 }
 
 // SetEntityState makes this an EntityStateDetails event.
 func (e EntityEvent) SetEntityState() EntityStateDetails {
-	e.orig.Attributes().PutStr(semconvOtelEntityEventName, semconvEventEntityEventState)
+	e.setEventName(semconvEventEntityEventState, legacySemconvEventEntityEventState)
 	return e.EntityStateDetails()
 }
 
@@ -115,7 +126,7 @@ func (e EntityEvent) EntityStateDetails() EntityStateDetails {
 
 // SetEntityDelete makes this an EntityDeleteDetails event.
 func (e EntityEvent) SetEntityDelete() EntityDeleteDetails {
-	e.orig.Attributes().PutStr(semconvOtelEntityEventName, semconvEventEntityEventDelete)
+	e.setEventName(semconvEventEntityEventDelete, legacySemconvEventEntityEventDelete)
 	return e.EntityDeleteDetails()
 }
 
@@ -138,18 +149,37 @@ const (
 
 // EventType returns the type of the event.
 func (e EntityEvent) EventType() EventType {
-	eventType, ok := e.orig.Attributes().Get(semconvOtelEntityEventName)
+	if useEntityEventsSpecification() {
+		switch e.orig.EventName() {
+		case semconvEventEntityEventState:
+			return EventTypeState
+		case semconvEventEntityEventDelete:
+			return EventTypeDelete
+		default:
+			return EventTypeNone
+		}
+	}
+
+	eventType, ok := e.orig.Attributes().Get(legacySemconvOtelEntityEventName)
 	if !ok {
 		return EventTypeNone
 	}
 
 	switch eventType.Str() {
-	case semconvEventEntityEventState:
+	case legacySemconvEventEntityEventState:
 		return EventTypeState
-	case semconvEventEntityEventDelete:
+	case legacySemconvEventEntityEventDelete:
 		return EventTypeDelete
 	default:
 		return EventTypeNone
+	}
+}
+
+func (e EntityEvent) setEventName(eventName, legacyEventName string) {
+	if useEntityEventsSpecification() {
+		e.orig.SetEventName(eventName)
+	} else {
+		e.orig.Attributes().PutStr(legacySemconvOtelEntityEventName, legacyEventName)
 	}
 }
 
@@ -160,16 +190,22 @@ type EntityStateDetails struct {
 
 // Attributes returns the attributes of the entity.
 func (s EntityStateDetails) Attributes() pcommon.Map {
-	m, ok := s.orig.Attributes().Get(semconvOtelEntityAttributes)
+	name := entityAttributesAttributeName()
+	m, ok := s.orig.Attributes().Get(name)
 	if !ok {
-		return s.orig.Attributes().PutEmptyMap(semconvOtelEntityAttributes)
+		return s.orig.Attributes().PutEmptyMap(name)
 	}
 	return m.Map()
 }
 
+// Description returns the descriptive attributes of the entity.
+func (s EntityStateDetails) Description() pcommon.Map {
+	return s.Attributes()
+}
+
 // EntityType returns the type of the entity.
 func (s EntityStateDetails) EntityType() string {
-	t, ok := s.orig.Attributes().Get(semconvOtelEntityType)
+	t, ok := s.orig.Attributes().Get(entityTypeAttributeName())
 	if !ok {
 		return ""
 	}
@@ -178,21 +214,34 @@ func (s EntityStateDetails) EntityType() string {
 
 // SetEntityType sets the type of the entity.
 func (s EntityStateDetails) SetEntityType(t string) {
-	s.orig.Attributes().PutStr(semconvOtelEntityType, t)
+	s.orig.Attributes().PutStr(entityTypeAttributeName(), t)
 }
 
 // SetInterval sets the reporting period
 // i.e. how frequently the information about this entity is reported via EntityState events even if the entity does not change.
 func (s EntityStateDetails) SetInterval(t time.Duration) {
-	s.orig.Attributes().PutInt(semconvOtelEntityInterval, t.Milliseconds())
+	if useEntityEventsSpecification() {
+		s.orig.Attributes().PutInt(semconvOtelEntityInterval, int64(t.Seconds()))
+		return
+	}
+	s.orig.Attributes().PutInt(legacySemconvOtelEntityInterval, t.Milliseconds())
 }
 
 // Interval returns the reporting period
 func (s EntityStateDetails) Interval() time.Duration {
-	t, ok := s.orig.Attributes().Get(semconvOtelEntityInterval)
+	if useEntityEventsSpecification() {
+		t, ok := s.orig.Attributes().Get(semconvOtelEntityInterval)
+		if !ok {
+			return 0
+		}
+		return time.Duration(t.Int()) * time.Second
+	}
+
+	t, ok := s.orig.Attributes().Get(legacySemconvOtelEntityInterval)
 	if !ok {
 		return 0
 	}
+
 	return time.Duration(t.Int()) * time.Millisecond
 }
 
@@ -204,7 +253,7 @@ type EntityDeleteDetails struct {
 // EntityType returns the type of the entity.
 // TODO: Move the entity type methods to EntityEvent as they are needed for both EntityState and EntityDelete events.
 func (d EntityDeleteDetails) EntityType() string {
-	t, ok := d.orig.Attributes().Get(semconvOtelEntityType)
+	t, ok := d.orig.Attributes().Get(entityTypeAttributeName())
 	if !ok {
 		return ""
 	}
@@ -213,5 +262,52 @@ func (d EntityDeleteDetails) EntityType() string {
 
 // SetEntityType sets the type of the entity.
 func (d EntityDeleteDetails) SetEntityType(t string) {
-	d.orig.Attributes().PutStr(semconvOtelEntityType, t)
+	d.orig.Attributes().PutStr(entityTypeAttributeName(), t)
+}
+
+// DeletionReason returns the reason for entity deletion.
+func (d EntityDeleteDetails) DeletionReason() string {
+	if !useEntityEventsSpecification() {
+		return ""
+	}
+
+	t, ok := d.orig.Attributes().Get(semconvOtelEntityDeletionReason)
+	if !ok {
+		return ""
+	}
+	return t.Str()
+}
+
+// SetDeletionReason sets the reason for entity deletion.
+func (d EntityDeleteDetails) SetDeletionReason(reason string) {
+	if !useEntityEventsSpecification() {
+		return
+	}
+
+	d.orig.Attributes().PutStr(semconvOtelEntityDeletionReason, reason)
+}
+
+func useEntityEventsSpecification() bool {
+	return metadata.PkgExperimentalmetricmetadataUseEntityEventsSpecificationFeatureGate.IsEnabled()
+}
+
+func entityIDAttributeName() string {
+	if useEntityEventsSpecification() {
+		return semconvOtelEntityID
+	}
+	return legacySemconvOtelEntityID
+}
+
+func entityTypeAttributeName() string {
+	if useEntityEventsSpecification() {
+		return semconvOtelEntityType
+	}
+	return legacySemconvOtelEntityType
+}
+
+func entityAttributesAttributeName() string {
+	if useEntityEventsSpecification() {
+		return semconvOtelEntityAttributes
+	}
+	return legacySemconvOtelEntityAttributes
 }

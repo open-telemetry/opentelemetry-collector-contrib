@@ -16,7 +16,7 @@ func SpanFunctions() map[string]ottl.Factory[*ottlspan.TransformContext] {
 	functions := ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()
 
 	spanFunctions := ottl.CreateFactoryMap(
-		ottlfuncs.NewIsRootSpanFactoryNew(),
+		ottlfuncs.NewIsRootSpanFactory(),
 		NewSetSemconvSpanNameFactory(),
 	)
 

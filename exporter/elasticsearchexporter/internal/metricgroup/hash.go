@@ -6,14 +6,43 @@ package metricgroup // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"cmp"
 	"encoding/binary"
-	"hash"
 	"math"
 	"slices"
 
+	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
+
+// kv is a sortable key/value pair used when hashing maps in key-sorted order.
+type kv struct {
+	k string
+	v pcommon.Value
+}
+
+var (
+	// Package-level one-byte slices avoid allocating []byte{0}/[]byte{1} on
+	// every empty/bool value write in the hash hot path.
+	hashByteZero = []byte{0}
+	hashByteOne  = []byte{1}
+)
+
+func resetKVs(kvs []kv, capHint int) []kv {
+	clear(kvs)
+	if cap(kvs) < capHint {
+		return make([]kv, 0, capHint)
+	}
+	return kvs[:0]
+}
+
+func isReservedAttr(k string, extraExcludes []string) bool {
+	switch k {
+	case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace:
+		return true
+	}
+	return slices.Contains(extraExcludes, k)
+}
 
 // mapHashSortedExcludeReservedAttrs is mapHash but ignoring some reserved attributes and is independent of order in Map.
 // e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
@@ -21,62 +50,89 @@ import (
 // TODO(carsonip): https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39377
 // Use opentelemetry-collector-contrib/pkg/pdatautil/hash.go when it can optionally exclude attributes
 // We could have used it now but it'll involve creating a new Map and copying things over.
-func mapHashSortedExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extraExcludes ...string) {
-	type kv struct {
-		k string
-		v pcommon.Value
+func mapHashSortedExcludeReservedAttrs(hasher *xxhash.Digest, kvs []kv, m pcommon.Map, extraExcludes ...string) []kv {
+	kvs = appendSortedKVsExcludeReservedAttrs(resetKVs(kvs, m.Len()), m, extraExcludes...)
+	for i := range kvs {
+		_, _ = hasher.WriteString(kvs[i].k)
+		valueHash(hasher, kvs[i].v)
 	}
-	kvs := make([]kv, 0, m.Len())
+	return kvs
+}
+
+func appendSortedKVsExcludeReservedAttrs(kvs []kv, m pcommon.Map, extraExcludes ...string) []kv {
 	for k, v := range m.All() {
-		switch k {
-		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace:
-			continue
-		}
-		if slices.Contains(extraExcludes, k) {
+		if isReservedAttr(k, extraExcludes) {
 			continue
 		}
 		kvs = append(kvs, kv{k: k, v: v})
 	}
-
 	slices.SortFunc(kvs, func(a, b kv) int {
 		return cmp.Compare(a.k, b.k)
 	})
+	return kvs
+}
 
-	for _, kv := range kvs {
-		hasher.Write([]byte(kv.k))
-		valueHash(hasher, kv.v)
+// writeMergedSortedKVs hashes the ECS merge of resource and datapoint attributes
+// (datapoint wins on key conflict). Both inputs must already be sorted by key.
+func writeMergedSortedKVs(hasher *xxhash.Digest, resourceKVs, dpKVs []kv) {
+	i, j := 0, 0
+	for i < len(resourceKVs) || j < len(dpKVs) {
+		switch {
+		case j >= len(dpKVs):
+			_, _ = hasher.WriteString(resourceKVs[i].k)
+			valueHash(hasher, resourceKVs[i].v)
+			i++
+		case i >= len(resourceKVs):
+			_, _ = hasher.WriteString(dpKVs[j].k)
+			valueHash(hasher, dpKVs[j].v)
+			j++
+		case resourceKVs[i].k < dpKVs[j].k:
+			_, _ = hasher.WriteString(resourceKVs[i].k)
+			valueHash(hasher, resourceKVs[i].v)
+			i++
+		case resourceKVs[i].k > dpKVs[j].k:
+			_, _ = hasher.WriteString(dpKVs[j].k)
+			valueHash(hasher, dpKVs[j].v)
+			j++
+		default:
+			// Equal keys: datapoint overwrites resource.
+			_, _ = hasher.WriteString(dpKVs[j].k)
+			valueHash(hasher, dpKVs[j].v)
+			i++
+			j++
+		}
 	}
 }
 
-func mapHash(hasher hash.Hash, m pcommon.Map) {
+func mapHash(hasher *xxhash.Digest, m pcommon.Map) {
 	for k, v := range m.All() {
-		hasher.Write([]byte(k))
+		_, _ = hasher.WriteString(k)
 		valueHash(hasher, v)
 	}
 }
 
-func valueHash(h hash.Hash, v pcommon.Value) {
+func valueHash(h *xxhash.Digest, v pcommon.Value) {
 	switch v.Type() {
 	case pcommon.ValueTypeEmpty:
-		h.Write([]byte{0})
+		_, _ = h.Write(hashByteZero)
 	case pcommon.ValueTypeStr:
-		h.Write([]byte(v.Str()))
+		_, _ = h.WriteString(v.Str())
 	case pcommon.ValueTypeBool:
 		if v.Bool() {
-			h.Write([]byte{1})
+			_, _ = h.Write(hashByteOne)
 		} else {
-			h.Write([]byte{0})
+			_, _ = h.Write(hashByteZero)
 		}
 	case pcommon.ValueTypeDouble:
-		buf := make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, math.Float64bits(v.Double()))
-		h.Write(buf)
+		var buf [8]byte
+		binary.LittleEndian.PutUint64(buf[:], math.Float64bits(v.Double()))
+		_, _ = h.Write(buf[:])
 	case pcommon.ValueTypeInt:
-		buf := make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, uint64(v.Int()))
-		h.Write(buf)
+		var buf [8]byte
+		binary.LittleEndian.PutUint64(buf[:], uint64(v.Int()))
+		_, _ = h.Write(buf[:])
 	case pcommon.ValueTypeBytes:
-		h.Write(v.Bytes().AsRaw())
+		_, _ = h.Write(v.Bytes().AsRaw())
 	case pcommon.ValueTypeMap:
 		mapHash(h, v.Map())
 	case pcommon.ValueTypeSlice:
@@ -84,7 +140,7 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 	}
 }
 
-func sliceHash(h hash.Hash, s pcommon.Slice) {
+func sliceHash(h *xxhash.Digest, s pcommon.Slice) {
 	for _, item := range s.All() {
 		valueHash(h, item)
 	}

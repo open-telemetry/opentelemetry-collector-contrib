@@ -46,6 +46,7 @@ Editors:
 Available Editors:
 
 - [append](#append)
+- [clear](#clear)
 - [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
@@ -74,6 +75,39 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
+
+### clear
+
+`clear(target)`
+
+The `clear` function reads the current value of `target`, computes that value's default empty form, and passes it to the target's setter. How that value is ultimately applied depends on the specific target implementation.
+
+The table below shows what `clear` passes to setters for the common target types supported by OTTL paths.
+
+| Current target value type | Value passed by `clear` |
+| --- | --- |
+| `string` | `""` |
+| `int64` | `0` |
+| `float64` | `0` |
+| `bool` | `false` |
+| `[]byte` | `nil` |
+| slices (for example `[]any`) | `nil` |
+| maps (for example `map[string]any`) | `nil` |
+| `pcommon.Map` | empty `pcommon.Map` |
+| `pcommon.Slice` | empty `pcommon.Slice` |
+| `pcommon.Value` | empty `pcommon.Value` |
+| `pcommon.TraceID` | empty TraceID (`[16]byte{}`) |
+| `pcommon.SpanID` | empty SpanID (`[8]byte{}`) |
+| `time.Time` | `time.Time{}` |
+| `time.Duration` | `0` |
+| pointers | `nil` pointer |
+| `nil` | `nil` |
+
+Whether `nil` is accepted depends on the target setter. Some setters treat `nil` as "clear the field", while others return an error.
+
+**Examples:**
+- `clear(attributes["http.method"])`
+- `clear(resource.attributes["host.name"])`
 
 ### delete_index
 
@@ -428,6 +462,9 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 `set(target, value)`
 
+> [!NOTE]
+> The [`ottl.set.allowNil`](../documentation.md#feature-gates) feature gate changes the behavior of `set` when a `nil` value is passed. Prior to this gate, passing `nil` was a no-op. When enabled, `set` will pass the `nil` value directly to the target, which may result in an error or an empty value depending on the target's underlying type.
+
 The `set` function allows users to set a telemetry field using a value.
 
 `target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
@@ -500,7 +537,6 @@ Available Converters:
 
 - [All](#all)
 - [Any](#any)
-- [Base64Decode](#base64decode-deprecated)
 - [Base64Encode](#base64encode)
 - [Bool](#bool)
 - [Decode](#decode)
@@ -545,6 +581,7 @@ Available Converters:
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
 - [MapEach](#mapeach)
+- [MapKeys](#mapkeys)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -672,23 +709,6 @@ Use in a condition:
 
 - `set(log.attributes["has_prod"], true) where Any(log.attributes["tags"], (_, v) => v == "prod")`
 
-### Base64Decode (Deprecated)
-
-*This function has been deprecated. Please use the [Decode](#decode) function instead.*
-
-`Base64Decode(value)`
-
-The `Base64Decode` Converter takes a base64 encoded string and returns the decoded string.
-
-`value` is a valid base64 encoded string.
-
-Examples:
-
-- `Base64Decode("aGVsbG8gd29ybGQ=")`
-
-
-- `Base64Decode(resource.attributes["encoded field"])`
-
 ### Base64Encode
 
 `Base64Encode(value, Optional[variant])`
@@ -802,7 +822,7 @@ Examples:
 
 The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`values` is a list of values. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`values` can be a list of values or an expression/path that resolves to a slice. Its values support paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
 `delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
@@ -815,6 +835,10 @@ Examples:
 
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
+
+- `Concat(Split(span.attributes["request.id"], "-"), "")`
+
+- `Concat(log.attributes["values"], ",")`
 
 ### ContainsValue
 
@@ -1437,11 +1461,11 @@ The returned type is int64.
 The input `value` types:
 
 - float64. Fraction is discharged (truncation towards zero).
-- string. Trying to parse an integer from string if it fails then nil will be returned.
+- string. Trying to parse an integer from string. If parsing fails, an error is returned.
 - bool. If `value` is true, then the function will return 1 otherwise 0.
 - int64. The function returns the `value` without changes.
 
-If `value` is another type or parsing failed nil is always returned.
+If `value` is `nil`, `nil` is returned. If `value` is an unsupported type or a string that cannot be parsed as an integer, an error is returned.
 
 The `value` is either a path expression to a telemetry field to retrieve or a literal.
 
@@ -1743,6 +1767,40 @@ Stringify map values:
 Store the mapped result:
 
 - `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
+
+### MapKeys
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`MapKeys(source, keyMapper)`
+
+The `MapKeys` converter returns a new `pcommon.Map` with each key transformed by `keyMapper`. Values are unchanged.
+
+`source` is a path expression or another getter that resolves to a map.
+
+`keyMapper` is a lambda expression with exactly two parameters that returns a `string`.
+The first parameter is the element key (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+If `keyMapper` produces duplicate keys, only one value is retained and which one is unspecified. 
+Keys are processed in the order they appear in the `source` map, though this is not guaranteed.
+
+If `source` is not a map, or if `keyMapper` does not return a `string`, it returns an error.
+
+Examples:
+
+Prefix map keys:
+
+- `MapKeys(log.attributes, (k, _) => Concat(["http.", k], ""))`
+
+Derive keys from key and value:
+
+- `MapKeys(log.attributes, (k, v) => Concat([k, ":", String(v)], ""))`
+
+Store the result:
+
+- `set(log.attributes["prefixed"], MapKeys(log.attributes, (k, _) => Concat(["http.", k], "")))`
 
 ### MD5
 

@@ -1,4 +1,4 @@
-awsecsattributes:
+aws_ecs_attributes:
   # check for the container ID in the following resource attributes,
   # the first non-empty value is used
   container_id:

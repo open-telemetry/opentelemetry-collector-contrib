@@ -12,7 +12,7 @@ import (
 
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// Deprecated: [v0.55.0] Use confighttp.ClientConfig instead.
 	httpConfig `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected

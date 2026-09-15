@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/metadata"
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -81,7 +81,7 @@ func TestHandleNonExistingDirectoryWithAnError(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = "/not/a/dir"
 
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
 }
@@ -99,7 +99,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 
 	cfg.Directory = file.Name()
 
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	require.Error(t, err)
 	require.EqualError(t, err, file.Name()+" is not a directory")
 }
@@ -374,7 +374,7 @@ func TestCompactionDirectory(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.ErrorIs(t, xconfmap.Validate(test.config(t)), test.err)
+			require.ErrorIs(t, confmap.Validate(test.config(t)), test.err)
 		})
 	}
 }

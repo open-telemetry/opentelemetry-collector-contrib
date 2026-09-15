@@ -12,6 +12,8 @@ $defs:
       enabled:
         type: boolean
 type: object
-allOf:
-  - $ref: transactions_config
-  - $ref: critical_path_config
+properties:
+  critical_path:
+    $ref: critical_path_config
+  transactions:
+    $ref: transactions_config

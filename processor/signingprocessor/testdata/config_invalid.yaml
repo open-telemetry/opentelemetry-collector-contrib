@@ -1,0 +1,53 @@
+# Signing processor — invalid configurations used in negative tests.
+
+# Missing key_source.type (empty type triggers errInvalidKeySourceType).
+signing/missing_key_source:
+  algorithm: RS256
+
+# Invalid algorithm.
+signing/bad_hash:
+  algorithm: MD5
+  key_source:
+    type: file
+    file:
+      cert_file: /etc/otelcol/cert.pem
+      key_file:  /etc/otelcol/key.pem
+
+# Invalid certificate_ref value.
+signing/bad_cert_ref:
+  certificate_ref: base64
+  key_source:
+    type: file
+    file:
+      cert_file: /etc/otelcol/cert.pem
+      key_file:  /etc/otelcol/key.pem
+
+# file provider — missing cert_file.
+signing/file_missing_cert:
+  key_source:
+    type: file
+    file:
+      key_file: /etc/otelcol/key.pem
+
+# env provider — missing key_env_var.
+signing/env_missing_key:
+  key_source:
+    type: env
+    env:
+      cert_env_var: SIGNING_CERT_PEM
+
+# k8s_secret provider — missing secret name.
+signing/k8s_missing_name:
+  key_source:
+    type: k8s_secret
+    k8s_secret:
+      cert_key: tls.crt
+      key_key:  tls.key
+
+# bao provider — missing secret_path.
+signing/bao_missing_path:
+  key_source:
+    type: bao
+    bao:
+      cert_field: certificate
+      key_field:  private_key

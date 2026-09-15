@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
@@ -329,6 +330,49 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			},
 		},
 		{
+			name:                "integer NHCB without explicit bounds",
+			metricName:          "histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			integerHistogram: &histogram.Histogram{
+				Schema:          histogram.CustomBucketsSchema,
+				Count:           42,
+				Sum:             123.5,
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 1}},
+				PositiveBuckets: []int64{42},
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(42)
+				point.SetSum(123.5)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.BucketCounts().FromRaw([]uint64{42})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "integer NHCB without explicit bounds with zero count",
+			metricName:          "histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			integerHistogram: &histogram.Histogram{
+				Schema: histogram.CustomBucketsSchema,
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetSum(0)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.BucketCounts().FromRaw([]uint64{0})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
 			name:                "integer NHCB that is stale",
 			metricName:          "histogram",
 			intervalStartTimeMs: 11,
@@ -345,6 +389,26 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
 				point.BucketCounts().FromRaw([]uint64{0, 0, 0, 0, 0})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "integer NHCB without explicit bounds that is stale",
+			metricName:          "histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			integerHistogram: &histogram.Histogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    math.Float64frombits(value.StaleNaN),
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				point.BucketCounts().FromRaw([]uint64{0})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -373,6 +437,63 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.BucketCounts().FromRaw([]uint64{15, 20, 15})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
+				return point
+			},
+		},
+		{
+			name:                "float NHCB without explicit bounds",
+			metricName:          "histogram",
+			intervalStartTimeMs: 12,
+			labels:              labels.FromMap(map[string]string{"a": "A"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema:          histogram.CustomBucketsSchema,
+				Count:           42,
+				Sum:             123.5,
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 1}},
+				PositiveBuckets: []float64{42},
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(42)
+				point.SetSum(123.5)
+				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.BucketCounts().FromRaw([]uint64{42})
+				point.Attributes().PutStr("a", "A")
+				return point
+			},
+		},
+		{
+			name:                "float NHCB without explicit bounds with zero count",
+			metricName:          "histogram",
+			intervalStartTimeMs: 12,
+			labels:              labels.FromMap(map[string]string{"a": "A"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema: histogram.CustomBucketsSchema,
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetSum(0)
+				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.BucketCounts().FromRaw([]uint64{0})
+				point.Attributes().PutStr("a", "A")
+				return point
+			},
+		},
+		{
+			name:                "float NHCB without explicit bounds that is stale",
+			metricName:          "histogram",
+			intervalStartTimeMs: 12,
+			labels:              labels.FromMap(map[string]string{"a": "A"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    math.Float64frombits(value.StaleNaN),
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				point.BucketCounts().FromRaw([]uint64{0})
+				point.Attributes().PutStr("a", "A")
 				return point
 			},
 		},
@@ -423,6 +544,44 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			got := hdpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestMetricGroupData_toNHCBDistributionRejectsNonzeroSumWithZeroCount(t *testing.T) {
+	tests := []struct {
+		name             string
+		integerHistogram *histogram.Histogram
+		floatHistogram   *histogram.FloatHistogram
+	}{
+		{
+			name: "integer NHCB",
+			integerHistogram: &histogram.Histogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    123.5,
+			},
+		},
+		{
+			name: "float NHCB",
+			floatHistogram: &histogram.FloatHistogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    123.5,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mp := newMetricFamily("histogram", mc, zap.NewNop(), false, false)
+			lbls := labels.FromMap(map[string]string{"a": "A"})
+			sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
+
+			err := mp.addNHCBSeries(sRef, "histogram", lbls, 11, tt.integerHistogram, tt.floatHistogram)
+			require.NoError(t, err)
+
+			sl := pmetric.NewMetricSlice()
+			mp.appendMetric(sl, false)
+			require.Zero(t, sl.Len())
 		})
 	}
 }
@@ -1023,6 +1182,228 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			got := ndpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestConvertExemplar(t *testing.T) {
+	const (
+		validTraceID = "0102030405060708090a0b0c0d0e0f10"
+		validSpanID  = "0102030405060708"
+	)
+	validTraceIDBytes := [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}
+	validSpanIDBytes := [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
+
+	tests := []struct {
+		name   string
+		labels labels.Labels
+		want   func() pmetric.Exemplar
+	}{
+		{
+			name: "valid ids are converted",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: validSpanID},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.SetTraceID(validTraceIDBytes)
+				e.SetSpanID(validSpanIDBytes)
+				return e
+			},
+		},
+		// Each trace: / span: case below only sets the ID it's testing (the other
+		// is either absent or a known-valid ID), so a copy-paste slip between the
+		// two near-identical branches in convertExemplar shows up as a failure in
+		// the right ID's own test, not silently masked by both branches always
+		// being exercised together with matching validity.
+		{
+			name: "trace: undersized id is not zero padded and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "174137cab66dc880"}, // 16 hex chars / 8 bytes
+				labels.Label{Name: "span_id", Value: validSpanID},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
+				e.SetSpanID(validSpanIDBytes)
+				return e
+			},
+		},
+		{
+			name: "trace: oversized id is not truncated and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, // 36 hex chars / 18 bytes
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
+				return e
+			},
+		},
+		{
+			name: "trace: odd length id is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "174137cab66dc88"}, // 15 hex chars, odd length
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "174137cab66dc88")
+				return e
+			},
+		},
+		{
+			name: "trace: non-hex id is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"}, // 32 chars, not hex
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")
+				return e
+			},
+		},
+		{
+			name: "trace: all-zero id is not a valid id and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: "00000000000000000000000000000000"}, // 32 hex chars, all zero
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("trace_id", "00000000000000000000000000000000")
+				return e
+			},
+		},
+		{
+			name: "span: undersized id is not zero padded and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: "dfa4597a9d"}, // 10 hex chars / 5 bytes
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e.SetTraceID(validTraceIDBytes)
+				return e
+			},
+		},
+		{
+			name: "span: oversized id is not truncated and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "span_id", Value: "719cee4a669fd7d109ff"}, // 20 hex chars / 10 bytes
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				return e
+			},
+		},
+		{
+			name: "span: odd length id is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "span_id", Value: "dfa4597a9"}, // 9 hex chars, odd length
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "dfa4597a9")
+				return e
+			},
+		},
+		{
+			name: "span: non-hex id is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "span_id", Value: "zzzzzzzzzzzzzzzz"}, // 16 chars, not hex
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "zzzzzzzzzzzzzzzz")
+				return e
+			},
+		},
+		{
+			name: "span: all-zero id is not a valid id and is kept as an attribute",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: "0000000000000000"}, // 16 hex chars, all zero
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "0000000000000000")
+				e.SetTraceID(validTraceIDBytes)
+				return e
+			},
+		},
+		{
+			name: "empty value is dropped entirely, matching absent label",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "trace_id", Value: ""},
+				labels.Label{Name: "span_id", Value: ""},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				return e
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pe := exemplar.Exemplar{
+				Value:  1,
+				Ts:     11,
+				Labels: tt.labels,
+			}
+			got := pmetric.NewExemplar()
+			convertExemplar(pe, got)
+			require.Equal(t, tt.want(), got)
 		})
 	}
 }

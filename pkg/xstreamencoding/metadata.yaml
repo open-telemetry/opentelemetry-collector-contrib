@@ -6,4 +6,5 @@ status:
   stability:
     development: [ extension ]
   codeowners:
-    active: [Kavindu-Dodan, axw]
+    active: [Kavindu-Dodan]
+    emeritus: [axw]

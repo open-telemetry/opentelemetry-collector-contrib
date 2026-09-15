@@ -67,7 +67,8 @@ func TestConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config.yaml"), factories)
+		filepath.Join("testdata", "config.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -121,7 +122,8 @@ func TestConfigS3StorageClass(t *testing.T) {
 	factories.Exporters[factory.Type()] = factory
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_storage_class.yaml"), factories)
+		filepath.Join("testdata", "config-s3_storage_class.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -158,7 +160,8 @@ func TestConfigS3ACL(t *testing.T) {
 	factories.Exporters[factory.Type()] = factory
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_acl.yaml"), factories)
+		filepath.Join("testdata", "config-s3_acl.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -196,7 +199,8 @@ func TestConfigS3ACLDefined(t *testing.T) {
 	factories.Exporters[factory.Type()] = factory
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_canned-acl.yaml"), factories)
+		filepath.Join("testdata", "config-s3_canned-acl.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -233,7 +237,8 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3-compatible-systems.yaml"), factories)
+		filepath.Join("testdata", "config-s3-compatible-systems.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -397,7 +402,8 @@ func TestMarshallerName(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "marshaler.yaml"), factories)
+		filepath.Join("testdata", "marshaler.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -451,7 +457,8 @@ func TestCompressionName(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "compression.yaml"), factories)
+		filepath.Join("testdata", "compression.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -527,7 +534,8 @@ func TestResourceAttrsToS3(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_resource-attrs-to-s3.yaml"), factories)
+		filepath.Join("testdata", "config-s3_resource-attrs-to-s3.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -568,7 +576,8 @@ func TestRetry(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "retry.yaml"), factories)
+		filepath.Join("testdata", "retry.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -606,7 +615,8 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 	factories.Exporters[factory.Type()] = factory
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_unique_key_func.yaml"), factories)
+		filepath.Join("testdata", "config-s3_unique_key_func.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -643,7 +653,8 @@ func TestConfigS3BasePrefix(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_base_prefix.yaml"), factories)
+		filepath.Join("testdata", "config-s3_base_prefix.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -682,7 +693,8 @@ func TestConfigS3BasePrefixWithResourceAttrs(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_base_prefix_with_resource_attrs.yaml"), factories)
+		filepath.Join("testdata", "config-s3_base_prefix_with_resource_attrs.yaml"), factories,
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)

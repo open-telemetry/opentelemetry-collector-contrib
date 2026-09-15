@@ -10,17 +10,20 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/google/pprof/profile"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
 type FileScraper struct {
-	Include string
-	Logger  *zap.Logger
+	Include   string
+	Logger    *zap.Logger
+	BuildInfo component.BuildInfo
 }
 
 func (fs FileScraper) Scrape(_ context.Context) (pprofile.Profiles, error) {
@@ -50,6 +53,16 @@ func (fs FileScraper) Scrape(_ context.Context) (pprofile.Profiles, error) {
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to convert pprof to profiles from %s: %w", match, err))
 			continue
+		}
+
+		// set ScopeName and Version
+		for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+			rp := profiles.ResourceProfiles().At(i)
+			for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+				sp := rp.ScopeProfiles().At(j)
+				sp.Scope().SetName(metadata.ScopeName + "/filescraper")
+				sp.Scope().SetVersion(fs.BuildInfo.Version)
+			}
 		}
 
 		if err := profiles.MergeTo(result); err != nil {

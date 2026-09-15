@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -42,6 +43,15 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 
 	if err := r.setStorageClient(ctx, host); err != nil {
 		return fmt.Errorf("storage client: %w", err)
+	}
+
+	// Offer the host to operators that opt in via HostSetter (e.g. tcp input).
+	// Each operator decides whether it actually needs it (e.g. only when an
+	// auth extension is configured).
+	for _, op := range r.pipe.Operators() {
+		if hs, ok := op.(operator.HostSetter); ok {
+			hs.SetHost(host)
+		}
 	}
 
 	if err := r.pipe.Start(r.storageClient); err != nil {

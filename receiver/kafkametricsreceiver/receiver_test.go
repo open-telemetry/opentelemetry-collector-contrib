@@ -50,7 +50,8 @@ func TestNewReceiver(t *testing.T) {
 		return scraper.NewMetrics(
 			func(context.Context) (pmetric.Metrics, error) {
 				return pmetric.Metrics{}, nil
-			})
+			},
+		)
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(t.Context(), *c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())

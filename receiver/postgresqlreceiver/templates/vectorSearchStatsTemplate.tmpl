@@ -1,0 +1,32 @@
+-- Distance-function classification is purely text based; it cannot resolve which operator
+-- implementation a query actually invokes. The `(^|[^<])<->(?!>)` pattern excludes pg_trgm's
+-- word-similarity variants (<<->, <->>, <<->>), but pg_trgm also overloads the plain `<->`
+-- operator for text similarity. When both pg_trgm and pgvector are installed, a query such as
+-- `ORDER BY text_col <-> 'abc'` is indistinguishable from a pgvector L2 search and is counted as
+-- `l2`. This limitation is documented in the metric documentation.
+SELECT
+  CASE
+    WHEN query ~ '<=>'            OR query ~* '\mcosine_distance\M'  THEN 'cosine'
+    WHEN query ~ '(^|[^<])<->(?!>)' OR query ~* '\ml2_distance\M'    THEN 'l2'
+    WHEN query ~ '<#>'            OR query ~* '\minner_product\M'    THEN 'inner_product'
+    WHEN query ~ '<\+>' OR query ~* '\ml1_distance\M'      THEN 'l1'
+    WHEN query ~ '<~>'  OR query ~* '\mhamming_distance\M' THEN 'hamming'
+    WHEN query ~ '<%>'  OR query ~* '\mjaccard_distance\M' THEN 'jaccard'
+  END AS distance_function,
+  SUM(calls) AS calls,
+  SUM(total_exec_time) AS total_exec_time,
+  SUM(rows) AS rows_returned
+FROM
+  pg_stat_statements AS pg_stat_statements
+  LEFT JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid
+WHERE
+  datname = current_database()
+  AND query != '<insufficient privilege>'
+  AND query NOT LIKE '/* otel-collector-ignore */%'
+  AND EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')
+  AND (
+    query ~ '<=>|<#>|<\+>|<~>|<%>'
+    OR query ~ '(^|[^<])<->(?!>)'
+    OR query ~* '\m(l2|cosine|l1|hamming|jaccard)_distance\M|\minner_product\M'
+  )
+GROUP BY distance_function;

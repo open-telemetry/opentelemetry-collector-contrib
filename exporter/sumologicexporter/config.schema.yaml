@@ -30,6 +30,8 @@ properties:
   metric_format:
     description: Metrics related configuration The format of metrics you will be sending, either otlp or prometheus (Default is otlp)
     $ref: metric_format_type
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
@@ -38,4 +40,3 @@ properties:
     type: boolean
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
