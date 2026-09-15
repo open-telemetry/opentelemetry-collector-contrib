@@ -26,9 +26,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/counterstore"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/sampler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/samplingstate"
 )
 
 // rootSpanConditionRuleLabel is the sentinel value stamped on the
@@ -317,7 +317,7 @@ func (p *adaptiveTailSamplingProcessor) Start(_ context.Context, host component.
 	type syncTarget struct {
 		name    string
 		sampler *sampler.SharedThroughput
-		store   counterstore.Store
+		store   samplingstate.CounterStore
 		timeout time.Duration
 	}
 	var targets []syncTarget
@@ -351,12 +351,12 @@ func (p *adaptiveTailSamplingProcessor) Start(_ context.Context, host component.
 }
 
 // resolveCounterStore returns the counter store a throughput sampler should
-// publish to: the sampler-state extension named by shared_counters, or a
+// publish to: the sampling-state extension named by shared_counters, or a
 // fresh in-process store when the block is unset. Extensions satisfy
-// counterstore.Store structurally; they do not import the processor.
-func resolveCounterStore(host component.Host, cfg *SharedCountersConfig) (counterstore.Store, error) {
+// samplingstate.CounterStore structurally; they do not import the processor.
+func resolveCounterStore(host component.Host, cfg *SharedCountersConfig) (samplingstate.CounterStore, error) {
 	if cfg == nil {
-		return counterstore.NewMemory(), nil
+		return samplingstate.NewMemoryCounterStore(), nil
 	}
 	if host == nil {
 		return nil, errors.New("shared_counters: no host available to resolve extensions")
@@ -365,7 +365,7 @@ func resolveCounterStore(host component.Host, cfg *SharedCountersConfig) (counte
 	if !ok {
 		return nil, fmt.Errorf("shared_counters: extension %q not found", cfg.Extension)
 	}
-	store, ok := ext.(counterstore.Store)
+	store, ok := ext.(samplingstate.CounterStore)
 	if !ok {
 		return nil, fmt.Errorf("shared_counters: extension %q does not implement the counter store interface (AddCounts/ReadCounts)", cfg.Extension)
 	}

@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/counterstore"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/sampler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/samplingstate"
 )
 
 // runCounterSync drives one throughput sampler's interval loop: every
@@ -21,7 +21,7 @@ import (
 // Ticks are aligned to wall-clock interval boundaries so instances sharing a
 // store address the same bucket for the same time period and publish at
 // roughly the same moment.
-func (p *adaptiveTailSamplingProcessor) runCounterSync(ctx context.Context, name string, st *sampler.SharedThroughput, store counterstore.Store, timeout time.Duration) {
+func (p *adaptiveTailSamplingProcessor) runCounterSync(ctx context.Context, name string, st *sampler.SharedThroughput, store samplingstate.CounterStore, timeout time.Duration) {
 	defer p.syncWG.Done()
 	interval := st.Interval()
 	if timeout <= 0 {
@@ -59,7 +59,7 @@ func nextBoundary(now time.Time, interval time.Duration) time.Time {
 // timeout, so a store slower than the interval routes into the same fail-open
 // path rather than blocking the loop. The decide path never touches the
 // store, so it is unaffected either way.
-func (p *adaptiveTailSamplingProcessor) syncCounters(ctx context.Context, now time.Time, name string, st *sampler.SharedThroughput, store counterstore.Store, timeout time.Duration) {
+func (p *adaptiveTailSamplingProcessor) syncCounters(ctx context.Context, now time.Time, name string, st *sampler.SharedThroughput, store samplingstate.CounterStore, timeout time.Duration) {
 	interval := st.Interval()
 	// The tick fires at (or just after) a bucket boundary; stepping back half
 	// an interval indexes the bucket that just completed.

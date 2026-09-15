@@ -275,7 +275,7 @@ type SamplerConfig struct {
 	LookbackFrequency time.Duration `mapstructure:"lookback_frequency"`
 
 	// SharedCounters publishes the sampler's per-interval traffic counts to a
-	// sampler-state extension shared by multiple collector instances, making
+	// sampling-state extension shared by multiple collector instances, making
 	// GoalThroughput the combined budget for the fleet instead of a
 	// per-instance budget. Unset, counts stay in process and GoalThroughput
 	// is per-instance.
@@ -287,10 +287,10 @@ type SamplerConfig struct {
 }
 
 // SharedCountersConfig connects an adaptive_throughput sampler to a
-// sampler-state extension that merges traffic counts across collector
+// sampling-state extension that merges traffic counts across collector
 // instances.
 type SharedCountersConfig struct {
-	// Extension is the component ID of the sampler-state extension to publish
+	// Extension is the component ID of the sampling-state extension to publish
 	// counts to and read merged counts from. The extension must implement the
 	// counter-store interface (AddCounts/ReadCounts). Required.
 	Extension component.ID `mapstructure:"extension"`

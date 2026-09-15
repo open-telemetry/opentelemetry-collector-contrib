@@ -343,7 +343,7 @@ sampler:
 
 ##### Sharing the throughput budget across instances
 
-`shared_counters` connects the sampler to a sampler-state extension that
+`shared_counters` connects the sampler to a sampling-state extension that
 merges per-interval traffic counts across collector instances. Every instance
 publishes what it saw and reads back the fleet-wide totals, then recomputes
 the same rate table locally, making `goal_throughput` the combined budget for
@@ -356,12 +356,12 @@ sampler:
   fingerprint_attributes:
     - resource.attributes["service.name"]
   shared_counters:
-    extension: my_sampler_state           # component ID of a sampler-state extension
+    extension: my_sampler_state           # component ID of a sampling-state extension
     sync_timeout: 5s                      # per round-trip bound; 0 or omitted = half the interval
 ```
 
 The named extension must implement the counter-store contract
-(`AddCounts`/`ReadCounts`, see `internal/counterstore`); no such extension
+(`AddCounts`/`ReadCounts`, see `internal/samplingstate`); no such extension
 ships in this repository yet. All instances sharing a store must configure the
 same rule name, goal, algorithm, and intervals, since each instance recomputes
 rates from the merged counts independently.
@@ -549,7 +549,7 @@ SDKs → Collectors (loadbalancing exporter, hash by traceID)
            → Backend
 ```
 
-Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances by default. For `adaptive_throughput` (with either algorithm) this means `goal_throughput` is a **per-instance** target: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it. Alternatively, configure `shared_counters` with a sampler-state extension to merge traffic counts across the fleet and make `goal_throughput` a fleet-wide budget (see the `adaptive_throughput` section). The percentage-based samplers (`adaptive_percentage`, `probabilistic`) are unaffected, since a target percentage composes across instances.
+Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances by default. For `adaptive_throughput` (with either algorithm) this means `goal_throughput` is a **per-instance** target: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it. Alternatively, configure `shared_counters` with a sampling-state extension to merge traffic counts across the fleet and make `goal_throughput` a fleet-wide budget (see the `adaptive_throughput` section). The percentage-based samplers (`adaptive_percentage`, `probabilistic`) are unaffected, since a target percentage composes across instances.
 
 ## Known limitations
 

@@ -20,10 +20,10 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/counterstore"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/sampler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/samplingstate"
 )
 
 // fakeHost supplies extensions to Start without a full collector runtime.
@@ -33,11 +33,11 @@ type fakeHost struct {
 
 func (h *fakeHost) GetExtensions() map[component.ID]component.Component { return h.exts }
 
-// fakeCounterExtension satisfies counterstore.Store structurally (the way a
-// real sampler-state extension would, without importing the processor) plus
+// fakeCounterExtension satisfies samplingstate.CounterStore structurally (the way a
+// real sampling-state extension would, without importing the processor) plus
 // the component lifecycle.
 type fakeCounterExtension struct {
-	store *counterstore.Memory
+	store *samplingstate.MemoryCounterStore
 }
 
 func (*fakeCounterExtension) Start(context.Context, component.Host) error { return nil }
@@ -63,12 +63,12 @@ func TestResolveCounterStore(t *testing.T) {
 	t.Run("unset config defaults to in-memory", func(t *testing.T) {
 		store, err := resolveCounterStore(nil, nil)
 		require.NoError(t, err)
-		assert.IsType(t, &counterstore.Memory{}, store)
+		assert.IsType(t, &samplingstate.MemoryCounterStore{}, store)
 	})
 
 	t.Run("extension resolved structurally", func(t *testing.T) {
 		host := &fakeHost{exts: map[component.ID]component.Component{
-			extID: &fakeCounterExtension{store: counterstore.NewMemory()},
+			extID: &fakeCounterExtension{store: samplingstate.NewMemoryCounterStore()},
 		}}
 		store, err := resolveCounterStore(host, &SharedCountersConfig{Extension: extID})
 		require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestProcessorStart_SharedCountersExtensionMissing(t *testing.T) {
 
 func TestProcessor_SharedCountersEndToEnd(t *testing.T) {
 	extID := component.MustNewID("redis_sampler_state")
-	ext := &fakeCounterExtension{store: counterstore.NewMemory()}
+	ext := &fakeCounterExtension{store: samplingstate.NewMemoryCounterStore()}
 	sink := &consumertest.TracesSink{}
 	cfg := throughputTestConfig(&SharedCountersConfig{Extension: extID})
 	require.NoError(t, cfg.Validate())
@@ -165,7 +165,7 @@ func TestSyncCounters_AppliesMergedCounts(t *testing.T) {
 	p, err := newProcessor(processortest.NewNopSettings(metadata.Type), throughputTestConfig(nil), &consumertest.TracesSink{})
 	require.NoError(t, err)
 	st := p.rules[0].sampler.(*sampler.SharedThroughput)
-	store := counterstore.NewMemory()
+	store := samplingstate.NewMemoryCounterStore()
 
 	// Heavy traffic on one key: after a sync tick the rate must move off the
 	// bootstrap value of 10.
@@ -184,7 +184,7 @@ func TestSyncCounters_MergesAcrossInstances(t *testing.T) {
 		return p.rules[0].sampler.(*sampler.SharedThroughput)
 	}
 	a, b := newInstance(), newInstance()
-	store := counterstore.NewMemory()
+	store := samplingstate.NewMemoryCounterStore()
 	pa, err := newProcessor(processortest.NewNopSettings(metadata.Type), throughputTestConfig(nil), sink)
 	require.NoError(t, err)
 
@@ -212,7 +212,7 @@ func TestSyncCounters_MergesAcrossInstances(t *testing.T) {
 type erroringStore struct {
 	failAdd  bool
 	failRead bool
-	inner    *counterstore.Memory
+	inner    *samplingstate.MemoryCounterStore
 }
 
 func (s *erroringStore) AddCounts(ctx context.Context, samplerID string, bucket int64, counts map[string]float64) error {
@@ -235,8 +235,8 @@ func TestSyncCounters_FailsOpenOnStoreErrors(t *testing.T) {
 		store *erroringStore
 		op    string
 	}{
-		{name: "add fails", store: &erroringStore{failAdd: true, inner: counterstore.NewMemory()}, op: "add"},
-		{name: "read fails", store: &erroringStore{failRead: true, inner: counterstore.NewMemory()}, op: "read"},
+		{name: "add fails", store: &erroringStore{failAdd: true, inner: samplingstate.NewMemoryCounterStore()}, op: "add"},
+		{name: "read fails", store: &erroringStore{failRead: true, inner: samplingstate.NewMemoryCounterStore()}, op: "read"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tt := componenttest.NewTelemetry()
@@ -272,7 +272,7 @@ func TestSyncCounters_FailsOpenOnStoreErrors(t *testing.T) {
 type blockingStore struct {
 	blockAdd  bool
 	blockRead bool
-	inner     *counterstore.Memory
+	inner     *samplingstate.MemoryCounterStore
 }
 
 func (s *blockingStore) AddCounts(ctx context.Context, samplerID string, bucket int64, counts map[string]float64) error {
@@ -297,8 +297,8 @@ func TestSyncCounters_TimeoutFailsOpen(t *testing.T) {
 		store *blockingStore
 		op    string
 	}{
-		{name: "add times out", store: &blockingStore{blockAdd: true, inner: counterstore.NewMemory()}, op: "add"},
-		{name: "read times out", store: &blockingStore{blockRead: true, inner: counterstore.NewMemory()}, op: "read"},
+		{name: "add times out", store: &blockingStore{blockAdd: true, inner: samplingstate.NewMemoryCounterStore()}, op: "add"},
+		{name: "read times out", store: &blockingStore{blockRead: true, inner: samplingstate.NewMemoryCounterStore()}, op: "read"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tt := componenttest.NewTelemetry()

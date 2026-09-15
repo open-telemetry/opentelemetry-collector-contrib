@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package counterstore
+package samplingstate
 
 import (
 	"testing"
@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMemory_AddMergesAdditively(t *testing.T) {
-	m := NewMemory()
+func TestMemoryCounterStore_AddMergesAdditively(t *testing.T) {
+	m := NewMemoryCounterStore()
 	ctx := t.Context()
 
 	// Two writers (instances) into the same sampler and bucket.
@@ -23,8 +23,8 @@ func TestMemory_AddMergesAdditively(t *testing.T) {
 	assert.Equal(t, map[string]float64{"svc-1": 17, "svc-2": 5, "svc-3": 2}, merged)
 }
 
-func TestMemory_BucketsAndSamplersAreIsolated(t *testing.T) {
-	m := NewMemory()
+func TestMemoryCounterStore_BucketsAndSamplersAreIsolated(t *testing.T) {
+	m := NewMemoryCounterStore()
 	ctx := t.Context()
 
 	require.NoError(t, m.AddCounts(ctx, "rule-a", 100, map[string]float64{"svc-1": 10}))
@@ -39,16 +39,16 @@ func TestMemory_BucketsAndSamplersAreIsolated(t *testing.T) {
 	assert.Equal(t, map[string]float64{"svc-1": 3}, merged)
 }
 
-func TestMemory_UnwrittenBucketReadsEmpty(t *testing.T) {
-	m := NewMemory()
+func TestMemoryCounterStore_UnwrittenBucketReadsEmpty(t *testing.T) {
+	m := NewMemoryCounterStore()
 	merged, err := m.ReadCounts(t.Context(), "rule-a", 42)
 	require.NoError(t, err)
 	assert.Empty(t, merged)
 	assert.NotNil(t, merged)
 }
 
-func TestMemory_ReadReturnsCallerOwnedCopy(t *testing.T) {
-	m := NewMemory()
+func TestMemoryCounterStore_ReadReturnsCallerOwnedCopy(t *testing.T) {
+	m := NewMemoryCounterStore()
 	ctx := t.Context()
 	require.NoError(t, m.AddCounts(ctx, "rule-a", 100, map[string]float64{"svc-1": 10}))
 
@@ -62,8 +62,8 @@ func TestMemory_ReadReturnsCallerOwnedCopy(t *testing.T) {
 	assert.Equal(t, map[string]float64{"svc-1": 10}, second, "mutating a read result must not affect the store")
 }
 
-func TestMemory_DoesNotRetainCallerMap(t *testing.T) {
-	m := NewMemory()
+func TestMemoryCounterStore_DoesNotRetainCallerMap(t *testing.T) {
+	m := NewMemoryCounterStore()
 	ctx := t.Context()
 	counts := map[string]float64{"svc-1": 10}
 	require.NoError(t, m.AddCounts(ctx, "rule-a", 100, counts))
@@ -74,8 +74,8 @@ func TestMemory_DoesNotRetainCallerMap(t *testing.T) {
 	assert.Equal(t, map[string]float64{"svc-1": 10}, merged, "mutating the input map must not affect the store")
 }
 
-func TestMemory_PrunesOldBuckets(t *testing.T) {
-	m := NewMemory()
+func TestMemoryCounterStore_PrunesOldBuckets(t *testing.T) {
+	m := NewMemoryCounterStore()
 	ctx := t.Context()
 	require.NoError(t, m.AddCounts(ctx, "rule-a", 100, map[string]float64{"svc-1": 1}))
 	require.NoError(t, m.AddCounts(ctx, "rule-a", 100+retainedBuckets, map[string]float64{"svc-1": 1}))
