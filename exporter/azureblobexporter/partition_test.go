@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"testing/synctest"
 	"text/template"
 	"time"
 
@@ -25,6 +26,44 @@ import (
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 )
+
+// TestPartitionUploadsGroupsSequentially verifies the exporter's scheduling
+// contract: groups within one export request are uploaded one at a time, so
+// concurrency is governed only by the sending queue's num_consumers. It runs
+// inside a synctest bubble with a bubble-local gate and no exporterhelper queue,
+// so synctest.Wait proves quiescence rather than relying on timing.
+func TestPartitionUploadsGroupsSequentially(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+		exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+
+		started := make(chan string, 3)
+		release := make(chan struct{})
+		client := &mockAzBlobClient{url: "http://mock"}
+		client.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).
+			Run(func(args mock.Arguments) {
+				started <- args.String(2)
+				<-release
+			}).Return(nil)
+		exporter.client = client
+
+		done := make(chan error, 1)
+		go func() {
+			done <- exporter.ConsumeLogs(t.Context(), generateLogsWithActivities("a", "b", "c"))
+		}()
+
+		for _, want := range []string{"a.json", "b.json", "c.json"} {
+			synctest.Wait()
+			require.Len(t, started, 1, "a second upload must not start while one is in flight")
+			require.Equal(t, want, <-started)
+			release <- struct{}{}
+		}
+		synctest.Wait()
+		require.NoError(t, <-done)
+		client.AssertNumberOfCalls(t, "AppendBlock", 3)
+	})
+}
 
 func TestPartitionCancellationPreservesUnsentLogs(t *testing.T) {
 	for _, tc := range []struct {
