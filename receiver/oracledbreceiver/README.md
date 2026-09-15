@@ -312,6 +312,53 @@ GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
+## AWS RDS Oracle grants
+
+Run the following as the master/admin user using `rdsadmin.rdsadmin_util.grant_sys_object` to grant permissions on the required views.
+The following grants cover all metrics and events collected by this receiver:
+
+```sql
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SYSMETRIC',      '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CON_SYSMETRIC',  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CONTAINERS',     '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SESSION',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SESSION_EVENT',  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SYSSTAT',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CON_SYSSTAT',    '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$OSSTAT',         '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SGAINFO',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL',            '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL_PLAN',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL_PLAN_STATISTICS_ALL', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PARAMETER',      '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$ROWCACHE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$RESOURCE_LIMIT', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$LOCK',           '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PROCESS',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$TRANSACTION',    '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$DATABASE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$INSTANCE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$DATAFILE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PDBS',           '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_DATA_FILES',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_FREE_SPACE',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_RECYCLEBIN',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_TABLESPACES',              '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_TABLESPACE_USAGE_METRICS', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_PROCEDURES',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_OBJECTS',                  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_TABLESPACE_USAGE_METRICS', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_TABLESPACES',              '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_SERVICES',                 '<username>', 'SELECT', false);
+GRANT CREATE SESSION TO <username>;
+```
+
+On a direct-PDB connection, `oracledb.transactions.limit` and `oracledb.dml_locks.limit`
+are derived from `v$parameter` rather than `v$resource_limit`. If those resources are
+left at Oracle's auto-tuned default, this reports the real computed value (e.g. `354`)
+instead of `-1` (unlimited) as a root/standalone connection would — the same metric name
+can carry a different meaning depending on connection type.
+
 ## Enabling metrics.
 
 See [documentation](./documentation.md).
