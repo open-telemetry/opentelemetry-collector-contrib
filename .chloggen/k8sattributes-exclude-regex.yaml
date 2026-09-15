@@ -1,0 +1,6 @@
+﻿change_type: bug_fix
+component: processor/k8s_attributes
+note: Reject an invalid `exclude.pods[].name` regex at config load instead of panicking at startup
+issues: [50957]
+subtext:
+change_logs: [user]
