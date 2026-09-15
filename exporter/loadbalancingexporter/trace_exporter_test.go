@@ -331,48 +331,13 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	<-consumeDone
 }
 
+// TestConsumeTracesServiceBased verifies that service-based routing splits traces across
+// backends deterministically: every span for a service lands on exactly the backend the
+// consistent-hash ring selects for that service name.
 func TestConsumeTracesServiceBased(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
-	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
-		return newNopMockTracesExporter(), nil
-	}
-	lb, err := newLoadBalancer(ts.Logger, serviceBasedRoutingConfig(), componentFactory, tb)
-	require.NotNil(t, lb)
-	require.NoError(t, err)
 
-	p, err := newTracesExporter(ts, serviceBasedRoutingConfig())
-	require.NotNil(t, p)
-	require.NoError(t, err)
-	assert.Equal(t, svcRouting, p.routingKey)
-
-	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(t.Context(), []string{"endpoint-1"})
-	lb.addMissingExporters(t.Context(), []string{"endpoint-2"})
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(_ context.Context) ([]string, error) {
-			return []string{"endpoint-1", "endpoint-2"}, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	err = p.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	// test
-	res := p.ConsumeTraces(t.Context(), simpleTracesWithServiceName())
-
-	// verify
-	assert.NoError(t, res)
-}
-
-// This test validates that traces are correctly split.
-func TestConsumeTracesServiceBased_VerifiesCorrectRouting(t *testing.T) {
-	ts, tb := getTelemetryAssets(t)
-
+	// ConsumeTraces runs the export loop synchronously, so no locking is needed here.
 	received := map[string]ptrace.Traces{}
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
 		te := &mockTracesExporter{Component: mockComponent{}}
@@ -419,22 +384,28 @@ func TestConsumeTracesServiceBased_VerifiesCorrectRouting(t *testing.T) {
 
 	// Build input: 3 services with 2 spans each, using distinct trace IDs to also
 	// exercise the SplitTraces path that splits by (ResourceSpans, ScopeSpans, TraceID).
+	services := []string{"svc-alpha", "svc-beta", "svc-gamma"}
 	td := ptrace.NewTraces()
-	for _, svc := range []struct {
-		name string
-		tid1 pcommon.TraceID
-		tid2 pcommon.TraceID
-	}{
-		{"svc-alpha", pcommon.TraceID{1}, pcommon.TraceID{2}},
-		{"svc-beta", pcommon.TraceID{3}, pcommon.TraceID{4}},
-		{"svc-gamma", pcommon.TraceID{5}, pcommon.TraceID{6}},
-	} {
+	for i, svc := range services {
 		rs := td.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().PutStr("service.name", svc.name)
+		rs.Resource().Attributes().PutStr("service.name", svc)
 		ss := rs.ScopeSpans().AppendEmpty()
-		ss.Spans().AppendEmpty().SetTraceID(svc.tid1)
-		ss.Spans().AppendEmpty().SetTraceID(svc.tid2)
+		ss.Spans().AppendEmpty().SetTraceID(pcommon.TraceID{byte(i*2 + 1)})
+		ss.Spans().AppendEmpty().SetTraceID(pcommon.TraceID{byte(i*2 + 2)})
 	}
+
+	// Precompute expected backend for each service before calling ConsumeTraces.
+	expectedEndpoint := make(map[string]string, len(services))
+	distinctEndpoints := map[string]bool{}
+	for _, svc := range services {
+		routingKey := buildAttributeRoutingKeyStrValue("service.name", svc)
+		ep := endpointWithPort(lb.ring.endpointFor([]byte(routingKey)))
+		expectedEndpoint[svc] = ep
+		distinctEndpoints[ep] = true
+	}
+
+	require.Greater(t, len(distinctEndpoints), 1,
+		"service names must hash to at least two distinct endpoints; update service names if the ring layout changed")
 
 	require.NoError(t, p.ConsumeTraces(t.Context(), td))
 
@@ -447,11 +418,6 @@ func TestConsumeTracesServiceBased_VerifiesCorrectRouting(t *testing.T) {
 			require.True(t, ok, "service.name attribute must be present on every ResourceSpans")
 			svcName := svcAttr.Str()
 
-			// Compute the expected backend for this service name using the same
-			// routing key format as routingIdentifiersFromTraces ("service.name=<value>|").
-			routingKey := buildAttributeRoutingKeyStrValue("service.name", svcName)
-			expectedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(routingKey)))
-
 			sss := rs.ScopeSpans()
 			for j := 0; j < sss.Len(); j++ {
 				spans := sss.At(j).Spans()
@@ -459,9 +425,9 @@ func TestConsumeTracesServiceBased_VerifiesCorrectRouting(t *testing.T) {
 					totalSpans++
 					// Regression check: spans for a service must only appear on the
 					// one backend that service hashes to.
-					assert.Equal(t, expectedEndpoint, endpoint,
+					assert.Equal(t, expectedEndpoint[svcName], endpoint,
 						"spans for service %q landed on %q but should be on %q",
-						svcName, endpoint, expectedEndpoint)
+						svcName, endpoint, expectedEndpoint[svcName])
 				}
 			}
 		}
