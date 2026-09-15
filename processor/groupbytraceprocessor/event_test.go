@@ -669,3 +669,20 @@ func (*testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) met
 func (tt *testTelemetry) Shutdown(ctx context.Context) error {
 	return tt.meterProvider.Shutdown(ctx)
 }
+
+// The event name is used as an attribute value on the event latency metric, so
+// every event type needs a distinct name and none may fall through to "unknown".
+func TestEventTypeString(t *testing.T) {
+	all := []eventType{
+		traceReceived, traceExpired, traceReleased, traceRemoved,
+		subtraceExpired, subtraceReleased, subtraceRemoved,
+	}
+	seen := make(map[string]bool, len(all))
+	for _, typ := range all {
+		name := typ.String()
+		assert.NotEqual(t, "unknown", name, "event type %d has no name", int(typ))
+		assert.False(t, seen[name], "duplicate event name %q", name)
+		seen[name] = true
+	}
+	assert.Equal(t, "unknown", eventType(-1).String())
+}

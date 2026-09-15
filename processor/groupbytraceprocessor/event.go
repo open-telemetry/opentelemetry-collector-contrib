@@ -32,6 +32,17 @@ const (
 
 	// traceID to be removed
 	traceRemoved
+
+	// Subtrace events. Only used when EmitStrategy == EmitStrategyService:
+
+	// subtraceID whose wait timer has fired
+	subtraceExpired
+
+	// assembled ptrace.Traces ready for the next consumer
+	subtraceReleased
+
+	// subtraceID to be removed from storage
+	subtraceRemoved
 )
 
 var (
@@ -56,6 +67,26 @@ type (
 	}
 )
 
+func (t eventType) String() string {
+	switch t {
+	case traceReceived:
+		return "onTraceReceived"
+	case traceExpired:
+		return "onTraceExpired"
+	case traceReleased:
+		return "onTraceReleased"
+	case traceRemoved:
+		return "onTraceRemoved"
+	case subtraceExpired:
+		return "subtrace_expired"
+	case subtraceReleased:
+		return "subtrace_released"
+	case subtraceRemoved:
+		return "subtrace_removed"
+	}
+	return "unknown"
+}
+
 type tracesWithID struct {
 	id pcommon.TraceID
 	td ptrace.Traces
@@ -78,6 +109,10 @@ type eventMachine struct {
 	onTraceExpired  func(traceID pcommon.TraceID, worker *eventMachineWorker) error
 	onTraceReleased func(rss []ptrace.ResourceSpans) error
 	onTraceRemoved  func(traceID pcommon.TraceID) error
+
+	onSubtraceExpired  func(id subtraceID, worker *eventMachineWorker) error
+	onSubtraceReleased func(td ptrace.Traces) error
+	onSubtraceRemoved  func(id subtraceID, worker *eventMachineWorker) error
 
 	onError func(event)
 
@@ -146,7 +181,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 	switch e.typ {
 	case traceReceived:
 		if em.onTraceReceived == nil {
-			em.logger.Debug("onTraceReceived not set, skipping event")
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
@@ -157,12 +192,12 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceReceived", func() error {
+		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceReceived(payload, w)
 		})
 	case traceExpired:
 		if em.onTraceExpired == nil {
-			em.logger.Debug("onTraceExpired not set, skipping event")
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
@@ -173,12 +208,12 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceExpired", func() error {
+		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceExpired(payload, w)
 		})
 	case traceReleased:
 		if em.onTraceReleased == nil {
-			em.logger.Debug("onTraceReleased not set, skipping event")
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
@@ -189,12 +224,12 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceReleased", func() error {
+		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceReleased(payload)
 		})
 	case traceRemoved:
 		if em.onTraceRemoved == nil {
-			em.logger.Debug("onTraceRemoved not set, skipping event")
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
@@ -205,11 +240,53 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceRemoved", func() error {
+		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceRemoved(payload)
 		})
+	case subtraceExpired:
+		if em.onSubtraceExpired == nil {
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
+			em.callOnError(e)
+			return
+		}
+		payload, ok := e.payload.(subtraceID)
+		if !ok {
+			em.callOnError(e)
+			return
+		}
+		em.handleEventWithObservability(e.typ, func() error {
+			return em.onSubtraceExpired(payload, w)
+		})
+	case subtraceReleased:
+		if em.onSubtraceReleased == nil {
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
+			em.callOnError(e)
+			return
+		}
+		payload, ok := e.payload.(ptrace.Traces)
+		if !ok {
+			em.callOnError(e)
+			return
+		}
+		em.handleEventWithObservability(e.typ, func() error {
+			return em.onSubtraceReleased(payload)
+		})
+	case subtraceRemoved:
+		if em.onSubtraceRemoved == nil {
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
+			em.callOnError(e)
+			return
+		}
+		payload, ok := e.payload.(subtraceID)
+		if !ok {
+			em.callOnError(e)
+			return
+		}
+		em.handleEventWithObservability(e.typ, func() error {
+			return em.onSubtraceRemoved(payload, w)
+		})
 	default:
-		em.logger.Info("unknown event type", zap.Any("event", e.typ))
+		em.logger.Info("unknown event type", zap.Stringer("event", e.typ))
 		em.callOnError(e)
 		return
 	}
@@ -292,27 +369,37 @@ func (em *eventMachine) callOnError(e event) {
 
 // handleEventWithObservability uses the given function to process and event,
 // recording the event's latency and timing out if it doesn't finish within a reasonable duration
-func (em *eventMachine) handleEventWithObservability(event string, do func() error) {
+func (em *eventMachine) handleEventWithObservability(typ eventType, do func() error) {
+	name := typ.String()
 	start := time.Now()
 	succeeded, err := doWithTimeout(time.Second, do)
 	duration := time.Since(start)
-	em.telemetry.ProcessorGroupbytraceEventLatency.Record(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attribute.NewSet(attribute.String("event", event))))
+	em.telemetry.ProcessorGroupbytraceEventLatency.Record(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attribute.NewSet(attribute.String("event", name))))
 
 	if err != nil {
-		em.logger.Error("failed to process event", zap.Error(err), zap.String("event", event))
+		em.logger.Error("failed to process event", zap.Error(err), zap.String("event", name))
 	}
 	if succeeded {
-		em.logger.Debug("event finished", zap.String("event", event))
+		em.logger.Debug("event finished", zap.String("event", name))
 	} else {
-		em.logger.Debug("event aborted", zap.String("event", event))
+		em.logger.Debug("event aborted", zap.String("event", name))
 	}
 }
 
 type eventMachineWorker struct {
 	machine *eventMachine
 
-	// the ring buffer holds the IDs for all the in-flight traces
+	// buffer holds the IDs for all in-flight traces (EmitStrategyTrace).
 	buffer *ringBuffer
+
+	// subtraceBuffer holds the IDs for all in-flight subtraces (EmitStrategyService).
+	subtraceBuffer *subtraceRingBuffer
+
+	// subSt holds the spans buffered for this worker's subtraces
+	// (EmitStrategyService). Traces are routed to a worker by trace ID, so a
+	// worker is the only one to touch its own storage, and workers do not
+	// contend with each other for it.
+	subSt subtraceStorage
 
 	events chan event
 }
