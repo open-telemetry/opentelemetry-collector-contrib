@@ -32,10 +32,10 @@ supports both live system logs and archived log files (`.logarchive`).
 |--------|------|---------|-------------|
 | `archive_path` | string | "" | Path or glob pattern to `.logarchive` directory(ies). If empty, reads live system logs. Supports glob patterns (e.g., `*.logarchive`, `**/logs/*.logarchive`) which will match multiple archives |
 | `predicate` | string | "" | Filter predicate (e.g., `"subsystem == 'com.apple.example'"`) |
-| `start_time` | string | "" | Start time in format "2006-01-02 15:04:05" |
+| `start_time` | string | "" | Start time in format "2006-01-02 15:04:05". In live mode it only applies to the first poll |
 | `end_time` | string | "" | End time in format "2006-01-02 15:04:05" (archive mode only) |
 | `max_poll_interval` | duration | 30s | Maximum interval between polling for new logs (live mode only). Uses exponential backoff starting at 100ms |
-| `max_log_age` | duration | 24h | Maximum age of logs to read on startup (live mode only) |
+| `max_log_age` | duration | 24h | Maximum age of logs to read on startup (live mode only). Later polls resume from the last emitted record |
 | `format` | string | "default" | Output format: `default`, `ndjson`, `json`, `syslog`, or `compact` |
 
 ### Exponential Backoff Behavior
@@ -44,7 +44,12 @@ In live mode, the receiver uses exponential backoff to optimize polling based on
 
 - **Active Logging**: When logs are actively being written, the receiver polls frequently (starting at 100ms) to minimize latency and catch logs written immediately after the previous poll
 - **Idle Period**: When no logs are found, the polling interval increases exponentially (doubling each time) up to `max_poll_interval`
-- **Automatic Reset**: As soon as logs are detected again, the interval resets to the minimum (100ms)
+- **Automatic Reset**: As soon as new logs are detected again, the interval resets to the minimum (100ms)
+
+Each poll resumes from the timestamp of the newest record emitted by the previous poll, so with the `ndjson`,
+`default`, `syslog` and `compact` formats a record is only emitted once. The `json` format prints each record
+across several lines, so no per-line timestamp is available and those records are still emitted on every poll
+that returns them; the same applies to any line without a parseable timestamp.
 
 This approach minimizes both latency during active logging and resource usage during idle periods.
 
@@ -153,7 +158,7 @@ When using JSON formats, each log line is captured as a complete JSON string in 
 
 When using plain text formats, each log line is captured as plain text in the body:
 
-- **Timestamp**: Set to observed time (when the log was received)
+- **Timestamp**: Parsed from the leading timestamp column of the line
 - **Severity**: Not set
 
 ## Example
