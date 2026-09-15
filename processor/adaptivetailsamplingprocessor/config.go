@@ -284,6 +284,34 @@ type SamplerConfig struct {
 	// Used by: adaptive_throughput (algorithm: windowed).
 	LookbackFrequency time.Duration `mapstructure:"lookback_frequency"`
 
+	// SharedCounters publishes the sampler's per-interval traffic counts to a
+	// sampling-state extension shared by multiple collector instances, making
+	// GoalThroughput the combined budget for the fleet instead of a
+	// per-instance budget. Unset, counts stay in process and GoalThroughput
+	// is per-instance.
+	// Used by: adaptive_throughput.
+	SharedCounters *SharedCountersConfig `mapstructure:"shared_counters"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// SharedCountersConfig connects an adaptive_throughput sampler to a
+// sampling-state extension that merges traffic counts across collector
+// instances.
+type SharedCountersConfig struct {
+	// Extension is the component ID of the sampling-state extension to publish
+	// counts to and read merged counts from. The extension must implement the
+	// counter-store interface (AddCounts/ReadCounts). Required.
+	Extension component.ID `mapstructure:"extension"`
+	// SyncTimeout bounds each store round-trip (publish and read) per interval
+	// tick. A call that exceeds it is abandoned and treated as a failure,
+	// failing open to this instance's own counts, so a store that cannot keep
+	// up with the traffic it is meant to control degrades responsiveness by a
+	// bounded amount instead of stalling the sync loop. Should be set well
+	// under the sampler's adjustment interval. 0 (or omitting the field) uses
+	// half the effective interval.
+	SyncTimeout time.Duration `mapstructure:"sync_timeout"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -465,6 +493,14 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
 		}
+		if s.SharedCounters != nil {
+			if s.SharedCounters.Extension == (component.ID{}) {
+				return fmt.Errorf("rule %q: shared_counters.extension is required", ruleName)
+			}
+			if s.SharedCounters.SyncTimeout < 0 {
+				return fmt.Errorf("rule %q: shared_counters.sync_timeout must be non-negative", ruleName)
+			}
+		}
 		if s.InitialSamplingPercentage != nil && (*s.InitialSamplingPercentage <= 0 || *s.InitialSamplingPercentage > 100) {
 			return fmt.Errorf("rule %q: initial_sampling_percentage must be in (0, 100]", ruleName)
 		}
@@ -481,6 +517,7 @@ func (s *SamplerConfig) validate(ruleName string) error {
 				"max_keys":                    true,
 				"adjustment_interval":         true,
 				"weight":                      true,
+				"shared_counters":             true,
 			})
 		case AlgorithmWindowed:
 			if s.UpdateFrequency < 0 {
@@ -497,6 +534,7 @@ func (s *SamplerConfig) validate(ruleName string) error {
 				"max_keys":                    true,
 				"update_frequency":            true,
 				"lookback_frequency":          true,
+				"shared_counters":             true,
 			})
 		default:
 			return fmt.Errorf("rule %q: unknown algorithm %q (must be %q or %q)", ruleName, s.Algorithm, AlgorithmEMA, AlgorithmWindowed)
@@ -557,6 +595,9 @@ func (s *SamplerConfig) rejectUnusedFields(ruleName, typeName string, allowed ma
 		return err
 	}
 	if err := set("lookback_frequency", s.LookbackFrequency != 0); err != nil {
+		return err
+	}
+	if err := set("shared_counters", s.SharedCounters != nil); err != nil {
 		return err
 	}
 	return nil

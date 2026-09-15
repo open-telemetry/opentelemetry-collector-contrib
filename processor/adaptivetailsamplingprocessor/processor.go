@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/sampler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/samplingstate"
 )
 
 // rootSpanConditionRuleLabel is the sentinel value stamped on the
@@ -147,6 +148,11 @@ type adaptiveTailSamplingProcessor struct {
 	// default IsRootSpan(), letting the per-span check skip OTTL entirely.
 	rootSpanFastPath bool
 
+	// syncCancel stops the counter-sync loops Start spawned for throughput
+	// samplers; syncWG waits for them to exit.
+	syncCancel context.CancelFunc
+	syncWG     sync.WaitGroup
+
 	wg sync.WaitGroup
 }
 
@@ -263,6 +269,11 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 		selectors, err := sampler.ParseSelectors(sc.FingerprintAttributes)
 		return s, selectors, err
 	case AdaptiveThroughput:
+		// Both algorithms run through SharedThroughput: counts published to a
+		// counter store each interval, rates recomputed from the merged
+		// totals. Without shared_counters the store is in-process, giving
+		// per-instance behavior through the same path.
+		//
 		// A throughput goal cannot be converted to a sample rate without
 		// observed volume, so the pre-warmup rate comes from the explicit
 		// initial_sampling_percentage bootstrap (default 10%, i.e. 1-in-10).
@@ -270,25 +281,21 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 		if sc.InitialSamplingPercentage != nil {
 			initialPct = *sc.InitialSamplingPercentage
 		}
-		initialRate := max(int(100.0/initialPct), 1)
+		stCfg := sampler.SharedThroughputConfig{
+			GoalThroughputPerSec: float64(sc.GoalThroughput),
+			InitialSamplingRate:  max(int(100.0/initialPct), 1),
+			MaxKeys:              sc.MaxKeys,
+			AdjustmentInterval:   sc.AdjustmentInterval,
+			Weight:               sc.Weight,
+			UpdateFrequency:      sc.UpdateFrequency,
+			LookbackFrequency:    sc.LookbackFrequency,
+		}
 		var s sampler.Sampler
 		var err error
 		if sc.effectiveAlgorithm() == AlgorithmWindowed {
-			s, err = sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-				GoalThroughputPerSec: float64(sc.GoalThroughput),
-				InitialSamplingRate:  initialRate,
-				UpdateFrequency:      sc.UpdateFrequency,
-				LookbackFrequency:    sc.LookbackFrequency,
-				MaxKeys:              sc.MaxKeys,
-			})
+			s, err = sampler.NewSharedWindowedThroughput(stCfg)
 		} else {
-			s, err = sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-				GoalThroughputPerSec: sc.GoalThroughput,
-				InitialSamplingRate:  initialRate,
-				AdjustmentInterval:   sc.AdjustmentInterval,
-				Weight:               sc.Weight,
-				MaxKeys:              sc.MaxKeys,
-			})
+			s, err = sampler.NewSharedEMAThroughput(stCfg)
 		}
 		if err != nil {
 			return nil, nil, err
@@ -306,14 +313,72 @@ func (*adaptiveTailSamplingProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-// Start initializes the embedded samplers.
-func (p *adaptiveTailSamplingProcessor) Start(context.Context, component.Host) error {
+// Start initializes the embedded samplers, resolves the counter store for
+// each throughput sampler (the configured extension, or the in-process
+// default), and spawns their counter-sync loops.
+func (p *adaptiveTailSamplingProcessor) Start(_ context.Context, host component.Host) error {
 	for _, r := range p.rules {
 		if err := r.sampler.Start(); err != nil {
 			return fmt.Errorf("rule %q sampler start: %w", r.name, err)
 		}
 	}
+
+	type syncTarget struct {
+		name    string
+		sampler *sampler.SharedThroughput
+		store   samplingstate.CounterStore
+		timeout time.Duration
+	}
+	var targets []syncTarget
+	for i, r := range p.rules {
+		st, ok := r.sampler.(*sampler.SharedThroughput)
+		if !ok {
+			continue
+		}
+		shared := p.cfg.Rules[i].Sampler.SharedCounters
+		store, err := resolveCounterStore(host, shared)
+		if err != nil {
+			return fmt.Errorf("rule %q: %w", r.name, err)
+		}
+		var timeout time.Duration
+		if shared != nil {
+			timeout = shared.SyncTimeout
+		}
+		targets = append(targets, syncTarget{name: r.name, sampler: st, store: store, timeout: timeout})
+	}
+	if len(targets) == 0 {
+		return nil
+	}
+	// The loops outlive Start's context; Shutdown cancels them.
+	ctx, cancel := context.WithCancel(context.Background())
+	p.syncCancel = cancel
+	for _, t := range targets {
+		p.syncWG.Add(1)
+		go p.runCounterSync(ctx, t.name, t.sampler, t.store, t.timeout)
+	}
 	return nil
+}
+
+// resolveCounterStore returns the counter store a throughput sampler should
+// publish to: the sampling-state extension named by shared_counters, or a
+// fresh in-process store when the block is unset. Extensions satisfy
+// samplingstate.CounterStore structurally; they do not import the processor.
+func resolveCounterStore(host component.Host, cfg *SharedCountersConfig) (samplingstate.CounterStore, error) {
+	if cfg == nil {
+		return samplingstate.NewMemoryCounterStore(), nil
+	}
+	if host == nil {
+		return nil, errors.New("shared_counters: no host available to resolve extensions")
+	}
+	ext, ok := host.GetExtensions()[cfg.Extension]
+	if !ok {
+		return nil, fmt.Errorf("shared_counters: extension %q not found", cfg.Extension)
+	}
+	store, ok := ext.(samplingstate.CounterStore)
+	if !ok {
+		return nil, fmt.Errorf("shared_counters: extension %q does not implement the counter store interface (AddCounts/ReadCounts)", cfg.Extension)
+	}
+	return store, nil
 }
 
 // Shutdown cancels any pending decision timers, stops samplers, and waits for
@@ -365,6 +430,14 @@ func (p *adaptiveTailSamplingProcessor) Shutdown(ctx context.Context) error {
 		}
 		pt.triggerReason = triggerShutdown
 		p.decideTrace(ctx, pt)
+	}
+
+	// Stop the counter-sync loops after the drain: samplers answer from their
+	// last table (and bootstrap) regardless, so ordering only affects whether
+	// one final tick can land mid-drain, which is harmless.
+	if p.syncCancel != nil {
+		p.syncCancel()
+		p.syncWG.Wait()
 	}
 
 	var errs error

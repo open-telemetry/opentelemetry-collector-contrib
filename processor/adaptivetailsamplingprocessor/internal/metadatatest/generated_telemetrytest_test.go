@@ -19,6 +19,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ProcessorAdaptiveTailSamplingCounterSyncErrors.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingDecisionSampleRate.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingDecisionTriggers.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingFingerprintDuration.Record(context.Background(), 1)
@@ -29,6 +30,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorAdaptiveTailSamplingTracesDropped.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingTracesEvicted.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingTracesSampled.Add(context.Background(), 1)
+	AssertEqualProcessorAdaptiveTailSamplingCounterSyncErrors(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingDecisionSampleRate(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())

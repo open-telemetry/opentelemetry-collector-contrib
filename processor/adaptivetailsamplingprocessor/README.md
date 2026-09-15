@@ -353,7 +353,7 @@ sampler:
 ```
 
 > [!IMPORTANT]
-> `goal_throughput` is enforced **per collector instance**. Each instance targets the goal against the traffic it sees, so a fleet of N instances emits up to N times the configured throughput. Divide the backend budget by the instance count when sizing this value. See [Deployment considerations](#deployment-considerations).
+> Without `shared_counters`, `goal_throughput` is enforced **per collector instance**. Each instance targets the goal against the traffic it sees, so a fleet of N instances emits up to N times the configured throughput. Divide the backend budget by the instance count when sizing this value, or configure `shared_counters` to make the goal fleet-wide. See [Deployment considerations](#deployment-considerations).
 
 With `algorithm: windowed`, rate recalculation (`update_frequency`) is
 decoupled from the historical window used for the calculation
@@ -371,6 +371,47 @@ sampler:
   lookback_frequency: 30s                 # historical window; floored to a multiple of update_frequency
   max_keys: 500
 ```
+
+##### Sharing the throughput budget across instances
+
+`shared_counters` connects the sampler to a sampling-state extension that
+merges per-interval traffic counts across collector instances. Every instance
+publishes what it saw and reads back the fleet-wide totals, then recomputes
+the same rate table locally, making `goal_throughput` the combined budget for
+the fleet rather than a per-instance target:
+
+```yaml
+sampler:
+  type: adaptive_throughput
+  goal_throughput: 100                    # fleet-wide spans/sec with shared_counters
+  fingerprint_attributes:
+    - resource.attributes["service.name"]
+  shared_counters:
+    extension: my_sampler_state           # component ID of a sampling-state extension
+    sync_timeout: 5s                      # per round-trip bound; 0 or omitted = half the interval
+```
+
+The named extension must implement the counter-store contract
+(`AddCounts`/`ReadCounts`, see `internal/samplingstate`); no such extension
+ships in this repository yet. All instances sharing a store must configure the
+same rule name, goal, algorithm, and intervals, since each instance recomputes
+rates from the merged counts independently.
+
+Store I/O happens once per adjustment interval on a background goroutine,
+never on the span-processing path. Each round-trip is bounded by
+`sync_timeout` (default: half the effective interval), so a store slower than
+the interval, likely the moment a traffic burst is loading it, is abandoned
+rather than stalling the loop. Store failures and timeouts both fail open: the
+sampler applies its own counts for that interval (per-instance behavior
+against the full goal, which over-samples fleet-wide) rather than stalling,
+logs a warning, and increments
+`otelcol_processor_adaptive_tail_sampling_counter_sync_errors`.
+
+When `shared_counters` is unset, counts stay in process and behavior is
+per-instance, unchanged from earlier releases with one exception: keys beyond
+`max_keys` now sample at the initial rate (1 in 10) instead of being kept
+wholesale (see
+[#50538](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50538)).
 
 ### Fingerprints
 
@@ -539,7 +580,7 @@ SDKs → Collectors (loadbalancing exporter, hash by traceID)
            → Backend
 ```
 
-Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances. For `adaptive_throughput` (with either algorithm) this means `goal_throughput` is a **per-instance** target: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it. The percentage-based samplers (`adaptive_percentage`, `probabilistic`) are unaffected, since a target percentage composes across instances. Automatic cluster-size awareness for the throughput goal is not currently implemented.
+Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances by default. For `adaptive_throughput` (with either algorithm) this means `goal_throughput` is a **per-instance** target: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it. Alternatively, configure `shared_counters` with a sampling-state extension to merge traffic counts across the fleet and make `goal_throughput` a fleet-wide budget (see the `adaptive_throughput` section). The percentage-based samplers (`adaptive_percentage`, `probabilistic`) are unaffected, since a target percentage composes across instances.
 
 ## Known limitations
 
