@@ -4121,6 +4121,33 @@ func TestSupervisor_healthSurvivesOpAMPClientReplacement(t *testing.T) {
 		}
 	})
 
+	t.Run("the whole message reaches a replacement client", func(t *testing.T) {
+		s, _ := newTestSupervisor(t)
+
+		reported := &protobufs.ComponentHealth{
+			Healthy:            false,
+			LastError:          "Agent process PID=1 exited unexpectedly, exit code=1",
+			StartTimeUnixNano:  uint64(time.Unix(1, 0).UnixNano()),
+			StatusTimeUnixNano: uint64(time.Unix(2, 0).UnixNano()),
+			Status:             "StatusPermanentError",
+			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
+				"pipeline:metrics": {Healthy: false, LastError: "exporter shut down"},
+			},
+		}
+		require.NoError(t, s.SetHealth(reported))
+
+		// Stand in for the client startOpAMPClient creates, then run the same seeding
+		// it performs. Asserting the retained health alone would not catch a
+		// replacement that was given only part of the message.
+		var seeded *protobufs.ComponentHealth
+		s.opampClient = &mockOpAMPClient{setHealthFunc: func(h *protobufs.ComponentHealth) { seeded = h }}
+		require.NoError(t, s.publishLastReportedHealth())
+
+		assert.True(t, proto.Equal(reported, seeded),
+			"a replacement client must be given the whole health message, including LastError, "+
+				"timestamps and nested component health")
+	})
+
 	t.Run("health survives a failed replacement and its rollback", func(t *testing.T) {
 		s, reader := newTestSupervisor(t)
 
@@ -4129,16 +4156,19 @@ func TestSupervisor_healthSurvivesOpAMPClientReplacement(t *testing.T) {
 		require.NoError(t, s.SetHealth(healthy))
 		require.EqualValues(t, 1, readHealthStatus(t, reader))
 
-		// An invalid CA cert makes LoadTLSConfig fail synchronously, so the replacement
-		// client is never created and onOpampConnectionSettings restores the old settings
-		// by calling startOpAMPClient a second time. Both attempts must seed health.
-		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+		oldEndpoint := s.config.Server.Endpoint
+
+		// An invalid CA cert makes LoadTLSConfig fail synchronously, before the
+		// replacement client is created, so only the rollback reaches the seeding.
+		// onOpampConnectionSettings restores the previous settings and calls
+		// startOpAMPClient again; requiring no error is what makes this case
+		// meaningful, because a rollback that never produced a working client would
+		// leave the assertions below true without publishing anything.
+		require.NoError(t, s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
 			DestinationEndpoint: fmt.Sprintf("wss://127.0.0.1:%d", freePort(t)),
 			Certificate:         &protobufs.TLSCertificate{CaCert: []byte("not-a-valid-pem-certificate")},
-		})
-		if err != nil {
-			t.Logf("rollback also failed (expected in some environments): %v", err)
-		}
+		}))
+		require.Equal(t, oldEndpoint, s.config.Server.Endpoint, "the rollback must restore the previous endpoint")
 
 		assert.EqualValues(t, 1, readHealthStatus(t, reader),
 			"a failed replacement and its rollback must not reset health")
