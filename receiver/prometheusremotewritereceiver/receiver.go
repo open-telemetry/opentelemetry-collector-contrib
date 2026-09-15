@@ -569,9 +569,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 
 		// The compatibility specification requires native histograms of the float flavor to be
-		// dropped; the gauge flavor is already rejected above. This has to come before the stale
-		// check, otherwise a stale float histogram would be accepted by accident.
-		if histogram.IsFloatHistogram() {
+		// dropped; the gauge flavor is already rejected above.
+		if isFloatFlavored(histogram) {
 			prw.settings.Logger.Debug(
 				"Dropping float flavored Native Histogram",
 				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
@@ -581,44 +580,42 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			continue
 		}
 
-		// Validate everything that can be checked without allocating, so that a histogram which
-		// is going to be dropped never reserves budget or leaves an empty metric behind. A stale
-		// marker is exempt because its remaining fields are ignored rather than translated.
-		var expLayout exponentialHistogramLayout
-		if histogramType == "exponential" && !value.IsStaleNaN(histogram.Sum) {
-			var err error
-			expLayout, err = validateExponentialHistogram(histogram)
-			if err != nil {
-				prw.settings.Logger.Error(
-					"Dropping Native Histogram that cannot be converted",
-					zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
-					zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
-					zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
-					zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
-					zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
-				)
-				continue
-			}
-			if !bucketBudget.reserve(expLayout) {
-				// Logged once for the request rather than once per histogram.
+		dropped := func(err error) {
+			prw.settings.Logger.Error(
+				"Dropping Native Histogram that cannot be converted",
+				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
+				zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
+				zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
+				zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
+				zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
+			)
+		}
+
+		// A stale marker leaves the rest of the histogram unread, but its bounds are copied to
+		// the data point either way, so they are checked before the marker takes the short cut.
+		if histogramType == "nhcb" {
+			if err := validateCustomBounds(histogram.CustomValues); err != nil {
+				dropped(err)
 				continue
 			}
 		}
-		if histogramType == "nhcb" && !value.IsStaleNaN(histogram.Sum) {
-			// The dense form is as long as the bounds, so what has to be checked is that the
-			// spans and deltas describe that shape. Prometheus runs the same check on every
-			// histogram it accepts over remote write; without it the conversion below stops
-			// where the bounds or the deltas run out and reports what it managed to read.
-			// The float flavor is refused above, so the integer conversion always succeeds.
-			if err := histogram.ToIntHistogram().Validate(); err != nil {
-				prw.settings.Logger.Error(
-					"Dropping Native Histogram that cannot be converted",
-					zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
-					zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
-					zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
-					zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
-					zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
-				)
+
+		// Checked before anything is built, so a histogram that is going to be dropped never
+		// reserves budget or leaves an empty metric behind.
+		var expLayout exponentialHistogramLayout
+		if !value.IsStaleNaN(histogram.Sum) {
+			var err error
+			if histogramType == "nhcb" {
+				err = validateNHCB(histogram)
+			} else {
+				expLayout, err = validateExponentialHistogram(histogram)
+			}
+			if err != nil {
+				dropped(err)
+				continue
+			}
+			if histogramType == "exponential" && !bucketBudget.reserve(expLayout) {
+				// Logged once for the request rather than once per histogram.
 				continue
 			}
 		}
@@ -898,6 +895,64 @@ func (l bucketSpanLayout) otelOffset() int32 {
 // See https://prometheus.io/docs/specs/native_histograms/#schema
 func exponentialHistogramFiniteLimit(histogramSchema int32) int32 {
 	return int32(math.Ldexp(1024, int(histogramSchema)))
+}
+
+// isFloatFlavored reports whether any of a histogram's counts arrived on the float side of its
+// oneof. A count field can be left unset on the wire, so the bucket lists decide it too.
+func isFloatFlavored(histogram *writev2.Histogram) bool {
+	if histogram.IsFloatHistogram() || len(histogram.PositiveCounts) > 0 || len(histogram.NegativeCounts) > 0 {
+		return true
+	}
+	_, floatZero := histogram.GetZeroCount().(*writev2.Histogram_ZeroCountFloat)
+	return floatZero
+}
+
+// validateCustomBounds checks the bounds a custom bucket histogram carries. They become OTLP
+// ExplicitBounds unchanged, where anything but a finite increasing sequence describes a bucket
+// that can hold nothing.
+func validateCustomBounds(bounds []float64) error {
+	prev := math.Inf(-1)
+	for i, bound := range bounds {
+		if math.IsNaN(bound) || math.IsInf(bound, 0) {
+			return fmt.Errorf("custom bound %d is %v, which is not a finite bound", i, bound)
+		}
+		if i > 0 && bound <= prev {
+			return fmt.Errorf("custom bound %d is %v, which does not follow %v", i, bound, prev)
+		}
+		prev = bound
+	}
+	return nil
+}
+
+// validateNHCB checks that the spans and deltas of a custom bucket histogram describe exactly the
+// buckets its bounds separate. Count is left out on purpose: it is rebuilt from the buckets, the
+// way the exponential schemas rebuild theirs, so the count that arrived does not have to agree.
+func validateNHCB(histogram *writev2.Histogram) error {
+	if len(histogram.NegativeSpans) > 0 || len(histogram.NegativeDeltas) > 0 {
+		return errors.New("custom buckets have no negative range")
+	}
+	if histogram.GetZeroCountInt() != 0 || histogram.ZeroThreshold != 0 {
+		return errors.New("custom buckets have no zero bucket")
+	}
+	if hasNegativeCounts(histogram) {
+		return errors.New("histogram has negative counts")
+	}
+
+	var described, dense int64
+	for i, span := range histogram.PositiveSpans {
+		if span.Offset < 0 {
+			return fmt.Errorf("span %d has an offset of %d", i, span.Offset)
+		}
+		described += int64(span.Length)
+		dense += int64(span.Offset) + int64(span.Length)
+	}
+	if values := int64(len(histogram.PositiveDeltas)); described != values {
+		return fmt.Errorf("spans describe %d buckets, %d values provided", described, values)
+	}
+	if buckets := int64(len(histogram.CustomValues)) + 1; dense > buckets {
+		return fmt.Errorf("spans reach past the %d buckets the bounds describe", buckets)
+	}
+	return nil
 }
 
 // validateExponentialHistogram returns the dense layout the spans of an exponential Native
