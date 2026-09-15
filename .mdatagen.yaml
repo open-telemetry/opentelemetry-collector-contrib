@@ -404,6 +404,9 @@ exclusions:
       - name: filelog.windows.caseInsensitive
         validation:
           enabled: false
+      - name: filelog.windows.keepFilesOpen
+        validation:
+          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
     feature_gates:
       - name: pkg.translator.azurelogs.DontEmitV0LogConventions
