@@ -149,7 +149,10 @@ identical canonical JSON.
 | `map`     | JSON object (values encoded recursively; max nesting depth 128)   |
 
 Serialization fails with a hard error if the total pre-JCS JSON size exceeds
-2 MiB or the attribute nesting depth exceeds 128 levels.
+2 MiB, if the attribute nesting depth exceeds 128 levels, or if the event name,
+an attribute key, a map key, or a string value is not valid UTF-8. The check
+exists because `json.Marshal` would otherwise replace each invalid byte with
+U+FFFD, and two records differing only in such bytes would share a signature.
 
 ## Example pipeline
 
