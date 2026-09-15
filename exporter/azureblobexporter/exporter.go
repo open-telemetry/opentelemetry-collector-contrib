@@ -610,8 +610,8 @@ func (e *azureBlobExporter) partitionLogsByBlobName(ld plog.Logs) []blobGroup[pl
 		return []blobGroup[plog.Logs]{{data: ld}}
 	}
 
-	groups := make(map[string]plog.Logs)
-	var order []string
+	indices := make(map[string]int)
+	var groups []blobGroup[plog.Logs]
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		single := plog.NewLogs()
@@ -623,25 +623,20 @@ func (e *azureBlobExporter) partitionLogsByBlobName(ld plog.Logs) []blobGroup[pl
 			return []blobGroup[plog.Logs]{{data: ld, nameFormat: &e.config.BlobNameFormat.LogsFormat}}
 		}
 
-		group, ok := groups[name]
+		index, ok := indices[name]
 		if !ok {
-			group = plog.NewLogs()
-			groups[name] = group
-			order = append(order, name)
+			index = len(groups)
+			indices[name] = index
+			groups = append(groups, blobGroup[plog.Logs]{data: plog.NewLogs(), nameFormat: &name})
 		}
-		single.ResourceLogs().At(0).MoveTo(group.ResourceLogs().AppendEmpty())
+		single.ResourceLogs().At(0).MoveTo(groups[index].data.ResourceLogs().AppendEmpty())
 	}
 
-	if len(order) == 1 {
+	if len(groups) == 1 {
 		// Every resource entry addresses the same blob: upload the original payload.
-		return []blobGroup[plog.Logs]{{data: ld, nameFormat: &order[0]}}
+		groups[0].data = ld
 	}
-
-	out := make([]blobGroup[plog.Logs], 0, len(order))
-	for _, name := range order {
-		out = append(out, blobGroup[plog.Logs]{data: groups[name], nameFormat: &name})
-	}
-	return out
+	return groups
 }
 
 // partitionMetricsByBlobName is the pmetric.Metrics equivalent of
@@ -651,8 +646,8 @@ func (e *azureBlobExporter) partitionMetricsByBlobName(md pmetric.Metrics) []blo
 		return []blobGroup[pmetric.Metrics]{{data: md}}
 	}
 
-	groups := make(map[string]pmetric.Metrics)
-	var order []string
+	indices := make(map[string]int)
+	var groups []blobGroup[pmetric.Metrics]
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		single := pmetric.NewMetrics()
@@ -664,25 +659,20 @@ func (e *azureBlobExporter) partitionMetricsByBlobName(md pmetric.Metrics) []blo
 			return []blobGroup[pmetric.Metrics]{{data: md, nameFormat: &e.config.BlobNameFormat.MetricsFormat}}
 		}
 
-		group, ok := groups[name]
+		index, ok := indices[name]
 		if !ok {
-			group = pmetric.NewMetrics()
-			groups[name] = group
-			order = append(order, name)
+			index = len(groups)
+			indices[name] = index
+			groups = append(groups, blobGroup[pmetric.Metrics]{data: pmetric.NewMetrics(), nameFormat: &name})
 		}
-		single.ResourceMetrics().At(0).MoveTo(group.ResourceMetrics().AppendEmpty())
+		single.ResourceMetrics().At(0).MoveTo(groups[index].data.ResourceMetrics().AppendEmpty())
 	}
 
-	if len(order) == 1 {
+	if len(groups) == 1 {
 		// Every resource entry addresses the same blob: upload the original payload.
-		return []blobGroup[pmetric.Metrics]{{data: md, nameFormat: &order[0]}}
+		groups[0].data = md
 	}
-
-	out := make([]blobGroup[pmetric.Metrics], 0, len(order))
-	for _, name := range order {
-		out = append(out, blobGroup[pmetric.Metrics]{data: groups[name], nameFormat: &name})
-	}
-	return out
+	return groups
 }
 
 // partitionTracesByBlobName is the ptrace.Traces equivalent of
@@ -692,8 +682,8 @@ func (e *azureBlobExporter) partitionTracesByBlobName(td ptrace.Traces) []blobGr
 		return []blobGroup[ptrace.Traces]{{data: td}}
 	}
 
-	groups := make(map[string]ptrace.Traces)
-	var order []string
+	indices := make(map[string]int)
+	var groups []blobGroup[ptrace.Traces]
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		single := ptrace.NewTraces()
@@ -705,25 +695,20 @@ func (e *azureBlobExporter) partitionTracesByBlobName(td ptrace.Traces) []blobGr
 			return []blobGroup[ptrace.Traces]{{data: td, nameFormat: &e.config.BlobNameFormat.TracesFormat}}
 		}
 
-		group, ok := groups[name]
+		index, ok := indices[name]
 		if !ok {
-			group = ptrace.NewTraces()
-			groups[name] = group
-			order = append(order, name)
+			index = len(groups)
+			indices[name] = index
+			groups = append(groups, blobGroup[ptrace.Traces]{data: ptrace.NewTraces(), nameFormat: &name})
 		}
-		single.ResourceSpans().At(0).MoveTo(group.ResourceSpans().AppendEmpty())
+		single.ResourceSpans().At(0).MoveTo(groups[index].data.ResourceSpans().AppendEmpty())
 	}
 
-	if len(order) == 1 {
+	if len(groups) == 1 {
 		// Every resource entry addresses the same blob: upload the original payload.
-		return []blobGroup[ptrace.Traces]{{data: td, nameFormat: &order[0]}}
+		groups[0].data = td
 	}
-
-	out := make([]blobGroup[ptrace.Traces], 0, len(order))
-	for _, name := range order {
-		out = append(out, blobGroup[ptrace.Traces]{data: groups[name], nameFormat: &name})
-	}
-	return out
+	return groups
 }
 
 func (e *azureBlobExporter) consumeData(ctx context.Context, blobName string, data []byte, signal pipeline.Signal) error {

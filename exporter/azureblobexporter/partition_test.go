@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestReviewRegressionPartitionKeepsRenderedName(t *testing.T) {
+func TestPartitionKeepsRenderedName(t *testing.T) {
 	cfg := newPartitionTestConfig("{{ .LogRecordCount }}.json", true)
 	cfg.AppendBlob.Enabled = false
 	exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
@@ -47,7 +47,7 @@ func TestReviewRegressionPartitionKeepsRenderedName(t *testing.T) {
 		uploadedLogBodies(t, client.uploads["2.json"]))
 }
 
-func TestReviewRegressionLaterResourceTemplateErrorFallsBack(t *testing.T) {
+func TestPartitionLaterResourceTemplateErrorFallsBack(t *testing.T) {
 	const nameTemplate = `{{ index (getResourceLogAttr . 0 "parts") 1 }}.json`
 	cfg := newPartitionTestConfig(nameTemplate, true)
 	core, observed := observer.New(zap.WarnLevel)
@@ -76,11 +76,11 @@ func TestReviewRegressionLaterResourceTemplateErrorFallsBack(t *testing.T) {
 	).Len())
 }
 
-func TestReviewRegressionRenderedNamesAcrossSignals(t *testing.T) {
+func TestPartitionRenderedNamesAcrossSignals(t *testing.T) {
 	for _, signal := range []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalMetrics, pipeline.SignalTraces} {
 		for _, counts := range [][]int{{1, 1, 2}, {1, 1}} {
 			t.Run(fmt.Sprintf("%s/%v", signal, counts), func(t *testing.T) {
-				input := newReviewSignalInput(signal, counts)
+				input := newPartitionSignalInput(signal, counts)
 				cfg := newPartitionTestConfig(input.countTemplate, true)
 				cfg.BlobNameFormat.MetricsFormat = input.countTemplate
 				cfg.BlobNameFormat.TracesFormat = input.countTemplate
@@ -103,10 +103,10 @@ func TestReviewRegressionRenderedNamesAcrossSignals(t *testing.T) {
 	}
 }
 
-func TestReviewRegressionFallbackAcrossSignals(t *testing.T) {
+func TestPartitionFallbackAcrossSignals(t *testing.T) {
 	for _, signal := range []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalMetrics, pipeline.SignalTraces} {
 		t.Run(signal.String(), func(t *testing.T) {
-			input := newReviewSignalInput(signal, []int{1, 1})
+			input := newPartitionSignalInput(signal, []int{1, 1})
 			first := input.attributes[0].PutEmptySlice("parts")
 			first.AppendEmpty().SetStr("prefix")
 			first.AppendEmpty().SetStr("tenant-a")
@@ -130,7 +130,7 @@ func TestReviewRegressionFallbackAcrossSignals(t *testing.T) {
 	}
 }
 
-func TestReviewRegressionPartitionPreservesNameFormatting(t *testing.T) {
+func TestPartitionPreservesNameFormatting(t *testing.T) {
 	for _, compression := range []configcompression.Type{"", configcompression.TypeGzip, configcompression.TypeZstd} {
 		for _, serialBeforeExtension := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/before_extension=%t", compression, serialBeforeExtension), func(t *testing.T) {
@@ -147,7 +147,7 @@ func TestReviewRegressionPartitionPreservesNameFormatting(t *testing.T) {
 				require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 				client := newRecordingAzBlobClient(nil)
 				exporter.client = client
-				input := newReviewSignalInput(pipeline.SignalLogs, []int{1, 1, 2})
+				input := newPartitionSignalInput(pipeline.SignalLogs, []int{1, 1, 2})
 				startYear := time.Now().Format("2006")
 				require.NoError(t, input.consume(t.Context(), exporter))
 				yearPattern := "(" + startYear + "|" + time.Now().Format("2006") + ")"
@@ -173,15 +173,15 @@ func TestReviewRegressionPartitionPreservesNameFormatting(t *testing.T) {
 	}
 }
 
-type reviewSignalInput struct {
+type partitionSignalInput struct {
 	countTemplate   string
 	failingTemplate string
 	attributes      []pcommon.Map
 	consume         func(context.Context, *azureBlobExporter) error
 }
 
-func newReviewSignalInput(signal pipeline.Signal, counts []int) reviewSignalInput {
-	var input reviewSignalInput
+func newPartitionSignalInput(signal pipeline.Signal, counts []int) partitionSignalInput {
+	var input partitionSignalInput
 	switch signal {
 	case pipeline.SignalLogs:
 		logs := plog.NewLogs()

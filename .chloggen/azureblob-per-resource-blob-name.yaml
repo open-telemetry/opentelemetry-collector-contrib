@@ -16,15 +16,8 @@ issues: [50336]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Previously, when `blob_name_format::template_enabled` was set, the blob name was rendered
-  once per export from the first resource entry, so a payload containing multiple resource
-  entries wrote all of them to the blob addressed by the first one. Exports whose resource
-  entries all render to the same blob name are unaffected, as are configurations without
-  `template_enabled`.
-  Partitioned groups are uploaded concurrently (bounded by the new
-  `max_concurrent_uploads` option, default 10), and when only some groups fail,
-  the error carries just the failed groups' data so the retry sender does not
-  upload succeeded groups twice.
+  Templates now evaluate against one resource entry at a time, including count-based expressions.
+  The new `max_concurrent_uploads` option (default 10) bounds parallel uploads per export.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

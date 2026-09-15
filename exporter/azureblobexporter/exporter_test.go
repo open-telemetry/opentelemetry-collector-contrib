@@ -773,33 +773,20 @@ func TestConsumeLogsPartitionsByRenderedBlobName(t *testing.T) {
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
-	uploads := make(map[string]plog.Logs)
-	var uploadsMu sync.Mutex
-	mockClient := &mockAzBlobClient{url: "http://mock"}
-	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).
-		Run(func(args mock.Arguments) {
-			blobName := args.String(2)
-			data := bytes.TrimSuffix(args.Get(3).([]byte), []byte("\n"))
-			unmarshaler := plog.JSONUnmarshaler{}
-			logs, err := unmarshaler.UnmarshalLogs(data)
-			require.NoError(t, err)
-			uploadsMu.Lock()
-			uploads[blobName] = logs
-			uploadsMu.Unlock()
-		}).
-		Return(nil)
-	ae.client = mockClient
+	client := newRecordingAzBlobClient(nil)
+	ae.client = client
 
 	// Resource entries for two activities, interleaved, plus a second entry for
 	// the first activity to verify grouping rather than one upload per entry.
 	logs := generateLogsWithActivities("activity-a", "activity-b", "activity-a")
 	require.NoError(t, ae.ConsumeLogs(t.Context(), logs))
 
-	mockClient.AssertNumberOfCalls(t, "AppendBlock", 2)
-	require.Len(t, uploads, 2)
-
-	logsA, ok := uploads["activity-a.json"]
-	require.True(t, ok, "expected an upload for activity-a.json, got %v", uploads)
+	require.Len(t, client.uploads, 2)
+	require.Len(t, client.uploads["activity-a.json"], 1)
+	require.Len(t, client.uploads["activity-b.json"], 1)
+	unmarshaler := plog.JSONUnmarshaler{}
+	logsA, err := unmarshaler.UnmarshalLogs(bytes.TrimSuffix(client.uploads["activity-a.json"][0], []byte("\n")))
+	require.NoError(t, err)
 	assert.Equal(t, 2, logsA.ResourceLogs().Len())
 	for i := 0; i < logsA.ResourceLogs().Len(); i++ {
 		val, attrOK := logsA.ResourceLogs().At(i).Resource().Attributes().Get("activity-id")
@@ -807,8 +794,8 @@ func TestConsumeLogsPartitionsByRenderedBlobName(t *testing.T) {
 		assert.Equal(t, "activity-a", val.Str())
 	}
 
-	logsB, ok := uploads["activity-b.json"]
-	require.True(t, ok, "expected an upload for activity-b.json, got %v", uploads)
+	logsB, err := unmarshaler.UnmarshalLogs(bytes.TrimSuffix(client.uploads["activity-b.json"][0], []byte("\n")))
+	require.NoError(t, err)
 	assert.Equal(t, 1, logsB.ResourceLogs().Len())
 	val, ok := logsB.ResourceLogs().At(0).Resource().Attributes().Get("activity-id")
 	require.True(t, ok)
@@ -853,17 +840,8 @@ func TestConsumeMetricsPartitionsByRenderedBlobName(t *testing.T) {
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
-	var blobNames []string
-	var blobNamesMu sync.Mutex
-	mockClient := &mockAzBlobClient{url: "http://mock"}
-	mockClient.On("AppendBlock", mock.Anything, "metrics", mock.Anything, mock.Anything, mock.Anything).
-		Run(func(args mock.Arguments) {
-			blobNamesMu.Lock()
-			blobNames = append(blobNames, args.String(2))
-			blobNamesMu.Unlock()
-		}).
-		Return(nil)
-	ae.client = mockClient
+	client := newRecordingAzBlobClient(nil)
+	ae.client = client
 
 	metrics := pmetric.NewMetrics()
 	for _, svc := range []string{"svc-a", "svc-b"} {
@@ -874,8 +852,9 @@ func TestConsumeMetricsPartitionsByRenderedBlobName(t *testing.T) {
 	}
 	require.NoError(t, ae.ConsumeMetrics(t.Context(), metrics))
 
-	mockClient.AssertNumberOfCalls(t, "AppendBlock", 2)
-	assert.ElementsMatch(t, []string{"svc-a.json", "svc-b.json"}, blobNames)
+	require.Len(t, client.uploads, 2)
+	assert.Len(t, client.uploads["svc-a.json"], 1)
+	assert.Len(t, client.uploads["svc-b.json"], 1)
 }
 
 func TestConsumeTracesPartitionsByRenderedBlobName(t *testing.T) {
@@ -884,17 +863,8 @@ func TestConsumeTracesPartitionsByRenderedBlobName(t *testing.T) {
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalTraces)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
-	var blobNames []string
-	var blobNamesMu sync.Mutex
-	mockClient := &mockAzBlobClient{url: "http://mock"}
-	mockClient.On("AppendBlock", mock.Anything, "traces", mock.Anything, mock.Anything, mock.Anything).
-		Run(func(args mock.Arguments) {
-			blobNamesMu.Lock()
-			blobNames = append(blobNames, args.String(2))
-			blobNamesMu.Unlock()
-		}).
-		Return(nil)
-	ae.client = mockClient
+	client := newRecordingAzBlobClient(nil)
+	ae.client = client
 
 	traces := ptrace.NewTraces()
 	for _, svc := range []string{"svc-a", "svc-b"} {
@@ -905,8 +875,9 @@ func TestConsumeTracesPartitionsByRenderedBlobName(t *testing.T) {
 	}
 	require.NoError(t, ae.ConsumeTraces(t.Context(), traces))
 
-	mockClient.AssertNumberOfCalls(t, "AppendBlock", 2)
-	assert.ElementsMatch(t, []string{"svc-a.json", "svc-b.json"}, blobNames)
+	require.Len(t, client.uploads, 2)
+	assert.Len(t, client.uploads["svc-a.json"], 1)
+	assert.Len(t, client.uploads["svc-b.json"], 1)
 }
 
 func TestConsumeLogsPartitionFallsBackOnTemplateError(t *testing.T) {
