@@ -57,8 +57,8 @@ func addCause(seg *awsxray.Segment, span ptrace.Span) {
 			attrs := evt.Attributes()
 			attrs.EnsureCapacity(8)
 
-			// ID is a required field
-			attrs.PutStr(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
+			// The exception id is optional in X-Ray segment documents, so it may be nil.
+			addString(excp.ID, awsxray.AWSXrayExceptionIDAttribute, attrs)
 			addString(excp.Message, string(conventions.ExceptionMessageKey), attrs)
 			addString(excp.Type, string(conventions.ExceptionTypeKey), attrs)
 			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, attrs)
