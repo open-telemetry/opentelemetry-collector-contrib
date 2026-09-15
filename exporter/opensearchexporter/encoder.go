@@ -36,7 +36,7 @@ var errInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 
 // between semantic-convention versions (code.function -> code.function.name).
 //
 // To keep the document indexable, the concrete value is moved under a ".value"
-// sub-key ("code.function" -> "code.function.value"), mirroring the behaviour
+// sub-key ("code.function" -> "code.function.value"), mirroring the behavior
 // of the ECS mapping mode's objmodel.Dedup step. The rewrite only triggers when
 // a conflicting sibling is present in the same map, i.e. only for documents
 // OpenSearch would otherwise reject, so well-formed documents are unchanged.
