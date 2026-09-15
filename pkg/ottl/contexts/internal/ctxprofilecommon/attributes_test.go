@@ -13,7 +13,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // Mock implementations for AttributeContext and dependencies
@@ -217,7 +216,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -231,7 +230,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			},
 		}
@@ -289,7 +288,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -334,7 +333,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			},
 		}
@@ -384,7 +383,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			},
 		}
@@ -423,7 +422,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("bazinga"),
+					S: new("bazinga"),
 				},
 			},
 		}

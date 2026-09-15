@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v90/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -808,10 +808,10 @@ func TestGetContributors(t *testing.T) {
 				contribResponse: contribResponse{
 					contribs: [][]*github.Contributor{{
 						{
-							ID: github.Ptr(int64(1)),
+							ID: new(int64(1)),
 						},
 						{
-							ID: github.Ptr(int64(2)),
+							ID: new(int64(2)),
 						},
 					}},
 					responseCode: http.StatusOK,

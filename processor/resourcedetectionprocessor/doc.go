@@ -10,6 +10,7 @@
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/aws/elasticbeanstalk/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/aws/lambda/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/azure/aks/metadata.yaml
+//go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/azure/appservice/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/azure/containerapps/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/azure/metadata.yaml
 //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/consul/metadata.yaml
