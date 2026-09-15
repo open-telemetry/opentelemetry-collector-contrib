@@ -19,8 +19,6 @@ subtext: |
   Labels starting with a single underscore (e.g. `_foo`) will no longer be
   prefixed with `key_` by default. To restore the previous behavior, disable the
   feature gate: `--feature-gates=-pkg.translator.prometheus.PermissiveLabelSanitization`.
-  This change prepares for the removal of the deprecated
-  `otlptranslator.LabelNamer.UnderscoreLabelSanitization` field upstream.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
