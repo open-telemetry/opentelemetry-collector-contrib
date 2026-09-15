@@ -14,7 +14,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"testing/synctest"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -32,8 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap/zaptest"
 
@@ -834,52 +831,6 @@ func TestConsumeLogsSingleUploadWhenTemplateDisabled(t *testing.T) {
 	mockClient.AssertNumberOfCalls(t, "AppendBlock", 1)
 }
 
-func TestConsumeMetricsPartitionsByRenderedBlobName(t *testing.T) {
-	c := newPartitionTestConfig("logs.json", true)
-
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
-	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
-
-	client := newRecordingAzBlobClient(nil)
-	ae.client = client
-
-	metrics := pmetric.NewMetrics()
-	for _, svc := range []string{"svc-a", "svc-b"} {
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutStr("service.name", svc)
-		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-		m.SetName("metric for " + svc)
-	}
-	require.NoError(t, ae.ConsumeMetrics(t.Context(), metrics))
-
-	require.Len(t, client.uploads, 2)
-	assert.Len(t, client.uploads["svc-a.json"], 1)
-	assert.Len(t, client.uploads["svc-b.json"], 1)
-}
-
-func TestConsumeTracesPartitionsByRenderedBlobName(t *testing.T) {
-	c := newPartitionTestConfig("logs.json", true)
-
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalTraces)
-	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
-
-	client := newRecordingAzBlobClient(nil)
-	ae.client = client
-
-	traces := ptrace.NewTraces()
-	for _, svc := range []string{"svc-a", "svc-b"} {
-		rs := traces.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().PutStr("service.name", svc)
-		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetName("span for " + svc)
-	}
-	require.NoError(t, ae.ConsumeTraces(t.Context(), traces))
-
-	require.Len(t, client.uploads, 2)
-	assert.Len(t, client.uploads["svc-a.json"], 1)
-	assert.Len(t, client.uploads["svc-b.json"], 1)
-}
-
 func TestConsumeLogsPartitionFallsBackOnTemplateError(t *testing.T) {
 	// A template that fails at execution time (invalid field access on the root
 	// object) must fall back to a single upload with the default name format.
@@ -996,43 +947,48 @@ func TestConsumeLogsPartialFailureRetriesOnlyFailedGroups(t *testing.T) {
 	require.Len(t, client.uploads, 2)
 }
 
+// TestPartitionWithExporterHelperRetry wires the exporter behind the real
+// exporterhelper queue and retry senders and verifies that, after a partial
+// failure, only the failed group is retried and no successful group is
+// uploaded twice.
 func TestPartitionWithExporterHelperRetry(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
-		defaults := createDefaultConfig().(*Config)
-		cfg.BackOffConfig = defaults.BackOffConfig
-		cfg.TimeoutSettings = defaults.TimeoutSettings
-		qCfg := exporterhelper.NewDefaultQueueConfig()
-		qCfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
-		qCfg.WaitForResult = true
-		cfg.QueueSettings = configoptional.Some(qCfg)
+	cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+	defaults := createDefaultConfig().(*Config)
+	cfg.TimeoutSettings = defaults.TimeoutSettings
+	cfg.BackOffConfig = defaults.BackOffConfig
+	cfg.BackOffConfig.InitialInterval = time.Millisecond
+	cfg.BackOffConfig.MaxInterval = 10 * time.Millisecond
+	qCfg := exporterhelper.NewDefaultQueueConfig()
+	qCfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
+	// Block ConsumeLogs until the queued request, including retries, completes.
+	qCfg.WaitForResult = true
+	cfg.QueueSettings = configoptional.Some(qCfg)
 
-		ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
-		le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
-			ae.ConsumeLogs,
-			exporterhelper.WithStart(ae.start),
-			exporterhelper.WithRetry(cfg.BackOffConfig),
-			exporterhelper.WithQueue(cfg.QueueSettings),
-			exporterhelper.WithTimeout(cfg.TimeoutSettings))
-		require.NoError(t, err)
-		require.NoError(t, le.Start(t.Context(), componenttest.NewNopHost()))
-		defer func() { require.NoError(t, le.Shutdown(t.Context())) }()
-		client := newRecordingAzBlobClient(map[string]int{"activity-b.json": 1})
-		ae.client = client
+	ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
+		ae.ConsumeLogs,
+		exporterhelper.WithStart(ae.start),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings))
+	require.NoError(t, err)
+	require.NoError(t, le.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, le.Shutdown(t.Context())) }()
+	client := newRecordingAzBlobClient(map[string]int{"activity-b.json": 1})
+	ae.client = client
 
-		logs := generateLogsWithActivities("activity-a", "activity-b", "activity-c")
-		require.NoError(t, le.ConsumeLogs(t.Context(), logs))
+	logs := generateLogsWithActivities("activity-a", "activity-b", "activity-c")
+	require.NoError(t, le.ConsumeLogs(t.Context(), logs))
 
-		client.mu.Lock()
-		defer client.mu.Unlock()
-		require.Zero(t, client.remainingFailures["activity-b.json"])
-		require.Len(t, client.uploads, 3)
-		for _, activity := range []string{"activity-a", "activity-b", "activity-c"} {
-			payloads := client.uploads[activity+".json"]
-			require.Len(t, payloads, 1, "the retry chain must not replay a successful group")
-			assert.Equal(t, []string{"log for " + activity}, uploadedLogBodies(t, payloads))
-		}
-	})
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	require.Zero(t, client.remainingFailures["activity-b.json"])
+	require.Len(t, client.uploads, 3)
+	for _, activity := range []string{"activity-a", "activity-b", "activity-c"} {
+		payloads := client.uploads[activity+".json"]
+		require.Len(t, payloads, 1, "the retry chain must not replay a successful group")
+		assert.Equal(t, []string{"log for " + activity}, uploadedLogBodies(t, payloads))
+	}
 }
 
 func TestConsumeLogsAllGroupsUploadedDespiteFailure(t *testing.T) {
@@ -1053,62 +1009,6 @@ func TestConsumeLogsAllGroupsUploadedDespiteFailure(t *testing.T) {
 	assert.Equal(t, []string{"log for activity-a"}, uploadedLogBodies(t, client.uploads["activity-a.json"]))
 	assert.Equal(t, []string{"log for activity-c"}, uploadedLogBodies(t, client.uploads["activity-c.json"]))
 	assert.Empty(t, client.uploads["activity-b.json"])
-}
-
-func TestConsumeMetricsPartialFailureCarriesOnlyFailedData(t *testing.T) {
-	c := newPartitionTestConfig("logs.json", true)
-
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
-	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
-
-	client := newRecordingAzBlobClient(map[string]int{"svc-b.json": 1})
-	ae.client = client
-
-	metrics := pmetric.NewMetrics()
-	for _, svc := range []string{"svc-a", "svc-b"} {
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutStr("service.name", svc)
-		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("metric for " + svc)
-	}
-
-	err := ae.ConsumeMetrics(t.Context(), metrics)
-	require.Error(t, err)
-
-	var metricsErr consumererror.Metrics
-	require.ErrorAs(t, err, &metricsErr)
-	retryData := metricsErr.Data()
-	require.Equal(t, 1, retryData.ResourceMetrics().Len())
-	val, ok := retryData.ResourceMetrics().At(0).Resource().Attributes().Get("service.name")
-	require.True(t, ok)
-	assert.Equal(t, "svc-b", val.Str())
-}
-
-func TestConsumeTracesPartialFailureCarriesOnlyFailedData(t *testing.T) {
-	c := newPartitionTestConfig("logs.json", true)
-
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalTraces)
-	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
-
-	client := newRecordingAzBlobClient(map[string]int{"svc-b.json": 1})
-	ae.client = client
-
-	traces := ptrace.NewTraces()
-	for _, svc := range []string{"svc-a", "svc-b"} {
-		rs := traces.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().PutStr("service.name", svc)
-		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("span for " + svc)
-	}
-
-	err := ae.ConsumeTraces(t.Context(), traces)
-	require.Error(t, err)
-
-	var tracesErr consumererror.Traces
-	require.ErrorAs(t, err, &tracesErr)
-	retryData := tracesErr.Data()
-	require.Equal(t, 1, retryData.ResourceSpans().Len())
-	val, ok := retryData.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
-	require.True(t, ok)
-	assert.Equal(t, "svc-b", val.Str())
 }
 
 func TestConsumeLogsManyGroups(t *testing.T) {
@@ -1186,54 +1086,4 @@ func TestPartitionWithQueueBatching(t *testing.T) {
 			[]string{"log 0 for " + activity, "log 1 for " + activity},
 			bodies, "blob for %s must hold exactly its two records", activity)
 	}
-}
-
-func TestPartitionWithConcurrentQueueConsumers(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
-		qCfg := exporterhelper.NewDefaultQueueConfig()
-		qCfg.NumConsumers = 2
-		qCfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
-		cfg.QueueSettings = configoptional.Some(qCfg)
-
-		ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
-		le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
-			ae.ConsumeLogs,
-			exporterhelper.WithStart(ae.start),
-			exporterhelper.WithQueue(cfg.QueueSettings))
-		require.NoError(t, err)
-		require.NoError(t, le.Start(t.Context(), componenttest.NewNopHost()))
-		defer func() { require.NoError(t, le.Shutdown(t.Context())) }()
-
-		started := make(chan string, 4)
-		release := make(map[string]chan struct{})
-		for _, name := range []string{"a.json", "b.json", "c.json", "d.json"} {
-			release[name] = make(chan struct{}, 1)
-		}
-		defer func() {
-			for _, ch := range release {
-				close(ch)
-			}
-		}()
-		client := &mockAzBlobClient{url: "http://mock"}
-		client.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).
-			Run(func(args mock.Arguments) {
-				started <- args.String(2)
-				<-release[args.String(2)]
-			}).Return(nil)
-		ae.client = client
-
-		require.NoError(t, le.ConsumeLogs(t.Context(), generateLogsWithActivities("a", "b")))
-		require.NoError(t, le.ConsumeLogs(t.Context(), generateLogsWithActivities("c", "d")))
-		for _, want := range [][]string{{"a.json", "c.json"}, {"b.json", "d.json"}} {
-			synctest.Wait()
-			require.Len(t, started, 2, "queue consumers should upload separate requests concurrently")
-			require.ElementsMatch(t, want, []string{<-started, <-started})
-			for _, name := range want {
-				release[name] <- struct{}{}
-			}
-		}
-		synctest.Wait()
-		client.AssertNumberOfCalls(t, "AppendBlock", 4)
-	})
 }

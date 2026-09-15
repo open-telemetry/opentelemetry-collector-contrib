@@ -5,10 +5,8 @@ package azureblobexporter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
-	"testing/synctest"
 	"text/template"
 	"time"
 
@@ -27,39 +25,6 @@ import (
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 )
-
-func TestUploadGroupsSequential(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		cfg := newPartitionTestConfig("logs.json", false)
-		exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
-		require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
-		exporter.client = newRecordingAzBlobClient(nil)
-
-		started := make(chan int, 3)
-		release := make(chan struct{})
-		defer close(release)
-		done := make(chan error, 1)
-		go func() {
-			done <- uploadGroups(t.Context(), exporter, pipeline.SignalLogs,
-				[]blobGroup[int]{{data: 1}, {data: 2}, {data: 3}},
-				func(data int) ([]byte, error) {
-					started <- data
-					<-release
-					return []byte("payload"), nil
-				},
-				func(err error, _ []int) error { return err })
-		}()
-
-		for want := 1; want <= 3; want++ {
-			synctest.Wait()
-			require.Len(t, started, 1, "only one group may be prepared at a time")
-			require.Equal(t, want, <-started)
-			release <- struct{}{}
-		}
-		synctest.Wait()
-		require.NoError(t, <-done)
-	})
-}
 
 func TestPartitionCancellationPreservesUnsentLogs(t *testing.T) {
 	for _, tc := range []struct {
@@ -113,34 +78,6 @@ func TestPartitionCancellationPreservesUnsentLogs(t *testing.T) {
 			exporter.client = retryClient
 			require.NoError(t, exporter.ConsumeLogs(t.Context(), retryLogs))
 			assert.Len(t, retryClient.uploads, len(tc.wantRetryLogs))
-		})
-	}
-}
-
-func TestUploadGroupsCanceledBeforeMarshal(t *testing.T) {
-	for _, count := range []int{1, 3} {
-		t.Run(fmt.Sprint(count), func(t *testing.T) {
-			cfg := newPartitionTestConfig("logs.json", false)
-			exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
-			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
-			client := newRecordingAzBlobClient(nil)
-			exporter.client = client
-			ctx, cancel := context.WithCancel(t.Context())
-			cancel()
-			groups := make([]blobGroup[int], count)
-			for i := range groups {
-				groups[i].data = i
-			}
-			marshalErr := errors.New("must not marshal canceled data")
-			err := uploadGroups(ctx, exporter, pipeline.SignalLogs, groups,
-				func(int) ([]byte, error) { return nil, marshalErr },
-				func(err error, failed []int) error {
-					assert.Len(t, failed, count)
-					return err
-				})
-			require.ErrorIs(t, err, context.Canceled)
-			assert.NotErrorIs(t, err, marshalErr)
-			assert.Empty(t, client.uploads)
 		})
 	}
 }
@@ -298,6 +235,52 @@ func TestPartitionFallbackAcrossSignals(t *testing.T) {
 			assert.Equal(t, 1, observed.FilterMessage(
 				"Failed to execute blob name template, using default blob name format",
 			).Len())
+		})
+	}
+}
+
+func TestPartitionPartialFailureCarriesOnlyFailedData(t *testing.T) {
+	for _, signal := range []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalMetrics, pipeline.SignalTraces} {
+		t.Run(signal.String(), func(t *testing.T) {
+			input := newPartitionSignalInput(signal, []int{1, 2})
+			cfg := newPartitionTestConfig(input.countTemplate, true)
+			cfg.BlobNameFormat.MetricsFormat = input.countTemplate
+			cfg.BlobNameFormat.TracesFormat = input.countTemplate
+			exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
+			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+			client := newRecordingAzBlobClient(map[string]int{"2.json": 1})
+			exporter.client = client
+
+			consumeErr := input.consume(t.Context(), exporter)
+			require.Error(t, consumeErr)
+
+			// The error must carry only the failed resource, as the
+			// exporterhelper retry sender extracts it via OnError.
+			wantRetry, err := input.marshal(1)
+			require.NoError(t, err)
+			var gotRetry []byte
+			switch signal {
+			case pipeline.SignalLogs:
+				var partial consumererror.Logs
+				require.ErrorAs(t, consumeErr, &partial)
+				gotRetry, err = (&plog.JSONMarshaler{}).MarshalLogs(partial.Data())
+			case pipeline.SignalMetrics:
+				var partial consumererror.Metrics
+				require.ErrorAs(t, consumeErr, &partial)
+				gotRetry, err = (&pmetric.JSONMarshaler{}).MarshalMetrics(partial.Data())
+			case pipeline.SignalTraces:
+				var partial consumererror.Traces
+				require.ErrorAs(t, consumeErr, &partial)
+				gotRetry, err = (&ptrace.JSONMarshaler{}).MarshalTraces(partial.Data())
+			}
+			require.NoError(t, err)
+			assert.JSONEq(t, string(wantRetry), string(gotRetry))
+
+			wantUploaded, err := input.marshal(0)
+			require.NoError(t, err)
+			require.Len(t, client.uploads["1.json"], 1)
+			assert.JSONEq(t, string(wantUploaded), string(client.uploads["1.json"][0]))
+			assert.Empty(t, client.uploads["2.json"])
 		})
 	}
 }

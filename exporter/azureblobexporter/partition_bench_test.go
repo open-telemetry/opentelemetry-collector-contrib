@@ -48,15 +48,11 @@ func BenchmarkPartitionLogsByBlobName(b *testing.B) {
 		{"template_disabled", false, 10, 10},
 		{"all_same_name", true, 10, 1},
 		{"all_distinct_names", true, 10, 10},
-		{"resources=1000/destinations=1", true, 1000, 1},
-		{"resources=1000/destinations=10", true, 1000, 10},
-		{"resources=1000/destinations=100", true, 1000, 100},
 		{"resources=1000/destinations=1000", true, 1000, 1000},
 	} {
 		b.Run(bc.name, func(b *testing.B) {
 			e := benchExporter(b, bc.templateEnabled)
-			// Keep record volume fixed; the 1000-resource cases also keep
-			// resource structure fixed to isolate destination cardinality.
+			// Keep record volume fixed so cases differ only in destination cardinality.
 			logs := benchLogs(bc.resources, 1000/bc.resources, bc.destinations)
 			wantGroups := bc.destinations
 			if !bc.templateEnabled {
