@@ -5,6 +5,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"strings"
@@ -13,13 +14,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -32,6 +33,8 @@ const (
 )
 
 var _ exporter.Logs = (*logExporterImp)(nil)
+
+type exporterLogs map[*wrappedExporter]plog.Logs
 
 type logExporterImp struct {
 	loadBalancer *loadBalancer
@@ -120,11 +123,10 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		batches = splitLogsByAttributes(ld, e.routingAttrs)
 	}
 
-	logsByExporter := make(map[*wrappedExporter]plog.Logs, len(batches))
-	exporterEndpoints := make(map[*wrappedExporter]string, len(batches))
+	logsByExporter := make(exporterLogs, len(batches))
 
 	for routingID, lds := range batches {
-		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
 		if err != nil {
 			return err
 		}
@@ -133,30 +135,50 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		if !ok {
 			exp.consumeWG.Add(1)
 			logsByExporter[exp] = lds
-			exporterEndpoints[exp] = endpoint
 		} else {
 			mergeLogs(logsByExporter[exp], lds)
 		}
 	}
 
-	var errs error
-	for exp, lds := range logsByExporter {
-		start := time.Now()
-		err := exp.ConsumeLogs(ctx, lds)
-		duration := time.Since(start)
+	return e.exportBatches(ctx, logsByExporter)
+}
 
-		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
-		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
-		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export logs", zap.Error(err))
+// exportToBackend sends ld to one backend, records per-backend telemetry, and signals the
+// exporter's consume wait group.
+func (e *logExporterImp) exportToBackend(ctx context.Context, exp *wrappedExporter, ld plog.Logs) error {
+	start := time.Now()
+	err := exp.ConsumeLogs(ctx, ld)
+	duration := time.Since(start)
+	exp.consumeWG.Done()
+	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+	if err == nil {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+	} else {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+		e.logger.Debug("failed to export logs", zap.Error(err))
+	}
+	return err
+}
+
+// exportBatches sends each pre-routed batch to its backend, returning a consumererror.Logs
+// carrying only the subset that failed so retries do not re-send already-delivered data.
+func (e *logExporterImp) exportBatches(ctx context.Context, batches exporterLogs) error {
+	var errs error
+	var failed []plog.Logs
+	for exp, lds := range batches {
+		if err := e.exportToBackend(ctx, exp, lds); err != nil {
+			errs = errors.Join(errs, err)
+			failed = append(failed, failedLogsFromError(err, lds))
 		}
 	}
-
-	return errs
+	if len(failed) == 0 {
+		return nil
+	}
+	// Merging into the first failed batch leaves the common single-failure case a no-op.
+	for _, lds := range failed[1:] {
+		mergeLogs(failed[0], lds)
+	}
+	return consumererror.NewLogs(errs, failed[0])
 }
 
 func splitLogsByServiceName(ld plog.Logs) map[string]plog.Logs {
