@@ -128,4 +128,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
-replace github.com/hamba/avro/v2 => github.com/iskorotkov/avro/v2 v2.33.0
+replace github.com/hamba/avro/v2 => github.com/iskorotkov/avro/v2 v2.34.0
