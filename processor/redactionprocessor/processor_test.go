@@ -2568,3 +2568,98 @@ func TestDBObfuscationErrorInAttribute(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "SELECT * FROM users WHERE id = ?", val.Str())
 }
+
+func TestMaskingStringIsAppliedToLogs(t *testing.T) {
+	cfg := &Config{
+		AllowAllKeys:  true,
+		MaskingString: "[REDACTED]",
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+	}
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	ils := rl.ScopeLogs().AppendEmpty()
+	logRecord := ils.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("credit card 4111111111111111")
+	logRecord.Attributes().PutStr("credit.card", "4111111111111111")
+
+	logRecordWithMap := ils.LogRecords().AppendEmpty()
+	lrMap := logRecordWithMap.Body().SetEmptyMap()
+	lrMap.PutStr("cc", "4111111111111111")
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outLogs, err := processor.processLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "credit card [REDACTED]", outLog.Body().Str())
+	creditCardAttr, ok := outLog.Attributes().Get("credit.card")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", creditCardAttr.AsString())
+
+	outLogWithMap := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
+	ccFromBodyMap, ok := outLogWithMap.Body().Map().Get("cc")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", ccFromBodyMap.Str())
+}
+
+func TestMaskingStringIsAppliedToSpanAttributesAndEvents(t *testing.T) {
+	cfg := &Config{
+		AllowAllKeys:  true,
+		MaskingString: "[REDACTED]",
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+	}
+
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
+	span.SetName("test-span")
+
+	span.Attributes().PutStr("credit.card", "4111111111111111")
+
+	spanEvent := span.Events().AppendEmpty()
+	spanEvent.SetName("test-event")
+	spanEvent.Attributes().PutStr("cc", "4111111111111111")
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outTraces, err := processor.processTraces(t.Context(), inBatch)
+	require.NoError(t, err)
+
+	outTrace := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	creditCardAttr, ok := outTrace.Attributes().Get("credit.card")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", creditCardAttr.Str())
+	outSpanEvent := outTrace.Events().At(0)
+	ccFromSpanEvent, ok := outSpanEvent.Attributes().Get("cc")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", ccFromSpanEvent.Str())
+}
+
+func TestMaskingStringIsAppliedToMetrics(t *testing.T) {
+	cfg := &Config{
+		AllowAllKeys:  true,
+		MaskingString: "[REDACTED]",
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+	}
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("request")
+	metric.SetEmptyGauge()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("credit.card", "4111111111111111")
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outMetrics, err := processor.processMetrics(t.Context(), metrics)
+	require.NoError(t, err)
+	outAttrs := outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes()
+	creditCardAttr, ok := outAttrs.Get("credit.card")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", creditCardAttr.Str())
+}
