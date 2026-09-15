@@ -82,6 +82,9 @@ type franzConsumer struct {
 	host         component.Host
 	stoppingOnce sync.Once
 	stoppedOnce  sync.Once
+
+	// telemetryShutdownOnce ensures callbacks release their stopped metric consumer exactly once.
+	telemetryShutdownOnce sync.Once
 }
 
 // newFranzKafkaConsumer creates a new franz-go based Kafka consumer
@@ -97,7 +100,7 @@ func newFranzKafkaConsumer(
 		return nil, err
 	}
 
-	return &franzConsumer{
+	consumer := &franzConsumer{
 		config:           config,
 		topics:           topics,
 		excludeTopics:    excludeTopics,
@@ -110,7 +113,33 @@ func newFranzKafkaConsumer(
 		assignments:      make(map[topicPartition]*pc),
 		controls:         make(chan partitionControl, 1),
 		brokerReadOpts:   make(map[brokerReadKey]metric.MeasurementOption),
-	}, nil
+	}
+
+	// otelcol_kafka_receiver_offset_lag is an observable gauge which requires a callback
+	// to report the lag once every metric collection cycle.
+	if err := telemetryBuilder.RegisterKafkaReceiverOffsetLagCallback(consumer.observeOffsetLag); err != nil {
+		return nil, err
+	}
+	return consumer, nil
+}
+
+// observeOffsetLag report offset lag for all current partition assignments.
+func (c *franzConsumer) observeOffsetLag(_ context.Context, observer metric.Int64Observer) error {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	for _, pc := range c.assignments {
+		// Avoid reporting when the assignment has not yet a processed batch
+		// and if a partition assignment has been lost/revoked
+		if pc.hasOffsetLag.Load() && !pc.partitionLost.Load() {
+			observer.Observe(pc.offsetLag.Load(), metric.WithAttributeSet(pc.attrs))
+		}
+	}
+	return nil
+}
+
+// shutdownTelemetry unregisters callbacks so a shared MeterProvider cannot retain or report from this consumer.
+func (c *franzConsumer) shutdownTelemetry() {
+	c.telemetryShutdownOnce.Do(c.telemetryBuilder.Shutdown)
 }
 
 // reportStatus emits a component status event if we have a host.
@@ -129,9 +158,15 @@ func (c *franzConsumer) reportRecoverable(err error) {
 	componentstatus.ReportStatus(c.host, componentstatus.NewRecoverableErrorEvent(err))
 }
 
-func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
+func (c *franzConsumer) Start(ctx context.Context, host component.Host) (err error) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	startClaimed := false
+	defer func() {
+		c.mu.Unlock()
+		if startClaimed && err != nil {
+			c.shutdownTelemetry()
+		}
+	}()
 	select {
 	case <-c.closing:
 		return errors.New("franz kafka consumer already shut down")
@@ -140,6 +175,8 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	default:
 		close(c.started)
 	}
+	// This invocation owns telemetry cleanup after claiming the start lifecycle.
+	startClaimed = true
 
 	// Report "Starting" as soon as Start() is called.
 	c.host = host
@@ -471,6 +508,8 @@ func (c *franzConsumer) dispatchPartitionBatches(
 }
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
+	defer c.shutdownTelemetry()
+
 	// Report Stopping at shutdown start.
 	c.stoppingOnce.Do(func() { c.reportStatus(componentstatus.StatusStopping) })
 
@@ -591,6 +630,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			if !ok {
 				continue
 			}
+			pc.partitionLost.Store(true)
 			pc.cancelContext(errors.New(
 				"stopping processing: partition reassigned or lost",
 			))

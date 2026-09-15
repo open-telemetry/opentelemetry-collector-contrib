@@ -45,6 +45,14 @@ type pc struct {
 	// pauseReasons stores a bitmask of partitionPauseReason values.
 	pauseReasons atomic.Uint32
 
+	// offsetLag holds the last reported offset lag
+	offsetLag atomic.Int64
+	// hasOffsetLag flag to track when the partition has processed the first batch and reported an offset lag
+	hasOffsetLag atomic.Bool
+
+	// partitionLost indicates if a partition assignment has been lost or revoked
+	partitionLost atomic.Bool
+
 	// mu prevents cancellation from racing a new wg.Add.
 	mu sync.RWMutex
 	// wg tracks the number of in-flight message processing goroutines for this
@@ -266,11 +274,10 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 	if lastProcessed == nil {
 		return result
 	}
-	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
-		ctx,
-		(p.HighWatermark-1)-lastProcessed.Offset,
-		metric.WithAttributeSet(pc.attrs),
-	)
+	// Record the current consumer lag.
+	pc.offsetLag.Store((p.HighWatermark - 1) - lastProcessed.Offset)
+	pc.hasOffsetLag.Store(true)
+
 	if c.config.MessageMarking.After {
 		// Mark the latest accepted record after processing. This also covers
 		// every earlier record in the batch.

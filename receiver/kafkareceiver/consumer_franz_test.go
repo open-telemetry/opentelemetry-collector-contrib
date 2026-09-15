@@ -1095,7 +1095,13 @@ func TestOffsetLagMetricSuppressedOnForcedRebalance(t *testing.T) {
 				previous := h.assignment(0)
 				release := consume("blocked", true)
 				h.consumer.client.ForceRebalance()
-				//require.Eventually(t, previous.partitionLost.Load, 5*time.Second, 10*time.Millisecond)
+				require.Eventually(
+					t,
+					previous.partitionLost.Load,
+					5*time.Second,
+					10*time.Millisecond,
+					"previous partition assignment was not marked lost during rebalance",
+				)
 
 				// Revocation must hide the old assignment before its worker finishes.
 				requireOffsetLagSamples(t, h.telemetry, "during forced rebalance")
@@ -1201,6 +1207,7 @@ func TestOffsetLagMetricSuppressedDuringPartitionLossRevoke(t *testing.T) {
 					t,
 					tel,
 					"before partition loss/revoke",
+					// validate reassigned + stable partition
 					offsetLagSample{PodName: podName, Partition: int64(reassignedPartition), Lag: lag},
 					stable,
 				)
@@ -1217,7 +1224,13 @@ func TestOffsetLagMetricSuppressedDuringPartitionLossRevoke(t *testing.T) {
 					releaseWorker()
 					<-lostDone
 				})
-				//require.Eventually(t, current.partitionLost.Load, 5*time.Second, 10*time.Millisecond)
+				require.Eventually(
+					t,
+					current.partitionLost.Load,
+					5*time.Second,
+					10*time.Millisecond,
+					"previous partition assignment was not marked lost during rebalance",
+				)
 
 				// Revocation must hide partition 0 lag before its worker finishes.
 				requireOffsetLagSamples(t, tel, "during partition loss/revoke", stable)

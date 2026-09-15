@@ -144,6 +144,7 @@ telemetry:
       unit: "1"
       gauge:
         value_type: int
+        async: true
       attributes: [topic, partition]
     kafka_receiver_partition_close:
       enabled: true
