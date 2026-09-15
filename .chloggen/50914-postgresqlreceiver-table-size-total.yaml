@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/postgresql
+
+note: Fix `postgresql.table.size` to report total disk space used by a table, including its indexes and TOAST data
+
+issues: [50914]
+
+subtext:
+
+change_logs: [user]
