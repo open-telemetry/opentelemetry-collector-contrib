@@ -13,4 +13,3 @@ feature_gates:
     stage: alpha
     from_version: v0.156.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49667
-    skip_strict_validation: true

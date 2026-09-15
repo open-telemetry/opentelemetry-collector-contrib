@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
@@ -456,7 +455,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 			continue
 		}
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
-			Metricnamespace: to.Ptr(configNamespace),
+			Metricnamespace: new(configNamespace),
 		}
 		s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, opts, nil)
 	}
@@ -629,8 +628,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 						&opts,
 					)
 					if err != nil {
-						var respErr *azcore.ResponseError
-						if errors.As(err, &respErr) {
+						if respErr, ok := errors.AsType[*azcore.ResponseError](err); ok {
 							logFields = append(logFields, zap.Any("error", respErr))
 						} else {
 							logFields = append(logFields, zap.Error(err))
@@ -709,11 +707,11 @@ func newQueryResourcesOptions(
 	top int32,
 ) azmetrics.QueryResourcesOptions {
 	return azmetrics.QueryResourcesOptions{
-		Aggregation: to.Ptr(aggregationsStr),
-		StartTime:   to.Ptr(start.Format(time.RFC3339)),
-		EndTime:     to.Ptr(end.Format(time.RFC3339)),
-		Interval:    to.Ptr(timeGrain),
-		Top:         to.Ptr(top), // Defaults to 10 (may be limiting results)
+		Aggregation: new(aggregationsStr),
+		StartTime:   new(start.Format(time.RFC3339)),
+		EndTime:     new(end.Format(time.RFC3339)),
+		Interval:    new(timeGrain),
+		Top:         new(top), // Defaults to 10 (may be limiting results)
 		Filter:      buildDimensionsFilter(dimensionsStr),
 	}
 }

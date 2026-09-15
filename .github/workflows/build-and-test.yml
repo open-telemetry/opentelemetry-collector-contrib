@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -168,18 +168,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Lint
         env:
           MATRIX_GOOS: ${{ matrix.goos }}
           MATRIX_GROUP: ${{ matrix.group }}
-        run: GOOS="${MATRIX_GOOS}" GOARCH=amd64 make -j2 golint GROUP="${MATRIX_GROUP}"
+        run: GOGC=50 GOMEMLIMIT=2GiB GOOS="${MATRIX_GOOS}" GOARCH=amd64 make -j2 golint GROUP="${MATRIX_GROUP}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, lint-matrix]
     steps:
       - name: Print result
@@ -213,6 +213,7 @@ jobs:
           - internal
           - pkg
           - cmd-0
+          - other
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [setup-environment]
@@ -221,7 +222,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           # Pinned to oldstable while github.com/cockroachdb/swiss does not
           # build with Go 1.27; revert once
@@ -268,7 +269,7 @@ jobs:
       # Workaround for https://github.com/go-git/go-git/issues/2242
       - name: Disable git auto maintenance
         run: git config --global maintenance.auto false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
           gomoddownload: ${{ matrix.shard == 'read-only-checks' && 'false' || 'true' }}
@@ -278,7 +279,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, checks-matrix]
     steps:
       - name: Print result
@@ -308,7 +309,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -344,18 +345,39 @@ jobs:
           retention-days: 4
       - name: Fail workflow if tests fails
         if: always()
+        env:
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+          TESTS_WITH_JUNIT_OUTCOME: ${{ steps.tests-with-junit.outcome }}
         run: |
-          if [[ "${{ steps.tests-with-junit.outcome }}" == "failure" || "${{ steps.tests.outcome }}" == "failure" ]]; then
+          if [[ "${TESTS_WITH_JUNIT_OUTCOME}" == "failure" || "${TESTS_OUTCOME}" == "failure" ]]; then
             echo "Tests failed. Failing workflow."
             exit 1
           else
             echo "Tests passed or were skipped. Continuing."
           fi
 
+  # Runs tests without the race detector so that test files guarded by
+  # //go:build !race are included. Most groups will find no !race packages
+  # and skip silently via test-no-race.
+  unittest-no-race:
+    needs: [setup-environment]
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-go-tools # zizmor: ignore
+        with:
+          go-version: oldstable
+      - name: Run Unit Tests Without Race Detector
+        run: make gotest-no-race
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
-    needs: [setup-environment, unittest-matrix]
+    runs-on: ubuntu-slim
+    needs: [setup-environment, unittest-matrix, unittest-no-race]
     steps:
       - name: Print result
         run: echo ${{ needs.unittest-matrix.result }}
@@ -366,6 +388,21 @@ jobs:
             echo "All matrix jobs passed!"
           else
             echo "One or more matrix jobs failed."
+            false
+          fi
+      - name: Print no-race result
+        env:
+          NO_RACE_RESULT: ${{ needs.unittest-no-race.result }}
+        run: echo "${NO_RACE_RESULT}"
+      - name: Interpret no-race result
+        env:
+          NO_RACE_RESULT: ${{ needs.unittest-no-race.result }}
+        run: |
+          if [[ success == "${NO_RACE_RESULT}" || skipped == "${NO_RACE_RESULT}" ]]
+          then
+            echo "No-race job passed!"
+          else
+            echo "No-race job failed."
             false
           fi
   coverage:
@@ -398,7 +435,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Compute Docker cache key
@@ -440,7 +477,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Cache Docker images.
@@ -454,14 +491,17 @@ jobs:
 
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
       - name: Print result
-        run: echo ${{ needs.integration-tests-matrix.result }}
+        run: |
+          echo "integration-tests-matrix: ${{ needs.integration-tests-matrix.result }}"
+          echo "integration-sudo-tests-matrix: ${{ needs.integration-sudo-tests-matrix.result }}"
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.integration-tests-matrix.result }} || skipped == ${{ needs.integration-tests-matrix.result }} ]]
+          if [[ ( success == ${{ needs.integration-tests-matrix.result }} || skipped == ${{ needs.integration-tests-matrix.result }} ) && \
+                ( success == ${{ needs.integration-sudo-tests-matrix.result }} || skipped == ${{ needs.integration-sudo-tests-matrix.result }} ) ]]
           then
             echo "All matrix jobs passed!"
           else
@@ -476,7 +516,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Correctness
@@ -489,7 +529,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Correctness
@@ -503,7 +543,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
           gomoddownload: "false"
@@ -594,11 +634,14 @@ jobs:
           - os: aix
             arch: ppc64
             runner: ubuntu-24.04
+          - os: solaris
+            arch: amd64
+            runner: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Generate collector files
@@ -639,7 +682,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
           gomoddownload: "false"
@@ -771,7 +814,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1

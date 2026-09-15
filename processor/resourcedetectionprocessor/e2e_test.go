@@ -892,6 +892,54 @@ func TestE2EAzureDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
+// TestE2EAzureAppServiceDetector tests the Azure App Service detector by setting the
+// environment variables Azure App Service injects and verifying that the resource
+// attributes are attached to metrics.
+func TestE2EAzureAppServiceDetector(t *testing.T) {
+	var expected pmetric.Metrics
+	expectedFile := filepath.Join("testdata", "e2e", "azureappservice", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "azureappservice", "collector"), map[string]string{}, "")
+
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	wantEntries := 10
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
+
+	// Uncomment to regenerate golden file
+	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
+}
+
 // TestE2EK8sAPIDetector tests the k8s_api detector by querying the K8s API server
 // to retrieve node and cluster metadata and verifying that k8s.node.name, k8s.node.uid,
 // and k8s.cluster.uid are correctly detected and attached to metrics.

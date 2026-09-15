@@ -308,7 +308,7 @@ func Test_extractSumMetric(t *testing.T) {
 			evaluate, err := extractSumMetric(tt.monotonicity, tt.suffix)
 			require.NoError(t, err)
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), sMetrics, tt.input)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, tt.input)
 			defer tCtx.Close()
 			_, err = evaluate(t.Context(), tCtx)
 			assert.Equal(t, tt.wantErr, err)

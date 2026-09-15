@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v90/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"

@@ -51,9 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	}
 	clientConfig.HTTP2PingTimeout = 10 * time.Second
 	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
-	clientConfig.MaxIdleConns = hundred
-	clientConfig.MaxIdleConnsPerHost = hundred
-	clientConfig.IdleConnTimeout = idleConnTimeout
+	clientConfig.MaxIdleConns = hundred            //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns.
+	clientConfig.MaxIdleConnsPerHost = hundred     //nolint:staticcheck // SA1019: MaxIdleConnsPerHost is deprecated in favor of Keepalive.MaxIdleConnsPerHost.
+	clientConfig.IdleConnTimeout = idleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout.
 
 	tests := []struct {
 		id       component.ID
