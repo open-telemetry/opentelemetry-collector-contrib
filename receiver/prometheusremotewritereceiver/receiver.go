@@ -799,8 +799,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	}
 	dp.SetCount(count)
 	if count > 0 {
-		// OTLP wants the sum to be zero when the count is, so a histogram whose observations all
-		// landed outside the representable range carries neither.
+		// OTLP requires a data point with no count to carry no sum.
 		dp.SetSum(histogram.Sum)
 	}
 
@@ -1214,9 +1213,8 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 
-	// OTLP wants the count to be the sum of the bucket counts. Prometheus counts an observation
-	// of NaN without putting it in any bucket, so the count it sends can be larger than the
-	// buckets account for.
+	// The count is the bucket total rather than the one that arrived, which an observation of
+	// NaN raises without landing anywhere.
 	dp.SetCount(count)
 	if count > 0 {
 		// OTLP requires the sum to be zero when the count is.
@@ -1230,8 +1228,8 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 	stats.Histograms++
 }
 
-// convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts, reporting false
-// if the deltas take a running count below zero, which no bucket population can express.
+// convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts. validateNHCB has
+// already ruled out the shapes the bounds checks below catch, which are here to hold if it misses.
 func convertNHCBBuckets(histogram *writev2.Histogram) ([]uint64, bool) {
 	// For NHCB, we need numExplicitBounds + 1 buckets (including the final +inf bucket)
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
