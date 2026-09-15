@@ -2510,6 +2510,33 @@ func TestGetAttributesForPodsCronJob(t *testing.T) {
 	assert.Nil(t, attrs)
 }
 
+func TestGetAttributesForHPA(t *testing.T) {
+	kc := &fakeClient{
+		HPAs: map[string]*kube.HPA{
+			"hpa-abc": {
+				Name: "test-hpa",
+				UID:  "hpa-abc",
+				Attributes: map[string]string{
+					"k8s.hpa.label.team": "checkout",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing hpa
+	attrs := p.getAttributesForHPA("hpa-abc")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "checkout", attrs["k8s.hpa.label.team"])
+
+	// Test getting attributes for non-existent hpa
+	attrs = p.getAttributesForHPA("non-existent")
+	assert.Nil(t, attrs)
+}
+
 // newTracesProcessorWithSettings is like newTracesProcessor but uses caller-supplied settings,
 // allowing tests to inject a telemetry-capturing componenttest.Telemetry.
 func newTracesProcessorWithSettings(set processor.Settings, cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {

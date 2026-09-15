@@ -244,14 +244,14 @@ After receiving a pod deletion event, the processor can keep the pod's metadata 
 
 ## Extracting attributes from pod labels and annotations
 
-The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, replicasets, statefulsets, daemonsets, jobs, cronjobs and nodes.
-The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/ReplicaSet/StatefulSet/DaemonSet/Job/CronJob/Node annotations/labels is configured via "annotations"  and "labels" keys.
-This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/replicasets/statefulsets/daemonsets/jobs/cronjobs/nodes and added to spans, metrics and logs.
+The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, replicasets, statefulsets, daemonsets, jobs, cronjobs, horizontalpodautoscalers and nodes.
+The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/ReplicaSet/StatefulSet/DaemonSet/Job/CronJob/HorizontalPodAutoscaler/Node annotations/labels is configured via "annotations"  and "labels" keys.
+This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/replicasets/statefulsets/daemonsets/jobs/cronjobs/horizontalpodautoscalers/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has the following possible values: "pod", "namespace", "deployment", "replicaset", "statefulset", "daemonset", "job", "cronjob" and "node" and defaults to "pod" if none is specified.
+The "from" field has the following possible values: "pod", "namespace", "deployment", "replicaset", "statefulset", "daemonset", "job", "cronjob", "horizontalpodautoscaler" and "node" and defaults to "pod" if none is specified.
 
-By default, extracting metadata from `Deployments`, `ReplicaSets`, `StatefulSets`, `DaemonSets`, `Jobs` and `CronJobs` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
+By default, extracting metadata from `Deployments`, `ReplicaSets`, `StatefulSets`, `DaemonSets`, `Jobs`, `CronJobs` and `HorizontalPodAutoscalers` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
 
 A few examples to use this config are as follows:
 
@@ -308,6 +308,8 @@ The Extracted deployment name is: `opentelemetry-collector`.
 Also note that for **CronJob names (`k8s.cronjob.name`)** a similar pattern applies, but it uses the **Job** informer (not ReplicaSet). With only `k8s.cronjob.name` in `extract.metadata`, the processor derives the CronJob name from the Job's name using a heuristic (8-digit time suffix aligned with pod creation time) and does **not** start a Job informer. The Job informer is started when `k8s.cronjob.uid` is enabled, or when labels or annotations are extracted with `from: job` or `from: cronjob`, in which case the CronJob name can be resolved from the API when available. That reduces RBAC needs and memory use when you only need the CronJob name (no `jobs` watch for that attribute alone).
 
 Extracting labels or annotations with `from: cronjob` additionally starts a **CronJob** informer (to read the CronJob's own labels/annotations) on top of the Job informer (needed to associate a Pod's Job with its owning CronJob's UID).
+
+**HorizontalPodAutoscalers (`from: horizontalpodautoscaler`)** are unlike the workload types above: an HPA has no owning Pod, so its labels/annotations enrich telemetry (typically HPA metrics emitted by the `k8sclusterreceiver`) purely by matching the `k8s.hpa.uid` resource attribute already present on that telemetry — no Pod association or owner-reference chain is involved. Extracting labels or annotations with `from: horizontalpodautoscaler` starts a dedicated **HorizontalPodAutoscaler** informer.
 
 Example:
 
@@ -523,6 +525,8 @@ When using `k8s.cronjob.uid`, or when extracting labels or annotations with `fro
 
 When extracting labels or annotations with `from: cronjob`, the processor additionally needs `get`, `watch` and `list` permissions for `cronjobs` resources.
 
+When extracting labels or annotations with `from: horizontalpodautoscaler`, the processor needs `get`, `watch` and `list` permissions for `horizontalpodautoscalers` resources in the `autoscaling` API group.
+
 Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 
 ```yaml
@@ -545,6 +549,9 @@ rules:
   verbs: ["get", "list", "watch"]
 - apiGroups: ["batch"]
   resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["extensions"]
   resources: ["replicasets"]
@@ -597,6 +604,9 @@ rules:
   verbs: ["get", "list", "watch"]
 - apiGroups: ["batch"]
   resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -778,7 +788,7 @@ k8s_attributes:
     annotations:
       - tag_name: annotation_value  # Resource attribute name
         key: my-annotation           # Annotation key to extract
-        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, cronjob, or node
+        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, cronjob, horizontalpodautoscaler, or node
       - tag_name: deployment_annotation
         key: app.version
         from: deployment
@@ -796,7 +806,7 @@ k8s_attributes:
     labels:
       - tag_name: label_value        # Resource attribute name
         key: my-label                # Label key to extract
-        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, cronjob, or node
+        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, cronjob, horizontalpodautoscaler, or node
       - tag_name: namespace_label
         key: environment
         from: namespace
@@ -929,7 +939,7 @@ All fields listed in the "Complete Configuration Options" section above under `e
 | `tag_name` | string | Auto-generated | Resource attribute name (supports regex backreferences with `key_regex`) |
 | `key` | string | `""` | Exact annotation/label key to extract (mutually exclusive with `key_regex`) |
 | `key_regex` | string | `""` | Regex pattern to match annotation/label keys (mutually exclusive with `key`) |
-| `from` | string | `pod` | Source to extract from: `pod`, `namespace`, `deployment`, `statefulset`, `daemonset`, `job`, `cronjob`, or `node` |
+| `from` | string | `pod` | Source to extract from: `pod`, `namespace`, `deployment`, `statefulset`, `daemonset`, `job`, `cronjob`, `horizontalpodautoscaler`, or `node` |
 
 #### Filter Options
 
@@ -1013,7 +1023,7 @@ The processor maintains an in-memory cache of K8s metadata for all pods it monit
 - **Number of pods monitored**: Each pod's metadata (labels, annotations, owner references) is cached
 - **Metadata fields extracted**: More fields = more memory per pod
 - **Label/annotation extraction rules**: Regex patterns and multiple rules increase overhead
-- **Workload metadata**: Extracting deployment/statefulset/daemonset/job/cronjob metadata adds additional caching
+- **Workload metadata**: Extracting deployment/statefulset/daemonset/job/cronjob/horizontalpodautoscaler metadata adds additional caching
 
 **Optimization strategies:**
 1. **Use node filtering** in agent deployments: `filter.node_from_env_var: KUBE_NODE_NAME`
