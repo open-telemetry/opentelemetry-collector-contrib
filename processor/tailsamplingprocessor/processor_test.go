@@ -1654,6 +1654,69 @@ func TestDropLargeTraces(t *testing.T) {
 	}, 2*time.Second, 100*time.Millisecond)
 }
 
+// TestDropLargeTraceEvictsAccumulatedSpans is a regression test for a memory
+// leak on the too-large drop path. A trace that grows over several batches
+// already has its earlier batches in tail storage by the time it crosses
+// maximum_trace_size_bytes. The drop path removes it from the decision batcher,
+// so no tick will ever take those spans from storage, and relies on
+// releaseNotSampledTrace for eviction, which only evicts on a non-sampled
+// decision cache hit. With the default NopCache the idToTrace entry, its
+// deleteTraceQueue element and the accumulated tail storage payload all leaked.
+func TestDropLargeTraceEvictsAccumulatedSpans(t *testing.T) {
+	controller := newTestTSPController()
+
+	traceID := pcommon.TraceID([16]byte{9, 9, 9, 1})
+	batchOf := func(value string) ptrace.Traces {
+		td := ptrace.NewTraces()
+		ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		sp := ss.Spans().AppendEmpty()
+		sp.SetTraceID(traceID)
+		sp.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+		sp.Attributes().PutStr("foo", value)
+		return td
+	}
+
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(100),
+		ExpectedNewTracesPerSec: 64,
+		MaximumTraceSizeBytes:   4096,
+		// No decision caches, which is the default and what makes the leak visible.
+		PolicyCfgs: testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+
+	nextConsumer := new(consumertest.TracesSink)
+	processor, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+	require.NoError(t, processor.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, processor.Shutdown(t.Context()))
+	}()
+
+	tsp := processor.(*shardedProcessor).shards[0]
+
+	// The first batch stays under the limit and is spilled to tail storage.
+	require.NoError(t, processor.ConsumeTraces(t.Context(), batchOf(strings.Repeat("a", 2048))))
+	controller.waitForTick()
+	require.Len(t, tsp.idToTrace, 1, "trace should be pending after the first batch")
+
+	// The second batch pushes the accumulated size over the limit.
+	require.NoError(t, processor.ConsumeTraces(t.Context(), batchOf(strings.Repeat("b", 3072))))
+	controller.waitForTick()
+
+	assert.Empty(t, tsp.idToTrace, "too-large trace leaked its idToTrace entry")
+	assert.Equal(t, int64(0), tsp.tracesOnMemory.Load(), "traces_on_memory was not decremented")
+	assert.Equal(t, 0, tsp.deleteTraceQueue.Len(), "too-large trace leaked its deleteTraceQueue element")
+
+	taken, err := tsp.tailStorage.Take(traceID)
+	require.NoError(t, err)
+	assert.Equal(t, 0, taken.ResourceSpans().Len(), "too-large trace leaked its accumulated spans in tail storage")
+}
+
 // TestSetMaxTraceSizeDrainedBeforeEvaluation is a regression test for the fix
 // that drains pending configuration updates (SetMaximumTraceSizeBytes) before
 // processing incoming trace batches in the iter loop. Without the drain, Go's
