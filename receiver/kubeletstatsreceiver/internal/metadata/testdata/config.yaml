@@ -1,6 +1,12 @@
 default:
 all_set:
   metrics:
+    container.cpu.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    container.cpu.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     container.cpu.time:
       enabled: true
     container.cpu.usage:
@@ -11,12 +17,24 @@ all_set:
       enabled: true
     container.filesystem.usage:
       enabled: true
+    container.io.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    container.io.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     container.memory.available:
       enabled: true
     container.memory.major_page_faults:
       enabled: true
     container.memory.page_faults:
       enabled: true
+    container.memory.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    container.memory.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     container.memory.rss:
       enabled: true
     container.memory.usage:
@@ -40,6 +58,12 @@ all_set:
       enabled: true
     k8s.container.memory_request_utilization:
       enabled: true
+    k8s.node.cpu.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    k8s.node.cpu.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     k8s.node.cpu.time:
       enabled: true
     k8s.node.cpu.usage:
@@ -54,12 +78,24 @@ all_set:
       enabled: true
     k8s.node.filesystem.usage:
       enabled: true
+    k8s.node.io.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    k8s.node.io.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     k8s.node.memory.available:
       enabled: true
     k8s.node.memory.major_page_faults:
       enabled: true
     k8s.node.memory.page_faults:
       enabled: true
+    k8s.node.memory.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    k8s.node.memory.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     k8s.node.memory.rss:
       enabled: true
     k8s.node.memory.usage:
@@ -84,6 +120,12 @@ all_set:
       enabled: true
     k8s.pod.cpu.node.utilization:
       enabled: true
+    k8s.pod.cpu.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    k8s.pod.cpu.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     k8s.pod.cpu.time:
       enabled: true
     k8s.pod.cpu.usage:
@@ -98,6 +140,12 @@ all_set:
       enabled: true
     k8s.pod.filesystem.usage:
       enabled: true
+    k8s.pod.io.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    k8s.pod.io.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     k8s.pod.memory.available:
       enabled: true
     k8s.pod.memory.major_page_faults:
@@ -106,6 +154,12 @@ all_set:
       enabled: true
     k8s.pod.memory.page_faults:
       enabled: true
+    k8s.pod.memory.pressure.avg:
+      enabled: true
+      attributes: ["pressure.type","pressure.window"]
+    k8s.pod.memory.pressure.total:
+      enabled: true
+      attributes: ["pressure.type"]
     k8s.pod.memory.rss:
       enabled: true
     k8s.pod.memory.usage:
@@ -171,6 +225,12 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    container.cpu.pressure.avg:
+      enabled: true
+      attributes: []
+    container.cpu.pressure.total:
+      enabled: true
+      attributes: []
     container.cpu.time:
       enabled: true
     container.cpu.usage:
@@ -181,12 +241,24 @@ reaggregate_set:
       enabled: true
     container.filesystem.usage:
       enabled: true
+    container.io.pressure.avg:
+      enabled: true
+      attributes: []
+    container.io.pressure.total:
+      enabled: true
+      attributes: []
     container.memory.available:
       enabled: true
     container.memory.major_page_faults:
       enabled: true
     container.memory.page_faults:
       enabled: true
+    container.memory.pressure.avg:
+      enabled: true
+      attributes: []
+    container.memory.pressure.total:
+      enabled: true
+      attributes: []
     container.memory.rss:
       enabled: true
     container.memory.usage:
@@ -210,6 +282,12 @@ reaggregate_set:
       enabled: true
     k8s.container.memory_request_utilization:
       enabled: true
+    k8s.node.cpu.pressure.avg:
+      enabled: true
+      attributes: []
+    k8s.node.cpu.pressure.total:
+      enabled: true
+      attributes: []
     k8s.node.cpu.time:
       enabled: true
     k8s.node.cpu.usage:
@@ -224,12 +302,24 @@ reaggregate_set:
       enabled: true
     k8s.node.filesystem.usage:
       enabled: true
+    k8s.node.io.pressure.avg:
+      enabled: true
+      attributes: []
+    k8s.node.io.pressure.total:
+      enabled: true
+      attributes: []
     k8s.node.memory.available:
       enabled: true
     k8s.node.memory.major_page_faults:
       enabled: true
     k8s.node.memory.page_faults:
       enabled: true
+    k8s.node.memory.pressure.avg:
+      enabled: true
+      attributes: []
+    k8s.node.memory.pressure.total:
+      enabled: true
+      attributes: []
     k8s.node.memory.rss:
       enabled: true
     k8s.node.memory.usage:
@@ -254,6 +344,12 @@ reaggregate_set:
       enabled: true
     k8s.pod.cpu.node.utilization:
       enabled: true
+    k8s.pod.cpu.pressure.avg:
+      enabled: true
+      attributes: []
+    k8s.pod.cpu.pressure.total:
+      enabled: true
+      attributes: []
     k8s.pod.cpu.time:
       enabled: true
     k8s.pod.cpu.usage:
@@ -268,6 +364,12 @@ reaggregate_set:
       enabled: true
     k8s.pod.filesystem.usage:
       enabled: true
+    k8s.pod.io.pressure.avg:
+      enabled: true
+      attributes: []
+    k8s.pod.io.pressure.total:
+      enabled: true
+      attributes: []
     k8s.pod.memory.available:
       enabled: true
     k8s.pod.memory.major_page_faults:
@@ -276,6 +378,12 @@ reaggregate_set:
       enabled: true
     k8s.pod.memory.page_faults:
       enabled: true
+    k8s.pod.memory.pressure.avg:
+      enabled: true
+      attributes: []
+    k8s.pod.memory.pressure.total:
+      enabled: true
+      attributes: []
     k8s.pod.memory.rss:
       enabled: true
     k8s.pod.memory.usage:
@@ -341,6 +449,12 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    container.cpu.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    container.cpu.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     container.cpu.time:
       enabled: false
     container.cpu.usage:
@@ -351,12 +465,24 @@ none_set:
       enabled: false
     container.filesystem.usage:
       enabled: false
+    container.io.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    container.io.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     container.memory.available:
       enabled: false
     container.memory.major_page_faults:
       enabled: false
     container.memory.page_faults:
       enabled: false
+    container.memory.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    container.memory.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     container.memory.rss:
       enabled: false
     container.memory.usage:
@@ -380,6 +506,12 @@ none_set:
       enabled: false
     k8s.container.memory_request_utilization:
       enabled: false
+    k8s.node.cpu.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    k8s.node.cpu.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     k8s.node.cpu.time:
       enabled: false
     k8s.node.cpu.usage:
@@ -394,12 +526,24 @@ none_set:
       enabled: false
     k8s.node.filesystem.usage:
       enabled: false
+    k8s.node.io.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    k8s.node.io.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     k8s.node.memory.available:
       enabled: false
     k8s.node.memory.major_page_faults:
       enabled: false
     k8s.node.memory.page_faults:
       enabled: false
+    k8s.node.memory.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    k8s.node.memory.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     k8s.node.memory.rss:
       enabled: false
     k8s.node.memory.usage:
@@ -424,6 +568,12 @@ none_set:
       enabled: false
     k8s.pod.cpu.node.utilization:
       enabled: false
+    k8s.pod.cpu.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    k8s.pod.cpu.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     k8s.pod.cpu.time:
       enabled: false
     k8s.pod.cpu.usage:
@@ -438,6 +588,12 @@ none_set:
       enabled: false
     k8s.pod.filesystem.usage:
       enabled: false
+    k8s.pod.io.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    k8s.pod.io.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     k8s.pod.memory.available:
       enabled: false
     k8s.pod.memory.major_page_faults:
@@ -446,6 +602,12 @@ none_set:
       enabled: false
     k8s.pod.memory.page_faults:
       enabled: false
+    k8s.pod.memory.pressure.avg:
+      enabled: false
+      attributes: ["pressure.type","pressure.window"]
+    k8s.pod.memory.pressure.total:
+      enabled: false
+      attributes: ["pressure.type"]
     k8s.pod.memory.rss:
       enabled: false
     k8s.pod.memory.usage:
