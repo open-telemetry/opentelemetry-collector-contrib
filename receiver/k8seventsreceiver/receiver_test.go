@@ -357,7 +357,7 @@ func TestReceiverStorageInitialization(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = corev1.AddToScheme(scheme)
-	_ = eventsv1.AddToScheme(scheme)
+			_ = eventsv1.AddToScheme(scheme)
 
 			rCfg := createDefaultConfig().(*Config)
 			rCfg.Storage = tt.storageID
