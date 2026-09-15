@@ -156,7 +156,7 @@ type agentHandler struct {
 
 // EmitZipkinBatch is unsupported agent's
 func (*agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err error) {
-	panic("unsupported receiver")
+	return errors.New("unsupported receiver")
 }
 
 // EmitBatch implements thrift-gen/agent/Agent and it forwards
