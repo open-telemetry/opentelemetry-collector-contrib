@@ -474,7 +474,9 @@ type SASLConfig struct {
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "AWS_MSK_IAM_OAUTHBEARER":
-		// TODO validate c.AWSMSK
+		if c.AWSMSK.Region == "" {
+			return errors.New("region is required for AWS_MSK_IAM_OAUTHBEARER mechanism")
+		}
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
@@ -489,7 +491,7 @@ func (c SASLConfig) Validate() error {
 		}
 	default:
 		return fmt.Errorf(
-			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
+			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
 			c.Mechanism,
 		)
 	}
