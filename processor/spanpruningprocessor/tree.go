@@ -24,7 +24,8 @@ type spanNode struct {
 	isLeaf             bool           // true if node has no children
 	markedForRemoval   bool           // true if node will be aggregated
 	isPreservedOutlier bool           // true if this node is the root of a preserved outlier subtree
-	protected          bool           // true if this node is within a preserved outlier subtree (never aggregated)
+	isExemplar         bool           // true if this node is the root of a sampled exemplar subtree
+	protected          bool           // true if this node is within a preserved outlier or exemplar subtree (never aggregated)
 }
 
 // traceTree holds span nodes indexed by ID plus quick leaf/orphan lists for
@@ -150,6 +151,18 @@ func markOutlierSubtree(root *spanNode) {
 	}
 }
 
+// markExemplarSubtree records root as a sampled-exemplar root and marks every
+// node in its subtree (root included) as protected, so the whole subtree is kept
+// intact (never aggregated). It is exemplar-specific (it sets isExemplar); it
+// deliberately does not reuse markOutlierSubtree so exemplars never acquire an
+// outlier flag.
+func markExemplarSubtree(root *spanNode) {
+	root.isExemplar = true
+	for _, n := range subtreeNodes(root) {
+		n.protected = true
+	}
+}
+
 // subtreeNodes returns root and all of its descendants.
 func subtreeNodes(root *spanNode) []*spanNode {
 	nodes := []*spanNode{root}
@@ -208,13 +221,15 @@ func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool
 		return false
 	}
 
-	// Must not already be marked for removal, and must not itself be a protected
-	// outlier subtree (those are preserved, not aggregated).
+	// Must not already be marked for removal, and must not itself be within a
+	// protected subtree (preserved outliers and sampled exemplars are kept, not
+	// aggregated).
 	if node.markedForRemoval || node.protected {
 		return false
 	}
 
-	// All children must be aggregated or part of a preserved outlier subtree.
+	// All children must be aggregated or part of a protected (preserved outlier
+	// or sampled exemplar) subtree.
 	for _, child := range node.children {
 		if !child.markedForRemoval && !child.protected {
 			return false

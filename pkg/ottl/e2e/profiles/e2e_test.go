@@ -260,11 +260,15 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], nil)`,
-			want:      func(_ *testing.T, _ *ottlprofile.TransformContext) {},
+			want: func(t *testing.T, tCtx *ottlprofile.TransformContext) {
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "test", pcommon.NewValueEmpty())
+			},
 		},
 		{
 			statement: `set(attributes["test"], attributes["unknown"])`,
-			want:      func(_ *testing.T, _ *ottlprofile.TransformContext) {},
+			want: func(t *testing.T, tCtx *ottlprofile.TransformContext) {
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "test", pcommon.NewValueEmpty())
+			},
 		},
 		{
 			statement: `set(attributes["foo"]["test"], "pass")`,
@@ -560,7 +564,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
+			statement: `set(attributes["test"], Decode("cGFzcw==", "base64"))`,
 			want: func(_ *testing.T, tCtx *ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", "pass")
 			},
@@ -1359,7 +1363,9 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
-			want:      func(_ *testing.T, _ *ottlprofile.TransformContext) {},
+			want: func(t *testing.T, tCtx *ottlprofile.TransformContext) {
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "test", pcommon.NewValueEmpty())
+			},
 		},
 		{
 			name:      "map value as input to function",
@@ -1654,7 +1660,7 @@ func constructProfileTransformContext() *ottlprofile.TransformContext {
 
 	dic := pprofile.NewProfilesDictionary()
 	scopeProfiles := pprofile.NewScopeProfiles()
-	return ottlprofile.NewTransformContextPtr(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
+	return ottlprofile.NewTransformContext(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
 }
 
 func constructProfileTransformContextEditors() *ottlprofile.TransformContext {
@@ -1688,7 +1694,7 @@ func constructProfileTransformContextEditors() *ottlprofile.TransformContext {
 
 	dic := pprofile.NewProfilesDictionary()
 	scopeProfiles := pprofile.NewScopeProfiles()
-	return ottlprofile.NewTransformContextPtr(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
+	return ottlprofile.NewTransformContext(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
 }
 
 func constructProfileTransformContextValueExpressions() *ottlprofile.TransformContext {
@@ -1727,7 +1733,7 @@ func constructProfileTransformContextValueExpressions() *ottlprofile.TransformCo
 
 	dic := pprofile.NewProfilesDictionary()
 	scopeProfiles := pprofile.NewScopeProfiles()
-	return ottlprofile.NewTransformContextPtr(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
+	return ottlprofile.NewTransformContext(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
 }
 
 func newResourceProfiles(tCtx *ottlprofile.TransformContext) pprofile.ResourceProfiles {

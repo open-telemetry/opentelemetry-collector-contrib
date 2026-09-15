@@ -404,6 +404,52 @@
 			"total succeed number of checkpoints": {
 				"$numberInt": "42"
 			}
+		},
+		"log": {
+			"log bytes written": {
+				"$numberLong": "1048576000"
+			},
+			"log write operations": {
+				"$numberLong": "12345"
+			},
+			"log sync operations": {
+				"$numberLong": "2345"
+			},
+			"log flush operations": {
+				"$numberLong": "8100"
+			},
+			"log sync time duration (usecs)": {
+				"$numberLong": "5000000"
+			}
+		},
+		"connection": {
+			"total fsync I/Os": {
+				"$numberLong": "42"
+			}
+		},
+		"concurrentTransactions": {
+			"read": {
+				"out": {
+					"$numberInt": "3"
+				},
+				"available": {
+					"$numberInt": "125"
+				},
+				"totalTickets": {
+					"$numberInt": "128"
+				}
+			},
+			"write": {
+				"out": {
+					"$numberInt": "1"
+				},
+				"available": {
+					"$numberInt": "127"
+				},
+				"totalTickets": {
+					"$numberInt": "128"
+				}
+			}
 		}
 	},
 	"version": "4.0.25"
