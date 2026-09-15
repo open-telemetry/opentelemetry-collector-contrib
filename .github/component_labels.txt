@@ -229,6 +229,7 @@ processor/spanprocessor processor/span
 processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
+processor/telemetrypolicyprocessor processor/telemetrypolicy
 processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll

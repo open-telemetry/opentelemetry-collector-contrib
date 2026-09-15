@@ -709,6 +709,10 @@ component_management:
     name: processor_tailsampling
     paths:
     - processor/tailsamplingprocessor/**
+  - component_id: processor_telemetrypolicy
+    name: processor_telemetrypolicy
+    paths:
+    - processor/telemetrypolicyprocessor/**
   - component_id: processor_transform
     name: processor_transform
     paths:

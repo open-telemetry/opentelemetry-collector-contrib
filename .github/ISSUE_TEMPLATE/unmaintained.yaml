@@ -247,6 +247,7 @@ body:
       - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
+      - processor/telemetrypolicy
       - processor/transform
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
