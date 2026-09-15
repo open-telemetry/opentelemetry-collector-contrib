@@ -2303,6 +2303,20 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				m.PutStr("list.0.test", "hello")
 			},
 		},
+		{
+			name: "slice args in keep_keys",
+			statements: []string{
+				`set(cache["list_of_keys"], ["flags"])`,
+				`keep_keys(attributes, cache["list_of_keys"])`,
+			},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().RemoveIf(
+					func(key string, _ pcommon.Value) bool {
+						return key != "flags"
+					},
+				)
+			},
+		},
 	}
 
 	for _, tt := range tests {

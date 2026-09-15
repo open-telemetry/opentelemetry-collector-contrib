@@ -82,7 +82,8 @@ func Test_keepKeys(t *testing.T) {
 				}
 			}
 
-			exprFunc := keepKeys(target, keys)
+			sliceKeys := ottl.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](true, keys)
+			exprFunc := keepKeys(target, sliceKeys)
 
 			_, err := exprFunc(nil, scenarioMap)
 			require.NoError(t, err)
@@ -107,13 +108,13 @@ func Test_keepKeys_bad_input(t *testing.T) {
 		},
 	}
 
-	keys := []ottl.StringGetter[any]{
+	keys := ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 		ottl.StandardStringGetter[any]{
 			Getter: func(_ context.Context, _ any) (any, error) {
 				return "anything", nil
 			},
 		},
-	}
+	})
 
 	exprFunc := keepKeys[any](target, keys)
 
@@ -131,13 +132,13 @@ func Test_keepKeys_get_nil(t *testing.T) {
 		},
 	}
 
-	keys := []ottl.StringGetter[any]{
+	keys := ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 		ottl.StandardStringGetter[any]{
 			Getter: func(_ context.Context, _ any) (any, error) {
 				return "anything", nil
 			},
 		},
-	}
+	})
 
 	exprFunc := keepKeys[any](target, keys)
 	_, err := exprFunc(nil, nil)
@@ -168,13 +169,13 @@ func Test_KeepKeysFactory(t *testing.T) {
 				return pcommon.NewMap(), nil
 			},
 		}
-		keepKeysArgs.Keys = []ottl.StringGetter[any]{
+		keepKeysArgs.Keys = *ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 			ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return "key", nil
 				},
 			},
-		}
+		})
 
 		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
