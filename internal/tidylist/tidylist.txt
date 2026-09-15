@@ -163,6 +163,7 @@ pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
+extension/filetelemetrypolicyextension
 extension/googleclientauthextension
 extension/headerssetterextension
 pkg/status
