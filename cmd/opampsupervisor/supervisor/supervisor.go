@@ -172,6 +172,18 @@ type Supervisor struct {
 	// lastHealthFromClient is the last health status of the agent received from the client.
 	lastHealthFromClient atomic.Pointer[protobufs.ComponentHealth]
 
+	// healthMu guards lastReportedHealth and its publication, so that a health
+	// update and an OpAMP client replacement cannot interleave and lose the
+	// newer value.
+	healthMu sync.Mutex
+	// lastReportedHealth is the last health the Supervisor published to the OpAMP
+	// server, whether it originated from the agent or from process supervision.
+	// A replacement OpAMP client is seeded from it, so that accepting connection
+	// settings does not report a running agent as unhealthy. It is deliberately
+	// distinct from lastHealthFromClient, which holds agent-reported health only
+	// and takes part in config apply timeout decisions.
+	lastReportedHealth *protobufs.ComponentHealth
+
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
@@ -758,7 +770,12 @@ func (s *Supervisor) startOpAMPClient() error {
 		return err
 	}
 
-	if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
+	// Replacing the client must not reset the agent's health. The agent reports
+	// aggregate status changes only, so health published here is not corrected
+	// until the agent's health changes again, which for a healthy agent means not
+	// until its process restarts. When no health has been published yet this is
+	// the initial client, and unhealthy is published as before.
+	if err := s.publishLastReportedHealth(); err != nil {
 		return err
 	}
 
@@ -2050,7 +2067,7 @@ func (s *Supervisor) runAgentProcess() {
 				s.telemetrySettings.Logger.Debug("No config present, nothing to apply")
 				configApplyTimeoutTimer.Stop()
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
-				if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
+				if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
 					s.telemetrySettings.Logger.Error("Could not report healthy status to OpAMP server", zap.Error(err))
 				}
 				// need to clear exit channel to avoid triggering `s.commander.Exited()` case
@@ -2348,7 +2365,7 @@ func (s *Supervisor) Shutdown() {
 	}
 
 	if s.opampClient != nil {
-		err := s.opampClient.SetHealth(
+		err := s.SetHealth(
 			&protobufs.ComponentHealth{
 				Healthy: false, LastError: "Supervisor is shutdown",
 			},
@@ -2500,7 +2517,36 @@ func (s *Supervisor) reportLastWorkingRemoteConfigStatus(status protobufs.Remote
 	}
 }
 
+// SetHealth publishes the agent's health to the OpAMP server and records it as
+// the health a replacement client is given. All health publication goes through
+// it, whether the health came from the agent or from process supervision, so
+// that replacing the client preserves what the server was last told.
 func (s *Supervisor) SetHealth(componentHealth *protobufs.ComponentHealth) error {
+	s.healthMu.Lock()
+	defer s.healthMu.Unlock()
+
+	return s.setHealthLocked(componentHealth)
+}
+
+// publishLastReportedHealth publishes the health last reported to the OpAMP
+// server, so that a newly created client reports it instead of resetting it. It
+// publishes unhealthy when no health has been reported yet.
+func (s *Supervisor) publishLastReportedHealth() error {
+	s.healthMu.Lock()
+	defer s.healthMu.Unlock()
+
+	componentHealth := s.lastReportedHealth
+	if componentHealth == nil {
+		componentHealth = &protobufs.ComponentHealth{Healthy: false}
+	}
+	return s.setHealthLocked(componentHealth)
+}
+
+// setHealthLocked publishes health to the OpAMP server and records it. s.healthMu
+// must be held: the read and the publication in publishLastReportedHealth have to
+// exclude a concurrent update, otherwise health reported while the client is being
+// replaced would be overwritten by the older value being republished.
+func (s *Supervisor) setHealthLocked(componentHealth *protobufs.ComponentHealth) error {
 	s.telemetrySettings.Logger.Debug(
 		"Setting health",
 		zap.Bool("healthy", componentHealth.Healthy),
@@ -2512,6 +2558,8 @@ func (s *Supervisor) SetHealth(componentHealth *protobufs.ComponentHealth) error
 	if err != nil {
 		return fmt.Errorf("failed to set health to OpAMP server: %w", err)
 	}
+	// Cloned because the caller retains ownership of the message it passed.
+	s.lastReportedHealth = proto.Clone(componentHealth).(*protobufs.ComponentHealth)
 	return nil
 }
 
