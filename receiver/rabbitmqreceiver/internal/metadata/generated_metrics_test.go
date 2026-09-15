@@ -327,6 +327,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRabbitmqNodeUptimeDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
+			rb.SetRabbitmqClusterName("rabbitmq.cluster.name-val")
 			rb.SetRabbitmqExchangeName("rabbitmq.exchange.name-val")
 			rb.SetRabbitmqExchangeType("rabbitmq.exchange.type-val")
 			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
