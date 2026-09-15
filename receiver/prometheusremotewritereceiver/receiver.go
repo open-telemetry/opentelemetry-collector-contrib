@@ -482,9 +482,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			dataPoints := metric.Sum().DataPoints()
 			before := dataPoints.Len()
 			addNumberDatapoints(dataPoints, ls, ts, &stats)
-			// The first point this series appended is the one its exemplars belong to, and
-			// consuming the entry stops a second metric identity built from the same labels,
-			// differing only by type or unit, from taking a copy of the same exemplars.
+			// Exemplars belong to a series, not to a metric, so consuming the entry stops a second
+			// metric built from the same labels, differing only by type or unit, from publishing a copy.
 			if len(exemplarMap) > 0 && dataPoints.Len() > before {
 				key := makeExemplarKey(ls)
 				if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
