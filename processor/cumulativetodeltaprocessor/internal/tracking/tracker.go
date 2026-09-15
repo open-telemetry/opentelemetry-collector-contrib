@@ -214,6 +214,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 		// Calculate deltas unless there was a reset.
 		if valid {
 			if !isMonotonicHistogram(&delta, prevValue) {
+				state.prevPoint = metricPoint
 				return out, false, ReasonReset
 			}
 			delta.Count -= prevValue.Count
@@ -231,6 +232,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 
 		// Count and ZeroThreshold should only increase when merging, and Scale should only decrease.
 		if value.Count < prevValue.Count || value.ZeroThreshold < prevValue.ZeroThreshold || value.Scale > prevValue.Scale {
+			state.prevPoint = metricPoint
 			return out, false, ReasonReset
 		}
 
@@ -262,10 +264,12 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 		var reset bool
 		delta.Positive, reset = value.Positive.Diff(&prevValue.Positive)
 		if reset {
+			state.prevPoint = metricPoint
 			return out, false, ReasonReset
 		}
 		delta.Negative, reset = value.Negative.Diff(&prevValue.Negative)
 		if reset {
+			state.prevPoint = metricPoint
 			return out, false, ReasonReset
 		}
 
