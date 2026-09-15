@@ -222,6 +222,11 @@ func runner(t *testing.T, eventType string, restartCollector, persistentQueue, a
 	tc.ValidateData()
 }
 
+// outageExporterTimeout is the exporter `timeout` used by
+// TestExporterRetriesAfterElasticsearchRecovers. The simulated outage is kept
+// going until the exporter has been retrying for longer than this.
+const outageExporterTimeout = 5 * time.Second
+
 type outageDataReceiver struct {
 	*esDataReceiver
 	storage string
@@ -241,7 +246,7 @@ func (r *outageDataReceiver) GenConfigYAMLStr() string {
       max_retries: 200
       initial_interval: 500ms
       max_interval: 1s
-    timeout: 5s
+    timeout: %s
     sending_queue:
       enabled: true
 %s      block_on_overflow: false
@@ -254,11 +259,18 @@ func (r *outageDataReceiver) GenConfigYAMLStr() string {
         min_size: 5000
         max_size: 10000
         sizer: items
-`, r.endpoint, TestLogsIndex, storage)
+`, r.endpoint, TestLogsIndex, outageExporterTimeout, storage)
 }
 
 // TestExporterRetriesAfterElasticsearchRecovers verifies that data remains
 // queued while Elasticsearch is unavailable and is exported when it recovers.
+//
+// The outage is simulated by the mock Elasticsearch aborting every connection
+// without a response. The exporter sees the same transport-level failure as
+// with an unreachable endpoint, but deterministically on every platform and
+// observably by the test: dialing a closed port can take seconds to fail on
+// Windows, which made a closed-port version of this test flaky.
+//
 // The retry intervals are short enough for testing, while the exporter timeout
 // is long enough to inspect retry behavior with a debugger.
 func TestExporterRetriesAfterElasticsearchRecovers(t *testing.T) {
@@ -304,6 +316,15 @@ func testExporterRetriesAfterElasticsearchRecovers(t *testing.T, persistent bool
 	require.NoError(t, err)
 	defer cleanup()
 
+	// While esDown is set, the mock Elasticsearch aborts every bulk request.
+	// Each aborted request is one export attempt; timestamping them lets the
+	// test observe how long the exporter keeps retrying.
+	var (
+		esDown                        atomic.Bool
+		firstAttemptAt, lastAttemptAt atomic.Int64 // Unix nanoseconds
+	)
+	esDown.Store(true)
+
 	tc := testbed.NewTestCase(
 		t,
 		provider,
@@ -313,30 +334,38 @@ func testExporterRetriesAfterElasticsearchRecovers(t *testing.T, persistent bool
 		newCountValidator(t, provider),
 		&testbed.CorrectnessResults{},
 		testbed.WithSkipResults(),
+		testbed.WithDecisionFunc(func() error {
+			if !esDown.Load() {
+				return nil
+			}
+			now := time.Now().UnixNano()
+			firstAttemptAt.CompareAndSwap(0, now)
+			lastAttemptAt.Store(now)
+			return errElasticsearch{abortConnection: true}
+		}),
 	)
 	defer tc.Stop()
 
-	// Start the collector without the mock Elasticsearch backend, send one
-	// full batch, and let the exporter cycle through several failed export
-	// attempts against the unreachable endpoint.
+	// Start with Elasticsearch down and send one full batch.
+	tc.StartBackend()
 	tc.StartAgent()
 	tc.StartLoad(loadOpts)
 	require.Eventually(t, func() bool {
 		return tc.LoadGenerator.DataItemsSent() == 5_000
 	}, 3*time.Second, 10*time.Millisecond)
 	tc.StopLoad()
-	time.Sleep(5500 * time.Millisecond)
 
-	// Once Elasticsearch recovers, the queue should retry the request and
-	// deliver every log in the batch.
-	//
-	// The bound must cover an attempt that is already in flight when the
-	// backend comes up. Dialing a closed port is nearly instantaneous on
-	// Linux, but on Windows it has been observed to take several seconds
-	// before the connection is refused; only then does the retry back off
-	// (up to retry::max_interval) and finally reach the backend, which
-	// still has to decode the whole batch under the race detector.
-	tc.StartBackend()
+	// Keep the outage going until the exporter has been retrying for longer
+	// than `timeout`. Before #49834 all retries of a flush shared a single
+	// `timeout` deadline, so retrying stopped here and the batch was dropped.
+	require.Eventually(t, func() bool {
+		first, last := firstAttemptAt.Load(), lastAttemptAt.Load()
+		return first != 0 && time.Duration(last-first) > outageExporterTimeout
+	}, 30*time.Second, 10*time.Millisecond, "exporter should keep retrying while Elasticsearch is down")
+
+	// Once Elasticsearch recovers, the next retry, at most retry::max_interval
+	// away, should deliver every log in the batch.
+	esDown.Store(false)
 	require.Eventually(t, func() bool {
 		return tc.MockBackend.DataItemsReceived() == tc.LoadGenerator.DataItemsSent()
 	}, 15*time.Second, 10*time.Millisecond)
