@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -338,8 +339,10 @@ func (e *azureBlobExporter) generateBlobNameWithCompression(signal pipeline.Sign
 		return "", err
 	}
 
-	// Append compression extension if configured. This must be done after generateBlobName
-	// so that the base name (including serial number etc) is generated first.
+	return e.appendCompressionExtension(blobName), nil
+}
+
+func (e *azureBlobExporter) appendCompressionExtension(blobName string) string {
 	switch e.config.Compression {
 	case configcompression.TypeGzip:
 		blobName += ".gz"
@@ -347,52 +350,48 @@ func (e *azureBlobExporter) generateBlobNameWithCompression(signal pipeline.Sign
 		blobName += ".zst"
 	}
 
-	return blobName, nil
+	return blobName
 }
 
 func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryData any) (string, error) {
-	// Get current time
-	now := time.Now()
+	var format string
+	switch signal {
+	case pipeline.SignalMetrics:
+		format = e.config.BlobNameFormat.MetricsFormat
+	case pipeline.SignalLogs:
+		format = e.config.BlobNameFormat.LogsFormat
+	case pipeline.SignalTraces:
+		format = e.config.BlobNameFormat.TracesFormat
+	default:
+		return "", fmt.Errorf("unsupported signal type: %v", signal)
+	}
 
+	// if template enabled, parse and apply template. if met error, fallback to default blob name format
+	if e.config.BlobNameFormat.TemplateEnabled {
+		// Render template with telemetry data
+		rendered, err := e.renderBlobNameTemplate(signal, telemetryData)
+		if err != nil {
+			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
+		} else {
+			format = rendered
+		}
+	}
+
+	return e.formatBlobName(format), nil
+}
+
+func (e *azureBlobExporter) formatBlobName(format string) string {
+	now := time.Now()
 	if e.timeLocation != nil {
 		now = now.In(e.timeLocation)
 	}
 
-	var format string
-	var tmpl *template.Template
-	switch signal {
-	case pipeline.SignalMetrics:
-		format = e.config.BlobNameFormat.MetricsFormat
-		tmpl = e.blobNameTemplate.metrics
-	case pipeline.SignalLogs:
-		format = e.config.BlobNameFormat.LogsFormat
-		tmpl = e.blobNameTemplate.logs
-	case pipeline.SignalTraces:
-		format = e.config.BlobNameFormat.TracesFormat
-		tmpl = e.blobNameTemplate.traces
-	default:
-		return "", fmt.Errorf("unsupported signal type: %v", signal)
-	}
-	var blobName string
-
-	// if template enabled, parse and apply template. if met error, fallback to default blob name format
-	if e.config.BlobNameFormat.TemplateEnabled {
-		// Parse and apply template with telemetry data
-		var buf bytes.Buffer
-		err := tmpl.Execute(&buf, telemetryData)
-		if err != nil {
-			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
-		} else {
-			blobName = buf.String()
-			format = blobName
-		}
-	}
-
 	if !e.config.BlobNameFormat.SerialNumEnabled {
 		// No serial number enabled, return the formatted blob name
-		return e.parseTimeInBlobName(now, format), nil
+		return e.parseTimeInBlobName(now, format)
 	}
 
+	var blobName string
 	if e.config.BlobNameFormat.SerialNumBeforeExtension {
 		// Append a random number and do so before the file extension if there is one
 		ext := filepath.Ext(format)
@@ -404,7 +403,7 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 		blobName = fmt.Sprintf("%s_%d", e.parseTimeInBlobName(now, format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)))
 	}
 
-	return blobName, nil
+	return blobName
 }
 
 func (e *azureBlobExporter) parseTimeInBlobName(now time.Time, format string) string {
@@ -467,42 +466,256 @@ func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	// Marshal the metrics data
-	data, err := e.marshaller.marshalMetrics(md)
-	if err != nil {
-		return fmt.Errorf("failed to marshal metrics: %w", err)
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-
-	return e.consumeData(ctx, md, data, pipeline.SignalMetrics)
+	return uploadGroups(ctx, e, pipeline.SignalMetrics, e.partitionMetricsByBlobName(md),
+		e.marshaller.marshalMetrics,
+		func(err error, failed []pmetric.Metrics) error {
+			combined := pmetric.NewMetrics()
+			for _, f := range failed {
+				f.ResourceMetrics().MoveAndAppendTo(combined.ResourceMetrics())
+			}
+			return consumererror.NewMetrics(err, combined)
+		})
 }
 
 func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	// Marshal the logs data
-	data, err := e.marshaller.marshalLogs(ld)
-	if err != nil {
-		return fmt.Errorf("failed to marshal logs: %w", err)
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-
-	return e.consumeData(ctx, ld, data, pipeline.SignalLogs)
+	return uploadGroups(ctx, e, pipeline.SignalLogs, e.partitionLogsByBlobName(ld),
+		e.marshaller.marshalLogs,
+		func(err error, failed []plog.Logs) error {
+			combined := plog.NewLogs()
+			for _, f := range failed {
+				f.ResourceLogs().MoveAndAppendTo(combined.ResourceLogs())
+			}
+			return consumererror.NewLogs(err, combined)
+		})
 }
 
 func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	// Marshal the trace data
-	data, err := e.marshaller.marshalTraces(td)
-	if err != nil {
-		return fmt.Errorf("failed to marshal traces: %w", err)
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-
-	return e.consumeData(ctx, td, data, pipeline.SignalTraces)
+	return uploadGroups(ctx, e, pipeline.SignalTraces, e.partitionTracesByBlobName(td),
+		e.marshaller.marshalTraces,
+		func(err error, failed []ptrace.Traces) error {
+			combined := ptrace.NewTraces()
+			for _, f := range failed {
+				f.ResourceSpans().MoveAndAppendTo(combined.ResourceSpans())
+			}
+			return consumererror.NewTraces(err, combined)
+		})
 }
 
-func (e *azureBlobExporter) consumeData(ctx context.Context, telemetryData any, data []byte, signal pipeline.Signal) error {
-	// Generate a unique blob name
-	blobName, err := e.generateBlobNameWithCompression(signal, telemetryData)
-	if err != nil {
-		return fmt.Errorf("failed to generate blobname: %w", err)
+type blobGroup[T any] struct {
+	data T
+	// A non-nil format is already rendered or explicitly selected for fallback.
+	// Never re-render it against the combined group.
+	nameFormat *string
+}
+
+// uploadGroups marshals and uploads each partitioned group. A single group is
+// uploaded synchronously and any error is returned as-is, preserving the
+// non-partitioned behavior. Groups are uploaded sequentially; exporterhelper
+// controls concurrency between export requests. If some groups fail, the error
+// carries only failed and unstarted data for exporterhelper to retry.
+func uploadGroups[T any](
+	ctx context.Context,
+	e *azureBlobExporter,
+	signal pipeline.Signal,
+	groups []blobGroup[T],
+	marshal func(T) ([]byte, error),
+	wrapRetryable func(err error, failed []T) error,
+) error {
+	upload := func(group blobGroup[T]) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		data, err := marshal(group.data)
+		if err != nil {
+			return fmt.Errorf("failed to marshal %s: %w", signal.String(), err)
+		}
+		var blobName string
+		if group.nameFormat == nil {
+			blobName, err = e.generateBlobNameWithCompression(signal, group.data)
+			if err != nil {
+				return fmt.Errorf("failed to generate blobname: %w", err)
+			}
+		} else {
+			blobName = e.appendCompressionExtension(e.formatBlobName(*group.nameFormat))
+		}
+		return e.consumeData(ctx, blobName, data, signal)
+	}
+	if len(groups) == 1 {
+		return upload(groups[0])
 	}
 
+	var failed []T
+	var errs []error
+	for i, group := range groups {
+		if err := ctx.Err(); err != nil {
+			for _, unstarted := range groups[i:] {
+				failed = append(failed, unstarted.data)
+			}
+			errs = append(errs, err)
+			break
+		}
+		if err := upload(group); err != nil {
+			failed = append(failed, group.data)
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return wrapRetryable(errors.Join(errs...), failed)
+}
+
+// renderBlobNameTemplate executes the blob name template for the given signal
+// against telemetryData and returns the rendered output.
+func (e *azureBlobExporter) renderBlobNameTemplate(signal pipeline.Signal, telemetryData any) (string, error) {
+	var tmpl *template.Template
+	switch signal {
+	case pipeline.SignalMetrics:
+		tmpl = e.blobNameTemplate.metrics
+	case pipeline.SignalLogs:
+		tmpl = e.blobNameTemplate.logs
+	case pipeline.SignalTraces:
+		tmpl = e.blobNameTemplate.traces
+	default:
+		return "", fmt.Errorf("unsupported signal type: %v", signal)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, telemetryData); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// partitionLogsByBlobName splits the payload into groups of resource entries
+// whose blob name templates render to the same value, so that each group is
+// uploaded to the blob it is addressed to. Without this, the blob name would
+// be rendered once from the first resource entry and data belonging to other
+// resource entries would be written to that same blob.
+//
+// The original payload is returned as a single group when the template is
+// disabled, when every resource entry renders to the same blob name, or when
+// rendering fails for any resource entry. In the failure case the upload path
+// falls back to the default blob name format, matching generateBlobName.
+func (e *azureBlobExporter) partitionLogsByBlobName(ld plog.Logs) []blobGroup[plog.Logs] {
+	if !e.config.BlobNameFormat.TemplateEnabled || ld.ResourceLogs().Len() <= 1 {
+		return []blobGroup[plog.Logs]{{data: ld}}
+	}
+
+	indices := make(map[string]int)
+	var groups []blobGroup[plog.Logs]
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		single := plog.NewLogs()
+		rls.At(i).CopyTo(single.ResourceLogs().AppendEmpty())
+
+		name, err := e.renderBlobNameTemplate(pipeline.SignalLogs, single)
+		if err != nil {
+			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
+			return []blobGroup[plog.Logs]{{data: ld, nameFormat: &e.config.BlobNameFormat.LogsFormat}}
+		}
+
+		index, ok := indices[name]
+		if !ok {
+			index = len(groups)
+			indices[name] = index
+			groups = append(groups, blobGroup[plog.Logs]{data: single, nameFormat: &name})
+			continue
+		}
+		single.ResourceLogs().At(0).MoveTo(groups[index].data.ResourceLogs().AppendEmpty())
+	}
+
+	if len(groups) == 1 {
+		// Every resource entry addresses the same blob: upload the original payload.
+		groups[0].data = ld
+	}
+	return groups
+}
+
+// partitionMetricsByBlobName is the pmetric.Metrics equivalent of
+// partitionLogsByBlobName.
+func (e *azureBlobExporter) partitionMetricsByBlobName(md pmetric.Metrics) []blobGroup[pmetric.Metrics] {
+	if !e.config.BlobNameFormat.TemplateEnabled || md.ResourceMetrics().Len() <= 1 {
+		return []blobGroup[pmetric.Metrics]{{data: md}}
+	}
+
+	indices := make(map[string]int)
+	var groups []blobGroup[pmetric.Metrics]
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		single := pmetric.NewMetrics()
+		rms.At(i).CopyTo(single.ResourceMetrics().AppendEmpty())
+
+		name, err := e.renderBlobNameTemplate(pipeline.SignalMetrics, single)
+		if err != nil {
+			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
+			return []blobGroup[pmetric.Metrics]{{data: md, nameFormat: &e.config.BlobNameFormat.MetricsFormat}}
+		}
+
+		index, ok := indices[name]
+		if !ok {
+			index = len(groups)
+			indices[name] = index
+			groups = append(groups, blobGroup[pmetric.Metrics]{data: single, nameFormat: &name})
+			continue
+		}
+		single.ResourceMetrics().At(0).MoveTo(groups[index].data.ResourceMetrics().AppendEmpty())
+	}
+
+	if len(groups) == 1 {
+		// Every resource entry addresses the same blob: upload the original payload.
+		groups[0].data = md
+	}
+	return groups
+}
+
+// partitionTracesByBlobName is the ptrace.Traces equivalent of
+// partitionLogsByBlobName.
+func (e *azureBlobExporter) partitionTracesByBlobName(td ptrace.Traces) []blobGroup[ptrace.Traces] {
+	if !e.config.BlobNameFormat.TemplateEnabled || td.ResourceSpans().Len() <= 1 {
+		return []blobGroup[ptrace.Traces]{{data: td}}
+	}
+
+	indices := make(map[string]int)
+	var groups []blobGroup[ptrace.Traces]
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		single := ptrace.NewTraces()
+		rss.At(i).CopyTo(single.ResourceSpans().AppendEmpty())
+
+		name, err := e.renderBlobNameTemplate(pipeline.SignalTraces, single)
+		if err != nil {
+			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
+			return []blobGroup[ptrace.Traces]{{data: td, nameFormat: &e.config.BlobNameFormat.TracesFormat}}
+		}
+
+		index, ok := indices[name]
+		if !ok {
+			index = len(groups)
+			indices[name] = index
+			groups = append(groups, blobGroup[ptrace.Traces]{data: single, nameFormat: &name})
+			continue
+		}
+		single.ResourceSpans().At(0).MoveTo(groups[index].data.ResourceSpans().AppendEmpty())
+	}
+
+	if len(groups) == 1 {
+		// Every resource entry addresses the same blob: upload the original payload.
+		groups[0].data = td
+	}
+	return groups
+}
+
+func (e *azureBlobExporter) consumeData(ctx context.Context, blobName string, data []byte, signal pipeline.Signal) error {
 	// Compress the content if compression is configured (note: for append_blob, compression is applied to each block)
 	compressedData, err := e.compressContent(data)
 	if err != nil {
