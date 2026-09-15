@@ -106,7 +106,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		// http://169.254.169.254/latest/meta-data/instance-id works but
 		// http://169.254.169.254/latest/dynamic/instance-identity/document does not.
 		d.logger.Debug("EC2 instance identity document unavailable", zap.Error(err))
-		if d.failOnMissingMetadata {
+		if d.failOnMissingMetadata || !isNotFound(err) {
+			// For failOnMissingMetadata==true, we want to return the error anyway. For failOnMissingMetadata==false: An HTTP 404
+			// indicates that the endpoint is not implemented, that is, that this is not an actual EC2 instance. For this case
+			// we return an empty resource and no error, to honor failOnMissingMetadata==false. Any other error might be
+			// transient, so it is returned here to be routed into detectWithRetry, instead of being silently ignored.
 			return pcommon.NewResource(), "", fmt.Errorf("failed getting identity document: %w", err)
 		}
 		return pcommon.NewResource(), "", nil
@@ -157,6 +161,14 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	}
 	return res, conventions.SchemaURL, nil
+}
+
+// isNotFound reports whether err has been caused by an HTTP 404 response from the metadata endpoint.
+func isNotFound(err error) bool {
+	// The IMDS client reports non-2xx responses as *smithyhttp.ResponseError; matching on the status code accessor
+	// keeps this independent of which of the SDK's response error types is used.
+	var statusErr interface{ HTTPStatusCode() int }
+	return errors.As(err, &statusErr) && statusErr.HTTPStatusCode() == http.StatusNotFound
 }
 
 func getClientConfig(ctx context.Context, logger *zap.Logger) *http.Client {

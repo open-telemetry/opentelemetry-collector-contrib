@@ -14,6 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,6 +27,19 @@ import (
 )
 
 var errUnavailable = errors.New("ec2metadata unavailable")
+
+// httpError creates an error of the type the IMDS client returns for a metadata endpoint response with the given
+// status code, see github.com/aws/aws-sdk-go-v2/feature/ec2/imds.deserializeResponse.
+func httpError(statusCode int) error {
+	return &smithy.OperationError{
+		ServiceID:     "ec2imds",
+		OperationName: "GetInstanceIdentityDocument",
+		Err: &smithyhttp.ResponseError{
+			Response: &smithyhttp.Response{Response: &http.Response{StatusCode: statusCode}},
+			Err:      errors.New("request to EC2 IMDS failed"),
+		},
+	}
+}
 
 type mockMetadata struct {
 	retIDDoc    imds.InstanceIdentityDocument
@@ -440,12 +455,12 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			// Regression test for clusters where the metadata service provides the EC2-compatible "meta-data" tree, but not the
 			// AWS-specific "dynamic/instance-identity" tree. Examples are clusters based on OpenStack Nova, like
-			// T Cloud Public/ECS. The instance ID probe succeeds and then the identity document lookup fails. Without
-			// fail_on_missing_metadata, this must not result in a startup error.
-			name: "get fails (identity document)",
+			// T Cloud Public/ECS. The instance ID probe succeeds and then the identity document lookup fails with HTTP 404.
+			// If fail_on_missing_metadata is false, this must not result in a startup error.
+			name: "get (identity document) fails with HTTP 404",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc:    imds.InstanceIdentityDocument{},
-				retErrIDDoc: errors.New("get failed"),
+				retErrIDDoc: httpError(http.StatusNotFound),
 				isAvailable: true,
 			}},
 			args:    args{ctx: t.Context()},
@@ -453,10 +468,36 @@ func TestDetector_Detect(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "get fails (identity document), with fail_on_missing_metadata",
+			// A status code other than 404 for the identity document is currently not covered by fail_on_missing_metadata==false,
+			// so the error is reported.
+			name: "get (identity document) fails with HTTP 500",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: httpError(http.StatusInternalServerError),
+				isAvailable: true,
+			}},
+			args:    args{ctx: t.Context()},
+			want:    pcommon.NewResource(),
+			wantErr: true,
+		},
+		{
+			// A non-HTTP error for the identity document is currently not covered by fail_on_missing_metadata==false, so the
+			// error is reported.
+			name: "get (identity document) fails with non-HTTP error",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc:    imds.InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("get failed"),
+				isAvailable: true,
+			}},
+			args:    args{ctx: t.Context()},
+			want:    pcommon.NewResource(),
+			wantErr: true,
+		},
+		{
+			name: "get (identity document) fails with HTTP 404, with fail_on_missing_metadata",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: httpError(http.StatusNotFound),
 				isAvailable: true,
 			}},
 			args:                  args{ctx: t.Context()},
