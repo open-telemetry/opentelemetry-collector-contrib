@@ -381,7 +381,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
@@ -531,7 +531,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
@@ -681,7 +681,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
@@ -831,7 +831,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2

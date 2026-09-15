@@ -252,7 +252,7 @@ Number of user tables in a database.
 
 ### postgresql.table.size
 
-Disk space used by a table.
+Total disk space used by a table, including its indexes and TOAST data.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
