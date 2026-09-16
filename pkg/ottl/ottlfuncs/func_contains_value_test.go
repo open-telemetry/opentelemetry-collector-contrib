@@ -78,6 +78,34 @@ func Test_ContainsValue(t *testing.T) {
 			expected: true,
 		},
 		{
+			name: "find int item in float slice using OTTL numeric equality",
+			target: ottl.StandardPSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []any{1.0}, nil
+				},
+			},
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(1), nil
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "find float item in int slice using OTTL numeric equality",
+			target: ottl.StandardPSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []any{int64(2)}, nil
+				},
+			},
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return float64(2), nil
+				},
+			},
+			expected: true,
+		},
+		{
 			name: "find booleans in target",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
