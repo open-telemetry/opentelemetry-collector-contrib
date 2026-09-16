@@ -321,6 +321,49 @@ type offsetLagSample struct {
 	Lag       int64
 }
 
+// assignmentLockObserver checks whether the assignment write lock is available
+// when the metrics callback records an observation.
+type assignmentLockObserver struct {
+	metric.Int64Observer
+	mu       *sync.RWMutex
+	acquired bool
+}
+
+// Observe records whether partition lifecycle code could acquire the assignment
+// write lock at this point in the metrics callback.
+func (o *assignmentLockObserver) Observe(int64, ...metric.ObserveOption) {
+	o.acquired = o.mu.TryLock()
+	if o.acquired {
+		o.mu.Unlock()
+	}
+}
+
+// TestObserveOffsetLagDoesNotBlockAssignmentLifecycle verifies that recording
+// offset lag does not hold the lock needed by partition lifecycle hooks.
+func TestObserveOffsetLagDoesNotBlockAssignmentLifecycle(t *testing.T) {
+	// Publish one assignment with observable lag.
+	partitionConsumer := &pc{}
+	partitionConsumer.hasOffsetLag.Store(true)
+	consumer := &franzConsumer{
+		assignments: map[topicPartition]*pc{
+			{topic: "test", partition: 0}: partitionConsumer,
+		},
+	}
+	consumer.mu.Lock()
+	consumer.storeAssignmentSnapshot()
+	consumer.mu.Unlock()
+
+	observer := &assignmentLockObserver{
+		mu: &consumer.mu, // Use the consumer lock so we can confirm it is not held
+	}
+
+	// Simulate a metric collection cycle
+	require.NoError(t, consumer.observeOffsetLag(t.Context(), observer))
+
+	// Verify the lock was never acquired
+	require.True(t, observer.acquired, "offset lag observation held the assignment lock")
+}
+
 func readOffsetLagSamples(t *testing.T, telemetry *componenttest.Telemetry) []offsetLagSample {
 	t.Helper()
 	metric, err := telemetry.GetMetric("otelcol_kafka_receiver_offset_lag")
