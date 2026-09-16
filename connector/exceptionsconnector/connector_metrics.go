@@ -4,8 +4,8 @@
 package exceptionsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
 
 import (
-	"bytes"
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,8 +33,6 @@ type metricsConnector struct {
 	// Additional dimensions to add to metrics.
 	dimensions []pdatautil.Dimension
 
-	keyBuf *bytes.Buffer
-
 	metricsConsumer consumer.Metrics
 	component.StartFunc
 	component.ShutdownFunc
@@ -60,7 +58,6 @@ func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsCo
 		logger:         logger,
 		config:         *cfg,
 		dimensions:     newDimensions(cfg.Dimensions),
-		keyBuf:         bytes.NewBuffer(make([]byte, 0, 1024)),
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 		exceptions:     make(map[string]*exception),
 	}
@@ -96,13 +93,12 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 						spanKind := traceutil.SpanKindStr(span.Kind())
 						statusCode := traceutil.StatusCodeStr(span.Status().Code())
 
-						c.keyBuf.Reset()
-						buildKey(c.keyBuf, serviceName, spanName, spanKind, statusCode, c.dimensions, span.Attributes(), eventAttrs, resourceAttr)
-						key := c.keyBuf.String()
+						var sb strings.Builder
+						buildKey(&sb, serviceName, spanName, spanKind, statusCode, c.dimensions, span.Attributes(), eventAttrs, resourceAttr)
+						key := sb.String()
 
 						attrs := buildDimensionKVs(c.dimensions, serviceName, spanName, spanKind, statusCode, span.Attributes(), eventAttrs, resourceAttr)
-						exc := c.addException(key, attrs)
-						c.addExemplar(exc, span.TraceID(), span.SpanID())
+						c.recordException(key, attrs, span.TraceID(), span.SpanID())
 					}
 				}
 			}
@@ -133,13 +129,12 @@ func (c *metricsConnector) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 				}
 				lrAttrs := lr.Attributes()
 
-				c.keyBuf.Reset()
-				buildKey(c.keyBuf, serviceName, "", "", "", c.dimensions, lrAttrs, resourceAttr)
-				key := c.keyBuf.String()
+				var sb strings.Builder
+				buildKey(&sb, serviceName, "", "", "", c.dimensions, lrAttrs, resourceAttr)
+				key := sb.String()
 
 				attrs := buildDimensionKVs(c.dimensions, serviceName, "", "", "", lrAttrs, resourceAttr)
-				exc := c.addException(key, attrs)
-				c.addExemplar(exc, lr.TraceID(), lr.SpanID())
+				c.recordException(key, attrs, lr.TraceID(), lr.SpanID())
 			}
 		}
 	}
@@ -191,28 +186,23 @@ func (c *metricsConnector) collectExceptions(ilm pmetric.ScopeMetrics) error {
 	return nil
 }
 
-func (c *metricsConnector) addException(excKey string, attrs pcommon.Map) *exception {
+func (c *metricsConnector) recordException(excKey string, attrs pcommon.Map, traceID pcommon.TraceID, spanID pcommon.SpanID) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	exc, ok := c.exceptions[excKey]
 	if !ok {
-		c.exceptions[excKey] = &exception{
-			count:     1,
-			attrs:     attrs,
-			exemplars: pmetric.NewExemplarSlice(),
-		}
-		return c.exceptions[excKey]
+		exc = &exception{count: 0, attrs: attrs, exemplars: pmetric.NewExemplarSlice()}
+		c.exceptions[excKey] = exc
 	}
 	exc.count++
-	return exc
-}
 
-func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, spanID pcommon.SpanID) {
-	if !c.config.Exemplars.Enabled || traceID.IsEmpty() {
-		return
+	if c.config.Exemplars.Enabled && !traceID.IsEmpty() {
+		e := exc.exemplars.AppendEmpty()
+		e.SetTraceID(traceID)
+		e.SetSpanID(spanID)
+		e.SetDoubleValue(float64(exc.count))
 	}
-	e := exc.exemplars.AppendEmpty()
-	e.SetTraceID(traceID)
-	e.SetSpanID(spanID)
-	e.SetDoubleValue(float64(exc.count))
 }
 
 // buildDimensionKVs builds the dimensions/attributes for an exception metric data point.
@@ -241,7 +231,7 @@ func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName, spanName, 
 // buildKey builds the metric key: service name, span metadata, then any configured dimensions
 // found in attrSets (searched in order, earlier sets take precedence). Values are concatenated,
 // delimited by a null character. spanName/spanKind/statusCode are omitted when empty.
-func buildKey(dest *bytes.Buffer, serviceName, spanName, spanKind, statusCode string, optionalDims []pdatautil.Dimension, attrSets ...pcommon.Map) {
+func buildKey(dest *strings.Builder, serviceName, spanName, spanKind, statusCode string, optionalDims []pdatautil.Dimension, attrSets ...pcommon.Map) {
 	concatDimensionValue(dest, serviceName, false)
 	if spanName != "" {
 		concatDimensionValue(dest, spanName, true)
@@ -260,7 +250,7 @@ func buildKey(dest *bytes.Buffer, serviceName, spanName, spanKind, statusCode st
 	}
 }
 
-func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
+func concatDimensionValue(dest *strings.Builder, value string, prefixSep bool) {
 	if prefixSep {
 		dest.WriteString(metricKeySeparator)
 	}

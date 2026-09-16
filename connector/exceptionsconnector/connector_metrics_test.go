@@ -4,7 +4,8 @@
 package exceptionsconnector
 
 import (
-	"bytes"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -278,6 +279,49 @@ func TestConnectorConsumeLogs(t *testing.T) {
 	assert.False(t, ok)
 }
 
+// TestConnectorConsumeTracesAndLogsConcurrently guards c.exceptions against concurrent Consume*
+// calls. Run with -race.
+func TestConnectorConsumeTracesAndLogsConcurrently(t *testing.T) {
+	msink := &consumertest.MetricsSink{}
+	cfg := &Config{Dimensions: []Dimension{{Name: exceptionTypeKey}}}
+	c := newMetricsConnector(zaptest.NewLogger(t), cfg)
+	c.metricsConsumer = msink
+
+	buildLogs := func() plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr(serviceNameKey, "service-a")
+		sl := rl.ScopeLogs().AppendEmpty()
+		exc := sl.LogRecords().AppendEmpty()
+		exc.SetEventName(eventNameExc)
+		exc.Attributes().PutStr(exceptionTypeKey, "java.lang.NullPointerException")
+		return logs
+	}
+
+	const iterations = 200
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		for range iterations {
+			assert.NoError(t, c.ConsumeTraces(t.Context(), buildSampleTrace()))
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for range iterations {
+			assert.NoError(t, c.ConsumeTraces(t.Context(), buildSampleTrace()))
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for range iterations {
+			assert.NoError(t, c.ConsumeLogs(t.Context(), buildLogs()))
+		}
+	}()
+	wg.Wait()
+}
+
 func buildBadSampleTrace() ptrace.Traces {
 	badTrace := buildSampleTrace()
 	span := badTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
@@ -291,7 +335,7 @@ func buildBadSampleTrace() ptrace.Traces {
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	buf := &bytes.Buffer{}
+	buf := &strings.Builder{}
 	buildKey(buf, "ab", span0.Name(), traceutil.SpanKindStr(span0.Kind()), traceutil.StatusCodeStr(span0.Status().Code()), nil, span0.Attributes(), pcommon.NewMap(), pcommon.NewMap())
 	k0 := buf.String()
 	buf.Reset()
@@ -371,7 +415,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			buf := &bytes.Buffer{}
+			buf := &strings.Builder{}
 			buildKey(buf, "ab", span0.Name(), traceutil.SpanKindStr(span0.Kind()), traceutil.StatusCodeStr(span0.Status().Code()), tc.optionalDims, span0.Attributes(), pcommon.NewMap(), resAttr)
 			assert.Equal(t, tc.wantKey, buf.String())
 		})
