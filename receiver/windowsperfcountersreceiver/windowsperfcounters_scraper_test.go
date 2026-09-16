@@ -65,7 +65,7 @@ func (w *mockPerfCounter) Close() error {
 func mockPerfCounterFactoryInvocations(mpcs ...mockPerfCounter) newWatcherFunc {
 	invocationNum := 0
 
-	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+	return func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 		if invocationNum == len(mpcs) {
 			return nil, fmt.Errorf("invoked watcher %d times but only %d were setup", invocationNum+1, len(mpcs))
 		}
@@ -251,6 +251,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
 				pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),
 				pmetrictest.IgnoreSubsequentDataPoints("processor.time"),
+				pmetrictest.IgnoreMetricAttributeValue("instance", "processor.time"),
 				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreScopeMetricsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
@@ -350,6 +351,85 @@ func TestInitWatchers(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInitWatchersWithIncludedAggregation(t *testing.T) {
+	requestedInstance := ""
+	s := &windowsPerfCountersScraper{
+		cfg: &Config{PerfCounters: []ObjectConfig{
+			{
+				Object:    "Processor",
+				Instances: []string{"*", defaultAggregationName},
+				Counters:  []CounterConfig{{Name: "% Processor Time"}},
+			},
+		}},
+		newWatcher: func(_, instance, _ string, _ ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+			requestedInstance = instance
+			return &mockPerfCounter{path: `\Processor(*)\% Processor Time`}, nil
+		},
+	}
+
+	watchers, err := s.initWatchers()
+	require.NoError(t, err)
+	require.Len(t, watchers, 1)
+	assert.Equal(t, "*", requestedInstance)
+}
+
+func TestScraperIncludesAggregationInstance(t *testing.T) {
+	cfg := &Config{
+		MetricMetaData: map[string]MetricConfig{
+			"processor.time": {
+				Unit:  "%",
+				Gauge: GaugeMetric{},
+			},
+		},
+		PerfCounters: []ObjectConfig{
+			{
+				Object:    "Processor",
+				Instances: []string{"*", defaultAggregationName},
+				Counters: []CounterConfig{
+					{Name: "% Processor Time", MetricRep: MetricRep{Name: "processor.time"}},
+				},
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, scraper.shutdown(t.Context()))
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		metrics, err := scraper.scrape(t.Context())
+		if !assert.NoError(c, err) {
+			return
+		}
+
+		foundAggregationInstance := false
+		resourceMetrics := metrics.ResourceMetrics()
+		for i := 0; i < resourceMetrics.Len(); i++ {
+			scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
+			for j := 0; j < scopeMetrics.Len(); j++ {
+				metricSlice := scopeMetrics.At(j).Metrics()
+				for k := 0; k < metricSlice.Len(); k++ {
+					metric := metricSlice.At(k)
+					if metric.Name() != "processor.time" {
+						continue
+					}
+					dataPoints := metric.Gauge().DataPoints()
+					for l := 0; l < dataPoints.Len(); l++ {
+						instance, ok := dataPoints.At(l).Attributes().Get(instanceLabelName)
+						if ok && instance.Str() == defaultAggregationName {
+							foundAggregationInstance = true
+						}
+					}
+				}
+			}
+		}
+
+		assert.True(c, foundAggregationInstance)
+	}, 20*time.Second, time.Second)
 }
 
 func TestWatcherResetFailure(t *testing.T) {
@@ -560,7 +640,7 @@ func TestScrape(t *testing.T) {
 					assert.Equal(t, len(counterValues), dps.Len())
 					for dpIdx, val := range counterValues {
 						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
-						expectedAttributeLen := len(counterCfg.Attributes)
+						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++
 						}
@@ -570,7 +650,7 @@ func TestScrape(t *testing.T) {
 								assert.Equal(t, val.InstanceName, v.Str())
 								continue
 							}
-							assert.Equal(t, counterCfg.Attributes[k], v.Str())
+							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
 						}
 					}
 					curMetricsNum++

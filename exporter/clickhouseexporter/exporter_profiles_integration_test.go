@@ -31,7 +31,7 @@ func requireFullTextSearch(t *testing.T, endpoint string) {
 	opt, err := cfg.buildClickHouseOptions()
 	require.NoError(t, err)
 
-	db, err := internal.NewClickhouseClientFromOptions(opt)
+	db, err := internal.NewClickhouseClientFromOptions(opt, cfg.shouldCreateSchema())
 	require.NoError(t, err)
 	defer func() { _ = db.Close() }()
 

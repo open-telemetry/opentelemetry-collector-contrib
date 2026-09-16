@@ -51,14 +51,6 @@ func checkCgroupSystem(tb testing.TB) {
 	}
 }
 
-func pointerInt64(val int64) *int64 {
-	return &val
-}
-
-func pointerUint64(uval uint64) *uint64 {
-	return &uval
-}
-
 // setupMemoryCgroupCleanUp returns a cleanup function that restores the cgroup's max memory to its initial value
 func setupMemoryCgroupCleanUp(t *testing.T, manager *cgroup2.Manager, cgroupPath string) func() {
 	stats, err := manager.Stat()
@@ -68,7 +60,7 @@ func setupMemoryCgroupCleanUp(t *testing.T, manager *cgroup2.Manager, cgroupPath
 	memoryCgroupCleanUp := func() {
 		err = manager.Update(&cgroup2.Resources{
 			Memory: &cgroup2.Memory{
-				Max: pointerInt64(int64(initialMaxMemory)),
+				Max: new(int64(initialMaxMemory)),
 			},
 		})
 		assert.NoError(t, err)
@@ -133,7 +125,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	}{
 		{
 			name:            "90% the max cgroup memory and 12 GOMAXPROCS",
-			cgroupCPUQuota:  pointerInt64(100000),
+			cgroupCPUQuota:  new(int64(100000)),
 			cgroupCPUPeriod: 8000,
 			cgroupMaxMemory: maxMem,
 			config: &Config{
@@ -151,7 +143,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 		},
 		{
 			name:            "80% of the max cgroup memory and 4 GOMAXPROCS",
-			cgroupCPUQuota:  pointerInt64(100000),
+			cgroupCPUQuota:  new(int64(100000)),
 			cgroupCPUPeriod: 25000,
 			cgroupMaxMemory: maxMem,
 			config: &Config{
@@ -202,7 +194,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	cpuCgroupCleanUp := func() {
 		err = manager.Update(&cgroup2.Resources{
 			CPU: &cgroup2.CPU{
-				Max: cgroup2.NewCPUMax(pointerInt64(initialCPUQuota), pointerUint64(initialCPUPeriod)),
+				Max: cgroup2.NewCPUMax(new(initialCPUQuota), new(initialCPUPeriod)),
 			},
 		})
 		assert.NoError(t, err)
@@ -235,10 +227,10 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 					// overwritten
 					// to automemlimit change the GOMEMLIMIT
 					// value
-					Max: pointerInt64(test.cgroupMaxMemory),
+					Max: new(test.cgroupMaxMemory),
 				},
 				CPU: &cgroup2.CPU{
-					Max: cgroup2.NewCPUMax(test.cgroupCPUQuota, pointerUint64(test.cgroupCPUPeriod)),
+					Max: cgroup2.NewCPUMax(test.cgroupCPUQuota, new(test.cgroupCPUPeriod)),
 				},
 			})
 			require.NoError(t, err)
@@ -352,7 +344,7 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 					// overwritten
 					// to automemlimit change the GOMEMLIMIT
 					// value
-					Max: pointerInt64(test.cgroupMaxMemory),
+					Max: new(test.cgroupMaxMemory),
 				},
 			})
 			require.NoError(t, err)
@@ -386,7 +378,7 @@ func TestDynamicMemoryLimitRefreshSudo(t *testing.T) {
 	ratio := 0.8
 	refreshInterval := 100 * time.Millisecond
 
-	err = manager.Update(&cgroup2.Resources{Memory: &cgroup2.Memory{Max: pointerInt64(initialMem)}})
+	err = manager.Update(&cgroup2.Resources{Memory: &cgroup2.Memory{Max: new(initialMem)}})
 	require.NoError(t, err)
 
 	config := &Config{
@@ -397,7 +389,7 @@ func TestDynamicMemoryLimitRefreshSudo(t *testing.T) {
 	startExtension(t, config)
 	assert.Equal(t, int64(float64(initialMem)*ratio), debug.SetMemoryLimit(-1))
 
-	err = manager.Update(&cgroup2.Resources{Memory: &cgroup2.Memory{Max: pointerInt64(updatedMem)}})
+	err = manager.Update(&cgroup2.Resources{Memory: &cgroup2.Memory{Max: new(updatedMem)}})
 	require.NoError(t, err)
 
 	expectedUpdatedLimit := int64(float64(updatedMem) * ratio)

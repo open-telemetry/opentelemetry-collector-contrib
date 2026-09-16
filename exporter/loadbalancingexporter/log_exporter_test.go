@@ -1419,7 +1419,8 @@ func TestSplitLogsByTraceID(t *testing.T) {
 		ld := plog.NewLogs()
 		rl := ld.ResourceLogs().AppendEmpty()
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
-			pcommon.TraceID([16]byte{1, 2, 3, 4}))
+			pcommon.TraceID([16]byte{1, 2, 3, 4}),
+		)
 
 		batches := splitLogsByTraceID(ld)
 		require.Len(t, batches, 1)
@@ -1429,10 +1430,12 @@ func TestSplitLogsByTraceID(t *testing.T) {
 		ld := plog.NewLogs()
 		rl1 := ld.ResourceLogs().AppendEmpty()
 		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
-			pcommon.TraceID([16]byte{1, 2, 3, 4}))
+			pcommon.TraceID([16]byte{1, 2, 3, 4}),
+		)
 		rl2 := ld.ResourceLogs().AppendEmpty()
 		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
-			pcommon.TraceID([16]byte{5, 6, 7, 8}))
+			pcommon.TraceID([16]byte{5, 6, 7, 8}),
+		)
 
 		batches := splitLogsByTraceID(ld)
 		require.Len(t, batches, 2)
@@ -1442,10 +1445,12 @@ func TestSplitLogsByTraceID(t *testing.T) {
 		ld := plog.NewLogs()
 		rl1 := ld.ResourceLogs().AppendEmpty()
 		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
-			pcommon.TraceID([16]byte{1, 2, 3, 4}))
+			pcommon.TraceID([16]byte{1, 2, 3, 4}),
+		)
 		rl2 := ld.ResourceLogs().AppendEmpty()
 		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
-			pcommon.TraceID([16]byte{1, 2, 3, 4}))
+			pcommon.TraceID([16]byte{1, 2, 3, 4}),
+		)
 
 		batches := splitLogsByTraceID(ld)
 		require.Len(t, batches, 1)
@@ -1541,7 +1546,8 @@ func TestConsumeLogsWithTraceIDRouting(t *testing.T) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(
-		pcommon.TraceID([16]byte{1, 2, 3, 4}))
+		pcommon.TraceID([16]byte{1, 2, 3, 4}),
+	)
 
 	err = p.ConsumeLogs(t.Context(), ld)
 	assert.NoError(t, err)
@@ -1706,7 +1712,8 @@ func TestE2EResourceRoutingIsolation(t *testing.T) {
 			rl.Resource().Attributes().PutStr("service.name", "my-service")
 			rl.Resource().Attributes().PutStr("host.name", host)
 			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(
-				fmt.Sprintf("round=%d host=%s", round, host))
+				fmt.Sprintf("round=%d host=%s", round, host),
+			)
 
 			err = p.ConsumeLogs(t.Context(), ld)
 			require.NoError(t, err)
@@ -2038,7 +2045,8 @@ func TestDataIntegrityLogCountPreserved(t *testing.T) {
 				rl := ld.ResourceLogs().AppendEmpty()
 				rl.Resource().Attributes().PutStr("service.name", fmt.Sprintf("svc-%d", i%5))
 				rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(
-					fmt.Sprintf("log-%d", i))
+					fmt.Sprintf("log-%d", i),
+				)
 			}
 
 			sentCount := ld.LogRecordCount()
@@ -2381,7 +2389,8 @@ func TestConsumeLogsPartialBackendFailure(t *testing.T) {
 		rl := ld.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr("service.name", fmt.Sprintf("svc-%d", i))
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(
-			fmt.Sprintf("log-%d", i))
+			fmt.Sprintf("log-%d", i),
+		)
 	}
 
 	err = p.ConsumeLogs(t.Context(), ld)

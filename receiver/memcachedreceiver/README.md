@@ -37,6 +37,10 @@ receiver the duration between runs. This value must be a string readable by
 Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `tls`: configures the TLS settings used to connect to memcached. TLS is
+disabled by default (`insecure: true`), preserving plaintext connections. See
+[TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+for the full set of supported options.
 
 Example:
 
@@ -46,6 +50,17 @@ receivers:
     endpoint: "localhost:11211"
     collection_interval: 10s
     transport: tcp
+```
+
+Example with TLS enabled:
+
+```yaml
+receivers:
+  memcached:
+    endpoint: "localhost:11211"
+    tls:
+      insecure: false
+      ca_file: /etc/ssl/certs/ca.crt
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)

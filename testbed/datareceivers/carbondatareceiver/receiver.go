@@ -35,7 +35,7 @@ func NewCarbonDataReceiver(port int) *CarbonDataReceiver {
 func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := carbonreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*carbonreceiver.Config)
-	cfg.Endpoint = fmt.Sprintf("127.0.0.1:%d", cr.Port)
+	cfg.AddrConfig.Endpoint = fmt.Sprintf("127.0.0.1:%d", cr.Port)
 
 	set := receivertest.NewNopSettings(factory.Type())
 	var err error

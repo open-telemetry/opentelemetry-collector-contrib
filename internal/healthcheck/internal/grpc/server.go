@@ -52,13 +52,13 @@ func NewServer(
 // Start implements the component.Component interface.
 func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
-	s.grpcServer, err = s.config.ToServer(ctx, host.GetExtensions(), s.telemetry)
+	s.grpcServer, err = s.config.ServerConfig.ToServer(ctx, host.GetExtensions(), s.telemetry)
 	if err != nil {
 		return err
 	}
 
 	healthpb.RegisterHealthServer(s.grpcServer, s)
-	ln, err := s.config.NetAddr.Listen(context.Background())
+	ln, err := s.config.ServerConfig.NetAddr.Listen(context.Background())
 	if err != nil {
 		// Server never started, ensure doneCh is closed so shutdown doesn't block
 		s.doneOnce.Do(func() { close(s.doneCh) })

@@ -39,7 +39,7 @@ func CreateTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
-	if c.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
 		return nil, errors.New("exporter config requires a non-empty 'endpoint'")
 	}

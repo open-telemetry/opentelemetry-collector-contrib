@@ -1,6 +1,7 @@
 type: object
 properties:
   fail_on_missing_metadata:
+    description: 'Deprecated: Use the top-level fail_on_missing_metadata in the processor config instead. This field will be removed in a future release.'
     type: boolean
   resource_attributes:
     $ref: ./internal/metadata.resource_attributes_config

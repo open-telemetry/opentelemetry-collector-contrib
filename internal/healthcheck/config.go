@@ -71,7 +71,7 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the extension configuration is valid
 func (c *Config) Validate() error {
 	if !c.UseV2 {
-		if c.NetAddr.Endpoint == "" {
+		if c.ServerConfig.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if !strings.HasPrefix(c.Path, "/") {
@@ -85,7 +85,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPConfig != nil {
-		if c.HTTPConfig.NetAddr.Endpoint == "" {
+		if c.HTTPConfig.ServerConfig.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if c.HTTPConfig.Status.Enabled && !strings.HasPrefix(c.HTTPConfig.Status.Path, "/") {
@@ -96,7 +96,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.GRPCConfig != nil && c.GRPCConfig.NetAddr.Endpoint == "" {
+	if c.GRPCConfig != nil && c.GRPCConfig.ServerConfig.NetAddr.Endpoint == "" {
 		return ErrGRPCEndpointRequired
 	}
 
@@ -114,12 +114,12 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		httpServerConfig.WriteTimeout = 0
 		httpServerConfig.ReadHeaderTimeout = 0
-		httpServerConfig.IdleTimeout = 0
+		httpServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 		httpServerConfig.NetAddr = confignet.AddrConfig{
 			Endpoint:  endpointForPort(DefaultHTTPPort),
 			Transport: confignet.TransportTypeTCP,
 		}
-		httpServerConfig.KeepAlivesEnabled = true
+		httpServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 		c.HTTPConfig = &httpserver.Config{
 			ServerConfig: httpServerConfig,
 			Status: httpserver.PathConfig{
@@ -167,22 +167,22 @@ func NewDefaultConfig() component.Config {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	legacyServerConfig.WriteTimeout = 0
 	legacyServerConfig.ReadHeaderTimeout = 0
-	legacyServerConfig.IdleTimeout = 0
+	legacyServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	legacyServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  endpointForPort(DefaultHTTPPort),
 		Transport: "tcp",
 	}
-	legacyServerConfig.KeepAlivesEnabled = true
+	legacyServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 	httpServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	httpServerConfig.WriteTimeout = 0
 	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  endpointForPort(DefaultHTTPPort),
 		Transport: "tcp",
 	}
-	httpServerConfig.KeepAlivesEnabled = true
+	httpServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 	return &Config{
 		LegacyConfig: httpserver.LegacyConfig{
 			ServerConfig: legacyServerConfig,

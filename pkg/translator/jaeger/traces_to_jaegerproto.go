@@ -7,10 +7,12 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/internal/metadata"
 )
 
 // ProtoFromTraces translates internal trace data into the Jaeger Proto for GRPC.
@@ -111,6 +113,15 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.
 		return dest
 	}
 	for key, attr := range attrs.All() {
+		if key == string(conventionsv125.HTTPStatusCodeKey) || key == string(conventions.HTTPResponseStatusCodeKey) {
+			if !metadata.PkgTranslatorJaegerDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				dest = append(dest, attributeToJaegerProtoTag(string(conventionsv125.HTTPStatusCodeKey), attr))
+			}
+			if metadata.PkgTranslatorJaegerEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				dest = append(dest, attributeToJaegerProtoTag(string(conventions.HTTPResponseStatusCodeKey), attr))
+			}
+			continue
+		}
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
 	}
 	return dest

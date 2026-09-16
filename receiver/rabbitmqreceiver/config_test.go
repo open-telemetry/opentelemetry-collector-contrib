@@ -38,7 +38,8 @@ func TestValidate(t *testing.T) {
 			expectedErr: errors.Join(
 				errMissingUsername,
 				errMissingPassword,
-				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			),
 		},
 		{
 			desc: "missing password and invalid endpoint",
@@ -108,10 +109,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "http://localhost:15672"
+	expected.ClientConfig.Endpoint = "http://localhost:15672"
 	expected.Username = "otelu"
 	expected.Password = "${env:RABBITMQ_PASSWORD}"
-	expected.CollectionInterval = 10 * time.Second
+	expected.ControllerConfig.CollectionInterval = 10 * time.Second
 
 	require.Equal(t, expected, cfg)
 }

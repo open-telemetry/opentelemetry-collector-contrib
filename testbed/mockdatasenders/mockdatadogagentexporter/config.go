@@ -12,5 +12,5 @@ import (
 type Config struct {
 	component.Config
 	// client to send to the agent
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 }

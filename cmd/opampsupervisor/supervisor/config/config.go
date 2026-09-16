@@ -4,7 +4,6 @@
 package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -25,13 +24,13 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
@@ -56,22 +55,7 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, errors.New("path to config file cannot be empty")
 	}
 
-	resolverSettings := confmap.ResolverSettings{
-		URIs: []string{configFile},
-		ProviderFactories: []confmap.ProviderFactory{
-			fileprovider.NewFactory(),
-			envprovider.NewFactory(),
-		},
-		ConverterFactories: []confmap.ConverterFactory{},
-		DefaultScheme:      "env",
-	}
-
-	resolver, err := confmap.NewResolver(resolverSettings)
-	if err != nil {
-		return Supervisor{}, err
-	}
-
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := ResolveURI(configFile)
 	if err != nil {
 		return Supervisor{}, err
 	}
@@ -114,11 +98,15 @@ type Capabilities struct {
 	ReportsOwnLogs                 bool `mapstructure:"reports_own_logs"`
 	ReportsOwnTraces               bool `mapstructure:"reports_own_traces"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
-	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 	AcceptsPackages                bool `mapstructure:"accepts_packages"`
-	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
+
+	// Deprecated: ReportsRemoteConfig has no effect. AcceptsRemoteConfig enables both the
+	// AcceptsRemoteConfig and ReportsRemoteConfig OpAMP capabilities. This field will be
+	// removed in a future release.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
+	ReportsRemoteConfig bool `mapstructure:"reports_remote_config"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -144,12 +132,11 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces
 	}
 
+	// AcceptsRemoteConfig enables both the AcceptsRemoteConfig and ReportsRemoteConfig
+	// OpAMP capabilities; accepting remote config without reporting its status is not useful.
 	if c.AcceptsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-	}
-
-	if c.ReportsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 	}
 
 	if c.AcceptsRestartCommand {
@@ -167,14 +154,13 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
 	}
 
-	// AcceptsPackages and ReportsPackageStatuses are not yet fully implemented.
-	// They are included here for completeness.
+	// AcceptsPackages is not yet fully implemented. It is included here for completeness.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	// AcceptsPackages enables both the AcceptsPackages and ReportsPackageStatuses
+	// OpAMP capabilities; accepting packages without reporting their statuses is not useful.
 	if c.AcceptsPackages {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
-	}
-	if c.ReportsPackageStatuses {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
 	}
 
 	return supportedCapabilities
@@ -387,19 +373,24 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
+	Resource ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
+type ResourceConfig struct {
+	otelconftelemetry.ResourceConfig `mapstructure:",squash"`
+	DetectionDevelopment             configoptional.Optional[xotelconf.ExperimentalResourceDetection] `mapstructure:"detection/development,omitempty"`
+}
+
 type HealthCheck struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (h HealthCheck) Port() int64 {
-	_, port, err := net.SplitHostPort(h.NetAddr.Endpoint)
+	_, port, err := net.SplitHostPort(h.ServerConfig.NetAddr.Endpoint)
 	if err != nil {
 		return 0
 	}
@@ -452,12 +443,17 @@ func DefaultSupervisor() Supervisor {
 		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
 	}
 
+	defaultAgentBinary := "otelcol-contrib"
+	if runtime.GOOS == "windows" {
+		defaultAgentBinary += ".exe"
+	}
+
 	serverConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 	}
@@ -475,7 +471,6 @@ func DefaultSupervisor() Supervisor {
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
 			AcceptsPackages:                false,
-			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -488,7 +483,8 @@ func DefaultSupervisor() Supervisor {
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,
 			Package: AgentPackage{
-				Verifier: Verifier{Type: VerifierTypeNone},
+				AgentBinary: defaultAgentBinary,
+				Verifier:    Verifier{Type: VerifierTypeNone},
 			},
 		},
 		Telemetry: Telemetry{

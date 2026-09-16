@@ -24,6 +24,24 @@ func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
 		wantError                 bool
 	}{
 		{
+			name:                      "valid semconv version 1.43.0 and original span name attribute",
+			semconvVersion:            "1.43.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 false,
+		},
+		{
+			name:                      "valid semconv version 1.42.0 and original span name attribute",
+			semconvVersion:            "1.42.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 false,
+		},
+		{
+			name:                      "valid semconv version 1.41.0 and original span name attribute",
+			semconvVersion:            "1.41.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 false,
+		},
+		{
 			name:                      "valid semconv version 1.40.0 and original span name attribute",
 			semconvVersion:            "1.40.0",
 			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
@@ -60,8 +78,14 @@ func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
 			wantError:                 true,
 		},
 		{
-			name:                      "unsupported semconv version and valid original span name attribute",
+			name:                      "unsupported semconv version below minimum and valid original span name attribute",
 			semconvVersion:            "1.36.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 true,
+		},
+		{
+			name:                      "unsupported semconv version above maximum and valid original span name attribute",
+			semconvVersion:            "1.44.0",
 			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
 			wantError:                 true,
 		},
@@ -505,7 +529,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			require.NoError(t, err)
 			require.NotNil(t, setSemconvNameFunction)
 
-			tCtx := ottlspan.NewTransformContextPtr(resourceSpans, scopeSpans, span)
+			tCtx := ottlspan.NewTransformContext(resourceSpans, scopeSpans, span)
 			defer tCtx.Close()
 			_, err = setSemconvNameFunction(t.Context(), tCtx)
 			require.NoError(t, err)

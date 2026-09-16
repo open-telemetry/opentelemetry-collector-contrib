@@ -17,6 +17,8 @@ $defs:
         $ref: resource_attribute_config
       cloud.region:
         $ref: resource_attribute_config
+      cloud.resource_id:
+        $ref: resource_attribute_config
       host.id:
         $ref: resource_attribute_config
       host.name:

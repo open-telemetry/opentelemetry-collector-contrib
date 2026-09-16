@@ -1,9 +1,0 @@
-change_type: enhancement
-component: processor/lookup
-note: Add `reload_interval` to the `yaml` lookup source to periodically re-read the file without a collector restart.
-issues: [41816]
-subtext: |
-  On a failed reload the previously loaded data is kept and a warning is logged. Reload
-  outcomes are recorded by the `lookup_source_reloads` and `lookup_source_reload_failures`
-  metrics.
-change_logs: [user]

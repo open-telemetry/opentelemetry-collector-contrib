@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetElasticsearchClusterName(val string) {
 	}
 }
 
+// SetElasticsearchClusterUUID sets provided value as "elasticsearch.cluster.uuid" attribute.
+func (rb *ResourceBuilder) SetElasticsearchClusterUUID(val string) {
+	if rb.config.ElasticsearchClusterUUID.Enabled {
+		rb.res.Attributes().PutStr("elasticsearch.cluster.uuid", val)
+	}
+}
+
 // SetElasticsearchIndexName sets provided value as "elasticsearch.index.name" attribute.
 func (rb *ResourceBuilder) SetElasticsearchIndexName(val string) {
 	if rb.config.ElasticsearchIndexName.Enabled {

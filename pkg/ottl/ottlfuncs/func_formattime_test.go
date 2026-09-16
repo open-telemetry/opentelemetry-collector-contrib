@@ -168,3 +168,40 @@ func Test_FormatTime(t *testing.T) {
 		})
 	}
 }
+
+func Test_FormatTimeFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewFormatTimeFactory[any]()
+		assert.Equal(t, "FormatTime", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewFormatTimeFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &FormatTimeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time", "Format"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewFormatTimeFactory[any]()
+		args := factory.CreateDefaultArguments()
+		formatTimeArgs, ok := args.(*FormatTimeArguments[any])
+		require.True(t, ok)
+		formatTimeArgs.Time = &ottl.StandardTimeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Now(), nil
+			},
+		}
+		formatTimeArgs.Format = "%Y-%m-%d"
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createFormatTimeFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "FormatTimeFactory args must be of type *FormatTimeArguments[K]")
+	})
+}

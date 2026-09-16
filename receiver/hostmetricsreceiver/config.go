@@ -10,7 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -20,8 +19,8 @@ import (
 
 // Config defines configuration for HostMetrics receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Scrapers                       map[component.Type]component.Config `mapstructure:"-"`
+	ControllerConfig scraperhelper.ControllerConfig      `mapstructure:",squash"`
+	Scrapers         map[component.Type]component.Config `mapstructure:"-"`
 	// RootPath is the host's root directory (linux only).
 	RootPath string `mapstructure:"root_path"`
 
@@ -34,7 +33,7 @@ type Config struct {
 }
 
 var (
-	_ xconfmap.Validator  = (*Config)(nil)
+	_ confmap.Validator   = (*Config)(nil)
 	_ confmap.Unmarshaler = (*Config)(nil)
 )
 

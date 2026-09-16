@@ -17,7 +17,7 @@ type Config struct {
 	// ServerConfig is used to set up the Firehose delivery
 	// endpoint. The Firehose delivery stream expects an HTTPS
 	// endpoint, so TLSs must be used to enable that.
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 	// Encoding identifies the encoding of records received from
 	// Firehose.
 	//
@@ -40,7 +40,7 @@ type Config struct {
 // Validate checks that the endpoint and record type exist and
 // are valid.
 func (c *Config) Validate() error {
-	if c.NetAddr.Endpoint == "" {
+	if c.ServerConfig.NetAddr.Endpoint == "" {
 		return errors.New("must specify endpoint")
 	}
 	if c.RecordType != "" && c.Encoding != "" {

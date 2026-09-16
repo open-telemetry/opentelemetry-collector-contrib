@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -31,18 +31,18 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	defaultLegacyServerConfig.WriteTimeout = 0
 	defaultLegacyServerConfig.ReadHeaderTimeout = 0
-	defaultLegacyServerConfig.IdleTimeout = 0
+	defaultLegacyServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	defaultLegacyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 	}
-	defaultLegacyServerConfig.KeepAlivesEnabled = true
+	defaultLegacyServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 
 	legacyConfigServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	legacyConfigServerConfig.WriteTimeout = 0
 	legacyConfigServerConfig.ReadHeaderTimeout = 0
-	legacyConfigServerConfig.IdleTimeout = 0
+	legacyConfigServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	legacyConfigServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:13",
@@ -54,62 +54,62 @@ func TestLoadConfig(t *testing.T) {
 			KeyFile:  "/path/to/key",
 		},
 	})
-	legacyConfigServerConfig.KeepAlivesEnabled = true
+	legacyConfigServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 
 	v2allLegacyServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	v2allLegacyServerConfig.WriteTimeout = 0
 	v2allLegacyServerConfig.ReadHeaderTimeout = 0
-	v2allLegacyServerConfig.IdleTimeout = 0
+	v2allLegacyServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	v2allLegacyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 	}
-	v2allLegacyServerConfig.KeepAlivesEnabled = true
+	v2allLegacyServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 
 	v2allHTTPServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	v2allHTTPServerConfig.WriteTimeout = 0
 	v2allHTTPServerConfig.ReadHeaderTimeout = 0
-	v2allHTTPServerConfig.IdleTimeout = 0
+	v2allHTTPServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	v2allHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 	}
-	v2allHTTPServerConfig.KeepAlivesEnabled = true
+	v2allHTTPServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 
 	v2httpCustomizedLegacyServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	v2httpCustomizedLegacyServerConfig.WriteTimeout = 0
 	v2httpCustomizedLegacyServerConfig.ReadHeaderTimeout = 0
-	v2httpCustomizedLegacyServerConfig.IdleTimeout = 0
+	v2httpCustomizedLegacyServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	v2httpCustomizedLegacyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 	}
-	v2httpCustomizedLegacyServerConfig.KeepAlivesEnabled = true
+	v2httpCustomizedLegacyServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 
 	v2httpCustomizedHTTPServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	v2httpCustomizedHTTPServerConfig.WriteTimeout = 0
 	v2httpCustomizedHTTPServerConfig.ReadHeaderTimeout = 0
-	v2httpCustomizedHTTPServerConfig.IdleTimeout = 0
+	v2httpCustomizedHTTPServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	v2httpCustomizedHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:13",
 	}
-	v2httpCustomizedHTTPServerConfig.KeepAlivesEnabled = true
+	v2httpCustomizedHTTPServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 
 	v2grpcCustomizedLegacyServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	v2grpcCustomizedLegacyServerConfig.WriteTimeout = 0
 	v2grpcCustomizedLegacyServerConfig.ReadHeaderTimeout = 0
-	v2grpcCustomizedLegacyServerConfig.IdleTimeout = 0
+	v2grpcCustomizedLegacyServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	v2grpcCustomizedLegacyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 	}
-	v2grpcCustomizedLegacyServerConfig.KeepAlivesEnabled = true
+	v2grpcCustomizedLegacyServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 
 	tests := []struct {
 		id          component.ID
@@ -247,10 +247,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedErr)
+				assert.ErrorIs(t, confmap.Validate(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

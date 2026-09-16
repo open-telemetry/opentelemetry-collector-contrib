@@ -1,9 +1,0 @@
-change_type: bug_fix
-
-component: processor/metrics_transform
-
-note: aggregate_labels and aggregate_label_values operations no longer silently drop all data points when applied to Summary metrics. The operation is now skipped with a warning log instead.
-
-issues: [49456]
-
-change_logs: [user]

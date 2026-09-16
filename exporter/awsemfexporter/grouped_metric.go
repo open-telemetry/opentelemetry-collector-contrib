@@ -102,7 +102,7 @@ func addToGroupedMetric(
 			} else {
 				groupedMetrics[groupKey] = &groupedMetric{
 					labels:   labels,
-					metrics:  map[string]*metricInfo{(dp.name): metric},
+					metrics:  map[string]*metricInfo{dp.name: metric},
 					metadata: metadata,
 				}
 			}

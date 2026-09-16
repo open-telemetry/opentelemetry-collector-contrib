@@ -191,7 +191,7 @@ func TestObserverExcludesImagesIntegration(t *testing.T) {
 	require.NotNil(t, container)
 
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.ExcludedImages = []string{"*nginx*"}
+	config.Config.ExcludedImages = []string{"*nginx*"}
 
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserverWithConfig(t, mn, config)

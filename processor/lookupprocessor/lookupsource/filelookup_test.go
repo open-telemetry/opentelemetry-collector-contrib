@@ -86,8 +86,12 @@ func TestFileLookupReloadAndCallback(t *testing.T) {
 		return v == "v2"
 	}, 2*time.Second, 10*time.Millisecond)
 
-	assert.Positive(t, successes.Load())
-	assert.Zero(t, failures.Load())
+	// load() updates the data before invoking OnReload, so seeing "v2" above does
+	// not guarantee the success callback has run yet; poll until the counter catches up.
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		require.Positive(collect, successes.Load())
+		require.Zero(collect, failures.Load())
+	}, 2*time.Second, 10*time.Millisecond)
 }
 
 func TestFileLookupKeepsLastGoodOnParseError(t *testing.T) {

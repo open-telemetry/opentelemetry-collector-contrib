@@ -21,9 +21,10 @@ and converts them into otlp.
 
 ## Prerequisites
 
-This receiver supports Kafka versions:
-  -  2.X
-  -  3.X
+This receiver supports Kafka versions 2.x, 3.x and 4.x (including KRaft mode).
+
+> **Note:** Compatibility is determined by the underlying Kafka protocol support in the driver (e.g., `franz-go` or `sarama`). Basic metrics collection remains compatible with Kafka 4.x brokers.
+>
 
 ## Feature gates
 
@@ -49,6 +50,7 @@ Metrics collected by the associated scraper are listed in [metadata.yaml](metada
 Optional Settings (with defaults):
 
 - `cluster_alias`: Alias name of the cluster. Adds `kafka.cluster.alias` resource attribute.
+- The cluster's unique ID can be auto-discovered from cluster metadata and emitted as the `kafka.cluster.id` resource attribute. It is disabled by default; enable it via `resource_attributes.kafka.cluster.id.enabled: true`.
 - `protocol_version` (default = 2.1.0): Kafka protocol version
 - `brokers` (default = localhost:9092): the list of brokers to read from.
 - `resolve_canonical_bootstrap_servers_only` (default = false): whether to resolve then reverse-lookup broker IPs during startup.
