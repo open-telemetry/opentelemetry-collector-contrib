@@ -304,9 +304,17 @@ func formatCorrelations(correlations []attributeCorrelation) string {
 	return sb.String()
 }
 
-// getDuration calculates span duration efficiently.
+// getDuration calculates span duration efficiently. Timestamps are unsigned, so
+// a span that has no end timestamp yet underflows the subtraction and the signed
+// conversion turns it back into a negative duration. Those are clamped to zero:
+// a negative Q1 or median otherwise stretches the measured spread far enough to
+// hide every real outlier in the group.
 func getDuration(node *spanNode) time.Duration {
-	return time.Duration(node.span.EndTimestamp() - node.span.StartTimestamp())
+	d := time.Duration(node.span.EndTimestamp() - node.span.StartTimestamp())
+	if d < 0 {
+		return 0
+	}
+	return d
 }
 
 // filterOutlierNodes returns (normalNodes, outlierNodes) based on analysis.
