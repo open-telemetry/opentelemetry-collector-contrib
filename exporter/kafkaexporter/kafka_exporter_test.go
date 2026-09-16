@@ -1615,6 +1615,7 @@ func configureExporter[T any](tb testing.TB,
 		client,
 		exp.cfg.IncludeMetadataKeys,
 		exp.cfg.RecordHeaders,
+		exp.cfg.PropagateTraceContext,
 		exp.cfg.Producer.MaxMessageBytes,
 		nil,
 	)

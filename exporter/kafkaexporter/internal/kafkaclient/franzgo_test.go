@@ -6,6 +6,7 @@ package kafkaclient
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -167,7 +169,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 
-	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes, nil)
+	producer := NewFranzSyncProducer(client, nil, nil, false, maxMessageBytes, nil)
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
@@ -212,6 +214,7 @@ func TestExportData_AttachesHeaders(t *testing.T) {
 			{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
 			{Name: "shared-key", Value: configopaque.String("static-value-override")},
 		},
+		false,
 		1024*1024,
 		nil,
 	)
@@ -231,6 +234,99 @@ func TestExportData_AttachesHeaders(t *testing.T) {
 	}, got)
 }
 
+func TestExportData_PropagateTraceContext(t *testing.T) {
+	const topic = "test-topic"
+	cluster, err := kfake.NewCluster(kfake.SeedTopics(1, topic))
+	require.NoError(t, err)
+	t.Cleanup(cluster.Close)
+
+	kgoClient, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(kgoClient.Close)
+
+	newSpanContext := func(flags trace.TraceFlags, traceState string) trace.SpanContext {
+		ts, err := trace.ParseTraceState(traceState)
+		require.NoError(t, err)
+		return trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    trace.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+			SpanID:     trace.SpanID{1, 2, 3, 4, 5, 6, 7, 8},
+			TraceFlags: flags,
+			TraceState: ts,
+		})
+	}
+	const traceparent = "00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01"
+
+	// Trace context headers from other sources, e.g. forwarded from an
+	// upstream Kafka record, belong to a different trace.
+	upstreamHeaders := []kgo.RecordHeader{
+		{Key: "static-key", Value: []byte("static-value")},
+		{Key: "traceparent", Value: []byte("static-traceparent")},
+		{Key: "tracestate", Value: []byte("upstream=state")},
+		{Key: "metadata-key", Value: []byte("metadata-value")},
+	}
+	nonTraceHeaders := []kgo.RecordHeader{
+		{Key: "static-key", Value: []byte("static-value")},
+		{Key: "metadata-key", Value: []byte("metadata-value")},
+	}
+
+	for name, testcase := range map[string]struct {
+		propagate   bool
+		spanContext trace.SpanContext
+		expected    []kgo.RecordHeader
+	}{
+		"disabled": {
+			spanContext: newSpanContext(trace.FlagsSampled, ""),
+			expected:    upstreamHeaders,
+		},
+		"enabled without span": {
+			propagate: true,
+			expected:  nonTraceHeaders,
+		},
+		"enabled with unsampled span": {
+			propagate:   true,
+			spanContext: newSpanContext(0, ""),
+			expected:    nonTraceHeaders,
+		},
+		"enabled with sampled span": {
+			propagate:   true,
+			spanContext: newSpanContext(trace.FlagsSampled, ""),
+			expected: append(slices.Clone(nonTraceHeaders),
+				kgo.RecordHeader{Key: "traceparent", Value: []byte(traceparent)},
+			),
+		},
+		"enabled with sampled span and tracestate": {
+			propagate:   true,
+			spanContext: newSpanContext(trace.FlagsSampled, "vendor=value"),
+			expected: append(slices.Clone(nonTraceHeaders),
+				kgo.RecordHeader{Key: "tracestate", Value: []byte("vendor=value")},
+				kgo.RecordHeader{Key: "traceparent", Value: []byte(traceparent)},
+			),
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			producer := NewFranzSyncProducer(kgoClient,
+				[]string{"tracestate", "metadata-key"},
+				[]RecordHeader{
+					{Name: "static-key", Value: configopaque.String("static-value")},
+					{Name: "traceparent", Value: configopaque.String("static-traceparent")},
+				},
+				testcase.propagate,
+				1024*1024,
+				nil,
+			)
+
+			ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{
+				"tracestate":   {"upstream=state"},
+				"metadata-key": {"metadata-value"},
+			})})
+			ctx = trace.ContextWithSpanContext(ctx, testcase.spanContext)
+			records := []*kgo.Record{{Topic: topic, Value: []byte("test-payload")}}
+			require.NoError(t, producer.ExportData(ctx, records))
+			assert.Equal(t, testcase.expected, records[0].Headers)
+		})
+	}
+}
+
 func TestClose_UnblocksInFlightExportData(t *testing.T) {
 	fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
 	require.NoError(t, err)
@@ -246,7 +342,7 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 	// Shut down the broker so ExportData blocks indefinitely.
 	fakeCluster.Close()
 
-	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, clientCancel)
+	producer := NewFranzSyncProducer(kgoClient, nil, nil, false, 1024*1024, clientCancel)
 
 	records := []*kgo.Record{{Topic: "otlp_logs", Value: []byte("test")}}
 

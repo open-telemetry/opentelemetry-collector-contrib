@@ -74,6 +74,9 @@ properties:
   profiles:
     description: Profiles holds configuration about how profiles should be sent to Kafka.
     $ref: signal_config
+  propagate_trace_context:
+    description: PropagateTraceContext adds W3C Trace Context headers for the export span to every outgoing Kafka record, when the span is sampled.
+    type: boolean
   record_headers:
     description: RecordHeaders sets static headers on every outgoing Kafka record.
     type: array

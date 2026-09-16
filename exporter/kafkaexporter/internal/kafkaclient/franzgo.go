@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"sync"
 	"time"
 
@@ -103,6 +104,7 @@ type FranzSyncProducer struct {
 	clientCancel    context.CancelFunc
 	metadataKeys    []string
 	recordHeaders   []kgo.RecordHeader
+	propagateTrace  bool
 	maxMessageBytes int
 }
 
@@ -112,6 +114,7 @@ type FranzSyncProducer struct {
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
 	recordHeaders []RecordHeader,
+	propagateTraceContext bool,
 	maxMessageBytes int,
 	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
@@ -128,20 +131,29 @@ func NewFranzSyncProducer(client *kgo.Client,
 		clientCancel:    clientCancel,
 		metadataKeys:    metadataKeys,
 		recordHeaders:   headers,
+		propagateTrace:  propagateTraceContext,
 		maxMessageBytes: maxMessageBytes,
 	}
 }
 
 // ExportData sends a batch of records to Kafka. It attaches configured
-// record headers and per-call metadata-derived headers to each record before
-// producing.
+// record headers, per-call metadata-derived headers, and trace context headers
+// to each record before producing.
 func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Record) error {
 	metadataHeaders := metadataToHeaders(ctx, p.metadataKeys)
+	var traceHeaders []kgo.RecordHeader
+	if p.propagateTrace {
+		traceHeaders = traceContextToHeaders(ctx)
+	}
 	var headers []kgo.RecordHeader
-	if n := len(p.recordHeaders) + len(metadataHeaders); n > 0 {
+	if n := len(p.recordHeaders) + len(metadataHeaders) + len(traceHeaders); n > 0 {
 		headers = make([]kgo.RecordHeader, 0, n)
-		headers = append(headers, p.recordHeaders...)
-		headers = append(headers, metadataHeaders...)
+		for _, h := range slices.Concat(p.recordHeaders, metadataHeaders) {
+			if !p.propagateTrace || !isTraceContextHeader(h.Key) {
+				headers = append(headers, h)
+			}
+		}
+		headers = append(headers, traceHeaders...)
 	}
 	for _, r := range records {
 		r.Headers = headers

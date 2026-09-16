@@ -54,6 +54,7 @@ func configureExporterBench[T any](
 		client,
 		exp.cfg.IncludeMetadataKeys,
 		exp.cfg.RecordHeaders,
+		exp.cfg.PropagateTraceContext,
 		exp.cfg.Producer.MaxMessageBytes,
 		nil,
 	)
