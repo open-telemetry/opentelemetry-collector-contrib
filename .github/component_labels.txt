@@ -156,6 +156,7 @@ pkg/golden pkg/golden
 pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
+pkg/ottl/contexts/xprofile pkg/ottl/contexts/xprofile
 pkg/pdatatest pkg/pdatatest
 pkg/pdatautil pkg/pdatautil
 pkg/resourcetotelemetry pkg/resourcetotelemetry
