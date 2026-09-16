@@ -371,6 +371,12 @@ type querySample struct {
 	// Connector/J" or "libmysql". Empty if the client reported no connect
 	// attributes.
 	clientName string
+	// blockerDetails is the raw "[{\"thread_id\":..,\"session_id\":..}, ...]"
+	// JSON array produced by querySample.tmpl -- one entry per concurrent
+	// InnoDB row-lock blocker for this thread, unordered. "[]" when measured
+	// and not blocked, empty string when blocking isn't measurable on this
+	// engine/version (MariaDB, MySQL <8.0.11).
+	blockerDetails string
 }
 
 type topQuery struct {
@@ -1155,6 +1161,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.traceparent)
 			case "client_name":
 				dest = append(dest, &s.clientName)
+			case "blocker_details":
+				dest = append(dest, &s.blockerDetails)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}
