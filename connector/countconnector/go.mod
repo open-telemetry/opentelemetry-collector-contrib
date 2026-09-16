@@ -7,6 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0
 	github.com/stretchr/testify v1.12.1
@@ -75,7 +76,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
-	github.com/twmb/murmur3 v1.1.8 // indirect
+	github.com/twmb/murmur3 v1.2.0 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
@@ -165,3 +166,5 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile => ../../pkg/ottl/contexts/xprofile
