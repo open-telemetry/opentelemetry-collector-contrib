@@ -207,6 +207,13 @@ of the GCP platform the application is running on, use the gcp detector:
 It also can optionally gather labels for the GCE instance that the collector is running on.
 Note that in order to fetch GCE labels, the service account assigned to the GCE instance must have the `roles/compute.viewer` role.
 
+On GKE, the machine type of the node is not available from the metadata server, so the
+detector fetches `host.type` from the Compute API when the `host.type` resource attribute
+is enabled (the default). This requires the runtime identity to have the
+`compute.instances.get` permission (covered by `roles/compute.viewer`); without it, the
+attribute is skipped and the failure is logged. To avoid the API call entirely, disable
+the attribute with `resource_attributes: { host.type: { enabled: false } }`.
+
 Example:
 
 ```yaml
@@ -248,6 +255,7 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * k8s.cluster.name
     * host.id (instance id)
     * host.name (instance name; availability with workload identity depends on GKE version)
+    * host.type (machine type; requires the `compute.instances.get` permission, skipped otherwise)
 
 #### Google Cloud Run Services Metadata
 

@@ -16,6 +16,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -772,13 +773,14 @@ func TestOIDCAuthenticationPublicKeysFileHotReload(t *testing.T) {
 			// Update JWKS file with server2's key
 			updateJWKSFile(t, jwksFile, oidcServer2.privateKey.Public())
 
-			// Wait for file watcher to detect the change
-			time.Sleep(100 * time.Millisecond)
-
-			// Token should now succeed
-			ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
-			assert.NoError(t, err)
-			assert.NotNil(t, ctx)
+			// Token should now succeed once the file watcher detects the change and
+			// reloads the keys. Poll instead of using a fixed sleep, since the watcher
+			// is asynchronous and reload timing varies across platforms.
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+				assert.NoError(c, err)
+				assert.NotNil(c, ctx)
+			}, 5*time.Second, 10*time.Millisecond)
 		})
 	}
 }
@@ -792,6 +794,15 @@ func TestOIDCAuthenticationPublicKeysFileHotReload(t *testing.T) {
 // will miss the rotation and keep accepting tokens signed by revoked
 // keys until the collector restarts.
 func TestOIDCAuthenticationPublicKeysFileSymlinkRotation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// This test models the Kubernetes/kubelet projected-secret rotation,
+		// which atomically retargets the "..data" directory symlink via
+		// rename(2). Windows cannot rename over an existing directory symlink
+		// (os.Rename fails with "Access is denied"), so the atomic-rotation
+		// scenario this test exercises does not apply on Windows.
+		t.Skip("projected-secret symlink rotation is a POSIX-only scenario")
+	}
+
 	// prepare two OIDC servers, each with their own signing key
 	oidcServer1, err := newOIDCServer()
 	require.NoError(t, err)
