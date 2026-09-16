@@ -46,14 +46,16 @@ func TestConnectorLogConsumeTraces(t *testing.T) {
 	}
 }
 
-func TestConnectorLogConsumeTracesPropagatesSampledFlag(t *testing.T) {
+func TestConnectorLogConsumeTracesPropagatesSpanMetadata(t *testing.T) {
 	lsink := new(consumertest.LogsSink)
 	c := newTestLogsConnector(lsink, zaptest.NewLogger(t))
 
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
+	rspans.SetSchemaUrl("https://opentelemetry.io/schemas/1.31.0")
 	rspans.Resource().Attributes().PutStr(serviceNameKey, "service-a")
 	ils := rspans.ScopeSpans().AppendEmpty()
+	ils.SetSchemaUrl("https://opentelemetry.io/schemas/1.31.0/scope")
 
 	span := ils.Spans().AppendEmpty()
 	span.SetName("op")
@@ -68,35 +70,13 @@ func TestConnectorLogConsumeTracesPropagatesSampledFlag(t *testing.T) {
 
 	out := lsink.AllLogs()
 	require.Len(t, out, 1)
-	lr := out[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.True(t, lr.Flags().IsSampled())
-	assert.Equal(t, plog.LogRecordFlags(0x1), lr.Flags(), "only the low trace-flags byte must be copied")
-}
-
-func TestConnectorLogConsumeTracesPropagatesSchemaURL(t *testing.T) {
-	lsink := new(consumertest.LogsSink)
-	c := newTestLogsConnector(lsink, zaptest.NewLogger(t))
-
-	traces := ptrace.NewTraces()
-	rspans := traces.ResourceSpans().AppendEmpty()
-	rspans.SetSchemaUrl("https://opentelemetry.io/schemas/1.31.0")
-	rspans.Resource().Attributes().PutStr(serviceNameKey, "service-a")
-	ils := rspans.ScopeSpans().AppendEmpty()
-	ils.SetSchemaUrl("https://opentelemetry.io/schemas/1.31.0/scope")
-
-	span := ils.Spans().AppendEmpty()
-	span.SetName("op")
-	exc := span.Events().AppendEmpty()
-	exc.SetName(eventNameExc)
-	exc.Attributes().PutStr(exceptionTypeKey, "boom")
-
-	require.NoError(t, c.ConsumeTraces(t.Context(), traces))
-
-	out := lsink.AllLogs()
-	require.Len(t, out, 1)
 	outRL := out[0].ResourceLogs().At(0)
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.31.0", outRL.SchemaUrl())
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.31.0/scope", outRL.ScopeLogs().At(0).SchemaUrl())
+
+	lr := outRL.ScopeLogs().At(0).LogRecords().At(0)
+	assert.True(t, lr.Flags().IsSampled())
+	assert.Equal(t, plog.LogRecordFlags(0x1), lr.Flags(), "only the low trace-flags byte must be copied")
 }
 
 func TestConnectorLogConsumeTracesRequiredAttrsIndependentOfDimensions(t *testing.T) {
