@@ -46,6 +46,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 	return &detector{
 		logger:                set.Logger,
 		detector:              gcp.NewDetector(),
+		onGCE:                 metadata.OnGCEWithContext,
 		rb:                    localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
 		labelKeyRegexes:       labelKeyRegexes,
 		gceClientBuilder:      &instancesRESTBuilder{},
@@ -57,6 +58,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 type detector struct {
 	logger                *zap.Logger
 	detector              gcpDetector
+	onGCE                 func(context.Context) bool
 	rb                    *localMetadata.ResourceBuilder
 	labelKeyRegexes       []*regexp.Regexp
 	gceClientBuilder      instancesBuilder
@@ -65,7 +67,8 @@ type detector struct {
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	if d.detector.CloudPlatform() == gcp.BareMetalSolution {
+	// BMS has no metadata server, so it must be detected before the OnGCE probe.
+	if d.onBareMetalSolution() {
 		d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
 		errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.BareMetalSolutionProjectID)
 
@@ -80,7 +83,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
-	if !metadata.OnGCE() {
+	// Pass the context to the metadata server probe to honor the configured timeout.
+	if !d.onGCE(ctx) {
 		return pcommon.NewResource(), "", nil
 	}
 
@@ -214,6 +218,14 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", errs
 	}
 	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+func (d *detector) onBareMetalSolution() bool {
+	projectID, projectErr := d.detector.BareMetalSolutionProjectID()
+	region, regionErr := d.detector.BareMetalSolutionCloudRegion()
+	instanceID, instanceErr := d.detector.BareMetalSolutionInstanceID()
+	return projectErr == nil && regionErr == nil && instanceErr == nil &&
+		projectID != "" && region != "" && instanceID != ""
 }
 
 type instancesAPI interface {
