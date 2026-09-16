@@ -111,6 +111,41 @@ func TestWindowedThroughput_InvalidGoal(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// zeroRateSampler stands in for the windowed throughput sampler's behavior of
+// returning 0 for keys it has no computed rate for (cold start, untracked
+// keys, max_keys overflow).
+type zeroRateSampler struct{}
+
+func (zeroRateSampler) Start() error                       { return nil }
+func (zeroRateSampler) Stop() error                        { return nil }
+func (zeroRateSampler) GetSampleRateMulti(string, int) int { return 0 }
+
+func TestDynsamplerWrapper_FallbackRateOnZero(t *testing.T) {
+	w := &dynsamplerWrapper{inner: zeroRateSampler{}, fallbackRate: 10}
+	assert.Equal(t, 10, w.GetSampleRate("any-key", 1),
+		"a non-positive inner rate must map to the bootstrap rate, not keep-everything")
+
+	// An unset fallback still never returns a non-positive rate.
+	w = &dynsamplerWrapper{inner: zeroRateSampler{}}
+	assert.Equal(t, 1, w.GetSampleRate("any-key", 1))
+}
+
+func TestWindowedThroughput_ColdStartUsesInitialRate(t *testing.T) {
+	s, err := NewWindowedThroughput(WindowedThroughputConfig{
+		GoalThroughputPerSec: 100,
+		InitialSamplingRate:  10,
+		UpdateFrequency:      time.Second,
+		LookbackFrequency:    30 * time.Second,
+	})
+	require.NoError(t, err)
+	require.NoError(t, s.Start())
+	t.Cleanup(func() { _ = s.Stop() })
+
+	// Before the first lookback window completes, the library has no rate for
+	// any key; the wrapper must apply the bootstrap instead of keeping all.
+	assert.Equal(t, 10, s.GetSampleRate("svc-a", 1))
+}
+
 func TestDynsamplerWrapper_StopIsIdempotent(t *testing.T) {
 	samplers := []func() (Sampler, error){
 		func() (Sampler, error) {

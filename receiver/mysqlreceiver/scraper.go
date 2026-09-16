@@ -35,7 +35,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
-const defaultServiceName = "unknown_service:mysql"
+const (
+	defaultServiceName                  = "unknown_service:mysql"
+	innodbRedoLogCurrentLSNStatusKey    = "Innodb_redo_log_current_lsn"
+	innodbRedoLogCheckpointLSNStatusKey = "Innodb_redo_log_checkpoint_lsn"
+)
 
 // otelUUIDv5Namespace is the UUID v5 namespace for deriving service.instance.id,
 // as defined by the OpenTelemetry specification.
@@ -43,6 +47,7 @@ var otelUUIDv5Namespace = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 
 type mySQLScraper struct {
 	sqlclient              client
+	clientFactory          mySQLClientFactory
 	logger                 *zap.Logger
 	config                 *Config
 	mb                     *metadata.MetricsBuilder
@@ -65,14 +70,23 @@ type mySQLScraper struct {
 func newMySQLScraper(
 	settings receiver.Settings,
 	config *Config,
+	clientFactory mySQLClientFactory,
 	cache *lru.Cache[string, int64],
 	queryPlanCache *expirable.LRU[string, string],
-) *mySQLScraper {
+) (*mySQLScraper, error) {
+	if clientFactory == nil {
+		var err error
+		clientFactory, err = newClientFactory(config, settings.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
 	seed := resolveServiceInstanceSeed(config.AddrConfig.Endpoint, settings.Logger)
 	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(seed)).String()
 	return &mySQLScraper{
 		logger:                 settings.Logger,
 		config:                 config,
+		clientFactory:          clientFactory,
 		mb:                     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		lb:                     metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
 		cache:                  cache,
@@ -80,7 +94,7 @@ func newMySQLScraper(
 		obfuscator:             newObfuscator(),
 		lastExecutionTimestamp: time.Unix(0, 0),
 		serviceInstanceID:      serviceInstanceID,
-	}
+	}, nil
 }
 
 // resolveServiceInstanceSeed returns the endpoint string to use as the UUID v5
@@ -110,17 +124,24 @@ func resolveServiceInstanceSeed(endpoint string, logger *zap.Logger) string {
 }
 
 // start starts the scraper by initializing the db client connection.
-func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
-	sqlclient, err := newMySQLClient(m.config)
+func (m *mySQLScraper) start(ctx context.Context, host component.Host) error {
+	var extensions map[component.ID]component.Component
+	if host != nil {
+		extensions = host.GetExtensions()
+	}
+	provider, err := m.config.resolveCredentialProvider(extensions)
+	if err != nil {
+		return err
+	}
+	if provider != nil {
+		m.clientFactory.setCredentialProvider(provider)
+	}
+
+	sqlclient, err := m.clientFactory.connect(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = sqlclient.Connect()
-	if err != nil {
-		_ = sqlclient.Close()
-		return err
-	}
 	m.sqlclient = sqlclient
 	m.detectedVersion = m.sqlclient.getDBVersion()
 	m.logDetectedVersion(m.detectedVersion)
@@ -133,6 +154,8 @@ func (m *mySQLScraper) logDetectedVersion(dbVer dbVersion) {
 	if dbVer.version == nil {
 		m.logger.Warn("database version could not be detected at startup; receiver will use MySQL <8/MariaDB fallback behavior for its entire lifetime",
 			zap.Bool("supports_query_sample_text", false),
+			zap.Bool("supports_innodb_redo_log_stats", false),
+			zap.Bool("requires_backup_admin_for_innodb_redo_log_stats", false),
 		)
 		return
 	}
@@ -140,6 +163,8 @@ func (m *mySQLScraper) logDetectedVersion(dbVer dbVersion) {
 		zap.String("product", dbVer.productString()),
 		zap.String("version", dbVer.version.String()),
 		zap.Bool("supports_query_sample_text", dbVer.supportsQuerySampleText()),
+		zap.Bool("supports_innodb_redo_log_stats", dbVer.supportsInnodbRedoLogStats()),
+		zap.Bool("requires_backup_admin_for_innodb_redo_log_stats", dbVer.requiresBackupAdminForInnodbRedoLogStats()),
 	)
 	if dbVer.product == dbProductMySQL && dbVer.version.Segments()[0] < 8 {
 		m.logger.Warn("detected MySQL version is past end-of-life and may not be supported by this receiver in a future release",
@@ -163,6 +188,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	errs := &scrapererror.ScrapeErrors{}
+
+	m.scrapeHealth(now)
 
 	// collect innodb metrics.
 	innodbStats, innoErr := m.sqlclient.getInnodbStats()
@@ -170,13 +198,13 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(innoErr))
 	}
 
-	errs := &scrapererror.ScrapeErrors{}
 	for k, v := range innodbStats {
 		if k != "buffer_pool_size" {
 			continue
 		}
 		addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
 	}
+	m.scrapeInnodbTransactionStats(now, errs)
 
 	// collect io_waits metrics.
 	m.scrapeTableIoWaitsStats(now, errs)
@@ -188,6 +216,8 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	// collect performance event statements metrics.
 	m.scrapeStatementEventsStats(now, errs)
+	m.scrapeQueryExecutionTime(now, errs)
+	m.scrapeActiveSessionCount(now, errs)
 	// collect lock table events metrics
 	m.scrapeTableLockWaitEventStats(now, errs)
 
@@ -254,14 +284,28 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, er
 	return m.emitLogs(errs)
 }
 
+func (m *mySQLScraper) scrapeHealth(now pcommon.Timestamp) {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlServerHealthy.Enabled {
+		return
+	}
+
+	if err := m.sqlclient.checkDBAvailability(); err != nil {
+		m.mb.RecordMysqlServerHealthyDataPoint(now, 0)
+		return
+	}
+	m.mb.RecordMysqlServerHealthyDataPoint(now, 1)
+}
+
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	globalStats, err := m.sqlclient.getGlobalStats()
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
 		errs.AddPartial(66, err)
+		m.scrapeInnodbRedoLogStats(now, nil, errs)
 		return
 	}
 
+	m.scrapeInnodbRedoLogStats(now, globalStats, errs)
 	m.recordDataPages(now, globalStats, errs)
 	m.recordDataUsage(now, globalStats, errs)
 	m.recordReplicaOpenTempTables(now, globalStats, errs)
@@ -643,6 +687,116 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 	}
 }
 
+func (m *mySQLScraper) scrapeInnodbTransactionStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	if !metrics.MysqlInnodbHistoryListLength.Enabled &&
+		!metrics.MysqlInnodbTransactionActiveCount.Enabled &&
+		!metrics.MysqlInnodbTransactionActiveDurationMax.Enabled {
+		return
+	}
+
+	stats, err := m.sqlclient.getInnodbTransactionStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch InnoDB transaction stats", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	if metrics.MysqlInnodbHistoryListLength.Enabled {
+		m.mb.RecordMysqlInnodbHistoryListLengthDataPoint(now, stats.historyListLength)
+	}
+	if metrics.MysqlInnodbTransactionActiveCount.Enabled {
+		m.mb.RecordMysqlInnodbTransactionActiveCountDataPoint(now, stats.activeTransactions)
+	}
+	if metrics.MysqlInnodbTransactionActiveDurationMax.Enabled {
+		m.mb.RecordMysqlInnodbTransactionActiveDurationMaxDataPoint(now, stats.maxActiveTransactionDuration)
+	}
+}
+
+func (m *mySQLScraper) scrapeInnodbRedoLogStats(now pcommon.Timestamp, globalStats map[string]string, errs *scrapererror.ScrapeErrors) {
+	if !m.hasEnabledInnodbRedoLogMetric() {
+		return
+	}
+
+	stats, ok, err := m.fetchInnodbRedoLogStats(globalStats)
+	if err != nil {
+		m.logger.Error("Failed to fetch InnoDB redo log stats", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+	if !ok {
+		return
+	}
+
+	m.recordInnodbRedoLogStats(now, stats)
+}
+
+func (m *mySQLScraper) hasEnabledInnodbRedoLogMetric() bool {
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	return metrics.MysqlInnodbRedoLogLsnCurrent.Enabled ||
+		metrics.MysqlInnodbRedoLogLsnCheckpoint.Enabled ||
+		metrics.MysqlInnodbRedoLogCheckpointAge.Enabled
+}
+
+func (m *mySQLScraper) fetchInnodbRedoLogStats(globalStats map[string]string) (innodbRedoLogStats, bool, error) {
+	switch m.detectedVersion.innodbRedoLogStatsSource() {
+	case innodbRedoLogStatsSourceGlobalStatus:
+		if globalStats == nil {
+			// The global status query failed earlier in the scrape and already
+			// contributed the relevant partial error.
+			return innodbRedoLogStats{}, false, nil
+		}
+		stats, err := innodbRedoLogStatsFromGlobalStatus(globalStats)
+		return stats, err == nil, err
+	case innodbRedoLogStatsSourceLogStatus:
+		stats, err := m.sqlclient.getInnodbRedoLogStatsFromLogStatus()
+		return stats, err == nil, err
+	default:
+		return innodbRedoLogStats{}, false, nil
+	}
+}
+
+func (m *mySQLScraper) recordInnodbRedoLogStats(now pcommon.Timestamp, stats innodbRedoLogStats) {
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	if metrics.MysqlInnodbRedoLogLsnCurrent.Enabled {
+		m.mb.RecordMysqlInnodbRedoLogLsnCurrentDataPoint(now, stats.currentLSN)
+	}
+	if metrics.MysqlInnodbRedoLogLsnCheckpoint.Enabled {
+		m.mb.RecordMysqlInnodbRedoLogLsnCheckpointDataPoint(now, stats.checkpointLSN)
+	}
+	if metrics.MysqlInnodbRedoLogCheckpointAge.Enabled {
+		m.mb.RecordMysqlInnodbRedoLogCheckpointAgeDataPoint(now, stats.checkpointAge)
+	}
+}
+
+func innodbRedoLogStatsFromGlobalStatus(globalStats map[string]string) (innodbRedoLogStats, error) {
+	currentLSN, err := globalStatusInt(globalStats, innodbRedoLogCurrentLSNStatusKey)
+	if err != nil {
+		return innodbRedoLogStats{}, err
+	}
+	checkpointLSN, err := globalStatusInt(globalStats, innodbRedoLogCheckpointLSNStatusKey)
+	if err != nil {
+		return innodbRedoLogStats{}, err
+	}
+	return innodbRedoLogStats{
+		currentLSN:    currentLSN,
+		checkpointLSN: checkpointLSN,
+		checkpointAge: currentLSN - checkpointLSN,
+	}, nil
+}
+
+func globalStatusInt(globalStats map[string]string, key string) (int64, error) {
+	value, ok := globalStats[key]
+	if !ok {
+		return 0, fmt.Errorf("missing global status variable %q", key)
+	}
+	parsed, err := parseInt(value)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse global status variable %q value %q: %w", key, value, err)
+	}
+	return parsed, nil
+}
+
 func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	tableIoWaitsStats, err := m.sqlclient.getTableIoWaitsStats()
 	if err != nil {
@@ -730,6 +884,34 @@ func (m *mySQLScraper) scrapeStatementEventsStats(now pcommon.Timestamp, errs *s
 
 		m.mb.RecordMysqlStatementEventWaitTimeDataPoint(now, s.sumTimerWait, s.schema, s.digest, s.digestText)
 	}
+}
+
+func (m *mySQLScraper) scrapeQueryExecutionTime(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlQueryExecutionTime.Enabled {
+		return
+	}
+
+	executionTime, err := m.sqlclient.getQueryExecutionTime()
+	if err != nil {
+		m.logger.Error("Failed to fetch query execution time", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+	m.mb.RecordMysqlQueryExecutionTimeDataPoint(now, executionTime)
+}
+
+func (m *mySQLScraper) scrapeActiveSessionCount(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlSessionActiveCount.Enabled {
+		return
+	}
+
+	activeSessionCount, err := m.sqlclient.getActiveSessionCount()
+	if err != nil {
+		m.logger.Error("Failed to fetch active session count", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+	m.mb.RecordMysqlSessionActiveCountDataPoint(now, activeSessionCount)
 }
 
 func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
