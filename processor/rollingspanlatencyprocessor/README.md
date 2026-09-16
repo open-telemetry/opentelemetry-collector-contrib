@@ -21,12 +21,6 @@ exponentially-weighted moving average (EWMA) of that key's duration. Once a key 
 enough observations to warm up, spans whose duration deviates from the rolling mean by more than a
 configured number of standard deviations are labeled accordingly.
 
-> [!NOTE]
-> This component currently only establishes its configuration and component structure. The
-> rolling-baseline tracking and attribute-labeling logic will be added in a follow-up PR, per the
-> [donation process](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/docs/new-components.md).
-> Until then, this processor passes traces through unchanged.
-
 ## Configuration
 
 ```yaml
@@ -62,8 +56,10 @@ processors:
     # Floor applied to a baseline's rolling standard deviation.
     min_stddev: 1ms
 
-    # Maximum number of concurrently tracked baselines (0 = unlimited).
-    max_baselines: 1000
+    # Maximum number of concurrently tracked baselines. Default is 0 (unlimited);
+    # set this when resource_key_attributes plus span name can produce high
+    # cardinality, to bound memory growth.
+    max_baselines: 0
 
     # Observations a baseline must accumulate before spans are labeled against it.
     warmup_count: 30

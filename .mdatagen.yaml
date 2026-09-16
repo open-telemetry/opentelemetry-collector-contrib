@@ -794,3 +794,10 @@ exclusions:
       - name: domainControllers.autodiscovery
         validation:
           enabled: false
+
+stability:
+  coverage:
+    development: 40
+    alpha: 15
+    beta: 50
+    stable: 85

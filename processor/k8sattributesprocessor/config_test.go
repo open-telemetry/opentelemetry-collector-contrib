@@ -582,6 +582,55 @@ func TestConfigValidateDuplicatePodAssociations(t *testing.T) {
 	}
 }
 
+func TestConfigValidateExcludePodNameRegex(t *testing.T) {
+	tests := []struct {
+		name    string
+		pods    []ExcludePodConfig
+		wantErr bool
+	}{
+		{
+			name:    "no excludes",
+			pods:    nil,
+			wantErr: false,
+		},
+		{
+			name:    "valid pattern",
+			pods:    []ExcludePodConfig{{Name: "jaeger-agent"}},
+			wantErr: false,
+		},
+		{
+			name:    "valid pattern with metacharacters",
+			pods:    []ExcludePodConfig{{Name: `^kube-(proxy|dns)-.*$`}},
+			wantErr: false,
+		},
+		{
+			name:    "unterminated character class",
+			pods:    []ExcludePodConfig{{Name: "[unclosed"}},
+			wantErr: true,
+		},
+		{
+			name:    "invalid pattern among valid ones",
+			pods:    []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "*invalid"}},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Exclude:   ExcludeConfig{Pods: tt.pods},
+			}
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestFilterConfigInvalidEnvVar(t *testing.T) {
 	f := FilterConfig{
 		Namespace:      "ns2",
