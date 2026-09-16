@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -18,6 +19,9 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
@@ -28,6 +32,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp/internal/metadata"
 )
+
+var errResolveAuthenticator = errors.New("failed to resolve authenticator")
 
 // Input is an operator that listens for log entries over tcp.
 type Input struct {
@@ -47,14 +53,32 @@ type Input struct {
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
 
+	auth       *helper.AuthConfig
+	host       component.Host
+	authServer extensionauth.Server
+
 	maxConnections        int
 	connectionIdleTimeout time.Duration
 	activeConnNum         atomic.Int64
 	tb                    *metadata.TelemetryBuilder
 }
 
+// SetHost stores the component host so the operator can resolve extensions,
+// such as a configured server authenticator, when it starts.
+func (i *Input) SetHost(host component.Host) {
+	i.host = host
+}
+
 // Start will start listening for log entries over tcp.
 func (i *Input) Start(_ operator.Persister) error {
+	if i.auth != nil && i.auth.IsConfigured() {
+		authServer, err := i.auth.GetServer(context.Background(), i.host)
+		if err != nil {
+			return fmt.Errorf("%w: %w", errResolveAuthenticator, err)
+		}
+		i.authServer = authServer
+	}
+
 	if err := i.configureListener(); err != nil {
 		return fmt.Errorf("failed to listen on interface: %w", err)
 	}
@@ -104,6 +128,11 @@ func (i *Input) goListen(ctx context.Context) {
 			}
 			i.backoff.Reset()
 
+			connCtx, ok := i.authenticate(ctx, conn)
+			if !ok {
+				continue
+			}
+
 			// when there is a max connection set, it will check if connection exceeds max number
 			if i.maxConnections > 0 {
 				// Check if max connections limit has been reached
@@ -133,11 +162,43 @@ func (i *Input) goListen(ctx context.Context) {
 
 			i.activeConnNum.Add(1)
 			i.recordActiveConnectionDelta(1)
-			subctx, cancel := context.WithCancel(ctx)
+
+			i.Logger().Debug("Received connection", zap.String("address", conn.RemoteAddr().String()))
+			subctx, cancel := context.WithCancel(connCtx)
 			i.goHandleClose(subctx, conn)
 			i.goHandleMessages(subctx, conn, cancel)
 		}
 	})
+}
+
+// authenticate runs the configured server authenticator for a new connection,
+// returning the connection context and whether to accept it. Connections are
+// always accepted when no authenticator is configured; rejected ones are
+// closed.
+func (i *Input) authenticate(ctx context.Context, conn net.Conn) (context.Context, bool) {
+	if i.authServer == nil {
+		return ctx, true
+	}
+
+	// The connection's remote address is exposed to the authenticator through
+	// the client.Info in the context.
+	authCtx := client.NewContext(ctx, client.Info{Addr: conn.RemoteAddr()})
+	authCtx, err := i.authServer.Authenticate(authCtx, map[string][]string{})
+	if err != nil {
+		i.Logger().Warn(
+			"Rejecting unauthenticated connection",
+			zap.String("address", conn.RemoteAddr().String()),
+			zap.Error(err),
+		)
+		if closeErr := conn.Close(); closeErr != nil {
+			i.Logger().Error(
+				"Failed to close unauthenticated connection",
+				zap.Error(closeErr),
+			)
+		}
+		return nil, false
+	}
+	return authCtx, true
 }
 
 // goHandleClose will wait for the context to finish before closing a connection.
