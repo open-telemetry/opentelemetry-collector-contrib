@@ -152,7 +152,7 @@ func TestUnmarshalLogsLargeMessage(t *testing.T) {
 	buff := bytes.NewBuffer([]byte{})
 	buff.Write(log[:len(log)-1])
 	buff.WriteString(`,"textPayload":"`)
-	for i := 0; i < padding; i++ {
+	for range padding {
 		buff.WriteByte('a')
 	}
 	buff.WriteString(`"}`)
