@@ -29,7 +29,10 @@ subtext: |
   describe a bucket that can hold nothing. A count field left unset on the
   wire no longer hides the float flavor, which the bucket lists and the zero
   count also carry. Custom bounds sent on a schema that has none are refused
-  too, since nothing would go looking for them. The sum is now left unset when
-  the count is zero, which OpenTelemetry requires.
+  too, since nothing would go looking for them. A histogram refused for a
+  shape it cannot be translated into is logged at error level rather than
+  info, which is kept for the classic histograms this receiver does not
+  support. The sum is now left unset when the count is zero, which
+  OpenTelemetry requires.
 
 change_logs: [user]
