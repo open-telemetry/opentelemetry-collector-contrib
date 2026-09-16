@@ -76,6 +76,12 @@ resourceLogs:
               - key: network.peer.port
                 value:
                   intValue: "1234"
+              - key: mysql.blocking.blockers
+                value:
+                  stringValue: '[]'
+              - key: mysql.blocking.blocker.count
+                value:
+                  intValue: "0"
             body: {}
             eventName: db.server.query_sample
             spanId: "2222222222222222"
