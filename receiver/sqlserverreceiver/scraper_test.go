@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -144,6 +145,72 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// cfg.QuerySample.Enabled = enabled
 }
 
+func gaugeDoubleValues(metrics pmetric.Metrics, name string) []float64 {
+	var values []float64
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() != name {
+					continue
+				}
+
+				dps := metric.Gauge().DataPoints()
+				for d := 0; d < dps.Len(); d++ {
+					values = append(values, dps.At(d).DoubleValue())
+				}
+			}
+		}
+	}
+	return values
+}
+
+func gaugeIntValues(metrics pmetric.Metrics, name string) []int64 {
+	var values []int64
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() != name {
+					continue
+				}
+
+				dps := metric.Gauge().DataPoints()
+				for d := 0; d < dps.Len(); d++ {
+					values = append(values, dps.At(d).IntValue())
+				}
+			}
+		}
+	}
+	return values
+}
+
+func setupPerformanceCounterTestScraper(
+	t *testing.T,
+	enableMetric func(*Config),
+) *sqlServerScraperHelper {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	enableMetric(cfg)
+	assert.NoError(t, cfg.Validate())
+
+	scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.Len(t, scrapers, 1)
+
+	return scrapers[0]
+}
+
 func enableSQLServerResourceAttributesForTests(resourceAttributes *metadata.ResourceAttributesConfig) {
 	resourceAttributes.SqlserverComputerName.Enabled = true
 	resourceAttributes.SqlserverInstanceName.Enabled = true
@@ -226,6 +293,43 @@ func TestSuccessfulScrape(t *testing.T) {
 					propertiesFixtureFile: test.propertiesFixtureFile,
 				}
 
+				if scraper.sqlQuery == getSQLServerPerformanceCounterQuery(scraper.config.InstanceName) {
+					scrapeTimes := []time.Time{
+						time.Unix(100, 0),
+						time.Unix(101, 0),
+					}
+					timeCall := 0
+					scraper.now = func() time.Time {
+						now := scrapeTimes[timeCall]
+						timeCall++
+						return now
+					}
+
+					queryCall := 0
+					scraper.client = queryRowsFuncClient{
+						queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+							rows, readErr := readFile("perfCounterQueryData.txt")
+							if readErr != nil {
+								return nil, readErr
+							}
+
+							if queryCall == 0 {
+								for _, row := range rows {
+									if isPerformanceCounterRate(row["counter_type"]) {
+										row["value"] = "0"
+										row["raw_value"] = "0"
+									}
+								}
+							}
+							queryCall++
+							return rows, nil
+						},
+					}
+
+					_, scrapeErr := scraper.ScrapeMetrics(t.Context())
+					assert.NoError(t, scrapeErr)
+				}
+
 				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
 				assert.NoError(t, err)
 				var expectedFile string
@@ -263,6 +367,347 @@ func TestSuccessfulScrape(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPerformanceCounterRateFirstSampleDoesNotEmit(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	})
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Statistics",
+					"counter":       "Batch Requests/sec",
+					"instance":      "",
+					"counter_type":  "272696576",
+					"value":         "431",
+					"raw_value":     "431",
+				},
+			}, nil
+		},
+	}
+
+	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, actualMetrics.ResourceMetrics().Len())
+}
+
+func TestPerformanceCounterRateUsesDeltaOverElapsedTime(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	rawValues := []string{"431", "481"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			rawValue := rawValues[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Statistics",
+					"counter":       "Batch Requests/sec",
+					"instance":      "",
+					"counter_type":  "272696576",
+					"value":         "400",
+					"raw_value":     rawValue,
+				},
+			}, nil
+		},
+	}
+
+	_, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	assert.Equal(t, []float64{5}, gaugeDoubleValues(
+		actualMetrics,
+		metadata.MetricsInfo.SqlserverBatchRequestRate.Name,
+	))
+}
+
+func TestPerformanceCounterRateResetEstablishesNewBaseline(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+		time.Unix(120, 0),
+		time.Unix(130, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	values := []string{"431", "481", "100", "130"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			value := values[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Statistics",
+					"counter":       "Batch Requests/sec",
+					"instance":      "",
+					"counter_type":  "272696576",
+					"value":         value,
+					"raw_value":     value,
+				},
+			}, nil
+		},
+	}
+
+	_, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	assert.Equal(t, []float64{5}, gaugeDoubleValues(
+		secondMetrics,
+		metadata.MetricsInfo.SqlserverBatchRequestRate.Name,
+	))
+
+	resetMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, resetMetrics.ResourceMetrics().Len())
+
+	fourthMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	assert.Equal(t, []float64{3}, gaugeDoubleValues(
+		fourthMetrics,
+		metadata.MetricsInfo.SqlserverBatchRequestRate.Name,
+	))
+}
+
+func TestPerformanceCounterNonRateFirstSampleEmitsUnchanged(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = true
+	})
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:General Statistics",
+					"counter":       "User Connections",
+					"instance":      "",
+					"counter_type":  "65792",
+					"value":         "42",
+				},
+			}, nil
+		},
+	}
+
+	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	assert.Equal(t, []int64{42}, gaugeIntValues(
+		actualMetrics,
+		metadata.MetricsInfo.SqlserverUserConnectionCount.Name,
+	))
+}
+
+func TestPerformanceCounterIntegerRateMetricSupportsFractionalRate(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(102, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	rawValues := []string{"10", "15"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			rawValue := rawValues[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:Buffer Manager",
+					"counter":       "Free list stalls/sec",
+					"instance":      "",
+					"counter_type":  perfCounterBulkCountType,
+					"value":         rawValue,
+					"raw_value":     rawValue,
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, firstMetrics.ResourceMetrics().Len())
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{2.5}, gaugeDoubleValues(
+		secondMetrics,
+		metadata.MetricsInfo.SqlserverPageBufferCacheFreeListStallsRate.Name,
+	))
+}
+
+func TestPerformanceCounterRateKeepsStreamsIndependent(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverErrorRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	values := [][]string{
+		{"100", "1000"},
+		{"150", "1200"},
+	}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			current := values[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Errors",
+					"counter":       "Errors/sec",
+					"instance":      "DB Offline Errors",
+					"counter_type":  "272696576",
+					"value":         current[0],
+					"raw_value":     current[0],
+				},
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Errors",
+					"counter":       "Errors/sec",
+					"instance":      "Info Errors",
+					"counter_type":  "272696576",
+					"value":         current[1],
+					"raw_value":     current[1],
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, firstMetrics.ResourceMetrics().Len())
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	rates := gaugeDoubleValues(secondMetrics, metadata.MetricsInfo.SqlserverErrorRate.Name)
+	sort.Float64s(rates)
+	assert.Equal(t, []float64{5, 20}, rates)
+}
+
+func TestPerformanceCounterRateReappearingStreamEstablishesNewBaseline(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+		time.Unix(120, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			queryCall++
+
+			if queryCall == 2 {
+				return nil, nil
+			}
+
+			value := "100"
+			if queryCall == 3 {
+				value = "160"
+			}
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Statistics",
+					"counter":       "Batch Requests/sec",
+					"instance":      "",
+					"counter_type":  "272696576",
+					"value":         value,
+					"raw_value":     value,
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, firstMetrics.ResourceMetrics().Len())
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, secondMetrics.ResourceMetrics().Len())
+
+	thirdMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, thirdMetrics.ResourceMetrics().Len())
 }
 
 func TestScrapeInvalidQuery(t *testing.T) {
