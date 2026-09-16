@@ -105,6 +105,7 @@ body:
       - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/filetelemetrypolicy
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
