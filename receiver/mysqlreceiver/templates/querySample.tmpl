@@ -79,7 +79,12 @@
     -- thread_id -- a different ID space) and filtered to one ATTR_NAME so
     -- the join stays 1:1, same pattern as the user_variables_by_thread join
     -- below for @traceparent.
-    COALESCE(attrs.ATTR_VALUE, '') AS client_name
+    COALESCE(attrs.ATTR_VALUE, '') AS client_name,
+    -- TIMER_START is an internal, monotonically increasing picosecond counter
+    -- (not wall-clock time) that changes only when a new statement begins on
+    -- this thread. Present unconditionally since Performance Schema statement
+    -- instrumentation was introduced (MySQL 5.6+, MariaDB), so no version gate.
+    COALESCE(statement.TIMER_START, 0) AS statement_timer_start
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
