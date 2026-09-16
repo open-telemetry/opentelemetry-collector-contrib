@@ -5,10 +5,11 @@ package cardinalityguardianprocessor
 
 import (
 	"fmt"
-	"hash/maphash"
 	"testing"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 const rotationBenchmarkTrackerCount = 256
@@ -22,40 +23,25 @@ func BenchmarkCardinalityProcessorRotate_Dense(b *testing.B) {
 }
 
 func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool) {
-	p, trackers := newRotationBenchmarkProcessor(dense)
-
-	// Align the initial state so the measured iterations start after a complete
-	// epoch boundary. For the dense case this also makes both alternating
-	// sketches dense, so Reset's dense clear path is exercised consistently.
-	p.rotate()
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; b.Loop(); i++ {
-		// Keep every tracker active without including the insert cost in the
-		// rotation measurement. This prevents stale eviction from changing the
-		// benchmark after two iterations.
-		b.StopTimer()
-		for trackerIndex, tracker := range trackers {
-			tracker.insert(uint64(i) + uint64(trackerIndex))
+	cfg := &Config{
+		MaxCardinalityDeltaPerEpoch: 1000000,
+		EpochDurationSeconds:        86400,
+		TopOffendersCount:           0,
+	}
+	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
+	proc, err := newCardinalityProcessor(b.Context(), cfg, set, consumertest.NewNop())
+	if err != nil {
+		b.Fatal(err)
+	}
+	p := proc.(*cardinalityProcessor)
+	if err := p.Start(b.Context(), nil); err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() {
+		if err := p.Shutdown(b.Context()); err != nil {
+			b.Errorf("shutdown benchmark processor: %v", err)
 		}
-		b.StartTimer()
-		p.rotate()
-	}
-}
-
-func newRotationBenchmarkProcessor(dense bool) (*cardinalityProcessor, []*tracker) {
-	p := &cardinalityProcessor{
-		config: &Config{
-			MaxCardinalityDeltaPerEpoch: 1000000,
-			TopOffendersCount:           0,
-		},
-		logger: zap.NewNop(),
-		seed:   maphash.MakeSeed(),
-	}
-	for i := range p.shards {
-		p.shards[i] = &trackerShard{trackers: make(map[trackerKey]*tracker)}
-	}
+	})
 
 	trackers := make([]*tracker, rotationBenchmarkTrackerCount)
 	valuesPerSketch := 32
@@ -83,5 +69,22 @@ func newRotationBenchmarkProcessor(dense bool) (*cardinalityProcessor, []*tracke
 	}
 	p.trackerCount.Store(int64(len(trackers)))
 
-	return p, trackers
+	// Align the initial state so the measured iterations start after a complete
+	// epoch boundary. For the dense case this also makes both alternating
+	// sketches dense, so Reset's dense clear path is exercised consistently.
+	p.rotate()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; b.Loop(); i++ {
+		// Keep every tracker active without including the insert cost in the
+		// rotation measurement. This prevents stale eviction from changing the
+		// benchmark after two iterations.
+		b.StopTimer()
+		for trackerIndex, tracker := range trackers {
+			tracker.insert(uint64(i) + uint64(trackerIndex))
+		}
+		b.StartTimer()
+		p.rotate()
+	}
 }
