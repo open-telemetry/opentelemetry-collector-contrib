@@ -47,12 +47,18 @@ type logsReceiver struct {
 	doneChan                      chan bool
 	storageID                     *component.ID
 	cloudwatchCheckpointPersister *cloudwatchCheckpointPersister
+	stsClient                     stsClient
 	accountID                     string
 }
 
 type client interface {
 	DescribeLogGroups(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
 	FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error)
+}
+
+// stsClient resolves the AWS account ID of the active credentials via GetCallerIdentity.
+type stsClient interface {
+	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 }
 
 type streamNames struct {
@@ -296,7 +302,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 	// In case of failure, the startTime of the request will be used as the checkpoint for the next poll
 	nextStartTime := startTime
 
-	err := l.ensureSession()
+	err := l.ensureSession(ctx)
 	if err != nil {
 		return nextStartTime, err
 	}
@@ -413,7 +419,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupRequest, error) {
 	l.settings.Logger.Debug("attempting to discover log groups.", zap.Int("limit", auto.Limit))
 	groups := []groupRequest{}
-	err := l.ensureSession()
+	err := l.ensureSession(ctx)
 	if err != nil {
 		return groups, fmt.Errorf("unable to establish a session to auto discover log groups: %w", err)
 	}
@@ -484,31 +490,52 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 	return groups, nil
 }
 
-func (l *logsReceiver) ensureSession() error {
-	if l.client != nil {
-		return nil
+func (l *logsReceiver) ensureSession(ctx context.Context) error {
+	if l.client == nil {
+		cfgOptions := []func(*config.LoadOptions) error{
+			config.WithRegion(l.region),
+		}
+
+		if l.imdsEndpoint != "" {
+			cfgOptions = append(cfgOptions, config.WithEC2IMDSEndpoint(l.imdsEndpoint))
+		}
+
+		if l.profile != "" {
+			cfgOptions = append(cfgOptions, config.WithSharedConfigProfile(l.profile))
+		}
+
+		cfg, err := config.LoadDefaultConfig(ctx, cfgOptions...)
+		if err != nil {
+			return err
+		}
+		l.client = cloudwatchlogs.NewFromConfig(cfg)
+		if l.stsClient == nil {
+			l.stsClient = sts.NewFromConfig(cfg)
+		}
 	}
 
-	cfgOptions := []func(*config.LoadOptions) error{
-		config.WithRegion(l.region),
+	// Resolve account ID lazily and retry on later polls if STS was temporarily unreachable.
+	// Failure must not block log collection; cloud.account.id is omitted until resolution succeeds.
+	if l.accountID == "" {
+		l.resolveAccountID(ctx)
 	}
+	return nil
+}
 
-	if l.imdsEndpoint != "" {
-		cfgOptions = append(cfgOptions, config.WithEC2IMDSEndpoint(l.imdsEndpoint))
+// resolveAccountID resolves the account ID of the active credentials via STS GetCallerIdentity.
+// On success, stores the resolved account ID on the receiver.
+func (l *logsReceiver) resolveAccountID(ctx context.Context) {
+	if l.stsClient == nil {
+		return
 	}
-
-	if l.profile != "" {
-		cfgOptions = append(cfgOptions, config.WithSharedConfigProfile(l.profile))
+	out, err := l.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		l.settings.Logger.Warn("unable to resolve AWS account ID via STS GetCallerIdentity; "+
+			"will retry on the next poll. Logs are emitted without the cloud.account.id "+
+			"resource attribute until resolution succeeds.", zap.Error(err))
+		return
 	}
-
-	cfg, err := config.LoadDefaultConfig(context.Background(), cfgOptions...)
-	l.client = cloudwatchlogs.NewFromConfig(cfg)
-
-	stsClient := sts.NewFromConfig(cfg)
-	stsResult, _ := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
-	if stsClient != nil && *stsResult.Account != "" {
-		l.accountID = *stsResult.Account
+	if id := aws.ToString(out.Account); id != "" {
+		l.accountID = id
 	}
-
-	return err
 }
