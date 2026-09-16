@@ -202,3 +202,16 @@ func TestConvertCESMetricsToOTLP(t *testing.T) {
 	got := ConvertCESMetricsToOTLP("project_1", "eu-west-101", "average", input)
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, got, pmetrictest.IgnoreResourceMetricsOrder()))
 }
+
+func TestToDimensions(t *testing.T) {
+	got := ToDimensions([]model.MetricsDimensionResp{
+		{Name: new("instance_id"), Value: new("12345")},
+		{Name: new("instance_id")},
+		{},
+	})
+	assert.Equal(t, []model.MetricsDimension{
+		{Name: "instance_id", Value: "12345"},
+		{Name: "instance_id"},
+		{},
+	}, got)
+}

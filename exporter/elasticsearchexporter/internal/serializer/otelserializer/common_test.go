@@ -42,9 +42,9 @@ func TestWriteAttributes_Deduplication(t *testing.T) {
 	// Serialize using writeAttributes
 	var buf bytes.Buffer
 	w := newJSONWriter(&buf)
-	w.startObject()
+	w.StartObject()
 	w.writeAttributes(attributes, false, true)
-	w.endObject()
+	w.EndObject()
 
 	// Parse and verify the output
 	var result map[string]any

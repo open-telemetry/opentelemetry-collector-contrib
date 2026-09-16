@@ -10,19 +10,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type MonthArguments[K any] struct {
+type monthArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
 func NewMonthFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Month", &MonthArguments[K]{}, createMonthFunction[K])
+	return ottl.NewFactory("Month", &monthArguments[K]{}, createMonthFunction[K])
 }
 
 func createMonthFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*MonthArguments[K])
+	args, ok := oArgs.(*monthArguments[K])
 
 	if !ok {
-		return nil, errors.New("MonthFactory args must be of type *MonthArguments[K]")
+		return nil, errors.New("MonthFactory args must be of type *monthArguments[K]")
 	}
 
 	return Month(args.Time)

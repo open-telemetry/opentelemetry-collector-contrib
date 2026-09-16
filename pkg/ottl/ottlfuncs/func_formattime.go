@@ -11,20 +11,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type FormatTimeArguments[K any] struct {
+type formatTimeArguments[K any] struct {
 	Time   ottl.TimeGetter[K]
 	Format string
 }
 
 func NewFormatTimeFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("FormatTime", &FormatTimeArguments[K]{}, createFormatTimeFunction[K])
+	return ottl.NewFactory("FormatTime", &formatTimeArguments[K]{}, createFormatTimeFunction[K])
 }
 
 func createFormatTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*FormatTimeArguments[K])
+	args, ok := oArgs.(*formatTimeArguments[K])
 
 	if !ok {
-		return nil, errors.New("FormatTimeFactory args must be of type *FormatTimeArguments[K]")
+		return nil, errors.New("FormatTimeFactory args must be of type *formatTimeArguments[K]")
 	}
 
 	return FormatTime(args.Time, args.Format)
