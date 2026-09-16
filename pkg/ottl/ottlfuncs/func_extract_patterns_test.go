@@ -204,3 +204,28 @@ func Test_ExtractPatternsFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ExtractPatternsFactory args must be of type *ExtractPatternsArguments[K]")
 	})
 }
+
+func BenchmarkExtractPatterns(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "a=b c=d", nil
+		},
+	}
+	pattern, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `^a=(?P<a>\w+)\s+c=(?P<c>\w+)$`, nil
+		},
+	})
+	require.NoError(b, err)
+
+	exprFunc, err := extractPatterns[any](target, pattern)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

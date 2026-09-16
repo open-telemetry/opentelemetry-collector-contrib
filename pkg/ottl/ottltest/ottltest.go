@@ -9,26 +9,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-//go:fix inline
-func Strp(s string) *string {
-	return new(s)
-}
-
-//go:fix inline
-func Floatp(f float64) *float64 {
-	return new(f)
-}
-
-//go:fix inline
-func Intp(i int64) *int64 {
-	return new(i)
-}
-
-//go:fix inline
-func Boolp(b bool) *bool {
-	return new(b)
-}
-
 // SetFeatureGateForTest sets the feature gate for the test and returns a function that restores the original value.
 func SetFeatureGateForTest(tb testing.TB, gate *featuregate.Gate, enabled bool) func() {
 	originalValue := gate.IsEnabled()

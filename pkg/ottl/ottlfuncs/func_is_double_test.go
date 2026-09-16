@@ -119,3 +119,16 @@ func Test_IsDoubleFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsDoubleFactory args must be of type *IsDoubleArguments[K]")
 	})
 }
+
+func BenchmarkIsDouble(b *testing.B) {
+	exprFunc := isDouble[any](&ottl.StandardFloatGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return float64(2.7), nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

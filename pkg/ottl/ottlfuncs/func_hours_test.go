@@ -103,3 +103,19 @@ func Test_HoursFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "HoursFactory args must be of type *HoursArguments[K]")
 	})
 }
+
+func BenchmarkHours(b *testing.B) {
+	exprFunc, err := Hours[any](&ottl.StandardDurationGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.ParseDuration("1h40m3s30ms100us1ns")
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

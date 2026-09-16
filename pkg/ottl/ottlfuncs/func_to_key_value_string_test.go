@@ -285,3 +285,23 @@ func Test_ToKeyValueStringFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ToKeyValueStringFactory args must be of type *ToKeyValueStringArguments[K]")
 	})
 }
+
+func BenchmarkToKeyValueString(b *testing.B) {
+	target := ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return map[string]any{
+				"key1": "value1",
+				"key2": "value2",
+			}, nil
+		},
+	}
+	exprFunc, err := toKeyValueString[any](target, ottl.Optional[string]{}, ottl.Optional[string]{}, ottl.Optional[bool]{})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

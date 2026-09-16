@@ -285,3 +285,20 @@ func Test_ConvertCaseFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ConvertCaseFactory args must be of type *ConvertCaseArguments[K]")
 	})
 }
+
+func BenchmarkConvertCase(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "CPUUtilizationMetric", nil
+		},
+	}
+	exprFunc, err := convertCase[any](target, "snake")
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

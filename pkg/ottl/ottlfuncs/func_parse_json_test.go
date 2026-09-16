@@ -250,12 +250,13 @@ func BenchmarkParseJSON(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		_, err := parseJSON(ottl.StandardStringGetter[any]{
+		if _, err := parseJSON(ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
 				return benchData, nil
 			},
-		})(ctx, nil)
-		require.NoError(b, err)
+		})(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 

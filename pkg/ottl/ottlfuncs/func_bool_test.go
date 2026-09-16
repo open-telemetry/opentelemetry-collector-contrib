@@ -211,3 +211,18 @@ func Test_BoolFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "BoolFactory args must be of type *BoolArguments[K]")
 	})
 }
+
+func BenchmarkBool(b *testing.B) {
+	exprFunc := boolFunc[any](&ottl.StandardBoolLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "true", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -3463,9 +3463,10 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for sqlserver events.
 type EventsConfig struct {
-	DbServerQueryPlan   EventConfig `mapstructure:"db.server.query_plan"`
-	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
-	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
+	DbServerQueryPlan    EventConfig `mapstructure:"db.server.query_plan"`
+	DbServerQuerySample  EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopProcedure EventConfig `mapstructure:"db.server.top_procedure"`
+	DbServerTopQuery     EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
@@ -3474,6 +3475,9 @@ func DefaultEventsConfig() EventsConfig {
 			Enabled: false,
 		},
 		DbServerQuerySample: EventConfig{
+			Enabled: false,
+		},
+		DbServerTopProcedure: EventConfig{
 			Enabled: false,
 		},
 		DbServerTopQuery: EventConfig{

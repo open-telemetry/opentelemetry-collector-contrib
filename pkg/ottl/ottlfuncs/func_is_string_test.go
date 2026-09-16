@@ -109,3 +109,18 @@ func Test_IsStringFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsStringFactory args must be of type *IsStringArguments[K]")
 	})
 }
+
+func BenchmarkIsString(b *testing.B) {
+	exprFunc := isString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "a string", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

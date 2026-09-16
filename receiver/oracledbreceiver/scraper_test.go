@@ -1706,8 +1706,10 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 				instanceName:         "oraclehost:1521/ORCL",
 				hostName:             "oraclehost:1521",
+				serverAddress:        "oraclehost",
+				serverPort:           1521,
 				obfuscator:           newObfuscator(),
-				serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 			}
 
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -1950,7 +1952,9 @@ func TestSamplesQuery(t *testing.T) {
 				logsBuilderConfig:  metadata.DefaultLogsBuilderConfig(),
 				obfuscator:         newObfuscator(),
 				instanceName:       "oraclehost:1521/ORCL",
-				serviceInstanceID:  getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serverAddress:      "oraclehost",
+				serverPort:         1521,
+				serviceInstanceID:  testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 			}
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = false
 			scrpr.logsBuilderConfig.Events.DbServerQuerySample.Enabled = true
@@ -2018,7 +2022,9 @@ func TestSamplesQueryCursorAgedOut(t *testing.T) {
 		logsBuilderConfig: logsCfg,
 		obfuscator:        newObfuscator(),
 		instanceName:      "oraclehost:1521/ORCL",
-		serviceInstanceID: getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serverAddress:     "oraclehost",
+		serverPort:        1521,
+		serviceInstanceID: testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
@@ -2156,7 +2162,9 @@ func TestSessionWaitEventsQuery(t *testing.T) {
 				logsBuilderConfig:   logsCfg,
 				obfuscator:          newObfuscator(),
 				instanceName:        "oraclehost:1521/ORCL",
-				serviceInstanceID:   getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serverAddress:       "oraclehost",
+				serverPort:          1521,
+				serviceInstanceID:   testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 				sessionWaitEventCfg: SessionWaitEvent{MaxRowsPerQuery: 200},
 			}
 			err := scrpr.start(t.Context(), componenttest.NewNopHost())
@@ -2481,6 +2489,154 @@ func TestScraper_StartCDBRoot_FallbackWhenGrantsMissing(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// On a direct-PDB connection (e.g. RDS Oracle), V$SYSMETRIC returns no rows even
+// though CDB reads "yes" — RDS never grants access to the CDB root. The scraper
+// must route sysmetric collection through V$CON_SYSMETRIC instead of relying on
+// the standalone V$SYSMETRIC client, and fall through to it harmlessly rather
+// than skip it outright. Shared Pool Free % is intentionally not recovered here:
+// V$SGASTAT is container-scoped, so a PDB-derived free % conflates CDB-wide
+// unclaimed memory with the PDB's own usage and comes out systematically wrong.
+func TestScraper_ScrapeSysMetrics_ConnectedToPDB_RDSFallback(t *testing.T) {
+	const floatDelta = 0.001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbSessionAverage.Enabled = true
+	cfg.Metrics.OracledbCPUUsageRate.Enabled = true
+	cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
+	cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
+	cfg.Metrics.OracledbSharedPoolUtilization.Enabled = true
+
+	pdbResponses := map[string][]metricRow{
+		sysmetricCDBSQL: {
+			{"METRIC_NAME": sysmetricAverageActiveSessions, "VALUE": "2.50", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricCPUUsagePerSec, "VALUE": "150.00", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricCursorCacheHitRatio, "VALUE": "96.40", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricResponseTimePerTxn, "VALUE": "12.34", "PDB_NAME": "PDB1"},
+		},
+		// V$SYSMETRIC genuinely returns 0 rows from a PDB connection; an empty
+		// response (not an error) reflects real RDS behavior after the scraper
+		// falls through to it.
+		sysmetricSQL: {},
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if rows, ok := pdbResponses[s]; ok {
+				return &fakeDbClient{Responses: [][]metricRow{rows}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: true, pdbName: "PDB1"},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	require.False(t, scrpr.isCDBRoot, "a direct-PDB connection must not use CDB-root queries")
+	require.NotNil(t, scrpr.sysmetricCDBClient)
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metricMap := make(map[string]float64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+			metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+		}
+	}
+
+	assert.InDelta(t, 2.50, metricMap["oracledb.session.average"], floatDelta)
+	assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
+	assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
+	assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
+	_, hasSharedPool := metricMap["oracledb.shared_pool.utilization"]
+	assert.False(t, hasSharedPool, "Shared Pool Free % cannot be measured accurately from a PDB connection and must not be recorded")
+}
+
+// On a direct-PDB connection (e.g. RDS Oracle), V$RESOURCE_LIMIT returns no rows
+// even though CDB reads "yes" — RDS restricts access to that CDB-root view. The
+// scraper must derive resource limits from V$PARAMETER/V$PROCESS/V$SESSION/
+// V$TRANSACTION instead of falling back to the (empty) standalone query.
+func TestScraper_ScrapeResourceLimits_ConnectedToPDB_RDSFallback(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbProcessesUsage.Enabled = true
+	cfg.Metrics.OracledbProcessesLimit.Enabled = true
+	cfg.Metrics.OracledbSessionsLimit.Enabled = true
+	cfg.Metrics.OracledbDmlLocksUsage.Enabled = true
+	cfg.Metrics.OracledbDmlLocksLimit.Enabled = true
+	cfg.Metrics.OracledbTransactionsUsage.Enabled = true
+	cfg.Metrics.OracledbTransactionsLimit.Enabled = true
+
+	pdbLimitRows := []metricRow{
+		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "12", "LIMIT_VALUE": "1000"},
+		{"RESOURCE_NAME": "sessions", "CURRENT_UTILIZATION": "20", "LIMIT_VALUE": "1105"},
+		{"RESOURCE_NAME": "transactions", "CURRENT_UTILIZATION": "3", "LIMIT_VALUE": "1215"},
+		{"RESOURCE_NAME": "dml_locks", "CURRENT_UTILIZATION": "5", "LIMIT_VALUE": "220"},
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			// V$RESOURCE_LIMIT is empty from a PDB connection on RDS; trap it so
+			// the test fails if the scraper ever falls back to querying it.
+			if s == systemResourceLimitsSQL {
+				return &fakeDbClient{Err: errors.New("should not be called: v$resource_limit returns 0 rows from a PDB connection")}
+			}
+			if s == systemResourceLimitsPDBSQL {
+				return &fakeDbClient{Responses: [][]metricRow{pdbLimitRows}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: true, pdbName: "PDB1"},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	require.NotNil(t, scrpr.systemResourceLimitsPDBClient)
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metricMap := make(map[string]int64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+			metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).IntValue()
+		}
+	}
+
+	assert.Equal(t, int64(12), metricMap["oracledb.processes.usage"])
+	assert.Equal(t, int64(1000), metricMap["oracledb.processes.limit"])
+	assert.Equal(t, int64(1105), metricMap["oracledb.sessions.limit"])
+	assert.Equal(t, int64(5), metricMap["oracledb.dml_locks.usage"])
+	assert.Equal(t, int64(220), metricMap["oracledb.dml_locks.limit"])
+	assert.Equal(t, int64(3), metricMap["oracledb.transactions.usage"])
+	assert.Equal(t, int64(1215), metricMap["oracledb.transactions.limit"])
+}
+
 // sysmetricDirectionValues collects gauge data points keyed by metric name then by
 // the disk.io.direction attribute value, so consolidated read/write rates can be
 // asserted independently.
@@ -2507,37 +2663,112 @@ func sysmetricDirectionValues(metrics pmetric.MetricSlice) map[string]map[string
 	return out
 }
 
-func TestGetInstanceId(t *testing.T) {
-	localhostName, _ := os.Hostname()
+func TestResolveServerEndpoint(t *testing.T) {
+	localhostName, err := os.Hostname()
+	require.NoError(t, err)
 
-	instanceString := "example.com:1521/XE"
-	instanceID := getInstanceID(instanceString, zap.NewNop())
-	assert.Equal(t, "example.com:1521/XE", instanceID)
+	tests := []struct {
+		name         string
+		hostName     string
+		expectedHost string
+		expectedPort int64
+	}{
+		{name: "host and port", hostName: "oraclehost:1521", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "host without port", hostName: "oraclehost", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "host with non default port", hostName: "oraclehost:51521", expectedHost: "oraclehost", expectedPort: 51521},
+		{name: "container hostname is not loopback", hostName: "ora-docker:1521", expectedHost: "ora-docker", expectedPort: 1521},
+		{name: "docker host gateway is not loopback", hostName: "host.docker.internal:1521", expectedHost: "host.docker.internal", expectedPort: 1521},
+		{name: "localhost with port", hostName: "localhost:51521", expectedHost: localhostName, expectedPort: 51521},
+		{name: "localhost without port", hostName: "localhost", expectedHost: localhostName, expectedPort: 1521},
+		{name: "localhost is matched case insensitively", hostName: "Localhost", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv4 loopback with port", hostName: "127.0.0.1:1521", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv4 loopback without port", hostName: "127.0.0.1", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv6 loopback with port", hostName: "[::1]:1521", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bracketed IPv6 loopback without port", hostName: "[::1]", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bare IPv6 loopback", hostName: "::1", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bracketed IPv6 with port is not loopback", hostName: "[2001:db8::1]:1521", expectedHost: "2001:db8::1", expectedPort: 1521},
+		{name: "bare IPv6 is not loopback", hostName: "2001:db8::1", expectedHost: "2001:db8::1", expectedPort: 1521},
+		// An undetermined host is not co-located knowledge, so it is left unset rather than resolved.
+		{name: "empty target", hostName: "", expectedHost: "", expectedPort: 1521},
+		{name: "blank target", hostName: "   ", expectedHost: "", expectedPort: 1521},
+		{name: "port zero defaults", hostName: "oraclehost:0", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "empty port defaults", hostName: "oraclehost:", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "non numeric port defaults", hostName: "oraclehost:notaport", expectedHost: "oraclehost", expectedPort: 1521},
+	}
 
-	localHostStringUppercase := "Localhost:1521/XE"
-	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			host, port := resolveServerEndpoint(test.hostName, zap.NewNop())
+			assert.Equal(t, test.expectedHost, host)
+			assert.Equal(t, test.expectedPort, port)
+		})
+	}
+}
 
-	localHostString := "127.0.0.1:1521/XE"
-	localInstanceID = getInstanceID(localHostString, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+const undeterminedHostWarning = "Could not determine the Oracle host from the connection string; server.address will not be reported"
 
-	localHostStringIPV6 := "[::1]:1521/XE"
-	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+func TestResolveServerEndpointWarnsOnUndeterminedHost(t *testing.T) {
+	core, logs := observer.New(zapcore.WarnLevel)
 
-	hostWithoutService := "127.0.0.1:1521"
-	localInstanceID = getInstanceID(hostWithoutService, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521", localInstanceID)
+	host, port := resolveServerEndpoint("", zap.New(core))
 
-	hostNameErrorSample := ""
-	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, "unknown:1521", localInstanceID)
+	assert.Empty(t, host)
+	assert.Equal(t, defaultOraclePort, port)
+	assert.Equal(t, 1, logs.FilterMessage(undeterminedHostWarning).Len())
+}
+
+func TestResolveServerEndpointDoesNotWarnOnDeterminedHost(t *testing.T) {
+	for _, hostName := range []string{"oraclehost:1521", "oraclehost", "localhost:1521", "127.0.0.1", "::1"} {
+		t.Run(hostName, func(t *testing.T) {
+			core, logs := observer.New(zapcore.WarnLevel)
+
+			host, _ := resolveServerEndpoint(hostName, zap.New(core))
+
+			assert.NotEmpty(t, host)
+			assert.Equal(t, 0, logs.FilterMessage(undeterminedHostWarning).Len(),
+				"a parseable host must not be reported as undetermined")
+		})
+	}
+}
+
+// testInstanceID mirrors what newScraper computes: one endpoint resolution feeding service.instance.id.
+func testInstanceID(hostName, instanceName string) string {
+	_, _, instanceID := resolveInstanceIdentity(hostName, instanceName, zap.NewNop())
+	return instanceID
+}
+
+func TestServiceInstanceID(t *testing.T) {
+	localhostName, err := os.Hostname()
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		instanceString string
+		expected       string
+	}{
+		{name: "remote host and port", instanceString: "example.com:1521/XE", expected: "example.com:1521/XE"},
+		{name: "remote host without port", instanceString: "example.com/XE", expected: "example.com:1521/XE"},
+		{name: "localhost is resolved case insensitively", instanceString: "Localhost:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "localhost without port", instanceString: "localhost/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv4 loopback with port", instanceString: "127.0.0.1:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv4 loopback without port", instanceString: "127.0.0.1/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv6 loopback with port", instanceString: "[::1]:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv6 loopback without port", instanceString: "[::1]/XE", expected: localhostName + ":1521/XE"},
+		{name: "bare IPv6 loopback", instanceString: "::1/XE", expected: localhostName + ":1521/XE"},
+		// A non-loopback IPv6 host is not re-bracketed by constructInstanceID; unchanged from before.
+		{name: "non loopback IPv6 with port", instanceString: "[2001:db8::1]:1521/XE", expected: "2001:db8::1:1521/XE"},
+		{name: "host without service", instanceString: "127.0.0.1:1521", expected: localhostName + ":1521"},
+		// An undetermined host keeps the pre-existing "unknown" placeholder.
+		{name: "empty instance string", instanceString: "", expected: "unknown:1521"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// The receiver resolves the target the connection uses; the instance string only adds the service.
+			target, _, _ := strings.Cut(test.instanceString, "/")
+			assert.Equal(t, test.expected, testInstanceID(target, test.instanceString))
+		})
+	}
 }
 
 func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
@@ -2597,8 +2828,10 @@ func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -2684,8 +2917,10 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -2868,8 +3103,10 @@ func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true

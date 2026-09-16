@@ -254,11 +254,9 @@ func BenchmarkDecodeBytes(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for b.Loop() {
-		_, err = dec(ctx, nil)
-		if err != nil {
+		if _, err = dec(ctx, nil); err != nil {
 			b.Fatal(err)
 		}
-		require.NoError(b, err)
 	}
 }
 
@@ -282,11 +280,9 @@ func BenchmarkDecodeString(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for b.Loop() {
-		_, err = dec(ctx, nil)
-		if err != nil {
+		if _, err = dec(ctx, nil); err != nil {
 			b.Fatal(err)
 		}
-		require.NoError(b, err)
 	}
 }
 

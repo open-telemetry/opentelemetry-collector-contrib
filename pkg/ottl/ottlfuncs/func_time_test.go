@@ -526,9 +526,9 @@ func Benchmark_Time(t *testing.B) {
 
 		t.Run(tt.name, func(t *testing.B) {
 			for t.Loop() {
-				result, err := exprFunc(nil, nil)
-				require.NoError(t, err)
-				assert.Equal(t, tt.expected.UnixNano(), result.(time.Time).UnixNano())
+				if _, err := exprFunc(nil, nil); err != nil {
+					t.Fatal(err)
+				}
 			}
 		})
 	}

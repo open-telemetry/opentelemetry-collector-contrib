@@ -95,6 +95,7 @@ components:
     - extension/ecs_observer
     - extension/encoding
     - extension/file_storage
+    - extension/file_telemetry_policy
     - extension/google_cloud_logentry_encoding
     - extension/googleclientauth
     - extension/headers_setter
@@ -163,6 +164,7 @@ components:
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
+    - pkg/ottl/contexts/xprofile
     - pkg/pdatatest
     - pkg/pdatautil
     - pkg/prometheus
@@ -231,6 +233,7 @@ components:
     - processor/span_pruning
     - processor/sumologic
     - processor/tail_sampling
+    - processor/telemetry_policy
     - processor/tencentcvmdetector
     - processor/transform
     - processor/transformprocessor/internal/logparsingfuncs

@@ -235,3 +235,32 @@ func Test_MergeMapsFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "MergeMapsFactory args must be of type *MergeMapsArguments[K]")
 	})
 }
+
+func BenchmarkMergeMaps(b *testing.B) {
+	source := ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			m := pcommon.NewMap()
+			m.PutStr("attr2", "value2")
+			return m, nil
+		},
+	}
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Map, error) {
+			m := pcommon.NewMap()
+			m.PutStr("attr1", "value1")
+			return m, nil
+		},
+		Setter: func(context.Context, any, any) error {
+			return nil
+		},
+	}
+	exprFunc, err := mergeMaps[any](target, source, UPSERT)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

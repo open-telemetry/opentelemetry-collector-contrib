@@ -329,3 +329,47 @@ func Test_CommunityIDFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "CommunityIDFactory args must be of type *CommunityIDArguments[K]")
 	})
 }
+
+func BenchmarkCommunityID(b *testing.B) {
+	sourceIP := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "1.2.3.4", nil
+		},
+	}
+	destIP := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "5.6.7.8", nil
+		},
+	}
+	sourcePort := ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(12345), nil
+		},
+	}
+	destPort := ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(80), nil
+		},
+	}
+	protocol := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "TCP", nil
+		},
+	}
+	seed := ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(0), nil
+		},
+	}
+	protocolOpt := ottl.NewTestingOptional[ottl.StringGetter[any]](protocol)
+	seedOpt := ottl.NewTestingOptional[ottl.IntGetter[any]](seed)
+
+	exprFunc := communityID(sourceIP, sourcePort, destIP, destPort, protocolOpt, seedOpt)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
