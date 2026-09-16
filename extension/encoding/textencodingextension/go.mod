@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.161.0
 	go.opentelemetry.io/collector/pdata v1.67.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/text v0.41.0
+	golang.org/x/text v0.42.0
 )
 
 require (
