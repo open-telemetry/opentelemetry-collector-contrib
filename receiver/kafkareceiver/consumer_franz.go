@@ -148,6 +148,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             c.settings.ID,
 		Transport:              transport,
+		LongLivedCtx:           true,
 		ReceiverCreateSettings: c.settings,
 	})
 	if err != nil {

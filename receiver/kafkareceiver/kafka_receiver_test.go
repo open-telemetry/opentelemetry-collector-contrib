@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -140,6 +141,74 @@ func TestReceiver_Headers_Metadata(t *testing.T) {
 				assert.Equal(t, []string{"otlp_spans"}, info.Metadata.Get("kafka.topic"))
 				assert.Equal(t, []string{"0"}, info.Metadata.Get("kafka.partition"))
 				assert.Equal(t, []string{"0"}, info.Metadata.Get("kafka.offset"))
+			})
+		})
+	}
+}
+
+func TestReceiver_TraceContextPropagation(t *testing.T) {
+	producerSpanContext := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+		SpanID:     trace.SpanID{1, 2, 3, 4, 5, 6, 7, 8},
+		TraceFlags: trace.FlagsSampled,
+		Remote:     true,
+	})
+
+	for name, testcase := range map[string]struct {
+		headers       []kgo.RecordHeader
+		expectedLinks []trace.SpanContext
+	}{
+		"no trace context": {},
+		"invalid trace context": {
+			headers: []kgo.RecordHeader{
+				{Key: "traceparent", Value: []byte("invalid")},
+			},
+		},
+		"valid trace context": {
+			headers: []kgo.RecordHeader{
+				{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01")},
+			},
+			expectedLinks: []trace.SpanContext{producerSpanContext},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			runTestForClients(t, func(t *testing.T) {
+				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+				traces := testdata.GenerateTraces(1)
+				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+				require.NoError(t, err)
+				results := kafkaClient.ProduceSync(t.Context(), &kgo.Record{
+					Topic:   "otlp_spans",
+					Value:   data,
+					Headers: testcase.headers,
+				})
+				require.NoError(t, results.FirstErr())
+
+				received := make(chan consumerArgs[ptrace.Traces], 1)
+				set, tel, _ := mustNewSettings(t)
+				r, err := NewFactory().CreateTraces(t.Context(), set, receiverConfig, newChannelTracesConsumer(received))
+				require.NoError(t, err)
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+				t.Cleanup(func() {
+					assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+				})
+				args := <-received
+
+				require.Eventually(t, func() bool {
+					return len(tel.SpanRecorder.Ended()) == 1
+				}, 10*time.Second, 10*time.Millisecond)
+				span := tel.SpanRecorder.Ended()[0]
+
+				// The receive span starts a new trace and is propagated to the next consumer.
+				assert.False(t, span.Parent().IsValid())
+				assert.Equal(t, span.SpanContext(), trace.SpanContextFromContext(args.ctx))
+
+				var links []trace.SpanContext
+				for _, link := range span.Links() {
+					links = append(links, link.SpanContext)
+				}
+				assert.Equal(t, testcase.expectedLinks, links)
 			})
 		})
 	}

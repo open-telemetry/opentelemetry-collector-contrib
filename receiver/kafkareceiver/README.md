@@ -175,6 +175,12 @@ Additionally, all Kafka message headers are included in the request metadata.
 This metadata can then be used throughout the pipeline, for example to set attributes using the
 [attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md).
 
+### Trace context propagation
+
+If a record has W3C Trace Context headers (`traceparent`, `tracestate`), the receiver links its span to
+that trace context. The receiver span starts a new trace. The Kafka exporter adds these headers when
+`propagate_trace_context` is enabled.
+
 ### Example configurations
 
 #### Minimal configuration
