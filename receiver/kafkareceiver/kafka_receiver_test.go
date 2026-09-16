@@ -155,8 +155,8 @@ func TestReceiver_TraceContextPropagation(t *testing.T) {
 	})
 
 	for name, testcase := range map[string]struct {
-		headers       []kgo.RecordHeader
-		expectedLinks []trace.SpanContext
+		headers        []kgo.RecordHeader
+		expectedParent trace.SpanContext
 	}{
 		"no trace context": {},
 		"invalid trace context": {
@@ -168,7 +168,7 @@ func TestReceiver_TraceContextPropagation(t *testing.T) {
 			headers: []kgo.RecordHeader{
 				{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01")},
 			},
-			expectedLinks: []trace.SpanContext{producerSpanContext},
+			expectedParent: producerSpanContext,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -200,15 +200,11 @@ func TestReceiver_TraceContextPropagation(t *testing.T) {
 				}, 10*time.Second, 10*time.Millisecond)
 				span := tel.SpanRecorder.Ended()[0]
 
-				// The receive span starts a new trace and is propagated to the next consumer.
-				assert.False(t, span.Parent().IsValid())
+				// The receive span is a child of the extracted span context and is
+				// propagated to the next consumer.
+				assert.Equal(t, testcase.expectedParent, span.Parent())
+				assert.Empty(t, span.Links())
 				assert.Equal(t, span.SpanContext(), trace.SpanContextFromContext(args.ctx))
-
-				var links []trace.SpanContext
-				for _, link := range span.Links() {
-					links = append(links, link.SpanContext)
-				}
-				assert.Equal(t, testcase.expectedLinks, links)
 			})
 		})
 	}
