@@ -51,7 +51,7 @@ func TestFloat64AdjacentValuesDistinct(t *testing.T) {
 		},
 		{
 			name: "values near int64 max (1.7e18 range where int64 would collide)",
-			a:    float64(int64(1<<62)),
+			a:    float64(int64(1 << 62)),
 			b:    math.Nextafter(float64(int64(1<<62)), math.MaxFloat64),
 		},
 		{
