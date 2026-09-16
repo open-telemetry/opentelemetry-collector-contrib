@@ -4,7 +4,6 @@
 package googlecloudlogentryencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension"
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -37,19 +36,24 @@ func (*ext) Shutdown(context.Context) error {
 func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
-	// each line corresponds to a log
-	scanner := bufio.NewScanner(bytes.NewReader(buf))
-	const maxLogMessageSize = 10 * 1024 * 1024
-	scanner.Buffer(make([]byte, 0, 64*1024), maxLogMessageSize+1)
-	for scanner.Scan() {
-		line := scanner.Bytes()
+	// Each line corresponds to a log. Split on '\n' by slicing the payload
+	// directly instead of using bufio.Scanner: the payload is already a
+	// []byte, so a scanner would copy every line into a second buffer and
+	// impose a max-line cap. Slicing handles arbitrarily large lines (the
+	// >64KiB case this fixes) without a per-decode scratch buffer.
+	for len(buf) > 0 {
+		var line []byte
+		if i := bytes.IndexByte(buf, '\n'); i >= 0 {
+			line, buf = buf[:i], buf[i+1:]
+		} else {
+			line, buf = buf, nil
+		}
+		if n := len(line); n > 0 && line[n-1] == '\r' {
+			line = line[:n-1]
+		}
 		if err := ex.handleLogLine(logs, line); err != nil {
 			return plog.Logs{}, err
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error reading log: %w", err)
 	}
 
 	return logs, nil
