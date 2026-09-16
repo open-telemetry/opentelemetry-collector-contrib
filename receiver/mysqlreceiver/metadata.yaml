@@ -178,6 +178,9 @@ attributes:
   mysql.events_statements_current.digest:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
+  mysql.events_statements_current.timer_start:
+    description: Internal, monotonically increasing picosecond counter (not wall-clock time) marking when the current statement started executing. Changes only when a new statement begins on this thread, making it a stable per-execution key for deduplicating a statement's wait-event rows across scrape cycles.
+    type: int
   mysql.events_statements_current.timer_wait:
     description: Elapsed time the current statement has been executing, in seconds.
     type: double
@@ -356,6 +359,7 @@ events:
       - client.port
       - network.peer.address
       - network.peer.port
+      - mysql.events_statements_current.timer_start
 
   db.server.top_query:
     enabled: false

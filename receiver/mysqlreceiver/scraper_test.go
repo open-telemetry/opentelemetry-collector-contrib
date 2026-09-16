@@ -1145,6 +1145,44 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 	})
 }
 
+func TestScrapeQuerySamplesTimerStart(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+	t.Run("reports the statement's TIMER_START value", func(t *testing.T) {
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
+		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_timer_start"}
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		val, ok := record.Attributes().Get("mysql.events_statements_current.timer_start")
+		require.True(t, ok, "mysql.events_statements_current.timer_start must be present")
+		assert.Equal(t, int64(652332302642692000), val.Int())
+	})
+
+	t.Run("defaults to zero when the fixture omits the column", func(t *testing.T) {
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
+		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_no_traceparent"}
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		val, ok := record.Attributes().Get("mysql.events_statements_current.timer_start")
+		require.True(t, ok, "mysql.events_statements_current.timer_start must be present")
+		assert.Equal(t, int64(0), val.Int())
+	})
+}
+
 func TestScrapeTopQueryInterval(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "otel"
@@ -1685,6 +1723,9 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
 		if len(text) > 16 {
 			s.traceparent = text[16]
+		}
+		if len(text) > 18 {
+			s.statementTimerStart, _ = parseInt(text[18])
 		}
 
 		samples = append(samples, s)
