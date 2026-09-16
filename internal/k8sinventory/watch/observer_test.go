@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,9 +30,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 )
 
-func setResourceVersionRetryDelay(observer *Observer, delay time.Duration) {
+func setRetryBackoffs(observer *Observer, delay time.Duration) {
 	observer.resourceVersionRetryBackoff.Duration = delay
 	observer.resourceVersionRetryBackoff.Jitter = 0
+	observer.watchRestartBackoff.Duration = delay
+	observer.watchRestartBackoff.Jitter = 0
 }
 
 func TestObserver(t *testing.T) {
@@ -423,7 +426,7 @@ func TestObserverRetriesResourceVersionRelistPastBackoffCap(t *testing.T) {
 		receivedEventsChan <- event
 	})
 	require.NoError(t, err)
-	setResourceVersionRetryDelay(obs, time.Millisecond)
+	setRetryBackoffs(obs, time.Millisecond)
 	obs.resourceVersionRetryBackoff.Cap = 2 * time.Millisecond
 
 	wg := sync.WaitGroup{}
@@ -469,7 +472,7 @@ func TestResourceVersionRetryStopsPromptly(t *testing.T) {
 		nil,
 	)
 	require.NoError(t, err)
-	setResourceVersionRetryDelay(obs, time.Hour)
+	setRetryBackoffs(obs, time.Hour)
 
 	stopperChan := make(chan struct{})
 	retryDone := make(chan error, 1)
@@ -538,7 +541,7 @@ func TestObserverBypassesPersistedResourceVersionAfter410(t *testing.T) {
 		receivedEventsChan <- event
 	})
 	require.NoError(t, err)
-	setResourceVersionRetryDelay(obs, 10*time.Millisecond)
+	setRetryBackoffs(obs, 10*time.Millisecond)
 
 	wg := sync.WaitGroup{}
 	stopChan, err := obs.Start(t.Context(), &wg)
@@ -561,12 +564,200 @@ func TestObserverBypassesPersistedResourceVersionAfter410(t *testing.T) {
 }
 
 func TestObserverNonStatusWatchErrorDoesNotPanic(t *testing.T) {
-	assert.NotPanics(t, func() {
-		assert.False(t, isExpiredResourceVersionEvent(apiWatch.Event{
-			Type:   apiWatch.Error,
-			Object: generatePod("not-a-status", "default", nil, "1"),
-		}))
+	cfg := Config{Config: k8sinventory.Config{Gvr: schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}}}
+	receivedEventsChan := make(chan *apiWatch.Event, 1)
+	obs, err := New(newMockDynamicClient(), cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
+		receivedEventsChan <- event
 	})
+	require.NoError(t, err)
+
+	watchCalls := 0
+	watchFunc := func(context.Context, v1.ListOptions) (apiWatch.Interface, error) {
+		watchCalls++
+		watcher := apiWatch.NewFakeWithChanSize(1, false)
+		switch watchCalls {
+		case 1:
+			// Not a *metav1.Status: exercises the defensive FromObject() path.
+			go watcher.Error(generatePod("not-a-status", "default", nil, "1"))
+		case 2:
+			go watcher.Add(generatePod("pod-after-error", "default", nil, "2"))
+		}
+		return watcher, nil
+	}
+
+	stopperChan := make(chan struct{})
+	doneChan := make(chan struct{})
+	go func() {
+		defer close(doneChan)
+		assert.NotPanics(t, func() {
+			obs.doWatch(t.Context(), "1", "default", watchFunc, stopperChan, func(string) {})
+		})
+	}()
+
+	select {
+	case event := <-receivedEventsChan:
+		assert.Equal(t, apiWatch.Added, event.Type)
+	case <-time.After(2 * time.Second):
+		close(stopperChan)
+		<-doneChan
+		t.Fatal("timeout waiting for event after non-status error")
+	}
+
+	close(stopperChan)
+	<-doneChan
+}
+
+// TestObserverForbiddenKeepsPersistedResourceVersion verifies that a 403
+// Forbidden watch error (unlike a 410) does not clear the persisted
+// resourceVersion: the watch is restarted from the same checkpoint.
+func TestObserverForbiddenKeepsPersistedResourceVersion(t *testing.T) {
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	cp := checkpoint.New(storageClient, zap.NewNop())
+	require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", "50"))
+	require.NoError(t, cp.Flush(t.Context()))
+
+	scheme := runtime.NewScheme()
+	gvrToListKind := map[schema.GroupVersionResource]string{
+		{Group: "", Version: "v1", Resource: "pods"}: "PodList",
+	}
+	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+	fakeClient.PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+		return true, podListWithResourceVersion("200"), nil
+	})
+
+	watchResourceVersions := make(chan string, 2)
+	watchCalls := 0
+	fakeClient.PrependWatchReactor("pods", func(action k8s_testing.Action) (bool, apiWatch.Interface, error) {
+		watchCalls++
+		watchAction := action.(k8s_testing.WatchAction)
+		watchResourceVersions <- watchAction.GetWatchRestrictions().ResourceVersion
+
+		if watchCalls == 1 {
+			// A Forbidden error returned directly from the watch call (as
+			// opposed to an error event on the channel) is what client-go's
+			// RetryWatcher forwards as a watch.Error event before stopping.
+			return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "pods"}, "", errors.New("forbidden"))
+		}
+		return true, apiWatch.NewFakeWithChanSize(1, false), nil
+	})
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+			Namespaces: []string{"default"},
+		},
+	}
+
+	events := make(chan *apiWatch.Event, 16)
+	obs, err := New(mockDynamicClient{client: fakeClient}, cfg, zap.NewNop(), storageClient, func(e *apiWatch.Event) {
+		select {
+		case events <- e:
+		default:
+		}
+	})
+	require.NoError(t, err)
+	setRetryBackoffs(obs, 10*time.Millisecond)
+
+	wg := sync.WaitGroup{}
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+
+	var rv1, rv2 string
+	select {
+	case rv1 = <-watchResourceVersions:
+	case <-time.After(2 * time.Second):
+		close(stopChan)
+		wg.Wait()
+		t.Fatal("timeout waiting for first watch call")
+	}
+	select {
+	case rv2 = <-watchResourceVersions:
+	case <-time.After(2 * time.Second):
+		close(stopChan)
+		wg.Wait()
+		t.Fatal("timeout waiting for second watch call")
+	}
+
+	close(stopChan)
+	wg.Wait()
+
+	close(events)
+	for e := range events {
+		assert.NotEqual(t, apiWatch.Error, e.Type, "non-410 watch errors must not reach handleWatchEventFunc")
+	}
+
+	assert.Equal(t, "50", rv1, "first watch should start from the persisted resourceVersion")
+	assert.Equal(t, "50", rv2, "watch restarted after Forbidden should reuse the persisted resourceVersion, not the list RV")
+
+	rv, err := cp.GetCheckpoint(t.Context(), "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "50", rv, "persisted checkpoint must survive a non-410 watch error")
+}
+
+// TestWatchRestartBackoffStopsPromptly verifies that closing stopperChan while
+// startWatch is sleeping between watch restarts (not blocked inside doWatch)
+// interrupts the backoff promptly instead of waiting out the full delay.
+func TestWatchRestartBackoffStopsPromptly(t *testing.T) {
+	scheme := runtime.NewScheme()
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(
+		scheme,
+		map[schema.GroupVersionResource]string{gvr: "PodList"},
+	)
+
+	watchCalled := make(chan struct{}, 1)
+	fakeClient.PrependWatchReactor("pods", func(_ k8s_testing.Action) (bool, apiWatch.Interface, error) {
+		select {
+		case watchCalled <- struct{}{}:
+		default:
+		}
+		watcher := apiWatch.NewFakeWithChanSize(1, false)
+		// An object without a resourceVersion makes client-go's RetryWatcher
+		// give up immediately, so doWatch returns (false, false) right away
+		// and startWatch enters its restart backoff sleep.
+		go watcher.Add(generatePod("no-rv", "default", nil, ""))
+		return true, watcher, nil
+	})
+
+	obs, err := New(
+		mockDynamicClient{client: fakeClient},
+		Config{Config: k8sinventory.Config{Gvr: gvr, Namespaces: []string{"default"}, ResourceVersion: "1"}},
+		zap.NewNop(),
+		nil,
+		nil,
+	)
+	require.NoError(t, err)
+	obs.watchRestartBackoff.Duration = time.Hour
+	obs.watchRestartBackoff.Jitter = 0
+
+	wg := sync.WaitGroup{}
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+
+	select {
+	case <-watchCalled:
+	case <-time.After(2 * time.Second):
+		close(stopChan)
+		wg.Wait()
+		t.Fatal("timeout waiting for first watch call")
+	}
+	// Give doWatch time to return so startWatch is sleeping in the backoff,
+	// not blocked on its own stopperChan select inside doWatch.
+	time.Sleep(50 * time.Millisecond)
+
+	close(stopChan)
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("startWatch did not stop promptly during restart backoff")
+	}
 }
 
 // TestSendInitialStateReturnsListRV verifies that sendInitialState returns the
