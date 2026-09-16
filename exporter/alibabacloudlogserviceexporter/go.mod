@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibab
 go 1.26.0
 
 require (
-	github.com/aliyun/aliyun-log-go-sdk v0.1.127
+	github.com/aliyun/aliyun-log-go-sdk v0.1.129
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.0
