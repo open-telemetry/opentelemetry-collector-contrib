@@ -1,4 +1,4 @@
-change_type: bug_fix
+change_type: breaking
 
 component: receiver/prometheus_remote_write
 
