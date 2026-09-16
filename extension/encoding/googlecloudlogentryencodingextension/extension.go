@@ -36,11 +36,7 @@ func (*ext) Shutdown(context.Context) error {
 func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
-	// Each line corresponds to a log. Split on '\n' by slicing the payload
-	// directly instead of using bufio.Scanner: the payload is already a
-	// []byte, so a scanner would copy every line into a second buffer and
-	// impose a max-line cap. Slicing handles arbitrarily large lines (the
-	// >64KiB case this fixes) without a per-decode scratch buffer.
+	// each line corresponds to a log
 	for len(buf) > 0 {
 		var line []byte
 		if i := bytes.IndexByte(buf, '\n'); i >= 0 {
