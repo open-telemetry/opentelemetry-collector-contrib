@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 )
 
 type ProfilesConsumer interface {
@@ -35,7 +35,7 @@ func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Prof
 	for _, rprofiles := range ld.ResourceProfiles().All() {
 		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
 			for _, profile := range sprofiles.Profiles().All() {
-				tCtx := ottlprofile.NewTransformContextPtr(rprofiles, sprofiles, profile, dic, ottlprofile.WithCache(cache))
+				tCtx := ottlprofile.NewTransformContext(rprofiles, sprofiles, profile, dic, ottlprofile.WithCache(cache))
 				condition, err := l.Eval(ctx, tCtx)
 				if err != nil {
 					tCtx.Close()
