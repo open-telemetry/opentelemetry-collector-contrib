@@ -201,3 +201,25 @@ func Test_CoalesceFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "CoalesceFactory args must be of type *CoalesceArguments[K]")
 	})
 }
+
+func BenchmarkCoalesce(b *testing.B) {
+	values := []ottl.Getter[any]{
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+			return nil, nil
+		}},
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+			return nil, nil
+		}},
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+			return "found", nil
+		}},
+	}
+	exprFunc := coalesce[any](values)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

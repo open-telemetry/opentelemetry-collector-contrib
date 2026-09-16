@@ -117,3 +117,19 @@ func Test_MD5Factory(t *testing.T) {
 		assert.ErrorContains(t, err, "MD5Factory args must be of type *MD5Arguments[K]")
 	})
 }
+
+func BenchmarkMD5(b *testing.B) {
+	exprFunc, err := MD5HashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world", nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

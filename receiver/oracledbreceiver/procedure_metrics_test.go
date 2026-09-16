@@ -66,6 +66,8 @@ func newProcedureMetricsScraperWithSeeds(t *testing.T, dbclientFn clientProvider
 		}
 	}
 
+	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity("oraclehost:1521", "oraclehost:1521/ORCL", zap.NewNop())
+
 	return &oracleScraper{
 		logger: zap.NewNop(),
 		mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
@@ -82,7 +84,9 @@ func newProcedureMetricsScraperWithSeeds(t *testing.T, dbclientFn clientProvider
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    serviceInstanceID,
+		serverAddress:        serverAddress,
+		serverPort:           serverPort,
 	}
 }
 

@@ -378,3 +378,19 @@ func Test_ParseXMLFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ParseXMLFactory args must be of type *ParseXMLArguments[K]")
 	})
 }
+
+func BenchmarkParseXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "<Log><User><ID>00001</ID><Name>Joe</Name><Email>joe.smith@example.com</Email></User><Text>User did a thing</Text></Log>", nil
+		},
+	}
+	exprFunc := parseXML(target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

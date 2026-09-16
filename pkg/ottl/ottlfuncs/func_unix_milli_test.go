@@ -104,3 +104,20 @@ func Test_UnixMilliFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "UnixMilliFactory args must be of type *UnixMilliArguments[K]")
 	})
 }
+
+func BenchmarkUnixMilli(b *testing.B) {
+	inputTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local)
+	exprFunc, err := UnixMilli(&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return inputTime, nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

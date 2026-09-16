@@ -89,3 +89,20 @@ func Test_DayFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "DayFactory args must be of type *DayArguments[K]")
 	})
 }
+
+func BenchmarkDay(b *testing.B) {
+	exprFunc, err := Day[any](&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC), nil
+		},
+	})
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

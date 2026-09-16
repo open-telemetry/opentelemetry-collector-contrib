@@ -79,3 +79,18 @@ func Test_UnixFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "UnixFactory args must be of type *UnixArguments[K]")
 	})
 }
+
+func BenchmarkUnix(b *testing.B) {
+	exprFunc, err := Unix[any](
+		&ottl.StandardIntGetter[any]{Getter: func(context.Context, any) (any, error) { return int64(1672527600), nil }},
+		ottl.Optional[ottl.IntGetter[any]]{},
+	)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

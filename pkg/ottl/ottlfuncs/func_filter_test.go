@@ -218,3 +218,31 @@ func Test_FilterFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "FilterFactory args must be of type *FilterArguments[K]")
 	})
 }
+
+func BenchmarkFilter(b *testing.B) {
+	source := ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			m := pcommon.NewMap()
+			m.PutStr("keep.a", "yes")
+			m.PutStr("keep.b", "yes")
+			m.PutStr("drop.a", "no")
+			m.PutStr("drop.b", "no")
+			return m, nil
+		},
+	}
+	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		k := resolveBinding("k")
+		return strings.HasPrefix(k.(string), "keep"), nil
+	})
+
+	exprFunc, err := filter(source, predicate)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

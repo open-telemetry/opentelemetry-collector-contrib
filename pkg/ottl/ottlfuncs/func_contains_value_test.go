@@ -78,6 +78,34 @@ func Test_ContainsValue(t *testing.T) {
 			expected: true,
 		},
 		{
+			name: "find int item in float slice using OTTL numeric equality",
+			target: ottl.StandardPSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []any{1.0}, nil
+				},
+			},
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(1), nil
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "find float item in int slice using OTTL numeric equality",
+			target: ottl.StandardPSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return []any{int64(2)}, nil
+				},
+			},
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return float64(2), nil
+				},
+			},
+			expected: true,
+		},
+		{
 			name: "find booleans in target",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
@@ -236,4 +264,25 @@ func Test_ContainsValueFactory(t *testing.T) {
 		_, err := createContainsValueFunction[any](ottl.FunctionContext{}, "invalid args")
 		assert.ErrorContains(t, err, "ContainsValueFactory args must be of type *ContainsValueArguments[K]")
 	})
+}
+
+func BenchmarkContainsValue(b *testing.B) {
+	target := ottl.StandardPSliceGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{"hello", "world", "foo", "bar"}, nil
+		},
+	}
+	item := ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "bar", nil
+		},
+	}
+	exprFunc := containsValue(target, item)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

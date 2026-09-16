@@ -115,3 +115,18 @@ func Test_XXH128Factory(t *testing.T) {
 		assert.ErrorContains(t, err, "XXH128Factory args must be of type *XXH128Arguments[K]")
 	})
 }
+
+func BenchmarkXXH128(b *testing.B) {
+	exprFunc := xxh128HashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -104,3 +104,17 @@ func Test_UnixMicroFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "UnixMicroFactory args must be of type *UnixMicroArguments[K]")
 	})
 }
+
+func BenchmarkUnixMicro(b *testing.B) {
+	exprFunc, err := UnixMicro[any](&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), nil },
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

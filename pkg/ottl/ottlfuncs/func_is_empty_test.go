@@ -265,8 +265,9 @@ func BenchmarkIsEmpty(b *testing.B) {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				_, err := exprFunc(ctx, nil)
-				require.NoError(b, err)
+				if _, err := exprFunc(ctx, nil); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}

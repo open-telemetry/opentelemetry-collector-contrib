@@ -307,3 +307,35 @@ func Test_ReplaceMatchFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ReplaceMatchFactory args must be of type *ReplaceMatchArguments[K]")
 	})
 }
+
+func BenchmarkReplaceMatch(b *testing.B) {
+	target := &ottl.StandardGetSetter[pcommon.Value]{
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
+			return tCtx.Str(), nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Value, val any) error {
+			tCtx.SetStr(val.(string))
+			return nil
+		},
+	}
+	pattern := ottl.StandardStringGetter[pcommon.Value]{
+		Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
+			return "hello*", nil
+		},
+	}
+	replacement := ottl.StandardStringGetter[pcommon.Value]{
+		Getter: func(context.Context, pcommon.Value) (any, error) {
+			return "hello {universe}", nil
+		},
+	}
+	exprFunc, err := replaceMatch(target, pattern, replacement, ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{}, ottl.Optional[ottl.StringGetter[pcommon.Value]]{})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioValue := pcommon.NewValueStr("hello world")
+		if _, err := exprFunc(ctx, scenarioValue); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

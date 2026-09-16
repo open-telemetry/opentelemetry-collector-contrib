@@ -134,3 +134,17 @@ func Test_TrimPrefixFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "TrimFactory args must be of type *TrimPrefixArguments[K]")
 	})
 }
+
+func BenchmarkTrimPrefix(b *testing.B) {
+	exprFunc := trimPrefix[any](
+		&ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello world", nil }},
+		&ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello ", nil }},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

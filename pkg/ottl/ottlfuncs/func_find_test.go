@@ -372,3 +372,29 @@ func Test_FindFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "FindFactory args must be of type *FindArguments[K]")
 	})
 }
+
+func BenchmarkFind(b *testing.B) {
+	s := pcommon.NewSlice()
+	require.NoError(b, s.FromRaw([]any{"a", "b", "target", "c"}))
+	source := ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return s, nil
+		},
+	}
+	predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		v := resolveBinding("v")
+		return v.(string) == "target", nil
+	})
+	mapper := ottl.Optional[*ottl.LambdaExpression[any]]{}
+
+	exprFunc, err := find(source, predicate, &mapper)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

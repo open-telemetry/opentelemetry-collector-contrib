@@ -165,3 +165,22 @@ func Test_TruncateTimeFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "TimeFactory args must be of type *TruncateTimeArguments[K]")
 	})
 }
+
+func BenchmarkTruncateTime(b *testing.B) {
+	exprFunc, err := TruncateTime[any](
+		&ottl.StandardTimeGetter[any]{Getter: func(context.Context, any) (any, error) {
+			return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.UTC), nil
+		}},
+		&ottl.StandardDurationGetter[any]{Getter: func(context.Context, any) (any, error) {
+			return time.Second, nil
+		}},
+	)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

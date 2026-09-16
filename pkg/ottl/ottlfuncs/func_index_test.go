@@ -357,3 +357,24 @@ func Test_IndexFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IndexFactory args must be of type *IndexArguments[K]")
 	})
 }
+
+func BenchmarkIndex(b *testing.B) {
+	sourceExpr := ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{"hello", "world", "opentelemetry"}, nil
+		},
+	}
+	valueExpr := ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "world", nil
+		},
+	}
+	exprFunc := index[any](ottl.NewValueComparator(), sourceExpr, valueExpr)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

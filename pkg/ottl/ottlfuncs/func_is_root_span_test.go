@@ -59,3 +59,21 @@ func Test_IsRootSpanFactory(t *testing.T) {
 		assert.NotNil(t, fn)
 	})
 }
+
+func BenchmarkIsRootSpan(b *testing.B) {
+	exprFunc, err := isRootSpan()
+	require.NoError(b, err)
+
+	span := ptrace.NewSpan()
+	span.SetParentSpanID(pcommon.SpanID{1, 0, 0, 0, 0, 0, 0, 0})
+	tCtx := ottlspan.NewTransformContext(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), span)
+	defer tCtx.Close()
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, tCtx); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
