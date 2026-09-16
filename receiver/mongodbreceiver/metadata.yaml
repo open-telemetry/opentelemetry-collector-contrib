@@ -205,6 +205,20 @@ attributes:
   mongodb.query.truncated:
     description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
     type: bool
+  mongodb.query_executor.collection_scan.type:
+    description: The type of cursor that performed the collection scan.
+    type: string
+    requirement_level: recommended
+    enum:
+      - tailable
+      - non_tailable
+  mongodb.query_executor.scan.type:
+    description: The type of data scanned by the query executor.
+    type: string
+    requirement_level: recommended
+    enum:
+      - index_key
+      - document
   mongodb.replica.name:
     description: The name of the replica, in host:port form.
     type: string
@@ -719,6 +733,26 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
+  mongodb.query_executor.collection_scan.count:
+    description: The number of queries that performed a collection scan.
+    stability: development
+    unit: "{scan}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [mongodb.query_executor.collection_scan.type]
+  mongodb.query_executor.scanned.count:
+    description: The number of index keys and documents scanned by the query executor.
+    stability: development
+    unit: "{scan}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [mongodb.query_executor.scan.type]
   mongodb.repl_commands_per_sec:
     description: The number of replicated commands executed per second.
     stability: development
