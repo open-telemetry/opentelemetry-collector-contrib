@@ -15,19 +15,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type FilterArguments[K any] struct {
+type filterArguments[K any] struct {
 	Source    ottl.Getter[K]
 	Predicate *ottl.LambdaExpression[K]
 }
 
 func NewFilterFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Filter", &FilterArguments[K]{}, createFilterFunction[K])
+	return ottl.NewFactory("Filter", &filterArguments[K]{}, createFilterFunction[K])
 }
 
 func createFilterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*FilterArguments[K])
+	args, ok := oArgs.(*filterArguments[K])
 	if !ok {
-		return nil, errors.New("FilterFactory args must be of type *FilterArguments[K]")
+		return nil, errors.New("FilterFactory args must be of type *filterArguments[K]")
 	}
 	return filter(args.Source, args.Predicate)
 }

@@ -17,21 +17,21 @@ const (
 	UPSERT = "upsert"
 )
 
-type MergeMapsArguments[K any] struct {
+type mergeMapsArguments[K any] struct {
 	Target   ottl.PMapGetSetter[K]
 	Source   ottl.PMapGetter[K]
 	Strategy string
 }
 
 func NewMergeMapsFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("merge_maps", &MergeMapsArguments[K]{}, createMergeMapsFunction[K])
+	return ottl.NewFactory("merge_maps", &mergeMapsArguments[K]{}, createMergeMapsFunction[K])
 }
 
 func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*MergeMapsArguments[K])
+	args, ok := oArgs.(*mergeMapsArguments[K])
 
 	if !ok {
-		return nil, errors.New("MergeMapsFactory args must be of type *MergeMapsArguments[K]")
+		return nil, errors.New("MergeMapsFactory args must be of type *mergeMapsArguments[K]")
 	}
 
 	return mergeMaps(args.Target, args.Source, args.Strategy)

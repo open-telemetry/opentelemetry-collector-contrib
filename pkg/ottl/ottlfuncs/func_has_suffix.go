@@ -11,20 +11,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type HasSuffixArguments[K any] struct {
+type hasSuffixArguments[K any] struct {
 	Target ottl.StringGetter[K]
 	Suffix ottl.StringGetter[K]
 }
 
 func NewHasSuffixFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("HasSuffix", &HasSuffixArguments[K]{}, createHasSuffixFunction[K])
+	return ottl.NewFactory("HasSuffix", &hasSuffixArguments[K]{}, createHasSuffixFunction[K])
 }
 
 func createHasSuffixFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*HasSuffixArguments[K])
+	args, ok := oArgs.(*hasSuffixArguments[K])
 
 	if !ok {
-		return nil, errors.New("HasSuffixFactory args must be of type *HasSuffixArguments[K]")
+		return nil, errors.New("HasSuffixFactory args must be of type *hasSuffixArguments[K]")
 	}
 
 	return HasSuffix(args.Target, args.Suffix), nil
