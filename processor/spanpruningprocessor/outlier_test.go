@@ -910,3 +910,43 @@ func TestAnalyzeOutliers_UnfinishedSpanIsNotAnOutlier(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzeOutliers_UnfinishedSpansDoNotSuppressDetection(t *testing.T) {
+	ms := time.Millisecond
+	baseTime := pcommon.NewTimestampFromTime(time.Now())
+
+	newSpan := func(end pcommon.Timestamp) *spanNode {
+		span := ptrace.NewSpan()
+		span.SetName("test")
+		span.SetStartTimestamp(baseTime)
+		span.SetEndTimestamp(end)
+		return &spanNode{span: span}
+	}
+	finished := func(d time.Duration) *spanNode {
+		return newSpan(pcommon.NewTimestampFromTime(baseTime.AsTime().Add(d)))
+	}
+
+	// Three unfinished spans sort to the bottom of a group of eight, which puts
+	// one of them on Q1. Read as negative durations they would stretch the IQR
+	// across eighteen orders of magnitude and hide the genuinely slow span;
+	// clamped to zero they leave Q1 at zero and the spread usable.
+	nodes := []*spanNode{
+		newSpan(0), newSpan(0), newSpan(0),
+		finished(10 * ms), finished(10 * ms), finished(10 * ms), finished(10 * ms),
+		finished(500 * ms),
+	}
+
+	result := analyzeOutliers(nodes, OutlierAnalysisConfig{
+		IQRMultiplier:                  1.5,
+		MADMultiplier:                  3.0,
+		MinGroupSize:                   4,
+		CorrelationMinOccurrence:       0.5,
+		CorrelationMaxNormalOccurrence: 0.5,
+		MaxCorrelatedAttributes:        5,
+		MinOutlierThresholdPercent:     0.1,
+	})
+
+	require.NotNil(t, result)
+	assert.Equal(t, 10*ms, result.median)
+	assert.Equal(t, []int{7}, result.outlierIndices)
+}
