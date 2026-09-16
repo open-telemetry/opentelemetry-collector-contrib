@@ -1,10 +1,12 @@
-{{/* Fallback for MySQL <8 / MariaDB. Keep in sync with topQuery.tmpl — differs only in omitting query_sample_text from SELECT and using 5-column Scan. */}}
+{{/* Fallback for MySQL <8 / MariaDB. Keep in sync with topQuery.tmpl — differs only in omitting query_sample_text from SELECT and using a 6-column (not 7-column) Scan. */}}
 SELECT
     COALESCE(`schema_name`, ''),
     COALESCE(`digest`, ''),
     COALESCE(`digest_text`, ''),
     `count_star`,
-    `sum_timer_wait`
+    `sum_timer_wait`,
+    `sum_rows_examined`,
+    `sum_rows_sent`
 FROM performance_schema.events_statements_summary_by_digest
 WHERE `last_seen` >= NOW() - INTERVAL {{ .lookbackTime }} second
     AND ((`digest_text` NOT LIKE 'EXPLAIN %' AND `digest_text` NOT LIKE '/* otel-collector-ignore */%')
