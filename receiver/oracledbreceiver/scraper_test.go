@@ -2872,10 +2872,26 @@ func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 			assert.Equal(t, 1, logsCol1.ResourceLogs().At(0).ScopeLogs().Len(), "Collection should run when lastExecutionTimestamp is not available")
 			assert.False(t, scrpr.lastExecutionTimestamp.IsZero(), "A value should be set for lastExecutionTimestamp after a successful collection")
 
-			scrpr.lastExecutionTimestamp = scrpr.lastExecutionTimestamp.Add(-10 * time.Second)
+			// Elapsed time just under the interval, but within vsqlRefreshLag of it. The lag
+			// buffer must widen the SQL lookback only — it must not open the collection gate early.
+			// ResourceLogs().Len()==0 alone is not enough: a wrongly early collection with zero
+			// deltas also emits nothing, so assert the timestamp did not move.
+			scrpr.lastExecutionTimestamp = scrpr.lastExecutionTimestamp.Add(-55 * time.Second)
+			skippedFrom := scrpr.lastExecutionTimestamp
 			logsCol2, err := scrpr.scrapeLogs(t.Context())
-			assert.Equal(t, 0, logsCol2.ResourceLogs().Len(), "top_query should not be collected until %s elapsed.", scrpr.topQueryCollectCfg.CollectionInterval.String())
 			require.NoError(t, err)
+			assert.Equal(t, 0, logsCol2.ResourceLogs().Len(), "top_query should not be collected until %s elapsed.", scrpr.topQueryCollectCfg.CollectionInterval.String())
+			assert.Equal(t, skippedFrom, scrpr.lastExecutionTimestamp,
+				"a skipped scrape must not advance lastExecutionTimestamp")
+
+			// Gate must open once the configured interval has elapsed (not only on the
+			// IsZero() first-scrape shortcut). Timestamp advancing proves collection ran.
+			scrpr.lastExecutionTimestamp = time.Now().Add(-scrpr.topQueryCollectCfg.CollectionInterval)
+			beforeOpen := scrpr.lastExecutionTimestamp
+			_, err = scrpr.scrapeLogs(t.Context())
+			require.NoError(t, err)
+			assert.True(t, scrpr.lastExecutionTimestamp.After(beforeOpen),
+				"top_query collection must run after the collection interval has elapsed")
 		})
 	}
 }
