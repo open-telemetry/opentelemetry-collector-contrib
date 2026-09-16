@@ -12,15 +12,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.161.0
 	github.com/parquet-go/parquet-go v0.32.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.67.0
+	go.opentelemetry.io/collector/component v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/component/componenttest v0.161.0
-	go.opentelemetry.io/collector/confmap v1.67.0
-	go.opentelemetry.io/collector/extension v1.67.0
+	go.opentelemetry.io/collector/confmap v1.67.1-0.20260916171901-3e8af656214a
+	go.opentelemetry.io/collector/extension v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.161.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.161.0
 	go.opentelemetry.io/collector/extension/xextension v0.161.0
-	go.opentelemetry.io/collector/featuregate v1.67.0
-	go.opentelemetry.io/collector/pdata v1.67.0
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260916171901-3e8af656214a
+	go.opentelemetry.io/collector/pdata v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/otel v1.46.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
