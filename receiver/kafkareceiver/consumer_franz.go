@@ -82,9 +82,6 @@ type franzConsumer struct {
 	host         component.Host
 	stoppingOnce sync.Once
 	stoppedOnce  sync.Once
-
-	// telemetryShutdownOnce ensures callbacks release their stopped metric consumer exactly once.
-	telemetryShutdownOnce sync.Once
 }
 
 // newFranzKafkaConsumer creates a new franz-go based Kafka consumer
@@ -137,11 +134,6 @@ func (c *franzConsumer) observeOffsetLag(_ context.Context, observer metric.Int6
 	return nil
 }
 
-// shutdownTelemetry unregisters callbacks so a shared MeterProvider cannot retain or report from this consumer.
-func (c *franzConsumer) shutdownTelemetry() {
-	c.telemetryShutdownOnce.Do(c.telemetryBuilder.Shutdown)
-}
-
 // reportStatus emits a component status event if we have a host.
 func (c *franzConsumer) reportStatus(s componentstatus.Status) {
 	if c.host == nil {
@@ -158,15 +150,9 @@ func (c *franzConsumer) reportRecoverable(err error) {
 	componentstatus.ReportStatus(c.host, componentstatus.NewRecoverableErrorEvent(err))
 }
 
-func (c *franzConsumer) Start(ctx context.Context, host component.Host) (err error) {
+func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	c.mu.Lock()
-	startClaimed := false
-	defer func() {
-		c.mu.Unlock()
-		if startClaimed && err != nil {
-			c.shutdownTelemetry()
-		}
-	}()
+	defer c.mu.Unlock()
 	select {
 	case <-c.closing:
 		return errors.New("franz kafka consumer already shut down")
@@ -175,8 +161,6 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) (err err
 	default:
 		close(c.started)
 	}
-	// This invocation owns telemetry cleanup after claiming the start lifecycle.
-	startClaimed = true
 
 	// Report "Starting" as soon as Start() is called.
 	c.host = host
@@ -508,7 +492,7 @@ func (c *franzConsumer) dispatchPartitionBatches(
 }
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
-	defer c.shutdownTelemetry()
+	c.telemetryBuilder.Shutdown()
 
 	// Report Stopping at shutdown start.
 	c.stoppingOnce.Do(func() { c.reportStatus(componentstatus.StatusStopping) })
