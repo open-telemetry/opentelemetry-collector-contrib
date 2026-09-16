@@ -880,7 +880,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 	finalDecision := samplingpolicy.NotSampled
 	// Decision is a small closed integer set. Indexing by it keeps
 	// first-policy-wins as a nil check without allocating a map on every trace.
-	var samplingDecisions [samplingpolicy.InvertNotSampled + 1]*policy
+	var samplingDecisions [samplingpolicy.NumDecisions]*policy
 
 	effectiveThreshold := pkgsampling.NeverSampleThreshold
 	haveThreshold := false
