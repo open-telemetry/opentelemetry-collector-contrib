@@ -317,6 +317,210 @@ func TestMetricTracker_ConvertHistogramReset(t *testing.T) {
 	assert.Equal(t, []uint64{0, 5}, out.HistogramValue.BucketCounts)
 }
 
+// TestMetricTracker_ConvertHistogramReset_Rebase reproduces
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50828:
+// after a histogram reset is detected, prevPoint must be rebased to the new
+// (post-reset) baseline so that subsequent points are compared against it,
+// rather than against the stale pre-reset baseline.
+func TestMetricTracker_ConvertHistogramReset_Rebase(t *testing.T) {
+	miHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeHistogram,
+		MetricName:             "hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64, buckets []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				HistogramValue: &HistogramPoint{
+					Count:        count,
+					Sum:          sum,
+					BucketBounds: []float64{1, 2},
+					BucketCounts: buckets,
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	// T1: count=1000 -> stored as baseline.
+	_, valid, _ := m.Convert(point(1000, 1000, []uint64{500, 500}))
+	require.True(t, valid)
+
+	// T2: count=1100 -> delta=100 (correct).
+	out, valid, _ := m.Convert(point(1100, 1100, []uint64{550, 550}))
+	require.True(t, valid)
+	assert.Equal(t, uint64(100), out.HistogramValue.Count)
+
+	// T3: count=50 (restart) -> reset detected, dropped. prevPoint should be
+	// rebased to this point (count=50), not remain at count=1100.
+	_, valid, reason := m.Convert(point(50, 50, []uint64{25, 25}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// T4: count=900, still below the old baseline (1100) but above the new
+	// baseline (50). This should be treated as a monotonic increase from the
+	// rebased baseline and produce a delta of 850, not be dropped as a
+	// "reset" against the stale old baseline.
+	out, valid, reason = m.Convert(point(900, 900, []uint64{450, 450}))
+	require.True(t, valid, "expected point above the new baseline to be valid, reason: %s", reason)
+	assert.Equal(t, uint64(850), out.HistogramValue.Count)
+
+	// T5: count=1200, now above the old stale baseline too. Delta should be
+	// computed against the rebased baseline (900), i.e. 300, not against the
+	// stale pre-reset baseline (1100), which would incorrectly yield 100.
+	out, valid, reason = m.Convert(point(1200, 1200, []uint64{600, 600}))
+	require.True(t, valid, "reason: %s", reason)
+	assert.Equal(t, uint64(300), out.HistogramValue.Count, "delta should be computed from the rebased post-reset baseline")
+}
+
+// TestMetricTracker_ConvertExponentialHistogramReset_Rebase reproduces
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50828
+// for exponential histograms: after a reset is detected, prevPoint must be
+// rebased to the new (post-reset) baseline so that subsequent points are
+// compared against it, rather than against the stale pre-reset baseline.
+func TestMetricTracker_ConvertExponentialHistogramReset_Rebase(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricName:             "exphist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64, buckets []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miExpHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				ExponentialHistogramValue: &ExponentialHistogramPoint{
+					Count: count,
+					Sum:   sum,
+					Scale: 0,
+					Positive: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: buckets,
+					},
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	// T1: count=1000 -> stored as baseline.
+	_, valid, _ := m.Convert(point(1000, 1000, []uint64{500, 500}))
+	require.True(t, valid)
+
+	// T2: count=1100 -> delta=100 (correct).
+	out, valid, _ := m.Convert(point(1100, 1100, []uint64{550, 550}))
+	require.True(t, valid)
+	assert.Equal(t, uint64(100), out.ExponentialHistogramPoint.Count)
+
+	// T3: count=50 (restart) -> reset detected, dropped. prevPoint should be
+	// rebased to this point (count=50), not remain at count=1100.
+	_, valid, reason := m.Convert(point(50, 50, []uint64{25, 25}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// T4: count=900, still below the old baseline (1100) but above the new
+	// baseline (50). This should be treated as a monotonic increase from the
+	// rebased baseline and produce a delta of 850, not be dropped as a
+	// "reset" against the stale old baseline.
+	out, valid, reason = m.Convert(point(900, 900, []uint64{450, 450}))
+	require.True(t, valid, "expected point above the new baseline to be valid, reason: %s", reason)
+	assert.Equal(t, uint64(850), out.ExponentialHistogramPoint.Count)
+
+	// T5: count=1200, now above the old stale baseline too. Delta should be
+	// computed against the rebased baseline (900), i.e. 300, not against the
+	// stale pre-reset baseline (1100), which would incorrectly yield 100.
+	out, valid, reason = m.Convert(point(1200, 1200, []uint64{600, 600}))
+	require.True(t, valid, "reason: %s", reason)
+	assert.Equal(t, uint64(300), out.ExponentialHistogramPoint.Count, "delta should be computed from the rebased post-reset baseline")
+}
+
+// TestMetricTracker_ConvertExponentialHistogramReset_AsymmetricBuckets exercises
+// the specific guard added for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50828:
+// when only the Positive buckets reset, the Negative-bucket diff against the
+// about-to-be-discarded prevValue must be skipped entirely (not just ignored),
+// and vice versa. Both buckets must still end up rebased to the new baseline.
+func TestMetricTracker_ConvertExponentialHistogramReset_AsymmetricBuckets(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricName:             "exphist_asym",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, positive, negative []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miExpHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				ExponentialHistogramValue: &ExponentialHistogramPoint{
+					Count: count,
+					Sum:   float64(count),
+					Scale: 0,
+					Positive: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: positive,
+					},
+					Negative: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: negative,
+					},
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	// T1: baseline. Positive=[1000], Negative=[100].
+	_, valid, _ := m.Convert(point(1100, []uint64{1000}, []uint64{100}))
+	require.True(t, valid)
+
+	// T2: Positive resets (drops to 10), Negative keeps growing (150, monotonic).
+	// The whole point must be dropped as a reset, and the Negative diff against
+	// the stale prevValue must never be computed (it would wrongly succeed with
+	// diff=50 if the reset guard didn't short-circuit).
+	_, valid, reason := m.Convert(point(160, []uint64{10}, []uint64{150}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// T3: both buckets grow from the new (rebased) baseline (Positive=10, Negative=150).
+	// Expect a clean positive delta on both sides, not a stale-baseline comparison
+	// against the pre-reset values (Positive=1000, Negative=100).
+	out, valid, reason := m.Convert(point(185, []uint64{20}, []uint64{165}))
+	require.True(t, valid, "reason: %s", reason)
+	require.Len(t, out.ExponentialHistogramPoint.Positive.BucketCounts, 1)
+	assert.Equal(t, uint64(10), out.ExponentialHistogramPoint.Positive.BucketCounts[0])
+	require.Len(t, out.ExponentialHistogramPoint.Negative.BucketCounts, 1)
+	assert.Equal(t, uint64(15), out.ExponentialHistogramPoint.Negative.BucketCounts[0])
+
+	// T4: now flip it — Negative resets (drops to 5), Positive keeps growing (30).
+	_, valid, reason = m.Convert(point(35, []uint64{30}, []uint64{5}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// T5: both grow again from the newly rebased baseline (Positive=30, Negative=5).
+	out, valid, reason = m.Convert(point(45, []uint64{35}, []uint64{10}))
+	require.True(t, valid, "reason: %s", reason)
+	require.Len(t, out.ExponentialHistogramPoint.Positive.BucketCounts, 1)
+	assert.Equal(t, uint64(5), out.ExponentialHistogramPoint.Positive.BucketCounts[0])
+	require.Len(t, out.ExponentialHistogramPoint.Negative.BucketCounts, 1)
+	assert.Equal(t, uint64(5), out.ExponentialHistogramPoint.Negative.BucketCounts[0])
+}
+
 func Test_metricTracker_removeStale(t *testing.T) {
 	currentTime := pcommon.Timestamp(100)
 	freshPoint := ValuePoint{
