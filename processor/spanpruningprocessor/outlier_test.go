@@ -867,3 +867,46 @@ func TestAnalyzeOutliers_DurationTransformMatrix(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzeOutliers_UnfinishedSpanIsNotAnOutlier(t *testing.T) {
+	ms := time.Millisecond
+	baseTime := pcommon.NewTimestampFromTime(time.Now())
+
+	newSpan := func(end pcommon.Timestamp) *spanNode {
+		span := ptrace.NewSpan()
+		span.SetName("test")
+		span.SetStartTimestamp(baseTime)
+		span.SetEndTimestamp(end)
+		return &spanNode{span: span}
+	}
+
+	nodes := make([]*spanNode, 0, 7)
+	for range 6 {
+		nodes = append(nodes, newSpan(pcommon.NewTimestampFromTime(baseTime.AsTime().Add(10*ms))))
+	}
+	// An unfinished span still carries end_time_unix_nano == 0, so end - start
+	// underflows the unsigned timestamp type. Reading that as an enormous
+	// positive duration would sort it last and flag it every time.
+	nodes = append(nodes, newSpan(0))
+
+	cfg := OutlierAnalysisConfig{
+		IQRMultiplier:                  1.5,
+		MADMultiplier:                  3.0,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.5,
+		CorrelationMaxNormalOccurrence: 0.5,
+		MaxCorrelatedAttributes:        5,
+		MinOutlierThresholdPercent:     0.1,
+	}
+
+	for _, transform := range []DurationTransform{DurationTransformNone, DurationTransformLog} {
+		t.Run(string(transform), func(t *testing.T) {
+			cfg.DurationTransform = transform
+			result := analyzeOutliers(nodes, cfg)
+
+			require.NotNil(t, result)
+			assert.NotContains(t, result.outlierIndices, 6)
+			assert.Contains(t, result.normalIndices, 6)
+		})
+	}
+}
