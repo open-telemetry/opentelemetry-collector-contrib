@@ -1199,8 +1199,6 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 		return
 	}
 
-	// Bounds sit between buckets, so a histogram carrying none still has the bucket above the
-	// last one, which is what a classic histogram with only a +Inf bucket becomes.
 	bucketCounts, ok := convertNHCBBuckets(histogram)
 	if !ok {
 		prw.settings.Logger.Error("Dropping Native Histogram whose deltas take a bucket population below zero",
