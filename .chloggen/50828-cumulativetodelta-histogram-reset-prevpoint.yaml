@@ -6,8 +6,6 @@ note: Fix histogram and exponential histogram reset recovery by updating prevPoi
 
 issues: [50828]
 
-subtext: |
-  The reset point is now stored as the new baseline so post-reset deltas are
-  computed correctly instead of being silently dropped or understated.
+subtext:
 
 change_logs: [user]

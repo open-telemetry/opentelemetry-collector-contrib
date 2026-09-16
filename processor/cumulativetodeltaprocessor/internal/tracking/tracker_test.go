@@ -411,6 +411,144 @@ func TestMetricTracker_ConvertExponentialHistogramResetRecovery(t *testing.T) {
 	assert.InDelta(t, 150.0, out.ExponentialHistogramPoint.Sum, 1e-9)
 }
 
+func TestMetricTracker_ConvertHistogramBucketDropResetRecovery(t *testing.T) {
+	miHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeHistogram,
+		MetricName:             "hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64, buckets []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				HistogramValue: &HistogramPoint{
+					Count:        count,
+					Sum:          sum,
+					BucketBounds: []float64{1, 2},
+					BucketCounts: buckets,
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	// Initial baseline.
+	m.Convert(point(10, 100, []uint64{4, 6}))
+
+	// Reset: total count grows but bucket[1] drops; must be stored as new baseline.
+	_, valid, reason := m.Convert(point(12, 120, []uint64{5, 5}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// Post-reset growth: must be diffed against the reset point, not the pre-reset baseline.
+	out, valid, _ := m.Convert(point(14, 140, []uint64{7, 6}))
+	require.True(t, valid)
+	assert.Equal(t, uint64(2), out.HistogramValue.Count)
+	assert.InDelta(t, 20.0, out.HistogramValue.Sum, 1e-9)
+	assert.Equal(t, []uint64{2, 1}, out.HistogramValue.BucketCounts)
+}
+
+func TestMetricTracker_ConvertExponentialHistogramPositiveBucketResetRecovery(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricName:             "exp_hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64, posCounts []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miExpHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				ExponentialHistogramValue: &ExponentialHistogramPoint{
+					Count: count,
+					Sum:   sum,
+					Scale: 0,
+					Positive: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: posCounts,
+					},
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	// Initial baseline.
+	m.Convert(point(8, 80, []uint64{5, 3}))
+
+	// Reset: count grows but a positive bucket shrinks; stored as new baseline.
+	_, valid, reason := m.Convert(point(9, 90, []uint64{4, 3}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// Post-reset growth: must be diffed against the reset point, not the pre-reset baseline.
+	out, valid, _ := m.Convert(point(11, 110, []uint64{6, 4}))
+	require.True(t, valid)
+	assert.Equal(t, uint64(2), out.ExponentialHistogramPoint.Count)
+	assert.InDelta(t, 20.0, out.ExponentialHistogramPoint.Sum, 1e-9)
+}
+
+func TestMetricTracker_ConvertExponentialHistogramNegativeBucketResetRecovery(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricName:             "exp_hist_neg",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64, negCounts []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miExpHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				ExponentialHistogramValue: &ExponentialHistogramPoint{
+					Count: count,
+					Sum:   sum,
+					Scale: 0,
+					Positive: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: []uint64{2, 1},
+					},
+					Negative: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: negCounts,
+					},
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	// Initial baseline.
+	m.Convert(point(8, 80, []uint64{5, 3}))
+
+	// Reset: count grows but a negative bucket shrinks; stored as new baseline.
+	_, valid, reason := m.Convert(point(9, 90, []uint64{4, 3}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// Post-reset growth: must be diffed against the reset point, not the pre-reset baseline.
+	out, valid, _ := m.Convert(point(11, 110, []uint64{6, 4}))
+	require.True(t, valid)
+	assert.Equal(t, uint64(2), out.ExponentialHistogramPoint.Count)
+	assert.InDelta(t, 20.0, out.ExponentialHistogramPoint.Sum, 1e-9)
+	assert.Equal(t, []uint64{2, 1}, out.ExponentialHistogramPoint.Negative.BucketCounts)
+}
+
 func Test_metricTracker_removeStale(t *testing.T) {
 	currentTime := pcommon.Timestamp(100)
 	freshPoint := ValuePoint{
