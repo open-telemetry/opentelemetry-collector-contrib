@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicm
 go 1.26.0
 
 require (
-	github.com/logicmonitor/lm-data-sdk-go v1.4.0
+	github.com/logicmonitor/lm-data-sdk-go v1.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.161.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.0
