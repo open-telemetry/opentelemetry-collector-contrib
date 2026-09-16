@@ -2057,6 +2057,10 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 
 	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
+	// mdatagen sets every attribute declared for an event, so keeping the plan payload off
+	// db.server.top_query means recording oracledb.query_plan there as an empty string.
+	omitPlanFromTopQuery := s.logsBuilderConfig.Events.DbServerQueryPlan.Enabled
+
 	for i := range hits {
 		hit := &hits[i]
 		planBytes, err := json.Marshal(childAddressToPlanMap[hit.childAddress])
@@ -2065,6 +2069,11 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 		}
 		planString := string(planBytes)
 
+		topQueryPlan := planString
+		if omitPlanFromTopQuery {
+			topQueryPlan = ""
+		}
+
 		s.lb.RecordDbServerTopQueryEvent(context.Background(),
 			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,
@@ -2072,7 +2081,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.dbNamespace,
 			hit.service,
 			hit.queryText,
-			planString, hit.sqlID, hit.childNumber,
+			topQueryPlan, hit.sqlID, hit.childNumber,
 			hit.childAddress,
 			asFloatInSeconds(hit.metrics[applicationWaitTimeMetric]),
 			hit.metrics[bufferGetsMetric],
@@ -2099,6 +2108,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.planHashValue,
 			hit.firstLoadTime,
 			hit.lastLoadTime)
+
+		s.lb.RecordDbServerQueryPlanEvent(context.Background(),
+			pcommon.NewTimestampFromTime(collectionTime),
+			hit.sqlID,
+			hit.childNumber,
+			hit.planHashValue,
+			planString)
 	}
 
 	hitCount := len(hits)

@@ -170,10 +170,10 @@ upgrading without adding new grants continue to work unchanged.
 
 ### Events collection
 
-The following grants are required for event collection. All four event types
+The following grants are required for event collection. All five event types
 (`db.server.query_sample`, `db.server.top_query`, `db.server.session.wait_sample`,
-`db.server.top_procedure`) are disabled by default and must be explicitly enabled
-in configuration.
+`db.server.top_procedure`, `db.server.query_plan`) are disabled by default and must be explicitly
+enabled in configuration.
 
 #### All events (shared requirements)
 
@@ -216,6 +216,28 @@ GRANT SELECT ON DBA_PROCEDURES TO <username>;            -- Stored procedure met
 ```sql
 ALTER SYSTEM SET statistics_level = ALL;
 ```
+
+#### `db.server.query_plan`
+
+By default, `db.server.top_query` carries the query's execution plan in its `oracledb.query_plan`
+attribute. A plan is a JSON payload holding one entry per plan step, so an oversized plan can push
+its record past a transport/buffer limit and take the lightweight query statistics down with it.
+Enabling `db.server.query_plan` moves the plan payload onto its own record: `db.server.top_query`
+still carries an `oracledb.query_plan` attribute but reports it as an **empty string**, and the plan
+itself is reported on `db.server.query_plan`, joined back via `oracledb.sql_id` +
+`oracledb.child_number` (the cursor the plan belongs to) and `oracledb.plan_hash_value`. Leaving
+`db.server.query_plan` disabled preserves the previous behavior exactly.
+
+> [!NOTE]
+> While `db.server.query_plan` is enabled, an empty `oracledb.query_plan` on `db.server.top_query`
+> means the plan was reported on `db.server.query_plan` — not that plan collection failed. When no
+> plan rows are returned for a cursor, `db.server.query_plan` reports `oracledb.query_plan` as
+> `null`, which is the value `db.server.top_query` carried for such a cursor before this event
+> existed.
+
+`db.server.query_plan` is sourced from the same collection as `db.server.top_query` and only splits
+the plan out of it, so it needs no grants of its own and collects nothing unless
+`db.server.top_query` is enabled too.
 
 #### `db.server.session.wait_sample`
 
@@ -350,6 +372,8 @@ receivers:
       db.server.session.wait_sample:
         enabled: true
       db.server.top_procedure:
+        enabled: true
+      db.server.query_plan:                      # reports the execution plan on its own event; db.server.top_query then reports it empty
         enabled: true
     top_query_collection:                        # this collection exports the most expensive queries as logs
       max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N

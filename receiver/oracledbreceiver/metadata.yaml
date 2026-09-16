@@ -276,7 +276,7 @@ attributes:
     description: The wait time in seconds. If the session is currently waiting, the value is the time spent waiting in the current wait. Returns 0 if the session is not currently waiting.
     type: double
   oracledb.query_plan:
-    description: The query execution plan used by the SQL Server.
+    description: The query execution plan used by the Oracle database.
     type: string
   oracledb.redo.request.type:
     description: The type of redo log buffer space request.
@@ -399,6 +399,15 @@ attributes:
     type: string
 
 events:
+  db.server.query_plan:
+    enabled: false
+    description: query execution plan. When enabled, the plan is reported here and db.server.top_query reports oracledb.query_plan as an empty string, so an oversized plan payload cannot drop the lightweight query statistics alongside it
+    attributes:
+      - oracledb.sql_id
+      - oracledb.child_number
+      - oracledb.plan_hash_value
+      - oracledb.query_plan
+
   db.server.query_sample:
     enabled: false
     description: sample query

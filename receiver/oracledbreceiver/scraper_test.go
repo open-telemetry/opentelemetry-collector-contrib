@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -1739,6 +1740,121 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent covers both sides of the db.server.query_plan switch.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent(t *testing.T) {
+	defaultRecords := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, true, false))
+	require.Len(t, defaultRecords, 1)
+	require.Equal(t, "db.server.top_query", defaultRecords[0].EventName())
+	planOnTopQuery, ok := defaultRecords[0].Attributes().Get("oracledb.query_plan")
+	require.True(t, ok, "db.server.top_query must keep oracledb.query_plan while db.server.query_plan is disabled")
+	require.NotEmpty(t, planOnTopQuery.Str())
+
+	records := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, true, true))
+	require.Len(t, records, 2)
+
+	byEventName := make(map[string]plog.LogRecord, len(records))
+	for _, record := range records {
+		byEventName[record.EventName()] = record
+	}
+
+	topQuery, ok := byEventName["db.server.top_query"]
+	require.True(t, ok, "db.server.top_query is still expected once db.server.query_plan is enabled")
+	planOnTopQueryWhenSplit, hasPlan := topQuery.Attributes().Get("oracledb.query_plan")
+	require.True(t, hasPlan, "db.server.top_query is expected to keep declaring oracledb.query_plan")
+	assert.Empty(t, planOnTopQueryWhenSplit.Str(), "db.server.top_query must report oracledb.query_plan empty once db.server.query_plan is enabled")
+
+	queryPlan, ok := byEventName["db.server.query_plan"]
+	require.True(t, ok, "db.server.query_plan record is missing")
+	// oracledb.query_plan is compared against the disabled scrape's value: the payload has to survive
+	// the move byte for byte.
+	assert.Equal(t, 4, queryPlan.Attributes().Len())
+	for attribute, want := range map[string]string{
+		"oracledb.sql_id":          "fxk8aq3nds8aw",
+		"oracledb.child_number":    "0",
+		"oracledb.plan_hash_value": "3123456789",
+		"oracledb.query_plan":      planOnTopQuery.Str(),
+	} {
+		got, found := queryPlan.Attributes().Get(attribute)
+		require.True(t, found, "db.server.query_plan is missing %s", attribute)
+		assert.Equal(t, want, got.Str(), attribute)
+	}
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventOnly asserts db.server.query_plan collects nothing
+// unless db.server.top_query is enabled too.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventOnly(t *testing.T) {
+	assert.Empty(t, logRecordsFrom(scrapeTopNLogsForPlanEvent(t, false, true)))
+}
+
+// scrapeTopNLogsForPlanEvent runs a log collection over the canned query metrics and plan rows in testdata.
+func scrapeTopNLogsForPlanEvent(t *testing.T, topQueryEventEnabled, queryPlanEventEnabled bool) plog.Logs {
+	t.Helper()
+
+	clientProviderFunc := func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+		file := "oracleQueryMetricsData.txt"
+		if strings.Contains(s, SQLPlanTable) {
+			file = "oracleQueryPlanData.txt"
+		}
+		var rows []metricRow
+		require.NoError(t, json.Unmarshal(readFile(file), &rows))
+		return &fakeDbClient{Responses: [][]metricRow{rows}}
+	}
+
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.ResourceAttributes.HostName.Enabled = true
+	logsCfg.Events.DbServerTopQuery.Enabled = topQueryEventEnabled
+	logsCfg.Events.DbServerQueryPlan.Enabled = queryPlanEventEnabled
+
+	lruCache, err := lru.New[string, map[string]int64](500)
+	require.NoError(t, err)
+	lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc:   clientProviderFunc,
+		id:                   component.ID{},
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		logsBuilderConfig:    logsCfg,
+		metricCache:          lruCache,
+		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+		instanceName:         "oraclehost:1521/ORCL",
+		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
+		obfuscator:           newObfuscator(),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
+	}
+
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	})
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+	return logs
+}
+
+func logRecordsFrom(logs plog.Logs) []plog.LogRecord {
+	var records []plog.LogRecord
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				records = append(records, logRecords.At(k))
+			}
+		}
+	}
+	return records
 }
 
 var samplesQueryResponses = map[string][]metricRow{
