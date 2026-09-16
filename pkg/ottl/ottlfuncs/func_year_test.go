@@ -89,3 +89,20 @@ func Test_YearFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "YearFactory args must be of type *YearArguments[K]")
 	})
 }
+
+func BenchmarkYear(b *testing.B) {
+	inputTime := time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC)
+	exprFunc, err := Year(&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return inputTime, nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

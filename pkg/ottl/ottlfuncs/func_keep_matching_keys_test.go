@@ -212,3 +212,41 @@ func Test_KeepMatchingKeysFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "KeepMatchingKeysFactory args must be of type *KeepMatchingKeysArguments[K")
 	})
 }
+
+func BenchmarkKeepMatchingKeys(b *testing.B) {
+	input := pcommon.NewMap()
+	input.PutStr("foo", "bar")
+	input.PutStr("foo1", "bar")
+	input.PutInt("foo2", 3)
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			v, ok := m.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	pattern := &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+			return `\d$`, nil
+		},
+	}
+	exprFunc, err := keepMatchingKeys(target, pattern)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		input.CopyTo(scenarioMap)
+		if _, err := exprFunc(ctx, scenarioMap); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

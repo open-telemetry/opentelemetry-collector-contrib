@@ -197,3 +197,19 @@ func Test_RemoveXMLFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "RemoveXML args must be of type *RemoveXMLAguments[K]")
 	})
 }
+
+func BenchmarkRemoveXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a><b/><b><c/></b></a>`, nil
+		},
+	}
+	exprFunc := removeXML[any](target, "/a/b")
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

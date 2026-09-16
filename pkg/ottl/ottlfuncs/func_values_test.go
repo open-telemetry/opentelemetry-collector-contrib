@@ -95,3 +95,30 @@ func Test_ValuesFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ValuesFactory args must be of type *ValuesArguments[K]")
 	})
 }
+
+func BenchmarkValues(b *testing.B) {
+	m := pcommon.NewMap()
+	err := m.FromRaw(map[string]any{
+		"key1": "test",
+		"key2": "test2",
+		"key3": 4,
+		"key4": true,
+		"key5": []any{1, 2, 3},
+		"key6": 3.14,
+		"key7": map[string]any{"subkey": "subvalue"},
+	})
+	require.NoError(b, err)
+	target := ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return m, nil
+		},
+	}
+	exprFunc := values[any](target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

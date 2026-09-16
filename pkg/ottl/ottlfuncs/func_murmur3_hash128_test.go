@@ -119,3 +119,18 @@ func Test_Murmur3Hash128Factory(t *testing.T) {
 		assert.ErrorContains(t, err, "Murmur3Hash128Factory args must be of type *Murmur3Hash128Arguments[K]")
 	})
 }
+
+func BenchmarkMurmur3Hash128(b *testing.B) {
+	exprFunc := murmur3Hash128[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "Hello World", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

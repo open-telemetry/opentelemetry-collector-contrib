@@ -205,3 +205,19 @@ func Test_FormatTimeFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "FormatTimeFactory args must be of type *FormatTimeArguments[K]")
 	})
 }
+
+func BenchmarkFormatTime(b *testing.B) {
+	exprFunc, err := FormatTime[any](&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.Date(2023, 4, 12, 17, 2, 59, 0, time.Local), nil
+		},
+	}, "%Y-%m-%d %H:%M:%S")
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

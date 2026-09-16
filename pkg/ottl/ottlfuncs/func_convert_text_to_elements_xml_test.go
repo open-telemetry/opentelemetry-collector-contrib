@@ -182,3 +182,19 @@ func Test_ConvertTextToElementsXMLFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ConvertTextToElementsXML args must be of type *ConvertTextToElementsXMLAguments[K]")
 	})
 }
+
+func BenchmarkConvertTextToElementsXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a>foo<b/>bar<c/>1<d>not</d>2<e><f/><f/></e></a>`, nil
+		},
+	}
+	exprFunc := convertTextToElementsXML[any](target, "/", "value")
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

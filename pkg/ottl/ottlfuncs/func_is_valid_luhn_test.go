@@ -144,3 +144,18 @@ func Test_IsValidLuhnFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsValidLuhnFactory args must be of type *IsValidLuhnArguments[K]")
 	})
 }
+
+func BenchmarkIsValidLuhn(b *testing.B) {
+	exprFunc := isValidLuhnFunc[any](&ottl.StandardStringLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "17893729974", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

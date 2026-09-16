@@ -135,3 +135,16 @@ func Test_ToUpperCaseFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ToUpperCaseFactory args must be of type *ToUpperCaseArguments[K]")
 	})
 }
+
+func BenchmarkToUpperCase(b *testing.B) {
+	exprFunc := toUpperCase[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "complex_SET-of.WORDS1234", nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -740,3 +740,33 @@ func Test_AppendFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "AppendFactory args must be of type *Appendrguments[K]")
 	})
 }
+
+func BenchmarkAppendTo(b *testing.B) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{"5", "6"}, nil
+		},
+		Setter: func(_ context.Context, res, val any) error {
+			rSlice := res.(pcommon.Slice)
+			vSlice := val.(pcommon.Slice)
+			return rSlice.FromRaw(vSlice.AsRaw())
+		},
+	}
+	value := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "a", nil
+		},
+	})
+	var nilSliceOptional ottl.Optional[[]ottl.Getter[any]]
+
+	exprFunc, err := appendTo[any](target, value, nilSliceOptional)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		res := pcommon.NewSlice()
+		if _, err := exprFunc(ctx, res); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

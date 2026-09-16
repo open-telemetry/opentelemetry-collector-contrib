@@ -329,3 +329,19 @@ func Test_ParseSimplifiedXMLFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ParseSimplifiedXML args must be of type *ParseSimplifiedXMLAguments[K]")
 	})
 }
+
+func BenchmarkParseSimplifiedXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a><b>1</b><c>2</c><c>3</c></a>`, nil
+		},
+	}
+	exprFunc := parseSimplifiedXML(target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

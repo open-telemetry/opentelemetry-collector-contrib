@@ -115,3 +115,18 @@ func Test_XXH3Factory(t *testing.T) {
 		assert.ErrorContains(t, err, "XXH3Factory args must be of type *XXH3Arguments[K]")
 	})
 }
+
+func BenchmarkXXH3(b *testing.B) {
+	exprFunc := xxh3HashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

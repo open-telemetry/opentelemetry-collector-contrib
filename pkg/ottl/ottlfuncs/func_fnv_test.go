@@ -117,3 +117,20 @@ func Test_FnvFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "FNVFactory args must be of type *FnvArguments[K]")
 	})
 }
+
+func BenchmarkFNVHashString(b *testing.B) {
+	exprFunc, err := FNVHashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world this is a benchmark string", nil
+		},
+	})
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

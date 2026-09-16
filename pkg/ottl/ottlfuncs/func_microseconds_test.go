@@ -103,3 +103,19 @@ func Test_MicrosecondsFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "MicrosecondsFactory args must be of type *MicrosecondsArguments[K]")
 	})
 }
+
+func BenchmarkMicroseconds(b *testing.B) {
+	exprFunc, err := Microseconds[any](&ottl.StandardDurationGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.ParseDuration("1h40m3s30ms100us")
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

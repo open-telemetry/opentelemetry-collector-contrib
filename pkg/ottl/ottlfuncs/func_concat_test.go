@@ -321,3 +321,22 @@ func Test_ConcatFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ConcatFactory args must be of type *ConcatArguments[K]")
 	})
 }
+
+func BenchmarkConcat(b *testing.B) {
+	getters := []ottl.StringLikeGetter[any]{
+		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello", nil }},
+		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "world", nil }},
+		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return int64(42), nil }},
+	}
+	vals := ottl.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, getters)
+	delimiter := &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " ", nil }}
+
+	exprFunc := concat(vals, delimiter)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

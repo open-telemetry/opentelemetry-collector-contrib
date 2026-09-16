@@ -194,3 +194,24 @@ func Test_ParseIntFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ParseIntFactory args must be of type *ParseIntArguments[K]")
 	})
 }
+
+func BenchmarkParseInt(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "123456789", nil
+		},
+	}
+	base := &ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(10), nil
+		},
+	}
+	exprFunc := parseIntFunc[any](target, base)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -314,3 +314,21 @@ func Test_SortFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "SortFactory args must be of type *SortArguments[K]")
 	})
 }
+
+func BenchmarkSort(b *testing.B) {
+	getter := ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			s := pcommon.NewValueSlice().SetEmptySlice()
+			_ = s.FromRaw([]any{9, 6, 3, 42, 17, 8, 23, 1, 99, 5})
+			return s, nil
+		},
+	}
+	exprFunc := sort(getter, sortAsc)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

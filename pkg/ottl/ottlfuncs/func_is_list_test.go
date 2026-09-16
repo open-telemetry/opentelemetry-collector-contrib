@@ -225,3 +225,18 @@ func Test_IsListFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "IsListFactory args must be of type *IsListArguments[K]")
 	})
 }
+
+func BenchmarkIsList(b *testing.B) {
+	exprFunc := isList[any](&ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{"a", "b", "c"}, nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

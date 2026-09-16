@@ -155,3 +155,27 @@ func Test_MapKeysFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "MapKeysFactory args must be of type *MapKeysArguments[K]")
 	})
 }
+
+func BenchmarkMapKeys(b *testing.B) {
+	source := pcommon.NewMap()
+	source.PutStr("a", "1")
+	source.PutStr("b", "2")
+	source.PutStr("c", "3")
+	target := ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return source, nil
+		},
+	}
+	keyMapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		return "prefix." + resolveBinding("k").(string), nil
+	})
+	exprFunc, err := mapKeys(target, keyMapper)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

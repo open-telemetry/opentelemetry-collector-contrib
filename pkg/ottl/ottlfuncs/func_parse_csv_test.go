@@ -599,3 +599,24 @@ func Test_ParseCSVFactory(t *testing.T) {
 		assert.ErrorContains(t, err, "ParseCSVFactory args must be of type *ParseCSVArguments[K]")
 	})
 }
+
+func BenchmarkParseCSV(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "val1,val2,val3", nil
+		},
+	}
+	header := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "col1,col2,col3", nil
+		},
+	}
+	exprFunc := parseCSV[any](target, header, parseCSVDefaultDelimiter, string(parseCSVDefaultDelimiter), parseCSVRow(false))
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
