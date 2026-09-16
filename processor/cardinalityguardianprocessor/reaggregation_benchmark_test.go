@@ -21,7 +21,7 @@ func BenchmarkReaggregateNumberDataPoints_NoCollision(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		reaggregateNumberDataPoints(dps, pmetric.MetricTypeSum, true)
 	}
 }
@@ -29,7 +29,7 @@ func BenchmarkReaggregateNumberDataPoints_NoCollision(b *testing.B) {
 func BenchmarkReaggregateNumberDataPoints_AllCollide(b *testing.B) {
 	// Worst case: all data points share the same identity.
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		dps := pmetric.NewNumberDataPointSlice()
 		for j := range 100 {

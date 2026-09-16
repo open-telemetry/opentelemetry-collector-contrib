@@ -40,5 +40,5 @@
 //	               across all 256 shards, one shard at a time
 //
 // Hot-path design rationale lives on the named identifiers themselves — see
-// numShards, hashAttrValue, sketchPool, estimateInterval, and tracker.insert.
+// numShards, hashAttrValue, estimateInterval, tracker.insert, and tracker.rotate.
 package cardinalityguardianprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor"

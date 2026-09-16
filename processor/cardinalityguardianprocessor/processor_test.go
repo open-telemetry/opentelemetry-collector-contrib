@@ -634,6 +634,64 @@ func TestCardinalityProcessor_EpochRotation(t *testing.T) {
 	shard.mu.RUnlock()
 }
 
+func TestTrackerRotateReusesPreviousSketch(t *testing.T) {
+	tracker := newTracker()
+	tracker.insert(1)
+	tracker.insert(2)
+
+	oldCurrent := tracker.current
+	oldPrevious := tracker.previous
+
+	idle := tracker.rotate()
+
+	require.False(t, idle)
+	require.Same(t, oldPrevious, tracker.current)
+	require.Same(t, oldCurrent, tracker.previous)
+
+	tracker.mu.Lock()
+	currentEstimate := tracker.current.Estimate()
+	previousEstimate := tracker.previous.Estimate()
+	cachedCurrent := tracker.cachedCurr
+	cachedPrevious := tracker.cachedPrev
+	insertCount := tracker.insertCount
+	tracker.mu.Unlock()
+
+	require.Zero(t, currentEstimate)
+	require.GreaterOrEqual(t, previousEstimate, uint64(2))
+	require.Zero(t, cachedCurrent)
+	require.GreaterOrEqual(t, cachedPrevious, uint64(2))
+	require.Zero(t, insertCount)
+
+	curr, prev := tracker.insert(3)
+	require.GreaterOrEqual(t, curr, uint64(1))
+	require.GreaterOrEqual(t, prev, uint64(2))
+}
+
+func TestTrackerRotateResetsDenseSketch(t *testing.T) {
+	tracker := newTracker()
+	for value := range 20000 {
+		hashValue := uint64(value)
+		tracker.current.InsertHash(hashValue)
+		tracker.previous.InsertHash(hashValue)
+	}
+
+	oldCurrent := tracker.current
+	oldPrevious := tracker.previous
+	tracker.rotate()
+
+	require.Same(t, oldPrevious, tracker.current)
+	require.Same(t, oldCurrent, tracker.previous)
+	require.Zero(t, tracker.current.Estimate())
+	require.Greater(t, tracker.previous.Estimate(), uint64(0))
+
+	tracker.current.InsertHash(1)
+	require.GreaterOrEqual(t, tracker.current.Estimate(), uint64(1))
+
+	tracker.rotate()
+	require.Same(t, oldCurrent, tracker.current)
+	require.Zero(t, tracker.current.Estimate())
+}
+
 // TestTopOffenders verifies that the otelcol_processor_cardinality_top.offenders gauge correctly
 // reports the highest-delta (metric, label) pairs after an epoch rotation.
 //
