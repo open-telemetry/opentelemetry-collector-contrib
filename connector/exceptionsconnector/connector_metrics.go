@@ -24,6 +24,10 @@ import (
 
 const (
 	metricKeySeparator = string(byte(0))
+
+	// keyEstimatedSize pre-sizes the per-event key builder: service name + up to 3 span fields +
+	// a couple configured dimensions is typically well under this.
+	keyEstimatedSize = 256
 )
 
 type metricsConnector struct {
@@ -94,6 +98,7 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 						statusCode := traceutil.StatusCodeStr(span.Status().Code())
 
 						var sb strings.Builder
+						sb.Grow(keyEstimatedSize)
 						buildKey(&sb, serviceName, spanName, spanKind, statusCode, true, c.dimensions, span.Attributes(), eventAttrs, resourceAttr)
 						key := sb.String()
 
@@ -130,6 +135,7 @@ func (c *metricsConnector) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 				lrAttrs := lr.Attributes()
 
 				var sb strings.Builder
+				sb.Grow(keyEstimatedSize)
 				buildKey(&sb, serviceName, "", "", "", false, c.dimensions, lrAttrs, resourceAttr)
 				key := sb.String()
 
