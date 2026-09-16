@@ -67,6 +67,7 @@ type postgreSQLScraper struct {
 	serviceInstanceID      string
 	serverEndpoint         serverEndpoint
 	lastExecutionTimestamp time.Time
+	dbVersion              string
 }
 
 type errsMux struct {
@@ -558,7 +559,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 // start resolves the credential provider (if a db_auth block is
 // configured) from the host extension map — only available now, at Start — and
 // injects it into the client factory so connections are built with it.
-func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error {
+func (p *postgreSQLScraper) start(ctx context.Context, host component.Host) error {
 	provider, err := p.config.resolveCredentialProvider(host.GetExtensions())
 	if err != nil {
 		return err
@@ -566,6 +567,20 @@ func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error 
 	if provider != nil {
 		p.clientFactory.setCredentialProvider(provider)
 	}
+
+	vctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
+		p.logger.Warn("postgresqlreceiver: failed to connect for version detection; db.system.version attribute will not be set", zap.Error(err))
+	} else {
+		defer c.Close()
+		if v, err := c.getVersion(vctx); err != nil {
+			p.logger.Warn("postgresqlreceiver: failed to detect PostgreSQL version; db.system.version attribute will not be set", zap.Error(err))
+		} else {
+			p.dbVersion = v
+		}
+	}
+
 	return nil
 }
 
@@ -1280,6 +1295,7 @@ func (p *postgreSQLScraper) setServerResourceAttributes(rb *metadata.ResourceBui
 		rb.SetServerAddress(p.serverEndpoint.address)
 		rb.SetServerPort(p.serverEndpoint.port)
 	}
+	rb.SetDbSystemVersion(p.dbVersion)
 }
 
 // serverEndpoint is the resolved network location of the monitored server. An unresolved endpoint
