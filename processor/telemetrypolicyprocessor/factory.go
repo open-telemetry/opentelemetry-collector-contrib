@@ -43,12 +43,8 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	procCfg, ok := cfg.(*Config)
-	if !ok {
+	if _, ok := cfg.(*Config); !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
-	}
-	if err := procCfg.Validate(); err != nil {
-		return nil, err
 	}
 	return processorhelper.NewLogs(
 		ctx, set, cfg, nextConsumer,
@@ -62,12 +58,8 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	procCfg, ok := cfg.(*Config)
-	if !ok {
+	if _, ok := cfg.(*Config); !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
-	}
-	if err := procCfg.Validate(); err != nil {
-		return nil, err
 	}
 	return processorhelper.NewMetrics(
 		ctx, set, cfg, nextConsumer,
@@ -81,12 +73,8 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	procCfg, ok := cfg.(*Config)
-	if !ok {
+	if _, ok := cfg.(*Config); !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
-	}
-	if err := procCfg.Validate(); err != nil {
-		return nil, err
 	}
 	return processorhelper.NewTraces(
 		ctx, set, cfg, nextConsumer,

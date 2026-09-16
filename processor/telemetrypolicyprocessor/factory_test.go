@@ -25,16 +25,12 @@ func TestFactoryCreateProcessors(t *testing.T) {
 	validCfg := &Config{
 		Providers: []component.ID{component.MustNewID("file_telemetry_policy")},
 	}
-	invalidCfg := &Config{}
 	wrongTypeCfg := wrongConfig{}
 
 	t.Run("logs", func(t *testing.T) {
 		lp, err := factory.CreateLogs(t.Context(), set, validCfg, consumertest.NewNop())
 		assert.NoError(t, err)
 		assert.NotNil(t, lp)
-
-		_, err = factory.CreateLogs(t.Context(), set, invalidCfg, consumertest.NewNop())
-		assert.Error(t, err)
 
 		_, err = factory.CreateLogs(t.Context(), set, wrongTypeCfg, consumertest.NewNop())
 		assert.Error(t, err)
@@ -45,9 +41,6 @@ func TestFactoryCreateProcessors(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, mp)
 
-		_, err = factory.CreateMetrics(t.Context(), set, invalidCfg, consumertest.NewNop())
-		assert.Error(t, err)
-
 		_, err = factory.CreateMetrics(t.Context(), set, wrongTypeCfg, consumertest.NewNop())
 		assert.Error(t, err)
 	})
@@ -56,9 +49,6 @@ func TestFactoryCreateProcessors(t *testing.T) {
 		tp, err := factory.CreateTraces(t.Context(), set, validCfg, consumertest.NewNop())
 		assert.NoError(t, err)
 		assert.NotNil(t, tp)
-
-		_, err = factory.CreateTraces(t.Context(), set, invalidCfg, consumertest.NewNop())
-		assert.Error(t, err)
 
 		_, err = factory.CreateTraces(t.Context(), set, wrongTypeCfg, consumertest.NewNop())
 		assert.Error(t, err)
