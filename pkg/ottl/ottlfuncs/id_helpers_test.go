@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -31,12 +30,12 @@ func Test_newIDExprFunc_rawBytes(t *testing.T) {
 func Test_newIDExprFunc_hexBytes(t *testing.T) {
 	target, err := ottl.NewTestingOptionalLiteralGetter(true, makeIDGetter([]byte("0102030405060708090a0b0c0d0e0f10")))
 	require.NoError(t, err)
-	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToProfileID)
+	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
 	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
 
 	result, err := expr(t.Context(), nil)
 	require.NoError(t, err)
-	assert.Equal(t, pprofile.ProfileID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, result)
+	assert.Equal(t, pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, result)
 }
 
 func Test_newIDExprFunc_literalSuccess(t *testing.T) {

@@ -1,0 +1,14 @@
+change_type: bug_fix
+
+component: processor/transform
+
+note: Fix exponential-to-explicit histogram conversion
+
+issues: [50737]
+
+subtext: |
+  The conversion now handles positive, negative, and zero buckets, includes the
+  required overflow bucket, preserves data point metadata, and uses the
+  exponential histogram mapping implementation for bucket boundaries.
+
+change_logs: [user, api]

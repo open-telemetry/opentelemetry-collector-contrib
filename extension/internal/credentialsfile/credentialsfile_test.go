@@ -4,6 +4,7 @@
 package credentialsfile
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -55,6 +56,149 @@ func TestFileWatcher_StartFailsMissingFile(t *testing.T) {
 	r, err := NewValueResolver("", "/nonexistent/path/secret", zaptest.NewLogger(t))
 	require.NoError(t, err)
 	require.Error(t, r.Start(t.Context()))
+}
+
+func TestFileWatcher_StartWithRetryOptionToleratesMissingFile(t *testing.T) {
+	t.Parallel()
+	r, err := NewValueResolver("", "/nonexistent/path/secret", zaptest.NewLogger(t),
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 1, Interval: time.Second}))
+	require.NoError(t, err)
+	require.Error(t, r.Start(t.Context()))
+}
+
+func TestFileWatcher_PicksUpFileAfterItAppears(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+
+	r, err := NewValueResolver("", f, zaptest.NewLogger(t),
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 5, Interval: 100 * time.Millisecond}))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- r.Start(ctx)
+	}()
+
+	// Simulate the file appearing later
+	time.Sleep(200 * time.Millisecond)
+	require.NoError(t, os.WriteFile(f, []byte("secret"), 0o600))
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for Start with retry")
+	}
+}
+
+func TestFileWatcher_RetryDoesNotWaitWhenFileExists(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+	require.NoError(t, os.WriteFile(f, []byte("secret"), 0o600))
+
+	// A large Interval must not delay startup when the file already exists:
+	// the interval is only applied after a failed read attempt.
+	r, err := NewValueResolver("", f, zaptest.NewLogger(t),
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 1, Interval: time.Hour}))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	require.NoError(t, r.Start(ctx))
+	assert.Equal(t, "secret", r.Value())
+}
+
+func TestFileWatcher_RetryUnlimitedPicksUpFileAfterManyIntervals(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+
+	// MaxRetries == 0 means retry indefinitely. The file appears only after
+	// several intervals have elapsed.
+	r, err := NewValueResolver(
+		"",
+		f, zaptest.NewLogger(t),
+		WithRetry(
+			RetryOnFailureConfig{
+				Enabled:    true,
+				MaxRetries: 0,
+				Interval:   20 * time.Millisecond,
+			},
+		),
+	)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- r.Start(ctx)
+	}()
+
+	// Delay well beyond several retry intervals before the file appears.
+	time.Sleep(300 * time.Millisecond)
+	require.NoError(t, os.WriteFile(f, []byte("secret"), 0o600))
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+		assert.Equal(t, "secret", r.Value())
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for Start with unlimited retry")
+	}
+}
+
+func TestFileWatcher_RetryUnlimitedStopsOnContextCancel(t *testing.T) {
+	t.Parallel()
+
+	// MaxRetries == 0 retries forever, so a permanently-missing file must never
+	// return the max-retries error; it only exits once the context is cancelled.
+	r, err := NewValueResolver(
+		"",
+		"/nonexistent/path/secret",
+		zaptest.NewLogger(t),
+		WithRetry(
+			RetryOnFailureConfig{
+				Enabled:    true,
+				MaxRetries: 0,
+				Interval:   20 * time.Millisecond,
+			},
+		),
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- r.Start(ctx)
+	}()
+
+	select {
+	case err := <-errCh:
+		require.Error(t, err)
+		// It must fail because the context was cancelled, not because a retry
+		// limit was reached.
+		assert.ErrorContains(t, err, "retry")
+		assert.NotContains(t, err.Error(), "max number of retries")
+	case <-time.After(5 * time.Second):
+		t.Fatal("Start did not return after context cancellation")
+	}
 }
 
 func TestFileWatcher_StartFailsEmptyFile(t *testing.T) {

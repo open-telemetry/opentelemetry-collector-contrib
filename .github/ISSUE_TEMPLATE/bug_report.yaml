@@ -73,7 +73,6 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/mezmo
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -175,6 +174,7 @@ body:
       - pkg/kafka/configkafka
       - pkg/kafka/topic
       - pkg/ottl
+      - pkg/ottl/contexts/xprofile
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
@@ -242,6 +242,7 @@ body:
       - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
+      - processor/rollingspanlatency
       - processor/schema
       - processor/signing
       - processor/span
