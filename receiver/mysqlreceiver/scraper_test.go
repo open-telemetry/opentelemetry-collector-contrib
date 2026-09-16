@@ -1145,6 +1145,46 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 	})
 }
 
+func TestSanitizeWaitTime(t *testing.T) {
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config), nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	require.NoError(t, err)
+
+	t.Run("io: passes through a plausible wait time unchanged", func(t *testing.T) {
+		assert.InDelta(t, 2.5, scraper.sanitizeWaitTime(2.5, "io", "table/sql/handler"), 0.0001)
+	})
+
+	t.Run("io: passes through exactly the ceiling", func(t *testing.T) {
+		assert.InDelta(t, maxPlausibleIOSyncWaitSeconds, scraper.sanitizeWaitTime(maxPlausibleIOSyncWaitSeconds, "io", "table/sql/handler"), 0.0001)
+	})
+
+	t.Run("io: clamps a reading just past the ceiling to zero", func(t *testing.T) {
+		assert.Equal(t, 0.0, scraper.sanitizeWaitTime(maxPlausibleIOSyncWaitSeconds+0.001, "io", "redo_log_flush"))
+	})
+
+	t.Run("io: clamps the Aurora redo_log_flush overflow case to zero", func(t *testing.T) {
+		// 2^64 picoseconds / 1e12 -- the exact garbage value this fix exists for.
+		assert.Equal(t, 0.0, scraper.sanitizeWaitTime(18446744.073709551616, "io", "redo_log_flush"))
+	})
+
+	t.Run("synch: clamps a reading past the tight ceiling to zero", func(t *testing.T) {
+		assert.Equal(t, 0.0, scraper.sanitizeWaitTime(maxPlausibleIOSyncWaitSeconds+0.001, "synch", "mutex/innodb/checkpoint_state"))
+	})
+
+	t.Run("lock: a real long lock wait survives unclamped, not zeroed", func(t *testing.T) {
+		// Well past the io/synch ceiling, but a lock wait this long can be a
+		// genuine blocking incident, so it must not be silently zeroed.
+		assert.InDelta(t, 300.0, scraper.sanitizeWaitTime(300.0, "lock", "table/sql/handler"), 0.0001)
+	})
+
+	t.Run("lock: the far-more-permissive backstop still catches overflow-scale garbage", func(t *testing.T) {
+		assert.Equal(t, 0.0, scraper.sanitizeWaitTime(18446744.073709551616, "lock", "table/sql/handler"))
+	})
+
+	t.Run("zero wait time is untouched", func(t *testing.T) {
+		assert.Equal(t, 0.0, scraper.sanitizeWaitTime(0, "CPU", "CPU"))
+	})
+}
+
 func TestScrapeTopQueryInterval(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "otel"
@@ -1680,11 +1720,17 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.digest = text[10]
 		s.eventID, _ = parseInt(text[11])
 		s.sessionStatus = text[12]
-		s.waitEvent = text[13]
+		s.waitType = text[13]
 		s.waitTime, _ = strconv.ParseFloat(text[14], 64)
 		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
 		if len(text) > 16 {
 			s.traceparent = text[16]
+		}
+		if len(text) > 17 {
+			s.waitEventType = text[17]
+		}
+		if len(text) > 18 {
+			s.waitEvent = text[18]
 		}
 
 		samples = append(samples, s)
@@ -1776,7 +1822,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 					digest:             digest,
 					eventID:            1,
 					sessionStatus:      "waiting",
-					waitEvent:          "CPU",
+					waitType:           "CPU",
 				},
 			},
 			topQueries: []topQuery{
@@ -1820,7 +1866,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 					digest:             digest,
 					eventID:            1,
 					sessionStatus:      "waiting",
-					waitEvent:          "CPU",
+					waitType:           "CPU",
 				},
 			},
 			topQueries: []topQuery{
@@ -1874,7 +1920,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 					digest:             digest,
 					eventID:            1,
 					sessionStatus:      "waiting",
-					waitEvent:          "CPU",
+					waitType:           "CPU",
 				},
 			},
 			topQueries: []topQuery{

@@ -1201,6 +1201,8 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			queryPlanHash = queryPlanCacheID
 		}
 
+		waitTime := m.sanitizeWaitTime(sample.waitTime, sample.waitEventType, sample.waitEvent)
+
 		m.lb.RecordDbServerQuerySampleEvent(
 			recordCtx,
 			now,
@@ -1215,11 +1217,13 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			queryPlan,
 			queryPlanHash,
 			sample.eventID,
+			sample.waitEventType,
 			sample.waitEvent,
+			sample.waitType,
 			sample.sessionStatus,
 			sample.sessionID,
 			sample.statementTimerWait,
-			sample.waitTime,
+			waitTime,
 			clientAddress,
 			clientPort,
 			networkPeerAddress,
@@ -1272,6 +1276,37 @@ func createCacheKey(dbName, digestTextHash string) string {
 func getDigestTextHash(digestText string) string {
 	sum := sha256.Sum256([]byte(digestText))
 	return hex.EncodeToString(sum[:])
+}
+
+// maxPlausibleIOSyncWaitSeconds bounds io/synch waits, which should never
+// legitimately be slow. Backstop for an overflow bug where the in-progress
+// wait estimate (current_time - wait.timer_start) grows unbounded when a
+// wait event never resolves the way it does on standalone InnoDB -- observed
+// on Aurora MySQL's redo_log_flush wait.
+const maxPlausibleIOSyncWaitSeconds = 60.0
+
+// maxPlausibleLockWaitSeconds is far more permissive: lock waits (row/table
+// locks) can legitimately run for minutes -- that's what mysql.blocking.*
+// exists to surface. This only backstops the same overflow class from
+// silently reaching a lock reading too.
+const maxPlausibleLockWaitSeconds = 86400.0
+
+// sanitizeWaitTime clamps an implausible mysql.events_waits_current.timer_wait
+// to zero. The ceiling depends on waitEventType since what counts as
+// implausible differs by wait category.
+func (m *mySQLScraper) sanitizeWaitTime(waitTime float64, waitEventType, waitEvent string) float64 {
+	ceiling := maxPlausibleIOSyncWaitSeconds
+	if waitEventType == "lock" {
+		ceiling = maxPlausibleLockWaitSeconds
+	}
+	if waitTime > ceiling {
+		m.logger.Warn("Discarding implausible mysql.events_waits_current.timer_wait reading",
+			zap.Float64("timer_wait_seconds", waitTime),
+			zap.String("mysql.wait_event_type", waitEventType),
+			zap.String("mysql.wait_event", waitEvent))
+		return 0
+	}
+	return waitTime
 }
 
 // contextWithTraceparent extracts a W3C TraceContext traceparent from the given
