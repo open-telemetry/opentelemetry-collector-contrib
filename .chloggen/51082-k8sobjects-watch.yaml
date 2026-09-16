@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/k8s_objects
+note: "Restart the watch with backoff when the watch channel closes instead of stopping permanently, and keep the persisted resourceVersion unless it expired."
+issues: [43928]
+subtext: "`ERROR` watch events other than 410 Gone are no longer emitted as log records; they are logged by the collector at warn level."
+change_logs: [user]
