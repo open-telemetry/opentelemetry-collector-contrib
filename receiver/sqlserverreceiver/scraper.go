@@ -37,28 +37,46 @@ const (
 	databaseNameKey = "database_name"
 	instanceNameKey = "sql_instance"
 
+	// Windows performance counter types that contain cumulative values and
+	// require two samples to calculate a per-second rate.
+	perfCounterCounterType   = "272696320"
+	perfCounterBulkCountType = "272696576"
+
 	defaultServiceName = "unknown_service:microsoft.sql_server"
 )
 
+type performanceCounterKey struct {
+	object   string
+	counter  string
+	instance string
+}
+
+type performanceCounterSample struct {
+	value     int64
+	timestamp time.Time
+}
+
 type sqlServerScraperHelper struct {
-	id                     component.ID
-	config                 *Config
-	sqlQuery               string
-	instanceName           string
-	clientProviderFunc     sqlquery.ClientProviderFunc
-	dbProviderFunc         sqlquery.DbProviderFunc
-	logger                 *zap.Logger
-	telemetry              sqlquery.TelemetryConfig
-	client                 sqlquery.DbClient
-	db                     *sql.DB
-	mb                     *metadata.MetricsBuilder
-	lb                     *metadata.LogsBuilder
-	cache                  *lru.Cache[string, int64]
-	lastExecutionTimestamp time.Time
-	obfuscator             *obfuscator
-	serviceInstanceID      string
-	serverAddress          string
-	serverPort             int64
+	id                        component.ID
+	config                    *Config
+	sqlQuery                  string
+	instanceName              string
+	clientProviderFunc        sqlquery.ClientProviderFunc
+	dbProviderFunc            sqlquery.DbProviderFunc
+	logger                    *zap.Logger
+	telemetry                 sqlquery.TelemetryConfig
+	client                    sqlquery.DbClient
+	db                        *sql.DB
+	mb                        *metadata.MetricsBuilder
+	lb                        *metadata.LogsBuilder
+	cache                     *lru.Cache[string, int64]
+	performanceCounterSamples map[performanceCounterKey]performanceCounterSample
+	lastExecutionTimestamp    time.Time
+	now                       func() time.Time
+	obfuscator                *obfuscator
+	serviceInstanceID         string
+	serverAddress             string
+	serverPort                int64
 }
 
 var (
@@ -93,21 +111,23 @@ func newSQLServerScraper(id component.ID,
 	}
 
 	return &sqlServerScraperHelper{
-		id:                     id,
-		config:                 cfg,
-		sqlQuery:               query,
-		logger:                 params.Logger,
-		telemetry:              telemetry,
-		dbProviderFunc:         dbProviderFunc,
-		clientProviderFunc:     clientProviderFunc,
-		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
-		cache:                  cache,
-		lastExecutionTimestamp: time.Unix(0, 0),
-		obfuscator:             newObfuscator(params.Logger),
-		serviceInstanceID:      serviceInstanceID,
-		serverAddress:          serverAddress,
-		serverPort:             int64(serverPort),
+		id:                        id,
+		config:                    cfg,
+		sqlQuery:                  query,
+		logger:                    params.Logger,
+		telemetry:                 telemetry,
+		dbProviderFunc:            dbProviderFunc,
+		clientProviderFunc:        clientProviderFunc,
+		mb:                        metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                        metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
+		cache:                     cache,
+		performanceCounterSamples: make(map[performanceCounterKey]performanceCounterSample),
+		lastExecutionTimestamp:    time.Unix(0, 0),
+		now:                       time.Now,
+		obfuscator:                newObfuscator(params.Logger),
+		serviceInstanceID:         serviceInstanceID,
+		serverAddress:             serverAddress,
+		serverPort:                int64(serverPort),
 	}
 }
 
@@ -543,6 +563,65 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 	return errors.Join(errs...)
 }
 
+func isPerformanceCounterRate(counterType string) bool {
+	switch counterType {
+	case perfCounterCounterType, perfCounterBulkCountType:
+		return true
+	default:
+		return false
+	}
+}
+
+func performanceCounterKeyFromRow(row sqlquery.StringMap) performanceCounterKey {
+	return performanceCounterKey{
+		object:   row["object"],
+		counter:  row["counter"],
+		instance: row["instance"],
+	}
+}
+
+func (s *sqlServerScraperHelper) calculatePerformanceCounterRate(
+	row sqlquery.StringMap,
+	now time.Time,
+) (float64, bool, error) {
+	val, err := retrieveInt(row, "raw_value")
+	if err != nil {
+		return 0, false, err
+	}
+	current := val.(int64)
+
+	key := performanceCounterKeyFromRow(row)
+
+	previous, found := s.performanceCounterSamples[key]
+	if !found {
+		s.performanceCounterSamples[key] = performanceCounterSample{
+			value:     current,
+			timestamp: now,
+		}
+		return 0, false, nil
+	}
+
+	if current < previous.value {
+		s.performanceCounterSamples[key] = performanceCounterSample{
+			value:     current,
+			timestamp: now,
+		}
+		return 0, false, nil
+	}
+
+	elapsed := now.Sub(previous.timestamp).Seconds()
+	if elapsed <= 0 {
+		return 0, false, nil
+	}
+
+	s.performanceCounterSamples[key] = performanceCounterSample{
+		value:     current,
+		timestamp: now,
+	}
+
+	return float64(current-previous.value) / elapsed, true, nil
+}
+
 func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Context) error {
 	const counterKey = "counter"
 	const valueKey = "value"
@@ -655,7 +734,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	}
 
 	var errs []error
-	now := pcommon.NewTimestampFromTime(time.Now())
+	scrapeTime := s.now()
+	now := pcommon.NewTimestampFromTime(scrapeTime)
 
 	// Track SQL compilation and recompilation rates so the derived
 	// sqlserver.recompilation.ratio metric can be emitted after the row loop.
@@ -665,8 +745,26 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		recompRatioRow       sqlquery.StringMap
 	)
 
+	seenPerformanceCounterKeys := make(map[performanceCounterKey]struct{})
+
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		if isPerformanceCounterRate(row["counter_type"]) {
+			rate, emit, err := s.calculatePerformanceCounterRate(row, scrapeTime)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to calculate performance counter rate for row %d: %w", i, err))
+				continue
+			}
+
+			key := performanceCounterKeyFromRow(row)
+			seenPerformanceCounterKeys[key] = struct{}{}
+
+			if !emit {
+				continue
+			}
+			row[valueKey] = strconv.FormatFloat(rate, 'f', -1, 64)
+		}
 
 		switch row[counterKey] {
 		case activeCursors:
@@ -894,12 +992,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				s.mb.RecordSqlserverParameterizationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverParameterizationResultForced)
 			}
 		case freeListStalls:
-			val, err := retrieveInt(row, valueKey)
+			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, freeListStalls)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint(now, val.(float64))
 			}
 		case freePages:
 			val, err := retrieveInt(row, valueKey)
@@ -1451,6 +1549,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	for key := range s.performanceCounterSamples {
+		if _, seen := seenPerformanceCounterKeys[key]; !seen {
+			delete(s.performanceCounterSamples, key)
+		}
 	}
 
 	// Emit derived sqlserver.recompilation.ratio metric (recomp / comp * 100)

@@ -799,7 +799,7 @@ resourceMetrics:
           - description: Number of free list stalls.
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asDouble: 0
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.page.buffer_cache.free_list.stalls.rate
