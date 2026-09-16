@@ -52,7 +52,7 @@ Key design decisions:
 
 - **256-way sharding.** Each shard has its own `RWMutex`. With 50 concurrent goroutines across 256 shards, average occupancy is ~0.4 per shard. Contention is near zero. Shard selection is `hash & 0xFF` — one CPU cycle.
 
-- **HLL++ with ~2KB per tracker.** Each sketch estimates cardinality regardless of whether 100 or 100M unique values have been observed. 1-2% accuracy. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
+- **HLL++ with reusable per-tracker storage.** Each tracker retains two p=14 sketches, estimating cardinality regardless of whether 100 or 100M unique values have been observed. Sparse sketches remain compact at low cardinality; dense registers use about 16 KiB per sketch. Epoch rotation resets and reuses the existing sketches, reducing allocation and GC pressure without changing steady-state tracker memory. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
 
 - **Stale eviction.** Trackers that haven't been seen for two epochs are cleaned up. Memory stays bounded.
 
@@ -66,7 +66,7 @@ Key design decisions:
 | Tag-only mode | Yes | No | No |
 | Per-metric overrides | Yes | N/A | N/A |
 | Top-N offender reporting | Yes | No | No |
-| Memory per tracker | ~2KB (HLL++) | N/A | N/A |
+| Memory per tracker | Two reusable p=14 sketches; sparse/dense size varies | N/A | N/A |
 
 `filterprocessor` and `metricstransformprocessor` are configuration-driven: you tell them what to drop. This processor is data-driven: it figures out what to drop based on observed behavior. The use cases are complementary, not competing.
 
