@@ -312,7 +312,7 @@ GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
-## AWS RDS Oracle grants
+### AWS RDS Oracle grants
 
 Run the following as the master/admin user using `rdsadmin.rdsadmin_util.grant_sys_object` to grant permissions on the required views.
 The following grants cover all metrics and events collected by this receiver:
@@ -353,11 +353,14 @@ EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_SERVICES',                 '<u
 GRANT CREATE SESSION TO <username>;
 ```
 
-On a direct-PDB connection, `oracledb.transactions.limit` and `oracledb.dml_locks.limit`
-are derived from `v$parameter` rather than `v$resource_limit`. If those resources are
-left at Oracle's auto-tuned default, this reports the real computed value (e.g. `354`)
-instead of `-1` (unlimited) as a root/standalone connection would — the same metric name
-can carry a different meaning depending on connection type.
+### Direct-PDB connections
+
+When the receiver connects directly to a PDB (including all AWS RDS Oracle deployments),
+`oracledb.transactions.limit` and `oracledb.dml_locks.limit` are derived from
+`v$parameter` instead of `v$resource_limit`, which is unavailable in PDB context.
+When Oracle auto-tunes these parameters, `v$parameter` reports the computed value
+(for example, `354` or `1416`) rather than `-1` (unlimited) as a root or standalone
+connection would. A direct-PDB deployment and a CDB-root deployment of the same instance can therefore report different values for these metrics.
 
 ## Enabling metrics.
 
