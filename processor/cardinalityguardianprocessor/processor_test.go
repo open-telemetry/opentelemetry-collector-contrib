@@ -682,7 +682,7 @@ func TestTrackerRotateResetsDenseSketch(t *testing.T) {
 	require.Same(t, oldPrevious, tracker.current)
 	require.Same(t, oldCurrent, tracker.previous)
 	require.Zero(t, tracker.current.Estimate())
-	require.Greater(t, tracker.previous.Estimate(), uint64(0))
+	require.Positive(t, tracker.previous.Estimate())
 
 	tracker.current.InsertHash(1)
 	require.GreaterOrEqual(t, tracker.current.Estimate(), uint64(1))
