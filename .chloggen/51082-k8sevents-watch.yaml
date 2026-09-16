@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/k8s_events
+note: "Restart the watch with backoff when the watch channel closes instead of stopping permanently, and keep the persisted resourceVersion unless it expired."
+issues: [43928]
+subtext:
+change_logs: [user]
