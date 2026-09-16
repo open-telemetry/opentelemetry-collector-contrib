@@ -1,6 +1,6 @@
 change_type: enhancement
 component: receiver/google_cloud_spanner
 note: Add missing label `operations_by_table_json_string` to top and total minute transaction stats in `googlecloudspannerreceiver`.
-issues: [0]
+issues: [51057]
 subtext: "Syncs the OTel receiver with SPANNER_SYS tables to bring the parity between GCP transaction insights page and OTel receiver."
 change_logs: []
