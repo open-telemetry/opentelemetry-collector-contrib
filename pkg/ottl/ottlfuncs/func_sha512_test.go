@@ -92,14 +92,14 @@ func Test_SHA512Factory(t *testing.T) {
 		factory := NewSHA512Factory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SHA512Arguments[any]{}, args)
+		assert.IsType(t, &sHA512Arguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSHA512Factory[any]()
 		args := factory.CreateDefaultArguments()
-		shaArgs, ok := args.(*SHA512Arguments[any])
+		shaArgs, ok := args.(*sHA512Arguments[any])
 		require.True(t, ok)
 		shaArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -114,6 +114,6 @@ func Test_SHA512Factory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSHA512Function[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SHA512Factory args must be of type *SHA512Arguments[K]")
+		assert.ErrorContains(t, err, "SHA512Factory args must be of type *sHA512Arguments[K]")
 	})
 }

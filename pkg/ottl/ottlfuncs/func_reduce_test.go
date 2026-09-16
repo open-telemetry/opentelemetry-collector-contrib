@@ -246,14 +246,14 @@ func Test_ReduceFactory(t *testing.T) {
 		factory := NewReduceFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ReduceArguments[any]{}, args)
+		assert.IsType(t, &reduceArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Source", "Seed", "Accumulator"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewReduceFactory[any]()
 		args := factory.CreateDefaultArguments()
-		reduceArgs, ok := args.(*ReduceArguments[any])
+		reduceArgs, ok := args.(*reduceArguments[any])
 		require.True(t, ok)
 		reduceArgs.Source = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -276,6 +276,6 @@ func Test_ReduceFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createReduceFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ReduceFactory args must be of type *ReduceArguments[K]")
+		assert.ErrorContains(t, err, "ReduceFactory args must be of type *reduceArguments[K]")
 	})
 }

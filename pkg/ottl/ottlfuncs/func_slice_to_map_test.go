@@ -400,7 +400,7 @@ func Test_SliceToMap(t *testing.T) {
 				valuePathOptional = ottl.NewTestingOptional(tt.valuePath)
 			}
 
-			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
+			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &sliceToMapArguments[any]{
 				Target: ottl.StandardPSliceGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						val := tt.value()
@@ -443,14 +443,14 @@ func Test_SliceToMapFactory(t *testing.T) {
 		factory := NewSliceToMapFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SliceToMapArguments[any]{}, args)
+		assert.IsType(t, &sliceToMapArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "KeyPath", "ValuePath"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSliceToMapFactory[any]()
 		args := factory.CreateDefaultArguments()
-		sliceToMapArgs, ok := args.(*SliceToMapArguments[any])
+		sliceToMapArgs, ok := args.(*sliceToMapArguments[any])
 		require.True(t, ok)
 		sliceToMapArgs.Target = &ottl.StandardPSliceGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -465,6 +465,6 @@ func Test_SliceToMapFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := sliceToMapFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SliceToMapFactory args must be of type *SliceToMapArguments[K")
+		assert.ErrorContains(t, err, "SliceToMapFactory args must be of type *sliceToMapArguments[K")
 	})
 }

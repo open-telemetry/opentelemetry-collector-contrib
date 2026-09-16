@@ -333,14 +333,14 @@ func Test_FindFactory(t *testing.T) {
 		factory := NewFindFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &FindArguments[any]{}, args)
+		assert.IsType(t, &findArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Source", "Predicate", "Mapper"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewFindFactory[any]()
 		args := factory.CreateDefaultArguments()
-		findArgs, ok := args.(*FindArguments[any])
+		findArgs, ok := args.(*findArguments[any])
 		require.True(t, ok)
 		findArgs.Source = source
 		findArgs.Predicate = predicate
@@ -356,7 +356,7 @@ func Test_FindFactory(t *testing.T) {
 		})
 		factory := NewFindFactory[any]()
 		args := factory.CreateDefaultArguments()
-		findArgs, ok := args.(*FindArguments[any])
+		findArgs, ok := args.(*findArguments[any])
 		require.True(t, ok)
 		findArgs.Source = source
 		findArgs.Predicate = predicate
@@ -369,6 +369,6 @@ func Test_FindFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createFindFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "FindFactory args must be of type *FindArguments[K]")
+		assert.ErrorContains(t, err, "FindFactory args must be of type *findArguments[K]")
 	})
 }

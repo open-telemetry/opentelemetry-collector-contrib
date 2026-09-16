@@ -64,14 +64,14 @@ func Test_YearFactory(t *testing.T) {
 		factory := NewYearFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &YearArguments[any]{}, args)
+		assert.IsType(t, &yearArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewYearFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*YearArguments[any])
+		timeArgs, ok := args.(*yearArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,6 +86,6 @@ func Test_YearFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createYearFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "YearFactory args must be of type *YearArguments[K]")
+		assert.ErrorContains(t, err, "YearFactory args must be of type *yearArguments[K]")
 	})
 }

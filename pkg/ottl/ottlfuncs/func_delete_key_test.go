@@ -151,14 +151,14 @@ func Test_DeleteKeyFactory(t *testing.T) {
 		factory := NewDeleteKeyFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &DeleteKeyArguments[any]{}, args)
+		assert.IsType(t, &deleteKeyArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Key"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewDeleteKeyFactory[any]()
 		args := factory.CreateDefaultArguments()
-		deleteKeyArgs, ok := args.(*DeleteKeyArguments[any])
+		deleteKeyArgs, ok := args.(*deleteKeyArguments[any])
 		require.True(t, ok)
 		deleteKeyArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -181,6 +181,6 @@ func Test_DeleteKeyFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createDeleteKeyFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "DeleteKeysFactory args must be of type *DeleteKeyArguments[K]")
+		assert.ErrorContains(t, err, "DeleteKeysFactory args must be of type *deleteKeyArguments[K]")
 	})
 }

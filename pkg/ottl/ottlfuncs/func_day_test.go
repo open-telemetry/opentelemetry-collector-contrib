@@ -64,14 +64,14 @@ func Test_DayFactory(t *testing.T) {
 		factory := NewDayFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &DayArguments[any]{}, args)
+		assert.IsType(t, &dayArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewDayFactory[any]()
 		args := factory.CreateDefaultArguments()
-		dayArgs, ok := args.(*DayArguments[any])
+		dayArgs, ok := args.(*dayArguments[any])
 		require.True(t, ok)
 		dayArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,6 +86,6 @@ func Test_DayFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createDayFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "DayFactory args must be of type *DayArguments[K]")
+		assert.ErrorContains(t, err, "DayFactory args must be of type *dayArguments[K]")
 	})
 }

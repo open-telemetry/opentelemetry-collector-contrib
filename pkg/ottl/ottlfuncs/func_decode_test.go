@@ -206,7 +206,7 @@ func TestDecode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expressionFunc, err := createDecodeFunction[any](ottl.FunctionContext{}, &DecodeArguments[any]{
+			expressionFunc, err := createDecodeFunction[any](ottl.FunctionContext{}, &decodeArguments[any]{
 				Target: &ottl.StandardGetSetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.value, nil
@@ -300,14 +300,14 @@ func Test_DecodeFactory(t *testing.T) {
 		factory := NewDecodeFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &DecodeArguments[any]{}, args)
+		assert.IsType(t, &decodeArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Encoding"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewDecodeFactory[any]()
 		args := factory.CreateDefaultArguments()
-		decodeArgs, ok := args.(*DecodeArguments[any])
+		decodeArgs, ok := args.(*decodeArguments[any])
 		require.True(t, ok)
 		decodeArgs.Target = &ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -327,6 +327,6 @@ func Test_DecodeFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createDecodeFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "DecodeFactory args must be of type *DecodeArguments[K]")
+		assert.ErrorContains(t, err, "DecodeFactory args must be of type *decodeArguments[K]")
 	})
 }

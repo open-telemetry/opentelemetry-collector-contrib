@@ -707,14 +707,14 @@ func Test_AppendFactory(t *testing.T) {
 		factory := NewAppendFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &AppendArguments[any]{}, args)
+		assert.IsType(t, &appendArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Value", "Values"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewAppendFactory[any]()
 		args := factory.CreateDefaultArguments()
-		appendArgs, ok := args.(*AppendArguments[any])
+		appendArgs, ok := args.(*appendArguments[any])
 		require.True(t, ok)
 		appendArgs.Target = &ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {

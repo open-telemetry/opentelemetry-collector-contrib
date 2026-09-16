@@ -162,14 +162,14 @@ func Test_AllFactory(t *testing.T) {
 		factory := NewAllFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &AllArguments[any]{}, args)
+		assert.IsType(t, &allArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Source", "Predicate"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewAllFactory[any]()
 		args := factory.CreateDefaultArguments()
-		allArgs, ok := args.(*AllArguments[any])
+		allArgs, ok := args.(*allArguments[any])
 		require.True(t, ok)
 		allArgs.Source = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -187,6 +187,6 @@ func Test_AllFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createAllFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "AllFactory args must be of type *AllArguments[K]")
+		assert.ErrorContains(t, err, "AllFactory args must be of type *allArguments[K]")
 	})
 }

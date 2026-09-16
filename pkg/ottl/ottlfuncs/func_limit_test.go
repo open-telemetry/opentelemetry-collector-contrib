@@ -205,14 +205,14 @@ func Test_LimitFactory(t *testing.T) {
 		factory := NewLimitFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &LimitArguments[any]{}, args)
+		assert.IsType(t, &limitArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Limit", "PriorityKeys"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewLimitFactory[any]()
 		args := factory.CreateDefaultArguments()
-		limitArgs, ok := args.(*LimitArguments[any])
+		limitArgs, ok := args.(*limitArguments[any])
 		require.True(t, ok)
 		limitArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -228,6 +228,6 @@ func Test_LimitFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createLimitFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "LimitFactory args must be of type *LimitArguments[K]")
+		assert.ErrorContains(t, err, "LimitFactory args must be of type *limitArguments[K]")
 	})
 }

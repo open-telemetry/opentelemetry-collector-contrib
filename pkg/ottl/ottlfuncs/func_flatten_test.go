@@ -602,14 +602,14 @@ func Test_FlattenFactory(t *testing.T) {
 		factory := NewFlattenFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &FlattenArguments[any]{}, args)
+		assert.IsType(t, &flattenArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Prefix", "Depth", "ResolveConflicts"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewFlattenFactory[any]()
 		args := factory.CreateDefaultArguments()
-		flattenArgs, ok := args.(*FlattenArguments[any])
+		flattenArgs, ok := args.(*flattenArguments[any])
 		require.True(t, ok)
 		flattenArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -627,6 +627,6 @@ func Test_FlattenFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createFlattenFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "FlattenFactory args must be of type *FlattenArguments[K]")
+		assert.ErrorContains(t, err, "FlattenFactory args must be of type *flattenArguments[K]")
 	})
 }

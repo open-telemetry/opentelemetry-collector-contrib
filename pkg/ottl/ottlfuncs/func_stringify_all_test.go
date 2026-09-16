@@ -128,14 +128,14 @@ func Test_StringifyAllFactory(t *testing.T) {
 		factory := NewStringifyAllFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &StringifyAllArguments[any]{}, args)
+		assert.IsType(t, &stringifyAllArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewStringifyAllFactory[any]()
 		args := factory.CreateDefaultArguments()
-		stringifyAllArgs, ok := args.(*StringifyAllArguments[any])
+		stringifyAllArgs, ok := args.(*stringifyAllArguments[any])
 		require.True(t, ok)
 		stringifyAllArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -153,6 +153,6 @@ func Test_StringifyAllFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createStringifyAllFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "StringifyAllFactory args must be of type *StringifyAllArguments[K]")
+		assert.ErrorContains(t, err, "StringifyAllFactory args must be of type *stringifyAllArguments[K]")
 	})
 }

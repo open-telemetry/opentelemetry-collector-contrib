@@ -64,14 +64,14 @@ func Test_SecondFactory(t *testing.T) {
 		factory := NewSecondFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SecondArguments[any]{}, args)
+		assert.IsType(t, &secondArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSecondFactory[any]()
 		args := factory.CreateDefaultArguments()
-		secondArgs, ok := args.(*SecondArguments[any])
+		secondArgs, ok := args.(*secondArguments[any])
 		require.True(t, ok)
 		secondArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,6 +86,6 @@ func Test_SecondFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSecondFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SecondFactory args must be of type *SecondArguments[K]")
+		assert.ErrorContains(t, err, "SecondFactory args must be of type *secondArguments[K]")
 	})
 }

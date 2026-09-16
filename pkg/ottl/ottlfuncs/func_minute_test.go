@@ -64,14 +64,14 @@ func Test_MinuteFactory(t *testing.T) {
 		factory := NewMinuteFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &MinuteArguments[any]{}, args)
+		assert.IsType(t, &minuteArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewMinuteFactory[any]()
 		args := factory.CreateDefaultArguments()
-		minuteArgs, ok := args.(*MinuteArguments[any])
+		minuteArgs, ok := args.(*minuteArguments[any])
 		require.True(t, ok)
 		minuteArgs.Time = ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,6 +86,6 @@ func Test_MinuteFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createMinuteFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "MinuteFactory args must be of type *MinuteArguments[K]")
+		assert.ErrorContains(t, err, "MinuteFactory args must be of type *minuteArguments[K]")
 	})
 }

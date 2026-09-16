@@ -12,19 +12,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type Base64EncodeArguments[K any] struct {
+type base64EncodeArguments[K any] struct {
 	Target  ottl.StringGetter[K]
 	Variant ottl.Optional[ottl.StringGetter[K]]
 }
 
 func NewBase64EncodeFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Base64Encode", &Base64EncodeArguments[K]{}, createBase64EncodeFunction[K])
+	return ottl.NewFactory("Base64Encode", &base64EncodeArguments[K]{}, createBase64EncodeFunction[K])
 }
 
 func createBase64EncodeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*Base64EncodeArguments[K])
+	args, ok := oArgs.(*base64EncodeArguments[K])
 	if !ok {
-		return nil, errors.New("Base64EncodeFactory args must be of type *Base64EncodeArguments[K]")
+		return nil, errors.New("Base64EncodeFactory args must be of type *base64EncodeArguments[K]")
 	}
 
 	return base64Encode(args.Target, args.Variant), nil
