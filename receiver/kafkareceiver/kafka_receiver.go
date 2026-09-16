@@ -364,9 +364,6 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	}
 
 	ctx = contextWithMetadata(ctx, record)
-	// Extract the W3C Trace Context from the record headers. The ObsReport is
-	// configured with LongLivedCtx, so the receive span starts a new trace and
-	// links to the extracted span context.
 	ctx = propagation.TraceContext{}.Extract(ctx, kotel.NewRecordCarrier(record))
 
 	obsCtx := handler.startObsReport(ctx)
