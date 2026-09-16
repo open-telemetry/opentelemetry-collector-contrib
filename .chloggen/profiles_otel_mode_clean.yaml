@@ -15,7 +15,12 @@ issues: [50589]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  In `otel` mapping mode, profiling signals are now written to OTel-native datastreams
+  (e.g. `profiling-events-all.otel-default`) that require **Elasticsearch 9.6.0 or later**.
+  Sending profiles to an older cluster will result in `index_not_found_exception` errors and data loss.
+  Users on Elasticsearch < 9.6.0 must restrict the exporter to ECS mode via `mapping.allowed_modes: [ecs]`.
+  Profiles are still in tech preview.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

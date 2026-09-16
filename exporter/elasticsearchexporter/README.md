@@ -496,22 +496,33 @@ exporters:
 In `otel` mapping mode, profiling signals are ingested into OTel-native Elasticsearch datastreams.
 Each profiling signal type is written to a dedicated backing index:
 
-| Signal type    | Index pattern                           |
-| -------------- | --------------------------------------- |
-| Stack traces   | `profiling-stacktraces`                 |
-| Stack frames   | `profiling-stackframes`                 |
-| Executables    | `profiling-executables`                 |
-| Trace events   | `profiling-events`                      |
+| Signal type    | Index pattern                                 |
+| -------------- | --------------------------------------------- |
+| Stack traces   | `profiling-stacktraces.otel-default`          |
+| Stack frames   | `profiling-stackframes.otel-default`          |
+| Executables    | `profiling-executables.otel-default`          |
+| Trace events   | `profiling-events-all.otel-default`           |
 
-Trace events also produce downsampled copies written to `profiling-events-5powNN` indices (where NN ranges from 01 to 11), with an `.otel-<namespace>` suffix appended to each index name. The downsampling follows powers of 5, storing progressively smaller fractions of the events to support efficient range queries over varying time windows.
+Trace events also produce downsampled copies written to `profiling-events-5powNN.otel-default` indices (where NN ranges from 01 to 11). The downsampling follows powers of 5, storing progressively smaller fractions of the events to support efficient range queries over varying time windows.
 
 > [!NOTE]
 > Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations) is not yet supported in OTel profiling datastream mode.
 
 > [!WARNING]
-> Starting from Elasticsearch 9.6, OTel profiling signals are ingested into the OTel-native datastream indices listed above.
-> This is a breaking change from prior behaviour: **the backing indices are different** from those used by earlier versions.
-> Existing profiling data in the old indices is not migrated automatically.
+> The `.otel-default` profiling datastream index templates are only available in **Elasticsearch 9.6.0 and later**.
+> If you send profiles with the default OTel mapping mode to an older cluster, documents will be rejected
+> with `index_not_found_exception` (HTTP 404) and profiling data will be lost.
+>
+> To continue sending profiles to Elasticsearch < 9.6.0, restrict the exporter to ECS mode:
+>
+> ```yaml
+> mapping:
+>   allowed_modes: [ecs]
+> ```
+>
+> This is a **breaking change** for existing OTel-mode profiling users (profiles were in tech preview):
+> the backing indices are different from the ECS-schema indices used by prior versions
+> (profiles are still in tech preview), and existing profiling data in the old indices is not migrated automatically.
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
