@@ -32,6 +32,8 @@ import (
 func setResourceVersionRetryDelay(observer *Observer, delay time.Duration) {
 	observer.resourceVersionRetryBackoff.Duration = delay
 	observer.resourceVersionRetryBackoff.Jitter = 0
+	observer.watchRestartBackoff.Duration = delay
+	observer.watchRestartBackoff.Jitter = 0
 }
 
 func TestObserver(t *testing.T) {
