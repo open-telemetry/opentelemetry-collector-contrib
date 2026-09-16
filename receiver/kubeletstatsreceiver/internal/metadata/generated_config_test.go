@@ -29,12 +29,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUPressureAvg: ContainerCPUPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ContainerCPUPressureAvgMetricAttributeKey{ContainerCPUPressureAvgMetricAttributeKeyPressureType, ContainerCPUPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []ContainerCPUPressureAvgMetricAttributeKey{ContainerCPUPressureAvgMetricAttributeKeyPsiType, ContainerCPUPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					ContainerCPUPressureTotal: ContainerCPUPressureTotalMetricConfig{
+					ContainerCPUPressureTime: ContainerCPUPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerCPUPressureTotalMetricAttributeKey{ContainerCPUPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []ContainerCPUPressureTimeMetricAttributeKey{ContainerCPUPressureTimeMetricAttributeKeyPsiType},
 					},
 					ContainerCPUTime: ContainerCPUTimeMetricConfig{
 						Enabled: true,
@@ -54,12 +54,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerIoPressureAvg: ContainerIoPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ContainerIoPressureAvgMetricAttributeKey{ContainerIoPressureAvgMetricAttributeKeyPressureType, ContainerIoPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []ContainerIoPressureAvgMetricAttributeKey{ContainerIoPressureAvgMetricAttributeKeyPsiType, ContainerIoPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					ContainerIoPressureTotal: ContainerIoPressureTotalMetricConfig{
+					ContainerIoPressureTime: ContainerIoPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerIoPressureTotalMetricAttributeKey{ContainerIoPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []ContainerIoPressureTimeMetricAttributeKey{ContainerIoPressureTimeMetricAttributeKeyPsiType},
 					},
 					ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
 						Enabled: true,
@@ -73,12 +73,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryPressureAvg: ContainerMemoryPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ContainerMemoryPressureAvgMetricAttributeKey{ContainerMemoryPressureAvgMetricAttributeKeyPressureType, ContainerMemoryPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []ContainerMemoryPressureAvgMetricAttributeKey{ContainerMemoryPressureAvgMetricAttributeKeyPsiType, ContainerMemoryPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					ContainerMemoryPressureTotal: ContainerMemoryPressureTotalMetricConfig{
+					ContainerMemoryPressureTime: ContainerMemoryPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerMemoryPressureTotalMetricAttributeKey{ContainerMemoryPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []ContainerMemoryPressureTimeMetricAttributeKey{ContainerMemoryPressureTimeMetricAttributeKeyPsiType},
 					},
 					ContainerMemoryRss: ContainerMemoryRssMetricConfig{
 						Enabled: true,
@@ -118,12 +118,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeCPUPressureAvg: K8sNodeCPUPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sNodeCPUPressureAvgMetricAttributeKey{K8sNodeCPUPressureAvgMetricAttributeKeyPressureType, K8sNodeCPUPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sNodeCPUPressureAvgMetricAttributeKey{K8sNodeCPUPressureAvgMetricAttributeKeyPsiType, K8sNodeCPUPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sNodeCPUPressureTotal: K8sNodeCPUPressureTotalMetricConfig{
+					K8sNodeCPUPressureTime: K8sNodeCPUPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeCPUPressureTotalMetricAttributeKey{K8sNodeCPUPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sNodeCPUPressureTimeMetricAttributeKey{K8sNodeCPUPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sNodeCPUTime: K8sNodeCPUTimeMetricConfig{
 						Enabled: true,
@@ -149,12 +149,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeIoPressureAvg: K8sNodeIoPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sNodeIoPressureAvgMetricAttributeKey{K8sNodeIoPressureAvgMetricAttributeKeyPressureType, K8sNodeIoPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sNodeIoPressureAvgMetricAttributeKey{K8sNodeIoPressureAvgMetricAttributeKeyPsiType, K8sNodeIoPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sNodeIoPressureTotal: K8sNodeIoPressureTotalMetricConfig{
+					K8sNodeIoPressureTime: K8sNodeIoPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeIoPressureTotalMetricAttributeKey{K8sNodeIoPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sNodeIoPressureTimeMetricAttributeKey{K8sNodeIoPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
 						Enabled: true,
@@ -168,12 +168,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeMemoryPressureAvg: K8sNodeMemoryPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sNodeMemoryPressureAvgMetricAttributeKey{K8sNodeMemoryPressureAvgMetricAttributeKeyPressureType, K8sNodeMemoryPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sNodeMemoryPressureAvgMetricAttributeKey{K8sNodeMemoryPressureAvgMetricAttributeKeyPsiType, K8sNodeMemoryPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sNodeMemoryPressureTotal: K8sNodeMemoryPressureTotalMetricConfig{
+					K8sNodeMemoryPressureTime: K8sNodeMemoryPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeMemoryPressureTotalMetricAttributeKey{K8sNodeMemoryPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sNodeMemoryPressureTimeMetricAttributeKey{K8sNodeMemoryPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sNodeMemoryRss: K8sNodeMemoryRssMetricConfig{
 						Enabled: true,
@@ -215,12 +215,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodCPUPressureAvg: K8sPodCPUPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sPodCPUPressureAvgMetricAttributeKey{K8sPodCPUPressureAvgMetricAttributeKeyPressureType, K8sPodCPUPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sPodCPUPressureAvgMetricAttributeKey{K8sPodCPUPressureAvgMetricAttributeKeyPsiType, K8sPodCPUPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sPodCPUPressureTotal: K8sPodCPUPressureTotalMetricConfig{
+					K8sPodCPUPressureTime: K8sPodCPUPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodCPUPressureTotalMetricAttributeKey{K8sPodCPUPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sPodCPUPressureTimeMetricAttributeKey{K8sPodCPUPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
 						Enabled: true,
@@ -246,12 +246,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodIoPressureAvg: K8sPodIoPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sPodIoPressureAvgMetricAttributeKey{K8sPodIoPressureAvgMetricAttributeKeyPressureType, K8sPodIoPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sPodIoPressureAvgMetricAttributeKey{K8sPodIoPressureAvgMetricAttributeKeyPsiType, K8sPodIoPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sPodIoPressureTotal: K8sPodIoPressureTotalMetricConfig{
+					K8sPodIoPressureTime: K8sPodIoPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodIoPressureTotalMetricAttributeKey{K8sPodIoPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sPodIoPressureTimeMetricAttributeKey{K8sPodIoPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
 						Enabled: true,
@@ -268,12 +268,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodMemoryPressureAvg: K8sPodMemoryPressureAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sPodMemoryPressureAvgMetricAttributeKey{K8sPodMemoryPressureAvgMetricAttributeKeyPressureType, K8sPodMemoryPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sPodMemoryPressureAvgMetricAttributeKey{K8sPodMemoryPressureAvgMetricAttributeKeyPsiType, K8sPodMemoryPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sPodMemoryPressureTotal: K8sPodMemoryPressureTotalMetricConfig{
+					K8sPodMemoryPressureTime: K8sPodMemoryPressureTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodMemoryPressureTotalMetricAttributeKey{K8sPodMemoryPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sPodMemoryPressureTimeMetricAttributeKey{K8sPodMemoryPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sPodMemoryRss: K8sPodMemoryRssMetricConfig{
 						Enabled: true,
@@ -349,12 +349,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUPressureAvg: ContainerCPUPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ContainerCPUPressureAvgMetricAttributeKey{ContainerCPUPressureAvgMetricAttributeKeyPressureType, ContainerCPUPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []ContainerCPUPressureAvgMetricAttributeKey{ContainerCPUPressureAvgMetricAttributeKeyPsiType, ContainerCPUPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					ContainerCPUPressureTotal: ContainerCPUPressureTotalMetricConfig{
+					ContainerCPUPressureTime: ContainerCPUPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerCPUPressureTotalMetricAttributeKey{ContainerCPUPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []ContainerCPUPressureTimeMetricAttributeKey{ContainerCPUPressureTimeMetricAttributeKeyPsiType},
 					},
 					ContainerCPUTime: ContainerCPUTimeMetricConfig{
 						Enabled: false,
@@ -374,12 +374,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerIoPressureAvg: ContainerIoPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ContainerIoPressureAvgMetricAttributeKey{ContainerIoPressureAvgMetricAttributeKeyPressureType, ContainerIoPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []ContainerIoPressureAvgMetricAttributeKey{ContainerIoPressureAvgMetricAttributeKeyPsiType, ContainerIoPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					ContainerIoPressureTotal: ContainerIoPressureTotalMetricConfig{
+					ContainerIoPressureTime: ContainerIoPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerIoPressureTotalMetricAttributeKey{ContainerIoPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []ContainerIoPressureTimeMetricAttributeKey{ContainerIoPressureTimeMetricAttributeKeyPsiType},
 					},
 					ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
 						Enabled: false,
@@ -393,12 +393,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryPressureAvg: ContainerMemoryPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ContainerMemoryPressureAvgMetricAttributeKey{ContainerMemoryPressureAvgMetricAttributeKeyPressureType, ContainerMemoryPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []ContainerMemoryPressureAvgMetricAttributeKey{ContainerMemoryPressureAvgMetricAttributeKeyPsiType, ContainerMemoryPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					ContainerMemoryPressureTotal: ContainerMemoryPressureTotalMetricConfig{
+					ContainerMemoryPressureTime: ContainerMemoryPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerMemoryPressureTotalMetricAttributeKey{ContainerMemoryPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []ContainerMemoryPressureTimeMetricAttributeKey{ContainerMemoryPressureTimeMetricAttributeKeyPsiType},
 					},
 					ContainerMemoryRss: ContainerMemoryRssMetricConfig{
 						Enabled: false,
@@ -438,12 +438,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeCPUPressureAvg: K8sNodeCPUPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sNodeCPUPressureAvgMetricAttributeKey{K8sNodeCPUPressureAvgMetricAttributeKeyPressureType, K8sNodeCPUPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sNodeCPUPressureAvgMetricAttributeKey{K8sNodeCPUPressureAvgMetricAttributeKeyPsiType, K8sNodeCPUPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sNodeCPUPressureTotal: K8sNodeCPUPressureTotalMetricConfig{
+					K8sNodeCPUPressureTime: K8sNodeCPUPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeCPUPressureTotalMetricAttributeKey{K8sNodeCPUPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sNodeCPUPressureTimeMetricAttributeKey{K8sNodeCPUPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sNodeCPUTime: K8sNodeCPUTimeMetricConfig{
 						Enabled: false,
@@ -469,12 +469,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeIoPressureAvg: K8sNodeIoPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sNodeIoPressureAvgMetricAttributeKey{K8sNodeIoPressureAvgMetricAttributeKeyPressureType, K8sNodeIoPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sNodeIoPressureAvgMetricAttributeKey{K8sNodeIoPressureAvgMetricAttributeKeyPsiType, K8sNodeIoPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sNodeIoPressureTotal: K8sNodeIoPressureTotalMetricConfig{
+					K8sNodeIoPressureTime: K8sNodeIoPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeIoPressureTotalMetricAttributeKey{K8sNodeIoPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sNodeIoPressureTimeMetricAttributeKey{K8sNodeIoPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
 						Enabled: false,
@@ -488,12 +488,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeMemoryPressureAvg: K8sNodeMemoryPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sNodeMemoryPressureAvgMetricAttributeKey{K8sNodeMemoryPressureAvgMetricAttributeKeyPressureType, K8sNodeMemoryPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sNodeMemoryPressureAvgMetricAttributeKey{K8sNodeMemoryPressureAvgMetricAttributeKeyPsiType, K8sNodeMemoryPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sNodeMemoryPressureTotal: K8sNodeMemoryPressureTotalMetricConfig{
+					K8sNodeMemoryPressureTime: K8sNodeMemoryPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeMemoryPressureTotalMetricAttributeKey{K8sNodeMemoryPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sNodeMemoryPressureTimeMetricAttributeKey{K8sNodeMemoryPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sNodeMemoryRss: K8sNodeMemoryRssMetricConfig{
 						Enabled: false,
@@ -535,12 +535,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodCPUPressureAvg: K8sPodCPUPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sPodCPUPressureAvgMetricAttributeKey{K8sPodCPUPressureAvgMetricAttributeKeyPressureType, K8sPodCPUPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sPodCPUPressureAvgMetricAttributeKey{K8sPodCPUPressureAvgMetricAttributeKeyPsiType, K8sPodCPUPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sPodCPUPressureTotal: K8sPodCPUPressureTotalMetricConfig{
+					K8sPodCPUPressureTime: K8sPodCPUPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodCPUPressureTotalMetricAttributeKey{K8sPodCPUPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sPodCPUPressureTimeMetricAttributeKey{K8sPodCPUPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
 						Enabled: false,
@@ -566,12 +566,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodIoPressureAvg: K8sPodIoPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sPodIoPressureAvgMetricAttributeKey{K8sPodIoPressureAvgMetricAttributeKeyPressureType, K8sPodIoPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sPodIoPressureAvgMetricAttributeKey{K8sPodIoPressureAvgMetricAttributeKeyPsiType, K8sPodIoPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sPodIoPressureTotal: K8sPodIoPressureTotalMetricConfig{
+					K8sPodIoPressureTime: K8sPodIoPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodIoPressureTotalMetricAttributeKey{K8sPodIoPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sPodIoPressureTimeMetricAttributeKey{K8sPodIoPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
 						Enabled: false,
@@ -588,12 +588,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodMemoryPressureAvg: K8sPodMemoryPressureAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []K8sPodMemoryPressureAvgMetricAttributeKey{K8sPodMemoryPressureAvgMetricAttributeKeyPressureType, K8sPodMemoryPressureAvgMetricAttributeKeyPressureWindow},
+						EnabledAttributes:   []K8sPodMemoryPressureAvgMetricAttributeKey{K8sPodMemoryPressureAvgMetricAttributeKeyPsiType, K8sPodMemoryPressureAvgMetricAttributeKeyPsiWindow},
 					},
-					K8sPodMemoryPressureTotal: K8sPodMemoryPressureTotalMetricConfig{
+					K8sPodMemoryPressureTime: K8sPodMemoryPressureTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodMemoryPressureTotalMetricAttributeKey{K8sPodMemoryPressureTotalMetricAttributeKeyPressureType},
+						EnabledAttributes:   []K8sPodMemoryPressureTimeMetricAttributeKey{K8sPodMemoryPressureTimeMetricAttributeKeyPsiType},
 					},
 					K8sPodMemoryRss: K8sPodMemoryRssMetricConfig{
 						Enabled: false,
@@ -666,7 +666,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerCPUPressureAvgMetricConfig{}, ContainerCPUPressureTotalMetricConfig{}, ContainerCPUTimeMetricConfig{}, ContainerCPUUsageMetricConfig{}, ContainerFilesystemAvailableMetricConfig{}, ContainerFilesystemCapacityMetricConfig{}, ContainerFilesystemUsageMetricConfig{}, ContainerIoPressureAvgMetricConfig{}, ContainerIoPressureTotalMetricConfig{}, ContainerMemoryAvailableMetricConfig{}, ContainerMemoryMajorPageFaultsMetricConfig{}, ContainerMemoryPageFaultsMetricConfig{}, ContainerMemoryPressureAvgMetricConfig{}, ContainerMemoryPressureTotalMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryUsageMetricConfig{}, ContainerMemoryWorkingSetMetricConfig{}, ContainerUptimeMetricConfig{}, K8sContainerCPUNodeUtilizationMetricConfig{}, K8sContainerCPULimitUtilizationMetricConfig{}, K8sContainerCPURequestUtilizationMetricConfig{}, K8sContainerEphemeralStorageUsageMetricConfig{}, K8sContainerMemoryNodeUtilizationMetricConfig{}, K8sContainerMemoryLimitUtilizationMetricConfig{}, K8sContainerMemoryRequestUtilizationMetricConfig{}, K8sNodeCPUPressureAvgMetricConfig{}, K8sNodeCPUPressureTotalMetricConfig{}, K8sNodeCPUTimeMetricConfig{}, K8sNodeCPUUsageMetricConfig{}, K8sNodeFilesystemAvailableMetricConfig{}, K8sNodeFilesystemCapacityMetricConfig{}, K8sNodeFilesystemInodeCountMetricConfig{}, K8sNodeFilesystemInodeFreeMetricConfig{}, K8sNodeFilesystemUsageMetricConfig{}, K8sNodeIoPressureAvgMetricConfig{}, K8sNodeIoPressureTotalMetricConfig{}, K8sNodeMemoryAvailableMetricConfig{}, K8sNodeMemoryMajorPageFaultsMetricConfig{}, K8sNodeMemoryPageFaultsMetricConfig{}, K8sNodeMemoryPressureAvgMetricConfig{}, K8sNodeMemoryPressureTotalMetricConfig{}, K8sNodeMemoryRssMetricConfig{}, K8sNodeMemoryUsageMetricConfig{}, K8sNodeMemoryWorkingSetMetricConfig{}, K8sNodeNetworkErrorsMetricConfig{}, K8sNodeNetworkIoMetricConfig{}, K8sNodeSystemContainerCPUTimeMetricConfig{}, K8sNodeSystemContainerCPUUsageMetricConfig{}, K8sNodeSystemContainerMemoryUsageMetricConfig{}, K8sNodeSystemContainerMemoryWorkingSetMetricConfig{}, K8sNodeUptimeMetricConfig{}, K8sPodCPUNodeUtilizationMetricConfig{}, K8sPodCPUPressureAvgMetricConfig{}, K8sPodCPUPressureTotalMetricConfig{}, K8sPodCPUTimeMetricConfig{}, K8sPodCPUUsageMetricConfig{}, K8sPodCPULimitUtilizationMetricConfig{}, K8sPodCPURequestUtilizationMetricConfig{}, K8sPodFilesystemAvailableMetricConfig{}, K8sPodFilesystemCapacityMetricConfig{}, K8sPodFilesystemUsageMetricConfig{}, K8sPodIoPressureAvgMetricConfig{}, K8sPodIoPressureTotalMetricConfig{}, K8sPodMemoryAvailableMetricConfig{}, K8sPodMemoryMajorPageFaultsMetricConfig{}, K8sPodMemoryNodeUtilizationMetricConfig{}, K8sPodMemoryPageFaultsMetricConfig{}, K8sPodMemoryPressureAvgMetricConfig{}, K8sPodMemoryPressureTotalMetricConfig{}, K8sPodMemoryRssMetricConfig{}, K8sPodMemoryUsageMetricConfig{}, K8sPodMemoryWorkingSetMetricConfig{}, K8sPodMemoryLimitUtilizationMetricConfig{}, K8sPodMemoryRequestUtilizationMetricConfig{}, K8sPodNetworkErrorsMetricConfig{}, K8sPodNetworkIoMetricConfig{}, K8sPodUptimeMetricConfig{}, K8sPodVolumeUsageMetricConfig{}, K8sVolumeAvailableMetricConfig{}, K8sVolumeCapacityMetricConfig{}, K8sVolumeInodesMetricConfig{}, K8sVolumeInodesFreeMetricConfig{}, K8sVolumeInodesUsedMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerCPUPressureAvgMetricConfig{}, ContainerCPUPressureTimeMetricConfig{}, ContainerCPUTimeMetricConfig{}, ContainerCPUUsageMetricConfig{}, ContainerFilesystemAvailableMetricConfig{}, ContainerFilesystemCapacityMetricConfig{}, ContainerFilesystemUsageMetricConfig{}, ContainerIoPressureAvgMetricConfig{}, ContainerIoPressureTimeMetricConfig{}, ContainerMemoryAvailableMetricConfig{}, ContainerMemoryMajorPageFaultsMetricConfig{}, ContainerMemoryPageFaultsMetricConfig{}, ContainerMemoryPressureAvgMetricConfig{}, ContainerMemoryPressureTimeMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryUsageMetricConfig{}, ContainerMemoryWorkingSetMetricConfig{}, ContainerUptimeMetricConfig{}, K8sContainerCPUNodeUtilizationMetricConfig{}, K8sContainerCPULimitUtilizationMetricConfig{}, K8sContainerCPURequestUtilizationMetricConfig{}, K8sContainerEphemeralStorageUsageMetricConfig{}, K8sContainerMemoryNodeUtilizationMetricConfig{}, K8sContainerMemoryLimitUtilizationMetricConfig{}, K8sContainerMemoryRequestUtilizationMetricConfig{}, K8sNodeCPUPressureAvgMetricConfig{}, K8sNodeCPUPressureTimeMetricConfig{}, K8sNodeCPUTimeMetricConfig{}, K8sNodeCPUUsageMetricConfig{}, K8sNodeFilesystemAvailableMetricConfig{}, K8sNodeFilesystemCapacityMetricConfig{}, K8sNodeFilesystemInodeCountMetricConfig{}, K8sNodeFilesystemInodeFreeMetricConfig{}, K8sNodeFilesystemUsageMetricConfig{}, K8sNodeIoPressureAvgMetricConfig{}, K8sNodeIoPressureTimeMetricConfig{}, K8sNodeMemoryAvailableMetricConfig{}, K8sNodeMemoryMajorPageFaultsMetricConfig{}, K8sNodeMemoryPageFaultsMetricConfig{}, K8sNodeMemoryPressureAvgMetricConfig{}, K8sNodeMemoryPressureTimeMetricConfig{}, K8sNodeMemoryRssMetricConfig{}, K8sNodeMemoryUsageMetricConfig{}, K8sNodeMemoryWorkingSetMetricConfig{}, K8sNodeNetworkErrorsMetricConfig{}, K8sNodeNetworkIoMetricConfig{}, K8sNodeSystemContainerCPUTimeMetricConfig{}, K8sNodeSystemContainerCPUUsageMetricConfig{}, K8sNodeSystemContainerMemoryUsageMetricConfig{}, K8sNodeSystemContainerMemoryWorkingSetMetricConfig{}, K8sNodeUptimeMetricConfig{}, K8sPodCPUNodeUtilizationMetricConfig{}, K8sPodCPUPressureAvgMetricConfig{}, K8sPodCPUPressureTimeMetricConfig{}, K8sPodCPUTimeMetricConfig{}, K8sPodCPUUsageMetricConfig{}, K8sPodCPULimitUtilizationMetricConfig{}, K8sPodCPURequestUtilizationMetricConfig{}, K8sPodFilesystemAvailableMetricConfig{}, K8sPodFilesystemCapacityMetricConfig{}, K8sPodFilesystemUsageMetricConfig{}, K8sPodIoPressureAvgMetricConfig{}, K8sPodIoPressureTimeMetricConfig{}, K8sPodMemoryAvailableMetricConfig{}, K8sPodMemoryMajorPageFaultsMetricConfig{}, K8sPodMemoryNodeUtilizationMetricConfig{}, K8sPodMemoryPageFaultsMetricConfig{}, K8sPodMemoryPressureAvgMetricConfig{}, K8sPodMemoryPressureTimeMetricConfig{}, K8sPodMemoryRssMetricConfig{}, K8sPodMemoryUsageMetricConfig{}, K8sPodMemoryWorkingSetMetricConfig{}, K8sPodMemoryLimitUtilizationMetricConfig{}, K8sPodMemoryRequestUtilizationMetricConfig{}, K8sPodNetworkErrorsMetricConfig{}, K8sPodNetworkIoMetricConfig{}, K8sPodUptimeMetricConfig{}, K8sPodVolumeUsageMetricConfig{}, K8sVolumeAvailableMetricConfig{}, K8sVolumeCapacityMetricConfig{}, K8sVolumeInodesMetricConfig{}, K8sVolumeInodesFreeMetricConfig{}, K8sVolumeInodesUsedMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -676,21 +676,21 @@ func TestContainerCPUPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []ContainerCPUPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric container.cpu.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric container.cpu.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().ContainerCPUPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestContainerCPUPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().ContainerCPUPressureTotal
+func TestContainerCPUPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerCPUPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []ContainerCPUPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric container.cpu.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []ContainerCPUPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.cpu.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().ContainerCPUPressureTotal
+	cfg = DefaultMetricsConfig().ContainerCPUPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -700,21 +700,21 @@ func TestContainerIoPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []ContainerIoPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric container.io.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric container.io.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().ContainerIoPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestContainerIoPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().ContainerIoPressureTotal
+func TestContainerIoPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerIoPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []ContainerIoPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric container.io.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []ContainerIoPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.io.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().ContainerIoPressureTotal
+	cfg = DefaultMetricsConfig().ContainerIoPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -724,21 +724,21 @@ func TestContainerMemoryPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []ContainerMemoryPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric container.memory.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric container.memory.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().ContainerMemoryPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestContainerMemoryPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().ContainerMemoryPressureTotal
+func TestContainerMemoryPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ContainerMemoryPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []ContainerMemoryPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric container.memory.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []ContainerMemoryPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric container.memory.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().ContainerMemoryPressureTotal
+	cfg = DefaultMetricsConfig().ContainerMemoryPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -760,21 +760,21 @@ func TestK8sNodeCPUPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []K8sNodeCPUPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.cpu.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.cpu.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().K8sNodeCPUPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestK8sNodeCPUPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().K8sNodeCPUPressureTotal
+func TestK8sNodeCPUPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sNodeCPUPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []K8sNodeCPUPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.cpu.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []K8sNodeCPUPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.cpu.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().K8sNodeCPUPressureTotal
+	cfg = DefaultMetricsConfig().K8sNodeCPUPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -784,21 +784,21 @@ func TestK8sNodeIoPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []K8sNodeIoPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.io.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.io.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().K8sNodeIoPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestK8sNodeIoPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().K8sNodeIoPressureTotal
+func TestK8sNodeIoPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sNodeIoPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []K8sNodeIoPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.io.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []K8sNodeIoPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.io.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().K8sNodeIoPressureTotal
+	cfg = DefaultMetricsConfig().K8sNodeIoPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -808,21 +808,21 @@ func TestK8sNodeMemoryPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []K8sNodeMemoryPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.memory.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.memory.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().K8sNodeMemoryPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestK8sNodeMemoryPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().K8sNodeMemoryPressureTotal
+func TestK8sNodeMemoryPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sNodeMemoryPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []K8sNodeMemoryPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.memory.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []K8sNodeMemoryPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.node.memory.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().K8sNodeMemoryPressureTotal
+	cfg = DefaultMetricsConfig().K8sNodeMemoryPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -856,21 +856,21 @@ func TestK8sPodCPUPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []K8sPodCPUPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.cpu.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.cpu.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().K8sPodCPUPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestK8sPodCPUPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().K8sPodCPUPressureTotal
+func TestK8sPodCPUPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sPodCPUPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []K8sPodCPUPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.cpu.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []K8sPodCPUPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.cpu.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().K8sPodCPUPressureTotal
+	cfg = DefaultMetricsConfig().K8sPodCPUPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -880,21 +880,21 @@ func TestK8sPodIoPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []K8sPodIoPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.io.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.io.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().K8sPodIoPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestK8sPodIoPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().K8sPodIoPressureTotal
+func TestK8sPodIoPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sPodIoPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []K8sPodIoPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.io.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []K8sPodIoPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.io.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().K8sPodIoPressureTotal
+	cfg = DefaultMetricsConfig().K8sPodIoPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -904,21 +904,21 @@ func TestK8sPodMemoryPressureAvgMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []K8sPodMemoryPressureAvgMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.memory.pressure.avg doesn't have an attribute invalid, valid attributes: [pressure.type, pressure.window]")
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.memory.pressure.avg doesn't have an attribute invalid, valid attributes: [psi.type, psi.window]")
 
 	cfg = DefaultMetricsConfig().K8sPodMemoryPressureAvg
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestK8sPodMemoryPressureTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().K8sPodMemoryPressureTotal
+func TestK8sPodMemoryPressureTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sPodMemoryPressureTime
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []K8sPodMemoryPressureTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.memory.pressure.total doesn't have an attribute invalid, valid attributes: [pressure.type]")
+	cfg.EnabledAttributes = []K8sPodMemoryPressureTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.memory.pressure.time doesn't have an attribute invalid, valid attributes: [psi.type]")
 
-	cfg = DefaultMetricsConfig().K8sPodMemoryPressureTotal
+	cfg = DefaultMetricsConfig().K8sPodMemoryPressureTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

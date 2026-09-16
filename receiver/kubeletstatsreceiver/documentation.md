@@ -398,22 +398,22 @@ Rolling average percentage of time tasks in the container cgroup were stalled wa
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### container.cpu.pressure.total
+### container.cpu.pressure.time
 
 Cumulative total time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### container.io.pressure.avg
 
@@ -427,22 +427,22 @@ Rolling average percentage of time tasks in the container cgroup were stalled wa
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### container.io.pressure.total
+### container.io.pressure.time
 
 Cumulative total time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### container.memory.pressure.avg
 
@@ -456,22 +456,22 @@ Rolling average percentage of time tasks in the container cgroup were stalled wa
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### container.memory.pressure.total
+### container.memory.pressure.time
 
 Cumulative total time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### container.uptime
 
@@ -555,22 +555,22 @@ Rolling average percentage of time tasks in the node cgroup were stalled waiting
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### k8s.node.cpu.pressure.total
+### k8s.node.cpu.pressure.time
 
 Cumulative total time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### k8s.node.filesystem.inode.count
 
@@ -600,22 +600,22 @@ Rolling average percentage of time tasks in the node cgroup were stalled waiting
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### k8s.node.io.pressure.total
+### k8s.node.io.pressure.time
 
 Cumulative total time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### k8s.node.memory.pressure.avg
 
@@ -629,22 +629,22 @@ Rolling average percentage of time tasks in the node cgroup were stalled waiting
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### k8s.node.memory.pressure.total
+### k8s.node.memory.pressure.time
 
 Cumulative total time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### k8s.node.system_container.cpu.time
 
@@ -706,22 +706,22 @@ Rolling average percentage of time tasks in the pod cgroup were stalled waiting 
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### k8s.pod.cpu.pressure.total
+### k8s.pod.cpu.pressure.time
 
 Cumulative total time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### k8s.pod.cpu_limit_utilization
 
@@ -751,22 +751,22 @@ Rolling average percentage of time tasks in the pod cgroup were stalled waiting 
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### k8s.pod.io.pressure.total
+### k8s.pod.io.pressure.time
 
 Cumulative total time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### k8s.pod.memory.node.utilization
 
@@ -788,22 +788,22 @@ Rolling average percentage of time tasks in the pod cgroup were stalled waiting 
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
-| pressure.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.window | The averaging window for PSI stall percentage metrics. | Str: ``10s``, ``60s``, ``300s`` | Recommended | - |
 
-### k8s.pod.memory.pressure.total
+### k8s.pod.memory.pressure.time
 
 Cumulative total time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ns | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| pressure.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
+| psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
 ### k8s.pod.memory_limit_utilization
 

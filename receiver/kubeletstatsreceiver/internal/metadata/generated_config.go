@@ -13,8 +13,8 @@ import (
 type ContainerCPUPressureAvgMetricAttributeKey string
 
 const (
-	ContainerCPUPressureAvgMetricAttributeKeyPressureType   ContainerCPUPressureAvgMetricAttributeKey = "pressure.type"
-	ContainerCPUPressureAvgMetricAttributeKeyPressureWindow ContainerCPUPressureAvgMetricAttributeKey = "pressure.window"
+	ContainerCPUPressureAvgMetricAttributeKeyPsiType   ContainerCPUPressureAvgMetricAttributeKey = "psi.type"
+	ContainerCPUPressureAvgMetricAttributeKeyPsiWindow ContainerCPUPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // ContainerCPUPressureAvgMetricConfig provides config for the container.cpu.pressure.avg metric.
@@ -43,9 +43,9 @@ func (ms *ContainerCPUPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf) e
 func (ms *ContainerCPUPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerCPUPressureAvgMetricAttributeKeyPressureType, ContainerCPUPressureAvgMetricAttributeKeyPressureWindow:
+		case ContainerCPUPressureAvgMetricAttributeKeyPsiType, ContainerCPUPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric container.cpu.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric container.cpu.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -58,23 +58,23 @@ func (ms *ContainerCPUPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// ContainerCPUPressureTotalMetricAttributeKey specifies the key of an attribute for the container.cpu.pressure.total metric.
-type ContainerCPUPressureTotalMetricAttributeKey string
+// ContainerCPUPressureTimeMetricAttributeKey specifies the key of an attribute for the container.cpu.pressure.time metric.
+type ContainerCPUPressureTimeMetricAttributeKey string
 
 const (
-	ContainerCPUPressureTotalMetricAttributeKeyPressureType ContainerCPUPressureTotalMetricAttributeKey = "pressure.type"
+	ContainerCPUPressureTimeMetricAttributeKeyPsiType ContainerCPUPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// ContainerCPUPressureTotalMetricConfig provides config for the container.cpu.pressure.total metric.
-type ContainerCPUPressureTotalMetricConfig struct {
+// ContainerCPUPressureTimeMetricConfig provides config for the container.cpu.pressure.time metric.
+type ContainerCPUPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerCPUPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerCPUPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerCPUPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerCPUPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -88,12 +88,12 @@ func (ms *ContainerCPUPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ContainerCPUPressureTotalMetricConfig) Validate() error {
+func (ms *ContainerCPUPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerCPUPressureTotalMetricAttributeKeyPressureType:
+		case ContainerCPUPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric container.cpu.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric container.cpu.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -210,8 +210,8 @@ func (ms *ContainerFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) 
 type ContainerIoPressureAvgMetricAttributeKey string
 
 const (
-	ContainerIoPressureAvgMetricAttributeKeyPressureType   ContainerIoPressureAvgMetricAttributeKey = "pressure.type"
-	ContainerIoPressureAvgMetricAttributeKeyPressureWindow ContainerIoPressureAvgMetricAttributeKey = "pressure.window"
+	ContainerIoPressureAvgMetricAttributeKeyPsiType   ContainerIoPressureAvgMetricAttributeKey = "psi.type"
+	ContainerIoPressureAvgMetricAttributeKeyPsiWindow ContainerIoPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // ContainerIoPressureAvgMetricConfig provides config for the container.io.pressure.avg metric.
@@ -240,9 +240,9 @@ func (ms *ContainerIoPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf) er
 func (ms *ContainerIoPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerIoPressureAvgMetricAttributeKeyPressureType, ContainerIoPressureAvgMetricAttributeKeyPressureWindow:
+		case ContainerIoPressureAvgMetricAttributeKeyPsiType, ContainerIoPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric container.io.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric container.io.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -255,23 +255,23 @@ func (ms *ContainerIoPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// ContainerIoPressureTotalMetricAttributeKey specifies the key of an attribute for the container.io.pressure.total metric.
-type ContainerIoPressureTotalMetricAttributeKey string
+// ContainerIoPressureTimeMetricAttributeKey specifies the key of an attribute for the container.io.pressure.time metric.
+type ContainerIoPressureTimeMetricAttributeKey string
 
 const (
-	ContainerIoPressureTotalMetricAttributeKeyPressureType ContainerIoPressureTotalMetricAttributeKey = "pressure.type"
+	ContainerIoPressureTimeMetricAttributeKeyPsiType ContainerIoPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// ContainerIoPressureTotalMetricConfig provides config for the container.io.pressure.total metric.
-type ContainerIoPressureTotalMetricConfig struct {
+// ContainerIoPressureTimeMetricConfig provides config for the container.io.pressure.time metric.
+type ContainerIoPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerIoPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerIoPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerIoPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerIoPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -285,12 +285,12 @@ func (ms *ContainerIoPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *ContainerIoPressureTotalMetricConfig) Validate() error {
+func (ms *ContainerIoPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerIoPressureTotalMetricAttributeKeyPressureType:
+		case ContainerIoPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric container.io.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric container.io.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -367,8 +367,8 @@ func (ms *ContainerMemoryPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf)
 type ContainerMemoryPressureAvgMetricAttributeKey string
 
 const (
-	ContainerMemoryPressureAvgMetricAttributeKeyPressureType   ContainerMemoryPressureAvgMetricAttributeKey = "pressure.type"
-	ContainerMemoryPressureAvgMetricAttributeKeyPressureWindow ContainerMemoryPressureAvgMetricAttributeKey = "pressure.window"
+	ContainerMemoryPressureAvgMetricAttributeKeyPsiType   ContainerMemoryPressureAvgMetricAttributeKey = "psi.type"
+	ContainerMemoryPressureAvgMetricAttributeKeyPsiWindow ContainerMemoryPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // ContainerMemoryPressureAvgMetricConfig provides config for the container.memory.pressure.avg metric.
@@ -397,9 +397,9 @@ func (ms *ContainerMemoryPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf
 func (ms *ContainerMemoryPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerMemoryPressureAvgMetricAttributeKeyPressureType, ContainerMemoryPressureAvgMetricAttributeKeyPressureWindow:
+		case ContainerMemoryPressureAvgMetricAttributeKeyPsiType, ContainerMemoryPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric container.memory.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric container.memory.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -412,23 +412,23 @@ func (ms *ContainerMemoryPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// ContainerMemoryPressureTotalMetricAttributeKey specifies the key of an attribute for the container.memory.pressure.total metric.
-type ContainerMemoryPressureTotalMetricAttributeKey string
+// ContainerMemoryPressureTimeMetricAttributeKey specifies the key of an attribute for the container.memory.pressure.time metric.
+type ContainerMemoryPressureTimeMetricAttributeKey string
 
 const (
-	ContainerMemoryPressureTotalMetricAttributeKeyPressureType ContainerMemoryPressureTotalMetricAttributeKey = "pressure.type"
+	ContainerMemoryPressureTimeMetricAttributeKeyPsiType ContainerMemoryPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// ContainerMemoryPressureTotalMetricConfig provides config for the container.memory.pressure.total metric.
-type ContainerMemoryPressureTotalMetricConfig struct {
+// ContainerMemoryPressureTimeMetricConfig provides config for the container.memory.pressure.time metric.
+type ContainerMemoryPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerMemoryPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerMemoryPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerMemoryPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -442,12 +442,12 @@ func (ms *ContainerMemoryPressureTotalMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *ContainerMemoryPressureTotalMetricConfig) Validate() error {
+func (ms *ContainerMemoryPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerMemoryPressureTotalMetricAttributeKeyPressureType:
+		case ContainerMemoryPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric container.memory.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric container.memory.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -712,8 +712,8 @@ func (ms *K8sContainerMemoryRequestUtilizationMetricConfig) Unmarshal(parser *co
 type K8sNodeCPUPressureAvgMetricAttributeKey string
 
 const (
-	K8sNodeCPUPressureAvgMetricAttributeKeyPressureType   K8sNodeCPUPressureAvgMetricAttributeKey = "pressure.type"
-	K8sNodeCPUPressureAvgMetricAttributeKeyPressureWindow K8sNodeCPUPressureAvgMetricAttributeKey = "pressure.window"
+	K8sNodeCPUPressureAvgMetricAttributeKeyPsiType   K8sNodeCPUPressureAvgMetricAttributeKey = "psi.type"
+	K8sNodeCPUPressureAvgMetricAttributeKeyPsiWindow K8sNodeCPUPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // K8sNodeCPUPressureAvgMetricConfig provides config for the k8s.node.cpu.pressure.avg metric.
@@ -742,9 +742,9 @@ func (ms *K8sNodeCPUPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf) err
 func (ms *K8sNodeCPUPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sNodeCPUPressureAvgMetricAttributeKeyPressureType, K8sNodeCPUPressureAvgMetricAttributeKeyPressureWindow:
+		case K8sNodeCPUPressureAvgMetricAttributeKeyPsiType, K8sNodeCPUPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric k8s.node.cpu.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric k8s.node.cpu.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -757,23 +757,23 @@ func (ms *K8sNodeCPUPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// K8sNodeCPUPressureTotalMetricAttributeKey specifies the key of an attribute for the k8s.node.cpu.pressure.total metric.
-type K8sNodeCPUPressureTotalMetricAttributeKey string
+// K8sNodeCPUPressureTimeMetricAttributeKey specifies the key of an attribute for the k8s.node.cpu.pressure.time metric.
+type K8sNodeCPUPressureTimeMetricAttributeKey string
 
 const (
-	K8sNodeCPUPressureTotalMetricAttributeKeyPressureType K8sNodeCPUPressureTotalMetricAttributeKey = "pressure.type"
+	K8sNodeCPUPressureTimeMetricAttributeKeyPsiType K8sNodeCPUPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// K8sNodeCPUPressureTotalMetricConfig provides config for the k8s.node.cpu.pressure.total metric.
-type K8sNodeCPUPressureTotalMetricConfig struct {
+// K8sNodeCPUPressureTimeMetricConfig provides config for the k8s.node.cpu.pressure.time metric.
+type K8sNodeCPUPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sNodeCPUPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sNodeCPUPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sNodeCPUPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeCPUPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -787,12 +787,12 @@ func (ms *K8sNodeCPUPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-func (ms *K8sNodeCPUPressureTotalMetricConfig) Validate() error {
+func (ms *K8sNodeCPUPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sNodeCPUPressureTotalMetricAttributeKeyPressureType:
+		case K8sNodeCPUPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric k8s.node.cpu.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric k8s.node.cpu.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -949,8 +949,8 @@ func (ms *K8sNodeFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) er
 type K8sNodeIoPressureAvgMetricAttributeKey string
 
 const (
-	K8sNodeIoPressureAvgMetricAttributeKeyPressureType   K8sNodeIoPressureAvgMetricAttributeKey = "pressure.type"
-	K8sNodeIoPressureAvgMetricAttributeKeyPressureWindow K8sNodeIoPressureAvgMetricAttributeKey = "pressure.window"
+	K8sNodeIoPressureAvgMetricAttributeKeyPsiType   K8sNodeIoPressureAvgMetricAttributeKey = "psi.type"
+	K8sNodeIoPressureAvgMetricAttributeKeyPsiWindow K8sNodeIoPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // K8sNodeIoPressureAvgMetricConfig provides config for the k8s.node.io.pressure.avg metric.
@@ -979,9 +979,9 @@ func (ms *K8sNodeIoPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *K8sNodeIoPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sNodeIoPressureAvgMetricAttributeKeyPressureType, K8sNodeIoPressureAvgMetricAttributeKeyPressureWindow:
+		case K8sNodeIoPressureAvgMetricAttributeKeyPsiType, K8sNodeIoPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric k8s.node.io.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric k8s.node.io.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -994,23 +994,23 @@ func (ms *K8sNodeIoPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// K8sNodeIoPressureTotalMetricAttributeKey specifies the key of an attribute for the k8s.node.io.pressure.total metric.
-type K8sNodeIoPressureTotalMetricAttributeKey string
+// K8sNodeIoPressureTimeMetricAttributeKey specifies the key of an attribute for the k8s.node.io.pressure.time metric.
+type K8sNodeIoPressureTimeMetricAttributeKey string
 
 const (
-	K8sNodeIoPressureTotalMetricAttributeKeyPressureType K8sNodeIoPressureTotalMetricAttributeKey = "pressure.type"
+	K8sNodeIoPressureTimeMetricAttributeKeyPsiType K8sNodeIoPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// K8sNodeIoPressureTotalMetricConfig provides config for the k8s.node.io.pressure.total metric.
-type K8sNodeIoPressureTotalMetricConfig struct {
+// K8sNodeIoPressureTimeMetricConfig provides config for the k8s.node.io.pressure.time metric.
+type K8sNodeIoPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sNodeIoPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sNodeIoPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sNodeIoPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeIoPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1024,12 +1024,12 @@ func (ms *K8sNodeIoPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-func (ms *K8sNodeIoPressureTotalMetricConfig) Validate() error {
+func (ms *K8sNodeIoPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sNodeIoPressureTotalMetricAttributeKeyPressureType:
+		case K8sNodeIoPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric k8s.node.io.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric k8s.node.io.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -1106,8 +1106,8 @@ func (ms *K8sNodeMemoryPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) e
 type K8sNodeMemoryPressureAvgMetricAttributeKey string
 
 const (
-	K8sNodeMemoryPressureAvgMetricAttributeKeyPressureType   K8sNodeMemoryPressureAvgMetricAttributeKey = "pressure.type"
-	K8sNodeMemoryPressureAvgMetricAttributeKeyPressureWindow K8sNodeMemoryPressureAvgMetricAttributeKey = "pressure.window"
+	K8sNodeMemoryPressureAvgMetricAttributeKeyPsiType   K8sNodeMemoryPressureAvgMetricAttributeKey = "psi.type"
+	K8sNodeMemoryPressureAvgMetricAttributeKeyPsiWindow K8sNodeMemoryPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // K8sNodeMemoryPressureAvgMetricConfig provides config for the k8s.node.memory.pressure.avg metric.
@@ -1136,9 +1136,9 @@ func (ms *K8sNodeMemoryPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf) 
 func (ms *K8sNodeMemoryPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sNodeMemoryPressureAvgMetricAttributeKeyPressureType, K8sNodeMemoryPressureAvgMetricAttributeKeyPressureWindow:
+		case K8sNodeMemoryPressureAvgMetricAttributeKeyPsiType, K8sNodeMemoryPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric k8s.node.memory.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric k8s.node.memory.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -1151,23 +1151,23 @@ func (ms *K8sNodeMemoryPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// K8sNodeMemoryPressureTotalMetricAttributeKey specifies the key of an attribute for the k8s.node.memory.pressure.total metric.
-type K8sNodeMemoryPressureTotalMetricAttributeKey string
+// K8sNodeMemoryPressureTimeMetricAttributeKey specifies the key of an attribute for the k8s.node.memory.pressure.time metric.
+type K8sNodeMemoryPressureTimeMetricAttributeKey string
 
 const (
-	K8sNodeMemoryPressureTotalMetricAttributeKeyPressureType K8sNodeMemoryPressureTotalMetricAttributeKey = "pressure.type"
+	K8sNodeMemoryPressureTimeMetricAttributeKeyPsiType K8sNodeMemoryPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// K8sNodeMemoryPressureTotalMetricConfig provides config for the k8s.node.memory.pressure.total metric.
-type K8sNodeMemoryPressureTotalMetricConfig struct {
+// K8sNodeMemoryPressureTimeMetricConfig provides config for the k8s.node.memory.pressure.time metric.
+type K8sNodeMemoryPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sNodeMemoryPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sNodeMemoryPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sNodeMemoryPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sNodeMemoryPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1181,12 +1181,12 @@ func (ms *K8sNodeMemoryPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *K8sNodeMemoryPressureTotalMetricConfig) Validate() error {
+func (ms *K8sNodeMemoryPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sNodeMemoryPressureTotalMetricAttributeKeyPressureType:
+		case K8sNodeMemoryPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric k8s.node.memory.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric k8s.node.memory.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -1481,8 +1481,8 @@ func (ms *K8sPodCPUNodeUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) 
 type K8sPodCPUPressureAvgMetricAttributeKey string
 
 const (
-	K8sPodCPUPressureAvgMetricAttributeKeyPressureType   K8sPodCPUPressureAvgMetricAttributeKey = "pressure.type"
-	K8sPodCPUPressureAvgMetricAttributeKeyPressureWindow K8sPodCPUPressureAvgMetricAttributeKey = "pressure.window"
+	K8sPodCPUPressureAvgMetricAttributeKeyPsiType   K8sPodCPUPressureAvgMetricAttributeKey = "psi.type"
+	K8sPodCPUPressureAvgMetricAttributeKeyPsiWindow K8sPodCPUPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // K8sPodCPUPressureAvgMetricConfig provides config for the k8s.pod.cpu.pressure.avg metric.
@@ -1511,9 +1511,9 @@ func (ms *K8sPodCPUPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *K8sPodCPUPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sPodCPUPressureAvgMetricAttributeKeyPressureType, K8sPodCPUPressureAvgMetricAttributeKeyPressureWindow:
+		case K8sPodCPUPressureAvgMetricAttributeKeyPsiType, K8sPodCPUPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric k8s.pod.cpu.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric k8s.pod.cpu.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -1526,23 +1526,23 @@ func (ms *K8sPodCPUPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// K8sPodCPUPressureTotalMetricAttributeKey specifies the key of an attribute for the k8s.pod.cpu.pressure.total metric.
-type K8sPodCPUPressureTotalMetricAttributeKey string
+// K8sPodCPUPressureTimeMetricAttributeKey specifies the key of an attribute for the k8s.pod.cpu.pressure.time metric.
+type K8sPodCPUPressureTimeMetricAttributeKey string
 
 const (
-	K8sPodCPUPressureTotalMetricAttributeKeyPressureType K8sPodCPUPressureTotalMetricAttributeKey = "pressure.type"
+	K8sPodCPUPressureTimeMetricAttributeKeyPsiType K8sPodCPUPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// K8sPodCPUPressureTotalMetricConfig provides config for the k8s.pod.cpu.pressure.total metric.
-type K8sPodCPUPressureTotalMetricConfig struct {
+// K8sPodCPUPressureTimeMetricConfig provides config for the k8s.pod.cpu.pressure.time metric.
+type K8sPodCPUPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sPodCPUPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sPodCPUPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sPodCPUPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodCPUPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1556,12 +1556,12 @@ func (ms *K8sPodCPUPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-func (ms *K8sPodCPUPressureTotalMetricConfig) Validate() error {
+func (ms *K8sPodCPUPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sPodCPUPressureTotalMetricAttributeKeyPressureType:
+		case K8sPodCPUPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric k8s.pod.cpu.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric k8s.pod.cpu.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -1718,8 +1718,8 @@ func (ms *K8sPodFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) err
 type K8sPodIoPressureAvgMetricAttributeKey string
 
 const (
-	K8sPodIoPressureAvgMetricAttributeKeyPressureType   K8sPodIoPressureAvgMetricAttributeKey = "pressure.type"
-	K8sPodIoPressureAvgMetricAttributeKeyPressureWindow K8sPodIoPressureAvgMetricAttributeKey = "pressure.window"
+	K8sPodIoPressureAvgMetricAttributeKeyPsiType   K8sPodIoPressureAvgMetricAttributeKey = "psi.type"
+	K8sPodIoPressureAvgMetricAttributeKeyPsiWindow K8sPodIoPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // K8sPodIoPressureAvgMetricConfig provides config for the k8s.pod.io.pressure.avg metric.
@@ -1748,9 +1748,9 @@ func (ms *K8sPodIoPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf) error
 func (ms *K8sPodIoPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sPodIoPressureAvgMetricAttributeKeyPressureType, K8sPodIoPressureAvgMetricAttributeKeyPressureWindow:
+		case K8sPodIoPressureAvgMetricAttributeKeyPsiType, K8sPodIoPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric k8s.pod.io.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric k8s.pod.io.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -1763,23 +1763,23 @@ func (ms *K8sPodIoPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// K8sPodIoPressureTotalMetricAttributeKey specifies the key of an attribute for the k8s.pod.io.pressure.total metric.
-type K8sPodIoPressureTotalMetricAttributeKey string
+// K8sPodIoPressureTimeMetricAttributeKey specifies the key of an attribute for the k8s.pod.io.pressure.time metric.
+type K8sPodIoPressureTimeMetricAttributeKey string
 
 const (
-	K8sPodIoPressureTotalMetricAttributeKeyPressureType K8sPodIoPressureTotalMetricAttributeKey = "pressure.type"
+	K8sPodIoPressureTimeMetricAttributeKeyPsiType K8sPodIoPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// K8sPodIoPressureTotalMetricConfig provides config for the k8s.pod.io.pressure.total metric.
-type K8sPodIoPressureTotalMetricConfig struct {
+// K8sPodIoPressureTimeMetricConfig provides config for the k8s.pod.io.pressure.time metric.
+type K8sPodIoPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sPodIoPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sPodIoPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sPodIoPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodIoPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1793,12 +1793,12 @@ func (ms *K8sPodIoPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *K8sPodIoPressureTotalMetricConfig) Validate() error {
+func (ms *K8sPodIoPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sPodIoPressureTotalMetricAttributeKeyPressureType:
+		case K8sPodIoPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric k8s.pod.io.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric k8s.pod.io.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -1895,8 +1895,8 @@ func (ms *K8sPodMemoryPageFaultsMetricConfig) Unmarshal(parser *confmap.Conf) er
 type K8sPodMemoryPressureAvgMetricAttributeKey string
 
 const (
-	K8sPodMemoryPressureAvgMetricAttributeKeyPressureType   K8sPodMemoryPressureAvgMetricAttributeKey = "pressure.type"
-	K8sPodMemoryPressureAvgMetricAttributeKeyPressureWindow K8sPodMemoryPressureAvgMetricAttributeKey = "pressure.window"
+	K8sPodMemoryPressureAvgMetricAttributeKeyPsiType   K8sPodMemoryPressureAvgMetricAttributeKey = "psi.type"
+	K8sPodMemoryPressureAvgMetricAttributeKeyPsiWindow K8sPodMemoryPressureAvgMetricAttributeKey = "psi.window"
 )
 
 // K8sPodMemoryPressureAvgMetricConfig provides config for the k8s.pod.memory.pressure.avg metric.
@@ -1925,9 +1925,9 @@ func (ms *K8sPodMemoryPressureAvgMetricConfig) Unmarshal(parser *confmap.Conf) e
 func (ms *K8sPodMemoryPressureAvgMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sPodMemoryPressureAvgMetricAttributeKeyPressureType, K8sPodMemoryPressureAvgMetricAttributeKeyPressureWindow:
+		case K8sPodMemoryPressureAvgMetricAttributeKeyPsiType, K8sPodMemoryPressureAvgMetricAttributeKeyPsiWindow:
 		default:
-			return fmt.Errorf("metric k8s.pod.memory.pressure.avg doesn't have an attribute %v, valid attributes: [pressure.type, pressure.window]", val)
+			return fmt.Errorf("metric k8s.pod.memory.pressure.avg doesn't have an attribute %v, valid attributes: [psi.type, psi.window]", val)
 		}
 	}
 
@@ -1940,23 +1940,23 @@ func (ms *K8sPodMemoryPressureAvgMetricConfig) Validate() error {
 	return nil
 }
 
-// K8sPodMemoryPressureTotalMetricAttributeKey specifies the key of an attribute for the k8s.pod.memory.pressure.total metric.
-type K8sPodMemoryPressureTotalMetricAttributeKey string
+// K8sPodMemoryPressureTimeMetricAttributeKey specifies the key of an attribute for the k8s.pod.memory.pressure.time metric.
+type K8sPodMemoryPressureTimeMetricAttributeKey string
 
 const (
-	K8sPodMemoryPressureTotalMetricAttributeKeyPressureType K8sPodMemoryPressureTotalMetricAttributeKey = "pressure.type"
+	K8sPodMemoryPressureTimeMetricAttributeKeyPsiType K8sPodMemoryPressureTimeMetricAttributeKey = "psi.type"
 )
 
-// K8sPodMemoryPressureTotalMetricConfig provides config for the k8s.pod.memory.pressure.total metric.
-type K8sPodMemoryPressureTotalMetricConfig struct {
+// K8sPodMemoryPressureTimeMetricConfig provides config for the k8s.pod.memory.pressure.time metric.
+type K8sPodMemoryPressureTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []K8sPodMemoryPressureTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sPodMemoryPressureTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *K8sPodMemoryPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodMemoryPressureTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1970,12 +1970,12 @@ func (ms *K8sPodMemoryPressureTotalMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *K8sPodMemoryPressureTotalMetricConfig) Validate() error {
+func (ms *K8sPodMemoryPressureTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case K8sPodMemoryPressureTotalMetricAttributeKeyPressureType:
+		case K8sPodMemoryPressureTimeMetricAttributeKeyPsiType:
 		default:
-			return fmt.Errorf("metric k8s.pod.memory.pressure.total doesn't have an attribute %v, valid attributes: [pressure.type]", val)
+			return fmt.Errorf("metric k8s.pod.memory.pressure.time doesn't have an attribute %v, valid attributes: [psi.type]", val)
 		}
 	}
 
@@ -2329,19 +2329,19 @@ func (ms *K8sVolumeInodesUsedMetricConfig) Unmarshal(parser *confmap.Conf) error
 // MetricsConfig provides config for kubelet_stats metrics.
 type MetricsConfig struct {
 	ContainerCPUPressureAvg                ContainerCPUPressureAvgMetricConfig                `mapstructure:"container.cpu.pressure.avg"`
-	ContainerCPUPressureTotal              ContainerCPUPressureTotalMetricConfig              `mapstructure:"container.cpu.pressure.total"`
+	ContainerCPUPressureTime               ContainerCPUPressureTimeMetricConfig               `mapstructure:"container.cpu.pressure.time"`
 	ContainerCPUTime                       ContainerCPUTimeMetricConfig                       `mapstructure:"container.cpu.time"`
 	ContainerCPUUsage                      ContainerCPUUsageMetricConfig                      `mapstructure:"container.cpu.usage"`
 	ContainerFilesystemAvailable           ContainerFilesystemAvailableMetricConfig           `mapstructure:"container.filesystem.available"`
 	ContainerFilesystemCapacity            ContainerFilesystemCapacityMetricConfig            `mapstructure:"container.filesystem.capacity"`
 	ContainerFilesystemUsage               ContainerFilesystemUsageMetricConfig               `mapstructure:"container.filesystem.usage"`
 	ContainerIoPressureAvg                 ContainerIoPressureAvgMetricConfig                 `mapstructure:"container.io.pressure.avg"`
-	ContainerIoPressureTotal               ContainerIoPressureTotalMetricConfig               `mapstructure:"container.io.pressure.total"`
+	ContainerIoPressureTime                ContainerIoPressureTimeMetricConfig                `mapstructure:"container.io.pressure.time"`
 	ContainerMemoryAvailable               ContainerMemoryAvailableMetricConfig               `mapstructure:"container.memory.available"`
 	ContainerMemoryMajorPageFaults         ContainerMemoryMajorPageFaultsMetricConfig         `mapstructure:"container.memory.major_page_faults"`
 	ContainerMemoryPageFaults              ContainerMemoryPageFaultsMetricConfig              `mapstructure:"container.memory.page_faults"`
 	ContainerMemoryPressureAvg             ContainerMemoryPressureAvgMetricConfig             `mapstructure:"container.memory.pressure.avg"`
-	ContainerMemoryPressureTotal           ContainerMemoryPressureTotalMetricConfig           `mapstructure:"container.memory.pressure.total"`
+	ContainerMemoryPressureTime            ContainerMemoryPressureTimeMetricConfig            `mapstructure:"container.memory.pressure.time"`
 	ContainerMemoryRss                     ContainerMemoryRssMetricConfig                     `mapstructure:"container.memory.rss"`
 	ContainerMemoryUsage                   ContainerMemoryUsageMetricConfig                   `mapstructure:"container.memory.usage"`
 	ContainerMemoryWorkingSet              ContainerMemoryWorkingSetMetricConfig              `mapstructure:"container.memory.working_set"`
@@ -2354,7 +2354,7 @@ type MetricsConfig struct {
 	K8sContainerMemoryLimitUtilization     K8sContainerMemoryLimitUtilizationMetricConfig     `mapstructure:"k8s.container.memory_limit_utilization"`
 	K8sContainerMemoryRequestUtilization   K8sContainerMemoryRequestUtilizationMetricConfig   `mapstructure:"k8s.container.memory_request_utilization"`
 	K8sNodeCPUPressureAvg                  K8sNodeCPUPressureAvgMetricConfig                  `mapstructure:"k8s.node.cpu.pressure.avg"`
-	K8sNodeCPUPressureTotal                K8sNodeCPUPressureTotalMetricConfig                `mapstructure:"k8s.node.cpu.pressure.total"`
+	K8sNodeCPUPressureTime                 K8sNodeCPUPressureTimeMetricConfig                 `mapstructure:"k8s.node.cpu.pressure.time"`
 	K8sNodeCPUTime                         K8sNodeCPUTimeMetricConfig                         `mapstructure:"k8s.node.cpu.time"`
 	K8sNodeCPUUsage                        K8sNodeCPUUsageMetricConfig                        `mapstructure:"k8s.node.cpu.usage"`
 	K8sNodeFilesystemAvailable             K8sNodeFilesystemAvailableMetricConfig             `mapstructure:"k8s.node.filesystem.available"`
@@ -2363,12 +2363,12 @@ type MetricsConfig struct {
 	K8sNodeFilesystemInodeFree             K8sNodeFilesystemInodeFreeMetricConfig             `mapstructure:"k8s.node.filesystem.inode.free"`
 	K8sNodeFilesystemUsage                 K8sNodeFilesystemUsageMetricConfig                 `mapstructure:"k8s.node.filesystem.usage"`
 	K8sNodeIoPressureAvg                   K8sNodeIoPressureAvgMetricConfig                   `mapstructure:"k8s.node.io.pressure.avg"`
-	K8sNodeIoPressureTotal                 K8sNodeIoPressureTotalMetricConfig                 `mapstructure:"k8s.node.io.pressure.total"`
+	K8sNodeIoPressureTime                  K8sNodeIoPressureTimeMetricConfig                  `mapstructure:"k8s.node.io.pressure.time"`
 	K8sNodeMemoryAvailable                 K8sNodeMemoryAvailableMetricConfig                 `mapstructure:"k8s.node.memory.available"`
 	K8sNodeMemoryMajorPageFaults           K8sNodeMemoryMajorPageFaultsMetricConfig           `mapstructure:"k8s.node.memory.major_page_faults"`
 	K8sNodeMemoryPageFaults                K8sNodeMemoryPageFaultsMetricConfig                `mapstructure:"k8s.node.memory.page_faults"`
 	K8sNodeMemoryPressureAvg               K8sNodeMemoryPressureAvgMetricConfig               `mapstructure:"k8s.node.memory.pressure.avg"`
-	K8sNodeMemoryPressureTotal             K8sNodeMemoryPressureTotalMetricConfig             `mapstructure:"k8s.node.memory.pressure.total"`
+	K8sNodeMemoryPressureTime              K8sNodeMemoryPressureTimeMetricConfig              `mapstructure:"k8s.node.memory.pressure.time"`
 	K8sNodeMemoryRss                       K8sNodeMemoryRssMetricConfig                       `mapstructure:"k8s.node.memory.rss"`
 	K8sNodeMemoryUsage                     K8sNodeMemoryUsageMetricConfig                     `mapstructure:"k8s.node.memory.usage"`
 	K8sNodeMemoryWorkingSet                K8sNodeMemoryWorkingSetMetricConfig                `mapstructure:"k8s.node.memory.working_set"`
@@ -2381,7 +2381,7 @@ type MetricsConfig struct {
 	K8sNodeUptime                          K8sNodeUptimeMetricConfig                          `mapstructure:"k8s.node.uptime"`
 	K8sPodCPUNodeUtilization               K8sPodCPUNodeUtilizationMetricConfig               `mapstructure:"k8s.pod.cpu.node.utilization"`
 	K8sPodCPUPressureAvg                   K8sPodCPUPressureAvgMetricConfig                   `mapstructure:"k8s.pod.cpu.pressure.avg"`
-	K8sPodCPUPressureTotal                 K8sPodCPUPressureTotalMetricConfig                 `mapstructure:"k8s.pod.cpu.pressure.total"`
+	K8sPodCPUPressureTime                  K8sPodCPUPressureTimeMetricConfig                  `mapstructure:"k8s.pod.cpu.pressure.time"`
 	K8sPodCPUTime                          K8sPodCPUTimeMetricConfig                          `mapstructure:"k8s.pod.cpu.time"`
 	K8sPodCPUUsage                         K8sPodCPUUsageMetricConfig                         `mapstructure:"k8s.pod.cpu.usage"`
 	K8sPodCPULimitUtilization              K8sPodCPULimitUtilizationMetricConfig              `mapstructure:"k8s.pod.cpu_limit_utilization"`
@@ -2390,13 +2390,13 @@ type MetricsConfig struct {
 	K8sPodFilesystemCapacity               K8sPodFilesystemCapacityMetricConfig               `mapstructure:"k8s.pod.filesystem.capacity"`
 	K8sPodFilesystemUsage                  K8sPodFilesystemUsageMetricConfig                  `mapstructure:"k8s.pod.filesystem.usage"`
 	K8sPodIoPressureAvg                    K8sPodIoPressureAvgMetricConfig                    `mapstructure:"k8s.pod.io.pressure.avg"`
-	K8sPodIoPressureTotal                  K8sPodIoPressureTotalMetricConfig                  `mapstructure:"k8s.pod.io.pressure.total"`
+	K8sPodIoPressureTime                   K8sPodIoPressureTimeMetricConfig                   `mapstructure:"k8s.pod.io.pressure.time"`
 	K8sPodMemoryAvailable                  K8sPodMemoryAvailableMetricConfig                  `mapstructure:"k8s.pod.memory.available"`
 	K8sPodMemoryMajorPageFaults            K8sPodMemoryMajorPageFaultsMetricConfig            `mapstructure:"k8s.pod.memory.major_page_faults"`
 	K8sPodMemoryNodeUtilization            K8sPodMemoryNodeUtilizationMetricConfig            `mapstructure:"k8s.pod.memory.node.utilization"`
 	K8sPodMemoryPageFaults                 K8sPodMemoryPageFaultsMetricConfig                 `mapstructure:"k8s.pod.memory.page_faults"`
 	K8sPodMemoryPressureAvg                K8sPodMemoryPressureAvgMetricConfig                `mapstructure:"k8s.pod.memory.pressure.avg"`
-	K8sPodMemoryPressureTotal              K8sPodMemoryPressureTotalMetricConfig              `mapstructure:"k8s.pod.memory.pressure.total"`
+	K8sPodMemoryPressureTime               K8sPodMemoryPressureTimeMetricConfig               `mapstructure:"k8s.pod.memory.pressure.time"`
 	K8sPodMemoryRss                        K8sPodMemoryRssMetricConfig                        `mapstructure:"k8s.pod.memory.rss"`
 	K8sPodMemoryUsage                      K8sPodMemoryUsageMetricConfig                      `mapstructure:"k8s.pod.memory.usage"`
 	K8sPodMemoryWorkingSet                 K8sPodMemoryWorkingSetMetricConfig                 `mapstructure:"k8s.pod.memory.working_set"`
@@ -2418,12 +2418,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerCPUPressureAvg: ContainerCPUPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ContainerCPUPressureAvgMetricAttributeKey{ContainerCPUPressureAvgMetricAttributeKeyPressureType, ContainerCPUPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []ContainerCPUPressureAvgMetricAttributeKey{ContainerCPUPressureAvgMetricAttributeKeyPsiType, ContainerCPUPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		ContainerCPUPressureTotal: ContainerCPUPressureTotalMetricConfig{
+		ContainerCPUPressureTime: ContainerCPUPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerCPUPressureTotalMetricAttributeKey{ContainerCPUPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []ContainerCPUPressureTimeMetricAttributeKey{ContainerCPUPressureTimeMetricAttributeKeyPsiType},
 		},
 		ContainerCPUTime: ContainerCPUTimeMetricConfig{
 			Enabled: true,
@@ -2443,12 +2443,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerIoPressureAvg: ContainerIoPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ContainerIoPressureAvgMetricAttributeKey{ContainerIoPressureAvgMetricAttributeKeyPressureType, ContainerIoPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []ContainerIoPressureAvgMetricAttributeKey{ContainerIoPressureAvgMetricAttributeKeyPsiType, ContainerIoPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		ContainerIoPressureTotal: ContainerIoPressureTotalMetricConfig{
+		ContainerIoPressureTime: ContainerIoPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerIoPressureTotalMetricAttributeKey{ContainerIoPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []ContainerIoPressureTimeMetricAttributeKey{ContainerIoPressureTimeMetricAttributeKeyPsiType},
 		},
 		ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
 			Enabled: true,
@@ -2462,12 +2462,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryPressureAvg: ContainerMemoryPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ContainerMemoryPressureAvgMetricAttributeKey{ContainerMemoryPressureAvgMetricAttributeKeyPressureType, ContainerMemoryPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []ContainerMemoryPressureAvgMetricAttributeKey{ContainerMemoryPressureAvgMetricAttributeKeyPsiType, ContainerMemoryPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		ContainerMemoryPressureTotal: ContainerMemoryPressureTotalMetricConfig{
+		ContainerMemoryPressureTime: ContainerMemoryPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerMemoryPressureTotalMetricAttributeKey{ContainerMemoryPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []ContainerMemoryPressureTimeMetricAttributeKey{ContainerMemoryPressureTimeMetricAttributeKeyPsiType},
 		},
 		ContainerMemoryRss: ContainerMemoryRssMetricConfig{
 			Enabled: true,
@@ -2507,12 +2507,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNodeCPUPressureAvg: K8sNodeCPUPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []K8sNodeCPUPressureAvgMetricAttributeKey{K8sNodeCPUPressureAvgMetricAttributeKeyPressureType, K8sNodeCPUPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []K8sNodeCPUPressureAvgMetricAttributeKey{K8sNodeCPUPressureAvgMetricAttributeKeyPsiType, K8sNodeCPUPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		K8sNodeCPUPressureTotal: K8sNodeCPUPressureTotalMetricConfig{
+		K8sNodeCPUPressureTime: K8sNodeCPUPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sNodeCPUPressureTotalMetricAttributeKey{K8sNodeCPUPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []K8sNodeCPUPressureTimeMetricAttributeKey{K8sNodeCPUPressureTimeMetricAttributeKeyPsiType},
 		},
 		K8sNodeCPUTime: K8sNodeCPUTimeMetricConfig{
 			Enabled: true,
@@ -2538,12 +2538,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNodeIoPressureAvg: K8sNodeIoPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []K8sNodeIoPressureAvgMetricAttributeKey{K8sNodeIoPressureAvgMetricAttributeKeyPressureType, K8sNodeIoPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []K8sNodeIoPressureAvgMetricAttributeKey{K8sNodeIoPressureAvgMetricAttributeKeyPsiType, K8sNodeIoPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		K8sNodeIoPressureTotal: K8sNodeIoPressureTotalMetricConfig{
+		K8sNodeIoPressureTime: K8sNodeIoPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sNodeIoPressureTotalMetricAttributeKey{K8sNodeIoPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []K8sNodeIoPressureTimeMetricAttributeKey{K8sNodeIoPressureTimeMetricAttributeKeyPsiType},
 		},
 		K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
 			Enabled: true,
@@ -2557,12 +2557,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNodeMemoryPressureAvg: K8sNodeMemoryPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []K8sNodeMemoryPressureAvgMetricAttributeKey{K8sNodeMemoryPressureAvgMetricAttributeKeyPressureType, K8sNodeMemoryPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []K8sNodeMemoryPressureAvgMetricAttributeKey{K8sNodeMemoryPressureAvgMetricAttributeKeyPsiType, K8sNodeMemoryPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		K8sNodeMemoryPressureTotal: K8sNodeMemoryPressureTotalMetricConfig{
+		K8sNodeMemoryPressureTime: K8sNodeMemoryPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sNodeMemoryPressureTotalMetricAttributeKey{K8sNodeMemoryPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []K8sNodeMemoryPressureTimeMetricAttributeKey{K8sNodeMemoryPressureTimeMetricAttributeKeyPsiType},
 		},
 		K8sNodeMemoryRss: K8sNodeMemoryRssMetricConfig{
 			Enabled: true,
@@ -2604,12 +2604,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodCPUPressureAvg: K8sPodCPUPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []K8sPodCPUPressureAvgMetricAttributeKey{K8sPodCPUPressureAvgMetricAttributeKeyPressureType, K8sPodCPUPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []K8sPodCPUPressureAvgMetricAttributeKey{K8sPodCPUPressureAvgMetricAttributeKeyPsiType, K8sPodCPUPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		K8sPodCPUPressureTotal: K8sPodCPUPressureTotalMetricConfig{
+		K8sPodCPUPressureTime: K8sPodCPUPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sPodCPUPressureTotalMetricAttributeKey{K8sPodCPUPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []K8sPodCPUPressureTimeMetricAttributeKey{K8sPodCPUPressureTimeMetricAttributeKeyPsiType},
 		},
 		K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
 			Enabled: true,
@@ -2635,12 +2635,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodIoPressureAvg: K8sPodIoPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []K8sPodIoPressureAvgMetricAttributeKey{K8sPodIoPressureAvgMetricAttributeKeyPressureType, K8sPodIoPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []K8sPodIoPressureAvgMetricAttributeKey{K8sPodIoPressureAvgMetricAttributeKeyPsiType, K8sPodIoPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		K8sPodIoPressureTotal: K8sPodIoPressureTotalMetricConfig{
+		K8sPodIoPressureTime: K8sPodIoPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sPodIoPressureTotalMetricAttributeKey{K8sPodIoPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []K8sPodIoPressureTimeMetricAttributeKey{K8sPodIoPressureTimeMetricAttributeKeyPsiType},
 		},
 		K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
 			Enabled: true,
@@ -2657,12 +2657,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodMemoryPressureAvg: K8sPodMemoryPressureAvgMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []K8sPodMemoryPressureAvgMetricAttributeKey{K8sPodMemoryPressureAvgMetricAttributeKeyPressureType, K8sPodMemoryPressureAvgMetricAttributeKeyPressureWindow},
+			EnabledAttributes:   []K8sPodMemoryPressureAvgMetricAttributeKey{K8sPodMemoryPressureAvgMetricAttributeKeyPsiType, K8sPodMemoryPressureAvgMetricAttributeKeyPsiWindow},
 		},
-		K8sPodMemoryPressureTotal: K8sPodMemoryPressureTotalMetricConfig{
+		K8sPodMemoryPressureTime: K8sPodMemoryPressureTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []K8sPodMemoryPressureTotalMetricAttributeKey{K8sPodMemoryPressureTotalMetricAttributeKeyPressureType},
+			EnabledAttributes:   []K8sPodMemoryPressureTimeMetricAttributeKey{K8sPodMemoryPressureTimeMetricAttributeKeyPsiType},
 		},
 		K8sPodMemoryRss: K8sPodMemoryRssMetricConfig{
 			Enabled: true,
