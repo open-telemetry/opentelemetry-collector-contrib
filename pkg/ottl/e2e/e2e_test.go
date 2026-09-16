@@ -2297,20 +2297,6 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				m.PutStr("list.0.test", "hello")
 			},
 		},
-		{
-			name: "slice args in keep_keys",
-			statements: []string{
-				`set(cache["list_of_keys"], ["flags"])`,
-				`keep_keys(attributes, cache["list_of_keys"])`,
-			},
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().RemoveIf(
-					func(key string, _ pcommon.Value) bool {
-						return key != "flags"
-					},
-				)
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -2333,6 +2319,90 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			tCtx.Close()
 			exTCtx.Close()
+		})
+	}
+}
+
+func Test_e2e_keep_keys_slice_arguments(t *testing.T) {
+	tests := []struct {
+		name      string
+		setup     string
+		statement string
+		wantErr   bool
+		wantKeys  []string
+	}{
+		{
+			name:      "valid dynamic slice",
+			setup:     `set(cache["x"], ["flags"])`,
+			statement: `keep_keys(attributes, cache["x"])`,
+			wantKeys:  []string{"flags"},
+		},
+		{
+			name:      "unset dynamic slice keeps none",
+			statement: `keep_keys(attributes, cache["x"])`,
+		},
+		{
+			name:      "non-slice dynamic value",
+			setup:     `set(cache["x"], "not a slice")`,
+			statement: `keep_keys(attributes, cache["x"])`,
+			wantErr:   true,
+		},
+		{
+			name:      "dynamic slice with non-string element",
+			setup:     `set(cache["x"], ["flags", 1])`,
+			statement: `keep_keys(attributes, cache["x"])`,
+			wantErr:   true,
+		},
+		{
+			name:      "empty dynamic slice keeps none",
+			setup:     `set(cache["x"], [])`,
+			statement: `keep_keys(attributes, cache["x"])`,
+		},
+		{
+			name:      "parsed literal keys",
+			statement: `keep_keys(attributes, ["a", "b"])`,
+			wantKeys:  []string{"a", "b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statements, err := parseStatementWithAndWithoutPathContext(tt.statement)
+			require.NoError(t, err)
+
+			var setupStatements []*ottl.Statement[*ottllog.TransformContext]
+			if tt.setup != "" {
+				setupStatements, err = parseStatementWithAndWithoutPathContext(tt.setup)
+				require.NoError(t, err)
+				require.Len(t, setupStatements, len(statements))
+			}
+
+			for i, statement := range statements {
+				tCtx := constructLogTransformContext()
+				defer tCtx.Close()
+				for _, key := range tt.wantKeys {
+					tCtx.GetLogRecord().Attributes().PutStr(key, key)
+				}
+
+				if setupStatements != nil {
+					_, _, err = setupStatements[i].Execute(t.Context(), tCtx)
+					require.NoError(t, err)
+				}
+
+				_, _, err = statement.Execute(t.Context(), tCtx)
+				if tt.wantErr {
+					require.Error(t, err)
+					continue
+				}
+				require.NoError(t, err)
+
+				attributes := tCtx.GetLogRecord().Attributes()
+				require.Equal(t, len(tt.wantKeys), attributes.Len())
+				for _, key := range tt.wantKeys {
+					_, ok := attributes.Get(key)
+					require.True(t, ok)
+				}
+			}
 		})
 	}
 }

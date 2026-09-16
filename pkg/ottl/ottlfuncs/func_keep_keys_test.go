@@ -97,6 +97,50 @@ func Test_keepKeys(t *testing.T) {
 	}
 }
 
+func Test_keepKeys_dynamic_key_error(t *testing.T) {
+	input := pcommon.NewMap()
+	input.PutStr("a", "value")
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+	}
+
+	getErr := errors.New("get dynamic key")
+	keys := ottl.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](false, []ottl.StringGetter[pcommon.Map]{
+		ottl.StandardStringGetter[pcommon.Map]{
+			Getter: func(context.Context, pcommon.Map) (any, error) {
+				return nil, getErr
+			},
+		},
+	})
+
+	exprFunc := keepKeys(target, keys)
+	_, err := exprFunc(t.Context(), input)
+	require.ErrorIs(t, err, getErr)
+	assert.Equal(t, 1, input.Len())
+}
+
+func Test_keepKeys_empty_dynamic_slice(t *testing.T) {
+	input := pcommon.NewMap()
+	input.PutStr("a", "value")
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, value any) error {
+			value.(pcommon.Map).CopyTo(tCtx)
+			return nil
+		},
+	}
+	keys := ottl.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](false, []ottl.StringGetter[pcommon.Map]{})
+
+	exprFunc := keepKeys(target, keys)
+	_, err := exprFunc(t.Context(), input)
+	require.NoError(t, err)
+	assert.Equal(t, 0, input.Len())
+}
+
 func Test_keepKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardPMapGetSetter[any]{
