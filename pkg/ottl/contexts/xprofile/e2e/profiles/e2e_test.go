@@ -18,10 +18,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 )
+
+func profileFuncs() map[string]ottl.Factory[*ottlprofile.TransformContext] {
+	funcs := ottlfuncs.StandardFuncs[*ottlprofile.TransformContext]()
+	for _, f := range xprofilefuncs.ProfileConverters[*ottlprofile.TransformContext]() {
+		funcs[f.Name()] = f
+	}
+	return funcs
+}
 
 var (
 	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
@@ -1572,7 +1581,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 
-			profileParser, err := ottlprofile.NewParser(ottlfuncs.StandardFuncs[*ottlprofile.TransformContext](), settings)
+			profileParser, err := ottlprofile.NewParser(profileFuncs(), settings)
 			require.NoError(t, err)
 			valueExpr, err := profileParser.ParseValueExpression(tt.statement)
 			require.NoError(t, err)
@@ -1589,7 +1598,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[*ottlprofile.TransformContext], error) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parserWithoutPathCtx, err := ottlprofile.NewParser(ottlfuncs.StandardFuncs[*ottlprofile.TransformContext](), settings)
+	parserWithoutPathCtx, err := ottlprofile.NewParser(profileFuncs(), settings)
 	if err != nil {
 		return nil, err
 	}
@@ -1599,7 +1608,7 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 		return nil, err
 	}
 
-	parserWithPathCtx, err := ottlprofile.NewParser(ottlfuncs.StandardFuncs[*ottlprofile.TransformContext](), settings, ottlprofile.EnablePathContextNames())
+	parserWithPathCtx, err := ottlprofile.NewParser(profileFuncs(), settings, ottlprofile.EnablePathContextNames())
 	if err != nil {
 		return nil, err
 	}

@@ -93,8 +93,6 @@ go.opentelemetry.io/collector/pdata v1.67.0 h1:dL654J7PNHc6EGHRa7j6gYtbSDBC7zs8X
 go.opentelemetry.io/collector/pdata v1.67.0/go.mod h1:2CSCUtdgTXIGIk7GXoYuBZG2VjkrTzqcGIh6ukgXLwc=
 go.opentelemetry.io/collector/pdata/pprofile v0.161.0 h1:69LCTV6/WcKM/sOCa4hSKX1fzcbag/4MenbRS6OoRA0=
 go.opentelemetry.io/collector/pdata/pprofile v0.161.0/go.mod h1:gusNvsJ88nRPRq4F3Azjep37O55EENifSiuwE1p1Zk0=
-go.opentelemetry.io/collector/pdata/testdata v0.161.0 h1:tmAuvlZYTF+OY070r4bhAcaH2eFw2WBPgdk/N3n0pq8=
-go.opentelemetry.io/collector/pdata/testdata v0.161.0/go.mod h1:Qi4tH77Q8FQzh64v+CNDTiV2+L8+XvStnf6VsNUMSSE=
 go.opentelemetry.io/collector/pdata/xpdata v0.161.0 h1:VMy6io/SIkDm9BkTVhIms2KUOqxb8ybkrkymzM/GwEw=
 go.opentelemetry.io/collector/pdata/xpdata v0.161.0/go.mod h1:p9i1IdfZycRcxJJcuI6kV6iJW28dK/TElPkQyc/dAnk=
 go.opentelemetry.io/otel v1.46.0 h1:FHt5/CDyVxi/8IM1CH7VE/rRgq3kLHa2mSTVMO8AWyc=
