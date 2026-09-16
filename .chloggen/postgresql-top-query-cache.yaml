@@ -1,4 +1,4 @@
 change_type: bug_fix
 component: receiver/postgresql
 note: Size the top-query counter cache from the fetched statement limit to prevent repeated cumulative values caused by cache eviction.
-issues: [51064]
+issues: [51066]
