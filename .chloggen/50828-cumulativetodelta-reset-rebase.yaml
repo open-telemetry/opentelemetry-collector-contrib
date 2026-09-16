@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/cumulativetodelta
+component: processor/cumulative_to_delta
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Fix histogram and exponential histogram counter resets never rebasing the tracked baseline, which understated or dropped deltas for points that grew from the new baseline but hadn't yet exceeded the stale pre-reset one.
