@@ -366,6 +366,10 @@ type querySample struct {
 	waitTime           float64
 	statementTimerWait float64
 	traceparent        string
+	// blockers is the raw "[{\"thread_id\":..,\"session_id\":..}, ...]" JSON
+	// array produced by querySample.tmpl -- one entry per concurrent InnoDB
+	// row-lock blocker for this thread, "[]" when not blocked, unordered.
+	blockers string
 }
 
 type topQuery struct {
@@ -1106,6 +1110,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.statementTimerWait)
 			case "traceparent":
 				dest = append(dest, &s.traceparent)
+			case "blockers":
+				dest = append(dest, &s.blockers)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}
