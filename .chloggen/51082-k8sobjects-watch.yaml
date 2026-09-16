@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/k8sobjects
+note: "Prevent the Kubernetes object watch from stopping after an idle connection is closed"
+issues: [51082]
+subtext:
+change_logs: [user]
