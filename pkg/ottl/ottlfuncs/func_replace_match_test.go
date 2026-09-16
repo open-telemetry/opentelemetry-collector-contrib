@@ -334,7 +334,8 @@ func BenchmarkReplaceMatch(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		scenarioValue := pcommon.NewValueStr("hello world")
-		_, err := exprFunc(ctx, scenarioValue)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, scenarioValue); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

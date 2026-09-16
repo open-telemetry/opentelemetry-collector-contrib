@@ -41,7 +41,8 @@ func BenchmarkUUID(b *testing.B) {
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {
-		_, err := exprFunc(ctx, nil)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

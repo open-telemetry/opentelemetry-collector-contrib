@@ -398,7 +398,8 @@ func BenchmarkTruncateAll(b *testing.B) {
 	for b.Loop() {
 		m = pcommon.NewMap()
 		m.PutStr("k1", "a value that is longer than the limit")
-		_, err = exprFunc(ctx, nil)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

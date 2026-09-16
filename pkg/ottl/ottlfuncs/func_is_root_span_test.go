@@ -72,7 +72,8 @@ func BenchmarkIsRootSpan(b *testing.B) {
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {
-		_, err := exprFunc(ctx, tCtx)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, tCtx); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

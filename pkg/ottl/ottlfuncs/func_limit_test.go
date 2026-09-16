@@ -259,7 +259,8 @@ func BenchmarkLimit(b *testing.B) {
 	for b.Loop() {
 		scenarioMap := pcommon.NewMap()
 		input.CopyTo(scenarioMap)
-		_, err := exprFunc(ctx, scenarioMap)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, scenarioMap); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

@@ -591,7 +591,8 @@ func BenchmarkReplacePattern(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		input := pcommon.NewValueStr("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
-		_, err := exprFunc(ctx, input)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, input); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

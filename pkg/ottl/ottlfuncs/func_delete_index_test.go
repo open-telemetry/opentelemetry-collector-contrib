@@ -381,9 +381,12 @@ func BenchmarkDeleteIndex(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		current = pcommon.NewSlice()
-		require.NoError(b, current.FromRaw([]any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}))
+		if err := current.FromRaw([]any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}); err != nil {
+			b.Fatal(err)
+		}
 		res := pcommon.NewSlice()
-		_, err := exprFunc(ctx, res)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, res); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

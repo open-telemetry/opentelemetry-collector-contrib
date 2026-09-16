@@ -765,7 +765,8 @@ func BenchmarkAppendTo(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		res := pcommon.NewSlice()
-		_, err := exprFunc(ctx, res)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, res); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

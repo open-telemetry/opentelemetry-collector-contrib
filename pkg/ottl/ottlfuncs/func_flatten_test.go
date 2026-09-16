@@ -637,7 +637,7 @@ func BenchmarkFlatten(b *testing.B) {
 		Getter: func(context.Context, any) (pcommon.Map, error) {
 			return current, nil
 		},
-		Setter: func(_ context.Context, _ any, val any) error {
+		Setter: func(_ context.Context, _, val any) error {
 			v, ok := val.(pcommon.Map)
 			if !ok {
 				return errors.New("expected pcommon.Map")
@@ -654,7 +654,7 @@ func BenchmarkFlatten(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		current = pcommon.NewMap()
-		require.NoError(b, current.FromRaw(map[string]any{
+		if err := current.FromRaw(map[string]any{
 			"name": "test",
 			"address": map[string]any{
 				"street": "first",
@@ -664,8 +664,11 @@ func BenchmarkFlatten(b *testing.B) {
 				"user 1",
 				"user 2",
 			},
-		}))
-		_, err := exprFunc(ctx, nil)
-		require.NoError(b, err)
+		}); err != nil {
+			b.Fatal(err)
+		}
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

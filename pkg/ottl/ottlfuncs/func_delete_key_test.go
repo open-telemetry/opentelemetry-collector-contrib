@@ -213,7 +213,8 @@ func BenchmarkDeleteKey(b *testing.B) {
 		m.PutStr("test", "hello world")
 		m.PutInt("test2", 3)
 		m.PutBool("test3", true)
-		_, err := exprFunc(ctx, m)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, m); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

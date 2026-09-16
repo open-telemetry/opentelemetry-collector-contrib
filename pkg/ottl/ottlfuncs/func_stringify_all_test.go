@@ -189,7 +189,8 @@ func BenchmarkStringifyAll(b *testing.B) {
 	for b.Loop() {
 		scenarioMap := pcommon.NewMap()
 		base.CopyTo(scenarioMap)
-		_, err := exprFunc(ctx, scenarioMap)
-		require.NoError(b, err)
+		if _, err := exprFunc(ctx, scenarioMap); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
