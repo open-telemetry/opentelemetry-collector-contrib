@@ -43,10 +43,9 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 	// Collect and sort durations
 	values := make([]indexedValue, n)
 	for i, node := range nodes {
-		// Use raw timestamps to avoid time.Time allocations
 		values[i] = indexedValue{
 			index: i,
-			value: float64(node.span.EndTimestamp() - node.span.StartTimestamp()),
+			value: float64(getDuration(node)),
 		}
 	}
 	sort.Slice(values, func(i, j int) bool {
@@ -165,9 +164,8 @@ func detectOutliersMAD(values []indexedValue, multiplier, minThreshold float64) 
 
 // logTransform maps a duration in nanoseconds onto the log scale, where the
 // spread the detectors measure is the typical ratio between spans rather than
-// the typical difference. Values are floored at one nanosecond because the
-// logarithm is undefined at zero and spans with equal start and end timestamps
-// are common.
+// the typical difference. The logarithm is undefined at or below zero, so
+// values are floored at one nanosecond.
 func logTransform(nanos float64) float64 {
 	if nanos < 1 {
 		nanos = 1
