@@ -59,6 +59,7 @@ type sqlServerScraperHelper struct {
 	serviceInstanceID      string
 	serverAddress          string
 	serverPort             int64
+	dbVersion              string
 }
 
 var (
@@ -115,7 +116,7 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 	return s.id
 }
 
-func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
+func (s *sqlServerScraperHelper) Start(ctx context.Context, _ component.Host) error {
 	// The connection pool is owned by the receiver and shared across all
 	// scrapers. Fetch the shared pool (opened once by the provider) rather than
 	// opening a new one here.
@@ -125,8 +126,24 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 		return fmt.Errorf("failed to open Db connection: %w", err)
 	}
 	s.client = s.clientProviderFunc(sqlquery.DbWrapper{Db: s.db}, s.sqlQuery, s.logger, s.telemetry)
+	s.dbVersion = detectSQLServerVersion(ctx, s.db, s.logger)
 
 	return nil
+}
+
+// detectSQLServerVersion queries SERVERPROPERTY('ProductVersion') once at startup.
+// Returns an empty string and logs a warning on failure.
+func detectSQLServerVersion(ctx context.Context, db *sql.DB, logger *zap.Logger) string {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var version string
+	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128))")
+	if err := row.Scan(&version); err != nil {
+		logger.Warn("sqlserverreceiver: failed to detect SQL Server version; db.system.version attribute will not be set", zap.Error(err))
+		return ""
+	}
+	return version
 }
 
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
@@ -396,6 +413,7 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceNamespace("")
 	rb.SetServerAddress(s.serverAddress)
 	rb.SetServerPort(s.serverPort)
+	rb.SetDbSystemVersion(s.dbVersion)
 
 	return rb
 }
