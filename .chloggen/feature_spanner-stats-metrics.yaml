@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/google_cloud_spanner
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Expand Spanner system stats coverage by adding previously uncovered columns to bring the parity between GCP Query insights page and OTel receiver. 
+note: Add `query_type` label to top minute query stats in `googlecloudspannerreceiver`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50843]
