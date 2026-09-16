@@ -217,7 +217,7 @@ metrics:
       value_type: double
     attributes: []
     warnings:
-      if_enabled: "This metric is deprecated and will be removed in a future release. It can be calculated as container.cpu.usage / k8s.node.allocatable_cpu."
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `container.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.container.cpu_limit_utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's limits"
@@ -253,7 +253,7 @@ metrics:
       value_type: double
     attributes: []
     warnings:
-      if_enabled: "This metric is deprecated and will be removed in a future release. It can be calculated as container.memory.usage / k8s.node.allocatable_memory."
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `container.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.container.memory_limit_utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the container's limits"
@@ -453,7 +453,7 @@ metrics:
       value_type: double
     attributes: []
     warnings:
-      if_enabled: "This metric is deprecated and will be removed in a future release. It can be calculated as k8s.pod.cpu.usage / k8s.node.allocatable_cpu."
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.pod.cpu.time:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
@@ -537,7 +537,7 @@ metrics:
       value_type: double
     attributes: []
     warnings:
-      if_enabled: "This metric is deprecated and will be removed in a future release. It can be calculated as k8s.pod.memory.usage / k8s.node.allocatable_memory."
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.pod.memory.page_faults:
     enabled: true
     description: "Pod memory page_faults"
