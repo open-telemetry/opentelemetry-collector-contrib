@@ -6,15 +6,16 @@ package adapter
 import (
 	"fmt"
 	"sort"
-	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
@@ -358,41 +359,79 @@ func TestHashResource(t *testing.T) {
 }
 
 func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
-	t.Parallel()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgStanzaAddDefaultScopeNameFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.PkgStanzaAddDefaultScopeNameFeatureGate.ID(), false)
+	})
 
 	testcases := []struct {
-		numberOFScopes int
-		logsPerScope   int
-		scopeName      string
+		name                        string
+		numberOFScopes              int
+		logsPerScope                int
+		emptyScopeNameForFirstEntry bool
+		defaultScopeName            string
+		defaultScopeVersion         string
 	}{
 		{
-			numberOFScopes: 1,
-			logsPerScope:   100,
+			name:                        "1 scope, non-empty",
+			numberOFScopes:              1,
+			logsPerScope:                100,
+			emptyScopeNameForFirstEntry: false,
 		},
 		{
-			numberOFScopes: 2,
-			logsPerScope:   50,
+			name:                        "2 scopes, non-empty",
+			numberOFScopes:              2,
+			logsPerScope:                50,
+			emptyScopeNameForFirstEntry: false,
+		},
+		{
+			name:                        "2 scope with 1 empty scope name",
+			numberOFScopes:              2,
+			logsPerScope:                50,
+			emptyScopeNameForFirstEntry: true,
+			defaultScopeName:            "defaultScope",
+			defaultScopeVersion:         "defaultVersion",
 		},
 	}
 
-	for i, tc := range testcases {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
 
 			entries := complexEntriesForNDifferentHostsMDifferentScopes(100, 1, tc.numberOFScopes)
 
-			pLogs := ConvertEntries(entries)
+			if tc.emptyScopeNameForFirstEntry {
+				entries[0].ScopeName = ""
+			}
+
+			expectedScopes := make(map[string]int)
+			expectedVersions := make(map[string]string)
+			for _, e := range entries {
+				scopeName := e.ScopeName
+				version := ""
+				if scopeName == "" {
+					scopeName = tc.defaultScopeName
+					version = tc.defaultScopeVersion
+				}
+				expectedScopes[scopeName]++
+				expectedVersions[scopeName] = version
+			}
+
+			pLogs := ConvertEntries(entries, tc.defaultScopeName, tc.defaultScopeVersion)
 
 			rLogs := pLogs.ResourceLogs()
+			require.Equal(t, 1, rLogs.Len())
+
 			rLog := rLogs.At(0)
-
 			ills := rLog.ScopeLogs()
-			require.Equal(t, ills.Len(), tc.numberOFScopes)
 
-			for i := 0; i < tc.numberOFScopes; i++ {
+			require.Equal(t, len(expectedScopes), ills.Len())
+
+			for i := 0; i < ills.Len(); i++ {
 				sl := ills.At(i)
-				require.Equal(t, sl.Scope().Name(), fmt.Sprintf("scope-%d", i%tc.numberOFScopes))
-				require.Equal(t, sl.LogRecords().Len(), tc.logsPerScope)
+				name := sl.Scope().Name()
+				require.Contains(t, expectedScopes, name)
+				require.Equal(t, expectedScopes[name], sl.LogRecords().Len())
+				require.Equal(t, expectedVersions[name], sl.Scope().Version())
 			}
 		})
 	}
@@ -803,7 +842,7 @@ func BenchmarkConverter(b *testing.B) {
 
 				for from := 0; from < entryCount; from += int(batchSize) {
 					to := min(from+int(batchSize), entryCount)
-					pLogs := ConvertEntries(entries[from:to])
+					pLogs := ConvertEntries(entries[from:to], "", "")
 					rLogs := pLogs.ResourceLogs()
 					require.Equal(b, hostsCount, rLogs.Len())
 				}
