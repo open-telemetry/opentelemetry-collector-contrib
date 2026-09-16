@@ -280,8 +280,8 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
-	if a.StopGracePeriod < 0 {
-		return errors.New("agent::stop_grace_period must not be negative")
+	if a.StopGracePeriod <= 0 {
+		return errors.New("agent::stop_grace_period must be positive")
 	}
 
 	for _, file := range a.ConfigFiles {

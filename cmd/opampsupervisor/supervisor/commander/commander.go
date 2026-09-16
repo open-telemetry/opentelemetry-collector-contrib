@@ -60,7 +60,9 @@ type Commander struct {
 func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
 	stopGracePeriod := cfg.StopGracePeriod
 	if stopGracePeriod <= 0 {
-		// Fall back to the default when unset, e.g. a config built without defaults.
+		// Config validation rejects a non-positive agent::stop_grace_period, so a
+		// loaded config never gets here. The fallback covers callers that build a
+		// config.Agent literal directly without going through config loading.
 		stopGracePeriod = defaultStopGracePeriod
 	}
 	return &Commander{
