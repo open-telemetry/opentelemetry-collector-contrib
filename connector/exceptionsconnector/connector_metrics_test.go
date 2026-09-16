@@ -336,16 +336,32 @@ func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
 	buf := &strings.Builder{}
-	buildKey(buf, "ab", span0.Name(), traceutil.SpanKindStr(span0.Kind()), traceutil.StatusCodeStr(span0.Status().Code()), nil, span0.Attributes(), pcommon.NewMap(), pcommon.NewMap())
+	buildKey(buf, "ab", span0.Name(), traceutil.SpanKindStr(span0.Kind()), traceutil.StatusCodeStr(span0.Status().Code()), true, nil, span0.Attributes(), pcommon.NewMap(), pcommon.NewMap())
 	k0 := buf.String()
 	buf.Reset()
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	buildKey(buf, "a", span1.Name(), traceutil.SpanKindStr(span1.Kind()), traceutil.StatusCodeStr(span1.Status().Code()), nil, span1.Attributes(), pcommon.NewMap(), pcommon.NewMap())
+	buildKey(buf, "a", span1.Name(), traceutil.SpanKindStr(span1.Kind()), traceutil.StatusCodeStr(span1.Status().Code()), true, nil, span1.Attributes(), pcommon.NewMap(), pcommon.NewMap())
 	k1 := buf.String()
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET", k0)
 	assert.Equal(t, "a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET", k1)
+}
+
+// hasSpan distinguishes no-span from an empty field: SpanKindStr/StatusCodeStr can also render
+// as "" for values outside their known enum, not just span.Name().
+func TestBuildKeyRealEmptySpanFieldsAreKept(t *testing.T) {
+	buf := &strings.Builder{}
+	buildKey(buf, "svc", "", "", "", true, nil, pcommon.NewMap(), pcommon.NewMap())
+	want := "svc" + metricKeySeparator + metricKeySeparator + metricKeySeparator
+	assert.Equal(t, want, buf.String(), "empty span.name/kind/status.code must still each occupy their own key segment")
+
+	dims := buildDimensionKVs(nil, "svc", "", "", "", true, pcommon.NewMap(), pcommon.NewMap())
+	for _, key := range []string{spanNameKey, spanKindKey, statusCodeKey} {
+		v, ok := dims.Get(key)
+		require.True(t, ok, "%s must be present (as empty) for a real span, not omitted", key)
+		assert.Equal(t, "", v.Str())
+	}
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
@@ -416,7 +432,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
 			buf := &strings.Builder{}
-			buildKey(buf, "ab", span0.Name(), traceutil.SpanKindStr(span0.Kind()), traceutil.StatusCodeStr(span0.Status().Code()), tc.optionalDims, span0.Attributes(), pcommon.NewMap(), resAttr)
+			buildKey(buf, "ab", span0.Name(), traceutil.SpanKindStr(span0.Kind()), traceutil.StatusCodeStr(span0.Status().Code()), true, tc.optionalDims, span0.Attributes(), pcommon.NewMap(), resAttr)
 			assert.Equal(t, tc.wantKey, buf.String())
 		})
 	}

@@ -94,10 +94,10 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 						statusCode := traceutil.StatusCodeStr(span.Status().Code())
 
 						var sb strings.Builder
-						buildKey(&sb, serviceName, spanName, spanKind, statusCode, c.dimensions, span.Attributes(), eventAttrs, resourceAttr)
+						buildKey(&sb, serviceName, spanName, spanKind, statusCode, true, c.dimensions, span.Attributes(), eventAttrs, resourceAttr)
 						key := sb.String()
 
-						attrs := buildDimensionKVs(c.dimensions, serviceName, spanName, spanKind, statusCode, span.Attributes(), eventAttrs, resourceAttr)
+						attrs := buildDimensionKVs(c.dimensions, serviceName, spanName, spanKind, statusCode, true, span.Attributes(), eventAttrs, resourceAttr)
 						c.recordException(key, attrs, span.TraceID(), span.SpanID())
 					}
 				}
@@ -130,10 +130,10 @@ func (c *metricsConnector) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 				lrAttrs := lr.Attributes()
 
 				var sb strings.Builder
-				buildKey(&sb, serviceName, "", "", "", c.dimensions, lrAttrs, resourceAttr)
+				buildKey(&sb, serviceName, "", "", "", false, c.dimensions, lrAttrs, resourceAttr)
 				key := sb.String()
 
-				attrs := buildDimensionKVs(c.dimensions, serviceName, "", "", "", lrAttrs, resourceAttr)
+				attrs := buildDimensionKVs(c.dimensions, serviceName, "", "", "", false, lrAttrs, resourceAttr)
 				c.recordException(key, attrs, lr.TraceID(), lr.SpanID())
 			}
 		}
@@ -206,18 +206,17 @@ func (c *metricsConnector) recordException(excKey string, attrs pcommon.Map, tra
 }
 
 // buildDimensionKVs builds the dimensions/attributes for an exception metric data point.
-// spanName/spanKind/statusCode are omitted when empty (logs-sourced exceptions have none).
-func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName, spanName, spanKind, statusCode string, attrSets ...pcommon.Map) pcommon.Map {
+// spanName/spanKind/statusCode are only added when hasSpan is true. A real span's values are
+// added as-is even when empty (e.g. an unnamed span, or a status/kind outside the known enum
+// values) - hasSpan distinguishes "no span exists" from "this field is empty", which are
+// different facts.
+func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName, spanName, spanKind, statusCode string, hasSpan bool, attrSets ...pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(4 + len(dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
-	if spanName != "" {
+	if hasSpan {
 		dims.PutStr(spanNameKey, spanName)
-	}
-	if spanKind != "" {
 		dims.PutStr(spanKindKey, spanKind)
-	}
-	if statusCode != "" {
 		dims.PutStr(statusCodeKey, statusCode)
 	}
 	for _, d := range dimensions {
@@ -230,16 +229,13 @@ func buildDimensionKVs(dimensions []pdatautil.Dimension, serviceName, spanName, 
 
 // buildKey builds the metric key: service name, span metadata, then any configured dimensions
 // found in attrSets (searched in order, earlier sets take precedence). Values are concatenated,
-// delimited by a null character. spanName/spanKind/statusCode are omitted when empty.
-func buildKey(dest *strings.Builder, serviceName, spanName, spanKind, statusCode string, optionalDims []pdatautil.Dimension, attrSets ...pcommon.Map) {
+// delimited by a null character. spanName/spanKind/statusCode are only added when hasSpan is
+// true (see buildDimensionKVs).
+func buildKey(dest *strings.Builder, serviceName, spanName, spanKind, statusCode string, hasSpan bool, optionalDims []pdatautil.Dimension, attrSets ...pcommon.Map) {
 	concatDimensionValue(dest, serviceName, false)
-	if spanName != "" {
+	if hasSpan {
 		concatDimensionValue(dest, spanName, true)
-	}
-	if spanKind != "" {
 		concatDimensionValue(dest, spanKind, true)
-	}
-	if statusCode != "" {
 		concatDimensionValue(dest, statusCode, true)
 	}
 
