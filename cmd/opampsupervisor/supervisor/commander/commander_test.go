@@ -27,6 +27,12 @@ const passthroughTestModeEnv = "OTEL_SUPERVISOR_COMMANDER_TEST_MODE" // #nosec G
 // its handler, which would instead terminate the process.
 const childReadyLine = "ignoring shutdown signals"
 
+// logAppendContinueFileEnv names the env var that tells the "log-append-after-truncate"
+// child where to look for the marker file signaling it to write its second line. Passed
+// as an env var, like passthroughTestModeEnv, because the child is a re-exec of this same
+// test binary and has no other channel to receive it over.
+const logAppendContinueFileEnv = "OTEL_SUPERVISOR_COMMANDER_TEST_CONTINUE_FILE"
+
 func TestMain(m *testing.M) {
 	switch os.Getenv(passthroughTestModeEnv) {
 	case "passthrough":
@@ -53,6 +59,26 @@ func TestMain(m *testing.M) {
 		signal.Ignore(os.Interrupt)
 		_, _ = fmt.Fprintln(os.Stderr, "ready")
 		time.Sleep(time.Minute)
+		os.Exit(0)
+	case "log-append-after-truncate":
+		// Writes a line, waits for the parent to truncate the log file out from
+		// under it and signal via a marker file, then writes a second line. This
+		// exercises the file handle Commander.startNormal actually hands to a real
+		// child through exec - as opposed to TestOpenAgentLogFileAppendsAfterExternalTruncate,
+		// which only writes through the parent's own *os.File and so would not catch
+		// a regression to Windows' handle-inheritance behavior.
+		_, _ = fmt.Fprint(os.Stdout, "before rotation\n")
+		continueFile := os.Getenv(logAppendContinueFileEnv)
+		if continueFile == "" {
+			os.Exit(1)
+		}
+		for {
+			if _, err := os.Stat(continueFile); err == nil {
+				break
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		_, _ = fmt.Fprint(os.Stdout, "after rotation\n")
 		os.Exit(0)
 	}
 	os.Exit(m.Run())
@@ -192,6 +218,89 @@ func TestWaitForOutputDrainCapturesFinalPassthroughLine(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 	require.Equal(t, []string{"final error line"}, lines)
+}
+
+func TestOpenAgentLogFileAppendsAfterExternalTruncate(t *testing.T) {
+	// Regression test for the pre-fix behavior: opening agent.log with a plain
+	// os.Create/os.OpenFile keeps writes anchored at the offset the file had
+	// when it was opened. If an external tool truncates the file for
+	// copytruncate-style rotation (e.g. the default policy on BOSH stemcells),
+	// the next write from the still-open handle used to land at that stale
+	// offset, padding the gap with NUL bytes and making the file's size snap
+	// right back up instead of staying rotated. openAgentLogFile must instead
+	// force every write to the file's current end-of-file, so that after an
+	// external truncate the next write starts the file clean.
+	path := filepath.Join(t.TempDir(), "agent.log")
+
+	f, err := openAgentLogFile(path)
+	require.NoError(t, err)
+	defer f.Close()
+
+	_, err = f.WriteString("before rotation\n")
+	require.NoError(t, err)
+
+	// Simulate an external copytruncate-style rotation: some other process
+	// truncates the file in place while our handle stays open.
+	require.NoError(t, os.Truncate(path, 0))
+
+	_, err = f.WriteString("after rotation\n")
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, "after rotation\n", string(got), "write after external truncate should land at the new end-of-file, not the stale pre-truncate offset")
+}
+
+// TestStartNormalChildWritesAfterExternalTruncate goes through startNormal with a real
+// child process instead of writing through openAgentLogFile's own *os.File. This matters
+// on Windows, where Go's os.O_APPEND is emulated in the opening process and does not
+// survive handle inheritance: a regression that dropped the FILE_APPEND_DATA-only handle
+// back to a plain append-mode handle would still pass TestOpenAgentLogFileAppendsAfterExternalTruncate,
+// but would fail here because the child writes through the inherited handle at its own
+// stale offset.
+func TestStartNormalChildWritesAfterExternalTruncate(t *testing.T) {
+	logPath := filepath.Join(t.TempDir(), "agent.log")
+	continueFile := filepath.Join(t.TempDir(), "continue")
+
+	cmdr, err := NewCommander(
+		zap.NewNop(),
+		logPath,
+		config.Agent{
+			Executable: os.Args[0],
+			Env: map[string]string{
+				passthroughTestModeEnv:   "log-append-after-truncate",
+				logAppendContinueFileEnv: continueFile,
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, cmdr.Start(t.Context()))
+	defer cmdr.Stop(t.Context()) //nolint:errcheck
+
+	require.Eventually(t, func() bool {
+		got, readErr := os.ReadFile(logPath)
+		return readErr == nil && strings.Contains(string(got), "before rotation")
+	}, 5*time.Second, 20*time.Millisecond, "child never wrote its first line")
+
+	// Simulate an external copytruncate-style rotation while the child is still alive
+	// and holding its inherited handle open.
+	require.NoError(t, os.Truncate(logPath, 0))
+
+	// Let the child proceed to its second write, now that the file has been rotated
+	// out from under it.
+	require.NoError(t, os.WriteFile(continueFile, nil, 0o600))
+
+	select {
+	case <-cmdr.Exited():
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for child process to exit")
+	}
+
+	got, err := os.ReadFile(logPath)
+	require.NoError(t, err)
+	require.Equal(t, "after rotation\n", string(got),
+		"child's write after external truncate should land at the new end-of-file through its inherited handle, not the stale pre-truncate offset")
 }
 
 func TestStopKillsUnresponsiveProcess(t *testing.T) {

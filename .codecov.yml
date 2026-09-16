@@ -225,10 +225,6 @@ component_management:
     name: exporter_logzio
     paths:
     - exporter/logzioexporter/**
-  - component_id: exporter_mezmo
-    name: exporter_mezmo
-    paths:
-    - exporter/mezmoexporter/**
   - component_id: exporter_opensearch
     name: exporter_opensearch
     paths:
@@ -497,6 +493,10 @@ component_management:
     name: pkg_ottl
     paths:
     - pkg/ottl/**
+  - component_id: pkg_ottl_contexts_xprofile
+    name: pkg_ottl_contexts_xprofile
+    paths:
+    - pkg/ottl/contexts/xprofile/**
   - component_id: pkg_pdatautil
     name: pkg_pdatautil
     paths:
