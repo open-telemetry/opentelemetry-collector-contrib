@@ -360,7 +360,7 @@ func TestBuildKeyRealEmptySpanFieldsAreKept(t *testing.T) {
 	for _, key := range []string{spanNameKey, spanKindKey, statusCodeKey} {
 		v, ok := dims.Get(key)
 		require.True(t, ok, "%s must be present (as empty) for a real span, not omitted", key)
-		assert.Equal(t, "", v.Str())
+		assert.Empty(t, v.Str())
 	}
 }
 
