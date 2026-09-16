@@ -14,20 +14,20 @@ import (
 
 var warnOnce sync.Once
 
-type SetArguments[K any] struct {
+type setArguments[K any] struct {
 	Target ottl.Setter[K]
 	Value  ottl.Getter[K]
 }
 
 func NewSetFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("set", &SetArguments[K]{}, createSetFunction[K])
+	return ottl.NewFactory("set", &setArguments[K]{}, createSetFunction[K])
 }
 
 func createSetFunction[K any](fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*SetArguments[K])
+	args, ok := oArgs.(*setArguments[K])
 
 	if !ok {
-		return nil, errors.New("SetFactory args must be of type *SetArguments[K]")
+		return nil, errors.New("SetFactory args must be of type *setArguments[K]")
 	}
 
 	return set(args.Target, args.Value, fCtx), nil

@@ -190,14 +190,14 @@ func Test_FilterFactory(t *testing.T) {
 		factory := NewFilterFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &FilterArguments[any]{}, args)
+		assert.IsType(t, &filterArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Source", "Predicate"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewFilterFactory[any]()
 		args := factory.CreateDefaultArguments()
-		filterArgs, ok := args.(*FilterArguments[any])
+		filterArgs, ok := args.(*filterArguments[any])
 		require.True(t, ok)
 		filterArgs.Source = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -215,7 +215,7 @@ func Test_FilterFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createFilterFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "FilterFactory args must be of type *FilterArguments[K]")
+		assert.ErrorContains(t, err, "FilterFactory args must be of type *filterArguments[K]")
 	})
 }
 

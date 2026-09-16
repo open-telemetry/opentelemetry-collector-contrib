@@ -289,14 +289,14 @@ func Test_CommunityIDFactory(t *testing.T) {
 		factory := NewCommunityIDFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &CommunityIDArguments[any]{}, args)
+		assert.IsType(t, &communityIDArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"SourceIP", "SourcePort", "DestinationIP", "DestinationPort", "Protocol", "Seed"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewCommunityIDFactory[any]()
 		args := factory.CreateDefaultArguments()
-		communityIDArgs, ok := args.(*CommunityIDArguments[any])
+		communityIDArgs, ok := args.(*communityIDArguments[any])
 		require.True(t, ok)
 		communityIDArgs.SourceIP = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -326,7 +326,7 @@ func Test_CommunityIDFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createCommunityIDFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "CommunityIDFactory args must be of type *CommunityIDArguments[K]")
+		assert.ErrorContains(t, err, "CommunityIDFactory args must be of type *communityIDArguments[K]")
 	})
 }
 

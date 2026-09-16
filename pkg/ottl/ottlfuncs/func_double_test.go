@@ -102,14 +102,14 @@ func Test_DoubleFactory(t *testing.T) {
 		factory := NewDoubleFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &DoubleArguments[any]{}, args)
+		assert.IsType(t, &doubleArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewDoubleFactory[any]()
 		args := factory.CreateDefaultArguments()
-		doubleArgs, ok := args.(*DoubleArguments[any])
+		doubleArgs, ok := args.(*doubleArguments[any])
 		require.True(t, ok)
 		doubleArgs.Target = &ottl.StandardFloatLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -124,7 +124,7 @@ func Test_DoubleFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createDoubleFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "DoubleFactory args must be of type *DoubleArguments[K]")
+		assert.ErrorContains(t, err, "DoubleFactory args must be of type *doubleArguments[K]")
 	})
 }
 

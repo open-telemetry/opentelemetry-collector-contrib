@@ -84,14 +84,14 @@ func Test_IsStringFactory(t *testing.T) {
 		factory := NewIsStringFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IsStringArguments[any]{}, args)
+		assert.IsType(t, &isStringArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewIsStringFactory[any]()
 		args := factory.CreateDefaultArguments()
-		isStringArgs, ok := args.(*IsStringArguments[any])
+		isStringArgs, ok := args.(*isStringArguments[any])
 		require.True(t, ok)
 		isStringArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -106,7 +106,7 @@ func Test_IsStringFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createIsStringFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "IsStringFactory args must be of type *IsStringArguments[K]")
+		assert.ErrorContains(t, err, "IsStringFactory args must be of type *isStringArguments[K]")
 	})
 }
 

@@ -10,20 +10,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type IsMatchArguments[K any] struct {
+type isMatchArguments[K any] struct {
 	Target  ottl.StringLikeGetter[K]
 	Pattern ottl.StringGetter[K]
 }
 
 func NewIsMatchFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("IsMatch", &IsMatchArguments[K]{}, createIsMatchFunction[K])
+	return ottl.NewFactory("IsMatch", &isMatchArguments[K]{}, createIsMatchFunction[K])
 }
 
 func createIsMatchFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*IsMatchArguments[K])
+	args, ok := oArgs.(*isMatchArguments[K])
 
 	if !ok {
-		return nil, errors.New("IsMatchFactory args must be of type *IsMatchArguments[K]")
+		return nil, errors.New("IsMatchFactory args must be of type *isMatchArguments[K]")
 	}
 
 	return isMatch(args.Target, args.Pattern)

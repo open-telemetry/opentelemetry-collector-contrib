@@ -345,14 +345,14 @@ func Test_MapEachFactory(t *testing.T) {
 		factory := NewMapEachFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &MapEachArguments[any]{}, args)
+		assert.IsType(t, &mapEachArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Source", "Mapper"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewMapEachFactory[any]()
 		args := factory.CreateDefaultArguments()
-		mapEachArgs, ok := args.(*MapEachArguments[any])
+		mapEachArgs, ok := args.(*mapEachArguments[any])
 		require.True(t, ok)
 		mapEachArgs.Source = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -370,7 +370,7 @@ func Test_MapEachFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createMapEachFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "MapEachFactory args must be of type *MapEachArguments[K]")
+		assert.ErrorContains(t, err, "MapEachFactory args must be of type *mapEachArguments[K]")
 	})
 }
 

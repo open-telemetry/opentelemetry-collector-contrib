@@ -154,14 +154,14 @@ func Test_KeepKeysFactory(t *testing.T) {
 		factory := NewKeepKeysFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &KeepKeysArguments[any]{}, args)
+		assert.IsType(t, &keepKeysArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Keys"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewKeepKeysFactory[any]()
 		args := factory.CreateDefaultArguments()
-		keepKeysArgs, ok := args.(*KeepKeysArguments[any])
+		keepKeysArgs, ok := args.(*keepKeysArguments[any])
 		require.True(t, ok)
 		keepKeysArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -183,7 +183,7 @@ func Test_KeepKeysFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createKeepKeysFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "KeepKeysFactory args must be of type *KeepKeysArguments[K]")
+		assert.ErrorContains(t, err, "KeepKeysFactory args must be of type *keepKeysArguments[K]")
 	})
 }
 

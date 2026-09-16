@@ -118,14 +118,14 @@ func Test_WeekdayFactory(t *testing.T) {
 		factory := NewWeekdayFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &WeekdayArguments[any]{}, args)
+		assert.IsType(t, &weekdayArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewWeekdayFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*WeekdayArguments[any])
+		timeArgs, ok := args.(*weekdayArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -140,7 +140,7 @@ func Test_WeekdayFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createWeekdayFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "WeekdayFactory args must be of type *WeekdayArguments[K]")
+		assert.ErrorContains(t, err, "WeekdayFactory args must be of type *weekdayArguments[K]")
 	})
 }
 

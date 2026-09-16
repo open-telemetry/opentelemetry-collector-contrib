@@ -189,14 +189,14 @@ func Test_SetFactory(t *testing.T) {
 		factory := NewSetFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SetArguments[any]{}, args)
+		assert.IsType(t, &setArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Value"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSetFactory[any]()
 		args := factory.CreateDefaultArguments()
-		setArgs, ok := args.(*SetArguments[any])
+		setArgs, ok := args.(*setArguments[any])
 		require.True(t, ok)
 		setArgs.Target = &ottl.StandardGetSetter[any]{
 			Setter: func(context.Context, any, any) error {
@@ -216,7 +216,7 @@ func Test_SetFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSetFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SetFactory args must be of type *SetArguments[K]")
+		assert.ErrorContains(t, err, "SetFactory args must be of type *setArguments[K]")
 	})
 }
 

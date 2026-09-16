@@ -152,14 +152,14 @@ func Test_WhenFactory(t *testing.T) {
 		factory := NewWhenFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &WhenArguments[any]{}, args)
+		assert.IsType(t, &whenArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Condition", "TrueValue", "FalseValue"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewWhenFactory[any]()
 		args := factory.CreateDefaultArguments()
-		whenArgs, ok := args.(*WhenArguments[any])
+		whenArgs, ok := args.(*whenArguments[any])
 		require.True(t, ok)
 		whenArgs.Condition = ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return true, nil
@@ -178,7 +178,7 @@ func Test_WhenFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createWhenFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "WhenFactory args must be of type *WhenArguments[K]")
+		assert.ErrorContains(t, err, "WhenFactory args must be of type *whenArguments[K]")
 	})
 }
 

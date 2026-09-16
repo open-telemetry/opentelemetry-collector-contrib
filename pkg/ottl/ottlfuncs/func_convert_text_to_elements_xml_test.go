@@ -81,7 +81,7 @@ func Test_ConvertTextToElementsXML(t *testing.T) {
 	factory := NewConvertTextToElementsXMLFactory[any]()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := &ConvertTextToElementsXMLArguments[any]{
+			args := &convertTextToElementsXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.document, nil
@@ -111,7 +111,7 @@ func TestCreateConvertTextToElementsXMLFunc(t *testing.T) {
 
 	// Invalid XPath should error on function creation
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ConvertTextToElementsXMLArguments[any]{
+		fCtx, &convertTextToElementsXMLArguments[any]{
 			XPath: ottl.NewTestingOptional("!"),
 		},
 	)
@@ -120,7 +120,7 @@ func TestCreateConvertTextToElementsXMLFunc(t *testing.T) {
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ConvertTextToElementsXMLArguments[any]{
+		fCtx, &convertTextToElementsXMLArguments[any]{
 			Target: invalidXMLGetter(),
 		},
 	)
@@ -157,14 +157,14 @@ func Test_ConvertTextToElementsXMLFactory(t *testing.T) {
 		factory := NewConvertTextToElementsXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ConvertTextToElementsXMLArguments[any]{}, args)
+		assert.IsType(t, &convertTextToElementsXMLArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "XPath", "ElementName"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewConvertTextToElementsXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
-		convertArgs, ok := args.(*ConvertTextToElementsXMLArguments[any])
+		convertArgs, ok := args.(*convertTextToElementsXMLArguments[any])
 		require.True(t, ok)
 		convertArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
