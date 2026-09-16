@@ -66,8 +66,8 @@ func (w *fileWatcher) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return fmt.Errorf("failed to read credentials file %q after %d retry", w.path, counter)
 		case <-timer.C:
-			if _, err := os.Stat(w.path); err == nil {
-				return w.start(ctx)
+			if err := w.start(ctx); err == nil {
+				return nil
 			}
 			counter++
 			if w.retryCfg.MaxRetries != 0 && counter > w.retryCfg.MaxRetries {
@@ -105,12 +105,16 @@ func (w *fileWatcher) start(ctx context.Context) error {
 
 	w.shutdownCH = make(chan struct{})
 	w.doneCH = make(chan struct{})
-	go w.watch(ctx, watcher)
 
-	// Watch the file itself. For symlinked files (e.g. Kubernetes projected volumes),
-	// fsnotify follows the symlink and watches the underlying inode. On Remove/Chmod
-	// events the watcher is re-added to follow the new symlink target.
-	return watcher.Add(w.path)
+	if err := watcher.Add(w.path); err != nil {
+		watcher.Close()
+		w.shutdownCH = nil
+		w.doneCH = nil
+		return err
+	}
+
+	go w.watch(ctx, watcher)
+	return nil
 }
 
 func (w *fileWatcher) Shutdown() error {

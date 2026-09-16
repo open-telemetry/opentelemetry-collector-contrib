@@ -360,3 +360,38 @@ func TestFileWatcher_UpdatesOnKubernetesSymlinkSwap(t *testing.T) {
 		assert.Equal(c, "rotated", r.Value())
 	}, 5*time.Second, 50*time.Millisecond, "value was not refreshed after symlink rotation")
 }
+
+func TestFileWatcher_RetriesWhenFileIsInitiallyEmpty(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+	// Create an empty file initially
+	require.NoError(t, os.WriteFile(f, []byte(""), 0o600))
+
+	r, err := NewValueResolver("", f, zaptest.NewLogger(t),
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 5, Interval: 50 * time.Millisecond}))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- r.Start(ctx)
+	}()
+
+	// Simulate populating the empty file after a delay
+	time.Sleep(150 * time.Millisecond)
+	require.NoError(t, os.WriteFile(f, []byte("secret-value"), 0o600))
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+		assert.Equal(t, "secret-value", r.Value())
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for Start with empty file retry")
+	}
+}
+
