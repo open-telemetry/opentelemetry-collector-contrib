@@ -345,43 +345,71 @@ func TestNHCBNegativeBucketPopulationIsDropped(t *testing.T) {
 	}
 }
 
-func TestStaleCustomBucketHistogramCarriesNoPopulation(t *testing.T) {
-	// The spans and deltas of a stale marker are not read, so the buckets stay empty and agree
-	// with the count of zero. Reading them would put a population on a data point that says
-	// nothing was recorded.
-	prwReceiver := setupMetricsReceiver(t)
-
-	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
-		Symbols: []string{
-			"",
-			"__name__", "test_metric", // 1, 2
-			"job", "service-x/test", // 3, 4
-			"instance", "107cn001", // 5, 6
+func TestStaleCustomBucketMarkerCarriesNoPopulation(t *testing.T) {
+	// A stale marker says the series stopped, so its spans and deltas describe nothing and are
+	// left unread. Reading them would put observations on a data point whose count is zero, and
+	// for deltas that overflow it would take the marker down with them.
+	for _, tc := range []struct {
+		name   string
+		count  uint64
+		bounds []float64
+		spans  []writev2.BucketSpan
+		deltas []int64
+	}{
+		{
+			name:   "deltas that would populate the buckets",
+			count:  777,
+			bounds: []float64{1.0, 2.0},
+			spans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+			deltas: []int64{9, 9},
 		},
-		Timeseries: []writev2.TimeSeries{
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
-				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
-				Histograms: []writev2.Histogram{{
-					Schema:         -53,
-					Timestamp:      1,
-					Sum:            math.Float64frombits(value.StaleNaN),
-					Count:          &writev2.Histogram_CountInt{CountInt: 777},
-					CustomValues:   []float64{1.0, 2.0},
-					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
-					PositiveDeltas: []int64{9, 9},
-				}},
-			},
+		{
+			name:   "deltas that would overflow the count",
+			count:  0,
+			bounds: []float64{1, 2, 3, 4},
+			spans:  []writev2.BucketSpan{{Offset: 0, Length: 5}},
+			deltas: []int64{1 << 62, 0, 0, 0, 0},
 		},
-	})
-	require.NoError(t, err)
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
 
-	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
-		Histogram().DataPoints().At(0)
-	assert.True(t, dp.Flags().NoRecordedValue())
-	assert.Equal(t, uint64(0), dp.Count())
-	assert.Equal(t, []uint64{0, 0, 0}, dp.BucketCounts().AsRaw(), "the deltas are not read")
-	assert.Equal(t, []float64{1.0, 2.0}, dp.ExplicitBounds().AsRaw(), "the shape is still described")
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Schema:         -53,
+							Count:          &writev2.Histogram_CountInt{CountInt: tc.count},
+							Sum:            math.Float64frombits(value.StaleNaN),
+							Timestamp:      1,
+							CustomValues:   tc.bounds,
+							PositiveSpans:  tc.spans,
+							PositiveDeltas: tc.deltas,
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, stats.Histograms)
+
+			dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+				Histogram().DataPoints()
+			require.Equal(t, 1, dps.Len(), "the stale marker is published")
+			dp := dps.At(0)
+			assert.True(t, dp.Flags().NoRecordedValue())
+			assert.Equal(t, uint64(0), dp.Count())
+			assert.Equal(t, make([]uint64, len(tc.bounds)+1), dp.BucketCounts().AsRaw(), "the deltas are not read")
+			assert.Equal(t, tc.bounds, dp.ExplicitBounds().AsRaw(), "the shape is still described")
+		})
+	}
 }
 
 func TestNHCBWithoutBoundsIsKept(t *testing.T) {
@@ -441,42 +469,6 @@ func TestNHCBWithoutBoundsIsKept(t *testing.T) {
 			assert.Equal(t, tc.count, dp.Count())
 		})
 	}
-}
-
-func TestStaleNHCBIsKeptWhateverItsBucketsSay(t *testing.T) {
-	// A stale marker has no population, so the buckets it carries are not summed and cannot take
-	// the marker down with them by overflowing.
-	prwReceiver := setupMetricsReceiver(t)
-
-	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
-		Symbols: []string{
-			"",
-			"__name__", "test_metric", // 1, 2
-			"job", "service-x/test", // 3, 4
-			"instance", "107cn001", // 5, 6
-		},
-		Timeseries: []writev2.TimeSeries{
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
-				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
-				Histograms: []writev2.Histogram{{
-					Count:          &writev2.Histogram_CountInt{CountInt: 0},
-					Sum:            math.Float64frombits(value.StaleNaN),
-					Timestamp:      1,
-					Schema:         -53,
-					CustomValues:   []float64{1, 2, 3, 4},
-					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 5}},
-					PositiveDeltas: []int64{1 << 62, 0, 0, 0, 0},
-				}},
-			},
-		},
-	})
-	require.NoError(t, err)
-	require.Equal(t, 1, stats.Histograms)
-
-	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints()
-	require.Equal(t, 1, dps.Len(), "the stale marker is published")
-	assert.True(t, dps.At(0).Flags().NoRecordedValue())
 }
 
 func TestNHCBCountComesFromTheBuckets(t *testing.T) {

@@ -793,7 +793,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	// represented by a bucket, which happens for NaN observations and for the overflow bucket.
 	count, ok := addPopulations(zeroCount, positive, negative)
 	if !positiveOK || !negativeOK || !ok {
-		prw.settings.Logger.Info("Dropping Native Histogram whose bucket population is too large to represent",
+		prw.settings.Logger.Error("Dropping Native Histogram whose bucket population is too large to represent",
 			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
 		return
 	}
@@ -928,6 +928,13 @@ func validateCustomBounds(bounds []float64) error {
 	return nil
 }
 
+// nhcbBucketCount is how many buckets a custom bucket histogram's bounds separate. Bounds sit
+// between buckets, so there is always one more bucket than bound, the last of them holding
+// everything above the last bound.
+func nhcbBucketCount(histogram *writev2.Histogram) int {
+	return len(histogram.CustomValues) + 1
+}
+
 // validateNHCB checks that the spans and deltas of a custom bucket histogram describe exactly the
 // buckets its bounds separate. Count is left out on purpose: it is rebuilt from the buckets, the
 // way the exponential schemas rebuild theirs, so the count that arrived does not have to agree.
@@ -953,7 +960,7 @@ func validateNHCB(histogram *writev2.Histogram) error {
 	if values := int64(len(histogram.PositiveDeltas)); described != values {
 		return fmt.Errorf("spans describe %d buckets, %d values provided", described, values)
 	}
-	if buckets := int64(len(histogram.CustomValues)) + 1; dense > buckets {
+	if buckets := int64(nhcbBucketCount(histogram)); dense > buckets {
 		return fmt.Errorf("spans reach past the %d buckets the bounds describe", buckets)
 	}
 	return nil
@@ -1186,7 +1193,7 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 		dp.ExplicitBounds().FromRaw(histogram.CustomValues)
-		dp.BucketCounts().FromRaw(make([]uint64, len(histogram.CustomValues)+1))
+		dp.BucketCounts().FromRaw(make([]uint64, nhcbBucketCount(histogram)))
 		attrs.CopyTo(dp.Attributes())
 		stats.Histograms++
 		return
@@ -1196,7 +1203,7 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 	// last one, which is what a classic histogram with only a +Inf bucket becomes.
 	bucketCounts, ok := convertNHCBBuckets(histogram)
 	if !ok {
-		prw.settings.Logger.Info("Dropping Native Histogram whose deltas take a bucket population below zero",
+		prw.settings.Logger.Error("Dropping Native Histogram whose deltas take a bucket population below zero",
 			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
 		return
 	}
@@ -1204,7 +1211,7 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 	// Counted first, so a population that cannot be represented is never half published.
 	count, ok := addPopulations(bucketCounts...)
 	if !ok {
-		prw.settings.Logger.Info("Dropping Native Histogram whose bucket population is too large to represent",
+		prw.settings.Logger.Error("Dropping Native Histogram whose bucket population is too large to represent",
 			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
 		return
 	}
@@ -1231,8 +1238,7 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 // convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts. validateNHCB has
 // already ruled out the shapes the bounds checks below catch, which are here to hold if it misses.
 func convertNHCBBuckets(histogram *writev2.Histogram) ([]uint64, bool) {
-	// For NHCB, we need numExplicitBounds + 1 buckets (including the final +inf bucket)
-	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
+	bucketCounts := make([]uint64, nhcbBucketCount(histogram))
 
 	// NHCB uses the positive bucket list and spans for all buckets
 	if len(histogram.PositiveSpans) == 0 {

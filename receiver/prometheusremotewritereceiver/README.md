@@ -101,13 +101,9 @@ Summaries suffer from the same problem, a working Summary is composed by several
 
 ### Only integer, counter flavored Native Histograms are translated
 
-The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, for both the standard schemas and custom buckets. A histogram whose reset hint is `GAUGE` is therefore not translated, and neither is one whose counts arrive as floats, whether that shows in its count fields, its bucket lists or its zero count, since any of the three can be the only float field on the wire. Float bucket populations can be fractional or non-finite and have no faithful representation in an OpenTelemetry histogram, whose bucket counts are unsigned integers.
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, and this receiver drops them. A native histogram whose bounds or bucket spans do not describe a histogram it can represent is dropped as well, and logged at error level with the metric name.
 
-A custom bucket histogram is checked before it is translated. Its bounds have to be finite and strictly increasing, since they are copied into `explicit_bounds` unchanged and anything else describes a bucket that can hold nothing; they are checked on a stale marker too, which carries them. Its spans and deltas have to describe exactly the buckets those bounds separate, because reading as far as the shorter of the two loses observations while leaving a count that agrees with the buckets that were emitted. The count that arrived is not part of that check, since it is rebuilt from the buckets.
-
-A custom bucket histogram that carries no bounds is translated rather than dropped. The bounds sit between buckets, so a histogram with none of them still has the bucket above the last one, which is the shape Prometheus produces for a classic histogram whose only bucket was `+Inf`.
-
-The data point count is rebuilt from what the translated histogram holds, rather than copied from the count Prometheus sent. For the exponential schemas that is the zero count plus the retained bucket populations, and for custom buckets it is the bucket counts. The two differ whenever an observation is not represented by a bucket, which happens for observations of NaN and for the overflow bucket. When nothing at all could be represented the count is zero, and the sum is then left unset, since OpenTelemetry requires the sum to be zero once the count is.
+The data point count is rebuilt from the buckets the translation emitted, rather than copied from the count Prometheus sent. Those differ whenever an observation is not represented by a bucket, which happens for observations of NaN and for the overflow bucket, so a count here can be lower than the one in Prometheus. When nothing could be represented the count is zero and the sum is left unset, which is what OpenTelemetry requires of a data point that recorded nothing.
 
 ### Native Histogram expansion limits
 
