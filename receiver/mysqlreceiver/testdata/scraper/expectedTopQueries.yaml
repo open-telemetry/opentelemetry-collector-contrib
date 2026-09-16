@@ -37,6 +37,15 @@ resourceLogs:
               - key: mysql.events_statements_summary_by_digest.sum_timer_wait
                 value:
                   doubleValue: 0.001021918999
+              - key: db.namespace
+                value:
+                  stringValue: mysql
+              - key: mysql.events_statements_summary_by_digest.sum_rows_examined
+                value:
+                  intValue: "0"
+              - key: mysql.events_statements_summary_by_digest.sum_rows_sent
+                value:
+                  intValue: "0"
             body: {}
             eventName: db.server.top_query
             timeUnixNano: "1779457646953037000"

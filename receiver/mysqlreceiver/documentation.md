@@ -954,6 +954,9 @@ This provides insights into query performance and resource usage, helping users 
 | mysql.events_statements_summary_by_digest.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str | - |
 | mysql.events_statements_summary_by_digest.count_star | The number of times the statement was executed, report in delta value. | Any Int | - |
 | mysql.events_statements_summary_by_digest.sum_timer_wait | The total time spent executing the statement, report in delta seconds. | Any Double | - |
+| db.namespace | The default database for the thread, or empty if none has been selected (originally processlist_db). | Any Str | - |
+| mysql.events_statements_summary_by_digest.sum_rows_examined | The number of rows examined by the statement, reported as a delta value. | Any Int | - |
+| mysql.events_statements_summary_by_digest.sum_rows_sent | The number of rows returned by the statement, reported as a delta value. | Any Int | - |
 
 ## Resource Attributes
 

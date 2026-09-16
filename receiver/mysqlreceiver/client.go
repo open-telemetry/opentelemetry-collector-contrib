@@ -375,6 +375,10 @@ type topQuery struct {
 	countStar                 int64
 	sumTimerWaitInPicoSeconds int64
 	querySampleText           string
+	// sumRowsExamined and sumRowsSent are raw cumulative counters from
+	// events_statements_summary_by_digest, diffed the same way as countStar.
+	sumRowsExamined int64
+	sumRowsSent     int64
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -1017,6 +1021,8 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 				&tq.countStar,
 				&tq.sumTimerWaitInPicoSeconds,
 				&tq.querySampleText,
+				&tq.sumRowsExamined,
+				&tq.sumRowsSent,
 			)
 		}
 		// querySampleText stays "" — sentinel for "no sample available"
@@ -1026,6 +1032,8 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 			&tq.digestText,
 			&tq.countStar,
 			&tq.sumTimerWaitInPicoSeconds,
+			&tq.sumRowsExamined,
+			&tq.sumRowsSent,
 		)
 	}
 
