@@ -14,6 +14,8 @@ type secondsArguments[K any] struct {
 	Duration ottl.DurationGetter[K]
 }
 
+// NewSecondsFactory returns a factory for the Seconds OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#seconds
 func NewSecondsFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Seconds", &secondsArguments[K]{}, createSecondsFunction[K])
 }
