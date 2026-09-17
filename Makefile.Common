@@ -373,6 +373,14 @@ gci:
 	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $$($(ALL_SRC_AND_DOC_CMD))
 
 CHANGED_GOLANG_SOURCES?=$(shell git diff main --name-only | grep -E '.*\.go$$' | grep -v -E '.*_test\.go$$')
+# FREE_DISK_THRESHOLD_MIB, when set to a positive number, makes
+# for-affected-components free the Go build and test caches between components
+# once the available disk space drops below that many MiB. This keeps a very
+# large affected set (e.g. a change to a broadly-imported module, whose affected
+# set is close to the whole repo) from exhausting the disk while building and
+# testing every component on space-constrained CI runners such as Windows. It is
+# empty by default, so local and roomy (e.g. Linux) runs are unaffected.
+FREE_DISK_THRESHOLD_MIB?=
 .PHONY: for-affected-components
 for-affected-components:
 	@echo "Checking for affected components..."
@@ -389,6 +397,13 @@ for-affected-components:
 			(cd "$${dir}" && \
 				echo "running $${CMD} in $${dir}" && \
 				$${CMD} ); \
+			if [ -n "$${FREE_DISK_THRESHOLD_MIB}" ]; then \
+				avail=$$(df -BM --output=avail . | sed '1d;s/[^0-9]//g'); \
+				if [ "$${avail}" -lt "$${FREE_DISK_THRESHOLD_MIB}" ]; then \
+					echo "Available disk space $${avail} MiB is below threshold $${FREE_DISK_THRESHOLD_MIB} MiB; running 'go clean -cache -testcache'"; \
+					$(GOCMD) clean -cache -testcache; \
+				fi; \
+			fi; \
 			done \
 		fi \
 	fi
