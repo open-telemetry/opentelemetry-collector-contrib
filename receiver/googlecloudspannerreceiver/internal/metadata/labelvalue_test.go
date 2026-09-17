@@ -17,7 +17,7 @@ func TestStringLabelValueMetadata(t *testing.T) {
 	assert.Equal(t, StringValueType, metadata.ValueType())
 	assert.Equal(t, labelName, metadata.Name())
 	assert.Equal(t, labelColumnName, metadata.ColumnName())
-	assert.Equal(t, true, metadata.GenerateHash())
+	assert.True(t, metadata.GenerateHash())
 
 	var expectedType *string
 
@@ -29,7 +29,7 @@ func TestInt64LabelValueMetadata(t *testing.T) {
 
 	assert.Equal(t, IntValueType, metadata.ValueType())
 	assert.Equal(t, labelName, metadata.Name())
-	assert.Equal(t, false, metadata.GenerateHash())
+	assert.False(t, metadata.GenerateHash())
 	assert.Equal(t, labelColumnName, metadata.ColumnName())
 
 	var expectedType *int64

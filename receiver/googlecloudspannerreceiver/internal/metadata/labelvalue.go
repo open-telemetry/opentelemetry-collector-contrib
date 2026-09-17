@@ -158,7 +158,6 @@ func (v stringSliceLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.PutStr(v.metadata.Name(), v.value)
 }
 
-
 func newStringSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
 	value := *valueHolder.(*[]string)
 
