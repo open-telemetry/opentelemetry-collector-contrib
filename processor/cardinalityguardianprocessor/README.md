@@ -52,9 +52,9 @@ Key design decisions:
 
 - **256-way sharding.** Each shard has its own `RWMutex`. With 50 concurrent goroutines across 256 shards, average occupancy is ~0.4 per shard. Contention is near zero. Shard selection is `hash & 0xFF` — one CPU cycle.
 
-- **HLL++ with reusable per-tracker storage.** Each tracker retains two p=14 sketches, estimating cardinality regardless of whether 100 or 100M unique values have been observed. Sparse sketches remain compact at low cardinality; dense registers use about 16 KiB per sketch. Epoch rotation resets and reuses the existing sketches, reducing allocation and GC pressure without changing steady-state tracker memory. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
+- **HLL++ with peak-retained per-tracker storage.** Each tracker retains two p=14 sketches. Sketches start sparse and may grow to dense registers of about 16 KiB each. Epoch rotation resets and reuses the sketches while preserving their representation and backing storage, so memory for a retained tracker reflects its peak observed cardinality rather than only its current epoch. This reduces allocation and GC pressure, but does not shrink tracker storage after load subsides. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
 
-- **Stale eviction.** Trackers that haven't been seen for two epochs are cleaned up. Memory stays bounded.
+- **Stale eviction.** Trackers that haven't been seen for two epochs are evicted and their sketch storage becomes eligible for garbage collection. However, shard-map capacity and storage retained by active trackers can reflect historical peak load. Set `max_tracker_count` to limit the number of concurrently retained trackers; `0` permits unlimited growth.
 
 ## Comparison with existing processors
 
@@ -66,7 +66,7 @@ Key design decisions:
 | Tag-only mode | Yes | No | No |
 | Per-metric overrides | Yes | N/A | N/A |
 | Top-N offender reporting | Yes | No | No |
-| Memory per tracker | Two reusable p=14 sketches; sparse/dense size varies | N/A | N/A |
+| Memory per retained tracker | Two reusable p=14 sketches; storage follows each tracker's peak cardinality and may retain up to ~32 KiB of dense registers, excluding overhead | N/A | N/A |
 
 `filterprocessor` and `metricstransformprocessor` are configuration-driven: you tell them what to drop. This processor is data-driven: it figures out what to drop based on observed behavior. The use cases are complementary, not competing.
 
