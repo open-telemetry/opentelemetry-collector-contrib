@@ -56,7 +56,11 @@ const (
 // decodeCollection reads a collection from the parent node's `<key>` (exact,
 // the default) or `<key>/include` (subset) entry. An absent key yields a nil
 // slice; specifying both forms is a schema error.
-func decodeCollection[T any](raw map[string]yaml.Node, key string) ([]T, collectionMode, error) {
+//
+// fixup, when non-nil, is called with each decoded item and that item's raw
+// keys, so a nested collection can be resolved for item types that have no
+// UnmarshalYAML of their own.
+func decodeCollection[T any](raw map[string]yaml.Node, key string, fixup func(*T, map[string]yaml.Node) error) ([]T, collectionMode, error) {
 	includeKey := key + "/include"
 	includeNode, hasInclude := raw[includeKey]
 	exactNode, hasExact := raw[key]
@@ -65,24 +69,36 @@ func decodeCollection[T any](raw map[string]yaml.Node, key string) ([]T, collect
 		return nil, collectionModeExact, fmt.Errorf("cannot specify both %q and %q", key, includeKey)
 	}
 
-	node, mode := exactNode, collectionModeExact
+	node, mode, usedKey := exactNode, collectionModeExact, key
 	if hasInclude {
-		node, mode = includeNode, collectionModeInclude
+		node, mode, usedKey = includeNode, collectionModeInclude, includeKey
 	} else if !hasExact {
 		return nil, collectionModeExact, nil
 	}
 
 	var out []T
 	if err := node.Decode(&out); err != nil {
-		if mode == collectionModeInclude {
-			return nil, mode, fmt.Errorf("decode %s: %w", includeKey, err)
-		}
-		return nil, mode, fmt.Errorf("decode %s: %w", key, err)
+		return nil, mode, fmt.Errorf("decode %s: %w", usedKey, err)
 	}
 	// An explicit empty list must stay non-nil: in exact mode it asserts that
 	// the collection is empty, which is distinct from omitting the key.
 	if out == nil {
 		out = []T{}
+	}
+	if fixup != nil {
+		// A sequence node decoded into a slice has one child per element.
+		if len(node.Content) != len(out) {
+			return nil, mode, fmt.Errorf("decode %s: got %d items but %d nodes", usedKey, len(out), len(node.Content))
+		}
+		for i := range out {
+			var item map[string]yaml.Node
+			if err := node.Content[i].Decode(&item); err != nil {
+				return nil, mode, fmt.Errorf("decode %s: %w", usedKey, err)
+			}
+			if err := fixup(&out[i], item); err != nil {
+				return nil, mode, err
+			}
+		}
 	}
 	return out, mode, nil
 }
@@ -137,7 +153,7 @@ func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 		r.AttributeMode = attributeModeExact
 	}
 
-	scopes, mode, err := decodeCollection[scopeAssertion](raw, "scopes")
+	scopes, mode, err := decodeCollection[scopeAssertion](raw, "scopes", nil)
 	if err != nil {
 		return fmt.Errorf("resource assertion: %w", err)
 	}
@@ -189,16 +205,16 @@ func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 
-	version, err := buildVersionMatcher(raw.Version, raw.VersionExists, raw.VersionRegex)
-	if err != nil {
-		return err
-	}
-
 	var keys map[string]yaml.Node
 	if err := value.Decode(&keys); err != nil {
 		return err
 	}
-	metrics, mode, err := decodeCollection[metricAssertion](keys, "metrics")
+
+	version, err := buildVersionMatcher(raw.Version, raw.VersionExists, raw.VersionRegex)
+	if err != nil {
+		return err
+	}
+	metrics, mode, err := decodeCollection(keys, "metrics", resolveMetricDatapoints)
 	if err != nil {
 		return fmt.Errorf("scope assertion: %w", err)
 	}
@@ -274,28 +290,13 @@ type metricAssertion struct {
 	DatapointsMode collectionMode       `yaml:"-"`
 }
 
-// UnmarshalYAML decodes a metric, resolving `datapoints` / `datapoints/include`
-// into the datapoint collection and its mode. A suffixed key cannot be
-// expressed as a struct tag next to the unsuffixed one, so it is read from the
-// raw keys here, the same way resourceAssertion and datapointAssertion read
-// `attributes/include`.
-func (m *metricAssertion) UnmarshalYAML(node *yaml.Node) error {
-	// metricFields has no UnmarshalYAML method, so decoding into it reads the
-	// identity fields by tag without recursing back into this method.
-	type metricFields metricAssertion
-	var fields metricFields
-	if err := node.Decode(&fields); err != nil {
-		return err
-	}
-	*m = metricAssertion(fields)
-
-	var raw map[string]yaml.Node
-	if err := node.Decode(&raw); err != nil {
-		return err
-	}
-	datapoints, mode, err := decodeCollection[datapointAssertion](raw, "datapoints")
+// resolveMetricDatapoints reads `datapoints` / `datapoints/include` from a
+// metric's raw keys. metricAssertion has no UnmarshalYAML of its own, so this
+// runs as decodeCollection's per-item fixup when a metrics collection is read.
+func resolveMetricDatapoints(m *metricAssertion, raw map[string]yaml.Node) error {
+	datapoints, mode, err := decodeCollection[datapointAssertion](raw, "datapoints", nil)
 	if err != nil {
-		return fmt.Errorf("metric assertion: %w", err)
+		return fmt.Errorf("metric %q: %w", m.Name, err)
 	}
 	m.Datapoints, m.DatapointsMode = datapoints, mode
 	return nil
@@ -444,9 +445,9 @@ func (d *datapointAssertion) decodeDoublePrecision(raw map[string]yaml.Node) err
 }
 
 func readDocument(path string) (*document, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read assertion file: %w", err)
+	b, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return nil, fmt.Errorf("read assertion file: %w", readErr)
 	}
 	var doc document
 	if err := yaml.Unmarshal(b, &doc); err != nil {
@@ -466,7 +467,7 @@ func readDocument(path string) (*document, error) {
 	if err := yaml.Unmarshal(b, &raw); err != nil {
 		return nil, fmt.Errorf("parse assertion file %s: %w", path, err)
 	}
-	resources, mode, err := decodeCollection[resourceAssertion](raw, "resources")
+	resources, mode, err := decodeCollection[resourceAssertion](raw, "resources", nil)
 	if err != nil {
 		return nil, fmt.Errorf("assertion file %s: %w", path, err)
 	}
