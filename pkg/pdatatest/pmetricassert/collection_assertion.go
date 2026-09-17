@@ -270,8 +270,15 @@ func (m metricAssertion) Matches(actual pmetric.Metric) error {
 	actualAssertion.Datapoints.Values = make([]datapointAssertion, 0, len(extractDatapoints(actual)))
 	for _, ed := range extractDatapoints(actual) {
 		actualAssertion.Datapoints.Values = append(actualAssertion.Datapoints.Values, datapointAssertion{
-			Attributes: attrMapToRaw(ed.attributes),
-			Value:      ed.value,
+			Attributes:     attrMapToRaw(ed.attributes),
+			IntValue:       ed.intValue,
+			DoubleValue:    ed.doubleValue,
+			Count:          ed.count,
+			Sum:            ed.sum,
+			Min:            ed.minVal,
+			Max:            ed.maxVal,
+			ExplicitBounds: ed.explicitBounds,
+			BucketCounts:   ed.bucketCounts,
 		})
 	}
 	return compareMetric(expected, actualAssertion)
