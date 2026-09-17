@@ -54,9 +54,7 @@ type signingProcessor struct {
 	certRef      string // audit.integrity.certificate value (fingerprint or full DER)
 }
 
-func newProcessor(cfg *Config, nextLogs consumer.Logs, settings processor.Settings) (*signingProcessor, error) {
-	ctx := context.Background()
-
+func newProcessor(ctx context.Context, cfg *Config, nextLogs consumer.Logs, settings processor.Settings) (*signingProcessor, error) {
 	provider, err := newKeyMaterialProvider(ctx, cfg, settings.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize key material provider: %w", err)

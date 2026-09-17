@@ -7,12 +7,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/signingprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/signingprocessor/internal/metadata"
 )
 
 func NewFactory() processor.Factory {
@@ -24,7 +23,7 @@ func NewFactory() processor.Factory {
 }
 
 func createLogsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	settings processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
@@ -38,7 +37,7 @@ func createLogsProcessor(
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	proc, err := newProcessor(processorCfg, nextConsumer, settings)
+	proc, err := newProcessor(ctx, processorCfg, nextConsumer, settings)
 	if err != nil {
 		return nil, fmt.Errorf("error creating processor: %w", err)
 	}

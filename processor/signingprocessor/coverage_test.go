@@ -828,7 +828,7 @@ func TestNewProcessorMissingKeyFiles(t *testing.T) {
 	}
 	f := NewFactory()
 	settings := processortest.NewNopSettings(f.Type())
-	_, err := newProcessor(cfg, &logSink{}, settings)
+	_, err := newProcessor(context.Background(), cfg, &logSink{}, settings)
 	if err == nil {
 		t.Error("expected error when key files do not exist")
 	}
