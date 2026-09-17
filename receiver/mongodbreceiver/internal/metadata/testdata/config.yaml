@@ -113,6 +113,18 @@ all_set:
       enabled: true
     mongodb.uptime:
       enabled: true
+    mongodb.wt.concurrent_transaction.ticket.in_use:
+      enabled: true
+      attributes: ["mongodb.wt.concurrent_transaction.ticket.type"]
+    mongodb.wt.fsync.count:
+      enabled: true
+    mongodb.wt.log.operation.count:
+      enabled: true
+      attributes: ["mongodb.wt.log.operation.type"]
+    mongodb.wt.log.sync.time:
+      enabled: true
+    mongodb.wt.log.write:
+      enabled: true
     mongodb.wtcache.bytes.read:
       enabled: true
   events:
@@ -121,6 +133,8 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     server.address:
       enabled: true
     server.port:
@@ -245,6 +259,18 @@ reaggregate_set:
       enabled: true
     mongodb.uptime:
       enabled: true
+    mongodb.wt.concurrent_transaction.ticket.in_use:
+      enabled: true
+      attributes: []
+    mongodb.wt.fsync.count:
+      enabled: true
+    mongodb.wt.log.operation.count:
+      enabled: true
+      attributes: []
+    mongodb.wt.log.sync.time:
+      enabled: true
+    mongodb.wt.log.write:
+      enabled: true
     mongodb.wtcache.bytes.read:
       enabled: true
   events:
@@ -253,6 +279,8 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     server.address:
       enabled: true
     server.port:
@@ -377,6 +405,18 @@ none_set:
       enabled: false
     mongodb.uptime:
       enabled: false
+    mongodb.wt.concurrent_transaction.ticket.in_use:
+      enabled: false
+      attributes: ["mongodb.wt.concurrent_transaction.ticket.type"]
+    mongodb.wt.fsync.count:
+      enabled: false
+    mongodb.wt.log.operation.count:
+      enabled: false
+      attributes: ["mongodb.wt.log.operation.type"]
+    mongodb.wt.log.sync.time:
+      enabled: false
+    mongodb.wt.log.write:
+      enabled: false
     mongodb.wtcache.bytes.read:
       enabled: false
   events:
@@ -385,6 +425,8 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.version:
+      enabled: false
     server.address:
       enabled: false
     server.port:
@@ -397,6 +439,9 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      override_value: "override-db.system.version"
     server.address:
       enabled: true
       override_value: "override-server.address"
@@ -414,6 +459,12 @@ override_set:
       override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     server.address:
       enabled: true
       metrics_include:
@@ -446,6 +497,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     server.address:
       enabled: true
       metrics_exclude:

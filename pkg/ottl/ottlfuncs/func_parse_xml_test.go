@@ -6,6 +6,7 @@ package ottlfuncs
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -23,10 +24,14 @@ func Test_ParseXML(t *testing.T) {
 		want        map[string]any
 		createError string
 		parseError  string
+		// parseErrorAnyOf is used instead of parseError when the wording of the
+		// error depends on the Go version in use. The error must contain at
+		// least one of the listed strings.
+		parseErrorAnyOf []string
 	}{
 		{
 			name: "Text values in nested elements",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "<Log><User><ID>00001</ID><Name>Joe</Name><Email>joe.smith@example.com</Email></User><Text>User did a thing</Text></Log>", nil
@@ -62,7 +67,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Formatted example",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `
@@ -106,7 +111,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Multiple tags with the same name",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<Log>This record has a collision<User id="0001"/><User id="0002"/></Log>`, nil
@@ -134,7 +139,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Multiple lines of content",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<Log>
@@ -160,7 +165,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Attribute only element",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<HostInfo hostname="example.com" zone="east-1" cloudprovider="aws" />`, nil
@@ -178,7 +183,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Ignores XML declaration",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<?xml version="1.0" encoding="UTF-8" ?><Log>Log content</Log>`, nil
@@ -192,7 +197,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Ignores comments",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<Log>This has a comment <!-- This is comment text --></Log>`, nil
@@ -206,7 +211,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Ignores processing instructions",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<Log><?xml-stylesheet type="text/xsl" href="style.xsl"?>Log content</Log>`, nil
@@ -220,7 +225,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Ignores directives",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<Log><!ELEMENT xi:fallback ANY>Log content</Log>`, nil
@@ -234,7 +239,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Missing closing element",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<Log id="1">`, nil
@@ -245,7 +250,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Missing nested closing element",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<Log><Text></Log>`, nil
@@ -256,7 +261,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Multiple XML elements in payload (trailing bytes)",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `<Log></Log><Log></Log>`, nil
@@ -267,7 +272,7 @@ func Test_ParseXML(t *testing.T) {
 		},
 		{
 			name: "Error getting target",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "", errors.New("failed to get string")
@@ -279,11 +284,11 @@ func Test_ParseXML(t *testing.T) {
 		{
 			name:        "Invalid arguments",
 			oArgs:       nil,
-			createError: "ParseXMLFactory args must be of type *ParseXMLArguments[K]",
+			createError: "ParseXMLFactory args must be of type *parseXMLArguments[K]",
 		},
 		{
 			name: "Exceeds max nesting depth",
-			oArgs: &ParseXMLArguments[any]{
+			oArgs: &parseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						const depth = maxXMLElementDepth + 2
@@ -291,7 +296,17 @@ func Test_ParseXML(t *testing.T) {
 					},
 				},
 			},
-			parseError: "exceeded maximum XML nesting depth",
+			// Whichever depth guard trips first depends on the Go version.
+			// Through a custom xml.Unmarshaler, encoding/xml resets its own
+			// depth counter on every DecodeElement call up to Go 1.25.12 and
+			// 1.26.5, so maxXMLElementDepth is what rejects the input. As of
+			// Go 1.25.13 and 1.26.6 that counter is tracked on the decoder and
+			// accumulates across calls, so encoding/xml rejects the input one
+			// level earlier and reports its own error instead.
+			parseErrorAnyOf: []string{
+				"exceeded maximum XML nesting depth",
+				"exceeded max depth",
+			},
 		},
 	}
 
@@ -308,6 +323,13 @@ func Test_ParseXML(t *testing.T) {
 			result, err := exprFunc(t.Context(), nil)
 			if tt.parseError != "" {
 				require.ErrorContains(t, err, tt.parseError)
+				return
+			}
+			if len(tt.parseErrorAnyOf) > 0 {
+				require.Error(t, err)
+				require.True(t, slices.ContainsFunc(tt.parseErrorAnyOf, func(want string) bool {
+					return strings.Contains(err.Error(), want)
+				}), "error %q contains none of %q", err, tt.parseErrorAnyOf)
 				return
 			}
 
@@ -331,14 +353,14 @@ func Test_ParseXMLFactory(t *testing.T) {
 		factory := NewParseXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ParseXMLArguments[any]{}, args)
+		assert.IsType(t, &parseXMLArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewParseXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
-		xmlArgs, ok := args.(*ParseXMLArguments[any])
+		xmlArgs, ok := args.(*parseXMLArguments[any])
 		require.True(t, ok)
 		xmlArgs.Target = ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -353,6 +375,22 @@ func Test_ParseXMLFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createParseXMLFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ParseXMLFactory args must be of type *ParseXMLArguments[K]")
+		assert.ErrorContains(t, err, "ParseXMLFactory args must be of type *parseXMLArguments[K]")
 	})
+}
+
+func BenchmarkParseXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "<Log><User><ID>00001</ID><Name>Joe</Name><Email>joe.smith@example.com</Email></User><Text>User did a thing</Text></Log>", nil
+		},
+	}
+	exprFunc := parseXML(target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -94,9 +95,35 @@ func TestEnabledAttributes(t *testing.T) {
 		"k8s.deployment.name",
 		"k8s.node.name",
 		"container.image.name",
-		containerImageTag,
+		"container.image.tags",
 	}
 	assert.ElementsMatch(t, expected, enabledAttributes())
+}
+
+func TestEnabledAttributesV0Gates(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+	}()
+
+	attrs := enabledAttributes()
+	assert.Contains(t, attrs, containerImageTag, "container.image.tag should be present when DontEmitV0K8sConventions is disabled")
+	assert.NotContains(t, attrs, "container.image.tags", "container.image.tags should not be present when EmitV1K8sConventions is disabled")
+}
+
+func TestEnabledAttributesBothSchemas(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
+	}()
+
+	attrs := enabledAttributes()
+	assert.Contains(t, attrs, containerImageTag, "container.image.tag should be present when DontEmitV0K8sConventions is disabled")
+	assert.Contains(t, attrs, "container.image.tags", "container.image.tags should be present when EmitV1K8sConventions is enabled")
 }
 
 func TestWithExtractAnnotations(t *testing.T) {
@@ -803,6 +830,17 @@ func TestWithExcludes(t *testing.T) {
 			assert.Equal(t, tt.want, p.podIgnore)
 		})
 	}
+}
+
+func TestWithExcludesInvalidRegex(t *testing.T) {
+	p := &kubernetesprocessor{}
+	opt := withExcludes(ExcludeConfig{
+		Pods: []ExcludePodConfig{{Name: "[unclosed"}},
+	})
+	err := opt(p)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid pod exclude name")
+	assert.Nil(t, p.podIgnore.Pods)
 }
 
 func TestOtelAnnotations(t *testing.T) {

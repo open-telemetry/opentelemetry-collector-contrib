@@ -11,19 +11,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type FormatArguments[K any] struct {
+type formatArguments[K any] struct {
 	Format string
 	Vals   []ottl.Getter[K]
 }
 
 func NewFormatFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Format", &FormatArguments[K]{}, createFormatFunction[K])
+	return ottl.NewFactory("Format", &formatArguments[K]{}, createFormatFunction[K])
 }
 
 func createFormatFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*FormatArguments[K])
+	args, ok := oArgs.(*formatArguments[K])
 	if !ok {
-		return nil, errors.New("FormatFactory args must be of type *FormatArguments[K]")
+		return nil, errors.New("FormatFactory args must be of type *formatArguments[K]")
 	}
 
 	return format(args.Format, args.Vals), nil

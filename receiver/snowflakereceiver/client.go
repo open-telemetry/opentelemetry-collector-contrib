@@ -90,6 +90,7 @@ func (c snowflakeClient) FetchBillingMetrics(ctx context.Context) (*[]billingMet
 		err = fmt.Errorf("no rows returned by query: %v", billingMetricsQuery)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res []billingMetric
 
@@ -110,6 +111,9 @@ func (c snowflakeClient) FetchBillingMetrics(ctx context.Context) (*[]billingMet
 			totalVirtualWarehouseCredits: totalVirtualWarehouseCredits,
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return &res, nil
 }
 
@@ -123,6 +127,7 @@ func (c snowflakeClient) FetchWarehouseBillingMetrics(ctx context.Context) (*[]w
 		err = fmt.Errorf("no rows returned by query: %v", warehouseBillingMetricsQuery)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res []whBillingMetric
 
@@ -141,6 +146,9 @@ func (c snowflakeClient) FetchWarehouseBillingMetrics(ctx context.Context) (*[]w
 			totalVirtualWarehouse: totalVirtualWarehouse,
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return &res, nil
 }
 
@@ -154,6 +162,7 @@ func (c snowflakeClient) FetchLoginMetrics(ctx context.Context) (*[]loginMetric,
 		err = fmt.Errorf("no rows returned by query: %v", loginMetricsQuery)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res []loginMetric
 
@@ -179,6 +188,9 @@ func (c snowflakeClient) FetchLoginMetrics(ctx context.Context) (*[]loginMetric,
 			isSuccess:          isSuccess,
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return &res, nil
 }
 
@@ -192,6 +204,7 @@ func (c snowflakeClient) FetchHighLevelQueryMetrics(ctx context.Context) (*[]hlQ
 		err = fmt.Errorf("no rows returned by query: %v", highLevelQueryMetricsQuery)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res []hlQueryMetric
 
@@ -219,6 +232,9 @@ func (c snowflakeClient) FetchHighLevelQueryMetrics(ctx context.Context) (*[]hlQ
 				avgQueryQueuedProvision: avgQueryQueuedProvision,
 			})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return &res, nil
 }
@@ -233,6 +249,7 @@ func (c snowflakeClient) FetchDbMetrics(ctx context.Context) (*[]dbMetric, error
 		err = fmt.Errorf("no rows returned by query: %v", dbMetricsQuery)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res []dbMetric
 
@@ -316,6 +333,9 @@ func (c snowflakeClient) FetchDbMetrics(ctx context.Context) (*[]dbMetric, error
 		}
 		res = append(res, db)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return &res, nil
 }
 
@@ -329,6 +349,7 @@ func (c snowflakeClient) FetchSessionMetrics(ctx context.Context) (*[]sessionMet
 		err = fmt.Errorf("no rows returned by query: %v", sessionMetricsQuery)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res []sessionMetric
 
@@ -345,6 +366,9 @@ func (c snowflakeClient) FetchSessionMetrics(ctx context.Context) (*[]sessionMet
 			distinctSessionID: distinctSessionID,
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return &res, nil
 }
@@ -359,6 +383,7 @@ func (c snowflakeClient) FetchSnowpipeMetrics(ctx context.Context) (*[]snowpipeM
 		err = fmt.Errorf("no rows returned by query: %v", snowpipeMetricsQuery)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res []snowpipeMetric
 
@@ -378,6 +403,9 @@ func (c snowflakeClient) FetchSnowpipeMetrics(ctx context.Context) (*[]snowpipeM
 			filesInserted: filesInserted,
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return &res, nil
 }
@@ -392,6 +420,7 @@ func (c snowflakeClient) FetchStorageMetrics(ctx context.Context) (*[]storageMet
 		err = fmt.Errorf("no rows returned by query: %v", storageMetricsQuery)
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res []storageMetric
 
@@ -406,6 +435,9 @@ func (c snowflakeClient) FetchStorageMetrics(ctx context.Context) (*[]storageMet
 			stageBytes:    stageBytes,
 			failsafeBytes: failsafeBytes,
 		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return &res, nil
 }

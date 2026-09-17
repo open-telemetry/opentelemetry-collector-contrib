@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
+	"strings"
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
@@ -72,7 +74,7 @@ func (cfg *Config) Validate() error {
 	if cfg.PodDeleteGracePeriod < 0 {
 		return errors.New("pod_delete_grace_period must be greater than or equal to 0")
 	}
-	if cfg.Kubelet.PollInterval <= 0 {
+	if cfg.Kubelet.Enabled && cfg.Kubelet.PollInterval <= 0 {
 		return errors.New("kubelet.poll_interval must be greater than 0")
 	}
 	if cfg.Kubelet.Enabled {
@@ -89,10 +91,17 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	seenAssociations := make(map[string]struct{}, len(cfg.Association))
 	for _, assoc := range cfg.Association {
 		if len(assoc.Sources) > kube.PodIdentifierMaxLength {
 			return fmt.Errorf("too many association sources. limit is %v", kube.PodIdentifierMaxLength)
 		}
+
+		key := podAssociationKey(assoc)
+		if _, ok := seenAssociations[key]; ok {
+			return fmt.Errorf("duplicate pod association: %s", key)
+		}
+		seenAssociations[key] = struct{}{}
 	}
 
 	for _, f := range append(cfg.Extract.Labels, cfg.Extract.Annotations...) {
@@ -101,9 +110,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		switch f.From {
-		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode, kube.MetadataFromDeployment, kube.MetadataFromStatefulSet, kube.MetadataFromDaemonSet, kube.MetadataFromJob:
+		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode, kube.MetadataFromDeployment, kube.MetadataFromReplicaSet, kube.MetadataFromStatefulSet, kube.MetadataFromDaemonSet, kube.MetadataFromJob, kube.MetadataFromCronJob:
 		default:
-			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, deployment, statefulset, daemonset, job, node", f.From)
+			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, deployment, replicaset, statefulset, daemonset, job, cronjob, node", f.From)
 		}
 
 		if f.KeyRegex != "" {
@@ -151,7 +160,27 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	for _, pod := range cfg.Exclude.Pods {
+		if _, err := regexp.Compile(pod.Name); err != nil {
+			return fmt.Errorf("invalid pod exclude name %q: %w", pod.Name, err)
+		}
+	}
+
 	return nil
+}
+
+// podAssociationKey builds a stable, order-independent key for a pod association
+// from its sources. Sources are sorted by "from" and "name" so that two
+// associations listing the same sources in a different order resolve to the same
+// key. A PodIdentifier resolves the same regardless of source order, so such
+// associations are duplicates.
+func podAssociationKey(assoc PodAssociationConfig) string {
+	parts := make([]string, 0, len(assoc.Sources))
+	for _, source := range assoc.Sources {
+		parts = append(parts, source.From+"/"+source.Name)
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ",")
 }
 
 // KubeletConfig configures direct kubelet /pods polling.
@@ -210,11 +239,6 @@ type ExtractConfig struct {
 	// OtelAnnotations extracts all pod annotations with the prefix "resource.opentelemetry.io" as resource attributes
 	// E.g. "resource.opentelemetry.io/foo" becomes "foo"
 	OtelAnnotations bool `mapstructure:"otel_annotations"`
-
-	// DeploymentNameFromReplicaSet allows extracting deployment name from ReplicaSet name by trimming pod template hash.
-	//
-	// Deprecated: This option now defaults to true and will be removed in future releases.
-	DeploymentNameFromReplicaSet bool `mapstructure:"deployment_name_from_replicaset"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)
@@ -260,7 +284,7 @@ type FieldExtractConfig struct {
 	KeyRegex string `mapstructure:"key_regex"`
 
 	// From represents the source of the labels/annotations.
-	// Allowed values are "pod", "namespace", "node", "deployment", "statefulset", "daemonset", and "job". The default is pod.
+	// Allowed values are "pod", "namespace", "node", "deployment", "replicaset", "statefulset", "daemonset", "job", and "cronjob". The default is pod.
 	From string `mapstructure:"from"`
 }
 

@@ -668,6 +668,15 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: k8s.statefulset.desired_pods
             unit: '{pod}'
+          - description: The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.
+            name: k8s.statefulset.pod.available
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{pod}'
           - description: Number of pods created by the stateful set that have the `Ready` condition
             gauge:
               dataPoints:

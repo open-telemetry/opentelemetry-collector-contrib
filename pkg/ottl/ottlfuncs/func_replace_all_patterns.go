@@ -18,7 +18,7 @@ const (
 	modeValue = "value"
 )
 
-type ReplaceAllPatternsArguments[K any] struct {
+type replaceAllPatternsArguments[K any] struct {
 	Target            ottl.PMapGetSetter[K]
 	Mode              string
 	RegexPattern      ottl.StringGetter[K]
@@ -28,14 +28,14 @@ type ReplaceAllPatternsArguments[K any] struct {
 }
 
 func NewReplaceAllPatternsFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("replace_all_patterns", &ReplaceAllPatternsArguments[K]{}, createReplaceAllPatternsFunction[K])
+	return ottl.NewFactory("replace_all_patterns", &replaceAllPatternsArguments[K]{}, createReplaceAllPatternsFunction[K])
 }
 
 func createReplaceAllPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ReplaceAllPatternsArguments[K])
+	args, ok := oArgs.(*replaceAllPatternsArguments[K])
 
 	if !ok {
-		return nil, errors.New("ReplaceAllPatternsFactory args must be of type *ReplaceAllPatternsArguments[K]")
+		return nil, errors.New("ReplaceAllPatternsFactory args must be of type *replaceAllPatternsArguments[K]")
 	}
 
 	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement, args.Function, args.ReplacementFormat)

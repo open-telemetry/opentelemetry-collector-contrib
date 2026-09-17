@@ -10,20 +10,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type TruncateTimeArguments[K any] struct {
+type truncateTimeArguments[K any] struct {
 	Time     ottl.TimeGetter[K]
 	Duration ottl.DurationGetter[K]
 }
 
 func NewTruncateTimeFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("TruncateTime", &TruncateTimeArguments[K]{}, createTruncateTimeFunction[K])
+	return ottl.NewFactory("TruncateTime", &truncateTimeArguments[K]{}, createTruncateTimeFunction[K])
 }
 
 func createTruncateTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*TruncateTimeArguments[K])
+	args, ok := oArgs.(*truncateTimeArguments[K])
 
 	if !ok {
-		return nil, errors.New("TimeFactory args must be of type *TruncateTimeArguments[K]")
+		return nil, errors.New("TimeFactory args must be of type *truncateTimeArguments[K]")
 	}
 
 	return TruncateTime(args.Time, args.Duration)

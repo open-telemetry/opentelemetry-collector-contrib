@@ -152,3 +152,13 @@ func (s *Sink) ExpectNoCallsUntil(t *testing.T, d time.Duration) {
 	case <-time.After(d):
 	}
 }
+
+// NextTokenWithin returns the next token body within the given duration, or nil if none available.
+func (s *Sink) NextTokenWithin(d time.Duration) []byte {
+	select {
+	case token := <-s.emitChan:
+		return token.Body
+	case <-time.After(d):
+		return nil
+	}
+}
