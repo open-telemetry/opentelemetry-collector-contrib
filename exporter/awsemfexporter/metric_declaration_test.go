@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -363,6 +364,28 @@ func TestMetricDeclarationInit(t *testing.T) {
 		err = m.init(logger)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "regex not specified for label matcher")
+	})
+}
+
+func TestMetricDeclarationInitInvalidSelector(t *testing.T) {
+	logger := zap.NewNop()
+
+	t.Run("unterminated character class", func(t *testing.T) {
+		m := &MetricDeclaration{
+			MetricNameSelectors: []string{"[unclosed"},
+		}
+		err := m.init(logger)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid metric name selector")
+	})
+
+	t.Run("invalid selector among valid ones", func(t *testing.T) {
+		m := &MetricDeclaration{
+			MetricNameSelectors: []string{"^a+$", "*invalid", "^b.*$"},
+		}
+		err := m.init(logger)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid metric name selector")
 	})
 }
 

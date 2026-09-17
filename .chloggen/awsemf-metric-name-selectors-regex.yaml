@@ -1,0 +1,9 @@
+﻿change_type: bug_fix
+component: exporter/awsemf
+note: Drop a metric declaration with an invalid `metric_name_selectors` regex instead of panicking
+issues: [51115]
+subtext: |
+  An invalid regular expression in `metric_name_selectors` was passed to `regexp.MustCompile`,
+  panicking during config validation. It is now compiled with `regexp.Compile` and the error is
+  returned, so the declaration is dropped with a warning like an invalid `label_matchers` regex.
+change_logs: [user]
