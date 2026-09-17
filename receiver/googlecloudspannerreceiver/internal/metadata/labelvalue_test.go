@@ -12,11 +12,12 @@ import (
 )
 
 func TestStringLabelValueMetadata(t *testing.T) {
-	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, StringValueType, false)
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, StringValueType, true)
 
 	assert.Equal(t, StringValueType, metadata.ValueType())
 	assert.Equal(t, labelName, metadata.Name())
 	assert.Equal(t, labelColumnName, metadata.ColumnName())
+	assert.Equal(t, true, metadata.GenerateHash())
 
 	var expectedType *string
 
@@ -28,6 +29,7 @@ func TestInt64LabelValueMetadata(t *testing.T) {
 
 	assert.Equal(t, IntValueType, metadata.ValueType())
 	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, false, metadata.GenerateHash())
 	assert.Equal(t, labelColumnName, metadata.ColumnName())
 
 	var expectedType *int64

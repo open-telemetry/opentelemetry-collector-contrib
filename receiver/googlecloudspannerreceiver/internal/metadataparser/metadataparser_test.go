@@ -42,18 +42,18 @@ func TestParseMetadataConfig(t *testing.T) {
 				mData := metadataSlice[0]
 
 				assert.NotNil(t, mData)
-				assertMetricsMetadata(t, "current stats", mData)
+				assertMetricsMetadata(t, "current stats", mData, false)
 
 				mData = metadataSlice[1]
 
 				assert.NotNil(t, mData)
-				assertMetricsMetadata(t, "interval stats", mData)
+				assertMetricsMetadata(t, "interval stats", mData, true)
 			}
 		})
 	}
 }
 
-func assertMetricsMetadata(t *testing.T, expectedName string, metricsMetadata *metadata.MetricsMetadata) {
+func assertMetricsMetadata(t *testing.T, expectedName string, metricsMetadata *metadata.MetricsMetadata, expectedGenerateHash bool) {
 	assert.Equal(t, expectedName, metricsMetadata.Name)
 	assert.Equal(t, "query", metricsMetadata.Query)
 	assert.Equal(t, "metric_name_prefix", metricsMetadata.MetricNamePrefix)
@@ -62,6 +62,7 @@ func assertMetricsMetadata(t *testing.T, expectedName string, metricsMetadata *m
 	assert.Equal(t, "label_name", metricsMetadata.QueryLabelValuesMetadata[0].Name())
 	assert.Equal(t, "LABEL_NAME", metricsMetadata.QueryLabelValuesMetadata[0].ColumnName())
 	assert.Equal(t, metadata.StringValueType, metricsMetadata.QueryLabelValuesMetadata[0].ValueType())
+	assert.Equal(t, expectedGenerateHash, metricsMetadata.QueryLabelValuesMetadata[0].GenerateHash())
 
 	assert.Len(t, metricsMetadata.QueryMetricValuesMetadata, 1)
 	assert.Equal(t, "metric_name", metricsMetadata.QueryMetricValuesMetadata[0].Name())

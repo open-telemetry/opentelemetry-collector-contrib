@@ -47,6 +47,10 @@ func (m queryLabelValueMetadata) ValueType() ValueType {
 	return m.valueType
 }
 
+func (m queryLabelValueMetadata) GenerateHash() bool {
+	return m.generateHash
+}
+
 type stringLabelValue struct {
 	metadata LabelValueMetadata
 	value    string
@@ -154,9 +158,6 @@ func (v stringSliceLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.PutStr(v.metadata.Name(), v.value)
 }
 
-func (m queryLabelValueMetadata) GenerateHash() bool {
-	return m.generateHash
-}
 
 func newStringSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
 	value := *valueHolder.(*[]string)

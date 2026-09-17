@@ -48,6 +48,7 @@ func TestNewIntervalStatsReader(t *testing.T) {
 		TopMetricsQueryMaxRows:            topMetricsQueryMaxRows,
 		BackfillEnabled:                   true,
 		HideTopnLockstatsRowrangestartkey: true,
+		HidePIIValues:                     true,
 		TruncateText:                      true,
 	}
 
@@ -60,6 +61,7 @@ func TestNewIntervalStatsReader(t *testing.T) {
 	assert.NotNil(t, reader.timestampsGenerator)
 	assert.True(t, reader.timestampsGenerator.backfillEnabled)
 	assert.True(t, reader.hideTopnLockstatsRowrangestartkey)
+	assert.True(t, reader.hidePIIValues)
 	assert.True(t, reader.truncateText)
 }
 
@@ -71,6 +73,7 @@ func TestIntervalStatsReader_NewPullStatement(t *testing.T) {
 		TopMetricsQueryMaxRows:            topMetricsQueryMaxRows,
 		BackfillEnabled:                   false,
 		HideTopnLockstatsRowrangestartkey: true,
+		HidePIIValues:                     true,
 		TruncateText:                      true,
 	}
 	ctx := t.Context()

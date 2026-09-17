@@ -42,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			BackfillEnabled:                   true,
 			CardinalityTotalLimit:             200000,
 			HideTopnLockstatsRowrangestartkey: true,
+			HidePIIValues:                     true,
 			TruncateText:                      true,
 			Projects: []Project{
 				{
