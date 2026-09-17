@@ -109,9 +109,10 @@ processors:
 
 ### Per log record
 
-| Attribute               | Type   | Description                                                                                                     |
-|-------------------------|--------|-----------------------------------------------------------------------------------------------------------------|
-| `audit.integrity.value` | string | Base64-encoded signature (or MAC for HMAC-SHA256) of the JCS-canonical payload, using the configured algorithm. |
+| Attribute                | Type   | Description                                                                                                     |
+|--------------------------|--------|-----------------------------------------------------------------------------------------------------------------|
+| `audit.integrity.value`  | string | Base64-encoded signature (or MAC for HMAC-SHA256) of the JCS-canonical payload, using the configured algorithm. |
+| `audit.integrity.signer` | string | Always `"collector"` — identifies that the Collector signing processor added the integrity value.               |
 
 ### Per Resource (set once per ResourceLogs block)
 
@@ -127,15 +128,15 @@ canonicalises it with RFC 8785 (JCS), and signs the result. All
 `audit.integrity.*` attributes are excluded so the signature can be verified
 before those attributes are removed.
 
-| Field                | JSON key             | Encoding                                       |
-|----------------------|----------------------|------------------------------------------------|
-| `EventName`          | `event_name`         | string; omitted if empty                       |
-| `Body` (string only) | `body`               | string; omitted if not a string value          |
-| `Timestamp`          | `timestamp`          | nanoseconds since Unix epoch as decimal string |
-| `ObservedTimestamp`  | `observed_timestamp` | nanoseconds since Unix epoch as decimal string |
-| `TraceID`            | `trace_id`           | lowercase hex string; omitted if all-zero      |
-| `SpanID`             | `span_id`            | lowercase hex string; omitted if all-zero      |
-| `Attributes`         | `attributes`         | object; see scalar encoding below              |
+| Field               | JSON key             | Encoding                                                                                |
+|---------------------|----------------------|-----------------------------------------------------------------------------------------|
+| `EventName`         | `event_name`         | string; omitted if empty                                                                |
+| `Body`              | `body`               | any non-empty value (type-tagged object, same encoding as attributes); omitted if empty |
+| `Timestamp`         | `timestamp`          | nanoseconds since Unix epoch as decimal string                                          |
+| `ObservedTimestamp` | `observed_timestamp` | nanoseconds since Unix epoch as decimal string                                          |
+| `TraceID`           | `trace_id`           | lowercase hex string; omitted if all-zero                                               |
+| `SpanID`            | `span_id`            | lowercase hex string; omitted if all-zero                                               |
+| `Attributes`        | `attributes`         | object; see scalar encoding below                                                       |
 
 ### Attribute scalar encoding
 

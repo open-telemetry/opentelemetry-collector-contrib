@@ -72,10 +72,10 @@ func fetchSecretDataWithClient(ctx context.Context, client kubernetes.Interface,
 	for attempt := range maxRetries {
 		secret, err := client.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
-			if apierrors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) || apierrors.IsTimeout(err) {
 				if attempt < maxRetries-1 {
 					if logger != nil {
-						logger.Info("Secret not found, retrying...",
+						logger.Info("Secret not available, retrying...",
 							zap.String("secret", fmt.Sprintf("%s/%s", namespace, secretName)),
 							zap.Int("attempt", attempt+1),
 							zap.Int("max_attempts", maxRetries),
@@ -90,7 +90,7 @@ func fetchSecretDataWithClient(ctx context.Context, client kubernetes.Interface,
 					retryDelay = min(time.Duration(float64(retryDelay)*1.5), 10*time.Second)
 					continue
 				}
-				lastErr = fmt.Errorf("secret %s/%s not found after %d attempts", namespace, secretName, maxRetries)
+				lastErr = fmt.Errorf("secret %s/%s not available after %d attempts: %w", namespace, secretName, maxRetries, err)
 				continue
 			}
 			if logger != nil {

@@ -188,16 +188,8 @@ func TestBaoProviderHTTPError(t *testing.T) {
 }
 
 func TestBaoProviderNonStringField(t *testing.T) {
-	certPEM, keyPEM, _ := generateTestPEM(t)
+	_, keyPEM, _ := generateTestPEM(t)
 
-	srv := newBaoTestServer(t, http.StatusOK, baoResponse(map[string]any{
-		"certificate": string(certPEM),
-		"private_key": string(keyPEM), // cert is fine but…
-	}))
-	// Re-use baoTestCfg but swap the field names so cert points at the integer
-	cfg := baoTestCfg(srv.URL)
-	cfg.Certificate = "private_key"
-	cfg.PrivateKey = "certificate"
 	// both are strings so this should succeed — test that non-string is rejected
 	srvBad := newBaoTestServer(t, http.StatusOK, baoResponse(map[string]any{
 		"certificate": 12345, // not a string

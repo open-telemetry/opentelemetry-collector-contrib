@@ -21,7 +21,7 @@ type baoKeyMaterialProvider struct {
 // newBaoKeyMaterialProvider reads key material from an OpenBao (or Vault-compatible)
 // KV v2 secret. For asymmetric algorithms the secret must contain the fields named by
 // cfg.Certificate and cfg.PrivateKey (PEM-encoded strings). For HMAC-SHA256 it must
-// contain the field named by cfg.HMACKey (raw or base64-encoded bytes).
+// contain the field named by cfg.HMACKey (base64-encoded bytes).
 func newBaoKeyMaterialProvider(ctx context.Context, cfg *BaoKeyConfig) (KeyMaterialProvider, error) {
 	return newBaoKeyMaterialProviderWithAddress(ctx, cfg, "")
 }
