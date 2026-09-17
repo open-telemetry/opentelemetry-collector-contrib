@@ -772,7 +772,7 @@ resources:
 
 	err := AssertMetrics(path, m)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing expected resource")
+	require.Contains(t, err.Error(), "expected resource[0] was not found in actual resources")
 }
 
 func TestAssertMetrics_AttributeIncludeDatapointAttributes(t *testing.T) {
