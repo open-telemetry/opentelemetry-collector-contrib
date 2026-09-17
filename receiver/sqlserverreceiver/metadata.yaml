@@ -21,7 +21,7 @@ status:
 
 resource_attributes:
   db.system.version:
-    description: The version of the SQL Server instance (e.g. "15.0.4261.1").
+    description: The version of the SQL Server instance (e.g. "15.0.4261.1"). Only available in direct connection mode, not Windows Performance Counter mode.
     enabled: true
     type: string
   host.name:
