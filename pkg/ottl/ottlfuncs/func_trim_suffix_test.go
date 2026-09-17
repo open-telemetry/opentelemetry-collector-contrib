@@ -45,7 +45,7 @@ func Test_TrimSuffix(t *testing.T) {
 			factory := NewTrimSuffixFactory[any]()
 			exprFunc, err := factory.CreateFunction(
 				ottl.FunctionContext{},
-				&TrimSuffixArguments[any]{
+				&trimSuffixArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
 						Getter: func(context.Context, any) (any, error) {
 							return tt.target, nil
@@ -104,14 +104,14 @@ func Test_TrimSuffixFactory(t *testing.T) {
 		factory := NewTrimSuffixFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &TrimSuffixArguments[any]{}, args)
+		assert.IsType(t, &trimSuffixArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Suffix"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewTrimSuffixFactory[any]()
 		args := factory.CreateDefaultArguments()
-		trimSuffixArgs, ok := args.(*TrimSuffixArguments[any])
+		trimSuffixArgs, ok := args.(*trimSuffixArguments[any])
 		require.True(t, ok)
 		trimSuffixArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -131,7 +131,7 @@ func Test_TrimSuffixFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createTrimSuffixFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "TrimFactory args must be of type *TrimSuffixArguments[K]")
+		assert.ErrorContains(t, err, "TrimFactory args must be of type *trimSuffixArguments[K]")
 	})
 }
 

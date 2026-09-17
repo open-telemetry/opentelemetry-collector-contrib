@@ -92,14 +92,14 @@ func Test_MD5Factory(t *testing.T) {
 		factory := NewMD5Factory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &MD5Arguments[any]{}, args)
+		assert.IsType(t, &mD5Arguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewMD5Factory[any]()
 		args := factory.CreateDefaultArguments()
-		md5Args, ok := args.(*MD5Arguments[any])
+		md5Args, ok := args.(*mD5Arguments[any])
 		require.True(t, ok)
 		md5Args.Target = ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -114,7 +114,7 @@ func Test_MD5Factory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createMD5Function[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "MD5Factory args must be of type *MD5Arguments[K]")
+		assert.ErrorContains(t, err, "MD5Factory args must be of type *mD5Arguments[K]")
 	})
 }
 

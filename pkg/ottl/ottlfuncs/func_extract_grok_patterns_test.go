@@ -279,14 +279,14 @@ func Test_ExtractGrokPatternsFactory(t *testing.T) {
 		factory := NewExtractGrokPatternsFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ExtractGrokPatternsArguments[any]{}, args)
+		assert.IsType(t, &extractGrokPatternsArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Pattern", "NamedCapturesOnly", "PatternDefinitions"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewExtractGrokPatternsFactory[any]()
 		args := factory.CreateDefaultArguments()
-		extractGrokPatternsArgs, ok := args.(*ExtractGrokPatternsArguments[any])
+		extractGrokPatternsArgs, ok := args.(*extractGrokPatternsArguments[any])
 		require.True(t, ok)
 		extractGrokPatternsArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -306,7 +306,7 @@ func Test_ExtractGrokPatternsFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createExtractGrokPatternsFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ExtractGrokPatternsFactory args must be of type *ExtractGrokPatternsArguments[K]")
+		assert.ErrorContains(t, err, "ExtractGrokPatternsFactory args must be of type *extractGrokPatternsArguments[K]")
 	})
 }
 

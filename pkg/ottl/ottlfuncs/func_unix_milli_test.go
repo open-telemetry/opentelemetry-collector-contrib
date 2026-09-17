@@ -79,14 +79,14 @@ func Test_UnixMilliFactory(t *testing.T) {
 		factory := NewUnixMilliFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &UnixMilliArguments[any]{}, args)
+		assert.IsType(t, &unixMilliArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewUnixMilliFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*UnixMilliArguments[any])
+		timeArgs, ok := args.(*unixMilliArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -101,7 +101,7 @@ func Test_UnixMilliFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createUnixMilliFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "UnixMilliFactory args must be of type *UnixMilliArguments[K]")
+		assert.ErrorContains(t, err, "UnixMilliFactory args must be of type *unixMilliArguments[K]")
 	})
 }
 

@@ -69,14 +69,14 @@ func Test_KeysFactory(t *testing.T) {
 		factory := NewKeysFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &KeysArguments[any]{}, args)
+		assert.IsType(t, &keysArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewKeysFactory[any]()
 		args := factory.CreateDefaultArguments()
-		keysArgs, ok := args.(*KeysArguments[any])
+		keysArgs, ok := args.(*keysArguments[any])
 		require.True(t, ok)
 		keysArgs.Target = ottl.StandardPMapGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -91,7 +91,7 @@ func Test_KeysFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createKeysFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "KeysFactory args must be of type *KeysArguments[K]")
+		assert.ErrorContains(t, err, "KeysFactory args must be of type *keysArguments[K]")
 	})
 }
 

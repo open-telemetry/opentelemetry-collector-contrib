@@ -164,14 +164,14 @@ func Test_ParseIntFactory(t *testing.T) {
 		factory := NewParseIntFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ParseIntArguments[any]{}, args)
+		assert.IsType(t, &parseIntArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Base"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewParseIntFactory[any]()
 		args := factory.CreateDefaultArguments()
-		parseIntArgs, ok := args.(*ParseIntArguments[any])
+		parseIntArgs, ok := args.(*parseIntArguments[any])
 		require.True(t, ok)
 		parseIntArgs.Target = ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -191,7 +191,7 @@ func Test_ParseIntFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createParseIntFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ParseIntFactory args must be of type *ParseIntArguments[K]")
+		assert.ErrorContains(t, err, "ParseIntFactory args must be of type *parseIntArguments[K]")
 	})
 }
 

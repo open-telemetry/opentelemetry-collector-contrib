@@ -187,14 +187,14 @@ func Test_URLFactory(t *testing.T) {
 		factory := NewURLFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &URLArguments[any]{}, args)
+		assert.IsType(t, &uRLArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"URI"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewURLFactory[any]()
 		args := factory.CreateDefaultArguments()
-		urlArgs, ok := args.(*URLArguments[any])
+		urlArgs, ok := args.(*uRLArguments[any])
 		require.True(t, ok)
 		urlArgs.URI = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -209,7 +209,7 @@ func Test_URLFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createURIFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "URLFactory args must be of type *URLArguments[K]")
+		assert.ErrorContains(t, err, "URLFactory args must be of type *uRLArguments[K]")
 	})
 }
 

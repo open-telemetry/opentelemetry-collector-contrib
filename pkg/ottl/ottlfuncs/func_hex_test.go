@@ -86,14 +86,14 @@ func Test_HexFactory(t *testing.T) {
 		factory := NewHexFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &HexArguments[any]{}, args)
+		assert.IsType(t, &hexArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewHexFactory[any]()
 		args := factory.CreateDefaultArguments()
-		hexArgs, ok := args.(*HexArguments[any])
+		hexArgs, ok := args.(*hexArguments[any])
 		require.True(t, ok)
 		hexArgs.Target = &ottl.StandardByteSliceLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -108,7 +108,7 @@ func Test_HexFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createHexFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "HexFactory args must be of type *HexArguments[K]")
+		assert.ErrorContains(t, err, "HexFactory args must be of type *hexArguments[K]")
 	})
 }
 

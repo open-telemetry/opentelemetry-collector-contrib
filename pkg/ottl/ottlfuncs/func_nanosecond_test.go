@@ -64,14 +64,14 @@ func Test_NanosecondFactory(t *testing.T) {
 		factory := NewNanosecondFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &NanosecondArguments[any]{}, args)
+		assert.IsType(t, &nanosecondArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewNanosecondFactory[any]()
 		args := factory.CreateDefaultArguments()
-		nanoArgs, ok := args.(*NanosecondArguments[any])
+		nanoArgs, ok := args.(*nanosecondArguments[any])
 		require.True(t, ok)
 		nanoArgs.Time = ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,7 +86,7 @@ func Test_NanosecondFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createNanosecondFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "NanosecondFactory args must be of type *NanosecondArguments[K]")
+		assert.ErrorContains(t, err, "NanosecondFactory args must be of type *nanosecondArguments[K]")
 	})
 }
 
