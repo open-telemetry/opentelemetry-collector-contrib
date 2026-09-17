@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use the W3C Trace Context in Kafka record headers as the parent of the receive span.
+note: Link the receive span to the trace context in Kafka record headers, using the propagators configured in `service::telemetry::traces::propagators`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51077]

@@ -25,9 +25,9 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
@@ -364,7 +364,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	}
 
 	ctx = contextWithMetadata(ctx, record)
-	ctx = propagation.TraceContext{}.Extract(ctx, kotel.NewRecordCarrier(record))
+	ctx = otel.GetTextMapPropagator().Extract(ctx, kotel.NewRecordCarrier(record))
 
 	obsCtx := handler.startObsReport(ctx)
 	data, n, err := handler.unmarshalData(record.Value)

@@ -177,8 +177,9 @@ This metadata can then be used throughout the pipeline, for example to set attri
 
 ### Trace context propagation
 
-If a record has W3C Trace Context headers (`traceparent`, `tracestate`), the receiver span is created as a
-child of that trace context. The Kafka exporter adds these headers when `propagate_trace_context` is enabled.
+The receiver extracts the trace context from record headers, using the propagators configured in
+`service::telemetry::traces::propagators`. The receiver span starts a new trace and links to the
+extracted trace context.
 
 ### Example configurations
 
