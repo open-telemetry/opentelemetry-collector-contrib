@@ -11,7 +11,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.161.0
 	github.com/stretchr/testify v1.12.1
@@ -37,6 +36,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pdata/testdata v0.161.1-0.20260916171901-3e8af656214a
+	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/otel v1.46.0
@@ -106,7 +106,6 @@ require (
 	go.opentelemetry.io/collector/extension v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/receiver v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.161.1-0.20260916171901-3e8af656214a // indirect
@@ -138,8 +137,6 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 

@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/group
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260916171901-3e8af656214a
@@ -45,6 +44,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.161.1-0.20260916171901-3e8af656214a // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
@@ -52,8 +52,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 retract (
 	v0.76.2
