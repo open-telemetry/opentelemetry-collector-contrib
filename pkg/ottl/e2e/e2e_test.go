@@ -2338,8 +2338,9 @@ func Test_e2e_keep_keys_slice_arguments(t *testing.T) {
 			wantKeys:  []string{"flags"},
 		},
 		{
-			name:      "unset dynamic slice keeps none",
+			name:      "unset dynamic slice returns error",
 			statement: `keep_keys(attributes, cache["x"])`,
+			wantErr:   true,
 		},
 		{
 			name:      "non-slice dynamic value",
