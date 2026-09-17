@@ -166,7 +166,6 @@ components:
     - pkg/ottl
     - pkg/ottl/contexts/xprofile
     - pkg/pdatatest
-    - pkg/pdatautil
     - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling

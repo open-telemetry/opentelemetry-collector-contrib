@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260916171901-3e8af656214a
@@ -13,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/consumer/consumertest v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260916171901-3e8af656214a
+	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/processor v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/processor/processorhelper v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/processor/processortest v0.161.1-0.20260916171901-3e8af656214a
@@ -49,7 +49,6 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -68,8 +67,6 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
