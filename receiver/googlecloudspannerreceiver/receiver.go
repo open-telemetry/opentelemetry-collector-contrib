@@ -116,6 +116,7 @@ func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Contex
 		BackfillEnabled:                   r.config.BackfillEnabled,
 		TopMetricsQueryMaxRows:            r.config.TopMetricsQueryMaxRows,
 		HideTopnLockstatsRowrangestartkey: r.config.HideTopnLockstatsRowrangestartkey,
+		HidePIIValues:                     r.config.HidePIIValues,
 		TruncateText:                      r.config.TruncateText,
 	}
 

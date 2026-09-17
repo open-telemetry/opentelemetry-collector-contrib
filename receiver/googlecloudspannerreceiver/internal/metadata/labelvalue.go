@@ -17,6 +17,7 @@ type LabelValueMetadata interface {
 	ValueMetadata
 	ValueType() ValueType
 	NewLabelValue(value any) LabelValue
+	GenerateHash() bool
 }
 
 type LabelValue interface {
@@ -31,6 +32,7 @@ type queryLabelValueMetadata struct {
 	valueType         ValueType
 	newLabelValueFunc newLabelValueFunction
 	valueHolderFunc   valueHolderFunction
+	generateHash      bool
 }
 
 func (m queryLabelValueMetadata) ValueHolder() any {
@@ -152,6 +154,10 @@ func (v stringSliceLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.PutStr(v.metadata.Name(), v.value)
 }
 
+func (m queryLabelValueMetadata) GenerateHash() bool {
+	return m.generateHash
+}
+
 func newStringSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
 	value := *valueHolder.(*[]string)
 
@@ -244,7 +250,7 @@ func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder any)
 	}
 }
 
-func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelValueMetadata, error) {
+func NewLabelValueMetadata(name, columnName string, valueType ValueType, generateHash bool) (LabelValueMetadata, error) {
 	var newLabelValueFunc newLabelValueFunction
 	var valueHolderFunc valueHolderFunction
 
@@ -295,5 +301,6 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		valueType:         valueType,
 		newLabelValueFunc: newLabelValueFunc,
 		valueHolderFunc:   valueHolderFunc,
+		generateHash:      generateHash,
 	}, nil
 }

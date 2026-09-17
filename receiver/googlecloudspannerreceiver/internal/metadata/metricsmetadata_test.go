@@ -76,7 +76,7 @@ func TestToLabelValue(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			row, _ := spanner.NewRow(rowColumnNames, []any{testCase.expectedValue})
-			metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, testCase.valueType)
+			metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, testCase.valueType, false)
 
 			labelValue, _ := toLabelValue(metadata, row)
 
@@ -93,12 +93,12 @@ func TestToLabelValue(t *testing.T) {
 }
 
 func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
-	stringLabelValueMetadata, _ := NewLabelValueMetadata("stringLabelName", "stringLabelColumnName", StringValueType)
-	boolLabelValueMetadata, _ := NewLabelValueMetadata("boolLabelName", "boolLabelColumnName", BoolValueType)
-	int64LabelValueMetadata, _ := NewLabelValueMetadata("int64LabelName", "int64LabelColumnName", IntValueType)
-	stringSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringSliceValueType)
-	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType)
-	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
+	stringLabelValueMetadata, _ := NewLabelValueMetadata("stringLabelName", "stringLabelColumnName", StringValueType, false)
+	boolLabelValueMetadata, _ := NewLabelValueMetadata("boolLabelName", "boolLabelColumnName", BoolValueType, false)
+	int64LabelValueMetadata, _ := NewLabelValueMetadata("int64LabelName", "int64LabelColumnName", IntValueType, false)
+	stringSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringSliceValueType, false)
+	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType, false)
+	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType, false)
 	queryLabelValuesMetadata := []LabelValueMetadata{
 		stringLabelValueMetadata,
 		boolLabelValueMetadata,
@@ -146,7 +146,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 }
 
 func TestMetricsMetadata_ToLabelValues_Error(t *testing.T) {
-	stringLabelValueMetadata, _ := NewLabelValueMetadata("nonExisting", "nonExistingColumn", StringValueType)
+	stringLabelValueMetadata, _ := NewLabelValueMetadata("nonExisting", "nonExistingColumn", StringValueType, false)
 	queryLabelValuesMetadata := []LabelValueMetadata{stringLabelValueMetadata}
 	metadata := MetricsMetadata{QueryLabelValuesMetadata: queryLabelValuesMetadata}
 	row, _ := spanner.NewRow([]string{}, []any{})
@@ -230,7 +230,7 @@ func TestMetricsMetadata_ToMetricValues_Error(t *testing.T) {
 func TestMetricsMetadata_RowToMetricsDataPoints(t *testing.T) {
 	metricDataType := metricValueDataType{dataType: metricDataType}
 	timestamp := time.Now().UTC()
-	labelValueMetadata, _ := NewLabelValueMetadata(labelName, labelColumnName, StringValueType)
+	labelValueMetadata, _ := NewLabelValueMetadata(labelName, labelColumnName, StringValueType, false)
 	metricValueMetadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, IntValueType)
 	queryLabelValuesMetadata := []LabelValueMetadata{labelValueMetadata}
 	queryMetricValuesMetadata := []MetricValueMetadata{metricValueMetadata}

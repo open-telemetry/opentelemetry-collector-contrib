@@ -4,6 +4,8 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -150,6 +152,68 @@ func (mdp *MetricsDataPoint) HideLockStatsRowrangestartkeyPII() {
 		p.ModifyValue(hashedKey)
 		mdp.labelValues[index] = v
 	}
+}
+
+func (mdp *MetricsDataPoint) HidePIIValues() {
+	for index, labelValue := range mdp.labelValues {
+		if !labelValue.Metadata().GenerateHash() {
+			continue
+		}
+
+		switch v := labelValue.(type) {
+		case byteSliceLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashPIIKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		case stringSliceLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashPIIKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		case stringLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashPIIKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		}
+	}
+}
+
+func parseAndHashPIIKey(val string) string {
+	startIdx := strings.Index(val, "(")
+	endIdx := strings.LastIndex(val, ")")
+
+	var prefix, suffix, content string
+
+	if startIdx != -1 && endIdx != -1 && endIdx > startIdx {
+		prefix = val[:startIdx+1]
+		suffix = val[endIdx:]
+		content = val[startIdx+1 : endIdx]
+	} else {
+		content = val
+	}
+
+	parts := strings.Split(content, ",")
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		// Check if it has a trailing +
+		hasPlus := strings.HasSuffix(part, "+")
+		partToHash := part
+		if hasPlus {
+			partToHash = part[:len(part)-1]
+		}
+
+		hash := sha256.Sum256([]byte(partToHash))
+		hashUint := binary.BigEndian.Uint32(hash[:4]) // Taking first 4 bytes for uint32
+		hashedStr := strconv.FormatUint(uint64(hashUint), 10)
+
+		if hasPlus {
+			hashedStr += "+"
+		}
+		parts[i] = hashedStr
+	}
+
+	return prefix + strings.Join(parts, ",") + suffix
 }
 
 func TruncateString(str string, length int) string {

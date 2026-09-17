@@ -43,6 +43,7 @@ metadata:
       - name: "row_range_start_key"
         column_name: "ROW_RANGE_START_KEY"
         value_type: "byte_slice"
+        generate_hash: true
       - name: "sample_lock_requests"
         column_name: "SAMPLE_LOCK_REQUESTS"
         value_type: "lock_request_slice"
@@ -553,9 +554,11 @@ metadata:
       - name: "split_start"
         column_name: "SPLIT_START"
         value_type: "string"
+        generate_hash: true
       - name: "split_limit"
         column_name: "SPLIT_LIMIT"
         value_type: "string"
+        generate_hash: true
       - name: "affected_tables"
         column_name: "AFFECTED_TABLES"
         value_type: "string_slice"
