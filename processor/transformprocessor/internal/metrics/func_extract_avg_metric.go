@@ -16,8 +16,7 @@ import (
 const avgFuncName = "extract_avg_metric"
 
 type extractAvgMetricArguments struct {
-	Monotonic bool
-	Suffix    ottl.Optional[string]
+	Suffix ottl.Optional[string]
 }
 
 func newExtractAvgMetricFactory() ottl.Factory[*ottlmetric.TransformContext] {
@@ -31,10 +30,10 @@ func createExtractAvgMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("extractAvgMetricFactory args must be of type *extractAvgMetricArguments")
 	}
 
-	return extractAvgMetric(args.Monotonic, args.Suffix)
+	return extractAvgMetric(args.Suffix)
 }
 
-func extractAvgMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
+func extractAvgMetric(suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	metricNameSuffix := "_avg"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
@@ -42,17 +41,11 @@ func extractAvgMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFu
 	return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
-		aggTemp := getAggregationTemporality(metric)
-		if aggTemp == pmetric.AggregationTemporalityUnspecified {
-			return nil, invalidMetricTypeError(avgFuncName, metric)
-		}
-
 		avgMetric := pmetric.NewMetric()
 		avgMetric.SetDescription(metric.Description())
 		avgMetric.SetName(metric.Name() + metricNameSuffix)
 		avgMetric.SetUnit(metric.Unit())
-		avgMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
-		avgMetric.Sum().SetIsMonotonic(monotonic)
+		avgMetric.SetEmptyGauge()
 
 		switch metric.Type() {
 		case pmetric.MetricTypeHistogram:
@@ -60,7 +53,7 @@ func extractAvgMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFu
 			for i := 0; i < dataPoints.Len(); i++ {
 				dataPoint := dataPoints.At(i)
 				if dataPoint.HasSum() && dataPoint.Count() > 0 {
-					addAvgDataPoint(dataPoint, avgMetric.Sum().DataPoints())
+					addAvgDataPoint(dataPoint, avgMetric.Gauge().DataPoints())
 				}
 			}
 		case pmetric.MetricTypeExponentialHistogram:
@@ -68,7 +61,7 @@ func extractAvgMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFu
 			for i := 0; i < dataPoints.Len(); i++ {
 				dataPoint := dataPoints.At(i)
 				if dataPoint.HasSum() && dataPoint.Count() > 0 {
-					addAvgDataPoint(dataPoint, avgMetric.Sum().DataPoints())
+					addAvgDataPoint(dataPoint, avgMetric.Gauge().DataPoints())
 				}
 			}
 		case pmetric.MetricTypeSummary:
@@ -77,14 +70,14 @@ func extractAvgMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFu
 				dataPoint := dataPoints.At(i)
 				// Summary requires Sum, no additional check needed
 				if dataPoint.Count() > 0 {
-					addAvgDataPoint(dataPoint, avgMetric.Sum().DataPoints())
+					addAvgDataPoint(dataPoint, avgMetric.Gauge().DataPoints())
 				}
 			}
 		default:
 			return nil, invalidMetricTypeError(avgFuncName, metric)
 		}
 
-		if avgMetric.Sum().DataPoints().Len() > 0 {
+		if avgMetric.Gauge().DataPoints().Len() > 0 {
 			avgMetric.MoveTo(tCtx.GetMetrics().AppendEmpty())
 		}
 
