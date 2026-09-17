@@ -15,7 +15,7 @@ issues: [] # TODO: replace with actual issue or PR number
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Reports the SQL Server product version (e.g. `15.0.4261.1`). Disabled by default,only available in direct connection mode.
+subtext: Reports the SQL Server product version (e.g. `15.0.4261.1`). Enabled by default, only available in direct connection mode.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

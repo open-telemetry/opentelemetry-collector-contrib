@@ -239,14 +239,14 @@ sqlserver:
       enabled: false
 ```
 
-`db.system.version` reports the SQL Server product version (e.g. `15.0.4261.1`). It is disabled by
-default and only available in direct connection mode. Enable it via:
+`db.system.version` reports the SQL Server product version (e.g. `15.0.4261.1`). It is enabled by
+default and only available in direct connection mode. Disable it via:
 
 ```yaml
 sqlserver:
   resource_attributes:
     db.system.version:
-      enabled: true
+      enabled: false
 ```
 
 ## Metrics
