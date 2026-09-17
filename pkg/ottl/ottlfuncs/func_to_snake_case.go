@@ -12,19 +12,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ToSnakeCaseArguments[K any] struct {
+type toSnakeCaseArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewToSnakeCaseFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ToSnakeCase", &ToSnakeCaseArguments[K]{}, createToSnakeCaseFunction[K])
+	return ottl.NewFactory("ToSnakeCase", &toSnakeCaseArguments[K]{}, createToSnakeCaseFunction[K])
 }
 
 func createToSnakeCaseFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ToSnakeCaseArguments[K])
+	args, ok := oArgs.(*toSnakeCaseArguments[K])
 
 	if !ok {
-		return nil, errors.New("ToSnakeCaseFactory args must be of type *ToSnakeCaseArguments[K]")
+		return nil, errors.New("ToSnakeCaseFactory args must be of type *toSnakeCaseArguments[K]")
 	}
 
 	return toSnakeCase(args.Target), nil

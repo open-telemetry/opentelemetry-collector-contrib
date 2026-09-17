@@ -8,6 +8,16 @@ This document contains documentation for both types of OTTL functions:
 - [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+Profiles converters that fall outside of OTTL's stability guarantees are documented separately. See the [`xprofile` module](../contexts/xprofile/README.md) for the profiles converters, including `ProfileID`.
+
+## Contents
+
+- [Design principles](#design-principles)
+- [Working with functions](#working-with-functions)
+- [Editors](#editors)
+- [Converters](#converters)
+- [Function stability](#function-stability)
+
 ## Design principles
 
 For the standard OTTL functions described in this document, we specify design principles to ensure they are always
@@ -462,14 +472,11 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 `set(target, value)`
 
-> [!NOTE]
-> The [`ottl.set.allowNil`](../documentation.md#feature-gates) feature gate changes the behavior of `set` when a `nil` value is passed. Prior to this gate, passing `nil` was a no-op. When enabled, `set` will pass the `nil` value directly to the target, which may result in an error or an empty value depending on the target's underlying type.
-
 The `set` function allows users to set a telemetry field using a value.
 
-`target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
+`target` is a path expression to a telemetry field. `value` is any value type, including `nil`.
 
-How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `ottl.ParseStatements`.
+How the underlying telemetry field is updated is decided by the path expression.
 
 Examples:
 
@@ -600,7 +607,6 @@ Available Converters:
 - [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
-- [ProfileID](#profileid)
 - [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
@@ -644,7 +650,7 @@ Available Converters:
 ### All
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `All(source, predicate)`
 
@@ -678,7 +684,7 @@ Use in a condition:
 ### Any
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `Any(source, predicate)`
 
@@ -1098,7 +1104,7 @@ Examples:
 ### Filter
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `Filter(source, predicate)`
 
@@ -1130,7 +1136,7 @@ Store the filtered result:
 ### Find
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `Find(source, predicate, Optional[mapper])`
 
@@ -1739,7 +1745,7 @@ Examples:
 ### MapEach
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `MapEach(source, mapper)`
 
@@ -1771,7 +1777,7 @@ Store the mapped result:
 ### MapKeys
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `MapKeys(source, keyMapper)`
 
@@ -2305,24 +2311,10 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
-### ProfileID
-
-`ProfileID(bytes|string)`
-
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
-
-`bytes`  byte slice of exactly 16 bytes.
-`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
-
-Examples:
-
-- `ProfileID(0x00112233445566778899aabbccddeeff)`
-- `ProfileID("a389023abaa839283293ed323892389d")`
-
 ### Reduce
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `Reduce(source, seed, accumulator)`
 
@@ -3122,7 +3114,7 @@ Examples:
 ### When
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `When(condition, trueValue, falseValue)`
 
@@ -3195,3 +3187,40 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
+
+## Function stability
+
+Once OTTL is `1.0`, the standard functions returned by `StandardFuncs` and `StandardConverters` are **frozen**.
+For the life of `1.x` no standard function will be removed and no existing signature will change in a
+backward-incompatible way.
+
+Because the standard set is frozen, new functions are introduced as experimental functions first, and become
+part of the frozen standard set only after they have proven stable.
+
+### Experimental functions
+
+New functions are introduced as experimental functions. While a function is experimental, it is **not covered by
+the stability guarantee**: its name, signature, and behavior may change in a backward-incompatible way, and the
+function may be removed entirely, in any `1.x` release without a major version bump. Experimental functions are
+documented in this README alongside the standard functions and clearly marked as experimental.
+
+### Promotion to standard
+
+Promotion moves the function out of the experimental set and into the frozen standard set. This is an additive,
+backward-compatible change and ships in a **minor** release (never a patch). Promotion also **freezes the
+function's signature**: the signature a function has at promotion is the signature it keeps for the life of
+`1.x`, so any desired signature change must be made while the function is still experimental.
+
+A function may be promoted only when all of the following hold:
+
+1. It has been available as an experimental function for at least two minor releases, giving users time to try
+   it and give feedback.
+2. It has complete tests that validate its behavior and complete documentation in this README.
+3. Its name, arguments, and behavior are settled — there are no open issues or pull requests proposing changes
+   to them.
+4. It adheres to the [design principles](#design-principles) for standard functions (no I/O, no infinite loops,
+   communicates only through parameters and results).
+5. There is demonstrated user demand for the function to be part of the standard set.
+6. It has sign-off from the OTTL code owners.
+
+A function that cannot meet these criteria stays experimental; there is no obligation to promote it.

@@ -31,6 +31,7 @@ type metricFamily struct {
 	name        string
 	metadata    *scrape.MetricMetadata
 	groupOrders []*metricGroup
+	logger      *zap.Logger
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
@@ -76,6 +77,7 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 		groups:      make(map[uint64]*metricGroup),
 		name:        familyName,
 		metadata:    metadata,
+		logger:      logger,
 	}
 }
 
@@ -99,7 +101,7 @@ func (mg *metricGroup) sortPoints() {
 	})
 }
 
-func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice) {
+func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice, logger *zap.Logger) {
 	if !mg.hasCount {
 		return
 	}
@@ -117,21 +119,44 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	var bucketCounts []uint64
 
 	if mg.isNHCB {
+		var validBuckets bool
 		switch {
 		case mg.hValue != nil:
 			bounds = make([]float64, len(mg.hValue.CustomValues))
 			copy(bounds, mg.hValue.CustomValues)
-			bucketCounts = convertNHCBBDeltBuckets(mg.hValue)
+			bucketCounts, validBuckets = convertNHCBBDeltBuckets(mg.hValue)
 		case mg.fhValue != nil:
 			bounds = make([]float64, len(mg.fhValue.CustomValues))
 			copy(bounds, mg.fhValue.CustomValues)
-			bucketCounts = convertNHCBAbsoluteBuckets(mg.fhValue)
+			bucketCounts, validBuckets = convertNHCBAbsoluteBuckets(mg.fhValue)
+		default:
+			validBuckets = true
+		}
+		// A malformed classic histogram converted to NHCB carries negative
+		// bucket counts; drop it instead of emitting invalid OTLP data.
+		if !validBuckets && !pointIsStale {
+			logger.Debug("dropping NHCB datapoint with negative or NaN bucket counts", zap.Any("labels", mg.ls))
+			return
 		}
 	} else {
 		bucketCount := len(mg.complexValue) + 1
 		// if the final bucket is +Inf, we ignore it
 		if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
 			bucketCount--
+		}
+		if !pointIsStale {
+			var previousCount float64
+			for i := 0; i < bucketCount-1; i++ {
+				if math.IsNaN(mg.complexValue[i].value) || mg.complexValue[i].value < previousCount {
+					logger.Debug("dropping histogram datapoint with NaN or decreasing bucket counts", zap.Any("labels", mg.ls))
+					return
+				}
+				previousCount = mg.complexValue[i].value
+			}
+			if math.IsNaN(mg.count) || mg.count < previousCount {
+				logger.Debug("dropping histogram datapoint with count that is NaN or below the largest bucket count", zap.Any("labels", mg.ls))
+				return
+			}
 		}
 
 		// for OTLP the bounds won't include +inf
@@ -298,11 +323,14 @@ func convertAbsoluteBuckets(spans []histogram.Span, counts []float64, buckets pc
 }
 
 // convertNHCBBDeltBuckets converts NHCB delta buckets to otel bucket counts.
-func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
+// The returned bool is false if any bucket count is negative, which cannot be
+// represented in OTLP.
+func convertNHCBBDeltBuckets(histogram *histogram.Histogram) ([]uint64, bool) {
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 	if len(histogram.PositiveSpans) == 0 {
-		return bucketCounts
+		return bucketCounts, true
 	}
+	valid := true
 	bucketIdx := 0
 	bucketCount := int64(0)
 	deltaIdx := 0
@@ -313,6 +341,9 @@ func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
 		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveBuckets); i++ {
 			bucketCount += histogram.PositiveBuckets[deltaIdx]
 			deltaIdx++
+			if bucketCount < 0 {
+				valid = false
+			}
 
 			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
 				bucketCounts[bucketIdx] = uint64(bucketCount)
@@ -320,28 +351,34 @@ func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
 			bucketIdx++
 		}
 	}
-	return bucketCounts
+	return bucketCounts, valid
 }
 
 // convertNHCBAbsoluteBuckets converts NHCB absolute buckets to otel bucket counts.
-func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) []uint64 {
+// The returned bool is false if any bucket count is negative or NaN, which
+// cannot be represented in OTLP.
+func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) ([]uint64, bool) {
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 	if len(histogram.PositiveSpans) == 0 {
-		return bucketCounts
+		return bucketCounts, true
 	}
+	valid := true
 	bucketIdx := 0
 	for _, span := range histogram.PositiveSpans {
 		bucketIdx += int(span.Offset)
 
 		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveBuckets)); i++ {
 			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				if math.IsNaN(histogram.PositiveBuckets[i]) || histogram.PositiveBuckets[i] < 0 {
+					valid = false
+				}
 				// This intentionally truncates the float value to an integer (e.g. 5.7 becomes 5).
 				bucketCounts[bucketIdx] = uint64(histogram.PositiveBuckets[i])
 			}
 			bucketIdx++
 		}
 	}
-	return bucketCounts
+	return bucketCounts, valid
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
@@ -593,7 +630,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toDistributionPoint(hdpL)
+			mg.toDistributionPoint(hdpL, mf.logger)
 		}
 		pointCount = hdpL.Len()
 

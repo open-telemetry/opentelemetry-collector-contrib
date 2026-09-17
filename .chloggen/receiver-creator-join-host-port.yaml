@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/receiver_creator
+
+note: Add a `joinHostPort` function for receiver template expressions.
+
+issues: [50969]
+
+subtext:
+
+change_logs: [user]

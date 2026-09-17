@@ -208,7 +208,45 @@ const (
 	// sessionCountCDBSQL extends sessionCountSQL with per-PDB breakdown via v$containers join.
 	sessionCountCDBSQL      = "select s.status, s.type, c.name as PDB_NAME, count(*) as VALUE FROM v$session s, v$containers c WHERE s.con_id = c.con_id(+) GROUP BY s.status, s.type, c.name"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
-	tablespaceUsageSQL      = `
+	// systemResourceLimitsPDBSQL derives resource limits for PDB connections (e.g. RDS Oracle) where
+	// v$resource_limit returns no rows. Limits from v$parameter; usage from v$process, v$session,
+	// v$transaction, v$lock. enqueue_locks and enqueue_resources are auto-managed in Oracle 19c and
+	// not exposed as init parameters, so they are omitted.
+	//
+	// Caveat: transactions and dml_locks are auto-tuned when left at their
+	// Oracle-computed default, so v$resource_limit reports them as UNLIMITED
+	// (-1) from a root/standalone connection, while this query reports the
+	// real computed value (e.g. 354, 1416) from a PDB connection. Same metric
+	// name, different meaning depending on connection type.
+	systemResourceLimitsPDBSQL = `SELECT
+    RESOURCE_NAME,
+    CURRENT_UTILIZATION,
+    CASE
+        WHEN LIMIT_VALUE IS NULL OR TRIM(LIMIT_VALUE) = 'UNLIMITED' THEN '-1'
+        ELSE TRIM(LIMIT_VALUE)
+    END AS LIMIT_VALUE
+FROM (
+  SELECT 'processes' AS RESOURCE_NAME,
+         (SELECT COUNT(*) FROM v$process) AS CURRENT_UTILIZATION,
+         (SELECT value FROM v$parameter WHERE name = 'processes') AS LIMIT_VALUE
+  FROM dual
+  UNION ALL
+  SELECT 'sessions',
+         (SELECT COUNT(*) FROM v$session),
+         (SELECT value FROM v$parameter WHERE name = 'sessions')
+  FROM dual
+  UNION ALL
+  SELECT 'transactions',
+         (SELECT COUNT(*) FROM v$transaction),
+         (SELECT value FROM v$parameter WHERE name = 'transactions')
+  FROM dual
+  UNION ALL
+  SELECT 'dml_locks',
+         (SELECT COUNT(*) FROM v$lock WHERE type = 'TM'),
+         (SELECT value FROM v$parameter WHERE name = 'dml_locks')
+  FROM dual
+)`
+	tablespaceUsageSQL = `
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
@@ -295,6 +333,9 @@ const (
 
 	defaultServiceName = "unknown_service:oracle"
 
+	// defaultOraclePort is the port the Oracle driver connects to when the target omits one.
+	defaultOraclePort = int64(1521)
+
 	queryExecutionMetric        = "EXECUTIONS"
 	elapsedTimeMetric           = "ELAPSED_TIME"
 	cpuTimeMetric               = "CPU_TIME"
@@ -372,10 +413,11 @@ type dbProviderFunc func() (*sql.DB, error)
 type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
 
 type oracleScraper struct {
-	statsClient                dbClient
-	tablespaceUsageClient      dbClient
-	systemResourceLimitsClient dbClient
-	sessionCountClient         dbClient
+	statsClient                   dbClient
+	tablespaceUsageClient         dbClient
+	systemResourceLimitsClient    dbClient
+	systemResourceLimitsPDBClient dbClient
+	sessionCountClient            dbClient
 	// isCDBRoot is true when connected to a CDB root (Oracle 12c+); enables per-PDB queries.
 	isCDBRoot bool
 	// useCDBProceduresView enables the CDB_PROCEDURES-qualified join for top_query and top_procedure. Separate
@@ -417,6 +459,8 @@ type oracleScraper struct {
 	querySampleCfg           QuerySample
 	sessionWaitEventCfg      SessionWaitEvent
 	serviceInstanceID        string
+	serverAddress            string
+	serverPort               int64
 	lastExecutionTimestamp   time.Time
 
 	oracleProcedureMetricsClient  dbClient
@@ -430,6 +474,7 @@ type oracleScraper struct {
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
+	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, logger)
 	s := &oracleScraper{
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,
@@ -439,7 +484,9 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		clientProviderFunc:   clientProviderFunc,
 		instanceName:         instanceName,
 		hostName:             hostName,
-		serviceInstanceID:    getInstanceID(instanceName, logger),
+		serviceInstanceID:    serviceInstanceID,
+		serverAddress:        serverAddress,
+		serverPort:           serverPort,
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -449,6 +496,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	topQueryCollectCfg TopQueryCollection, querySampleCfg QuerySample, sessionWaitEventCfg SessionWaitEvent, hostName string,
 	procedureMetricCache *lru.Cache[string, map[string]int64], procedureMetricsCfg ProcedureMetrics,
 ) (scraper.Logs, error) {
+	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, logger)
 	s := &oracleScraper{
 		lb:                   logsBuilder,
 		logsBuilderConfig:    logsBuilderConfig,
@@ -463,7 +511,9 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		sessionWaitEventCfg:  sessionWaitEventCfg,
 		hostName:             hostName,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID(instanceName, logger),
+		serviceInstanceID:    serviceInstanceID,
+		serverAddress:        serverAddress,
+		serverPort:           serverPort,
 		procedureMetricCache: procedureMetricCache,
 		procedureMetricsCfg:  procedureMetricsCfg,
 	}
@@ -556,6 +606,9 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
+	if s.instanceInfo.connectedToPDB {
+		s.systemResourceLimitsPDBClient = s.clientProviderFunc(s.db, systemResourceLimitsPDBSQL, s.logger)
+	}
 	s.samplesQueryClient = s.clientProviderFunc(s.db, s.buildQuerySampleSQL(), s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
@@ -566,7 +619,9 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.asmDiskgroupClient = s.clientProviderFunc(s.db, asmDiskgroupSQL, s.logger)
 	s.asmDiskClient = s.clientProviderFunc(s.db, asmDiskSQL, s.logger)
 	s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricSQL, s.logger)
-	if s.isCDBRoot {
+	// sysmetricCDBSQL works from both CDB root and PDB connections (v$containers is accessible in both).
+	// For PDB connections (e.g. RDS Oracle), it returns the sysmetric metrics available in PDB context.
+	if s.isCDBRoot || (s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB) {
 		s.sysmetricCDBClient = s.clientProviderFunc(s.db, sysmetricCDBSQL, s.logger)
 	}
 	return nil
@@ -1146,9 +1201,16 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueResourcesLimit.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksLimit.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksUsage.Enabled {
-		rows, err := s.systemResourceLimitsClient.metricRows(ctx)
+		// For PDB connections (e.g. RDS), v$resource_limit returns no rows; use derived query instead.
+		resourceLimitsQueryName := systemResourceLimitsSQL
+		resourceLimitsClient := s.systemResourceLimitsClient
+		if s.instanceInfo.connectedToPDB && s.systemResourceLimitsPDBClient != nil {
+			resourceLimitsQueryName = systemResourceLimitsPDBSQL
+			resourceLimitsClient = s.systemResourceLimitsPDBClient
+		}
+		rows, err := resourceLimitsClient.metricRows(ctx)
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", systemResourceLimitsSQL, err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", resourceLimitsQueryName, err))
 		}
 		for _, row := range rows {
 			resourceName := row["RESOURCE_NAME"]
@@ -1576,10 +1638,14 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	now := pcommon.NewTimestampFromTime(time.Now())
 	seenInContainerMetrics := make(map[string]bool)
 
-	// Skip per-PDB rows when oracle.db.pdb is not enabled on any sysmetric
-	// metric; otherwise the rows collapse to an average instead of the
-	// instance-wide value.
-	if s.isCDBRoot && s.sysmetricCDBClient != nil && s.anySysmetricPdbAttrEnabled() {
+	// isCDBRoot: skip per-PDB rows when oracle.db.pdb is not enabled on any
+	// sysmetric metric; otherwise the rows collapse to an average instead of
+	// the instance-wide value. connectedToPDB (e.g. RDS Oracle): always query,
+	// since a direct-PDB connection only ever returns rows for its own
+	// container — there's no multi-PDB averaging risk to guard against.
+	if s.sysmetricCDBClient != nil &&
+		((s.isCDBRoot && s.anySysmetricPdbAttrEnabled()) ||
+			(s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB)) {
 		rows, err := s.sysmetricCDBClient.metricRows(ctx)
 		if err != nil {
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricCDBSQL, err))
@@ -1600,6 +1666,10 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	}
 
 	// Query V$SYSMETRIC for metrics not already seen in V$CON_SYSMETRIC (or all 12 for non-CDB).
+	// On a direct-PDB connection (e.g. RDS Oracle) this returns 0 rows in PDB
+	// context; querying it anyway costs one empty round-trip but means a
+	// V$CON_SYSMETRIC error above still leaves a path to whatever V$SYSMETRIC
+	// can offer, instead of returning with no sysmetrics at all.
 	rows, err := s.sysmetricClient.metricRows(ctx)
 	if err != nil {
 		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricSQL, err))
@@ -2569,6 +2639,15 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 
+	if s.serverAddress != "" {
+		rb.SetServerAddress(s.serverAddress)
+	}
+	serverPort := s.serverPort
+	if serverPort <= 0 {
+		serverPort = defaultOraclePort
+	}
+	rb.SetServerPort(serverPort)
+
 	if s.instanceInfo.dbVersion != "" {
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
 	}
@@ -2584,29 +2663,50 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	return rb
 }
 
-func getInstanceID(instanceString string, logger *zap.Logger) string {
-	hostAndPort, service, found := strings.Cut(instanceString, "/")
-	if !found {
-		logger.Info("No service name found in the connection string", zap.String("instanceString", instanceString))
-	}
+func resolveServerEndpoint(hostName string, logger *zap.Logger) (string, int64) {
+	port := defaultOraclePort
 
-	host, port, err := net.SplitHostPort(hostAndPort)
+	host, portStr, err := net.SplitHostPort(hostName)
 	if err != nil {
-		logger.Warn("Computing service.instance.id failed. Couldn't extract host and port from the connection data.", zap.Error(err))
-		return constructInstanceID("unknown", "1521", service)
+		host = hostName
+	} else if parsedPort, parseErr := strconv.ParseInt(portStr, 10, 32); parseErr == nil && parsedPort > 0 {
+		port = parsedPort
 	}
 
-	// Replace the host value with machine name if connecting to localhost target
+	host = strings.Trim(strings.TrimSpace(host), "[]")
+
+	if host == "" {
+		logger.Warn("Could not determine the Oracle host from the connection string; server.address will not be reported",
+			zap.String("hostName", hostName))
+		return "", port
+	}
+
 	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
-		localhost, err := os.Hostname()
-		if err != nil {
-			logger.Warn("Failed getting localhost machine name for the service.instance.id.")
+		hostname, hostnameErr := os.Hostname()
+		if hostnameErr != nil {
+			logger.Warn("Failed resolving loopback to machine hostname for server.address", zap.Error(hostnameErr))
 		} else {
-			host = localhost
+			host = hostname
 		}
 	}
 
-	return constructInstanceID(host, port, service)
+	return host, port
+}
+
+// splitInstanceName splits a host[:port][/service] connection string into its target and service name.
+func splitInstanceName(instanceString string, logger *zap.Logger) (target, service string) {
+	target, service, found := strings.Cut(instanceString, "/")
+	if !found {
+		logger.Info("No service name found in the connection string", zap.String("instanceString", instanceString))
+	}
+	return target, service
+}
+
+func resolveInstanceIdentity(hostName, instanceName string, logger *zap.Logger) (address string, port int64, instanceID string) {
+	address, port = resolveServerEndpoint(hostName, logger)
+	_, service := splitInstanceName(instanceName, logger)
+
+	return address, port, constructInstanceID(address, strconv.FormatInt(port, 10), service)
 }
 
 func constructInstanceID(host, port, service string) string {
@@ -2614,7 +2714,7 @@ func constructInstanceID(host, port, service string) string {
 		host = "unknown"
 	}
 	if strings.TrimSpace(port) == "" {
-		port = "1521"
+		port = strconv.FormatInt(defaultOraclePort, 10)
 	}
 
 	if service != "" {

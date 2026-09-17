@@ -84,14 +84,14 @@ func Test_IsMapFactory(t *testing.T) {
 		factory := NewIsMapFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IsMapArguments[any]{}, args)
+		assert.IsType(t, &isMapArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewIsMapFactory[any]()
 		args := factory.CreateDefaultArguments()
-		isMapArgs, ok := args.(*IsMapArguments[any])
+		isMapArgs, ok := args.(*isMapArguments[any])
 		require.True(t, ok)
 		isMapArgs.Target = &ottl.StandardPMapGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -106,6 +106,21 @@ func Test_IsMapFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createIsMapFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "IsMapFactory args must be of type *IsMapArguments[K]")
+		assert.ErrorContains(t, err, "IsMapFactory args must be of type *isMapArguments[K]")
 	})
+}
+
+func BenchmarkIsMap(b *testing.B) {
+	exprFunc := isMap[any](&ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return map[string]any{"key": "value"}, nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

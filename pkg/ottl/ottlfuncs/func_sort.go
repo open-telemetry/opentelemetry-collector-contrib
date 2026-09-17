@@ -21,20 +21,20 @@ const (
 	sortDesc = "desc"
 )
 
-type SortArguments[K any] struct {
+type sortArguments[K any] struct {
 	Target ottl.Getter[K]
 	Order  ottl.Optional[string]
 }
 
 func NewSortFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Sort", &SortArguments[K]{}, createSortFunction[K])
+	return ottl.NewFactory("Sort", &sortArguments[K]{}, createSortFunction[K])
 }
 
 func createSortFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*SortArguments[K])
+	args, ok := oArgs.(*sortArguments[K])
 
 	if !ok {
-		return nil, errors.New("SortFactory args must be of type *SortArguments[K]")
+		return nil, errors.New("SortFactory args must be of type *sortArguments[K]")
 	}
 
 	order := sortAsc

@@ -66,7 +66,7 @@ jobs:
   # `mode` is a derived output (skip / full / scoped) used by cross-compile,
   # which doesn't fit the group-matrix shape.
   ci-scope:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     outputs:
       matrix: ${{ steps.post.outputs.matrix }}
@@ -332,6 +332,9 @@ jobs:
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP="${MATRIX_GROUP}"
+      - name: check-stability
+        if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: make check-stability GROUP="${MATRIX_GROUP}"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
@@ -406,7 +409,7 @@ jobs:
             false
           fi
   coverage:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [unittest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -657,7 +660,7 @@ jobs:
 
   publish-check:
     if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full')) }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [lint, unittest, integration-tests, cross-compile]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -740,6 +743,11 @@ jobs:
         env:
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
         run: ./.github/workflows/scripts/prepare-release-notes.sh
+      
+      - name: Prepare release title
+        id: release-title
+        run: |
+          echo "title=$(grep -A 2 '<!-- next version -->' CHANGELOG.md | awk '/##/{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Generate new contributor celebration text
         id: new-contributor-text
@@ -762,10 +770,11 @@ jobs:
 
       - name: Create Github Release
         run: |
-          gh release create "$RELEASE_TAG" -t "$RELEASE_TAG" -F ${{ env.RELEASE_NOTES }}
+          gh release create "${RELEASE_TAG}" -t "${STEPS_RELEASE_TITLE_OUTPUTS_TITLE}" -F ${{ env.RELEASE_NOTES }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+          STEPS_RELEASE_TITLE_OUTPUTS_TITLE: ${{ steps.release-title.outputs.title }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
   rotate-milestone:
     # This job updates the "next release" milestone
@@ -773,7 +782,7 @@ jobs:
     # named "next release" in its place
     permissions:
       issues: write # required for managing milestones
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [publish-stable]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
