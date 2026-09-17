@@ -1295,7 +1295,9 @@ func (p *postgreSQLScraper) setServerResourceAttributes(rb *metadata.ResourceBui
 		rb.SetServerAddress(p.serverEndpoint.address)
 		rb.SetServerPort(p.serverEndpoint.port)
 	}
-	rb.SetDbSystemVersion(p.dbVersion)
+	if p.dbVersion != "" {
+		rb.SetDbSystemVersion(p.dbVersion)
+	}
 }
 
 // serverEndpoint is the resolved network location of the monitored server. An unresolved endpoint
