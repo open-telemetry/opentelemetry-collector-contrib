@@ -882,12 +882,6 @@ type TypedGetter[K, V any] interface {
 	Get(ctx context.Context, tCtx K) (V, error)
 }
 
-// OptionalGetter is like TypedGetter, but for getters whose Get also returns a found bool,
-// such as the "Like" getters.
-type OptionalGetter[K, V any] interface {
-	Get(ctx context.Context, tCtx K) (V, bool, error)
-}
-
 // mockLiteralGetter is a mock implementation of TypedGetter that can be used for testing.
 type mockLiteralGetter[K, V any] struct {
 	valueGetter func(context.Context, K) (V, error)
@@ -908,6 +902,12 @@ func NewTestingLiteralGetter[K, V any](literal bool, getter TypedGetter[K, V]) (
 		return newLiteral[K, V](val), nil
 	}
 	return mockLiteralGetter[K, V]{valueGetter: getter.Get}, nil
+}
+
+// OptionalGetter is like TypedGetter, but for getters whose Get also returns a found bool,
+// such as the "Like" getters.
+type OptionalGetter[K, V any] interface {
+	Get(ctx context.Context, tCtx K) (V, bool, error)
 }
 
 // mockOptionalLiteralGetter is a mock implementation of an OptionalGetter literal for testing.
