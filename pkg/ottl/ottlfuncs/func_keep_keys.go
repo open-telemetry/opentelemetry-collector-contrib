@@ -53,22 +53,21 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys *ottl.SliceGetter[K, ott
 		keySet := literalKeySet
 		if keySet == nil {
 			// Resolve dynamic or runtime-generated keys for the current transform context
-			keySet = make(map[string]struct{}, length)
-			var keyErr error
-			err = keys.Range(ctx, tCtx, func(key ottl.StringGetter[K]) bool {
-				k, getErr := key.Get(ctx, tCtx)
-				if getErr != nil {
-					keyErr = getErr
-					return false
-				}
-				keySet[k] = struct{}{}
-				return true
-			})
+			resolvedKeys, err := keys.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			if keyErr != nil {
-				return nil, keyErr
+			if resolvedKeys == nil {
+				return nil, errors.New("keys cannot be nil")
+			}
+
+			keySet = make(map[string]struct{}, len(resolvedKeys))
+			for _, key := range resolvedKeys {
+				k, err := key.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				keySet[k] = struct{}{}
 			}
 		}
 
