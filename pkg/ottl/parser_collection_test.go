@@ -15,8 +15,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 type mockGetter struct {
@@ -464,7 +464,7 @@ func Test_ParseStatementsWithContext_UnknownContextError(t *testing.T) {
 }
 
 func Test_ParseStatementsWithContext_PrependPathContext(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
 	pc, err := NewParserCollection(
 		componenttest.NewNopTelemetrySettings(),
