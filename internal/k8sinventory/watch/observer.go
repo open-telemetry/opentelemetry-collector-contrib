@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"strconv"
 	"sync"
@@ -30,6 +31,7 @@ import (
 const (
 	defaultResourceVersion    = "1"
 	defaultCheckpointInterval = 5 * time.Second
+	minWatchTimeout           = 5 * time.Minute
 )
 
 type Config struct {
@@ -46,6 +48,11 @@ type Observer struct {
 	logger *zap.Logger
 
 	handleWatchEventFunc func(event *apiWatch.Event)
+}
+
+func watchTimeoutSeconds() int64 {
+	seconds := int64(minWatchTimeout / time.Second)
+	return seconds + rand.Int64N(seconds)
 }
 
 func New(client dynamic.Interface, config Config, logger *zap.Logger, storageClient storage.Client, handleWatchEventFunc func(event *apiWatch.Event)) (*Observer, error) {
@@ -144,10 +151,20 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
 		options.FieldSelector = o.config.FieldSelector
 		options.LabelSelector = o.config.LabelSelector
+		timeout := watchTimeoutSeconds()
+		options.TimeoutSeconds = &timeout
 		return resource.Watch(ctx, options)
 	}
 
 	cancelCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func() {
+		select {
+		case <-stopperChan:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
 
 	// Start flusher before sendInitialState so setLatestRV is wired up for
 	// both the initial listing and the subsequent watch loop.
@@ -171,7 +188,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 		flushCheckpoint()
 	}
 
-	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
+	wait.JitterUntilWithContext(cancelCtx, func(newCtx context.Context) {
 		var resourceVersion string
 		if initialListRV != "" {
 			// First iteration: reuse the list RV from sendInitialState directly,
@@ -186,12 +203,11 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 					zap.String("resource", o.config.Gvr.String()),
 					zap.String("namespace", namespace),
 					zap.Error(err))
-				cancel()
 				return
 			}
 		}
 
-		done := o.doWatch(ctx, resourceVersion, namespace, watchFunc, stopperChan, setLatestRV)
+		done, expired := o.doWatch(ctx, resourceVersion, namespace, watchFunc, stopperChan, setLatestRV)
 		if done {
 			cancel()
 			return
@@ -203,7 +219,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 
 		// Delete the persisted resourceVersion so we don't reuse the stale/expired value
 		// This handles 410 Gone errors where the persisted resourceVersion is too old
-		if o.checkpointer != nil {
+		if expired && o.checkpointer != nil {
 			if err := o.checkpointer.DeleteCheckpoint(context.Background(), namespace, o.config.Gvr.Resource); err != nil {
 				o.logger.Error("failed to delete persisted resourceVersion after watch restart",
 					zap.String("namespace", namespace),
@@ -211,7 +227,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 					zap.Error(err))
 			}
 		}
-	}, 0)
+	}, time.Second, 1.0, true)
 }
 
 // sendInitialState sends the current state of objects as synthetic Added events.
@@ -308,10 +324,10 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 	return listRV
 }
 
-// doWatch returns true when watching is done, false when watching should be restarted.
+// doWatch returns whether watching is done and whether the resource version expired.
 // setLatestRV is called with each new resourceVersion to update the in-memory value
 // that the periodic checkpoint flush will persist.
-func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
+func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) (done, expired bool) {
 	// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50432
 	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc}) //nolint:staticcheck
@@ -319,7 +335,7 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),
 			zap.Error(err))
-		return false
+		return false, false
 	}
 
 	defer watcher.Stop()
@@ -327,21 +343,22 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 	for {
 		select {
 		case data, ok := <-res:
-			if data.Type == apiWatch.Error {
-				errObject := apierrors.FromObject(data.Object)
-				//nolint:errorlint
-				if errObject.(*apierrors.StatusError).ErrStatus.Code == http.StatusGone {
-					o.logger.Info("received a 410, grabbing new resource version",
-						zap.Any("data", data))
-					// we received a 410 so we need to restart
-					return false
-				}
-			}
-
 			if !ok {
 				o.logger.Warn("Watch channel closed unexpectedly",
 					zap.String("resource", o.config.Gvr.String()))
-				return true
+				return false, false
+			}
+
+			if data.Type == apiWatch.Error {
+				errObject := apierrors.FromObject(data.Object)
+				var statusErr *apierrors.StatusError
+				if errors.As(errObject, &statusErr) && statusErr.ErrStatus.Code == http.StatusGone {
+					o.logger.Info("received a 410, grabbing new resource version",
+						zap.Any("data", data))
+					// we received a 410 so we need to restart
+					return false, true
+				}
+				continue
 			}
 
 			if o.config.Exclude[data.Type] {
@@ -371,7 +388,7 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 
 		case <-stopperChan:
 			watcher.Stop()
-			return true
+			return true, false
 		}
 	}
 }

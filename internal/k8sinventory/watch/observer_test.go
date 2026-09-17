@@ -78,6 +78,14 @@ func TestObserver(t *testing.T) {
 	wg.Wait()
 }
 
+func TestWatchTimeoutSeconds(t *testing.T) {
+	for range 100 {
+		timeout := watchTimeoutSeconds()
+		assert.GreaterOrEqual(t, timeout, int64(5*time.Minute/time.Second))
+		assert.Less(t, timeout, int64(10*time.Minute/time.Second))
+	}
+}
+
 func TestObserverWithInitialState(t *testing.T) {
 	mockClient := newMockDynamicClient()
 	mockClient.createPods(
