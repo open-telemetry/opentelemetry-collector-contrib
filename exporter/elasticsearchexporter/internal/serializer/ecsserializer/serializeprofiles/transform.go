@@ -4,13 +4,8 @@
 package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
 
 import (
-	"bytes"
 	"fmt"
-	"hash/fnv"
 	"math"
-	"slices"
-	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -60,7 +55,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	}
 
 	for _, sample := range profile.Samples().All() {
-		frames, frameTypes, leafFrame, err := stackFrames(dic, sample)
+		frames, frameTypes, err := serializer.StackFrames(dic, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
 		}
@@ -68,11 +63,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			continue
 		}
 
-		traceID, err := stackTraceID(frames)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create stacktrace ID: %w", err)
-		}
-
+		traceID := serializer.StackTraceID(frames)
 		event := stackTraceEvent(dic, traceID, sample, frequency, commonResourceAttributes)
 
 		// Set the stacktrace and stackframes to the payload.
@@ -88,8 +79,8 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			},
 		})
 
-		if !isFrameSymbolized(frames[len(frames)-1]) && leafFrame != nil {
-			unsymbolizedLeafFramesSet[*leafFrame] = struct{}{}
+		if leaf := &frames[len(frames)-1]; !leaf.IsSymbolized() {
+			unsymbolizedLeafFramesSet[leaf.ID] = struct{}{}
 		}
 
 		for j := range frames {
@@ -97,15 +88,11 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 				// Artificial error frames can't be symbolized.
 				continue
 			}
-			if isFrameSymbolized(frames[j]) {
+			if frames[j].IsSymbolized() {
 				// Skip interpreted frames and already symbolized native frames (kernel, Golang is planned).
 				continue
 			}
-			fID, err := serializer.NewFrameIDFromString(frames[j].DocID)
-			if err != nil {
-				return nil, fmt.Errorf("stackPayloads: %w", err)
-			}
-			unsymbolizedExecutablesSet[fID.FileID()] = struct{}{}
+			unsymbolizedExecutablesSet[frames[j].ID.FileID()] = struct{}{}
 		}
 
 		// Add one event per timestamp and its count value.
@@ -173,18 +160,22 @@ func unsymbolizedLeafFrames(frameIDs map[serializer.FrameID]struct{}) []Unsymbol
 }
 
 // symbolizedFrames returns a slice of StackFrames that have symbols.
-func symbolizedFrames(frames []StackFrame) []StackFrame {
+func symbolizedFrames(frames []serializer.Frame) []StackFrame {
 	framesWithSymbols := make([]StackFrame, 0, len(frames))
 	for i := range frames {
-		if isFrameSymbolized(frames[i]) {
-			framesWithSymbols = append(framesWithSymbols, frames[i])
+		f := &frames[i]
+		if !f.IsSymbolized() {
+			continue
 		}
+		framesWithSymbols = append(framesWithSymbols, StackFrame{
+			EcsVersion:   EcsVersion{V: EcsVersionString},
+			DocID:        f.DocID,
+			FileName:     f.FileName,
+			FunctionName: f.FunctionName,
+			LineNumber:   f.LineNumber,
+		})
 	}
 	return framesWithSymbols
-}
-
-func isFrameSymbolized(frame StackFrame) bool {
-	return len(frame.FileName) > 0 || len(frame.FunctionName) > 0
 }
 
 func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64,
@@ -222,83 +213,15 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 	return event
 }
 
-func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType) StackTrace {
-	frameIDs := make([]string, 0, len(frames))
-	for i := range frames {
-		f := &frames[i]
-		frameIDs = append(frameIDs, f.DocID)
-	}
-
-	// Up to 255 consecutive identical frame types are converted into 2 bytes (binary).
-	// We expect mostly consecutive frame types in a trace. Even if the encoding
-	// takes more than 32 bytes in single cases, the probability that the average base64 length
-	// per trace is below 32 bytes is very high.
-	// We expect resizing of buf to happen very rarely.
-	buf := bytes.NewBuffer(make([]byte, 0, 32))
-	serializer.EncodeFrameTypesTo(buf, frameTypes)
+func stackTrace(stackTraceID string, frames []serializer.Frame, frameTypes []libpf.FrameType) StackTrace {
+	frameIDs, types := serializer.EncodeStackTrace(frames, frameTypes)
 
 	return StackTrace{
 		EcsVersion: EcsVersion{V: EcsVersionString},
 		DocID:      stackTraceID,
-		FrameIDs:   strings.Join(frameIDs, ""),
-		Types:      buf.String(),
+		FrameIDs:   frameIDs,
+		Types:      types,
 	}
-}
-
-func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *serializer.FrameID, error) {
-	stack := dic.StackTable().At(int(sample.StackIndex()))
-	frames := make([]StackFrame, 0, stack.LocationIndices().Len())
-
-	locations := serializer.GetLocations(dic, stack)
-	totalFrames := 0
-	for _, location := range locations {
-		totalFrames += location.Lines().Len()
-	}
-	frameTypes := make([]libpf.FrameType, 0, totalFrames)
-
-	var leafFrameID *serializer.FrameID
-
-	for locationIdx, location := range locations {
-		if location.MappingIndex() >= int32(dic.MappingTable().Len()) {
-			continue
-		}
-
-		frameTypeStr, err := serializer.GetStringFromAttribute(dic, location, string(conventions.ProfileFrameTypeKey))
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
-
-		functionNames := make([]string, 0, location.Lines().Len())
-		fileNames := make([]string, 0, location.Lines().Len())
-		lineNumbers := make([]int32, 0, location.Lines().Len())
-
-		for _, line := range location.Lines().All() {
-			if line.FunctionIndex() < int32(dic.FunctionTable().Len()) {
-				functionNames = append(functionNames, serializer.GetString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).NameStrindex())))
-				fileNames = append(fileNames, serializer.GetString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).FilenameStrindex())))
-			}
-			lineNumbers = append(lineNumbers, int32(line.Line()))
-		}
-
-		frameID := serializer.GetFrameID(dic, location)
-
-		if locationIdx == 0 {
-			leafFrameID = frameID
-		}
-
-		frames = append([]StackFrame{
-			{
-				EcsVersion:   EcsVersion{V: EcsVersionString},
-				DocID:        frameID.String(),
-				FileName:     fileNames,
-				FunctionName: functionNames,
-				LineNumber:   lineNumbers,
-			},
-		}, frames...)
-	}
-
-	return frames, frameTypes, leafFrameID, nil
 }
 
 func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) ([]ExeMetadata, error) {
@@ -332,34 +255,4 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 	}
 
 	return metadata, nil
-}
-
-// stackTraceID creates a unique trace ID from the stack frames.
-// For the OTEL profiling protocol, we have all required information in one wire message.
-// But for the Elastic gRPC protocol, trace events and stack traces are sent separately, so
-// that the host agent still needs to generate the stack trace IDs.
-//
-// The following code generates the same trace ID as the host agent.
-// For ES 9.0.0, we could use a faster hash algorithm, e.g. xxh3, and hash strings instead
-// of hashing binary data.
-func stackTraceID(frames []StackFrame) (string, error) {
-	var buf [24]byte
-	h := fnv.New128a()
-	for i := range slices.Backward(frames) { // reverse ordered frames, done in stackFrames()
-		fID, err := serializer.NewFrameIDFromString(frames[i].DocID)
-		if err != nil {
-			return "", fmt.Errorf("failed to create frameID from string: %w", err)
-		}
-		_, _ = h.Write(fID.FileID().Bytes())
-		// Using FormatUint() or putting AppendUint() into a function leads
-		// to escaping to heap (allocation).
-		_, _ = h.Write(strconv.AppendUint(buf[:0], uint64(fID.AddressOrLine()), 10))
-	}
-	// make instead of nil avoids a heap allocation
-	traceHash, err := serializer.TraceHashFromBytes(h.Sum(make([]byte, 0, 16)))
-	if err != nil {
-		return "", err
-	}
-
-	return traceHash.Base64(), nil
 }

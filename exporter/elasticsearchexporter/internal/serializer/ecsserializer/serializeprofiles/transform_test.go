@@ -970,7 +970,7 @@ func TestStackTrace(t *testing.T) {
 			p := tt.buildProfile()
 			s := p.Samples().At(0)
 
-			frames, frameTypes, _, err := stackFrames(dic, s)
+			frames, frameTypes, err := serializer.StackFrames(dic, s)
 			require.NoError(t, err)
 
 			stacktrace := stackTrace("", frames, frameTypes)
@@ -1059,13 +1059,10 @@ func mkStackTraceID(t *testing.T, frameIDs []serializer.FrameID) string {
 		stack.LocationIndices().Append(int32(dic.LocationTable().Len() - 1))
 	}
 
-	frames, _, _, err := stackFrames(dic, s)
+	frames, _, err := serializer.StackFrames(dic, s)
 	require.NoError(t, err)
 
-	traceID, err := stackTraceID(frames)
-	require.NoError(t, err)
-
-	return traceID
+	return serializer.StackTraceID(frames)
 }
 
 // sortPayloads brings the payloads into a deterministic form to allow comparisons.

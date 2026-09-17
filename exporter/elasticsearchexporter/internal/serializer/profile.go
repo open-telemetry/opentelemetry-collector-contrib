@@ -51,10 +51,7 @@ func CheckProfileType(dic pprofile.ProfilesDictionary, profile pprofile.Profile)
 	return nil
 }
 
-// GetFrameID derives the frame ID of a location from its mapping's build ID
-// and address, synthesizing a file ID from the location's lines when no
-// build ID is available.
-func GetFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *FrameID {
+func GetFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) FrameID {
 	// The MappingIndex is known to be valid.
 	fileID := libpf.FileID{}
 
@@ -83,8 +80,7 @@ func GetFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *Fr
 		addressOrLineno = uint64(location.Lines().At(location.Lines().Len() - 1).Line())
 	}
 
-	fID := NewFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
-	return &fID
+	return NewFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
 }
 
 type attributable interface {
@@ -159,8 +155,6 @@ func GetStartOfWeekFromTime(t time.Time) uint32 {
 	return uint32(t.Truncate(time.Hour * 24 * 7).Unix())
 }
 
-// PopulateResourceData flattens resource, scope and profile attributes into a
-// single string map.
 func PopulateResourceData(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) (map[string]string, error) {
 	numAttrs := resource.Attributes().Len() + scope.Attributes().Len() + profile.AttributeIndices().Len()
 	if numAttrs == 0 {

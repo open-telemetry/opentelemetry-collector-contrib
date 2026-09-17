@@ -4,13 +4,8 @@
 package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 
 import (
-	"bytes"
 	"fmt"
-	"hash/fnv"
 	"math"
-	"slices"
-	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -57,7 +52,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	}
 
 	for _, sample := range profile.Samples().All() {
-		frames, frameTypes, err := stackFrames(dic, sample)
+		frames, frameTypes, err := serializer.StackFrames(dic, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
 		}
@@ -65,11 +60,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			continue
 		}
 
-		traceID, err := stackTraceID(frames)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create stacktrace ID: %w", err)
-		}
-
+		traceID := serializer.StackTraceID(frames)
 		event := stackTraceEvent(dic, traceID, sample, frequency, commonResourceAttributes)
 
 		ts := serializer.NewUnixTime64(uint64(time.Now().UnixNano()))
@@ -113,19 +104,22 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 }
 
 // symbolizedFrames returns a slice of StackFrames that have symbols.
-func symbolizedFrames(frames []StackFrame, ts serializer.UnixTime64) []StackFrame {
+func symbolizedFrames(frames []serializer.Frame, ts serializer.UnixTime64) []StackFrame {
 	framesWithSymbols := make([]StackFrame, 0, len(frames))
 	for i := range frames {
-		if isFrameSymbolized(frames[i]) {
-			frames[i].Timestamp = ts
-			framesWithSymbols = append(framesWithSymbols, frames[i])
+		f := &frames[i]
+		if !f.IsSymbolized() {
+			continue
 		}
+		framesWithSymbols = append(framesWithSymbols, StackFrame{
+			DocID:        f.DocID,
+			Timestamp:    ts,
+			FileName:     f.FileName,
+			FunctionName: f.FunctionName,
+			LineNumber:   f.LineNumber,
+		})
 	}
 	return framesWithSymbols
-}
-
-func isFrameSymbolized(frame StackFrame) bool {
-	return len(frame.FileName) > 0 || len(frame.FunctionName) > 0
 }
 
 func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64,
@@ -161,76 +155,15 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 	return event
 }
 
-func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType, ts serializer.UnixTime64) StackTrace {
-	frameIDs := make([]string, 0, len(frames))
-	for i := range frames {
-		f := &frames[i]
-		frameIDs = append(frameIDs, f.DocID)
-	}
-
-	// Up to 255 consecutive identical frame types are converted into 2 bytes (binary).
-	// We expect mostly consecutive frame types in a trace. Even if the encoding
-	// takes more than 32 bytes in single cases, the probability that the average base64 length
-	// per trace is below 32 bytes is very high.
-	// We expect resizing of buf to happen very rarely.
-	buf := bytes.NewBuffer(make([]byte, 0, 32))
-	serializer.EncodeFrameTypesTo(buf, frameTypes)
+func stackTrace(stackTraceID string, frames []serializer.Frame, frameTypes []libpf.FrameType, ts serializer.UnixTime64) StackTrace {
+	frameIDs, types := serializer.EncodeStackTrace(frames, frameTypes)
 
 	return StackTrace{
 		DocID:     stackTraceID,
 		Timestamp: ts,
-		FrameIDs:  strings.Join(frameIDs, ""),
-		Types:     buf.String(),
+		FrameIDs:  frameIDs,
+		Types:     types,
 	}
-}
-
-func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, error) {
-	stack := dic.StackTable().At(int(sample.StackIndex()))
-	frames := make([]StackFrame, 0, stack.LocationIndices().Len())
-
-	locations := serializer.GetLocations(dic, stack)
-	totalFrames := 0
-	for _, location := range locations {
-		totalFrames += location.Lines().Len()
-	}
-	frameTypes := make([]libpf.FrameType, 0, totalFrames)
-
-	for _, location := range locations {
-		if location.MappingIndex() >= int32(dic.MappingTable().Len()) {
-			continue
-		}
-
-		frameTypeStr, err := serializer.GetStringFromAttribute(dic, location, string(conventions.ProfileFrameTypeKey))
-		if err != nil {
-			return nil, nil, err
-		}
-		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
-
-		functionNames := make([]string, 0, location.Lines().Len())
-		fileNames := make([]string, 0, location.Lines().Len())
-		lineNumbers := make([]int32, 0, location.Lines().Len())
-
-		for _, line := range location.Lines().All() {
-			if line.FunctionIndex() < int32(dic.FunctionTable().Len()) {
-				functionNames = append(functionNames, serializer.GetString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).NameStrindex())))
-				fileNames = append(fileNames, serializer.GetString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).FilenameStrindex())))
-			}
-			lineNumbers = append(lineNumbers, int32(line.Line()))
-		}
-
-		frameID := serializer.GetFrameID(dic, location)
-
-		frames = append([]StackFrame{
-			{
-				DocID:        frameID.String(),
-				FileName:     fileNames,
-				FunctionName: functionNames,
-				LineNumber:   lineNumbers,
-			},
-		}, frames...)
-	}
-
-	return frames, frameTypes, nil
 }
 
 func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) []ExeMetadata {
@@ -263,34 +196,4 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 	}
 
 	return metadata
-}
-
-// stackTraceID creates a unique trace ID from the stack frames.
-// For the OTEL profiling protocol, we have all required information in one wire message.
-// But for the Elastic gRPC protocol, trace events and stack traces are sent separately, so
-// that the host agent still needs to generate the stack trace IDs.
-//
-// The following code generates the same trace ID as the host agent.
-// For ES 9.0.0, we could use a faster hash algorithm, e.g. xxh3, and hash strings instead
-// of hashing binary data.
-func stackTraceID(frames []StackFrame) (string, error) {
-	var buf [24]byte
-	h := fnv.New128a()
-	for i := range slices.Backward(frames) { // reverse ordered frames, done in stackFrames()
-		fID, err := serializer.NewFrameIDFromString(frames[i].DocID)
-		if err != nil {
-			return "", fmt.Errorf("failed to create frameID from string: %w", err)
-		}
-		_, _ = h.Write(fID.FileID().Bytes())
-		// Using FormatUint() or putting AppendUint() into a function leads
-		// to escaping to heap (allocation).
-		_, _ = h.Write(strconv.AppendUint(buf[:0], uint64(fID.AddressOrLine()), 10))
-	}
-	// make instead of nil avoids a heap allocation
-	traceHash, err := serializer.TraceHashFromBytes(h.Sum(make([]byte, 0, 16)))
-	if err != nil {
-		return "", err
-	}
-
-	return traceHash.Base64(), nil
 }
