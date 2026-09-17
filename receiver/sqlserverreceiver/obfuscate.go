@@ -86,6 +86,15 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 
 		switch elem := token.(type) {
 		case xml.StartElement:
+			// The decoder resolves the plan's default namespace into the Name.Space
+			// of every element, while the original xmlns declaration survives as a
+			// plain attribute on the root. Re-encoding that as-is makes the encoder
+			// declare the namespace again on the root -- producing a duplicate xmlns
+			// attribute that fails validation with "Attribute xmlns redefined" -- and
+			// re-declare it on every descendant. Clearing Name.Space (on EndElement
+			// too, so the tags stay matched) leaves the root's original declaration to
+			// pass through exactly once and keeps descendants free of redundant ones.
+			elem.Name.Space = ""
 			for i := range elem.Attr {
 				for _, attrName := range xmlPlanObfuscationAttrs {
 					if elem.Attr[i].Name.Local == attrName {
@@ -113,6 +122,7 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 				return "", err
 			}
 		case xml.EndElement:
+			elem.Name.Space = ""
 			err := encoder.EncodeToken(elem)
 			if err != nil {
 				return "", err
