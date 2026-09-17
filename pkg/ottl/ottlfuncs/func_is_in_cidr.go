@@ -15,6 +15,8 @@ type isInCIDRArguments[K any] struct {
 	Networks []ottl.StringGetter[K]
 }
 
+// NewIsInCIDRFactory returns a factory for the IsInCIDR OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#isincidr
 func NewIsInCIDRFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("IsInCIDR", &isInCIDRArguments[K]{}, createIsInCIDRFunction[K])
 }

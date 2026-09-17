@@ -19,6 +19,8 @@ type sliceToMapArguments[K any] struct {
 	ValuePath ottl.Optional[[]string]
 }
 
+// NewSliceToMapFactory returns a factory for the SliceToMap OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#slicetomap
 func NewSliceToMapFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("SliceToMap", &sliceToMapArguments[K]{}, sliceToMapFunction[K])
 }

@@ -16,6 +16,8 @@ type sHA1Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewSHA1Factory returns a factory for the SHA1 OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#sha1
 func NewSHA1Factory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("SHA1", &sHA1Arguments[K]{}, createSHA1Function[K])
 }
