@@ -63,7 +63,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 	for i := range pod.Spec.Containers {
 		c := &pod.Spec.Containers[i]
 		newPod.Spec.Containers = append(newPod.Spec.Containers, corev1.Container{
-			Name: c.Name,
+			Name:  c.Name,
+			Image: c.Image,
 			Resources: corev1.ResourceRequirements{
 				Requests: c.Resources.Requests,
 				Limits:   c.Resources.Limits,
