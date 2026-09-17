@@ -46,10 +46,6 @@ type brokerReadKey struct {
 	outcome string // "success" or "failure"
 }
 
-type assignmentSnapshot struct {
-	assignments []*pc
-}
-
 // franzConsumer implements a Kafka consumer using the franz-go client library.
 type franzConsumer struct {
 	config           *Config
@@ -72,7 +68,7 @@ type franzConsumer struct {
 	// assignmentsSnapshot is an immutable snapshot published by assignment
 	// lifecycle hooks. This allows readers to use the snapshot without
 	// acquiring a read lock on the `mu` mutex.
-	assignmentsSnapshot atomic.Pointer[assignmentSnapshot]
+	assignmentsSnapshot atomic.Pointer[[]*pc]
 
 	// controls serializes SetOffsets between PollRecords calls.
 	controls chan partitionControl
@@ -133,11 +129,11 @@ func newFranzKafkaConsumer(
 
 // observeOffsetLag report offset lag for all current partition assignments.
 func (c *franzConsumer) observeOffsetLag(_ context.Context, observer metric.Int64Observer) error {
-	snapshot := c.assignmentsSnapshot.Load()
-	if snapshot == nil {
+	assignmentsSnapshot := c.assignmentsSnapshot.Load()
+	if assignmentsSnapshot == nil {
 		return nil
 	}
-	for _, pc := range snapshot.assignments {
+	for _, pc := range *assignmentsSnapshot {
 		// Avoid reporting when the assignment has not yet a processed batch
 		// and if a partition assignment has been lost/revoked
 		if pc.hasOffsetLag.Load() && !pc.partitionLost.Load() {
@@ -151,12 +147,12 @@ func (c *franzConsumer) observeOffsetLag(_ context.Context, observer metric.Int6
 // The caller must hold c.mu for writing.
 func (c *franzConsumer) storeAssignmentSnapshot() {
 	assignments := make([]*pc, 0, len(c.assignments))
-	for _, pc := range c.assignments {
-		if !pc.partitionLost.Load() {
-			assignments = append(assignments, pc)
+	for _, partitionAssignment := range c.assignments {
+		if !partitionAssignment.partitionLost.Load() {
+			assignments = append(assignments, partitionAssignment)
 		}
 	}
-	c.assignmentsSnapshot.Store(&assignmentSnapshot{assignments: assignments})
+	c.assignmentsSnapshot.Store(&assignments)
 }
 
 // reportStatus emits a component status event if we have a host.
@@ -583,7 +579,7 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	changed := false
+	haveAssignmentsChanged := false
 	for topic, partitions := range assigned {
 		for _, partition := range partitions {
 			c.telemetryBuilder.KafkaReceiverPartitionStart.Add(context.Background(), 1)
@@ -601,7 +597,7 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 			partitionConsumer.ctx, partitionConsumer.cancel = context.WithCancelCause(ctx)
 			tp := topicPartition{topic: topic, partition: partition}
 			c.assignments[tp] = &partitionConsumer
-			changed = true
+			haveAssignmentsChanged = true
 			if c.config.PartitionProcessing.Independent {
 				partitionConsumer.mailbox = newPartitionMailbox(
 					partitionConsumer.ctx,
@@ -613,7 +609,7 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 			}
 		}
 	}
-	if changed {
+	if haveAssignmentsChanged {
 		c.storeAssignmentSnapshot()
 	}
 }
