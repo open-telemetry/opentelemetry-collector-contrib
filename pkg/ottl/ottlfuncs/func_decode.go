@@ -67,6 +67,8 @@ type decodeArguments[K any] struct {
 	Encoding ottl.StringGetter[K]
 }
 
+// NewDecodeFactory returns a factory for the Decode OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#decode
 func NewDecodeFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Decode", &decodeArguments[K]{}, createDecodeFunction[K])
 }

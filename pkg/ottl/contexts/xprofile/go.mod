@@ -65,3 +65,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../../golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../../internal/common

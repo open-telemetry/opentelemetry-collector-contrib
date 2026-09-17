@@ -17,6 +17,8 @@ type keepKeysArguments[K any] struct {
 	Keys   ottl.SliceGetter[K, ottl.StringGetter[K]]
 }
 
+// NewKeepKeysFactory returns a factory for the keep_keys OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#keep_keys
 func NewKeepKeysFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("keep_keys", &keepKeysArguments[K]{}, createKeepKeysFunction[K])
 }

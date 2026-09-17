@@ -195,9 +195,6 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 	case pmetric.MetricTypeHistogram:
 		value := metricPoint.HistogramValue
 		prevValue := state.prevPoint.HistogramValue
-		if math.IsNaN(value.Sum) {
-			value.Sum = prevValue.Sum
-		}
 
 		if len(value.BucketCounts) != len(prevValue.BucketCounts) {
 			valid = false
@@ -213,11 +210,27 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 
 		// Calculate deltas unless there was a reset.
 		if valid {
+			// Reset check runs before any NaN substitution so that a reset frame
+			// with NaN Sum is stored as-is (preserving NaN in the new baseline)
+			// rather than carrying forward the pre-reset Sum.
 			if !isMonotonicHistogram(&delta, prevValue) {
+				state.prevPoint = metricPoint
 				return out, false, ReasonReset
 			}
 			delta.Count -= prevValue.Count
 			delta.Sum -= prevValue.Sum
+			if math.IsNaN(delta.Sum) {
+				// NaN delta arises when the current point's Sum is NaN (unset).
+				// Emit zero for the delta and carry the previous Sum forward in
+				// the stored baseline so that subsequent non-NaN points still
+				// compute correct deltas.
+				delta.Sum = 0
+				if math.IsNaN(value.Sum) {
+					histCopy := value.Clone()
+					histCopy.Sum = prevValue.Sum
+					metricPoint.HistogramValue = &histCopy
+				}
+			}
 			for index, prevBucket := range prevValue.BucketCounts {
 				delta.BucketCounts[index] -= prevBucket
 			}
@@ -231,6 +244,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 
 		// Count and ZeroThreshold should only increase when merging, and Scale should only decrease.
 		if value.Count < prevValue.Count || value.ZeroThreshold < prevValue.ZeroThreshold || value.Scale > prevValue.Scale {
+			state.prevPoint = metricPoint
 			return out, false, ReasonReset
 		}
 
@@ -262,10 +276,12 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 		var reset bool
 		delta.Positive, reset = value.Positive.Diff(&prevValue.Positive)
 		if reset {
+			state.prevPoint = metricPoint
 			return out, false, ReasonReset
 		}
 		delta.Negative, reset = value.Negative.Diff(&prevValue.Negative)
 		if reset {
+			state.prevPoint = metricPoint
 			return out, false, ReasonReset
 		}
 
