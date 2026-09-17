@@ -10,19 +10,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type NanosecondArguments[K any] struct {
+type nanosecondArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
 func NewNanosecondFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Nanosecond", &NanosecondArguments[K]{}, createNanosecondFunction[K])
+	return ottl.NewFactory("Nanosecond", &nanosecondArguments[K]{}, createNanosecondFunction[K])
 }
 
 func createNanosecondFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*NanosecondArguments[K])
+	args, ok := oArgs.(*nanosecondArguments[K])
 
 	if !ok {
-		return nil, errors.New("NanosecondFactory args must be of type *NanosecondArguments[K]")
+		return nil, errors.New("NanosecondFactory args must be of type *nanosecondArguments[K]")
 	}
 
 	return Nanosecond(args.Time)

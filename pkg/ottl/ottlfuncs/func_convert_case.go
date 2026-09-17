@@ -14,20 +14,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ConvertCaseArguments[K any] struct {
+type convertCaseArguments[K any] struct {
 	Target ottl.StringGetter[K]
 	ToCase string
 }
 
 func NewConvertCaseFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ConvertCase", &ConvertCaseArguments[K]{}, createConvertCaseFunction[K])
+	return ottl.NewFactory("ConvertCase", &convertCaseArguments[K]{}, createConvertCaseFunction[K])
 }
 
 func createConvertCaseFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ConvertCaseArguments[K])
+	args, ok := oArgs.(*convertCaseArguments[K])
 
 	if !ok {
-		return nil, errors.New("ConvertCaseFactory args must be of type *ConvertCaseArguments[K]")
+		return nil, errors.New("ConvertCaseFactory args must be of type *convertCaseArguments[K]")
 	}
 
 	return convertCase(args.Target, args.ToCase)
