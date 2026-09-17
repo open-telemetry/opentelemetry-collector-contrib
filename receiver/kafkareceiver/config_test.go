@@ -172,6 +172,7 @@ func TestLoadConfig(t *testing.T) {
 				cfg.PartitionProcessing = PartitionProcessing{
 					Independent:        true,
 					MaxBufferedBatches: 2,
+					MaxInFlight:        1,
 				}
 				return cfg
 			}(),
@@ -219,6 +220,19 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name:        "kafka/invalid_partition_processing_manual_commit",
 			expectedErr: "partition_processing.independent requires autocommit.enable",
+		},
+		{
+			name: "kafka/partition_processing_max_in_flight",
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing.Independent = true
+				cfg.PartitionProcessing.MaxInFlight = 4
+				return cfg
+			}(),
+		},
+		{
+			name:        "kafka/invalid_partition_processing_zero_max_in_flight",
+			expectedErr: "partition_processing.max_in_flight must be greater than zero",
 		},
 	}
 

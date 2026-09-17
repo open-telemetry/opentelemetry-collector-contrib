@@ -38,10 +38,15 @@ type pc struct {
 
 	ctx    context.Context
 	cancel context.CancelCauseFunc
-	// Not safe for concurrent use, this field is never accessed concurrently.
+	// Not safe for concurrent use. handleMessage clones it when max_in_flight
+	// is above 1.
 	backOff *backoff.ExponentialBackOff
 
 	mailbox *partitionMailbox
+	// skipConsume holds offsets this worker already finished above a rewind
+	// hole. It stays nil until a rewind writes it. Entries drop when the
+	// marked prefix advances past them, and the map dies with pc on rebalance.
+	skipConsume map[int64]struct{}
 	// pauseReasons stores a bitmask of partitionPauseReason values.
 	pauseReasons atomic.Uint32
 
@@ -85,6 +90,17 @@ func (p *pc) clearPauseReasons(reasons partitionPauseReason) bool {
 	previous := p.pauseReasons.And(^mask)
 	remaining := previous &^ mask
 	return previous&mask != 0 && remaining == 0
+}
+
+// logProcessError reports a record the pipeline rejected. A cancelled partition
+// is an expected shutdown path, so it logs at debug level.
+func (p *pc) logProcessError(record *kgo.Record, err error) {
+	fields := []zap.Field{zap.Error(err), zap.Int64("offset", record.Offset)}
+	if p.ctx.Err() != nil {
+		p.logger.Debug("message processing interrupted", fields...)
+		return
+	}
+	p.logger.Error("unable to process message", fields...)
 }
 
 // runPartitionWorker processes exactly one partition in offset order. Workers
@@ -165,39 +181,33 @@ func (c *franzConsumer) applyMailboxRewind(pc *pc, tp topicPartition, partition 
 //     dequeues the batch. Records still waiting in the mailbox are not marked.
 //   - Legacy with autocommit disabled marks records here. consume commits all
 //     marked partitions after the fetched batch finishes.
+//   - Independent with max_in_flight above 1 always marks after processing,
+//     because concurrent calls have no single record to mark before.
+//     processRecordsConcurrent also marks the contiguous prefix as soon as
+//     earlier in-flight records finish.
 func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
 	var fatalRecord *kgo.Record
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
-	for _, msg := range p.Records {
-		if !c.config.MessageMarking.After {
-			c.markCommitRecords(pc, p.Topic, p.Partition, msg)
-		}
-		c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
-		if err := c.handleMessage(pc, msg); err != nil {
-			if pc.ctx.Err() != nil {
-				pc.logger.Debug("message processing interrupted",
-					zap.Error(err),
-					zap.Int64("offset", msg.Offset),
-				)
-			} else {
-				pc.logger.Error("unable to process message",
-					zap.Error(err),
-					zap.Int64("offset", msg.Offset),
-				)
+	concurrent := c.maxInFlight() > 1
+	if concurrent {
+		fatalRecord, fatalIsPermanent, lastProcessed = c.processRecordsConcurrent(ctx, pc, p)
+	} else {
+		for _, msg := range p.Records {
+			if !c.config.MessageMarking.After {
+				c.markCommitRecords(pc, p.Topic, p.Partition, msg)
 			}
-			// handleMessage only returns an error when After=true and
-			// the message should not be marked, so checking !shouldMark
-			// here is consistent with that contract.
-			isPermanent := consumererror.IsPermanent(err)
-			shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
-			if !shouldMark {
-				fatalRecord = msg
-				fatalIsPermanent = isPermanent
-				break
+			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
+			if err := c.handleMessage(pc, msg); err != nil {
+				pc.logProcessError(msg, err)
+				if !c.shouldMark(err) {
+					fatalRecord = msg
+					fatalIsPermanent = consumererror.IsPermanent(err)
+					break
+				}
 			}
+			lastProcessed = msg
 		}
-		lastProcessed = msg
 	}
 
 	result := partitionBatchResult{}
@@ -271,9 +281,8 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 		(p.HighWatermark-1)-lastProcessed.Offset,
 		metric.WithAttributeSet(pc.attrs),
 	)
-	if c.config.MessageMarking.After {
-		// Mark the latest accepted record after processing. This also covers
-		// every earlier record in the batch.
+	if c.config.MessageMarking.After || concurrent {
+		// Marking one record commits the contiguous accepted prefix.
 		c.markCommitRecords(pc, p.Topic, p.Partition, lastProcessed)
 	}
 	return result
@@ -291,4 +300,165 @@ func (c *franzConsumer) markCommitRecords(pc *pc, topic string, partition int32,
 		}
 	}
 	c.client.MarkCommitRecords(records...)
+}
+
+// shouldMark reports whether message_marking allows marking a record that
+// failed with err. handleMessage returns an error only when it already refused
+// to mark, so batch callers repeat this check to stay consistent.
+func (c *franzConsumer) shouldMark(err error) bool {
+	if consumererror.IsPermanent(err) {
+		return c.config.MessageMarking.OnPermanentError
+	}
+	return c.config.MessageMarking.OnError
+}
+
+// maxInFlight returns how many handleMessage calls one partition worker may run
+// at once. Only independent workers go above 1.
+func (c *franzConsumer) maxInFlight() int {
+	if c.config.PartitionProcessing.Independent {
+		return c.config.PartitionProcessing.MaxInFlight
+	}
+	return 1
+}
+
+// processRecordsConcurrent runs up to maxInFlight handleMessage calls at once
+// on one partition. It marks the successful prefix as records finish. An
+// unmarked failure is retried once in memory. If that retry fails, this worker
+// rewinds and skips Consume for offsets it already finished above the hole. It
+// returns that unmarked record, whether the error is permanent, and the last
+// record of the successful prefix.
+func (c *franzConsumer) processRecordsConcurrent(ctx context.Context, pc *pc, p kgo.FetchTopicPartition) (fatalRecord *kgo.Record, fatalIsPermanent bool, lastProcessed *kgo.Record) {
+	records := p.Records
+	sem := make(chan struct{}, c.maxInFlight())
+	finished := make([]atomic.Bool, len(records))
+	errs := make([]error, len(records))
+	var markMu sync.Mutex
+	markedThrough := -1
+	advanceMark := func() {
+		markMu.Lock()
+		defer markMu.Unlock()
+		start := markedThrough
+		base := markedThrough + 1
+		for k := range records[base:] {
+			next := base + k
+			if !finished[next].Load() {
+				break
+			}
+			if err := errs[next]; err != nil && !c.shouldMark(err) {
+				break
+			}
+			markedThrough = next
+		}
+		if markedThrough > start {
+			c.markCommitRecords(pc, p.Topic, p.Partition, records[markedThrough])
+		}
+	}
+
+	for pos := 0; pos < len(records); {
+		var (
+			wg      sync.WaitGroup
+			failed  atomic.Bool
+			started int
+		)
+		for rel, msg := range records[pos:] {
+			i := pos + rel
+			if _, ok := pc.skipConsume[msg.Offset]; ok {
+				finished[i].Store(true)
+				started++
+				advanceMark()
+				continue
+			}
+			sem <- struct{}{}
+			// Stop starting once a record fails. The hole is retried below.
+			if failed.Load() {
+				<-sem
+				break
+			}
+			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
+			started++
+			wg.Go(func() {
+				err := c.handleMessage(pc, msg)
+				if err != nil {
+					errs[i] = err
+					if !c.shouldMark(err) {
+						failed.Store(true)
+					} else {
+						pc.logProcessError(msg, err)
+					}
+				}
+				finished[i].Store(true)
+				advanceMark()
+				<-sem
+			})
+		}
+		wg.Wait()
+
+		for j, msg := range records[pos : pos+started] {
+			idx := pos + j
+			err := errs[idx]
+			if err != nil && !c.shouldMark(err) {
+				if c.config.ErrorBackOff.Enabled && !consumererror.IsPermanent(err) {
+					// One extra Consume, no new backoff. handleMessage already
+					// used the configured max_elapsed_time.
+					err = c.consumeMessage(pc.ctx, msg, pc.attrs)
+					if err == nil || c.shouldMark(err) {
+						errs[idx] = err
+						lastProcessed = msg
+						continue
+					}
+					c.rememberSkipConsume(pc, records[idx+1:pos+started], errs[idx+1:pos+started])
+				}
+				pc.logProcessError(msg, err)
+				pc.dropSkipConsume(markedOffset(records, markedThrough))
+				return msg, consumererror.IsPermanent(err), lastProcessed
+			}
+			lastProcessed = msg
+		}
+		advanceMark()
+		pc.dropSkipConsume(markedOffset(records, markedThrough))
+		if started == 0 {
+			break
+		}
+		pos += started
+	}
+	return nil, false, lastProcessed
+}
+
+func markedOffset(records []*kgo.Record, markedThrough int) int64 {
+	if markedThrough < 0 {
+		return -1
+	}
+	return records[markedThrough].Offset
+}
+
+// dropSkipConsume removes skip entries at or below the marked prefix. The map
+// returns to nil when it is empty so later success batches do not keep a set.
+func (p *pc) dropSkipConsume(through int64) {
+	if p.skipConsume == nil {
+		return
+	}
+	if through >= 0 {
+		for off := range p.skipConsume {
+			if off <= through {
+				delete(p.skipConsume, off)
+			}
+		}
+	}
+	if len(p.skipConsume) == 0 {
+		p.skipConsume = nil
+	}
+}
+
+// rememberSkipConsume records offsets above a rewind hole that this worker
+// already finished, so the next fetch on this pc does not Consume them again.
+func (c *franzConsumer) rememberSkipConsume(pc *pc, records []*kgo.Record, errs []error) {
+	for i, rec := range records {
+		if errs[i] != nil && !c.shouldMark(errs[i]) {
+			continue
+		}
+		if pc.skipConsume == nil {
+			pc.skipConsume = make(map[int64]struct{}, len(records))
+		}
+		pc.skipConsume[rec.Offset] = struct{}{}
+	}
 }
