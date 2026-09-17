@@ -31,40 +31,56 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 }
 
 func compareDocuments(expected, actual *document) error {
-	if err := expected.Resources.Validate(actual.Resources.Values); err != nil {
-		return fmt.Errorf("resources assertion failed: %w", err)
+	var errs []error
+	matched := make([]bool, len(actual.Resources))
+
+	for _, er := range expected.Resources {
+		idx := findMatchingAttributes(er.Attributes, er.AttributeMode, matched, len(actual.Resources), func(i int) map[string]any {
+			return actual.Resources[i].Attributes
+		})
+		if idx < 0 {
+			errs = append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
+			continue
+		}
+		matched[idx] = true
+		if err := compareResource(er, actual.Resources[idx]); err != nil {
+			errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
+		}
 	}
-	return nil
+	// Under /include, actual resources with no expected counterpart are allowed.
+	if expected.ResourcesMode == collectionModeExact {
+		for i, ar := range actual.Resources {
+			if !matched[i] {
+				errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
+			}
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func compareResource(expected, actual resourceAssertion) error {
-	if len(expected.Scopes.Includes) == 0 {
-		var errs []error
-		matched := make([]bool, len(actual.Scopes.Values))
+	var errs []error
+	matched := make([]bool, len(actual.Scopes))
 
-		for _, es := range expected.Scopes.Values {
-			idx := findMatchingScope(es, matched, actual.Scopes.Values)
-			if idx < 0 {
-				errs = append(errs, fmt.Errorf("missing expected scope %s", scopeIdentityString(es)))
-				continue
-			}
-			matched[idx] = true
-			if err := compareScope(es, actual.Scopes.Values[idx]); err != nil {
-				errs = append(errs, fmt.Errorf("scope %s: %w", scopeIdentityString(es), err))
-			}
+	for _, es := range expected.Scopes {
+		idx := findMatchingScope(es, matched, actual.Scopes)
+		if idx < 0 {
+			errs = append(errs, fmt.Errorf("missing expected scope %s", scopeIdentityString(es)))
+			continue
 		}
-		for i, as := range actual.Scopes.Values {
+		matched[idx] = true
+		if err := compareScope(es, actual.Scopes[idx]); err != nil {
+			errs = append(errs, fmt.Errorf("scope %s: %w", scopeIdentityString(es), err))
+		}
+	}
+	if expected.ScopesMode == collectionModeExact {
+		for i, as := range actual.Scopes {
 			if !matched[i] {
 				errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version.value))
 			}
 		}
-		return errors.Join(errs...)
 	}
-
-	if err := expected.Scopes.Validate(actual.Scopes.Values); err != nil {
-		return fmt.Errorf("scopes assertion failed: %w", err)
-	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // findMatchingScope returns the first unmatched index whose scope satisfies the
@@ -123,34 +139,29 @@ func versionMatcherString(m versionMatcher) string {
 }
 
 func compareScope(expected, actual scopeAssertion) error {
-	if len(expected.Metrics.Includes) == 0 {
-		var errs []error
-		expMetrics := indexMetrics(expected.Metrics.Values)
-		actMetrics := indexMetrics(actual.Metrics.Values)
+	var errs []error
+	expMetrics := indexMetrics(expected.Metrics)
+	actMetrics := indexMetrics(actual.Metrics)
 
-		for name := range expMetrics {
-			em := expMetrics[name]
-			am, ok := actMetrics[name]
-			if !ok {
-				errs = append(errs, fmt.Errorf("missing expected metric %q", name))
-				continue
-			}
-			if err := compareMetric(em, am); err != nil {
-				errs = append(errs, fmt.Errorf("metric %q: %w", name, err))
-			}
+	for name := range expMetrics {
+		em := expMetrics[name]
+		am, ok := actMetrics[name]
+		if !ok {
+			errs = append(errs, fmt.Errorf("missing expected metric %q", name))
+			continue
 		}
+		if err := compareMetric(em, am); err != nil {
+			errs = append(errs, fmt.Errorf("metric %q: %w", name, err))
+		}
+	}
+	if expected.MetricsMode == collectionModeExact {
 		for name := range actMetrics {
 			if _, ok := expMetrics[name]; !ok {
 				errs = append(errs, fmt.Errorf("unexpected metric %q", name))
 			}
 		}
-		return errors.Join(errs...)
 	}
-
-	if err := expected.Metrics.ValidateAssertions(actual.Metrics.Values); err != nil {
-		return fmt.Errorf("metrics assertion failed: %w", err)
-	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func indexMetrics(ms []metricAssertion) map[string]metricAssertion {
@@ -177,17 +188,13 @@ func compareMetric(expected, actual metricAssertion) error {
 		errs = append(errs, fmt.Errorf("monotonic mismatch: expected %v, got %v",
 			boolPtrString(expected.Monotonic), boolPtrString(actual.Monotonic)))
 	}
-	if len(expected.Datapoints.Includes) == 0 {
-		if err := compareDatapoints(expected.Datapoints.Values, actual.Datapoints.Values); err != nil {
-			errs = append(errs, err)
-		}
-	} else if err := expected.Datapoints.Validate(actual.Datapoints.Values); err != nil {
-		errs = append(errs, fmt.Errorf("datapoints assertion failed: %w", err))
+	if err := compareDatapoints(expected.Datapoints, expected.DatapointsMode, actual.Datapoints); err != nil {
+		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
 }
 
-func compareDatapoints(expected, actual []datapointAssertion) error {
+func compareDatapoints(expected []datapointAssertion, mode collectionMode, actual []datapointAssertion) error {
 	matched := make([]bool, len(actual))
 	var missing, unexpected []string
 	var valErrs []error
@@ -206,9 +213,11 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
 		}
 	}
-	for i, adp := range actual {
-		if !matched[i] {
-			unexpected = append(unexpected, canonKey(adp.Attributes))
+	if mode == collectionModeExact {
+		for i, adp := range actual {
+			if !matched[i] {
+				unexpected = append(unexpected, canonKey(adp.Attributes))
+			}
 		}
 	}
 	if len(missing) == 0 && len(unexpected) == 0 && len(valErrs) == 0 {

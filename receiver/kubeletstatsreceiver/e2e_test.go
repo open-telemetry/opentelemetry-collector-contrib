@@ -62,20 +62,8 @@ func TestE2E(t *testing.T) {
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
-	// Grab the latest metrics payload
 	actualMetrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
-
-	// Normalize the dynamic scope version to empty string so it matches our expected.yaml
-	rms := actualMetrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		sms := rms.At(i).ScopeMetrics()
-		for j := 0; j < sms.Len(); j++ {
-			sms.At(j).Scope().SetVersion("")
-		}
-	}
-
-	err = pmetricassert.AssertMetrics(expectedFile, actualMetrics)
-	require.NoError(t, err)
+	require.NoError(t, pmetricassert.AssertMetrics(expectedFile, actualMetrics))
 }
 
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {

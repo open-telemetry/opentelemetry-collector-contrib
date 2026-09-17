@@ -63,10 +63,10 @@ func TestWriteAssertionFile_IncludeHistogramExplicitBounds(t *testing.T) {
 
 	doc, err := readDocument(path)
 	require.NoError(t, err)
-	datapoints := doc.Resources.Values[0].Scopes.Values[0].Metrics.Values[0].Datapoints
+	datapoints := doc.Resources[0].Scopes[0].Metrics[0].Datapoints
 	require.Equal(t, []datapointAssertion{{
 		ExplicitBounds: &[]float64{0.005, 0.01, 0.025},
-	}}, datapoints.Values)
+	}}, datapoints)
 
 	dp := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
 	dp.SetCount(999)
@@ -772,7 +772,7 @@ resources:
 
 	err := AssertMetrics(path, m)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "expected resource[0] was not found in actual resources")
+	require.Contains(t, err.Error(), "missing expected resource")
 }
 
 func TestAssertMetrics_AttributeIncludeDatapointAttributes(t *testing.T) {

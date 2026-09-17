@@ -1,11 +1,71 @@
 version: 1
 signal: metrics
+# The node resource and the receiver scope are matched with /include so that
+# this assertion does not break when the e2e collector emits telemetry from
+# another component. The node metric set itself is still matched exactly.
 resources/include:
-  - attributes:
-      k8s.node.name: kind-control-plane
-    scopes/include:
-      - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
-        metrics/include:
-          - name: k8s.node.memory.usage
-            type: gauge
-            unit: By
+    - attributes:
+        k8s.node.name: kind-control-plane
+      scopes/include:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          # The scope version is the collector build version.
+          version/exists: true
+          metrics:
+            - name: k8s.node.cpu.time
+              type: sum
+              unit: s
+              temporality: cumulative
+              monotonic: true
+            - name: k8s.node.cpu.usage
+              type: gauge
+              unit: "{cpu}"
+            - name: k8s.node.filesystem.available
+              type: gauge
+              unit: By
+            - name: k8s.node.filesystem.capacity
+              type: gauge
+              unit: By
+            - name: k8s.node.filesystem.usage
+              type: gauge
+              unit: By
+            - name: k8s.node.memory.available
+              type: gauge
+              unit: By
+            - name: k8s.node.memory.major_page_faults
+              type: gauge
+              unit: "1"
+            - name: k8s.node.memory.page_faults
+              type: gauge
+              unit: "1"
+            - name: k8s.node.memory.rss
+              type: gauge
+              unit: By
+            - name: k8s.node.memory.usage
+              type: gauge
+              unit: By
+            - name: k8s.node.memory.working_set
+              type: gauge
+              unit: By
+            # The network metrics are reported per interface. Only the
+            # direction permutations are asserted, so the test does not depend
+            # on the interface names of the node it runs on.
+            - name: k8s.node.network.errors
+              type: sum
+              unit: "1"
+              temporality: cumulative
+              monotonic: true
+              datapoints/include:
+                - attributes/include:
+                    direction: receive
+                - attributes/include:
+                    direction: transmit
+            - name: k8s.node.network.io
+              type: sum
+              unit: By
+              temporality: cumulative
+              monotonic: true
+              datapoints/include:
+                - attributes/include:
+                    direction: receive
+                - attributes/include:
+                    direction: transmit

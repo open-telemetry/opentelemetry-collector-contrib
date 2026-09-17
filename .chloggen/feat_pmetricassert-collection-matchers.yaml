@@ -7,14 +7,14 @@ change_type: enhancement
 component: pkg/pdatatest
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add collection operator support (`/exact` and `/include`) to `pmetricassert` resources, scopes, metrics, and datapoints, including YAML parsing and end-to-end assertion validation.
+note: Add the `/include` collection operator to `pmetricassert` for `resources`, `scopes`, `metrics`, and `datapoints`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48472]
 
 subtext: |
-  This change introduces the `/include` operator for subset matching while
-  preserving default exact matching for collections.
+  Collections without an operator keep matching exactly. Within an item matched
+  by `/include`, an omitted nested collection asserts nothing about it.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
