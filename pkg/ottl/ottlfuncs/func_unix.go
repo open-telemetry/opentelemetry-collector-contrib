@@ -11,20 +11,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type UnixArguments[K any] struct {
+type unixArguments[K any] struct {
 	Seconds     ottl.IntGetter[K]
 	Nanoseconds ottl.Optional[ottl.IntGetter[K]]
 }
 
 func NewUnixFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Unix", &UnixArguments[K]{}, createUnixFunction[K])
+	return ottl.NewFactory("Unix", &unixArguments[K]{}, createUnixFunction[K])
 }
 
 func createUnixFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*UnixArguments[K])
+	args, ok := oArgs.(*unixArguments[K])
 
 	if !ok {
-		return nil, errors.New("UnixFactory args must be of type *UnixArguments[K]")
+		return nil, errors.New("UnixFactory args must be of type *unixArguments[K]")
 	}
 
 	return Unix(args.Seconds, args.Nanoseconds)

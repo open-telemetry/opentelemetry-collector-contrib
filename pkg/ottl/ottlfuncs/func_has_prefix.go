@@ -11,20 +11,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type HasPrefixArguments[K any] struct {
+type hasPrefixArguments[K any] struct {
 	Target ottl.StringGetter[K]
 	Prefix ottl.StringGetter[K]
 }
 
 func NewHasPrefixFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("HasPrefix", &HasPrefixArguments[K]{}, createHasPrefixFunction[K])
+	return ottl.NewFactory("HasPrefix", &hasPrefixArguments[K]{}, createHasPrefixFunction[K])
 }
 
 func createHasPrefixFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*HasPrefixArguments[K])
+	args, ok := oArgs.(*hasPrefixArguments[K])
 
 	if !ok {
-		return nil, errors.New("HasPrefixFactory args must be of type *HasPrefixArguments[K]")
+		return nil, errors.New("HasPrefixFactory args must be of type *hasPrefixArguments[K]")
 	}
 
 	return HasPrefix(args.Target, args.Prefix), nil

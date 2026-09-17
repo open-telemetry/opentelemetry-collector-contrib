@@ -1074,8 +1074,14 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 
 	finalDecision := actualData.FinalDecision
 
-	marshaler := &ptrace.ProtoMarshaler{}
-	actualData.SizeBytes += uint64(marshaler.ResourceSpansSize(rss))
+	// ResourceSpansSize walks the proto tree. SizeBytes is only needed to drop
+	// oversized traces or to record count_bytes_sampled. That metric is behind
+	// an alpha feature gate (off by default) because proto-sizing every batch
+	// is expensive, so skip the walk unless a size limit or the gate is on.
+	if tsp.maxTraceSizeBytes > 0 || telemetry.IsMetricStatCountBytesSampledEnabled() {
+		var m ptrace.ProtoMarshaler
+		actualData.SizeBytes += uint64(m.ResourceSpansSize(rss))
+	}
 
 	if finalDecision == samplingpolicy.Unspecified &&
 		tsp.maxTraceSizeBytes > 0 &&
