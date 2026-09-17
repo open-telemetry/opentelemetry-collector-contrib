@@ -556,9 +556,10 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	}
 }
 
-// start resolves the credential provider (if a db_auth block is
-// configured) from the host extension map — only available now, at Start — and
-// injects it into the client factory so connections are built with it.
+// start resolves the credential provider (if a db_auth block is configured)
+// from the host extension map — only available now, at Start — and injects
+// it into the client factory. It also detects the server version once at
+// startup so it can be stamped on every emitted resource as db.system.version.
 func (p *postgreSQLScraper) start(ctx context.Context, host component.Host) error {
 	provider, err := p.config.resolveCredentialProvider(host.GetExtensions())
 	if err != nil {
