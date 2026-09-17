@@ -7,7 +7,7 @@ change_type: breaking
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change `KeepKeysArguments.Keys` to use `ottl.SliceGetter`
+note: Change the `keep_keys` keys argument to use `ottl.SliceGetter`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45980]
