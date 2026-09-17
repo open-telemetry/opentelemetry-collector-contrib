@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type SubstringArguments[K any] struct {
+type substringArguments[K any] struct {
 	Target   ottl.StringGetter[K]
 	Start    ottl.IntGetter[K]
 	Length   ottl.IntGetter[K]
@@ -20,14 +20,14 @@ type SubstringArguments[K any] struct {
 }
 
 func NewSubstringFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Substring", &SubstringArguments[K]{}, createSubstringFunction[K])
+	return ottl.NewFactory("Substring", &substringArguments[K]{}, createSubstringFunction[K])
 }
 
 func createSubstringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*SubstringArguments[K])
+	args, ok := oArgs.(*substringArguments[K])
 
 	if !ok {
-		return nil, errors.New("SubstringFactory args must be of type *SubstringArguments[K]")
+		return nil, errors.New("SubstringFactory args must be of type *substringArguments[K]")
 	}
 
 	return substring(args.Target, args.Start, args.Length, args.Utf8Safe), nil

@@ -45,7 +45,7 @@ func Test_HasSuffix(t *testing.T) {
 			factory := NewHasSuffixFactory[any]()
 			exprFunc, err := factory.CreateFunction(
 				ottl.FunctionContext{},
-				&HasSuffixArguments[any]{
+				&hasSuffixArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
 						Getter: func(context.Context, any) (any, error) {
 							return tt.target, nil
@@ -73,7 +73,7 @@ func Test_HasSuffix_Error(t *testing.T) {
 			return "test", nil
 		},
 	}
-	exprFunc := HasSuffix[any](target, suffix)
+	exprFunc := hasSuffix[any](target, suffix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -89,7 +89,7 @@ func Test_HasSuffix_Error_suffix(t *testing.T) {
 			return true, nil
 		},
 	}
-	exprFunc := HasSuffix[any](target, suffix)
+	exprFunc := hasSuffix[any](target, suffix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -104,14 +104,14 @@ func Test_HasSuffixFactory(t *testing.T) {
 		factory := NewHasSuffixFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &HasSuffixArguments[any]{}, args)
+		assert.IsType(t, &hasSuffixArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Suffix"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewHasSuffixFactory[any]()
 		args := factory.CreateDefaultArguments()
-		hasSuffixArgs, ok := args.(*HasSuffixArguments[any])
+		hasSuffixArgs, ok := args.(*hasSuffixArguments[any])
 		require.True(t, ok)
 		hasSuffixArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -131,6 +131,23 @@ func Test_HasSuffixFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createHasSuffixFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "HasSuffixFactory args must be of type *HasSuffixArguments[K]")
+		assert.ErrorContains(t, err, "HasSuffixFactory args must be of type *hasSuffixArguments[K]")
 	})
+}
+
+func BenchmarkHasSuffix(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "hello world", nil },
+	}
+	suffix := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return " world", nil },
+	}
+	exprFunc := hasSuffix[any](target, suffix)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

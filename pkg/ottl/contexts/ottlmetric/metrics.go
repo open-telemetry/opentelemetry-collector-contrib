@@ -30,7 +30,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for metrics.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxmetric.Name
 
 var (
@@ -72,9 +71,9 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	}
 }
 
-// NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
+// NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.resourceMetrics = resourceMetrics
 	tCtx.scopeMetrics = scopeMetrics
@@ -117,20 +116,18 @@ func (tCtx *TransformContext) GetResource() pcommon.Resource {
 }
 
 // GetScopeSchemaURLItem returns the scope schema URL item from the TransformContext.
-func (tCtx *TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetScopeSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.scopeMetrics
 }
 
 // GetResourceSchemaURLItem returns the resource schema URL item from the TransformContext.
-func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetResourceSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.resourceMetrics
 }
 
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{

@@ -12,25 +12,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type SHA256Arguments[K any] struct {
+type sHA256Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewSHA256Factory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("SHA256", &SHA256Arguments[K]{}, createSHA256Function[K])
+	return ottl.NewFactory("SHA256", &sHA256Arguments[K]{}, createSHA256Function[K])
 }
 
 func createSHA256Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*SHA256Arguments[K])
+	args, ok := oArgs.(*sHA256Arguments[K])
 
 	if !ok {
-		return nil, errors.New("SHA256Factory args must be of type *SHA256Arguments[K]")
+		return nil, errors.New("SHA256Factory args must be of type *sHA256Arguments[K]")
 	}
 
-	return SHA256HashString(args.Target)
+	return sha256HashString(args.Target), nil
 }
 
-func SHA256HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func sha256HashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -43,5 +43,5 @@ func SHA256HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], err
 		}
 		hashValue := hex.EncodeToString(hash.Sum(nil))
 		return hashValue, nil
-	}, nil
+	}
 }

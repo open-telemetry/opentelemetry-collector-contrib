@@ -14,7 +14,7 @@ import (
 
 func (*Serializer) SerializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, idx elasticsearch.Index, buf *bytes.Buffer) {
 	w := newJSONWriter(buf)
-	w.startObject()
+	w.StartObject()
 	first := true
 	first = w.writeTimestampField("@timestamp", spanEvent.Timestamp(), first)
 	first = w.writeDataStream(idx, first)
@@ -34,12 +34,12 @@ func (*Serializer) SerializeSpanEvent(resource pcommon.Resource, resourceSchemaU
 	first = w.writeAttributes(attributes, false, first)
 	first = w.writeResource(resource, resourceSchemaURL, false, first)
 	_ = w.writeScope(scope, scopeSchemaURL, false, first)
-	w.endObject()
+	w.EndObject()
 }
 
 func (*Serializer) SerializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, idx elasticsearch.Index, buf *bytes.Buffer) error {
 	w := newJSONWriter(buf)
-	w.startObject()
+	w.StartObject()
 	first := true
 	first = w.writeTimestampField("@timestamp", span.StartTimestamp(), first)
 	first = w.writeDataStream(idx, first)
@@ -58,37 +58,37 @@ func (*Serializer) SerializeSpan(resource pcommon.Resource, resourceSchemaURL st
 	first = writeStatus(&w, span.Status(), first)
 	first = w.writeResource(resource, resourceSchemaURL, false, first)
 	_ = w.writeScope(scope, scopeSchemaURL, false, first)
-	w.endObject()
+	w.EndObject()
 	return nil
 }
 
 func writeStatus(w *jsonWriter, status ptrace.Status, first bool) bool {
-	first = w.key("status", first)
-	w.startObject()
+	first = w.Key("status", first)
+	w.StartObject()
 	firstField := true
 	firstField = w.writeStringFieldSkipDefault("message", status.Message(), firstField)
 	if code := status.Code(); code != ptrace.StatusCodeUnset {
 		_ = w.writeStringFieldSkipDefault("code", code.String(), firstField)
 	}
-	w.endObject()
+	w.EndObject()
 	return first
 }
 
 func writeSpanLinks(w *jsonWriter, span ptrace.Span, first bool) bool {
-	first = w.key("links", first)
-	w.startArray()
+	first = w.Key("links", first)
+	w.StartArray()
 	firstElem := true
 	for _, spanLink := range span.Links().All() {
-		firstElem = w.arrayComma(firstElem)
-		w.startObject()
+		firstElem = w.ArrayComma(firstElem)
+		w.StartObject()
 		firstField := true
 		firstField = w.writeStringFieldSkipDefault("trace_id", spanLink.TraceID().String(), firstField)
 		firstField = w.writeStringFieldSkipDefault("span_id", spanLink.SpanID().String(), firstField)
 		firstField = w.writeStringFieldSkipDefault("trace_state", spanLink.TraceState().AsRaw(), firstField)
 		firstField = w.writeAttributes(spanLink.Attributes(), false, firstField)
 		_ = w.writeIntFieldSkipDefault("dropped_attributes_count", int64(spanLink.DroppedAttributesCount()), firstField)
-		w.endObject()
+		w.EndObject()
 	}
-	w.endArray()
+	w.EndArray()
 	return first
 }

@@ -12,26 +12,26 @@ import (
 )
 
 const (
-	INSERT = "insert"
-	UPDATE = "update"
-	UPSERT = "upsert"
+	insert = "insert"
+	update = "update"
+	upsert = "upsert"
 )
 
-type MergeMapsArguments[K any] struct {
+type mergeMapsArguments[K any] struct {
 	Target   ottl.PMapGetSetter[K]
 	Source   ottl.PMapGetter[K]
 	Strategy string
 }
 
 func NewMergeMapsFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("merge_maps", &MergeMapsArguments[K]{}, createMergeMapsFunction[K])
+	return ottl.NewFactory("merge_maps", &mergeMapsArguments[K]{}, createMergeMapsFunction[K])
 }
 
 func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*MergeMapsArguments[K])
+	args, ok := oArgs.(*mergeMapsArguments[K])
 
 	if !ok {
-		return nil, errors.New("MergeMapsFactory args must be of type *MergeMapsArguments[K]")
+		return nil, errors.New("MergeMapsFactory args must be of type *mergeMapsArguments[K]")
 	}
 
 	return mergeMaps(args.Target, args.Source, args.Strategy)
@@ -44,7 +44,7 @@ func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 //	update: Update the entry in `target` with the value from `source` where the key does exist
 //	upsert: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
 func mergeMaps[K any](target ottl.PMapGetSetter[K], source ottl.PMapGetter[K], strategy string) (ottl.ExprFunc[K], error) {
-	if strategy != INSERT && strategy != UPDATE && strategy != UPSERT {
+	if strategy != insert && strategy != update && strategy != upsert {
 		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
 	}
 
@@ -58,20 +58,20 @@ func mergeMaps[K any](target ottl.PMapGetSetter[K], source ottl.PMapGetter[K], s
 			return nil, err
 		}
 		switch strategy {
-		case INSERT:
+		case insert:
 			for k, v := range valueMap.All() {
 				if _, ok := targetMap.Get(k); !ok {
 					tv := targetMap.PutEmpty(k)
 					v.CopyTo(tv)
 				}
 			}
-		case UPDATE:
+		case update:
 			for k, v := range valueMap.All() {
 				if tv, ok := targetMap.Get(k); ok {
 					v.CopyTo(tv)
 				}
 			}
-		case UPSERT:
+		case upsert:
 			for k, v := range valueMap.All() {
 				tv := targetMap.PutEmpty(k)
 				v.CopyTo(tv)
