@@ -37,7 +37,12 @@ func (s attributeLossSummary) isEmpty() bool {
 // - diverse: present in all spans but with multiple unique values (loss = unique - 1)
 // - missing: absent from some spans (loss depends on template presence)
 // Both slices are sorted by uniqueValues descending.
-func analyzeAttributeLoss(nodes []*spanNode, template *spanNode) attributeLossSummary {
+//
+// Keys starting with ignorePrefix are excluded from the comparison. The caller
+// passes the aggregation attribute prefix when merging existing summaries, so a
+// prior summary's own bookkeeping attributes (present on it, absent on the raw
+// spans beside it) are not reported as lost business attributes.
+func analyzeAttributeLoss(nodes []*spanNode, template *spanNode, ignorePrefix string) attributeLossSummary {
 	if len(nodes) < 2 || template == nil {
 		return attributeLossSummary{}
 	}
@@ -53,6 +58,9 @@ func analyzeAttributeLoss(nodes []*spanNode, template *spanNode) attributeLossSu
 
 	for _, node := range nodes {
 		node.span.Attributes().Range(func(k string, v pcommon.Value) bool {
+			if ignorePrefix != "" && isAggregationAttr(k, ignorePrefix) {
+				return true
+			}
 			if attributeValues[k] == nil {
 				attributeValues[k] = make(map[string]struct{})
 			}

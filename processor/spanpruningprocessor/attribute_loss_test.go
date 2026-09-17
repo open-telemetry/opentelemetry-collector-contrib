@@ -21,7 +21,7 @@ func TestAnalyzeAttributeLoss_NoDiversity(t *testing.T) {
 		{"db.operation": "select", "db.name": "users"},
 	})
 
-	result := analyzeAttributeLoss(nodes, nodes[0])
+	result := analyzeAttributeLoss(nodes, nodes[0], "")
 	assert.True(t, result.isEmpty(), "no loss expected when all values are identical")
 }
 
@@ -32,7 +32,7 @@ func TestAnalyzeAttributeLoss_WithDiversity(t *testing.T) {
 		{"db.operation": "select", "db.name": "products", "db.statement": "SELECT * FROM products"},
 	})
 
-	result := analyzeAttributeLoss(nodes, nodes[0])
+	result := analyzeAttributeLoss(nodes, nodes[0], "")
 	require.Len(t, result.diverse, 2)
 	assert.Empty(t, result.missing)
 	assert.Equal(t, 2, result.diverse[0].uniqueValues)
@@ -47,7 +47,7 @@ func TestAnalyzeAttributeLoss_MixedDiversity(t *testing.T) {
 		{"db.operation": "select", "http.method": "PUT", "http.route": "/api/users"},
 	})
 
-	result := analyzeAttributeLoss(nodes, nodes[0])
+	result := analyzeAttributeLoss(nodes, nodes[0], "")
 	require.Len(t, result.diverse, 1)
 	assert.Equal(t, "http.method", result.diverse[0].key)
 	assert.Equal(t, 2, result.diverse[0].uniqueValues)
@@ -62,7 +62,7 @@ func TestAnalyzeAttributeLoss_SortOrder(t *testing.T) {
 		{"a": "4", "b": "2", "c": "1"},
 	})
 
-	result := analyzeAttributeLoss(nodes, nodes[0])
+	result := analyzeAttributeLoss(nodes, nodes[0], "")
 	require.Len(t, result.diverse, 2)
 	assert.Equal(t, "a", result.diverse[0].key)
 	assert.Equal(t, 3, result.diverse[0].uniqueValues)
@@ -72,7 +72,7 @@ func TestAnalyzeAttributeLoss_SortOrder(t *testing.T) {
 
 func TestAnalyzeAttributeLoss_SingleNode(t *testing.T) {
 	nodes := createTestSpanNodes(t, []map[string]string{{"db.operation": "select"}})
-	assert.True(t, analyzeAttributeLoss(nodes, nodes[0]).isEmpty())
+	assert.True(t, analyzeAttributeLoss(nodes, nodes[0], "").isEmpty())
 }
 
 func TestAnalyzeAttributeLoss_MissingAttributesTemplateHasAttribute(t *testing.T) {
@@ -82,7 +82,7 @@ func TestAnalyzeAttributeLoss_MissingAttributesTemplateHasAttribute(t *testing.T
 		{"a": "3"},
 	})
 
-	result := analyzeAttributeLoss(nodes, nodes[0])
+	result := analyzeAttributeLoss(nodes, nodes[0], "")
 	require.Len(t, result.diverse, 1)
 	assert.Equal(t, "a", result.diverse[0].key)
 	assert.Equal(t, 2, result.diverse[0].uniqueValues)
@@ -96,7 +96,7 @@ func TestAnalyzeAttributeLoss_MissingAttributesTemplateLacksAttribute(t *testing
 		{"a": "3"},
 	})
 
-	result := analyzeAttributeLoss(nodes, nodes[1])
+	result := analyzeAttributeLoss(nodes, nodes[1], "")
 	require.Len(t, result.diverse, 1)
 	assert.Equal(t, "a", result.diverse[0].key)
 	assert.Equal(t, 2, result.diverse[0].uniqueValues)
@@ -112,8 +112,8 @@ func TestAnalyzeAttributeLoss_TemplateSelectionAffectsMissingLoss(t *testing.T) 
 		{"stable": "z"},
 	})
 
-	withOptionalTemplate := analyzeAttributeLoss(nodes, nodes[0])
-	withoutOptionalTemplate := analyzeAttributeLoss(nodes, nodes[1])
+	withOptionalTemplate := analyzeAttributeLoss(nodes, nodes[0], "")
+	withoutOptionalTemplate := analyzeAttributeLoss(nodes, nodes[1], "")
 
 	assert.Empty(t, withOptionalTemplate.missing)
 	require.Len(t, withoutOptionalTemplate.missing, 1)
@@ -132,7 +132,7 @@ func TestAnalyzeAttributeLoss_LargeCardinality(t *testing.T) {
 	}
 
 	nodes := createTestSpanNodes(t, attrSets)
-	result := analyzeAttributeLoss(nodes, nodes[0])
+	result := analyzeAttributeLoss(nodes, nodes[0], "")
 
 	require.Len(t, result.diverse, 1)
 	assert.Equal(t, "query.id", result.diverse[0].key)
