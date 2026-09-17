@@ -21,6 +21,8 @@ type findArguments[K any] struct {
 	Mapper    ottl.Optional[*ottl.LambdaExpression[K]]
 }
 
+// NewFindFactory returns a factory for the Find OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#find
 func NewFindFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Find", &findArguments[K]{}, createFindFunction[K])
 }

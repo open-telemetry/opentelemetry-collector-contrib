@@ -23,6 +23,8 @@ type mergeMapsArguments[K any] struct {
 	Strategy string
 }
 
+// NewMergeMapsFactory returns a factory for the merge_maps OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#merge_maps
 func NewMergeMapsFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("merge_maps", &mergeMapsArguments[K]{}, createMergeMapsFunction[K])
 }

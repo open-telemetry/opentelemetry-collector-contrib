@@ -18,6 +18,8 @@ type whenArguments[K any] struct {
 	FalseValue ottl.Getter[K]
 }
 
+// NewWhenFactory returns a factory for the When OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#when
 func NewWhenFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("When", &whenArguments[K]{}, createWhenFunction[K])
 }

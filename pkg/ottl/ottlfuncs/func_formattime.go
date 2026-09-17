@@ -16,6 +16,8 @@ type formatTimeArguments[K any] struct {
 	Format string
 }
 
+// NewFormatTimeFactory returns a factory for the FormatTime OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#formattime
 func NewFormatTimeFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("FormatTime", &formatTimeArguments[K]{}, createFormatTimeFunction[K])
 }

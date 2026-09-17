@@ -16,6 +16,8 @@ type hasSuffixArguments[K any] struct {
 	Suffix ottl.StringGetter[K]
 }
 
+// NewHasSuffixFactory returns a factory for the HasSuffix OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#hassuffix
 func NewHasSuffixFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("HasSuffix", &hasSuffixArguments[K]{}, createHasSuffixFunction[K])
 }

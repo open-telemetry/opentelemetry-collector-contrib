@@ -20,6 +20,8 @@ type filterArguments[K any] struct {
 	Predicate *ottl.LambdaExpression[K]
 }
 
+// NewFilterFactory returns a factory for the Filter OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#filter
 func NewFilterFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Filter", &filterArguments[K]{}, createFilterFunction[K])
 }

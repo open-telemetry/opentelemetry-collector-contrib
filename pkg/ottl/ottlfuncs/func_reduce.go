@@ -20,6 +20,8 @@ type reduceArguments[K any] struct {
 	Accumulator *ottl.LambdaExpression[K]
 }
 
+// NewReduceFactory returns a factory for the Reduce OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#reduce
 func NewReduceFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Reduce", &reduceArguments[K]{}, createReduceFunction[K])
 }

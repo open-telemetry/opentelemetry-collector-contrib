@@ -19,6 +19,8 @@ type allArguments[K any] struct {
 	Predicate *ottl.LambdaExpression[K]
 }
 
+// NewAllFactory returns a factory for the All OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#all
 func NewAllFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("All", &allArguments[K]{}, createAllFunction[K])
 }
