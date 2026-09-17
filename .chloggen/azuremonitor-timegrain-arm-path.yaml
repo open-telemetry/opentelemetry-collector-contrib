@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: receiver/azuremonitor
+component: receiver/azure_monitor
 
 note: Emit the `timegrain` datapoint attribute on the ARM collection path, matching the batch API path
 
