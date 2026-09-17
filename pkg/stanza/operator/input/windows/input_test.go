@@ -165,6 +165,8 @@ func TestInputStart_RemoteSessionWithDomain(t *testing.T) {
 		}
 		return 1, nil
 	})()
+	// Stop closes the fake session handle; keep that off the real API so the test does not depend on run order.
+	defer mockWithDeferredRestore(&evtClose, func(uintptr) error { return nil })()
 
 	input := newTestInput()
 	input.ignoreChannelErrors = true
