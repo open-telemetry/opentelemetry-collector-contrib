@@ -210,16 +210,26 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 
 		// Calculate deltas unless there was a reset.
 		if valid {
+			// Reset check runs before any NaN substitution so that a reset frame
+			// with NaN Sum is stored as-is (preserving NaN in the new baseline)
+			// rather than carrying forward the pre-reset Sum.
 			if !isMonotonicHistogram(&delta, prevValue) {
 				state.prevPoint = metricPoint
 				return out, false, ReasonReset
 			}
 			delta.Count -= prevValue.Count
 			delta.Sum -= prevValue.Sum
-			// NaN Sum in either the current or the previous (reset) point produces a
-			// NaN delta; treat it as zero so Sum is never reported as negative.
 			if math.IsNaN(delta.Sum) {
+				// NaN delta arises when the current point's Sum is NaN (unset).
+				// Emit zero for the delta and carry the previous Sum forward in
+				// the stored baseline so that subsequent non-NaN points still
+				// compute correct deltas.
 				delta.Sum = 0
+				if math.IsNaN(value.Sum) {
+					histCopy := value.Clone()
+					histCopy.Sum = prevValue.Sum
+					metricPoint.HistogramValue = &histCopy
+				}
 			}
 			for index, prevBucket := range prevValue.BucketCounts {
 				delta.BucketCounts[index] -= prevBucket
