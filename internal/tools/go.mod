@@ -328,3 +328,8 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+// actionlint v1.7.12 doesn't compile against go.yaml.in/yaml/v4 v4.0.0-rc.6, which other
+// tools pull in transitively. Pin to rc.3 until a compatible actionlint release exists.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51106.
+replace go.yaml.in/yaml/v4 => go.yaml.in/yaml/v4 v4.0.0-rc.3
