@@ -328,14 +328,14 @@ func Test_LenFactory(t *testing.T) {
 		factory := NewLenFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &LenArguments[any]{}, args)
+		assert.IsType(t, &lenArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewLenFactory[any]()
 		args := factory.CreateDefaultArguments()
-		lenArgs, ok := args.(*LenArguments[any])
+		lenArgs, ok := args.(*lenArguments[any])
 		require.True(t, ok)
 		lenArgs.Target = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -350,7 +350,7 @@ func Test_LenFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createLenFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "LenFactory args must be of type *LenArguments[K]")
+		assert.ErrorContains(t, err, "LenFactory args must be of type *lenArguments[K]")
 	})
 }
 

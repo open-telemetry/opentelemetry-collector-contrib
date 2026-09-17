@@ -13,18 +13,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type InsertXMLArguments[K any] struct {
+type insertXMLArguments[K any] struct {
 	Target      ottl.StringGetter[K]
 	XPath       string
 	SubDocument ottl.StringGetter[K]
 }
 
 func NewInsertXMLFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("InsertXML", &InsertXMLArguments[K]{}, createInsertXMLFunction[K])
+	return ottl.NewFactory("InsertXML", &insertXMLArguments[K]{}, createInsertXMLFunction[K])
 }
 
 func createInsertXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*InsertXMLArguments[K])
+	args, ok := oArgs.(*insertXMLArguments[K])
 
 	if !ok {
 		return nil, errors.New("InsertXML args must be of type *InsertXMLAguments[K]")

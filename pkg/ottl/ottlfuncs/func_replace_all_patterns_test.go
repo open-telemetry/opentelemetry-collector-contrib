@@ -783,14 +783,14 @@ func Test_ReplaceAllPatternsFactory(t *testing.T) {
 		factory := NewReplaceAllPatternsFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ReplaceAllPatternsArguments[any]{}, args)
+		assert.IsType(t, &replaceAllPatternsArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Mode", "RegexPattern", "Replacement", "Function", "ReplacementFormat"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewReplaceAllPatternsFactory[any]()
 		args := factory.CreateDefaultArguments()
-		replaceArgs, ok := args.(*ReplaceAllPatternsArguments[any])
+		replaceArgs, ok := args.(*replaceAllPatternsArguments[any])
 		require.True(t, ok)
 		replaceArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -819,7 +819,7 @@ func Test_ReplaceAllPatternsFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createReplaceAllPatternsFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ReplaceAllPatternsFactory args must be of type *ReplaceAllPatternsArguments[K]")
+		assert.ErrorContains(t, err, "ReplaceAllPatternsFactory args must be of type *replaceAllPatternsArguments[K]")
 	})
 }
 

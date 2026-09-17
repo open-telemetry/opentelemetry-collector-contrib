@@ -270,7 +270,7 @@ func TestCreateParseSimplifiedXMLFunc(t *testing.T) {
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ParseSimplifiedXMLArguments[any]{
+		fCtx, &parseSimplifiedXMLArguments[any]{
 			Target: invalidXMLGetter(),
 		},
 	)
@@ -304,14 +304,14 @@ func Test_ParseSimplifiedXMLFactory(t *testing.T) {
 		factory := NewParseSimplifiedXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ParseSimplifiedXMLArguments[any]{}, args)
+		assert.IsType(t, &parseSimplifiedXMLArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewParseSimplifiedXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
-		xmlArgs, ok := args.(*ParseSimplifiedXMLArguments[any])
+		xmlArgs, ok := args.(*parseSimplifiedXMLArguments[any])
 		require.True(t, ok)
 		xmlArgs.Target = ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {

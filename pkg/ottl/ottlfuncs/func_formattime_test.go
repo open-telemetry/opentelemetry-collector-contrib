@@ -152,7 +152,7 @@ func Test_FormatTime(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := FormatTime(tt.time, tt.format)
+			exprFunc, err := formatTime(tt.time, tt.format)
 			if tt.errorMsg != "" {
 				assert.ErrorContains(t, err, tt.errorMsg)
 			} else {
@@ -179,14 +179,14 @@ func Test_FormatTimeFactory(t *testing.T) {
 		factory := NewFormatTimeFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &FormatTimeArguments[any]{}, args)
+		assert.IsType(t, &formatTimeArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time", "Format"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewFormatTimeFactory[any]()
 		args := factory.CreateDefaultArguments()
-		formatTimeArgs, ok := args.(*FormatTimeArguments[any])
+		formatTimeArgs, ok := args.(*formatTimeArguments[any])
 		require.True(t, ok)
 		formatTimeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -202,12 +202,12 @@ func Test_FormatTimeFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createFormatTimeFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "FormatTimeFactory args must be of type *FormatTimeArguments[K]")
+		assert.ErrorContains(t, err, "FormatTimeFactory args must be of type *formatTimeArguments[K]")
 	})
 }
 
 func BenchmarkFormatTime(b *testing.B) {
-	exprFunc, err := FormatTime[any](&ottl.StandardTimeGetter[any]{
+	exprFunc, err := formatTime[any](&ottl.StandardTimeGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return time.Date(2023, 4, 12, 17, 2, 59, 0, time.Local), nil
 		},

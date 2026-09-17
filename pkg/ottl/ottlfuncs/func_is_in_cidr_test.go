@@ -181,14 +181,14 @@ func Test_IsInCIDRFactory(t *testing.T) {
 		factory := NewIsInCIDRFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IsInCIDRArguments[any]{}, args)
+		assert.IsType(t, &isInCIDRArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Networks"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewIsInCIDRFactory[any]()
 		args := factory.CreateDefaultArguments()
-		isInCIDRArgs, ok := args.(*IsInCIDRArguments[any])
+		isInCIDRArgs, ok := args.(*isInCIDRArguments[any])
 		require.True(t, ok)
 		isInCIDRArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -210,7 +210,7 @@ func Test_IsInCIDRFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createIsInCIDRFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "IsInCIDRFactory args must be of type *IsInCIDRArguments[K]")
+		assert.ErrorContains(t, err, "IsInCIDRFactory args must be of type *isInCIDRArguments[K]")
 	})
 }
 

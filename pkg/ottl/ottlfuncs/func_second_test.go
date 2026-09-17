@@ -32,8 +32,7 @@ func Test_Second(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Second(tt.time)
-			require.NoError(t, err)
+			exprFunc := second(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -47,8 +46,7 @@ func Test_Second_Error(t *testing.T) {
 			return "not a time", nil
 		},
 	}
-	exprFunc, err := Second(getter)
-	require.NoError(t, err)
+	exprFunc := second(getter)
 	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
@@ -64,14 +62,14 @@ func Test_SecondFactory(t *testing.T) {
 		factory := NewSecondFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SecondArguments[any]{}, args)
+		assert.IsType(t, &secondArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSecondFactory[any]()
 		args := factory.CreateDefaultArguments()
-		secondArgs, ok := args.(*SecondArguments[any])
+		secondArgs, ok := args.(*secondArguments[any])
 		require.True(t, ok)
 		secondArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,17 +84,16 @@ func Test_SecondFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSecondFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SecondFactory args must be of type *SecondArguments[K]")
+		assert.ErrorContains(t, err, "SecondFactory args must be of type *secondArguments[K]")
 	})
 }
 
 func BenchmarkSecond(b *testing.B) {
-	exprFunc, err := Second[any](&ottl.StandardTimeGetter[any]{
+	exprFunc := second[any](&ottl.StandardTimeGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC), nil
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {
