@@ -38,28 +38,96 @@ const (
 	attributeModeInclude
 )
 
+// collectionMode controls how a collection of resources, scopes, metrics, or
+// datapoints is evaluated.
+type collectionMode int
+
+const (
+	// collectionModeExact requires the actual collection to contain exactly
+	// the expected items — no missing and no extra ones. It is the default,
+	// and the only form WriteAssertionFile emits.
+	collectionModeExact collectionMode = iota
+	// collectionModeInclude requires every expected item to be present but
+	// allows additional actual items. It is selected by the `/include`
+	// operator suffix, e.g. `metrics/include`.
+	collectionModeInclude
+)
+
+// decodeCollection reads a collection from the parent node's `<key>` (exact,
+// the default) or `<key>/include` (subset) entry. An absent key yields a nil
+// slice; specifying both forms is a schema error.
+//
+// fixup, when non-nil, is called with each decoded item and that item's raw
+// keys, so a nested collection can be resolved for item types that have no
+// UnmarshalYAML of their own.
+func decodeCollection[T any](raw map[string]yaml.Node, key string, fixup func(*T, map[string]yaml.Node) error) ([]T, collectionMode, error) {
+	includeKey := key + "/include"
+	includeNode, hasInclude := raw[includeKey]
+	exactNode, hasExact := raw[key]
+
+	if hasInclude && hasExact {
+		return nil, collectionModeExact, fmt.Errorf("cannot specify both %q and %q", key, includeKey)
+	}
+
+	node, mode, usedKey := exactNode, collectionModeExact, key
+	if hasInclude {
+		node, mode, usedKey = includeNode, collectionModeInclude, includeKey
+	} else if !hasExact {
+		return nil, collectionModeExact, nil
+	}
+
+	var out []T
+	if err := node.Decode(&out); err != nil {
+		return nil, mode, fmt.Errorf("decode %s: %w", usedKey, err)
+	}
+	// An explicit empty list must stay non-nil: in exact mode it asserts that
+	// the collection is empty, which is distinct from omitting the key.
+	if out == nil {
+		out = []T{}
+	}
+	if fixup != nil {
+		// A sequence node decoded into a slice has one child per element.
+		if len(node.Content) != len(out) {
+			return nil, mode, fmt.Errorf("decode %s: got %d items but %d nodes", usedKey, len(out), len(node.Content))
+		}
+		for i := range out {
+			var item map[string]yaml.Node
+			if err := node.Content[i].Decode(&item); err != nil {
+				return nil, mode, fmt.Errorf("decode %s: %w", usedKey, err)
+			}
+			if err := fixup(&out[i], item); err != nil {
+				return nil, mode, err
+			}
+		}
+	}
+	return out, mode, nil
+}
+
 // document is the YAML-serializable form of a metrics assertion snapshot.
 //
 // The schema implements the identity-only subset of the grammar proposed in
 // issue #48079: default-exact matching, order-insensitive collections,
-// identity fields only. Attribute maps support /include mode.
+// identity fields only. Attribute maps and collections support /include mode.
 // Operator-suffix extensions (/exclude, /count, /approx, ...) are tracked
 // as follow-ups.
 type document struct {
-	Version   int                 `yaml:"version"`
-	Signal    string              `yaml:"signal"`
-	Resources []resourceAssertion `yaml:"resources"`
+	Version       int                 `yaml:"version"`
+	Signal        string              `yaml:"signal"`
+	Resources     []resourceAssertion `yaml:"resources"`
+	ResourcesMode collectionMode      `yaml:"-"`
 }
 
 type resourceAssertion struct {
 	Attributes    map[string]any   `yaml:"attributes,omitempty"`
 	AttributeMode attributeMode    `yaml:"-"`
 	Scopes        []scopeAssertion `yaml:"scopes"`
+	ScopesMode    collectionMode   `yaml:"-"`
 }
 
 // UnmarshalYAML implements custom unmarshaling to support `attributes/include`
-// as an alternative to `attributes`. When `attributes/include` is used the
-// AttributeMode is set to attributeModeInclude; specifying both keys is an error.
+// as an alternative to `attributes`, and `scopes/include` as an alternative to
+// `scopes`. When `attributes/include` is used the AttributeMode is set to
+// attributeModeInclude; specifying both keys is an error.
 func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 	// Decode into a raw map to detect operator-suffixed keys.
 	var raw map[string]yaml.Node
@@ -84,20 +152,22 @@ func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 		r.Attributes = attrs
 		r.AttributeMode = attributeModeExact
 	}
-	if scopesNode, ok := raw["scopes"]; ok {
-		if err := scopesNode.Decode(&r.Scopes); err != nil {
-			return fmt.Errorf("resource assertion: decode scopes: %w", err)
-		}
+
+	scopes, mode, err := decodeCollection[scopeAssertion](raw, "scopes", nil)
+	if err != nil {
+		return fmt.Errorf("resource assertion: %w", err)
 	}
+	r.Scopes, r.ScopesMode = scopes, mode
 	return nil
 }
 
 type scopeAssertion struct {
 	// Name is always matched exactly: it is the stable instrumentation library
 	// identity, so it has no /exists or /regex operator (unlike Version).
-	Name    string
-	Version versionMatcher
-	Metrics []metricAssertion
+	Name        string
+	Version     versionMatcher
+	Metrics     []metricAssertion
+	MetricsMode collectionMode
 }
 
 type matcherOp int
@@ -127,10 +197,16 @@ type scopeAssertionYAML struct {
 	Metrics []metricAssertion `yaml:"metrics"`
 }
 
-// UnmarshalYAML decodes a scope, resolving the version operator keys into a versionMatcher.
+// UnmarshalYAML decodes a scope, resolving the version operator keys into a
+// versionMatcher and `metrics` / `metrics/include` into the metric collection.
 func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
 	var raw scopeAssertionYAML
 	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	var keys map[string]yaml.Node
+	if err := value.Decode(&keys); err != nil {
 		return err
 	}
 
@@ -138,10 +214,14 @@ func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
 	if err != nil {
 		return err
 	}
+	metrics, mode, err := decodeCollection(keys, "metrics", resolveMetricDatapoints)
+	if err != nil {
+		return fmt.Errorf("scope assertion: %w", err)
+	}
 
 	s.Name = raw.Name
 	s.Version = version
-	s.Metrics = raw.Metrics
+	s.Metrics, s.MetricsMode = metrics, mode
 	return nil
 }
 
@@ -201,12 +281,25 @@ func (s scopeAssertion) MarshalYAML() (any, error) {
 }
 
 type metricAssertion struct {
-	Name        string               `yaml:"name"`
-	Type        string               `yaml:"type"`
-	Unit        string               `yaml:"unit,omitempty"`
-	Temporality string               `yaml:"temporality,omitempty"`
-	Monotonic   *bool                `yaml:"monotonic,omitempty"`
-	Datapoints  []datapointAssertion `yaml:"datapoints,omitempty"`
+	Name           string               `yaml:"name"`
+	Type           string               `yaml:"type"`
+	Unit           string               `yaml:"unit,omitempty"`
+	Temporality    string               `yaml:"temporality,omitempty"`
+	Monotonic      *bool                `yaml:"monotonic,omitempty"`
+	Datapoints     []datapointAssertion `yaml:"datapoints,omitempty"`
+	DatapointsMode collectionMode       `yaml:"-"`
+}
+
+// resolveMetricDatapoints reads `datapoints` / `datapoints/include` from a
+// metric's raw keys. metricAssertion has no UnmarshalYAML of its own, so this
+// runs as decodeCollection's per-item fixup when a metrics collection is read.
+func resolveMetricDatapoints(m *metricAssertion, raw map[string]yaml.Node) error {
+	datapoints, mode, err := decodeCollection[datapointAssertion](raw, "datapoints", nil)
+	if err != nil {
+		return fmt.Errorf("metric %q: %w", m.Name, err)
+	}
+	m.Datapoints, m.DatapointsMode = datapoints, mode
+	return nil
 }
 
 type datapointAssertion struct {
@@ -352,9 +445,9 @@ func (d *datapointAssertion) decodeDoublePrecision(raw map[string]yaml.Node) err
 }
 
 func readDocument(path string) (*document, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read assertion file: %w", err)
+	b, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return nil, fmt.Errorf("read assertion file: %w", readErr)
 	}
 	var doc document
 	if err := yaml.Unmarshal(b, &doc); err != nil {
@@ -368,6 +461,18 @@ func readDocument(path string) (*document, error) {
 		return nil, fmt.Errorf("assertion file %s: unsupported signal %q (want %q)",
 			path, doc.Signal, "metrics")
 	}
+	// The `resources/include` key cannot be expressed as a struct tag alongside
+	// `resources`, so it is resolved from the raw top-level keys here.
+	var raw map[string]yaml.Node
+	if err := yaml.Unmarshal(b, &raw); err != nil {
+		return nil, fmt.Errorf("parse assertion file %s: %w", path, err)
+	}
+	resources, mode, err := decodeCollection[resourceAssertion](raw, "resources", nil)
+	if err != nil {
+		return nil, fmt.Errorf("assertion file %s: %w", path, err)
+	}
+	doc.Resources, doc.ResourcesMode = resources, mode
+
 	expandShorthand(&doc)
 	return &doc, nil
 }
@@ -382,15 +487,49 @@ func readDocument(path string) (*document, error) {
 // encoding as a valid assertion either.
 func expandShorthand(doc *document) {
 	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 0 {
-					m.Datapoints = []datapointAssertion{{}}
-				}
-			}
-		}
+		expandResourceShorthand(&doc.Resources[i], doc.ResourcesMode)
 	}
+}
+
+// expandResourceShorthand expands r, which was listed in a collection matched
+// with parentMode.
+func expandResourceShorthand(r *resourceAssertion, parentMode collectionMode) {
+	r.ScopesMode = nestedMode(r.Scopes, r.ScopesMode, parentMode)
+	for i := range r.Scopes {
+		expandScopeShorthand(&r.Scopes[i], r.ScopesMode)
+	}
+}
+
+func expandScopeShorthand(s *scopeAssertion, parentMode collectionMode) {
+	s.MetricsMode = nestedMode(s.Metrics, s.MetricsMode, parentMode)
+	for i := range s.Metrics {
+		expandMetricShorthand(&s.Metrics[i], s.MetricsMode)
+	}
+}
+
+func expandMetricShorthand(m *metricAssertion, parentMode collectionMode) {
+	m.DatapointsMode = nestedMode(m.Datapoints, m.DatapointsMode, parentMode)
+	// The implicit single empty-attribute datapoint only applies to an exact
+	// collection: under /include, an omitted `datapoints:` asserts nothing
+	// about the datapoints, so injecting one would pin cardinality to 1.
+	if m.DatapointsMode == collectionModeExact && len(m.Datapoints) == 0 {
+		m.Datapoints = []datapointAssertion{{}}
+	}
+}
+
+// nestedMode resolves the mode of a nested collection whose parent item was
+// listed in a collection matched with parentMode.
+//
+// An omitted nested collection (a nil slice, as opposed to an explicit empty
+// list) inside an /include item means "not asserted": an include says the item
+// must be present, not that it has nothing below it. Include mode over an
+// empty expected list is exactly that — every expected item is present, and
+// extra actual items are allowed.
+func nestedMode[T any](nested []T, mode, parentMode collectionMode) collectionMode {
+	if parentMode == collectionModeInclude && nested == nil && mode == collectionModeExact {
+		return collectionModeInclude
+	}
+	return mode
 }
 
 func writeDocument(path string, doc *document) error {

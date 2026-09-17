@@ -54,13 +54,13 @@ func (c *sum) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 			for k := 0; k < scopeSpan.Spans().Len(); k++ {
 				span := scopeSpan.Spans().At(k)
-				sCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
+				sCtx := ottlspan.NewTransformContext(resourceSpan, scopeSpan, span)
 				multiError = errors.Join(multiError, spansSummer.update(ctx, span.Attributes(), sCtx))
 				sCtx.Close()
 
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
-					eCtx := ottlspanevent.NewTransformContextPtr(resourceSpan, scopeSpan, span, event)
+					eCtx := ottlspanevent.NewTransformContext(resourceSpan, scopeSpan, span, event)
 					multiError = errors.Join(multiError, spanEventsSummer.update(ctx, event.Attributes(), eCtx))
 					eCtx.Close()
 				}
@@ -100,7 +100,7 @@ func (c *sum) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
-				mCtx := ottlmetric.NewTransformContextPtr(resourceMetric, scopeMetrics, metric)
+				mCtx := ottlmetric.NewTransformContext(resourceMetric, scopeMetrics, metric)
 				multiError = errors.Join(multiError, metricsSummer.update(ctx, pcommon.NewMap(), mCtx))
 				mCtx.Close()
 
@@ -111,35 +111,35 @@ func (c *sum) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 				case pmetric.MetricTypeGauge:
 					dps := metric.Gauge().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
+						dCtx := ottldatapoint.NewTransformContext(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
+						dCtx := ottldatapoint.NewTransformContext(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
 				case pmetric.MetricTypeSummary:
 					dps := metric.Summary().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
+						dCtx := ottldatapoint.NewTransformContext(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
+						dCtx := ottldatapoint.NewTransformContext(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
-						dCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetrics, metric, dps.At(i))
+						dCtx := ottldatapoint.NewTransformContext(resourceMetric, scopeMetrics, metric, dps.At(i))
 						multiError = errors.Join(multiError, dataPointsSummer.update(ctx, dps.At(i).Attributes(), dCtx))
 						dCtx.Close()
 					}
@@ -182,7 +182,7 @@ func (c *sum) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
 				logRecord := scopeLogs.LogRecords().At(k)
 
-				lCtx := ottllog.NewTransformContextPtr(resourceLog, scopeLogs, logRecord)
+				lCtx := ottllog.NewTransformContext(resourceLog, scopeLogs, logRecord)
 				multiError = errors.Join(multiError, summer.update(ctx, logRecord.Attributes(), lCtx))
 				lCtx.Close()
 			}

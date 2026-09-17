@@ -13,12 +13,16 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [justinianvoss22, dyl10s, ishleenk17, shrenikjain38]
+    active: [justinianvoss22, dyl10s, ishleenk17, shrenikjain38, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
     seeking_new: true
 
 override_value_enabled: true
 
 resource_attributes:
+  db.system.version:
+    description: The database version of the instance. Examples include "5.0.0", "6.0.4".
+    enabled: false
+    type: string
   server.address:
     description: The address of the MongoDB host.
     enabled: true

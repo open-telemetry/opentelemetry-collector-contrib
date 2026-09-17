@@ -18,7 +18,7 @@ func newTestStorage(t *testing.T, cfg Config) *storage {
 	cfg.Directory = t.TempDir()
 	require.NoError(t, cfg.Validate())
 
-	s, err := newStorage(t.Context(), &cfg, zap.NewNop())
+	s, err := newStorage(t.Context(), &cfg, zap.NewNop(), nil)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, s.Close())

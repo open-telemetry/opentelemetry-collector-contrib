@@ -680,6 +680,7 @@ Note: when database profiling is disabled, the receiver falls back to MongoDB's 
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.version | The database version of the instance. Examples include "5.0.0", "6.0.4". | Any Str | false | - | - |
 | server.address | The address of the MongoDB host. | Any Str | true | - | - |
 | server.port | The port of the MongoDB host. | Any Int | false | - | - |
 | service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true | - | - |
