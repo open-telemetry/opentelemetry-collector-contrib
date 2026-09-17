@@ -92,6 +92,7 @@ extension/encoding/otlpencodingextension extension/encoding/otlpencoding
 extension/encoding/skywalkingencodingextension extension/encoding/skywalkingencoding
 extension/encoding/textencodingextension extension/encoding/textencoding
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
+extension/filetelemetrypolicyextension extension/filetelemetrypolicy
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
 extension/healthcheckextension extension/healthcheck
@@ -157,7 +158,6 @@ pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
 pkg/ottl/contexts/xprofile pkg/ottl/contexts/xprofile
 pkg/pdatatest pkg/pdatatest
-pkg/pdatautil pkg/pdatautil
 pkg/resourcetotelemetry pkg/resourcetotelemetry
 pkg/sampling pkg/sampling
 pkg/semconvtest pkg/semconvtest
@@ -230,6 +230,7 @@ processor/spanprocessor processor/span
 processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
+processor/telemetrypolicyprocessor processor/telemetrypolicy
 processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll

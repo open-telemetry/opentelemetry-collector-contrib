@@ -354,14 +354,14 @@ func Test_TruncateAllFactory(t *testing.T) {
 		factory := NewTruncateAllFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &TruncateAllArguments[any]{}, args)
+		assert.IsType(t, &truncateAllArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Limit", "Utf8Safe", "TruncationMarker"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewTruncateAllFactory[any]()
 		args := factory.CreateDefaultArguments()
-		truncateAllArgs, ok := args.(*TruncateAllArguments[any])
+		truncateAllArgs, ok := args.(*truncateAllArguments[any])
 		require.True(t, ok)
 		truncateAllArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -380,6 +380,26 @@ func Test_TruncateAllFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createTruncateAllFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "TruncateAllFactory args must be of type *TruncateAllArguments[K]")
+		assert.ErrorContains(t, err, "TruncateAllFactory args must be of type *truncateAllArguments[K]")
 	})
+}
+
+func BenchmarkTruncateAll(b *testing.B) {
+	var m pcommon.Map
+	target := ottl.StandardPMapGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Map, error) { return m, nil },
+		Setter: func(context.Context, any, any) error { return nil },
+	}
+	exprFunc, err := TruncateAll[any](target, 10, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		m = pcommon.NewMap()
+		m.PutStr("k1", "a value that is longer than the limit")
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

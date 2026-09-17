@@ -329,6 +329,10 @@ component_management:
     name: extension_dbauth_awsiamdbauth
     paths:
     - extension/dbauth/awsiamdbauthextension/**
+  - component_id: extension_filetelemetrypolicy
+    name: extension_filetelemetrypolicy
+    paths:
+    - extension/filetelemetrypolicyextension/**
   - component_id: extension_googleclientauth
     name: extension_googleclientauth
     paths:
@@ -497,10 +501,6 @@ component_management:
     name: pkg_ottl_contexts_xprofile
     paths:
     - pkg/ottl/contexts/xprofile/**
-  - component_id: pkg_pdatautil
-    name: pkg_pdatautil
-    paths:
-    - pkg/pdatautil/**
   - component_id: pkg_resourcetotelemetry
     name: pkg_resourcetotelemetry
     paths:
@@ -713,6 +713,10 @@ component_management:
     name: processor_tailsampling
     paths:
     - processor/tailsamplingprocessor/**
+  - component_id: processor_telemetrypolicy
+    name: processor_telemetrypolicy
+    paths:
+    - processor/telemetrypolicyprocessor/**
   - component_id: processor_transform
     name: processor_transform
     paths:
