@@ -191,7 +191,7 @@ func Test_WithParserCollectionErrorMode(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, pc)
-	require.Equal(t, PropagateError, pc.ErrorMode)
+	require.Equal(t, PropagateError, pc.ErrorMode())
 }
 
 func Test_EnableParserCollectionModifiedPathsLogging_True(t *testing.T) {
