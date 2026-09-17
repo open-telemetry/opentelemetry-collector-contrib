@@ -417,8 +417,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/data
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../../receiver/hostmetricsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../../pkg/pdatautil
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../../internal/filter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../../pkg/ottl

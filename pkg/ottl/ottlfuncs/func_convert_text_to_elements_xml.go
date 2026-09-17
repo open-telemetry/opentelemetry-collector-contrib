@@ -19,6 +19,8 @@ type convertTextToElementsXMLArguments[K any] struct {
 	ElementName ottl.Optional[string]
 }
 
+// NewConvertTextToElementsXMLFactory returns a factory for the ConvertTextToElementsXML OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#converttexttoelementsxml
 func NewConvertTextToElementsXMLFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ConvertTextToElementsXML", &convertTextToElementsXMLArguments[K]{}, createConvertTextToElementsXMLFunction[K])
 }
