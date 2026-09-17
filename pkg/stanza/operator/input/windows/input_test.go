@@ -545,6 +545,7 @@ func TestInputRead_Batching(t *testing.T) {
 	}
 
 	input := newTestInput()
+	input.persister = testutil.NewMockPersister("")
 
 	input.processEvent = func(_ context.Context, _ Event) error {
 		processedEvents++
