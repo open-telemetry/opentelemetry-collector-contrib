@@ -164,6 +164,7 @@ pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
+extension/filetelemetrypolicyextension
 extension/googleclientauthextension
 extension/headerssetterextension
 pkg/status
@@ -247,6 +248,7 @@ processor/signingprocessor
 processor/spanprocessor
 processor/spanpruningprocessor
 processor/sumologicprocessor
+processor/telemetrypolicyprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
 receiver/activedirectoryinvreceiver

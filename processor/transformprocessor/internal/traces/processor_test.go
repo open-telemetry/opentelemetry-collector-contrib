@@ -6,6 +6,7 @@ package traces
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -1594,6 +1595,154 @@ func Test_ProcessTraces_SharedCacheCrossContextAccess(t *testing.T) {
 			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
+}
+
+func Test_ProcessTraces_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
+	// Group 1 writes to the shared cache only for operationA spans.
+	// Group 2 marks any span that sees the cached value.
+	// If the cache carries over between calls, operationB in the second call
+	// (which has no operationA) would incorrectly see a non-nil cache entry.
+	statements := []common.ContextStatements{
+		{
+			Statements:  []string{`set(span.cache["k"], "seen") where span.name == "operationA"`},
+			SharedCache: true,
+		},
+		{
+			Statements:  []string{`set(span.attributes["result"], "cache-detected") where span.cache["k"] != nil`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+	require.NoError(t, err)
+
+	// First call: operationA writes cache["k"]; because the cache is shared within the call,
+	// operationB also sees it and both spans get the result attribute.
+	td1 := constructTraces()
+	_, err = processor.ProcessTraces(t.Context(), td1)
+	require.NoError(t, err)
+
+	v0, ok0 := td1.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("result")
+	require.True(t, ok0, "operationA should have result attribute after first call")
+	assert.Equal(t, "cache-detected", v0.Str())
+
+	v1, ok1 := td1.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().Get("result")
+	require.True(t, ok1, "operationB should see shared cache from operationA in first call")
+	assert.Equal(t, "cache-detected", v1.Str())
+
+	// Second call: trace contains only operationB; group 1 never fires, so cache["k"] stays nil.
+	// If the cache were not cleared between calls, operationB would still see "seen".
+	td2 := ptrace.NewTraces()
+	rs := td2.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	fillSpanTwo(ss.Spans().AppendEmpty())
+
+	_, err = processor.ProcessTraces(t.Context(), td2)
+	require.NoError(t, err)
+
+	_, hasResult := td2.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("result")
+	assert.False(t, hasResult, "shared cache should be cleared between ProcessTraces calls")
+}
+
+func Test_ProcessTraces_SharedCacheConcurrentCalls(t *testing.T) {
+	const numGoroutines = 10
+
+	// Each call: set a value in the shared cache, copy it to a span attribute, then delete it.
+	statements := []common.ContextStatements{
+		{
+			Context:     common.Span,
+			Statements:  []string{`set(cache["k"], "cached-value")`},
+			SharedCache: true,
+		},
+		{
+			Context:     common.Span,
+			Statements:  []string{`set(attributes["result"], cache["k"])`},
+			SharedCache: true,
+		},
+		{
+			Context:     common.Span,
+			Statements:  []string{`delete_key(cache, "k")`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	traces := make([]ptrace.Traces, numGoroutines)
+	errs := make([]error, numGoroutines)
+
+	for i := range numGoroutines {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			td := constructTraces()
+			_, callErr := processor.ProcessTraces(t.Context(), td)
+			errs[idx] = callErr
+			traces[idx] = td
+		}(i)
+	}
+	wg.Wait()
+
+	for i, td := range traces {
+		require.NoError(t, errs[i], "goroutine %d returned an error", i)
+		for _, rs := range td.ResourceSpans().All() {
+			for _, ss := range rs.ScopeSpans().All() {
+				for _, span := range ss.Spans().All() {
+					result, ok := span.Attributes().Get("result")
+					assert.True(t, ok, "goroutine %d: span %q should have result attribute set from cache", i, span.Name())
+					if ok {
+						assert.Equal(t, "cached-value", result.Str(), "goroutine %d: span %q result mismatch", i, span.Name())
+					}
+				}
+			}
+		}
+	}
+}
+
+func Test_ProcessTraces_SharedCacheAfterError(t *testing.T) {
+	// Group 1 writes to the shared cache for operationA only.
+	// Group 2 errors for operationA only, propagating the error and aborting
+	// the call before group 3 ever runs.
+	// Group 3 marks any span that sees a non-nil cached value.
+	statements := []common.ContextStatements{
+		{
+			Statements:  []string{`set(span.cache["k"], "seen") where span.name == "operationA"`},
+			SharedCache: true,
+		},
+		{
+			Statements:  []string{`set(span.attributes["test"], ParseJSON("true")) where span.name == "operationA"`},
+			SharedCache: true,
+		},
+		{
+			Statements:  []string{`set(span.attributes["result"], "cache-detected") where span.cache["k"] != nil`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+	require.NoError(t, err)
+
+	// First call: operationA writes cache["k"], then group 2 errors for
+	// operationA, so ProcessTraces returns an error before group 3 runs.
+	td1 := constructTraces()
+	_, err = processor.ProcessTraces(t.Context(), td1)
+	require.Error(t, err)
+
+	// Second call: trace contains only operationB, which never triggers group 2's
+	// error. If the cache from the first (failed) call carried over, operationB
+	// would incorrectly see a non-nil cache entry and get the result attribute.
+	td2 := ptrace.NewTraces()
+	rs := td2.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	fillSpanTwo(ss.Spans().AppendEmpty())
+
+	_, err = processor.ProcessTraces(t.Context(), td2)
+	require.NoError(t, err)
+
+	_, hasResult := td2.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("result")
+	assert.False(t, hasResult, "shared cache should not carry over from a call that returned an error")
 }
 
 func Test_ProcessTraces_InferredContextFromConditions(t *testing.T) {
