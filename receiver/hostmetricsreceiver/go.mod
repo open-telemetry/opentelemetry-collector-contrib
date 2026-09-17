@@ -134,3 +134,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcou
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv => ../../internal/gopsutilenv
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile => ../../pkg/ottl/contexts/xprofile
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
