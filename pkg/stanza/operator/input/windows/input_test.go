@@ -158,15 +158,16 @@ func TestInputStart_RemoteSessionWithDomain(t *testing.T) {
 	// Mock EvtOpenSession to capture the login struct and verify Domain handling
 	var capturedDomain string
 	var domainWasNil bool
-	defer mockWithDeferredRestore(&evtOpenSession, func(_ uint32, login *EvtRPCLogin, _, _ uint32) (windows.Handle, error) {
+	// Registered with t.Cleanup rather than defer so the mocks outlive the Stop call registered below.
+	t.Cleanup(mockWithDeferredRestore(&evtOpenSession, func(_ uint32, login *EvtRPCLogin, _, _ uint32) (windows.Handle, error) {
 		domainWasNil = login == nil || login.Domain == nil
 		if !domainWasNil {
 			capturedDomain = windows.UTF16PtrToString(login.Domain)
 		}
 		return 1, nil
-	})()
+	}))
 	// Stop closes the fake session handle; keep that off the real API so the test does not depend on run order.
-	defer mockWithDeferredRestore(&evtClose, func(uintptr) error { return nil })()
+	t.Cleanup(mockWithDeferredRestore(&evtClose, func(uintptr) error { return nil }))
 
 	input := newTestInput()
 	input.ignoreChannelErrors = true
