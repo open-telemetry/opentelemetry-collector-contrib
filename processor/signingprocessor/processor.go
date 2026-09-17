@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -212,28 +213,20 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 		data["event_name"] = lr.EventName()
 	}
 
-	if lr.Body().Type() == pcommon.ValueTypeStr {
-		body := lr.Body().Str()
-		if !utf8.ValidString(body) {
-			return nil, errors.New("log record body contains invalid UTF-8")
+	if lr.Body().Type() != pcommon.ValueTypeEmpty {
+		body, err := p.valueToInterface(lr.Body(), 0)
+		if err != nil {
+			return nil, fmt.Errorf("log record body: %w", err)
 		}
 		data["body"] = body
 	}
 
 	if lr.Timestamp() != 0 {
-		data["timestamp"] = lr.Timestamp().AsTime().UnixNano()
+		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 	}
 
 	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = lr.ObservedTimestamp().AsTime().UnixNano()
-	}
-
-	if lr.SeverityNumber() != 0 {
-		data["severity_number"] = lr.SeverityNumber()
-	}
-
-	if lr.SeverityText() != "" {
-		data["severity_text"] = lr.SeverityText()
+		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
 	}
 
 	if !lr.TraceID().IsEmpty() {
@@ -284,23 +277,23 @@ func (*signingProcessor) marshalJCS(v any) ([]byte, error) {
 
 func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, error) {
 	if depth > jsonMaxDepth {
-		return nil, fmt.Errorf("attribute value exceeds nesting depth limit (%d)", jsonMaxDepth)
+		return nil, fmt.Errorf("value exceeds nesting depth limit (%d)", jsonMaxDepth)
 	}
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
 		s := v.Str()
 		if !utf8.ValidString(s) {
-			return nil, errors.New("attribute string value contains invalid UTF-8")
+			return nil, errors.New("string value contains invalid UTF-8")
 		}
-		return s, nil
+		return map[string]any{"stringValue": s}, nil
 	case pcommon.ValueTypeInt:
-		return v.Int(), nil
+		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}, nil
 	case pcommon.ValueTypeDouble:
-		return v.Double(), nil
+		return map[string]any{"doubleValue": v.Double()}, nil
 	case pcommon.ValueTypeBool:
-		return v.Bool(), nil
+		return map[string]any{"boolValue": v.Bool()}, nil
 	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw()), nil
+		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}, nil
 	case pcommon.ValueTypeSlice:
 		slice := make([]any, v.Slice().Len())
 		for i := 0; i < v.Slice().Len(); i++ {
