@@ -27,10 +27,10 @@ func createFormatTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 		return nil, errors.New("FormatTimeFactory args must be of type *formatTimeArguments[K]")
 	}
 
-	return FormatTime(args.Time, args.Format)
+	return formatTime(args.Time, args.Format)
 }
 
-func FormatTime[K any](timeValue ottl.TimeGetter[K], format string) (ottl.ExprFunc[K], error) {
+func formatTime[K any](timeValue ottl.TimeGetter[K], format string) (ottl.ExprFunc[K], error) {
 	if format == "" {
 		return nil, errors.New("format cannot be nil")
 	}

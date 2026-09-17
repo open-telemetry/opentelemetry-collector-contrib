@@ -25,15 +25,15 @@ func createNanosecondsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, errors.New("NanosecondsFactory args must be of type *nanosecondsArguments[K]")
 	}
 
-	return Nanoseconds(args.Duration)
+	return nanoseconds(args.Duration), nil
 }
 
-func Nanoseconds[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
+func nanoseconds[K any](duration ottl.DurationGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return d.Nanoseconds(), nil
-	}, nil
+	}
 }

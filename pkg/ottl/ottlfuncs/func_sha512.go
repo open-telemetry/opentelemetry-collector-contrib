@@ -27,10 +27,10 @@ func createSHA512Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 		return nil, errors.New("SHA512Factory args must be of type *sHA512Arguments[K]")
 	}
 
-	return SHA512HashString(args.Target)
+	return sha512HashString(args.Target), nil
 }
 
-func SHA512HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func sha512HashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -43,5 +43,5 @@ func SHA512HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], err
 		}
 		hashValue := hex.EncodeToString(hash.Sum(nil))
 		return hashValue, nil
-	}, nil
+	}
 }

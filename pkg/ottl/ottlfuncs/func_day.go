@@ -25,15 +25,15 @@ func createDayFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 		return nil, errors.New("DayFactory args must be of type *dayArguments[K]")
 	}
 
-	return Day(args.Time)
+	return day(args.Time), nil
 }
 
-func Day[K any](time ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func day[K any](time ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := time.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return int64(t.Day()), nil
-	}, nil
+	}
 }
