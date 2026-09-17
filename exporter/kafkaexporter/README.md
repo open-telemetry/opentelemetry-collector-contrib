@@ -75,7 +75,7 @@ The following settings can be optionally configured:
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
-    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
+    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client`, `azure_auth`, or `bearertokenauth` to read tokens from a file). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
@@ -226,6 +226,31 @@ service:
 The [`azureauth`](../../extension/azureauthextension/README.md) extension can also be used
 as a token source, which supports managed identity, workload identity, and service principal
 for authenticating against Azure Event Hubs.
+
+The [`bearertokenauth`](../../extension/bearertokenauthextension/README.md) extension can also be
+used as an `oauthbearer_token_source` to provide static or file-based tokens (e.g. from Kubernetes
+projected volume or secret file):
+
+```yaml
+extensions:
+  bearertokenauth:
+    filename: /var/run/secrets/tokens/kafka.token
+
+exporters:
+  kafka:
+    brokers: ["localhost:9092"]
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_source: bearertokenauth
+
+service:
+  extensions: [bearertokenauth]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [kafka]
+```
 
 ## Destination Topic
 
