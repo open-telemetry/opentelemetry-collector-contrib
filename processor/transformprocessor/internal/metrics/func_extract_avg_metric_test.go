@@ -313,7 +313,7 @@ func Test_extractAvgMetric(t *testing.T) {
 			evaluate, err := extractAvgMetric(tt.suffix)
 			assert.NoError(t, err)
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), sMetrics, tt.input)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, tt.input)
 			defer tCtx.Close()
 			_, err = evaluate(t.Context(), tCtx)
 			assert.Equal(t, tt.wantErr, err)
