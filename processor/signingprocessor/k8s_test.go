@@ -156,6 +156,44 @@ func TestK8sKeyMaterialProviderKeyFetchError(t *testing.T) {
 	}
 }
 
+func TestK8sKeyMaterialProviderHMACHappyPath(t *testing.T) {
+	// client-go decodes Secret.Data from base64 automatically, so the raw key
+	// bytes land directly in Data — no second base64 layer needed.
+	rawKey := []byte("supersecrethmackey32byteslong!!!!")
+	client := fake.NewSimpleClientset(makeSecret("signing-secret", "default", map[string][]byte{
+		"hmac.key": rawKey,
+	}))
+
+	cfg := &K8sSecretConfig{
+		Name:      "signing-secret",
+		Namespace: "default",
+		HMACKey:   "hmac.key",
+	}
+	prov, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !bytes.Equal(prov.GetHMACKey(), rawKey) {
+		t.Errorf("HMAC key mismatch: got %x, want %x", prov.GetHMACKey(), rawKey)
+	}
+}
+
+func TestK8sKeyMaterialProviderHMACEmptyKey(t *testing.T) {
+	client := fake.NewSimpleClientset(makeSecret("signing-secret", "default", map[string][]byte{
+		"hmac.key": {},
+	}))
+
+	cfg := &K8sSecretConfig{
+		Name:      "signing-secret",
+		Namespace: "default",
+		HMACKey:   "hmac.key",
+	}
+	_, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
+	if err == nil {
+		t.Error("expected error for empty HMAC key")
+	}
+}
+
 func TestK8sKeyMaterialProviderBadPEM(t *testing.T) {
 	client := fake.NewSimpleClientset(makeSecret("signing-secret", "default", map[string][]byte{
 		"tls.crt": []byte("not-a-pem"),
