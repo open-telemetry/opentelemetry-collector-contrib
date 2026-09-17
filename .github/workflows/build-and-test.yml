@@ -175,7 +175,7 @@ jobs:
         env:
           MATRIX_GOOS: ${{ matrix.goos }}
           MATRIX_GROUP: ${{ matrix.group }}
-        run: GOGC=50 GOMEMLIMIT=2GiB GOOS="${MATRIX_GOOS}" GOARCH=amd64 make -j2 golint GROUP="${MATRIX_GROUP}"
+        run: GOMEMLIMIT=3GiB GOOS="${MATRIX_GOOS}" GOARCH=amd64 make -j4 golint GROUP="${MATRIX_GROUP}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
@@ -230,7 +230,7 @@ jobs:
           # is resolved.
           go-version: oldstable
       - name: Run `govulncheck`
-        run: make gogovulncheck GROUP=${{ matrix.group }}
+        run: GOMEMLIMIT=3GiB make -j4 gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks-matrix:
     runs-on: ubuntu-24.04
