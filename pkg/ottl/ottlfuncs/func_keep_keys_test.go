@@ -251,13 +251,13 @@ func BenchmarkKeepKeys(b *testing.B) {
 			return nil
 		},
 	}
-	keys := []ottl.StringGetter[pcommon.Map]{
+	keys := ottl.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](true, []ottl.StringGetter[pcommon.Map]{
 		ottl.StandardStringGetter[pcommon.Map]{
 			Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
 				return "test", nil
 			},
 		},
-	}
+	})
 	exprFunc := keepKeys(target, keys)
 
 	ctx := b.Context()
