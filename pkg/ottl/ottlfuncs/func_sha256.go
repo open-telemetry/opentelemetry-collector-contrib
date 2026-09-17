@@ -27,10 +27,10 @@ func createSHA256Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 		return nil, errors.New("SHA256Factory args must be of type *sHA256Arguments[K]")
 	}
 
-	return SHA256HashString(args.Target)
+	return sha256HashString(args.Target), nil
 }
 
-func SHA256HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func sha256HashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -43,5 +43,5 @@ func SHA256HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], err
 		}
 		hashValue := hex.EncodeToString(hash.Sum(nil))
 		return hashValue, nil
-	}, nil
+	}
 }

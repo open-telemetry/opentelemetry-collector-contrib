@@ -27,10 +27,10 @@ func createUnixFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, errors.New("UnixFactory args must be of type *unixArguments[K]")
 	}
 
-	return Unix(args.Seconds, args.Nanoseconds)
+	return unix(args.Seconds, args.Nanoseconds), nil
 }
 
-func Unix[K any](seconds ottl.IntGetter[K], nanoseconds ottl.Optional[ottl.IntGetter[K]]) (ottl.ExprFunc[K], error) {
+func unix[K any](seconds ottl.IntGetter[K], nanoseconds ottl.Optional[ottl.IntGetter[K]]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		sec, err := seconds.Get(ctx, tCtx)
 		if err != nil {
@@ -47,5 +47,5 @@ func Unix[K any](seconds ottl.IntGetter[K], nanoseconds ottl.Optional[ottl.IntGe
 		}
 
 		return time.Unix(sec, nsec), nil
-	}, nil
+	}
 }

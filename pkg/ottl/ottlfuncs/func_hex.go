@@ -26,15 +26,15 @@ func createHexFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 		return nil, errors.New("HexFactory args must be of type *hexArguments[K]")
 	}
 
-	return Hex(args.Target)
+	return hexString(args.Target), nil
 }
 
-func Hex[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error) {
+func hexString[K any](target ottl.ByteSliceLikeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		value, _, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return hex.EncodeToString(value), nil
-	}, nil
+	}
 }

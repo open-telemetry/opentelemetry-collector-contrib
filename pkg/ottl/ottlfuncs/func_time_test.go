@@ -234,7 +234,7 @@ func Test_Time(t *testing.T) {
 			if tt.locale != "" {
 				localeOptional = ottl.NewTestingOptional(tt.locale)
 			}
-			exprFunc, err := Time(tt.time, tt.format, locationOptional, localeOptional)
+			exprFunc, err := parseTime(tt.time, tt.format, locationOptional, localeOptional)
 			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
@@ -275,7 +275,7 @@ func Test_TimeError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var locationOptional ottl.Optional[string]
 			var localeOptional ottl.Optional[string]
-			exprFunc, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
+			exprFunc, err := parseTime[any](tt.time, tt.format, locationOptional, localeOptional)
 			require.NoError(t, err)
 			_, err = exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
@@ -335,7 +335,7 @@ func Test_TimeFormatError(t *testing.T) {
 			if tt.locale != "" {
 				localeOptional = ottl.NewTestingOptional(tt.locale)
 			}
-			_, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
+			_, err := parseTime[any](tt.time, tt.format, locationOptional, localeOptional)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -521,7 +521,7 @@ func Benchmark_Time(t *testing.B) {
 		if tt.location != "" {
 			locOptional = ottl.NewTestingOptional(tt.location)
 		}
-		exprFunc, err := Time(tt.time, tt.format, locOptional, ottl.Optional[string]{})
+		exprFunc, err := parseTime(tt.time, tt.format, locOptional, ottl.Optional[string]{})
 		require.NoError(t, err)
 
 		t.Run(tt.name, func(t *testing.B) {

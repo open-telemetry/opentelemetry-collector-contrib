@@ -25,15 +25,15 @@ func createUnixMilliFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("UnixMilliFactory args must be of type *unixMilliArguments[K]")
 	}
 
-	return UnixMilli(args.Time)
+	return unixMilli(args.Time), nil
 }
 
-func UnixMilli[K any](inputTime ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func unixMilli[K any](inputTime ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return t.UnixMilli(), nil
-	}, nil
+	}
 }

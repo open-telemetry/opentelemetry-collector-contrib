@@ -25,15 +25,15 @@ func createWeekdayFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 		return nil, errors.New("WeekdayFactory args must be of type *weekdayArguments[K]")
 	}
 
-	return Weekday(args.Time)
+	return weekday(args.Time), nil
 }
 
-func Weekday[K any](time ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func weekday[K any](time ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := time.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return int64(t.Weekday()), nil
-	}, nil
+	}
 }

@@ -25,15 +25,15 @@ func createUnixSecondsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, errors.New("UnixSecondsFactory args must be of type *unixSecondsArguments[K]")
 	}
 
-	return UnixSeconds(args.Time)
+	return unixSeconds(args.Time), nil
 }
 
-func UnixSeconds[K any](inputTime ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func unixSeconds[K any](inputTime ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return t.Unix(), nil
-	}, nil
+	}
 }

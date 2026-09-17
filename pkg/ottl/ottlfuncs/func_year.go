@@ -25,15 +25,15 @@ func createYearFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, errors.New("YearFactory args must be of type *yearArguments[K]")
 	}
 
-	return Year(args.Time)
+	return year(args.Time), nil
 }
 
-func Year[K any](time ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func year[K any](time ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := time.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return int64(t.Year()), nil
-	}, nil
+	}
 }
