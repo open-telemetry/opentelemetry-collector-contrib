@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"slices"
 	"sync"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -104,7 +104,6 @@ type FranzSyncProducer struct {
 	clientCancel    context.CancelFunc
 	metadataKeys    []string
 	recordHeaders   []kgo.RecordHeader
-	propagateTrace  bool
 	maxMessageBytes int
 }
 
@@ -114,7 +113,6 @@ type FranzSyncProducer struct {
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
 	recordHeaders []RecordHeader,
-	propagateTraceContext bool,
 	maxMessageBytes int,
 	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
@@ -131,7 +129,6 @@ func NewFranzSyncProducer(client *kgo.Client,
 		clientCancel:    clientCancel,
 		metadataKeys:    metadataKeys,
 		recordHeaders:   headers,
-		propagateTrace:  propagateTraceContext,
 		maxMessageBytes: maxMessageBytes,
 	}
 }
@@ -141,18 +138,17 @@ func NewFranzSyncProducer(client *kgo.Client,
 // to each record before producing.
 func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Record) error {
 	metadataHeaders := metadataToHeaders(ctx, p.metadataKeys)
+	propagator := otel.GetTextMapPropagator()
+	fields := propagator.Fields()
 	var traceHeaders []kgo.RecordHeader
-	if p.propagateTrace {
-		traceHeaders = traceContextToHeaders(ctx)
+	if len(fields) > 0 {
+		traceHeaders = traceContextToHeaders(ctx, propagator)
 	}
 	var headers []kgo.RecordHeader
 	if n := len(p.recordHeaders) + len(metadataHeaders) + len(traceHeaders); n > 0 {
 		headers = make([]kgo.RecordHeader, 0, n)
-		for _, h := range slices.Concat(p.recordHeaders, metadataHeaders) {
-			if !p.propagateTrace || !isTraceContextHeader(h.Key) {
-				headers = append(headers, h)
-			}
-		}
+		headers = appendHeadersExcept(headers, p.recordHeaders, fields)
+		headers = appendHeadersExcept(headers, metadataHeaders, fields)
 		headers = append(headers, traceHeaders...)
 	}
 	for _, r := range records {

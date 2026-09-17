@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `propagate_trace_context` option to add W3C Trace Context headers to Kafka records.
+note: Add the trace context to Kafka record headers using the propagators configured in `service::telemetry::traces::propagators`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51078]

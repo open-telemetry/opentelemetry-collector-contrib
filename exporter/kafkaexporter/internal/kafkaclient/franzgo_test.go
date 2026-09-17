@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -169,7 +171,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 
-	producer := NewFranzSyncProducer(client, nil, nil, false, maxMessageBytes, nil)
+	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes, nil)
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
@@ -214,7 +216,6 @@ func TestExportData_AttachesHeaders(t *testing.T) {
 			{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
 			{Name: "shared-key", Value: configopaque.String("static-value-override")},
 		},
-		false,
 		1024*1024,
 		nil,
 	)
@@ -254,7 +255,6 @@ func TestExportData_PropagateTraceContext(t *testing.T) {
 			TraceState: ts,
 		})
 	}
-	const traceparent = "00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01"
 
 	// Trace context headers from other sources, e.g. forwarded from an
 	// upstream Kafka record, belong to a different trace.
@@ -270,47 +270,52 @@ func TestExportData_PropagateTraceContext(t *testing.T) {
 	}
 
 	for name, testcase := range map[string]struct {
-		propagate   bool
+		propagator  propagation.TextMapPropagator
 		spanContext trace.SpanContext
 		expected    []kgo.RecordHeader
 	}{
-		"disabled": {
+		"no propagator": {
+			propagator:  propagation.NewCompositeTextMapPropagator(),
 			spanContext: newSpanContext(trace.FlagsSampled, ""),
 			expected:    upstreamHeaders,
 		},
-		"enabled without span": {
-			propagate: true,
-			expected:  nonTraceHeaders,
+		"without span": {
+			propagator: propagation.TraceContext{},
+			expected:   nonTraceHeaders,
 		},
-		"enabled with unsampled span": {
-			propagate:   true,
+		"with unsampled span": {
+			propagator:  propagation.TraceContext{},
 			spanContext: newSpanContext(0, ""),
-			expected:    nonTraceHeaders,
-		},
-		"enabled with sampled span": {
-			propagate:   true,
-			spanContext: newSpanContext(trace.FlagsSampled, ""),
 			expected: append(slices.Clone(nonTraceHeaders),
-				kgo.RecordHeader{Key: "traceparent", Value: []byte(traceparent)},
+				kgo.RecordHeader{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-00")},
 			),
 		},
-		"enabled with sampled span and tracestate": {
-			propagate:   true,
+		"with sampled span": {
+			propagator:  propagation.TraceContext{},
+			spanContext: newSpanContext(trace.FlagsSampled, ""),
+			expected: append(slices.Clone(nonTraceHeaders),
+				kgo.RecordHeader{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01")},
+			),
+		},
+		"with sampled span and tracestate": {
+			propagator:  propagation.TraceContext{},
 			spanContext: newSpanContext(trace.FlagsSampled, "vendor=value"),
 			expected: append(slices.Clone(nonTraceHeaders),
 				kgo.RecordHeader{Key: "tracestate", Value: []byte("vendor=value")},
-				kgo.RecordHeader{Key: "traceparent", Value: []byte(traceparent)},
+				kgo.RecordHeader{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01")},
 			),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			otel.SetTextMapPropagator(testcase.propagator)
+			t.Cleanup(func() { otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator()) })
+
 			producer := NewFranzSyncProducer(kgoClient,
 				[]string{"tracestate", "metadata-key"},
 				[]RecordHeader{
 					{Name: "static-key", Value: configopaque.String("static-value")},
 					{Name: "traceparent", Value: configopaque.String("static-traceparent")},
 				},
-				testcase.propagate,
 				1024*1024,
 				nil,
 			)
@@ -342,7 +347,7 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 	// Shut down the broker so ExportData blocks indefinitely.
 	fakeCluster.Close()
 
-	producer := NewFranzSyncProducer(kgoClient, nil, nil, false, 1024*1024, clientCancel)
+	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, clientCancel)
 
 	records := []*kgo.Record{{Topic: "otlp_logs", Value: []byte("test")}}
 

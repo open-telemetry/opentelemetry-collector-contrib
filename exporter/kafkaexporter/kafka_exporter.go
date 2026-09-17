@@ -135,7 +135,6 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
 		e.cfg.RecordHeaders,
-		e.cfg.PropagateTraceContext,
 		e.cfg.Producer.MaxMessageBytes,
 		clientCancel,
 	)

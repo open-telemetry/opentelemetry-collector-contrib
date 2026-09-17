@@ -154,10 +154,6 @@ type Config struct {
 	// RecordHeaders sets static headers on every outgoing Kafka record.
 	RecordHeaders []kafkaclient.RecordHeader `mapstructure:"record_headers"`
 
-	// PropagateTraceContext adds W3C Trace Context headers for the export span
-	// to every outgoing Kafka record, when the span is sampled.
-	PropagateTraceContext bool `mapstructure:"propagate_trace_context"`
-
 	// SignalHeader adds the "otelcol.signal" header to every outgoing Kafka record.
 	SignalHeader bool `mapstructure:"signal_header"`
 
