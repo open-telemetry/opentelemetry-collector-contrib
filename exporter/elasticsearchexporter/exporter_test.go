@@ -3408,69 +3408,6 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		rec.WaitItems(2) // 2 span documents are expected
 	})
 
-	t.Run("profiles", func(t *testing.T) {
-		testHost, rec := setupTestHost(t)
-		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn, func(cfg *Config) {
-			cfg.Mapping.AllowedModes = []string{"ecs"}
-		})
-		require.NoError(t, exporter.Start(t.Context(), testHost))
-		defer func() {
-			require.NoError(t, exporter.Shutdown(t.Context()))
-		}()
-
-		sendProfiles := func() {
-			profiles := pprofile.NewProfiles()
-			dic := profiles.Dictionary()
-			resource := profiles.ResourceProfiles().AppendEmpty()
-			scope := resource.ScopeProfiles().AppendEmpty()
-			profile := scope.Profiles().AppendEmpty()
-
-			dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
-			st := profile.SampleType()
-			st.SetTypeStrindex(0)
-			st.SetUnitStrindex(1)
-			pt := profile.PeriodType()
-			pt.SetTypeStrindex(2)
-			pt.SetUnitStrindex(3)
-
-			a := dic.AttributeTable().AppendEmpty()
-			a.SetKeyStrindex(4)
-			dic.StringTable().Append("process.executable.build_id.htlhash")
-			a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
-			a = dic.AttributeTable().AppendEmpty()
-			a.SetKeyStrindex(5)
-			dic.StringTable().Append("profile.frame.type")
-			a.Value().SetStr("native")
-			a = dic.AttributeTable().AppendEmpty()
-			a.SetKeyStrindex(6)
-			dic.StringTable().Append("host.id")
-			a.Value().SetStr("localhost")
-
-			profile.AttributeIndices().Append(2)
-
-			sample := profile.Samples().AppendEmpty()
-			sample.TimestampsUnixNano().Append(0)
-
-			stack := dic.StackTable().AppendEmpty()
-			stack.LocationIndices().Append(0)
-
-			m := dic.MappingTable().AppendEmpty()
-			m.AttributeIndices().Append(0)
-
-			l := dic.LocationTable().AppendEmpty()
-			l.SetMappingIndex(0)
-			l.SetAddress(111)
-			l.AttributeIndices().Append(1)
-
-			ctx := client.NewContext(t.Context(), client.Info{Metadata: metadata})
-			mustSendProfilesWithCtx(ctx, t, exporter, profiles)
-		}
-
-		sendProfiles()
-		sendProfiles()
-		rec.WaitItems(3) // 3 profile documents are expected in total: StackTrace + 2×Event (StackTrace deduped by LRU on second call)
-	})
-
 	t.Run("profiles/ecs", func(t *testing.T) {
 		testHost, rec := setupTestHost(t)
 		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn, func(cfg *Config) {

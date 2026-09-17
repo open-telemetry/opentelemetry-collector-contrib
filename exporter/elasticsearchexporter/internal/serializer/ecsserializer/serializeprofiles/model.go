@@ -9,6 +9,8 @@ import (
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
 // EcsVersionString is the value for the `ecs.version` metrics field.
@@ -42,9 +44,9 @@ type StackPayload struct {
 // in the schema mapping.
 type StackTraceEvent struct {
 	EcsVersion
-	TimeStamp    UnixTime64 `json:"@timestamp"`
-	HostID       string     `json:"host.id"`
-	StackTraceID string     `json:"Stacktrace.id"` // 128-bit hash in binary form
+	TimeStamp    serializer.UnixTime64 `json:"@timestamp"`
+	HostID       string                `json:"host.id"`
+	StackTraceID string                `json:"Stacktrace.id"` // 128-bit hash in binary form
 
 	// Event-specific metadata
 	PodName          string `json:"orchestrator.resource.name,omitempty"`

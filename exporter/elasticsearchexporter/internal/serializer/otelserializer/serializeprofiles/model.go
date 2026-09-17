@@ -9,6 +9,8 @@ import (
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
 // StackPayload represents a single [StackTraceEvent], with a [StackTrace], a
@@ -25,7 +27,7 @@ type StackPayload struct {
 
 // StackTraceEvent represents a stacktrace event serializable into ES.
 type StackTraceEvent struct {
-	TimeStamp        unixTime64
+	TimeStamp        serializer.UnixTime64
 	StackTraceID     string
 	Frequency        int64
 	Count            uint16
@@ -78,10 +80,10 @@ func (e StackTraceEvent) MarshalJSON() ([]byte, error) {
 // StackTrace represents a stacktrace serializable into the stacktraces index.
 // DocID should be the base64-encoded Stacktrace ID.
 type StackTrace struct {
-	DocID     string     `json:"-"`
-	Timestamp unixTime64 `json:"@timestamp"`
-	FrameIDs  string     `json:"frame.ids"`
-	Types     string     `json:"frame.types"`
+	DocID     string                `json:"-"`
+	Timestamp serializer.UnixTime64 `json:"@timestamp"`
+	FrameIDs  string                `json:"frame.ids"`
+	Types     string                `json:"frame.types"`
 }
 
 // StackFrame represents a stacktrace serializable into the stackframes index.
@@ -90,12 +92,12 @@ type StackTrace struct {
 // doesn't send inline information yet. The symbolizer already stores arrays, which requires
 // the reader to handle both formats if we don't use arrays here.
 type StackFrame struct {
-	DocID          string     `json:"-"`
-	Timestamp      unixTime64 `json:"@timestamp"`
-	FileName       []string   `json:"function.filename,omitempty"`
-	FunctionName   []string   `json:"function.name,omitempty"`
-	LineNumber     []int32    `json:"line.number,omitempty"`
-	FunctionOffset []int32    `json:"function.offset,omitempty"`
+	DocID          string                `json:"-"`
+	Timestamp      serializer.UnixTime64 `json:"@timestamp"`
+	FileName       []string              `json:"function.filename,omitempty"`
+	FunctionName   []string              `json:"function.name,omitempty"`
+	LineNumber     []int32               `json:"line.number,omitempty"`
+	FunctionOffset []int32               `json:"function.offset,omitempty"`
 }
 
 // ResourceData represents the resources metadata related to a sample for the
