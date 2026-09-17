@@ -42,7 +42,7 @@ func (p *staleReadProc) Call(a ...uintptr) (uintptr, uintptr, error) {
 	xml := a[0]
 	runtime.GC()
 	runtime.GC()
-	for i := 0; i < p.churns; i++ {
+	for range p.churns {
 		p.keep = append(p.keep, strings.Clone(canaryValue))
 	}
 	got := unsafe.Slice((*uint16)(addrToPointer(xml)), len(p.want))
@@ -69,7 +69,7 @@ func TestBookmarkOpenKeepsXMLAliveDuringCall(t *testing.T) {
 	proc := &staleReadProc{want: want, churns: 20000}
 	createBookmarkProc = proc
 
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		var b Bookmark
 		require.NoError(t, b.Open(xml))
 	}
