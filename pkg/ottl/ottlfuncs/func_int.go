@@ -10,19 +10,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type IntArguments[K any] struct {
+type intArguments[K any] struct {
 	Target ottl.IntLikeGetter[K]
 }
 
 func NewIntFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Int", &IntArguments[K]{}, createIntFunction[K])
+	return ottl.NewFactory("Int", &intArguments[K]{}, createIntFunction[K])
 }
 
 func createIntFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*IntArguments[K])
+	args, ok := oArgs.(*intArguments[K])
 
 	if !ok {
-		return nil, errors.New("IntFactory args must be of type *IntArguments[K]")
+		return nil, errors.New("IntFactory args must be of type *intArguments[K]")
 	}
 
 	return intFunc(args.Target), nil
@@ -30,13 +30,13 @@ func createIntFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 
 func intFunc[K any](target ottl.IntLikeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		value, err := target.Get(ctx, tCtx)
+		value, ok, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		if value == nil {
+		if !ok {
 			return nil, nil
 		}
-		return *value, nil
+		return value, nil
 	}
 }

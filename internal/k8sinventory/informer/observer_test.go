@@ -769,12 +769,13 @@ func TestCheckpointAdvancesAfterHandler(t *testing.T) {
 		t.Fatal("watchHandler was not called")
 	}
 
-	// While the handler is blocked, storage must not have RV 77 yet.
+	// While the handler is blocked, storage must not have RV 77 yet. (It may
+	// already hold the post-sync checkpoint of the initial, empty list.)
 	require.NoError(t, obs.cp.Flush(t.Context()))
 	verifier := checkpoint.New(storageClient, zap.NewNop())
 	rv, err := verifier.GetCheckpoint(t.Context(), "", podsGVR.Resource)
 	require.NoError(t, err)
-	assert.Empty(t, rv, "checkpoint must not advance before handler returns")
+	assert.NotEqual(t, "77", rv, "checkpoint must not advance before handler returns")
 
 	// Unblock the handler; RV 77 should now flow into storage.
 	releaseHandler()

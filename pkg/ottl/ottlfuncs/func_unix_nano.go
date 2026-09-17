@@ -10,19 +10,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type UnixNanoArguments[K any] struct {
+type unixNanoArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
 func NewUnixNanoFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("UnixNano", &UnixNanoArguments[K]{}, createUnixNanoFunction[K])
+	return ottl.NewFactory("UnixNano", &unixNanoArguments[K]{}, createUnixNanoFunction[K])
 }
 
 func createUnixNanoFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*UnixNanoArguments[K])
+	args, ok := oArgs.(*unixNanoArguments[K])
 
 	if !ok {
-		return nil, errors.New("UnixNanoFactory args must be of type *UnixNanoArguments[K]")
+		return nil, errors.New("UnixNanoFactory args must be of type *unixNanoArguments[K]")
 	}
 
 	return UnixNano(args.Time)

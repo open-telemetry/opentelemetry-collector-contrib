@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
@@ -60,7 +61,6 @@ capabilities:
   reports_own_traces: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:
@@ -81,7 +81,6 @@ capabilities:
   reports_own_metrics: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:
@@ -229,7 +228,7 @@ service:
 			acceptsRemoteConfig: true,
 			remoteConfig: &protobufs.AgentRemoteConfig{
 				Config: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{
+					ConfigMap: map[string]*protobufs.AgentConfigObject{
 						"": {Body: []byte(fileLogConfig)},
 					},
 				},
@@ -253,7 +252,7 @@ service:
 			acceptsRemoteConfig: false,
 			remoteConfig: &protobufs.AgentRemoteConfig{
 				Config: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{
+					ConfigMap: map[string]*protobufs.AgentConfigObject{
 						"": {Body: []byte(fileLogConfig)},
 					},
 				},
@@ -561,7 +560,7 @@ service:
 
 		_, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte("service: [")},
 				},
 			},
@@ -732,7 +731,7 @@ service:
 
 		got, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte(`
 service:
   telemetry:
@@ -796,7 +795,7 @@ service:
 
 		got, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte(`
 service:
   telemetry:
@@ -873,7 +872,7 @@ service:
 
 		got, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte(`
 service:
   telemetry:
@@ -955,7 +954,7 @@ service:
 
 		got, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte(`
 service:
   telemetry:
@@ -1269,7 +1268,7 @@ func Test_onMessage(t *testing.T) {
 			},
 			RemoteConfig: &protobufs.AgentRemoteConfig{
 				Config: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{
+					ConfigMap: map[string]*protobufs.AgentConfigObject{
 						"": {
 							Body: []byte(""),
 						},
@@ -1330,7 +1329,7 @@ service:
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte(testConfigMessage),
 					},
@@ -1365,7 +1364,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1434,7 +1433,7 @@ service:
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte(testConfigMessage),
 					},
@@ -1469,7 +1468,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1507,7 +1506,7 @@ service:
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte(testConfigMessage),
 					},
@@ -1544,7 +1543,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       defaultPIDProvider{},
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1630,7 +1629,7 @@ service:
 		remoteConfigHash := sha256.Sum256([]byte(remoteConfigMessage))
 		remoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte(remoteConfigMessage),
 					},
@@ -1667,7 +1666,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1742,7 +1741,7 @@ service:
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte(testConfigMessage),
 					},
@@ -2121,7 +2120,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
 			EffectiveConfig: &protobufs.EffectiveConfig{
 				ConfigMap: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{
+					ConfigMap: map[string]*protobufs.AgentConfigObject{
 						"": {
 							Body: []byte("test"),
 						},
@@ -2132,7 +2131,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		assert.Equal(t, &protobufs.EffectiveConfig{
 			ConfigMap: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte("test")},
 				},
 			},
@@ -2169,7 +2168,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
 			EffectiveConfig: &protobufs.EffectiveConfig{
 				ConfigMap: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{
+					ConfigMap: map[string]*protobufs.AgentConfigObject{
 						"": {
 							Body: []byte("test"),
 						},
@@ -2180,7 +2179,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		assert.Equal(t, &protobufs.EffectiveConfig{
 			ConfigMap: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte("test")},
 				},
 			},
@@ -2217,7 +2216,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
 			EffectiveConfig: &protobufs.EffectiveConfig{
 				ConfigMap: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{},
+					ConfigMap: map[string]*protobufs.AgentConfigObject{},
 				},
 			},
 		})
@@ -2256,7 +2255,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
 			EffectiveConfig: &protobufs.EffectiveConfig{
 				ConfigMap: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{
+					ConfigMap: map[string]*protobufs.AgentConfigObject{
 						"":           {Body: []byte("instance config")},
 						"other.yaml": {Body: []byte("other config")},
 					},
@@ -2300,7 +2299,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
 			EffectiveConfig: &protobufs.EffectiveConfig{
 				ConfigMap: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{
+					ConfigMap: map[string]*protobufs.AgentConfigObject{
 						"collector.yaml": {Body: []byte("a config"), ContentType: "text/yaml"},
 					},
 				},
@@ -2347,7 +2346,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
 			EffectiveConfig: &protobufs.EffectiveConfig{
 				ConfigMap: &protobufs.AgentConfigMap{
-					ConfigMap: map[string]*protobufs.AgentConfigFile{
+					ConfigMap: map[string]*protobufs.AgentConfigObject{
 						"":           {Body: []byte("instance config")},
 						"other.yaml": {Body: []byte("other config")},
 						"extra.yaml": {Body: []byte("extra config")},
@@ -2418,7 +2417,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("ComponentHealth - First healthy startup does not report status for startup fallback config", func(t *testing.T) {
 		startupRemoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte("receivers:\n  debug/startup: null\n"),
 					},
@@ -2481,7 +2480,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 func TestSupervisor_saveAndReportConfigStatus(t *testing.T) {
 	remoteConfig := &protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
+			ConfigMap: map[string]*protobufs.AgentConfigObject{
 				"": {
 					Body: []byte("receivers:\n  debug/working: null\n"),
 				},
@@ -2505,7 +2504,7 @@ func TestSupervisor_saveAndReportConfigStatus(t *testing.T) {
 				AutomaticConfigRollback: true,
 			},
 			Capabilities: config.Capabilities{
-				ReportsRemoteConfig: true,
+				AcceptsRemoteConfig: true,
 			},
 			Storage: config.Storage{
 				Directory: filepath.Dir(persistentState.configPath),
@@ -2545,7 +2544,7 @@ func TestSupervisor_saveAndReportConfigStatus(t *testing.T) {
 func TestSupervisor_reportLastWorkingRemoteConfigStatus(t *testing.T) {
 	workingRemoteConfig := &protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
+			ConfigMap: map[string]*protobufs.AgentConfigObject{
 				"": {
 					Body: []byte("receivers:\n  debug/working: null\n"),
 				},
@@ -2572,7 +2571,7 @@ func TestSupervisor_reportLastWorkingRemoteConfigStatus(t *testing.T) {
 		telemetrySettings: newNopTelemetrySettings(),
 		config: config.Supervisor{
 			Capabilities: config.Capabilities{
-				ReportsRemoteConfig: true,
+				AcceptsRemoteConfig: true,
 			},
 		},
 		persistentState: persistentState,
@@ -2748,6 +2747,10 @@ type mockOpAMPClient struct {
 }
 
 func (mockOpAMPClient) SetCapabilities(*protobufs.AgentCapabilities) error {
+	return nil
+}
+
+func (mockOpAMPClient) SetConnectionSettingsStatus(*protobufs.ConnectionSettingsStatus) error {
 	return nil
 }
 
@@ -2967,7 +2970,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 
 		s.effectiveConfig.Store(&protobufs.EffectiveConfig{
 			ConfigMap: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte("effective")},
 				},
 			},
@@ -3000,7 +3003,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 
 		s.effectiveConfig.Store(&protobufs.EffectiveConfig{
 			ConfigMap: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"":           {Body: []byte("instance config")},
 					"other.yaml": {Body: []byte("other config")},
 				},
@@ -3021,7 +3024,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 
 		s.effectiveConfig.Store(&protobufs.EffectiveConfig{
 			ConfigMap: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"collector.yaml": {Body: []byte("a config"), ContentType: "text/yaml"},
 				},
 			},
@@ -3129,7 +3132,7 @@ func TestComposeMergedConfigValidationBranches(t *testing.T) {
 
 		changed, err := s.composeMergedConfig(&protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {Body: []byte("receivers:\n  debug: {}\n")},
 				},
 			},
@@ -3150,7 +3153,7 @@ func TestComposeMergedConfigValidationBranches(t *testing.T) {
 		})
 
 		changed, err := s.composeMergedConfig(&protobufs.AgentRemoteConfig{
-			Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigFile{}},
+			Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{}},
 		})
 		require.NoError(t, err)
 		require.True(t, changed)
@@ -3223,7 +3226,7 @@ service:
 
 		remoteCfg := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte(testLastReceivedRemoteConfig),
 					},
@@ -3307,7 +3310,7 @@ service:
 
 		lastReceivedRemoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte("invalid"),
 					},
@@ -3317,7 +3320,7 @@ service:
 		}
 		lastWorkingRemoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
 					"": {
 						Body: []byte("receivers:\n  debug/working: null\n"),
 					},
@@ -3415,6 +3418,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3463,6 +3468,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3518,6 +3525,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3586,7 +3595,6 @@ capabilities:
   reports_own_metrics: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:
@@ -3643,6 +3651,38 @@ telemetry:
 	})
 
 	supervisor.Shutdown()
+}
+
+func TestSupervisor_composeNoopConfigDisablesInternalMetrics(t *testing.T) {
+	// The bootstrap Collector's internal metrics must stay disabled, otherwise its
+	// default reader binds localhost:8888 and the bootstrap fails when that port
+	// is already in use.
+	s := Supervisor{
+		persistentState: &persistentState{
+			InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
+		},
+		pidProvider: staticPIDProvider(1234),
+	}
+
+	require.NoError(t, s.createTemplates())
+
+	noopConfigBytes, err := s.composeNoopConfig()
+	require.NoError(t, err)
+
+	conf, err := config.NewConfFromYAML(noopConfigBytes)
+	require.NoError(t, err)
+
+	telemetryConf, err := conf.Sub("service::telemetry")
+	require.NoError(t, err)
+
+	telemetryCfg, ok := otelconftelemetry.NewFactory().CreateDefaultConfig().(*otelconftelemetry.Config)
+	require.True(t, ok)
+	require.NoError(t, telemetryConf.Unmarshal(telemetryCfg))
+
+	// Metrics must be disabled with `level: none` rather than an empty readers
+	// list: validation rejects an empty list while the level is not none.
+	require.NoError(t, telemetryCfg.Validate())
+	require.Equal(t, configtelemetry.LevelNone, telemetryCfg.Metrics.Level)
 }
 
 func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
@@ -3755,11 +3795,6 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 
 	t.Run("Health check server is started when port is configured", func(t *testing.T) {
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: "tcp",
 			Endpoint:  "localhost:23233",
@@ -3841,11 +3876,6 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 
 	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: "tcp",
 			Endpoint:  "localhost:23233",
@@ -4019,7 +4049,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 
 	config1 := &protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
+			ConfigMap: map[string]*protobufs.AgentConfigObject{
 				"test.yaml": {
 					Body: []byte("receivers:\n  nop:\nprocessors:\n  nop:\nexporters:\n  nop:\nservice:\n  pipelines:\n    logs:\n      receivers: [nop]\n      processors: [nop]\n      exporters: [nop]"),
 				},
@@ -4030,7 +4060,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 
 	config2 := &protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
+			ConfigMap: map[string]*protobufs.AgentConfigObject{
 				"test.yaml": {
 					Body: []byte("receivers:\n  nop:\nprocessors:\n  batch:\nexporters:\n  nop:\nservice:\n  pipelines:\n    logs:\n      receivers: [nop]\n      processors: [batch]\n      exporters: [nop]"),
 				},

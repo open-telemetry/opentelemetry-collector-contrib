@@ -16,7 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -149,13 +148,13 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, expr)
 
-			tCtx := ottllog.NewTransformContextPtr(plog.NewResourceLogs(), plog.NewScopeLogs(), lr)
+			tCtx := ottllog.NewTransformContext(plog.NewResourceLogs(), plog.NewScopeLogs(), lr)
 			defer tCtx.Close()
 			val, err := expr.Eval(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.False(t, val)
 
-			neCtx := ottllog.NewTransformContextPtr(plog.NewResourceLogs(), plog.NewScopeLogs(), lrm)
+			neCtx := ottllog.NewTransformContext(plog.NewResourceLogs(), plog.NewScopeLogs(), lrm)
 			defer neCtx.Close()
 			val, err = expr.Eval(t.Context(), neCtx)
 			require.NoError(t, err)
@@ -230,13 +229,13 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			require.NotNil(t, expr)
 
 			assert.NotNil(t, lr)
-			tCtx := ottllog.NewTransformContextPtr(plog.NewResourceLogs(), plog.NewScopeLogs(), lr)
+			tCtx := ottllog.NewTransformContext(plog.NewResourceLogs(), plog.NewScopeLogs(), lr)
 			defer tCtx.Close()
 			val, err := expr.Eval(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.True(t, val)
 
-			neCtx := ottllog.NewTransformContextPtr(plog.NewResourceLogs(), plog.NewScopeLogs(), lrm)
+			neCtx := ottllog.NewTransformContext(plog.NewResourceLogs(), plog.NewScopeLogs(), lrm)
 			defer neCtx.Close()
 			assert.NotNil(t, lrm)
 			val, err = expr.Eval(t.Context(), neCtx)
@@ -819,7 +818,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 				},
@@ -835,11 +834,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.0.0"),
+							Version: new("2.0.0"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1.1.0`),
+							Version: new(`1.1.0`),
 						},
 					},
 				},
@@ -855,7 +854,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.*"),
+							Version: new("0.*"),
 						},
 					},
 				},
@@ -871,11 +870,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.*"),
+							Version: new("2.*"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("^1\\\\.1.*"),
+							Version: new("^1\\\\.1.*"),
 						},
 					},
 				},
@@ -891,7 +890,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 				},
@@ -907,11 +906,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.0.0"),
+							Version: new("2.0.0"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1.1.0`),
+							Version: new(`1.1.0`),
 						},
 					},
 				},
@@ -927,7 +926,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.*"),
+							Version: new("0.*"),
 						},
 					},
 				},
@@ -943,11 +942,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.*"),
+							Version: new("2.*"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1\\.1.*`),
+							Version: new(`1\\.1.*`),
 						},
 					},
 				},
@@ -1264,7 +1263,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 					Resources: []filterconfig.Attribute{
@@ -1307,7 +1306,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			log.SetSeverityText("severity text")
 			log.SetSeverityNumber(tt.logSeverity)
 
-			tCtx := ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), log)
+			tCtx := ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), log)
 			defer tCtx.Close()
 
 			boolExpr, err := NewSkipExpr(tt.condition)
@@ -1379,7 +1378,7 @@ func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 		log.Body().SetStr("body")
 		log.SetSeverityNumber(plog.SeverityNumberUnspecified)
 
-		tCtx := ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), log)
+		tCtx := ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), log)
 		defer tCtx.Close()
 
 		b.Run(tt.name, func(b *testing.B) {

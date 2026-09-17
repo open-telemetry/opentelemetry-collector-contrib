@@ -83,8 +83,7 @@ func ValueFrom(err error, key string) (any, bool) {
 	if err == nil {
 		return nil, false
 	}
-	var verr ErrorWithValue
-	if errors.As(err, &verr) {
+	if verr, ok := errors.AsType[ErrorWithValue](err); ok {
 		v, vok := verr.Value(key)
 		if vok {
 			return v, vok

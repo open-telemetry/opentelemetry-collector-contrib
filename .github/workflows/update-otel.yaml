@@ -35,7 +35,6 @@ jobs:
         with:
           client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
-          permission-contents: read
           permission-pull-requests: write
       - name: Prepare to update dependencies
         run: |

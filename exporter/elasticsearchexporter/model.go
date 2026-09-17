@@ -166,6 +166,32 @@ type encodingContext struct {
 	resourceSchemaURL string
 	scope             pcommon.InstrumentationScope
 	scopeSchemaURL    string
+	// ecsDoc is reused across records in one Resource+Scope batch for MappingECS.
+	ecsDoc *objmodel.Document
+}
+
+func newECSDocument(mode MappingMode) *objmodel.Document {
+	if mode != MappingECS {
+		return nil
+	}
+	return &objmodel.Document{}
+}
+
+func startECSDocument(ec encodingContext, recordAttrs pcommon.Map) *objmodel.Document {
+	var document *objmodel.Document
+	if ec.ecsDoc != nil {
+		ec.ecsDoc.Reset()
+		document = ec.ecsDoc
+	} else {
+		document = new(objmodel.Document)
+	}
+	// +10 covers fixed ECS fields (@timestamp, data_stream.*, trace.id, ...).
+	document.Grow(ec.resource.Attributes().Len() + ec.scope.Attributes().Len() + recordAttrs.Len() + 10)
+	// First, try to map resource-level attributes to ECS fields.
+	encodeAttributesECSMode(document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	// Then, try to map scope-level attributes to ECS fields.
+	encodeAttributesECSMode(document, ec.scope.Attributes(), scopeAttrsConversionMap)
+	return document
 }
 
 func newEncoder(mode MappingMode) (documentEncoder, error) {
@@ -191,13 +217,11 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 			attributesPrefix: "",
 		}, nil
 	case MappingECS:
-		ser, err := ecsserializer.New()
+		ecsSer, err := ecsserializer.New()
 		if err != nil {
 			return nil, err
 		}
-		return ecsModeEncoder{
-			profilesSerializer: ser,
-		}, nil
+		return ecsModeEncoder{serializer: ecsSer}, nil
 	case MappingBodyMap:
 		return bodymapModeEncoder{
 			metricsUnsupportedEncoder:  metricsUnsupportedEncoder{mode: mode},
@@ -208,7 +232,7 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 		if err != nil {
 			return nil, err
 		}
-		return otelModeEncoder{serializer: ser}, nil
+		return otelModeEncoder{serializer: ser, profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode}}, nil
 	}
 	return nil, fmt.Errorf("unknown mapping mode %q (%d)", mode, int(mode))
 }
@@ -222,8 +246,7 @@ type legacyModeEncoder struct {
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
-
-	profilesSerializer *ecsserializer.Serializer
+	serializer *ecsserializer.Serializer
 }
 
 type bodymapModeEncoder struct {
@@ -233,6 +256,7 @@ type bodymapModeEncoder struct {
 
 type otelModeEncoder struct {
 	serializer *otelserializer.Serializer
+	profilesUnsupportedEncoder
 }
 
 const (
@@ -269,18 +293,14 @@ func (ecsModeEncoder) encodeLog(
 	idx elasticsearch.Index,
 	buf *bytes.Buffer,
 ) error {
-	var document objmodel.Document
+	document := startECSDocument(ec, record.Attributes())
 
-	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-	// Then, try to map scope-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 	// Finally, try to map record-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, record.Attributes(), logRecordAttrsConversionMap)
-	addDataStreamAttributes(&document, "", idx)
+	encodeAttributesECSMode(document, record.Attributes(), logRecordAttrsConversionMap)
+	addDataStreamAttributes(document, "", idx)
 
 	// Handle special cases.
-	encodeLogTimestampECSMode(&document, record)
+	encodeLogTimestampECSMode(document, record)
 	document.AddTraceID("trace.id", record.TraceID())
 	document.AddSpanID("span.id", record.SpanID())
 	if n := record.SeverityNumber(); n != plog.SeverityNumberUnspecified {
@@ -302,15 +322,11 @@ func (ecsModeEncoder) encodeSpan(
 	idx elasticsearch.Index,
 	buf *bytes.Buffer,
 ) error {
-	var document objmodel.Document
+	document := startECSDocument(ec, span.Attributes())
 
-	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-	// Then, try to map scope-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 	// Finally, try to map span-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
-	addDataStreamAttributes(&document, "", idx)
+	encodeAttributesECSMode(document, span.Attributes(), spanAttrsConversionMap)
+	addDataStreamAttributes(document, "", idx)
 
 	document.AddTimestamp("@timestamp", span.StartTimestamp())
 	document.AddTraceID("trace.id", span.TraceID())
@@ -401,15 +417,6 @@ func (e otelModeEncoder) encodeMetrics(
 		ec.scope, ec.scopeSchemaURL,
 		dataPoints, validationErrors, idx, buf,
 	)
-}
-
-func (e otelModeEncoder) encodeProfile(
-	ec encodingContext,
-	dic pprofile.ProfilesDictionary,
-	profile pprofile.Profile,
-	pushData func(*bytes.Buffer, string, string) error,
-) error {
-	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
 func (bodymapModeEncoder) encodeLog(
@@ -559,11 +566,9 @@ func (ecsModeEncoder) encodeSpanEvent(
 	namespace := ecsSpanEventNamespace(ec, event)
 	idx := elasticsearch.NewDataStreamIndex(defaultDataStreamTypeLogs, dataset, namespace)
 
-	var document objmodel.Document
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-	encodeAttributesECSMode(&document, event.Attributes(), ecsSpanEventAttrsConversionMap)
-	addDataStreamAttributes(&document, "", idx)
+	document := startECSDocument(ec, event.Attributes())
+	encodeAttributesECSMode(document, event.Attributes(), ecsSpanEventAttrsConversionMap)
+	addDataStreamAttributes(document, "", idx)
 
 	document.AddTimestamp("@timestamp", event.Timestamp())
 	document.AddTraceID("trace.id", span.TraceID())
@@ -600,7 +605,7 @@ func (e ecsModeEncoder) encodeProfile(
 	profile pprofile.Profile,
 	pushData func(*bytes.Buffer, string, string) error,
 ) error {
-	return e.profilesSerializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
+	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
 func isExceptionSpanEvent(event ptrace.SpanEvent) bool {
@@ -671,6 +676,7 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 }
 
 func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry) {
+	document.Grow(attrs.Len())
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
 		// document.

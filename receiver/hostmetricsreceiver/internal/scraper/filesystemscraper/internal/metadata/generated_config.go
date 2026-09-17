@@ -200,8 +200,3 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics: DefaultMetricsConfig(),
 	}
 }
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
-}

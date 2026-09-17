@@ -98,7 +98,7 @@ func TestBase64Encode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := &Base64EncodeArguments[any]{
+			args := &base64EncodeArguments[any]{
 				Target: &ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.value, nil
@@ -139,14 +139,14 @@ func Test_Base64EncodeFactory(t *testing.T) {
 		factory := NewBase64EncodeFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &Base64EncodeArguments[any]{}, args)
+		assert.IsType(t, &base64EncodeArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Variant"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewBase64EncodeFactory[any]()
 		args := factory.CreateDefaultArguments()
-		encodeArgs, ok := args.(*Base64EncodeArguments[any])
+		encodeArgs, ok := args.(*base64EncodeArguments[any])
 		require.True(t, ok)
 		encodeArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -161,6 +161,22 @@ func Test_Base64EncodeFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createBase64EncodeFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "Base64EncodeFactory args must be of type *Base64EncodeArguments[K]")
+		assert.ErrorContains(t, err, "Base64EncodeFactory args must be of type *base64EncodeArguments[K]")
 	})
+}
+
+func BenchmarkBase64Encode(b *testing.B) {
+	var nilVariant ottl.Optional[ottl.StringGetter[any]]
+	exprFunc := base64Encode[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "the quick brown fox jumps over the lazy dog", nil
+		},
+	}, nilVariant)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
