@@ -548,6 +548,8 @@ func TestInputRead_Batching(t *testing.T) {
 	}
 
 	input := newTestInput()
+	// The bookmark is saved after every batch, so the input needs a persister once the mocked
+	// EvtCreateBookmark hands back a real handle.
 	input.persister = testutil.NewMockPersister("")
 
 	input.processEvent = func(_ context.Context, _ Event) error {
