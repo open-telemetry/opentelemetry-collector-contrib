@@ -25,15 +25,15 @@ func createUnixMicroFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("UnixMicroFactory args must be of type *unixMicroArguments[K]")
 	}
 
-	return UnixMicro(args.Time)
+	return unixMicro(args.Time), nil
 }
 
-func UnixMicro[K any](inputTime ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func unixMicro[K any](inputTime ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return t.UnixMicro(), nil
-	}, nil
+	}
 }

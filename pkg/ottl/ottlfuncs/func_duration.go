@@ -26,10 +26,10 @@ func createDurationFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, errors.New("DurationFactory args must be of type *durationArguments[K]")
 	}
 
-	return Duration(args.Duration)
+	return parseDuration(args.Duration), nil
 }
 
-func Duration[K any](duration ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func parseDuration[K any](duration ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
@@ -40,5 +40,5 @@ func Duration[K any](duration ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 			return nil, err
 		}
 		return dur, nil
-	}, nil
+	}
 }

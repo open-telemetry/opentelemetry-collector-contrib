@@ -25,15 +25,15 @@ func createMillisecondsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argume
 		return nil, errors.New("MillisecondsFactory args must be of type *millisecondsArguments[K]")
 	}
 
-	return Milliseconds(args.Duration)
+	return milliseconds(args.Duration), nil
 }
 
-func Milliseconds[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
+func milliseconds[K any](duration ottl.DurationGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return d.Milliseconds(), nil
-	}, nil
+	}
 }

@@ -27,10 +27,10 @@ func createMD5Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 		return nil, errors.New("MD5Factory args must be of type *mD5Arguments[K]")
 	}
 
-	return MD5HashString(args.Target)
+	return md5HashString(args.Target), nil
 }
 
-func MD5HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func md5HashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -42,5 +42,5 @@ func MD5HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error)
 			return nil, err
 		}
 		return hex.EncodeToString(hash.Sum(nil)), nil
-	}, nil
+	}
 }

@@ -25,15 +25,15 @@ func createMonthFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 		return nil, errors.New("MonthFactory args must be of type *monthArguments[K]")
 	}
 
-	return Month(args.Time)
+	return month(args.Time), nil
 }
 
-func Month[K any](time ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func month[K any](time ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := time.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return int64(t.Month()), nil
-	}, nil
+	}
 }
