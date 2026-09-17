@@ -19,14 +19,14 @@ func TestEventCloseWhenAlreadyClosed(t *testing.T) {
 
 func TestEventCloseSyscallFailure(t *testing.T) {
 	event := NewEvent(5)
-	closeProc = SimpleMockProc(0, 0, ErrorNotSupported)
+	defer mockWithDeferredRestore(&evtClose, func(uintptr) error { return ErrorNotSupported })()
 	err := event.Close()
 	require.ErrorContains(t, err, "failed to close event handle")
 }
 
 func TestEventCloseSuccess(t *testing.T) {
 	event := NewEvent(5)
-	closeProc = SimpleMockProc(1, 0, ErrorSuccess)
+	defer mockWithDeferredRestore(&evtClose, func(uintptr) error { return nil })()
 	err := event.Close()
 	require.NoError(t, err)
 	require.Equal(t, uintptr(0), event.handle)

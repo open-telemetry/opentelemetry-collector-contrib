@@ -156,22 +156,15 @@ func TestInputStart_RemoteSessionWithDomain(t *testing.T) {
 	persister := testutil.NewMockPersister("")
 
 	// Mock EvtOpenSession to capture the login struct and verify Domain handling
-	originalOpenSessionProc := openSessionProc
 	var capturedDomain string
 	var domainWasNil bool
-	openSessionProc = MockProc{
-		call: func(a ...uintptr) (uintptr, uintptr, error) {
-			// a[0] = loginClass, a[1] = login pointer, a[2] = timeout, a[3] = flags
-			if len(a) >= 4 && a[1] != 0 {
-				capturedDomain = "remote-domain"
-				domainWasNil = false
-			} else {
-				domainWasNil = true
-			}
-			return 1, 0, nil
-		},
-	}
-	defer func() { openSessionProc = originalOpenSessionProc }()
+	defer mockWithDeferredRestore(&evtOpenSession, func(_ uint32, login *EvtRPCLogin, _, _ uint32) (windows.Handle, error) {
+		domainWasNil = login == nil || login.Domain == nil
+		if !domainWasNil {
+			capturedDomain = windows.UTF16PtrToString(login.Domain)
+		}
+		return 1, nil
+	})()
 
 	input := newTestInput()
 	input.ignoreChannelErrors = true
@@ -487,14 +480,14 @@ func TestInputRead_Batching(t *testing.T) {
 	originalEvtRender := evtRender
 	originalEvtClose := evtClose
 	originalEvtSubscribe := evtSubscribe
-	originalCreateBookmarkProc := createBookmarkProc
+	originalEvtCreateBookmark := evtCreateBookmark
 	originalEvtUpdateBookmark := evtUpdateBookmark
 	defer func() {
 		evtNext = originalEvtNext
 		evtRender = originalEvtRender
 		evtClose = originalEvtClose
 		evtSubscribe = originalEvtSubscribe
-		createBookmarkProc = originalCreateBookmarkProc
+		evtCreateBookmark = originalEvtCreateBookmark
 		evtUpdateBookmark = originalEvtUpdateBookmark
 	}()
 
@@ -511,10 +504,8 @@ func TestInputRead_Batching(t *testing.T) {
 		return nil
 	}
 
-	createBookmarkProc = MockProc{
-		call: func(_ ...uintptr) (uintptr, uintptr, error) {
-			return 1, 0, nil
-		},
+	evtCreateBookmark = func(_ *uint16) (uintptr, error) {
+		return 1, nil
 	}
 
 	evtUpdateBookmark = func(_, _ uintptr) error {

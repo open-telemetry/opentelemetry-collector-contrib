@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Keep pointer arguments to Windows Event Log API calls alive until the call returns.
+note: Call the Windows Event Log API through `*windows.LazyProc` directly so that pointer arguments stay alive for the duration of the call.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51074]
@@ -16,9 +16,9 @@ issues: [51074]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The wrappers in the windows_eventlog_input operator pass pointers through the `SyscallProc` interface as `uintptr`,
-  which does not extend the pointee's lifetime. A garbage collection during the Win32 call could free a buffer
-  the API was still reading. `runtime.KeepAlive` now pins every pointer argument until the call returns.
+  The wrappers in the windows_eventlog_input operator routed every call through a `SyscallProc` interface, which hid
+  the callee from the compiler and let the garbage collector free a buffer while the Windows API was still reading it.
+  The interface is removed and tests mock the wrapper functions instead.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
