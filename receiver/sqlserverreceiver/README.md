@@ -256,6 +256,11 @@ references:
 1. https://pkg.go.dev/crypto/x509#ParseCertificate
 2. https://github.com/microsoft/mssql-docker/issues/895
 
+SQL Server hosts running Windows Server 2012 R2 or older may be unable to complete the TLS handshake with the receiver's direct connection path. SCHANNEL on those releases predates the cipher suites modern Go offers, so there is no overlap to negotiate.
+references:
+1. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50774
+2. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44058
+
 ## Troubleshooting
 
 ### `service.instance.id` is `unknown:1433`
@@ -263,3 +268,13 @@ references:
 In a rare case, the `service.instance.id` resource attribute is set to `unknown:1433`. This is because the receiver is unable to parse and compute the `service.instance.id` resource attribute.
 
 You can file an issue that includes your configuration to help us investigate the issue.
+
+### `TLS Handshake failed: cannot read handshake packet: EOF`
+
+This occurs on Windows Server 2012 R2 and older even when `ForceEncryption` is set to `0`, because TDS negotiates TLS for the login packet regardless of that setting. Adding `&encrypt=disable` to the datasource works around it.
+
+Be aware that this exposes the login credential but not query results — TDS drops TLS after login, which is why `sys.dm_exec_connections.encrypt_option` reads `FALSE` even on working connections.
+
+### Scrapes appear to succeed but collect nothing on a failover cluster instance
+
+Pointing the datasource at `localhost` on a failover cluster instance fails because the instance binds its listener to the cluster IP, so the connection is refused before the handshake begins. The TLS error count drops to zero, which looks like success while the scrape is actually dead.
