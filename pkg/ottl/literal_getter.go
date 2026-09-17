@@ -52,7 +52,10 @@ func isLiteralGetter(getter any) bool {
 // GetLiteralValue retrieves the literal value from the given getter.
 // If the getter is not a literal getter, or if the value it's currently holding is not a
 // literal value, it returns the zero value of V and false.
-func GetLiteralValue[K, V any](getter typedGetter[K, V]) (V, bool) {
+func GetLiteralValue[K, V any](getter interface {
+	Get(ctx context.Context, tCtx K) (V, error)
+},
+) (V, bool) {
 	if !isLiteralGetter(getter) {
 		return *new(V), false
 	}
