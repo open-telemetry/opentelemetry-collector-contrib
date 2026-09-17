@@ -21,6 +21,9 @@ type anyArguments[K any] struct {
 
 // NewAnyFactory returns a factory for the Any OTTL function.
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#any
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future. It
+// requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewAnyFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Any", &anyArguments[K]{}, createAnyFunction[K])
 }
