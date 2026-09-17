@@ -513,9 +513,10 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 			ts:    ts,
 			ls:    ls,
 		}
-		if mf.mtype == pmetric.MetricTypeHistogram {
+		switch mf.mtype {
+		case pmetric.MetricTypeHistogram:
 			mg.complexValue = make([]dataPoint, 0, 8)
-		} else if mf.mtype == pmetric.MetricTypeSummary {
+		case pmetric.MetricTypeSummary:
 			mg.complexValue = make([]dataPoint, 0, 4)
 		}
 		mf.groups[groupKey] = mg

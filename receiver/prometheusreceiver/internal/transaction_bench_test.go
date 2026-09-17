@@ -286,6 +286,8 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 }
 
 // generateLabelSets creates label sets for benchmarking with the specified cardinality.
+//
+//nolint:unparam
 func generateLabelSets(seriesCount, cardinality int) []labels.Labels {
 	result := make([]labels.Labels, seriesCount)
 
@@ -618,13 +620,10 @@ func protoExemplar(val float64, tsProto *types.Timestamp) *dto.Exemplar {
 
 func generateProtobufCounterPayload(count int) []byte {
 	var buf bytes.Buffer
-	numFamilies := 10
-	if count < numFamilies {
-		numFamilies = count
-	}
+	numFamilies := min(10, count)
 	perFamily := count / numFamilies
 	tsProto := &types.Timestamp{Seconds: 1700000000, Nanos: 0}
-	for f := 0; f < numFamilies; f++ {
+	for f := range numFamilies {
 		mfName := fmt.Sprintf("bench_counter_%d_total", f)
 		mf := &dto.MetricFamily{
 			Name:   mfName,
@@ -632,7 +631,7 @@ func generateProtobufCounterPayload(count int) []byte {
 			Type:   dto.MetricType_COUNTER,
 			Metric: make([]dto.Metric, 0, perFamily),
 		}
-		for i := 0; i < perFamily; i++ {
+		for i := range perFamily {
 			mf.Metric = append(mf.Metric, dto.Metric{
 				Label:       commonProtoLabels(f, i),
 				TimestampMs: 1700000000000,
@@ -649,12 +648,9 @@ func generateProtobufCounterPayload(count int) []byte {
 
 func generateProtobufGaugePayload(count int) []byte {
 	var buf bytes.Buffer
-	numFamilies := 10
-	if count < numFamilies {
-		numFamilies = count
-	}
+	numFamilies := min(10, count)
 	perFamily := count / numFamilies
-	for f := 0; f < numFamilies; f++ {
+	for f := range numFamilies {
 		mfName := fmt.Sprintf("bench_gauge_%d", f)
 		mf := &dto.MetricFamily{
 			Name:   mfName,
@@ -662,7 +658,7 @@ func generateProtobufGaugePayload(count int) []byte {
 			Type:   dto.MetricType_GAUGE,
 			Metric: make([]dto.Metric, 0, perFamily),
 		}
-		for i := 0; i < perFamily; i++ {
+		for i := range perFamily {
 			mf.Metric = append(mf.Metric, dto.Metric{
 				Label:       commonProtoLabels(f, i),
 				TimestampMs: 1700000000000,
@@ -678,14 +674,11 @@ func generateProtobufGaugePayload(count int) []byte {
 
 func generateProtobufClassicHistogramPayload(numHistograms int) []byte {
 	var buf bytes.Buffer
-	numFamilies := 10
-	if numHistograms < numFamilies {
-		numFamilies = numHistograms
-	}
+	numFamilies := min(10, numHistograms)
 	perFamily := numHistograms / numFamilies
 	bounds := []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, math.Inf(1)}
 	tsProto := &types.Timestamp{Seconds: 1700000000, Nanos: 0}
-	for f := 0; f < numFamilies; f++ {
+	for f := range numFamilies {
 		mfName := fmt.Sprintf("bench_classic_hist_%d", f)
 		mf := &dto.MetricFamily{
 			Name:   mfName,
@@ -693,7 +686,7 @@ func generateProtobufClassicHistogramPayload(numHistograms int) []byte {
 			Type:   dto.MetricType_HISTOGRAM,
 			Metric: make([]dto.Metric, 0, perFamily),
 		}
-		for i := 0; i < perFamily; i++ {
+		for i := range perFamily {
 			buckets := make([]dto.Bucket, len(bounds))
 			for bIdx, ub := range bounds {
 				cumCount := uint64((bIdx + 1) * 10)
@@ -720,17 +713,14 @@ func generateProtobufClassicHistogramPayload(numHistograms int) []byte {
 
 func generatePromTextClassicHistogramPayload(numHistograms int) []byte {
 	var buf bytes.Buffer
-	numFamilies := 10
-	if numHistograms < numFamilies {
-		numFamilies = numHistograms
-	}
+	numFamilies := min(10, numHistograms)
 	perFamily := numHistograms / numFamilies
 	bounds := []string{"0.005", "0.01", "0.025", "0.05", "0.1", "0.25", "0.5", "+Inf"}
-	for f := 0; f < numFamilies; f++ {
+	for f := range numFamilies {
 		mf := fmt.Sprintf("bench_classic_hist_%d", f)
 		fmt.Fprintf(&buf, "# TYPE %s histogram\n", mf)
 		fmt.Fprintf(&buf, "# HELP %s Benchmark classic histogram family %d\n", mf, f)
-		for i := 0; i < perFamily; i++ {
+		for i := range perFamily {
 			baseLabels := fmt.Sprintf("job=\"benchmark\",instance=\"localhost:8080\",service=\"svc_%d\",env=\"prod\",region=\"us-east-1\",pod=\"pod_%d\",endpoint=\"/api/v1/items\",method=\"GET\",status=\"200\"", f, i)
 			for bIdx, le := range bounds {
 				cumCount := (bIdx + 1) * 10
@@ -745,17 +735,14 @@ func generatePromTextClassicHistogramPayload(numHistograms int) []byte {
 
 func generateProtobufSummaryPayload(numSummaries int) []byte {
 	var buf bytes.Buffer
-	numFamilies := 10
-	if numSummaries < numFamilies {
-		numFamilies = numSummaries
-	}
+	numFamilies := min(10, numSummaries)
 	perFamily := numSummaries / numFamilies
 	quantiles := []dto.Quantile{
 		{Quantile: 0.5, Value: 0.12},
 		{Quantile: 0.9, Value: 0.45},
 		{Quantile: 0.99, Value: 0.89},
 	}
-	for f := 0; f < numFamilies; f++ {
+	for f := range numFamilies {
 		mfName := fmt.Sprintf("bench_summary_%d", f)
 		mf := &dto.MetricFamily{
 			Name:   mfName,
@@ -763,7 +750,7 @@ func generateProtobufSummaryPayload(numSummaries int) []byte {
 			Type:   dto.MetricType_SUMMARY,
 			Metric: make([]dto.Metric, 0, perFamily),
 		}
-		for i := 0; i < perFamily; i++ {
+		for i := range perFamily {
 			mf.Metric = append(mf.Metric, dto.Metric{
 				Label:       commonProtoLabels(f, i),
 				TimestampMs: 1700000000000,
@@ -781,13 +768,10 @@ func generateProtobufSummaryPayload(numSummaries int) []byte {
 
 func generateProtobufNativeHistogramPayload(count int) []byte {
 	var buf bytes.Buffer
-	numFamilies := 10
-	if count < numFamilies {
-		numFamilies = count
-	}
+	numFamilies := min(10, count)
 	perFamily := count / numFamilies
 	tsProto := &types.Timestamp{Seconds: 1700000000, Nanos: 0}
-	for f := 0; f < numFamilies; f++ {
+	for f := range numFamilies {
 		mfName := fmt.Sprintf("bench_native_hist_%d", f)
 		mf := &dto.MetricFamily{
 			Name:   mfName,
@@ -795,7 +779,7 @@ func generateProtobufNativeHistogramPayload(count int) []byte {
 			Type:   dto.MetricType_HISTOGRAM,
 			Metric: make([]dto.Metric, 0, perFamily),
 		}
-		for i := 0; i < perFamily; i++ {
+		for i := range perFamily {
 			mf.Metric = append(mf.Metric, dto.Metric{
 				Label:       commonProtoLabels(f, i),
 				TimestampMs: 1700000000000,

@@ -119,14 +119,14 @@ func (t *transaction) append(ls labels.Labels, atMs int64, val float64) (storage
 		return 0, err
 	}
 
-	ref, _, _, err := t.addSampleDatapoint(rKey, ls, metricName, atMs, val, 0)
-	return ref, err
+	ref, _, _ := t.addSampleDatapoint(rKey, ls, metricName, atMs, val, 0)
+	return ref, nil
 }
 
 // addSampleDatapoint processes one scraped sample and stores it in the
 // appropriate metric family for the resource/scope context. It is shared by
 // both V1 and V2 appender paths.
-func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, val float64, stMs int64) (storage.SeriesRef, *metricFamily, uint64, error) {
+func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, val float64, stMs int64) (storage.SeriesRef, *metricFamily, uint64) {
 	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 	// But it can also be a staleNaN, which is inserted when the target goes away.
@@ -157,13 +157,13 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 	// For the `target_info` metric we need to convert it to resource attributes.
 	if metricName == prometheus.TargetInfoMetricName {
 		t.AddTargetInfo(rKey, ls)
-		return 0, nil, 0, nil
+		return 0, nil, 0
 	}
 
 	// For the `otel_scope_info` metric we need to convert it to scope attributes.
 	if metricName == prometheus.ScopeInfoMetricName && !t.ignoreScopeInfoMetric {
 		t.addScopeInfo(rKey, ls)
-		return 0, nil, 0, nil
+		return 0, nil, 0
 	}
 
 	parsedScope, attrs, hasScopeLabels := getScopeID(ls)
@@ -171,7 +171,7 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 
 	if value.IsStaleNaN(val) {
 		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, parsedScope, metricName, ls, hasScopeLabels) {
-			return 0, nil, 0, nil
+			return 0, nil, 0
 		}
 	}
 
@@ -187,12 +187,12 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 		// never return errors, as that fails the whole scrape
 		// return ref==0 indicating that the series was not added
-		return 0, nil, 0, nil
+		return 0, nil, 0
 	}
 
 	// never return errors, as that fails the whole scrape
 	// return a stable ref so Prometheus can track series staleness
-	return storage.SeriesRef(ls.Hash()), curMF, seriesRef, nil
+	return storage.SeriesRef(ls.Hash()), curMF, seriesRef
 }
 
 // detectAndStoreNativeHistogramStaleness returns true if it detects
@@ -338,14 +338,14 @@ func (t *transaction) appendHistogram(ls labels.Labels, atMs int64, h *histogram
 	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
 	// thus we don't check for them here as opposed to the Append function.
 
-	ref, _, _, err := t.addHistogramDatapoint(rKey, ls, metricName, atMs, h, fh, schema, 0)
-	return ref, err
+	ref, _, _ := t.addHistogramDatapoint(rKey, ls, metricName, atMs, h, fh, schema, 0)
+	return ref, nil
 }
 
 // addHistogramDatapoint adds a native histogram or NHCB datapoint to the appropriate metric family.
 // When stMs != 0, it also records a creation timestamp on the metric family.
 // It is shared by both V1 and V2 appender paths.
-func (t *transaction) addHistogramDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram, schema int32, stMs int64) (storage.SeriesRef, *metricFamily, uint64, error) {
+func (t *transaction) addHistogramDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram, schema int32, stMs int64) (storage.SeriesRef, *metricFamily, uint64) {
 	parsedScope, attrs, hasScopeLabels := getScopeID(ls)
 	t.addScopeAttributesFromLabels(rKey, parsedScope, attrs)
 
@@ -370,12 +370,12 @@ func (t *transaction) addHistogramDatapoint(rKey resourceKey, ls labels.Labels, 
 		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 		// never return errors, as that fails the whole scrape
 		// return ref==0 indicating that the series was not added
-		return 0, nil, 0, nil
+		return 0, nil, 0
 	}
 
 	// never return errors, as that fails the whole scrape
 	// return a stable ref so Prometheus can track series staleness
-	return storage.SeriesRef(ls.Hash()), curMF, seriesRef, nil
+	return storage.SeriesRef(ls.Hash()), curMF, seriesRef
 }
 
 func (t *transaction) appendSTZeroSample(ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
@@ -748,12 +748,12 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, stMs, atMs i
 		t.addingNativeHistogram = true
 		t.addingNHCB = schema == histogram.CustomBucketsSchema
 
-		sRef, curMF, seriesRef, _ = t.addHistogramDatapoint(rKey, ls, metricName, atMs, h, fh, schema, stMs)
+		sRef, curMF, seriesRef = t.addHistogramDatapoint(rKey, ls, metricName, atMs, h, fh, schema, stMs)
 	} else {
 		t.addingNativeHistogram = false
 		t.addingNHCB = false
 
-		sRef, curMF, seriesRef, _ = t.addSampleDatapoint(rKey, ls, metricName, atMs, val, stMs)
+		sRef, curMF, seriesRef = t.addSampleDatapoint(rKey, ls, metricName, atMs, val, stMs)
 	}
 
 	// Append the exemplars, continuing on error to try all exemplars.
