@@ -10,20 +10,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type DeleteKeyArguments[K any] struct {
+type deleteKeyArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
 	Key    ottl.StringGetter[K]
 }
 
 func NewDeleteKeyFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("delete_key", &DeleteKeyArguments[K]{}, createDeleteKeyFunction[K])
+	return ottl.NewFactory("delete_key", &deleteKeyArguments[K]{}, createDeleteKeyFunction[K])
 }
 
 func createDeleteKeyFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*DeleteKeyArguments[K])
+	args, ok := oArgs.(*deleteKeyArguments[K])
 
 	if !ok {
-		return nil, errors.New("DeleteKeysFactory args must be of type *DeleteKeyArguments[K]")
+		return nil, errors.New("DeleteKeysFactory args must be of type *deleteKeyArguments[K]")
 	}
 
 	return deleteKey(args.Target, args.Key), nil

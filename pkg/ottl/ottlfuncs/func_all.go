@@ -14,19 +14,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type AllArguments[K any] struct {
+type allArguments[K any] struct {
 	Source    ottl.Getter[K]
 	Predicate *ottl.LambdaExpression[K]
 }
 
 func NewAllFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("All", &AllArguments[K]{}, createAllFunction[K])
+	return ottl.NewFactory("All", &allArguments[K]{}, createAllFunction[K])
 }
 
 func createAllFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*AllArguments[K])
+	args, ok := oArgs.(*allArguments[K])
 	if !ok {
-		return nil, errors.New("AllFactory args must be of type *AllArguments[K]")
+		return nil, errors.New("AllFactory args must be of type *allArguments[K]")
 	}
 	return allMatch(args.Source, args.Predicate)
 }

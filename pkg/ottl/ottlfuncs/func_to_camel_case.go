@@ -12,19 +12,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ToCamelCaseArguments[K any] struct {
+type toCamelCaseArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewToCamelCaseFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ToCamelCase", &ToCamelCaseArguments[K]{}, createToCamelCaseFunction[K])
+	return ottl.NewFactory("ToCamelCase", &toCamelCaseArguments[K]{}, createToCamelCaseFunction[K])
 }
 
 func createToCamelCaseFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ToCamelCaseArguments[K])
+	args, ok := oArgs.(*toCamelCaseArguments[K])
 
 	if !ok {
-		return nil, errors.New("ToCamelCaseFactory args must be of type *ToCamelCaseArguments[K]")
+		return nil, errors.New("ToCamelCaseFactory args must be of type *toCamelCaseArguments[K]")
 	}
 
 	return toCamelCase(args.Target), nil

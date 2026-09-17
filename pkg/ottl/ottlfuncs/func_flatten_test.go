@@ -602,14 +602,14 @@ func Test_FlattenFactory(t *testing.T) {
 		factory := NewFlattenFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &FlattenArguments[any]{}, args)
+		assert.IsType(t, &flattenArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Prefix", "Depth", "ResolveConflicts"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewFlattenFactory[any]()
 		args := factory.CreateDefaultArguments()
-		flattenArgs, ok := args.(*FlattenArguments[any])
+		flattenArgs, ok := args.(*flattenArguments[any])
 		require.True(t, ok)
 		flattenArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -627,6 +627,48 @@ func Test_FlattenFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createFlattenFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "FlattenFactory args must be of type *FlattenArguments[K]")
+		assert.ErrorContains(t, err, "FlattenFactory args must be of type *flattenArguments[K]")
 	})
+}
+
+func BenchmarkFlatten(b *testing.B) {
+	var current pcommon.Map
+	target := ottl.StandardPMapGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Map, error) {
+			return current, nil
+		},
+		Setter: func(_ context.Context, _, val any) error {
+			v, ok := val.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(current)
+			return nil
+		},
+	}
+
+	exprFunc, err := flatten[any](target, ottl.Optional[string]{}, ottl.Optional[int64]{}, ottl.NewTestingOptional[bool](false))
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		current = pcommon.NewMap()
+		if err := current.FromRaw(map[string]any{
+			"name": "test",
+			"address": map[string]any{
+				"street": "first",
+				"house":  int64(1234),
+			},
+			"occupants": []any{
+				"user 1",
+				"user 2",
+			},
+		}); err != nil {
+			b.Fatal(err)
+		}
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

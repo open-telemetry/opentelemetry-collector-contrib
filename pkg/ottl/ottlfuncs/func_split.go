@@ -11,20 +11,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type SplitArguments[K any] struct {
+type splitArguments[K any] struct {
 	Target    ottl.StringGetter[K]
 	Delimiter ottl.StringGetter[K]
 }
 
 func NewSplitFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Split", &SplitArguments[K]{}, createSplitFunction[K])
+	return ottl.NewFactory("Split", &splitArguments[K]{}, createSplitFunction[K])
 }
 
 func createSplitFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*SplitArguments[K])
+	args, ok := oArgs.(*splitArguments[K])
 
 	if !ok {
-		return nil, errors.New("SplitFactory args must be of type *SplitArguments[K]")
+		return nil, errors.New("SplitFactory args must be of type *splitArguments[K]")
 	}
 
 	return split(args.Target, args.Delimiter), nil

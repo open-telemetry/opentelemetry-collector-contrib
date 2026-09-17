@@ -11,19 +11,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type IsValidLuhnArguments[K any] struct {
+type isValidLuhnArguments[K any] struct {
 	Target ottl.StringLikeGetter[K]
 }
 
 func NewIsValidLuhnFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("IsValidLuhn", &IsValidLuhnArguments[K]{}, createIsValidLuhnFunction[K])
+	return ottl.NewFactory("IsValidLuhn", &isValidLuhnArguments[K]{}, createIsValidLuhnFunction[K])
 }
 
 func createIsValidLuhnFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*IsValidLuhnArguments[K])
+	args, ok := oArgs.(*isValidLuhnArguments[K])
 
 	if !ok {
-		return nil, errors.New("IsValidLuhnFactory args must be of type *IsValidLuhnArguments[K]")
+		return nil, errors.New("IsValidLuhnFactory args must be of type *isValidLuhnArguments[K]")
 	}
 
 	return isValidLuhnFunc(args.Target), nil

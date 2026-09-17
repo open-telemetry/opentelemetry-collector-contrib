@@ -14,21 +14,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type LimitArguments[K any] struct {
+type limitArguments[K any] struct {
 	Target       ottl.PMapGetSetter[K]
 	Limit        int64
 	PriorityKeys []string
 }
 
 func NewLimitFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("limit", &LimitArguments[K]{}, createLimitFunction[K])
+	return ottl.NewFactory("limit", &limitArguments[K]{}, createLimitFunction[K])
 }
 
 func createLimitFunction[K any](fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*LimitArguments[K])
+	args, ok := oArgs.(*limitArguments[K])
 
 	if !ok {
-		return nil, errors.New("LimitFactory args must be of type *LimitArguments[K]")
+		return nil, errors.New("LimitFactory args must be of type *limitArguments[K]")
 	}
 
 	return limit(args.Target, args.Limit, args.PriorityKeys, fCtx.Set.Logger)

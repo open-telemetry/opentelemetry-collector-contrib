@@ -24,7 +24,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for context.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxotelcol.Name
 
 var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
@@ -43,8 +42,8 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
-// NewTransformContextPtr creates a new TransformContext with the provided parameters.
-func NewTransformContextPtr(options ...TransformContextOption) *TransformContext {
+// NewTransformContext creates a new TransformContext with the provided parameters.
+func NewTransformContext(options ...TransformContextOption) *TransformContext {
 	tc := tcPool.Get().(*TransformContext)
 	for _, opt := range options {
 		opt(tc)
@@ -62,8 +61,6 @@ func (tCtx *TransformContext) Close() {
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{ContextName})(p)

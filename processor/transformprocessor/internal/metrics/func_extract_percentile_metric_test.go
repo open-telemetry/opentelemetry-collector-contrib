@@ -167,7 +167,7 @@ func Test_extractPercentileMetric_SkippedMetricTypes(t *testing.T) {
 			scopeMetrics := pmetric.NewScopeMetrics()
 			metric.CopyTo(scopeMetrics.Metrics().AppendEmpty())
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), scopeMetrics, metric)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), scopeMetrics, metric)
 
 			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -367,7 +367,7 @@ func Test_extractPercentileMetric_Histogram(t *testing.T) {
 			scopeMetrics := pmetric.NewScopeMetrics()
 			metric.CopyTo(scopeMetrics.Metrics().AppendEmpty())
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), scopeMetrics, metric)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), scopeMetrics, metric)
 
 			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -610,7 +610,7 @@ func Test_extractPercentileMetric_ExponentialHistogram(t *testing.T) {
 			scopeMetrics := pmetric.NewScopeMetrics()
 			metric.CopyTo(scopeMetrics.Metrics().AppendEmpty())
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), scopeMetrics, metric)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), scopeMetrics, metric)
 
 			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -717,7 +717,7 @@ func Test_extractPercentileMetric_MalformedData(t *testing.T) {
 			scopeMetrics := pmetric.NewScopeMetrics()
 			metric.CopyTo(scopeMetrics.Metrics().AppendEmpty())
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), scopeMetrics, metric)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), scopeMetrics, metric)
 
 			_, err = exprFunc(t.Context(), tCtx)
 			assert.EqualError(t, err, tt.wantErr)

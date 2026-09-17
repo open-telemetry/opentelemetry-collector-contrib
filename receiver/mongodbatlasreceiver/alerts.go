@@ -128,10 +128,6 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 		return recv, nil
 	}
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  cfg.Endpoint,
 		Transport: "tcp",

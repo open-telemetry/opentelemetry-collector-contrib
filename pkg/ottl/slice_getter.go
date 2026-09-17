@@ -121,7 +121,7 @@ func GetScalarLiteralValues[
 // [V] is the expected type of the slice values.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func GetLiteralValues[K, V any, G typedGetter[K, V]](slice *SliceGetter[K, G]) ([]V, bool) {
+func GetLiteralValues[K, V any, G TypedGetter[K, V]](slice *SliceGetter[K, G]) ([]V, bool) {
 	var result []V
 	allLiterals := true
 	err := slice.Range(context.Background(), *new(K), func(value G) bool {

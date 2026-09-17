@@ -11,19 +11,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ToLowerCaseArguments[K any] struct {
+type toLowerCaseArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewToLowerCaseFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ToLowerCase", &ToLowerCaseArguments[K]{}, createToLowerCaseFunction[K])
+	return ottl.NewFactory("ToLowerCase", &toLowerCaseArguments[K]{}, createToLowerCaseFunction[K])
 }
 
 func createToLowerCaseFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ToLowerCaseArguments[K])
+	args, ok := oArgs.(*toLowerCaseArguments[K])
 
 	if !ok {
-		return nil, errors.New("ToLowerCaseFactory args must be of type *ToLowerCaseArguments[K]")
+		return nil, errors.New("ToLowerCaseFactory args must be of type *toLowerCaseArguments[K]")
 	}
 
 	return toLowerCase(args.Target), nil

@@ -10,12 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logparsingfuncs"
 )
 
 func Test_LogFunctions(t *testing.T) {
-	expected := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
+	expected := xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]())
 	expected["ParseCEF"] = logparsingfuncs.NewParseCEFFactory()
 	expected["ParseCLF"] = logparsingfuncs.NewParseCLFFactory()
 	expected["ParseELF"] = logparsingfuncs.NewParseELFFactory()

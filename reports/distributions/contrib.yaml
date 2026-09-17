@@ -45,7 +45,6 @@ components:
         - load_balancing
         - logicmonitor
         - logzio
-        - mezmo
         - opensearch
         - otelarrow
         - prometheus

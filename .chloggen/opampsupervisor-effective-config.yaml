@@ -1,7 +1,0 @@
-change_type: bug_fix
-component: cmd/opampsupervisor
-note: "Fix the OpAMP supervisor so that the full effective config map (all named config files) is forwarded to the OpAMP server instead of only the empty-string (\"\") key"
-issues:
-  - 49902
-change_logs:
-  - user

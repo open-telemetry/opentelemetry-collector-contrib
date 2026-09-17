@@ -14,19 +14,19 @@ import (
 
 const spanIDFuncName = "SpanID"
 
-type SpanIDArguments[K any] struct {
+type spanIDArguments[K any] struct {
 	Target ottl.ByteSliceLikeGetter[K]
 }
 
 func NewSpanIDFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory(spanIDFuncName, &SpanIDArguments[K]{}, createSpanIDFunction[K])
+	return ottl.NewFactory(spanIDFuncName, &spanIDArguments[K]{}, createSpanIDFunction[K])
 }
 
 func createSpanIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*SpanIDArguments[K])
+	args, ok := oArgs.(*spanIDArguments[K])
 
 	if !ok {
-		return nil, errors.New("SpanIDFactory args must be of type *SpanIDArguments[K]")
+		return nil, errors.New("SpanIDFactory args must be of type *spanIDArguments[K]")
 	}
 
 	return spanID[K](args.Target)

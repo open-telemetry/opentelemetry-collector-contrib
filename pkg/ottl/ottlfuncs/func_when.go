@@ -12,20 +12,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type WhenArguments[K any] struct {
+type whenArguments[K any] struct {
 	Condition  *ottl.LambdaExpression[K]
 	TrueValue  ottl.Getter[K]
 	FalseValue ottl.Getter[K]
 }
 
 func NewWhenFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("When", &WhenArguments[K]{}, createWhenFunction[K])
+	return ottl.NewFactory("When", &whenArguments[K]{}, createWhenFunction[K])
 }
 
 func createWhenFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*WhenArguments[K])
+	args, ok := oArgs.(*whenArguments[K])
 	if !ok {
-		return nil, errors.New("WhenFactory args must be of type *WhenArguments[K]")
+		return nil, errors.New("WhenFactory args must be of type *whenArguments[K]")
 	}
 	return whenFunction(args.Condition, args.TrueValue, args.FalseValue)
 }

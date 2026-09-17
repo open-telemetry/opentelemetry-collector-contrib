@@ -1,0 +1,9 @@
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    development: [ profiles ]
+  codeowners:
+    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
+    emeritus: [anuraaga, kentquirk]
+    seeking_new: true

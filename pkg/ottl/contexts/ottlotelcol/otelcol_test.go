@@ -172,7 +172,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
-			tCtx := NewTransformContextPtr()
+			tCtx := NewTransformContext()
 			defer tCtx.Close()
 			got, err := accessor.Get(t.Context(), tCtx)
 			assert.NoError(t, err)

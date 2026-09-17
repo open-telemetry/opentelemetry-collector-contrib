@@ -239,6 +239,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sStatefulset.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
+
+			allMetricsCount++
+			ebK8sStatefulset.RecordK8sStatefulsetPodAvailableDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sStatefulset.RecordK8sStatefulsetReadyPodsDataPoint(ts, 1)
@@ -1003,6 +1006,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.statefulset.pod.available":
+					assert.False(t, validatedMetrics["k8s.statefulset.pod.available"], "Found a duplicate in the metrics slice: k8s.statefulset.pod.available")
+					validatedMetrics["k8s.statefulset.pod.available"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.", mi.Description())
+					assert.Equal(t, "{pod}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.statefulset.ready_pods":
 					assert.False(t, validatedMetrics["k8s.statefulset.ready_pods"], "Found a duplicate in the metrics slice: k8s.statefulset.ready_pods")
 					validatedMetrics["k8s.statefulset.ready_pods"] = true
@@ -1151,4 +1168,69 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeprecatedRecordMethods(t *testing.T) {
+	start := pcommon.Timestamp(1_000_000_000)
+	ts := pcommon.Timestamp(1_000_001_000)
+	settings := receivertest.NewNopSettings(receivertest.NopType)
+	settings.Logger = zap.NewNop()
+	mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+	mb.RecordK8sContainerCPULimitDataPoint(ts, 1)
+	mb.RecordK8sContainerCPURequestDataPoint(ts, 1)
+	mb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, 1)
+	mb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, 1)
+	mb.RecordK8sContainerMemoryLimitDataPoint(ts, 1)
+	mb.RecordK8sContainerMemoryRequestDataPoint(ts, 1)
+	mb.RecordK8sContainerReadyDataPoint(ts, 1)
+	mb.RecordK8sContainerRestartsDataPoint(ts, 1)
+	mb.RecordK8sContainerStatusReasonDataPoint(ts, 1, AttributeK8sContainerStatusReasonContainerCreating)
+	mb.RecordK8sContainerStatusStateDataPoint(ts, 1, AttributeK8sContainerStatusStateTerminated)
+	mb.RecordK8sContainerStorageLimitDataPoint(ts, 1)
+	mb.RecordK8sContainerStorageRequestDataPoint(ts, 1)
+	mb.RecordK8sCronjobActiveJobsDataPoint(ts, 1)
+	mb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, 1)
+	mb.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, 1)
+	mb.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, 1)
+	mb.RecordK8sDaemonsetReadyNodesDataPoint(ts, 1)
+	mb.RecordK8sDeploymentAvailableDataPoint(ts, 1)
+	mb.RecordK8sDeploymentDesiredDataPoint(ts, 1)
+	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, 1)
+	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, 1)
+	mb.RecordK8sHpaMaxReplicasDataPoint(ts, 1)
+	mb.RecordK8sHpaMinReplicasDataPoint(ts, 1)
+	mb.RecordK8sJobActivePodsDataPoint(ts, 1)
+	mb.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, 1)
+	mb.RecordK8sJobFailedPodsDataPoint(ts, 1)
+	mb.RecordK8sJobMaxParallelPodsDataPoint(ts, 1)
+	mb.RecordK8sJobSuccessfulPodsDataPoint(ts, 1)
+	mb.RecordK8sNamespacePhaseDataPoint(ts, 1)
+	mb.RecordK8sNodeConditionDataPoint(ts, 1, "condition-val")
+	mb.RecordK8sPersistentvolumeStatusPhaseDataPoint(ts, 1, AttributeK8sPersistentvolumeStatusPhasePending)
+	mb.RecordK8sPersistentvolumeStorageCapacityDataPoint(ts, 1)
+	mb.RecordK8sPersistentvolumeclaimStatusPhaseDataPoint(ts, 1, AttributeK8sPersistentvolumeclaimStatusPhasePending)
+	mb.RecordK8sPersistentvolumeclaimStorageCapacityDataPoint(ts, 1)
+	mb.RecordK8sPersistentvolumeclaimStorageRequestDataPoint(ts, 1)
+	mb.RecordK8sPodPhaseDataPoint(ts, 1)
+	mb.RecordK8sPodStatusReasonDataPoint(ts, 1)
+	mb.RecordK8sReplicasetAvailableDataPoint(ts, 1)
+	mb.RecordK8sReplicasetDesiredDataPoint(ts, 1)
+	mb.RecordK8sReplicationControllerAvailableDataPoint(ts, 1)
+	mb.RecordK8sReplicationControllerDesiredDataPoint(ts, 1)
+	mb.RecordK8sResourceQuotaHardLimitDataPoint(ts, 1, "resource-val")
+	mb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "resource-val")
+	mb.RecordK8sServiceEndpointCountDataPoint(ts, 1, AttributeK8sServiceEndpointAddressTypeIPv4, AttributeK8sServiceEndpointConditionReady, "k8s.service.endpoint.zone-val")
+	mb.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, 1)
+	mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
+	mb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
+	mb.RecordK8sStatefulsetPodAvailableDataPoint(ts, 1)
+	mb.RecordK8sStatefulsetReadyPodsDataPoint(ts, 1)
+	mb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, 1)
+	mb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
+	mb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
+	mb.RecordOpenshiftClusterquotaLimitDataPoint(ts, 1, "resource-val")
+	mb.RecordOpenshiftClusterquotaUsedDataPoint(ts, 1, "resource-val")
+
+	metrics := mb.Emit()
+	assert.Greater(t, metrics.ResourceMetrics().Len(), 0)
 }

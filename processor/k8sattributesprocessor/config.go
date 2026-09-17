@@ -140,6 +140,12 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	for _, pod := range cfg.Exclude.Pods {
+		if _, err := regexp.Compile(pod.Name); err != nil {
+			return fmt.Errorf("invalid pod exclude name %q: %w", pod.Name, err)
+		}
+	}
+
 	return nil
 }
 

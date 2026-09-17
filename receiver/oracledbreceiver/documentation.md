@@ -1770,6 +1770,34 @@ Per-session wait event statistics from v$session_event.
 | oracledb.wait.duration | Total time waited in seconds for the wait event. | Any Double | - |
 | db.namespace | The database name. | Any Str | - |
 
+### db.server.top_procedure
+
+Aggregated performance metrics for the top stored procedures by elapsed time, derived from V$SQL grouped by PROGRAM_ID and joined to DBA_PROCEDURES, with delta computation on cumulative counters. Correlates with db.server.top_query and db.server.query_sample via oracledb.procedure_id.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
+| db.server.name | The name of the server hosting the database. | Any Str | - |
+| oracle.db.service | The Oracle service name associated with the database connection. | Any Str | - |
+| oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int | - |
+| oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
+| oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
+| oracledb.procedure.schema.name | The schema (owner) of the stored procedure or function. | Any Str | - |
+| oracledb.procedure_execution_count | The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution. | Any Int | - |
+| oracledb.cpu_time | Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta). | Any Double | - |
+| oracledb.elapsed_time | The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta). | Any Double | - |
+| oracledb.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int | - |
+| oracledb.disk_reads | The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta). | Any Int | - |
+| oracledb.direct_writes | The number of direct path write operations, where data is written directly to disk from user memory (reporting delta). | Any Int | - |
+| oracledb.rows_processed | The total number of rows that a query has read, returned, or affected during its execution (reporting delta). | Any Int | - |
+| oracledb.physical_read_bytes | The total number of bytes read from disk by a query (reporting delta). | Any Int | - |
+| oracledb.physical_write_bytes | The total number of bytes written to disk by a query (reporting delta). | Any Int | - |
+| oracledb.procedure.first_load_time | Earliest load time across the procedure's cached statements, in ISO 8601 format (UTC). | Any Str | - |
+| oracledb.procedure.last_active_time | The most recent time any of the procedure's cached statements were active, in ISO 8601 format (UTC). | Any Str | - |
+
 ### db.server.top_query
 
 Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
@@ -1810,8 +1838,8 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
 | db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. | Any Str | - |
 | oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
-| oracledb.plan.first_load | Time at which the plan was first loaded into the library cache, in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
-| oracledb.plan.last_load | Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
+| oracledb.plan.first_load | Time at which the plan was first loaded into the library cache, in ISO 8601 format (UTC). | Any Str | - |
+| oracledb.plan.last_load | Plan load time, in ISO 8601 format (UTC). | Any Str | - |
 
 ## Resource Attributes
 
@@ -1823,6 +1851,8 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracle.db.role | The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY"). | Any Str | true | - | - |
 | oracle.db.version | The Oracle Database version string. | Any Str | true | - | - |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true | - | - |
-| service.instance.id | A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value) | Any Str | true | - | - |
+| server.address | The address of the monitored Oracle instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. Omitted when the connection string carries no parseable host, such as a TNS descriptor. | Any Str | true | - | - |
+| server.port | The port of the monitored Oracle instance, defaulting to 1521 when the target does not specify one. | Any Int | true | - | - |
+| service.instance.id | A unique identifier of the Oracle DB instance in the format host:port/serviceName, where host and port are resolved the same way as server.address and server.port. (defaults to 'unknown:1521' when the connection string carries no parseable host) | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:oracle. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

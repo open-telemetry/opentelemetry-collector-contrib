@@ -11,20 +11,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type TrimArguments[K any] struct {
+type trimArguments[K any] struct {
 	Target      ottl.StringGetter[K]
 	Replacement ottl.Optional[string]
 }
 
 func NewTrimFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Trim", &TrimArguments[K]{}, createTrimFunction[K])
+	return ottl.NewFactory("Trim", &trimArguments[K]{}, createTrimFunction[K])
 }
 
 func createTrimFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*TrimArguments[K])
+	args, ok := oArgs.(*trimArguments[K])
 
 	if !ok {
-		return nil, errors.New("TrimFactory args must be of type *TrimArguments[K]")
+		return nil, errors.New("TrimFactory args must be of type *trimArguments[K]")
 	}
 
 	return trim(args.Target, args.Replacement), nil

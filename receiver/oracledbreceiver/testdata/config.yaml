@@ -9,6 +9,9 @@ oracledb:
   top_query_collection:
     max_query_sample_count: 222
     top_query_count: 200
+  top_procedure_collection:
+    max_procedure_sample_count: 555
+    top_procedure_count: 111
   metrics:
     oracledb.exchange_deadlocks:
       enabled: false
@@ -18,4 +21,6 @@ oracledb:
     db.server.top_query:
       enabled: true
     db.server.query_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true

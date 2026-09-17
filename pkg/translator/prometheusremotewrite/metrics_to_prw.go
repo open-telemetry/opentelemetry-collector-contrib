@@ -177,7 +177,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 				}
 			}
 		}
-		errs = multierr.Append(errs, addResourceTargetInfo(resource, settings, mostRecentTimestamp, c))
+		errs = multierr.Append(errs, c.addResourceTargetInfo(resource, settings, mostRecentTimestamp))
 	}
 
 	return errs

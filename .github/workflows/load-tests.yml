@@ -32,11 +32,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - run: make genoteltestbedcol
       - run: make oteltestbedcol
+      - run: GOOS=linux GOARCH=arm64 make oteltestbedcol
       - name: Upload Testbed Binaries
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -48,16 +49,16 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   loadtest:
-    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     needs: [setup-environment]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
+    runs-on: "${{ matrix.runner }}"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup-go-tools
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - run: mkdir -p results && touch results/TESTRESULTS.md
@@ -78,6 +79,7 @@ jobs:
       - name: Loadtest
         run: make -C testbed run-tests
         env:
+          RUN_TYPE: "${{ matrix.type == 'linux-arm64' && 'linux_arm64' || '' }}"
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename
         if: ${{ failure() || success() }}
@@ -110,7 +112,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   update-benchmarks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [loadtest]
     permissions:
       # deployments permission to deploy GitHub pages website
@@ -146,7 +148,7 @@ jobs:
       - loadtest
       - update-benchmarks
     if: always()
-    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@d9b812f9924a121c6a8276ea2f9e6f5b622cdd4d # v0.10.0
+    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@03559ef555db0eae5d85c3c6347d1530243e7aa7 # v0.13.0
     with:
       success: >-
         ${{

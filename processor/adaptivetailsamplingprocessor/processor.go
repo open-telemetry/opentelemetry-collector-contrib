@@ -653,7 +653,7 @@ func (p *adaptiveTailSamplingProcessor) evalRootSpanCondition(ctx context.Contex
 	if p.rootSpanFastPath {
 		return span.ParentSpanID().IsEmpty()
 	}
-	tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+	tCtx := ottlspan.NewTransformContext(rs, ss, span)
 	ok, err := p.rootSpanCond.Eval(ctx, tCtx)
 	tCtx.Close()
 	if err != nil {

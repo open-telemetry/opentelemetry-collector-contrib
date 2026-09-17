@@ -93,9 +93,13 @@ func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
 // configureLabelNamer configures the LabelNamer based on the translation strategy or legacy configuration
 func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	_, utf8Allowed := getTranslationConfiguration(config)
+	permissiveSanitization := prometheustranslator.DropSanitizationGate.IsEnabled()
 	return otlptranslator.LabelNamer{
-		UTF8Allowed:                 utf8Allowed,
-		PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled(),
+		UTF8Allowed: utf8Allowed,
+		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
+		UnderscoreLabelSanitization: !permissiveSanitization, //nolint:staticcheck
+		PreserveMultipleUnderscores: permissiveSanitization,
 	}
 }
 

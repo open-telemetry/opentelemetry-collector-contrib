@@ -13,19 +13,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type XXH3Arguments[K any] struct {
+type xXH3Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewXXH3Factory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("XXH3", &XXH3Arguments[K]{}, createXXH3Function[K])
+	return ottl.NewFactory("XXH3", &xXH3Arguments[K]{}, createXXH3Function[K])
 }
 
 func createXXH3Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*XXH3Arguments[K])
+	args, ok := oArgs.(*xXH3Arguments[K])
 
 	if !ok {
-		return nil, errors.New("XXH3Factory args must be of type *XXH3Arguments[K]")
+		return nil, errors.New("XXH3Factory args must be of type *xXH3Arguments[K]")
 	}
 
 	return xxh3HashString(args.Target), nil

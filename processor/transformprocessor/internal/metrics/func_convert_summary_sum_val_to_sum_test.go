@@ -130,7 +130,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 			evaluate, err := convertSummarySumValToSum(tt.temporality, tt.monotonicity, tt.suffix)
 			require.NoError(t, err)
 
-			tCtx := ottldatapoint.NewTransformContextPtr(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0), pmetric.NewNumberDataPoint())
+			tCtx := ottldatapoint.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0), pmetric.NewNumberDataPoint())
 			defer tCtx.Close()
 			_, err = evaluate(t.Context(), tCtx)
 			require.NoError(t, err)
