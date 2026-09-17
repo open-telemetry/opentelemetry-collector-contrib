@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -834,6 +835,7 @@ func TestReceiverStorageClientInitializedWhenConfigured(t *testing.T) {
 }
 
 func TestLeaderCallbacksAreRaceFree(t *testing.T) {
+	enableInformerObserver(t)
 	// Race the OnLeading callback against Shutdown. Under `-race`, unsynchronized
 	// access to kr.registry / kr.cancel / kr.stopped would trip the detector.
 	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
@@ -868,7 +870,7 @@ func TestLeaderCallbacksAreRaceFree(t *testing.T) {
 }
 
 func TestCacheSyncTimeoutFailsStart(t *testing.T) {
-	t.Parallel()
+	enableInformerObserver(t)
 
 	// Force every List against pods to fail so the informer cache never syncs.
 	mockClient := newMockDynamicClient()
@@ -898,7 +900,7 @@ func TestCacheSyncTimeoutFailsStart(t *testing.T) {
 }
 
 func TestSharedInformerFactoryDedupesListAndWatch(t *testing.T) {
-	t.Parallel()
+	enableInformerObserver(t)
 
 	mockClient := newMockDynamicClient()
 	mockClient.createPods(
@@ -957,6 +959,7 @@ func TestSharedInformerFactoryDedupesListAndWatch(t *testing.T) {
 }
 
 func TestStoragePersistenceSuppressesReDelivery(t *testing.T) {
+	enableInformerObserver(t)
 	// Seed the fake apiserver with two objects at RV 10 and 20.
 	mockClient := newMockDynamicClient()
 	mockClient.createPods(
@@ -996,6 +999,15 @@ func TestStoragePersistenceSuppressesReDelivery(t *testing.T) {
 	// A newer object (RV 30) is above the checkpoint → delivered.
 	mockClient.createPods(generatePod("pod3", "default", nil, "30"))
 	require.Eventually(t, func() bool { return consumer.Count() == 1 }, time.Second, 10*time.Millisecond)
+}
+
+// enableInformerObserver flips the receiver.k8s_objects.useInformerObserver gate
+// on for the duration of the test.
+func enableInformerObserver(t *testing.T) {
+	t.Helper()
+	id := metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.ID()
+	require.NoError(t, featuregate.GlobalRegistry().Set(id, true))
+	t.Cleanup(func() { _ = featuregate.GlobalRegistry().Set(id, false) })
 }
 
 // primeStorage seeds a resourceVersion checkpoint for (namespace, resource)
