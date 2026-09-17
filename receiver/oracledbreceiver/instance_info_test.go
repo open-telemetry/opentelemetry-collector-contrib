@@ -27,6 +27,11 @@ func versionRow(v string) []metricRow {
 	return []metricRow{{"VERSION": v}}
 }
 
+// versionEditionRow builds the fakeDbClient response for the v$instance version+edition query.
+func versionEditionRow(v, edition string) []metricRow {
+	return []metricRow{{"VERSION": v, colEdition: edition}}
+}
+
 // cdbRow builds the fakeDbClient response for the v$database CDB/role/open_mode query.
 func cdbRow(cdb, role, openMode string) []metricRow {
 	return []metricRow{{"CDB": cdb, "DATABASE_ROLE": role, "OPEN_MODE": openMode}}
@@ -107,6 +112,20 @@ func TestMajorVersion(t *testing.T) {
 }
 
 // -- detectInstanceInfo tests -------------------------------------------------
+
+func TestDetectInstanceInfo_EditionPopulated(t *testing.T) {
+	// Edition is read from the same row as version; verify it is populated.
+	info := detectInstanceInfo(t.Context(),
+		rowClient(versionEditionRow("19.0.0.0.0", "EE")),
+		rowClient(cdbRow("NO", "PRIMARY", "READ WRITE")),
+		noopClient(t), noopClient(t),
+		emptyClient(), emptyClient(), emptyClient(),
+		zap.NewNop(),
+	)
+
+	assert.Equal(t, "19.0.0.0.0", info.dbVersion)
+	assert.Equal(t, "EE", info.dbEdition)
+}
 
 func TestDetectInstanceInfo_VersionQueryFails(t *testing.T) {
 	// Version query fails: all fields stay at zero, detection stops.
@@ -616,6 +635,7 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 		serverPort:           1521,
 		instanceInfo: oracleInstanceInfo{
 			dbVersion:    "19.0.0.0.0",
+			dbEdition:    "EE",
 			databaseRole: "PRIMARY",
 			openMode:     "READ WRITE",
 			hostingType:  hostingTypeSelfManaged,
@@ -640,6 +660,10 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, hostingTypeSelfManaged, hostingType.Str())
 
+	edition, ok := res.Attributes().Get("db.system.edition")
+	require.True(t, ok)
+	assert.Equal(t, "EE", edition.Str())
+
 	serverAddress, ok := res.Attributes().Get("server.address")
 	require.True(t, ok)
 	assert.Equal(t, "myhost", serverAddress.Str())
@@ -658,7 +682,7 @@ func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
 
 	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
 
-	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type"} {
+	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type", "db.system.edition"} {
 		_, exists := res.Attributes().Get(attr)
 		assert.False(t, exists, "attribute %q should not be emitted when empty", attr)
 	}
