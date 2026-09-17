@@ -9,6 +9,8 @@ import (
 	"path"
 	"strconv"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
@@ -48,9 +50,9 @@ var priorityToSeverityText = map[string]string{
 // https://opentelemetry.io/docs/specs/otel/logs/data-model-appendix/#rfc5424-syslog
 // They are not (yet) part of the semantic conventions registry.
 var attributeMapping = map[string]string{
-	"CODE_FILE":       "code.file.path",
-	"CODE_FUNC":       "code.function.name",
-	"CODE_LINE":       "code.line.number",
+	"CODE_FILE":       string(semconv.CodeFilePathKey),
+	"CODE_FUNC":       string(semconv.CodeFunctionNameKey),
+	"CODE_LINE":       string(semconv.CodeLineNumberKey),
 	"SYSLOG_FACILITY": "syslog.facility.code",
 	// SYSLOG_IDENTIFIER is documented as the equivalent of the RFC5424 APP-NAME,
 	// which the OTel logs data model maps to syslog.identifier.
@@ -68,18 +70,18 @@ var attributeMapping = map[string]string{
 // _COMM is deliberately not mapped here: it is the value of /proc/[pid]/comm, which does
 // not reliably match process.executable.name. It is kept as journald._COMM instead
 var resourceMapping = map[string]string{
-	"_HOSTNAME": "host.name",
-	"_PID":      "process.pid",
-	"_EXE":      "process.executable.path",
-	"_CMDLINE":  "process.command_line",
+	"_HOSTNAME": string(semconv.HostNameKey),
+	"_PID":      string(semconv.ProcessPIDKey),
+	"_EXE":      string(semconv.ProcessExecutablePathKey),
+	"_CMDLINE":  string(semconv.ProcessCommandLineKey),
 }
 
 // numericFields are OTel attribute/resource keys whose journald string values should be converted to int64.
 var numericFields = map[string]bool{
-	"code.line.number":     true,
-	"syslog.facility.code": true,
-	"syslog.pid":           true,
-	"process.pid":          true,
+	string(semconv.CodeLineNumberKey): true,
+	"syslog.facility.code":            true,
+	"syslog.pid":                      true,
+	string(semconv.ProcessPIDKey):     true,
 }
 
 // convertFieldValue converts a journald field value to the type required by the OTel
@@ -158,7 +160,7 @@ func mapJournalEntryAttributes(e *entry.Entry, body map[string]any) {
 
 	// process.executable.name is the base name of the target of /proc/[pid]/exe, which
 	// journald reports as _EXE.
-	if exe, ok := e.Resource["process.executable.path"].(string); ok && exe != "" {
-		e.Resource["process.executable.name"] = path.Base(exe)
+	if exe, ok := e.Resource[string(semconv.ProcessExecutablePathKey)].(string); ok && exe != "" {
+		e.Resource[string(semconv.ProcessExecutableNameKey)] = path.Base(exe)
 	}
 }

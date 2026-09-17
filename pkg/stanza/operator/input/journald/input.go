@@ -34,7 +34,7 @@ type Input struct {
 
 	persister                    operator.Persister
 	convertMessageBytes          bool
-	ConvertToSemanticConventions bool
+	convertToSemanticConventions bool
 	cancel                       context.CancelFunc
 	wg                           sync.WaitGroup
 	errChan                      chan error
@@ -257,7 +257,7 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 		return nil, "", fmt.Errorf("failed to create entry: %w", err)
 	}
 
-	if operator.ConvertToSemanticConventions {
+	if operator.convertToSemanticConventions {
 		mapJournalEntryAttributes(e, body)
 	}
 

@@ -52,7 +52,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		newCmd:                       newCmdFunc,
 		convertMessageBytes:          c.ConvertMessageBytes,
 		includeLogRecordOriginal:     c.IncludeLogRecordOriginal,
-		ConvertToSemanticConventions: c.ConvertToSemanticConventions,
+		convertToSemanticConventions: c.ConvertToSemanticConventions,
 	}, nil
 }
 
