@@ -34,8 +34,8 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 func keepKeys[K any](target ottl.PMapGetSetter[K], keys *ottl.SliceGetter[K, ottl.StringGetter[K]]) ottl.ExprFunc[K] {
 	// Pre-build the key set when the slice length and all values are known at parse time
 	var literalKeySet map[string]struct{}
-	length, lengthKnown := keys.Len()
-	if lengthKnown {
+
+	if length, known := keys.Len(); known {
 		if literalValues, allLiteral := ottl.GetLiteralValues[K, string](keys); allLiteral {
 			literalKeySet = make(map[string]struct{}, length)
 			for _, key := range literalValues {
