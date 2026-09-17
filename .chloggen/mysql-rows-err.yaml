@@ -1,0 +1,9 @@
+﻿change_type: bug_fix
+component: receiver/mysql
+note: Check `rows.Err()` after iterating query results so a failed scrape is not reported as successful
+issues: [51125]
+subtext: |
+  `sql.Rows.Next()` returns false both at the end of a result set and when iteration fails, so a
+  dropped connection mid-scrape caused the affected methods to return partial data with a nil
+  error. Each query method now checks `rows.Err()` and returns the underlying error.
+change_logs: [user]
