@@ -11,19 +11,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type FnvArguments[K any] struct {
+type fnvArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewFnvFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("FNV", &FnvArguments[K]{}, createFnvFunction[K])
+	return ottl.NewFactory("FNV", &fnvArguments[K]{}, createFnvFunction[K])
 }
 
 func createFnvFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*FnvArguments[K])
+	args, ok := oArgs.(*fnvArguments[K])
 
 	if !ok {
-		return nil, errors.New("FNVFactory args must be of type *FnvArguments[K]")
+		return nil, errors.New("FNVFactory args must be of type *fnvArguments[K]")
 	}
 
 	return FNVHashString(args.Target)

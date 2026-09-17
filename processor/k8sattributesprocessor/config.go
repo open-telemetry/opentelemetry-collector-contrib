@@ -140,6 +140,12 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	for _, pod := range cfg.Exclude.Pods {
+		if _, err := regexp.Compile(pod.Name); err != nil {
+			return fmt.Errorf("invalid pod exclude name %q: %w", pod.Name, err)
+		}
+	}
+
 	return nil
 }
 
@@ -204,11 +210,6 @@ type ExtractConfig struct {
 	// OtelAnnotations extracts all pod annotations with the prefix "resource.opentelemetry.io" as resource attributes
 	// E.g. "resource.opentelemetry.io/foo" becomes "foo"
 	OtelAnnotations bool `mapstructure:"otel_annotations"`
-
-	// DeploymentNameFromReplicaSet allows extracting deployment name from ReplicaSet name by trimming pod template hash.
-	//
-	// Deprecated: This option now defaults to true and will be removed in future releases.
-	DeploymentNameFromReplicaSet bool `mapstructure:"deployment_name_from_replicaset"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)

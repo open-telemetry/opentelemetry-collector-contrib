@@ -46,6 +46,17 @@ Collecting query samples requires the `performance_schema` to be enabled:
 GRANT SELECT ON performance_schema.* TO <your-user>@'%';
 ```
 
+Collecting disabled-by-default InnoDB redo-log LSN and checkpoint-age metrics requires
+MySQL 8.0.11 or later. For MySQL 8.0.11 through 8.0.29, grant the receiver user
+`SELECT` on `performance_schema` and the `BACKUP_ADMIN` dynamic privilege:
+
+```sql
+GRANT SELECT ON performance_schema.* TO '<your-user>'@'%';
+GRANT BACKUP_ADMIN ON *.* TO '<your-user>'@'%';
+```
+
+MySQL 8.0.30 and later versions do not require `BACKUP_ADMIN` for these metrics.
+
 ## Configuration
 
 
@@ -56,7 +67,26 @@ The following settings are optional:
   - `insecure_skip_verify`: (default = `false`) Set this to `true` to enable TLS but not verify the certificate.
   - `server_name_override`: This sets the ServerName in the TLSConfig.  
 - `username`: (default = `root`)
-- `password`: The password to the username.
+- `password`: A static MySQL password.
+- `db_auth`: Component ID of a `dbauth` provider extension (for example `aws_iam_db_auth`). Mutually exclusive with `password`. Requires TLS (`tls.insecure: false`). RDS MySQL/Aurora MySQL only. Cleartext password auth (`mysql_clear_password`) is enabled automatically for IAM tokens over TLS.
+
+```yaml
+extensions:
+  aws_iam_db_auth:
+    region: us-east-2
+
+receivers:
+  mysql:
+    endpoint: my-database.example.com:3306
+    username: monitor
+    db_auth: aws_iam_db_auth
+    tls:
+      insecure: false
+
+service:
+  extensions: [aws_iam_db_auth]
+```
+
 - `allow_native_passwords`: (default = `true`)
 - `database`: The database name. If not specified, metrics will be collected for all databases.
 

@@ -10,19 +10,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type DayArguments[K any] struct {
+type dayArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
 func NewDayFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Day", &DayArguments[K]{}, createDayFunction[K])
+	return ottl.NewFactory("Day", &dayArguments[K]{}, createDayFunction[K])
 }
 
 func createDayFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*DayArguments[K])
+	args, ok := oArgs.(*dayArguments[K])
 
 	if !ok {
-		return nil, errors.New("DayFactory args must be of type *DayArguments[K]")
+		return nil, errors.New("DayFactory args must be of type *dayArguments[K]")
 	}
 
 	return Day(args.Time)

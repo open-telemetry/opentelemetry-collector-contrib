@@ -235,12 +235,12 @@ func New(
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.mc)
 
 	// Enable the ReplicaSet informer when any of the following applies:
-	//   1) DeploymentName is enabled and DeploymentNameFromReplicaSet flag is false
-	//   2) DeploymentUID is enabled
-	//   3) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
+	//   1) DeploymentUID is enabled
+	//   2) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
 	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
-	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
-		c.Rules.DeploymentUID ||
+	// For DeploymentName only, deployment names are always derived from the ReplicaSet name heuristic,
+	// so no informer is needed.
+	needReplicaSetInformer := c.Rules.DeploymentUID ||
 		c.extractDeploymentLabelsAnnotations() ||
 		c.extractReplicaSetLabelsAnnotations()
 
@@ -1032,7 +1032,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
 					// Attempt to use the ReplicaSet informer when it is running (e.g. DeploymentUID,
-					// deployment_name_from_replicaset: false, or from: deployment label/annotation extraction).
+					// or from: deployment label/annotation extraction).
 					// Otherwise fall back to heuristics using the ReplicaSet name and pod-template-hash label.
 					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						deploymentName = replicaset.Deployment.Name

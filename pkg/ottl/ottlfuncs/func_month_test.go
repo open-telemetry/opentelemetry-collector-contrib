@@ -64,14 +64,14 @@ func Test_MonthFactory(t *testing.T) {
 		factory := NewMonthFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &MonthArguments[any]{}, args)
+		assert.IsType(t, &monthArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewMonthFactory[any]()
 		args := factory.CreateDefaultArguments()
-		monthArgs, ok := args.(*MonthArguments[any])
+		monthArgs, ok := args.(*monthArguments[any])
 		require.True(t, ok)
 		monthArgs.Time = ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,6 +86,22 @@ func Test_MonthFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createMonthFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "MonthFactory args must be of type *MonthArguments[K]")
+		assert.ErrorContains(t, err, "MonthFactory args must be of type *monthArguments[K]")
 	})
+}
+
+func BenchmarkMonth(b *testing.B) {
+	exprFunc, err := Month[any](&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC), nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
