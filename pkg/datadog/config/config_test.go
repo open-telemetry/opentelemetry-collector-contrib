@@ -467,6 +467,17 @@ func TestUnmarshal(t *testing.T) {
 	}
 }
 
+func TestUnmarshalHostnameWhitespace(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+
+	configMap := confmap.NewFromStringMap(map[string]any{
+		"hostname": " my-hostname\n",
+	})
+
+	require.NoError(t, cfg.Unmarshal(configMap))
+	assert.Equal(t, "my-hostname", cfg.Hostname)
+}
+
 // Test that the factory creates the default configuration
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := CreateDefaultConfig()
