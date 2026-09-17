@@ -25,15 +25,15 @@ func createHoursFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 		return nil, errors.New("HoursFactory args must be of type *hoursArguments[K]")
 	}
 
-	return Hours(args.Duration)
+	return hours(args.Duration), nil
 }
 
-func Hours[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
+func hours[K any](duration ottl.DurationGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return d.Hours(), nil
-	}, nil
+	}
 }

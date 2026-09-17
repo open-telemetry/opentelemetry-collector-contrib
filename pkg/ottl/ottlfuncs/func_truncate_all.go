@@ -32,10 +32,10 @@ func createTruncateAllFunction[K any](fCtx ottl.FunctionContext, oArgs ottl.Argu
 		return nil, errors.New("TruncateAllFactory args must be of type *truncateAllArguments[K]")
 	}
 
-	return TruncateAll(args.Target, args.Limit, args.Utf8Safe, args.TruncationMarker, fCtx.Set.Logger)
+	return truncateAll(args.Target, args.Limit, args.Utf8Safe, args.TruncationMarker, fCtx.Set.Logger)
 }
 
-func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64, utf8Safe ottl.Optional[bool], truncationMarker ottl.Optional[string], logger *zap.Logger) (ottl.ExprFunc[K], error) {
+func truncateAll[K any](target ottl.PMapGetSetter[K], limit int64, utf8Safe ottl.Optional[bool], truncationMarker ottl.Optional[string], logger *zap.Logger) (ottl.ExprFunc[K], error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}

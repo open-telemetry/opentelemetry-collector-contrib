@@ -26,10 +26,10 @@ func createTruncateTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argume
 		return nil, errors.New("TimeFactory args must be of type *truncateTimeArguments[K]")
 	}
 
-	return TruncateTime(args.Time, args.Duration)
+	return truncateTime(args.Time, args.Duration), nil
 }
 
-func TruncateTime[K any](inputTime ottl.TimeGetter[K], inputDuration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
+func truncateTime[K any](inputTime ottl.TimeGetter[K], inputDuration ottl.DurationGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
@@ -40,5 +40,5 @@ func TruncateTime[K any](inputTime ottl.TimeGetter[K], inputDuration ottl.Durati
 			return nil, err
 		}
 		return t.Truncate(d), nil
-	}, nil
+	}
 }

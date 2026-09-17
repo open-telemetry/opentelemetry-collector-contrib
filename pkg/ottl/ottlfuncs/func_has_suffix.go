@@ -27,10 +27,10 @@ func createHasSuffixFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("HasSuffixFactory args must be of type *hasSuffixArguments[K]")
 	}
 
-	return HasSuffix(args.Target, args.Suffix), nil
+	return hasSuffix(args.Target, args.Suffix), nil
 }
 
-func HasSuffix[K any](target, suffix ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func hasSuffix[K any](target, suffix ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {

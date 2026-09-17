@@ -192,8 +192,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest =
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest => ../../pkg/semconvtest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden

@@ -177,7 +177,6 @@ body:
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
       - pkg/pdatatest
-      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
       - pkg/semconvtest

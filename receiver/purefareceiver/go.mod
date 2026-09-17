@@ -179,7 +179,6 @@ require (
 	github.com/oklog/ulid/v2 v2.1.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.161.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.161.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -230,6 +229,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/processor v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.161.1-0.20260916171901-3e8af656214a // indirect
@@ -294,8 +294,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../../exporter/prometheusremotewriteexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 retract (
 	v0.76.2
