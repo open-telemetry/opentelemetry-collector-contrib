@@ -321,11 +321,11 @@ func TestMetricsDataPoint_HidePIIValues_SplitStats(t *testing.T) {
 	// Create mock label value for split_start
 	splitStartMetadata, _ := NewLabelValueMetadata("split_start", "splitStartColumnName", StringValueType, true)
 	labelValue1 := stringLabelValue{metadata: splitStartMetadata, value: "test_db_user_123"}
-	
+
 	// Create mock label value for split_limit
 	splitLimitMetadata, _ := NewLabelValueMetadata("split_limit", "splitLimitColumnName", StringValueType, true)
 	labelValue2 := stringLabelValue{metadata: splitLimitMetadata, value: "test_db_user_999"}
-	
+
 	labelValues := []LabelValue{labelValue1, labelValue2}
 	timestamp := time.Now().UTC()
 	metricsDataPoint := &MetricsDataPoint{
