@@ -236,7 +236,7 @@ func validateIncludeCollection[T any](itemName string, expected, actual []T, mat
 }
 
 func (r resourceAssertion) Matches(actual resourceAssertion) error {
-	if err := compareAttributes(r.Attributes, actual.Attributes); err != nil {
+	if err := compareAttributes(r.Attributes, actual.Attributes, r.AttributeMode); err != nil {
 		return fmt.Errorf("attributes: %w", err)
 	}
 	return compareResource(r, actual)
@@ -253,7 +253,7 @@ func (s scopeAssertion) Matches(actual scopeAssertion) error {
 }
 
 func (d datapointAssertion) Matches(actual datapointAssertion) error {
-	if err := compareAttributes(d.Attributes, actual.Attributes); err != nil {
+	if err := compareAttributes(d.Attributes, actual.Attributes, d.AttributeMode); err != nil {
 		return err
 	}
 	return compareDatapointValues(d, actual)

@@ -1065,7 +1065,7 @@ func TestSpanIngestTickCleansUpPendingWithoutPolicyEvaluation(t *testing.T) {
 	require.Equal(t, 1, mpe.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount())
 	require.Eventually(t, func() bool {
-		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
+		return len(shard0(p).idToTrace) == 0
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -1199,7 +1199,7 @@ func TestSpanIngestChildFirstThenRootPendingCleanup(t *testing.T) {
 	require.Equal(t, 2, mpe.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount())
 	require.Eventually(t, func() bool {
-		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
+		return len(shard0(p).idToTrace) == 0
 	}, time.Second, 10*time.Millisecond)
 }
 

@@ -15,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_GetSliceValue_Valid(t *testing.T) {
@@ -24,7 +23,7 @@ func Test_GetSliceValue_Valid(t *testing.T) {
 
 	value, err := ctxutil.GetSliceValue[any](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{
-			I: ottltest.Intp(0),
+			I: new(int64(0)),
 		},
 	})
 
@@ -50,7 +49,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			name: "first key not an integer",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("key"),
+					S: new("key"),
 					G: getSetter,
 				},
 			},
@@ -60,7 +59,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			name: "index too large",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
+					I: new(int64(1)),
 					G: getSetter,
 				},
 			},
@@ -70,7 +69,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			name: "index too small",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
+					I: new(int64(-1)),
 					G: getSetter,
 				},
 			},
@@ -80,11 +79,11 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			name: "invalid type",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 			},
@@ -113,7 +112,7 @@ func Test_SetSliceValue_Valid(t *testing.T) {
 	s.AppendEmpty().SetStr("val")
 
 	err := ctxutil.SetSliceValue[any](t.Context(), nil, s, []ottl.Key[any]{
-		&pathtest.Key[any]{I: ottltest.Intp(0)},
+		&pathtest.Key[any]{I: new(int64(0))},
 	}, "value")
 	require.NoError(t, err)
 	assert.Equal(t, "value", s.At(0).AsRaw())
@@ -137,7 +136,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			name: "first key not an integer",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("key"),
+					S: new("key"),
 					G: getSetter,
 				},
 			},
@@ -147,7 +146,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			name: "index too large",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
+					I: new(int64(1)),
 					G: getSetter,
 				},
 			},
@@ -157,7 +156,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			name: "index too small",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
+					I: new(int64(-1)),
 					G: getSetter,
 				},
 			},
@@ -167,11 +166,11 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			name: "invalid type",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 			},
@@ -201,7 +200,7 @@ func Test_GetCommonTypedSliceValue_Valid(t *testing.T) {
 
 	value, err := ctxutil.GetCommonTypedSliceValue[any, string](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{
-			I: ottltest.Intp(1),
+			I: new(int64(1)),
 		},
 	})
 
@@ -227,7 +226,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "first key not an integer",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("key"),
+					S: new("key"),
 					G: getSetter,
 				},
 			},
@@ -237,7 +236,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "index too large",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
+					I: new(int64(1)),
 					G: getSetter,
 				},
 			},
@@ -247,7 +246,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "index too small",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
+					I: new(int64(-1)),
 					G: getSetter,
 				},
 			},
@@ -257,11 +256,11 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "invalid key type",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 			},
@@ -290,7 +289,7 @@ func Test_SetCommonTypedSliceValue_Valid(t *testing.T) {
 	s.Append("1", "2", "3")
 
 	err := ctxutil.SetCommonTypedSliceValue[any, string](t.Context(), nil, s, []ottl.Key[any]{
-		&pathtest.Key[any]{I: ottltest.Intp(1)},
+		&pathtest.Key[any]{I: new(int64(1))},
 	}, "two")
 	require.NoError(t, err)
 	assert.Equal(t, "two", s.At(1))
@@ -315,7 +314,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "first key not an integer",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("key"),
+					S: new("key"),
 					G: getSetter,
 				},
 			},
@@ -325,7 +324,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "index too large",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
+					I: new(int64(1)),
 					G: getSetter,
 				},
 			},
@@ -335,7 +334,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "index too small",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
+					I: new(int64(-1)),
 					G: getSetter,
 				},
 			},
@@ -345,11 +344,11 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "invalid key type",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 			},
@@ -359,7 +358,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 			name: "invalid value type",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 				},
 			},
 			val: 1,
@@ -473,7 +472,7 @@ func Test_SetCommonIntSliceValue_Valid(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("from %T", val), func(t *testing.T) {
 			err := ctxutil.SetCommonIntSliceValue[any, int32](t.Context(), nil, s, []ottl.Key[any]{
-				&pathtest.Key[any]{I: ottltest.Intp(1)},
+				&pathtest.Key[any]{I: new(int64(1))},
 			}, val)
 			require.NoError(t, err)
 			assert.Equal(t, int32(1), s.At(1))
@@ -500,7 +499,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 			name: "first key not an integer",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("key"),
+					S: new("key"),
 					G: getSetter,
 				},
 			},
@@ -510,7 +509,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 			name: "index too large",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
+					I: new(int64(1)),
 					G: getSetter,
 				},
 			},
@@ -520,7 +519,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 			name: "index too small",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
+					I: new(int64(-1)),
 					G: getSetter,
 				},
 			},
@@ -530,11 +529,11 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 			name: "invalid key type",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 			},
@@ -544,7 +543,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 			name: "invalid value type",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 				},
 			},
 			val: "one",

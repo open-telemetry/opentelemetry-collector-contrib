@@ -12,19 +12,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type MD5Arguments[K any] struct {
+type mD5Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewMD5Factory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("MD5", &MD5Arguments[K]{}, createMD5Function[K])
+	return ottl.NewFactory("MD5", &mD5Arguments[K]{}, createMD5Function[K])
 }
 
 func createMD5Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*MD5Arguments[K])
+	args, ok := oArgs.(*mD5Arguments[K])
 
 	if !ok {
-		return nil, errors.New("MD5Factory args must be of type *MD5Arguments[K]")
+		return nil, errors.New("MD5Factory args must be of type *mD5Arguments[K]")
 	}
 
 	return MD5HashString(args.Target)

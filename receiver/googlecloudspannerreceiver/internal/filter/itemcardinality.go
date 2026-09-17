@@ -58,7 +58,7 @@ func NewItemCardinalityFilter(metricName string, totalLimit, limitByTimestamp in
 	itemActivityPeriod time.Duration, logger *zap.Logger,
 ) (ItemFilter, error) {
 	if limitByTimestamp > totalLimit {
-		return nil, fmt.Errorf("total limit %q is lower or equal to limit by timestamp %q", totalLimit, limitByTimestamp)
+		return nil, fmt.Errorf("total limit %d is lower or equal to limit by timestamp %d", totalLimit, limitByTimestamp)
 	}
 
 	cache := ttlcache.New[string, struct{}](

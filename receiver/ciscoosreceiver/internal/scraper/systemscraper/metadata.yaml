@@ -48,5 +48,3 @@ metrics:
       value_type: double
 
 # TODO: Update the scraper to support test mode or mock SSH connections
-tests:
-  skip_lifecycle: true

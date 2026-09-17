@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"gopkg.in/yaml.v3"
 )
 
 func TestAssertMetrics_RoundTrip(t *testing.T) {
@@ -223,6 +224,7 @@ func TestCompareAttributes_RegexMatcherRequiresFullStringMatch(t *testing.T) {
 	err := compareAttributes(
 		map[string]any{"host.name/regex": "worker-[0-9]+"},
 		map[string]any{"host.name": "worker-42-extra"},
+		attributeModeExact,
 	)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), `attribute "host.name" value "worker-42-extra" does not match regex "worker-[0-9]+"`)
@@ -233,6 +235,7 @@ func TestCompareAttributes_RegexMatcherSchemaErrors(t *testing.T) {
 		err := compareAttributes(
 			map[string]any{"host.name/regex": true},
 			map[string]any{"host.name": "worker-42"},
+			attributeModeExact,
 		)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), `attribute "host.name"/regex must be a string pattern`)
@@ -242,6 +245,7 @@ func TestCompareAttributes_RegexMatcherSchemaErrors(t *testing.T) {
 		err := compareAttributes(
 			map[string]any{"host.name/regex": "worker-[0-9]+"},
 			map[string]any{"host.name": int64(42)},
+			attributeModeExact,
 		)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), `attribute "host.name" must be a string to match /regex`)
@@ -251,6 +255,7 @@ func TestCompareAttributes_RegexMatcherSchemaErrors(t *testing.T) {
 		err := compareAttributes(
 			map[string]any{"host.name/regex": "["},
 			map[string]any{"host.name": "worker-42"},
+			attributeModeExact,
 		)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), `attribute "host.name"/regex has invalid pattern "["`)
@@ -538,6 +543,94 @@ func TestAssertMetrics_SingleEmptyDatapointShorthand(t *testing.T) {
 	require.NoError(t, AssertMetrics(path, m))
 }
 
+func TestAssertMetrics_DoublePrecisionOperator(t *testing.T) {
+	m := buildSampleMetrics()
+	gauge := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	dp := gauge.Gauge().DataPoints().At(0)
+	dp.SetDoubleValue(1.23456)
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+              datapoints:
+                - attributes: {}
+                  double_value/precision3: 1.235
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Drift below the asserted precision is tolerated.
+	dp.SetDoubleValue(1.23549)
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Drift at the asserted precision is not.
+	dp.SetDoubleValue(1.24)
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "double_value mismatch at 3 decimal places")
+}
+
+func TestDatapointAssertion_PrecisionOperatorSchemaErrors(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		doc  string
+		want string
+	}{
+		{
+			name: "count is not a number",
+			doc:  "double_value/precisionX: 1.0",
+			want: "must end in a decimal place count",
+		},
+		{
+			name: "count is negative",
+			doc:  "double_value/precision-1: 1.0",
+			want: "out of range",
+		},
+		{
+			name: "count exceeds float64 precision",
+			doc:  "double_value/precision99: 1.0",
+			want: "out of range",
+		},
+		{
+			name: "conflicts with an exact double_value",
+			doc:  "double_value: 1.0\ndouble_value/precision2: 1.0",
+			want: "cannot specify both",
+		},
+		{
+			name: "more than one precision operator",
+			doc:  "double_value/precision2: 1.0\ndouble_value/precision3: 1.0",
+			want: "more than one precision operator",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var dp datapointAssertion
+			err := yaml.Unmarshal([]byte(tc.doc), &dp)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.want)
+		})
+	}
+}
+
 func buildSampleMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
@@ -611,4 +704,167 @@ func appendDatapointWithKindAndID(dps pmetric.NumberDataPointSlice, id, kind str
 	dp.Attributes().PutStr("id", id)
 	dp.Attributes().PutStr("kind", kind)
 	dp.SetIntValue(1)
+}
+
+func TestAssertMetrics_AttributeIncludeResourceAttributes(t *testing.T) {
+	m := buildSampleMetrics()
+	// Add an extra resource attribute that the assertion does not mention.
+	rm := m.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutStr("extra.env", "staging")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes/include:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_AttributeIncludeResourceAttributesMissingKey(t *testing.T) {
+	m := buildSampleMetrics()
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	// Assert an attribute that does not exist on the resource.
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes/include:
+        service.name: svc
+        missing.key: required
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing expected resource")
+}
+
+func TestAssertMetrics_AttributeIncludeDatapointAttributes(t *testing.T) {
+	m := buildSampleMetrics()
+	// Add extra datapoint attributes that the assertion does not mention.
+	rm := m.ResourceMetrics().At(0)
+	dps := rm.ScopeMetrics().At(0).Metrics().At(1).Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dps.At(i).Attributes().PutStr("region", "us-east-1")
+	}
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes/include:
+                    method: GET
+                - attributes/include:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_AttributeIncludeWithExists(t *testing.T) {
+	m := buildSampleMetrics()
+	rm := m.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutStr("service.instance.id", "generated-abc")
+	rm.Resource().Attributes().PutStr("extra.env", "staging")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes/include:
+        service.name: svc
+        service.instance.id/exists: true
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_AttributeIncludeBothKeysIsError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      attributes/include:
+        service.name: svc
+      scopes:
+        - name: scope
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+
+	err := AssertMetrics(path, buildSampleMetrics())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot specify both")
 }

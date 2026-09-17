@@ -252,7 +252,7 @@ Number of user tables in a database.
 
 ### postgresql.table.size
 
-Disk space used by a table.
+Total disk space used by a table, including its indexes and TOAST data.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -347,7 +347,7 @@ Number of disk blocks read in this database.
 
 ### postgresql.database.locks
 
-The number of database locks.
+The number of database locks, including those held by the receiver's own connections.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -357,7 +357,7 @@ The number of database locks.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str | Recommended | - |
+| relation | The name of the relation (table, index, view, etc.) targeted by the lock, or empty if the target is not a relation or part of a relation. | Any Str | Recommended | - |
 | mode | Name of the lock mode held or desired by the process. | Any Str | Recommended | - |
 | lock_type | Type of the lockable object. | Any Str | Recommended | - |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
@@ -683,7 +683,7 @@ query sample
 | postgresql.wait_event | Wait event name if backend is currently waiting, otherwise NULL. | Any Str | - |
 | postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. | Any Str | - |
 | postgresql.query_id | Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed. | Any Str | - |
-| postgresql.total_exec_time | Total time spent executing the statement, in delta milliseconds. | Any Double | - |
+| postgresql.total_exec_time | Total time spent executing the statement, in delta seconds. | Any Double | - |
 | postgresql.blocking.pids | Array of PIDs of sessions blocking this session (from pg_blocking_pids). Empty array when not blocked. | Any Str | - |
 | postgresql.blocking.start_time | UTC timestamp (RFC3339) when the current lock wait began, derived from pg_locks.waitstart. Empty string when not blocked. | Any Str | - |
 | postgresql.blocking.wait_duration | Whole seconds this session has been waiting for a lock, measured from pg_locks.waitstart. 0 when not blocked. | Any Int | - |
@@ -713,8 +713,8 @@ top query
 | postgresql.temp_blks_written | Total number of temp blocks written by the statement, reported in delta value. | Any Int | - |
 | postgresql.queryid | Hash code to identify identical normalized queries. | Any Str | - |
 | postgresql.rolname | The name of the PostgreSQL role that executed the query. | Any Str | - |
-| postgresql.total_exec_time | Total time spent executing the statement, in delta milliseconds. | Any Double | - |
-| postgresql.total_plan_time | Total time spent planning the statement, in delta milliseconds. | Any Double | - |
+| postgresql.total_exec_time | Total time spent executing the statement, in delta seconds. | Any Double | - |
+| postgresql.total_plan_time | Total time spent planning the statement, in delta seconds. | Any Double | - |
 | postgresql.query_plan | The execution plan used by PostgreSQL for the query. | Any Str | - |
 
 ## Resource Attributes
@@ -725,7 +725,7 @@ top query
 | postgresql.index.name | The name of the index on a table. | Any Str | true | - | - |
 | postgresql.schema.name | The schema name. | Any Str | true | - | - |
 | postgresql.table.name | The table name. | Any Str | true | - | - |
-| server.address | The address of the PostgreSQL server. | Any Str | true | - | - |
+| server.address | The address of the PostgreSQL server. A loopback endpoint is reported as the name of the machine running the collector, because the server is then co-located with it. With transport `unix` the socket path is reported instead. | Any Str | true | - | - |
 | server.port | The port number of the PostgreSQL server. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the PostgreSQL instance. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:postgresql. | Any Str | false | - | - |
@@ -740,6 +740,6 @@ This component has the following feature gates:
 | `postgresqlreceiver.preciselagmetrics` | beta | Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
 | `receiver.postgresql.connectionPool` | beta | Use of connection pooling | v0.96.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
 | `receiver.postgresql.separateSchemaAttr` | alpha | Moves Schema Names into dedicated Attribute | v0.122.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559) |
-| `receiver.postgresql.useOTelSemconv` | alpha | When enabled, uses a single resource per server with server.address, server.port, and service.instance.id (UUID v5) resource attributes, aligning with OpenTelemetry semantic conventions. When disabled, uses the legacy per-entity resource model with postgresql.database.name, postgresql.table.name, postgresql.index.name, and postgresql.schema.name resource attributes. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347) |
+| `receiver.postgresql.useOTelSemconv` | alpha | When enabled, uses a single resource per server with a service.instance.id (UUID v5) resource attribute, aligning with OpenTelemetry semantic conventions. When disabled, uses the legacy per-entity resource model with postgresql.database.name, postgresql.table.name, postgresql.index.name, and postgresql.schema.name resource attributes. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

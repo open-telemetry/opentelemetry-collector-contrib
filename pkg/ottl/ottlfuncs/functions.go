@@ -11,6 +11,7 @@ import (
 func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 	f := []ottl.Factory[K]{
 		// Editors
+		NewClearFactory[K](),
 		NewDeleteKeyFactory[K](),
 		NewDeleteMatchingKeysFactory[K](),
 		NewKeepMatchingKeysFactory[K](),
@@ -41,7 +42,6 @@ func converters[K any]() []ottl.Factory[K] {
 		// Converters
 		NewAllFactory[K](),
 		NewAnyFactory[K](),
-		NewBase64DecodeFactory[K](),
 		NewBase64EncodeFactory[K](),
 		NewBoolFactory[K](),
 		NewDecodeFactory[K](),
@@ -140,7 +140,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewHexFactory[K](),
 		NewSliceToMapFactory[K](),
 		NewParseSeverityFactory[K](),
-		NewProfileIDFactory[K](),
 		NewParseIntFactory[K](),
 		NewKeysFactory[K](),
 		NewXXH3Factory[K](),
