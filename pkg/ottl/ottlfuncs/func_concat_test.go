@@ -289,14 +289,14 @@ func Test_ConcatFactory(t *testing.T) {
 		factory := NewConcatFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ConcatArguments[any]{}, args)
+		assert.IsType(t, &concatArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Vals", "Delimiter"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewConcatFactory[any]()
 		args := factory.CreateDefaultArguments()
-		concatArgs, ok := args.(*ConcatArguments[any])
+		concatArgs, ok := args.(*concatArguments[any])
 		require.True(t, ok)
 		concatArgs.Vals = *ottl.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, []ottl.StringLikeGetter[any]{
 			&ottl.StandardStringLikeGetter[any]{
@@ -318,7 +318,7 @@ func Test_ConcatFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createConcatFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ConcatFactory args must be of type *ConcatArguments[K]")
+		assert.ErrorContains(t, err, "ConcatFactory args must be of type *concatArguments[K]")
 	})
 }
 

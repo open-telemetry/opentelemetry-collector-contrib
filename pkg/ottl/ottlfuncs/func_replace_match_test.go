@@ -269,14 +269,14 @@ func Test_ReplaceMatchFactory(t *testing.T) {
 		factory := NewReplaceMatchFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ReplaceMatchArguments[any]{}, args)
+		assert.IsType(t, &replaceMatchArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Pattern", "Replacement", "Function", "ReplacementFormat"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewReplaceMatchFactory[any]()
 		args := factory.CreateDefaultArguments()
-		replaceArgs, ok := args.(*ReplaceMatchArguments[any])
+		replaceArgs, ok := args.(*replaceMatchArguments[any])
 		require.True(t, ok)
 		replaceArgs.Target = &ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -304,7 +304,7 @@ func Test_ReplaceMatchFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createReplaceMatchFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ReplaceMatchFactory args must be of type *ReplaceMatchArguments[K]")
+		assert.ErrorContains(t, err, "ReplaceMatchFactory args must be of type *replaceMatchArguments[K]")
 	})
 }
 

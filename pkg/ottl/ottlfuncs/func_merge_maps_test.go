@@ -204,14 +204,14 @@ func Test_MergeMapsFactory(t *testing.T) {
 		factory := NewMergeMapsFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &MergeMapsArguments[any]{}, args)
+		assert.IsType(t, &mergeMapsArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Source", "Strategy"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewMergeMapsFactory[any]()
 		args := factory.CreateDefaultArguments()
-		mergeMapsArgs, ok := args.(*MergeMapsArguments[any])
+		mergeMapsArgs, ok := args.(*mergeMapsArguments[any])
 		require.True(t, ok)
 		mergeMapsArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -232,7 +232,7 @@ func Test_MergeMapsFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createMergeMapsFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "MergeMapsFactory args must be of type *MergeMapsArguments[K]")
+		assert.ErrorContains(t, err, "MergeMapsFactory args must be of type *mergeMapsArguments[K]")
 	})
 }
 

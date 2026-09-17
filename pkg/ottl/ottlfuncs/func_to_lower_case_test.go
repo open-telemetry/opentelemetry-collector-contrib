@@ -110,14 +110,14 @@ func Test_ToLowerCaseFactory(t *testing.T) {
 		factory := NewToLowerCaseFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ToLowerCaseArguments[any]{}, args)
+		assert.IsType(t, &toLowerCaseArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewToLowerCaseFactory[any]()
 		args := factory.CreateDefaultArguments()
-		createToLowerCaseArgs, ok := args.(*ToLowerCaseArguments[any])
+		createToLowerCaseArgs, ok := args.(*toLowerCaseArguments[any])
 		require.True(t, ok)
 		createToLowerCaseArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -132,7 +132,7 @@ func Test_ToLowerCaseFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createToLowerCaseFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ToLowerCaseFactory args must be of type *ToLowerCaseArguments[K]")
+		assert.ErrorContains(t, err, "ToLowerCaseFactory args must be of type *toLowerCaseArguments[K]")
 	})
 }
 

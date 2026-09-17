@@ -15,19 +15,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type MapKeysArguments[K any] struct {
+type mapKeysArguments[K any] struct {
 	Source    ottl.PMapGetter[K]
 	KeyMapper *ottl.LambdaExpression[K]
 }
 
 func NewMapKeysFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("MapKeys", &MapKeysArguments[K]{}, createMapKeysFunction[K])
+	return ottl.NewFactory("MapKeys", &mapKeysArguments[K]{}, createMapKeysFunction[K])
 }
 
 func createMapKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*MapKeysArguments[K])
+	args, ok := oArgs.(*mapKeysArguments[K])
 	if !ok {
-		return nil, errors.New("MapKeysFactory args must be of type *MapKeysArguments[K]")
+		return nil, errors.New("MapKeysFactory args must be of type *mapKeysArguments[K]")
 	}
 	return mapKeys(args.Source, args.KeyMapper)
 }

@@ -90,14 +90,14 @@ func Test_TrimFactory(t *testing.T) {
 		factory := NewTrimFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &TrimArguments[any]{}, args)
+		assert.IsType(t, &trimArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Replacement"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewTrimFactory[any]()
 		args := factory.CreateDefaultArguments()
-		trimArgs, ok := args.(*TrimArguments[any])
+		trimArgs, ok := args.(*trimArguments[any])
 		require.True(t, ok)
 		trimArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -112,7 +112,7 @@ func Test_TrimFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createTrimFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "TrimFactory args must be of type *TrimArguments[K]")
+		assert.ErrorContains(t, err, "TrimFactory args must be of type *trimArguments[K]")
 	})
 }
 
