@@ -58,7 +58,7 @@ func TestDepthCapIsCheckedBeforeMarshal(t *testing.T) {
 // Brace characters inside a string value are content, not structure. A record
 // whose true depth is two and whose one string holds 200 '{' must be accepted,
 // and a record whose true depth exceeds the cap must be refused even when a
-// sibling string holds 400 '}'. A byte scan over the marshalled JSON gets both
+// sibling string holds 400 '}'. A byte scan over the marshaled JSON gets both
 // of these wrong, in opposite directions.
 func TestStringBracesAreNotStructure(t *testing.T) {
 	p := &signingProcessor{}
