@@ -4,14 +4,24 @@
 package internal
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
+	"errors"
 	"fmt"
+	"io"
+	"math"
 	"testing"
 
+	types "github.com/gogo/protobuf/types"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/metadata"
+	"github.com/prometheus/prometheus/model/textparse"
+	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
@@ -22,11 +32,13 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
+	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 const (
-	numSeries = 10000
+	numSeries    = 10000
+	protoType    = "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited"
+	promTextType = "text/plain; version=0.0.4"
 )
 
 var (
@@ -176,13 +188,78 @@ func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScop
 	}
 }
 
+// BenchmarkE2ETransaction benchmarks the entire lifecycle of a transaction (new, Append, Commit)
+// without stopping the timer, providing a fair end-to-end comparison of memory and CPU performance.
+func BenchmarkE2ETransaction(b *testing.B) {
+	b.Run("ClassicMetrics", func(b *testing.B) {
+		benchmarkE2E(b, false, 0)
+	})
+	b.Run("ClassicMetrics/MultiSeries", func(b *testing.B) {
+		benchmarkE2E(b, false, 100)
+	})
+	b.Run("NativeHistogram", func(b *testing.B) {
+		benchmarkE2E(b, true, 0)
+	})
+}
+
+func benchmarkE2E(b *testing.B, useNativeHistograms bool, numFamilies int) {
+	var labelSets []labels.Labels
+	if numFamilies > 0 {
+		labelSets = generateMultiSeriesLabelSets(numSeries, 50, numFamilies)
+	} else {
+		labelSets = generateLabelSets(numSeries, 50)
+	}
+	var histograms []*histogram.Histogram
+	if useNativeHistograms {
+		histograms = generateNativeHistograms(numSeries)
+	}
+	timestamp := int64(1234567890)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		tx := newBenchmarkTransaction(b)
+		if useNativeHistograms {
+			for j := range labelSets {
+				_, err := tx.Append(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
+				assert.NoError(b, err)
+			}
+		} else {
+			for j, ls := range labelSets {
+				_, err := tx.Append(0, ls, 0, timestamp, float64(j), nil, nil, storage.AOptions{})
+				assert.NoError(b, err)
+			}
+		}
+		err := tx.Commit()
+		assert.NoError(b, err)
+	}
+}
+
+func generateMultiSeriesLabelSets(seriesCount, cardinality, numFamilies int) []labels.Labels {
+	result := make([]labels.Labels, seriesCount)
+
+	for i := range seriesCount {
+		lbls := labels.NewBuilder(labels.EmptyLabels())
+		lbls.Set(model.MetricNameLabel, fmt.Sprintf("metric_%d", i%numFamilies))
+
+		for j := range cardinality {
+			lbls.Set(fmt.Sprintf("label_%d", j), fmt.Sprintf("value_%d_%d", i, j))
+		}
+
+		result[i] = lbls.Labels()
+	}
+
+	return result
+}
+
 // newBenchmarkTransaction creates a new transaction configured for benchmarking.
 // It uses a no-op consumer and minimal configuration to isolate transaction performance.
 func newBenchmarkTransaction(b *testing.B) *transaction {
 	b.Helper()
 
 	sink := new(consumertest.MetricsSink)
-	settings := receivertest.NewNopSettings(metadata.Type)
+	settings := receivertest.NewNopSettings(mdata.Type)
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.MustNewID("prometheus"),
 		Transport:              "http",
@@ -227,13 +304,11 @@ func generateLabelSets(seriesCount, cardinality int) []labels.Labels {
 }
 
 // generateNativeHistograms creates native histogram instances for benchmarking.
-// Uses Prometheus's test histogram generator for realistic histogram structures.
+// Uses Prometheus's test histogram generator for realistic native histograms
 func generateNativeHistograms(count int) []*histogram.Histogram {
 	result := make([]*histogram.Histogram, count)
 
 	for i := range count {
-		// Use tsdbutil.GenerateTestHistogram to create realistic native histograms
-		// The parameter controls the histogram ID, which varies the bucket counts slightly
 		result[i] = tsdbutil.GenerateTestHistogram(int64(i))
 	}
 
@@ -241,7 +316,6 @@ func generateNativeHistograms(count int) []*histogram.Histogram {
 }
 
 // createTargetInfoLabels creates labels for a target_info metric.
-// The target_info metric is used to add resource attributes to metrics.
 func createTargetInfoLabels() labels.Labels {
 	return labels.FromMap(map[string]string{
 		model.MetricNameLabel: prometheus.TargetInfoMetricName,
@@ -254,7 +328,6 @@ func createTargetInfoLabels() labels.Labels {
 }
 
 // createScopeInfoLabels creates labels for an otel_scope_info metric.
-// The otel_scope_info metric is used to add scope-level attributes.
 func createScopeInfoLabels() labels.Labels {
 	return labels.FromMap(map[string]string{
 		model.MetricNameLabel:           prometheus.ScopeInfoMetricName,
@@ -283,4 +356,466 @@ func (*mockMetadataStore) SizeMetadata() int {
 
 func (*mockMetadataStore) LengthMetadata() int {
 	return 0
+}
+
+type benchPayload struct {
+	textBytes  []byte
+	protoBytes []byte
+}
+
+// BenchmarkScrapePayload benchmarks the full CPU and memory usage of scraping and committing
+// a 1,000-series metrics payload without network calls using Prometheus Protobuf format
+// (representing grouped wire formats such as Protobuf and OpenMetrics 2.0) as well as
+// Prometheus text format (text/plain; version=0.0.4) for ungrouped multi-line classic histograms.
+func BenchmarkScrapePayload(b *testing.B) {
+	b.Run("Counter", func(b *testing.B) {
+		// 1,000 counters in Protobuf format
+		p := benchPayload{protoBytes: generateProtobufCounterPayload(1000)}
+		runScrapePayloadBenchmark(b, p)
+	})
+	b.Run("Gauge", func(b *testing.B) {
+		// 1,000 gauges in Protobuf format
+		p := benchPayload{protoBytes: generateProtobufGaugePayload(1000)}
+		runScrapePayloadBenchmark(b, p)
+	})
+	b.Run("ClassicHistogram_Proto", func(b *testing.B) {
+		// 100 classic histograms * 10 series (8 buckets + sum + count) = 1,000 series equivalent,
+		// already grouped in Protobuf wire format (representative of Protobuf and OpenMetrics 2.0).
+		p := benchPayload{protoBytes: generateProtobufClassicHistogramPayload(100)}
+		runScrapePayloadBenchmark(b, p)
+	})
+	b.Run("ClassicHistogram_Text", func(b *testing.B) {
+		// 100 multi-line classic histograms * 10 lines (8 buckets + sum + count) = 1,000 series lines
+		// in Prometheus text format (text/plain; version=0.0.4).
+		p := benchPayload{textBytes: generatePromTextClassicHistogramPayload(100)}
+		runScrapePayloadBenchmark(b, p)
+	})
+	b.Run("Summary", func(b *testing.B) {
+		// 200 summaries * 5 series (3 quantiles + sum + count) = 1,000 series equivalent in Protobuf format
+		p := benchPayload{protoBytes: generateProtobufSummaryPayload(200)}
+		runScrapePayloadBenchmark(b, p)
+	})
+	b.Run("NativeHistogram", func(b *testing.B) {
+		// 1,000 native histograms in Protobuf format
+		p := benchPayload{protoBytes: generateProtobufNativeHistogramPayload(1000)}
+		runScrapePayloadBenchmark(b, p)
+	})
+	b.Run("MixedPayload", func(b *testing.B) {
+		// 200 Counters + 200 Gauges + 20 ClassicHistograms (200 series) + 40 Summaries (200 series) + 200 NativeHistograms = 1,000 series in Protobuf format
+		var protoBuf bytes.Buffer
+		protoBuf.Write(generateProtobufCounterPayload(200))
+		protoBuf.Write(generateProtobufGaugePayload(200))
+		protoBuf.Write(generateProtobufClassicHistogramPayload(20))
+		protoBuf.Write(generateProtobufSummaryPayload(40))
+		protoBuf.Write(generateProtobufNativeHistogramPayload(200))
+		p := benchPayload{
+			protoBytes: protoBuf.Bytes(),
+		}
+		runScrapePayloadBenchmark(b, p)
+	})
+}
+
+func runScrapePayloadBenchmark(b *testing.B, payload benchPayload) {
+	settings := receivertest.NewNopSettings(mdata.Type)
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("prometheus"),
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		b.Fatalf("Failed to create ObsReport: %v", err)
+	}
+	fallbackExemplarLabels := labels.FromStrings("trace_id", "0102030405060708090a0b0c0d0e0f10", "span_id", "0102030405060708")
+	symbolTable := labels.NewSymbolTable()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		metaMap := make(testMetadataStore)
+		ctx := scrape.ContextWithMetricMetadataStore(benchCtx, metaMap)
+		tx := newTransaction(
+			ctx,
+			consumertest.NewNop(),
+			labels.EmptyLabels(),
+			settings,
+			obsrecv,
+			false,
+			true,
+		)
+		tx.mc = metaMap
+
+		if len(payload.textBytes) > 0 {
+			parseAndAppend(b, tx, metaMap, payload.textBytes, promTextType, symbolTable, fallbackExemplarLabels)
+		}
+		if len(payload.protoBytes) > 0 {
+			parseAndAppend(b, tx, metaMap, payload.protoBytes, protoType, symbolTable, fallbackExemplarLabels)
+		}
+		if err := tx.Commit(); err != nil {
+			b.Fatalf("Commit failed: %v", err)
+		}
+	}
+}
+
+func parseAndAppend(
+	b *testing.B,
+	tx *transaction,
+	metaMap testMetadataStore,
+	data []byte,
+	contentType string,
+	st *labels.SymbolTable,
+	fallbackExemplarLabels labels.Labels,
+) {
+	p, err := textparse.New(data, contentType, st, textparse.ParserOptions{
+		ConvertClassicHistogramsToNHCB: false,
+		OpenMetricsSkipSTSeries:        false,
+	})
+	if err != nil && p == nil {
+		b.Fatalf("Failed to create parser: %v", err)
+	}
+	var lset labels.Labels
+	var currMFName string
+	var currMeta metadata.Metadata
+	exs := make([]exemplar.Exemplar, 0, 8)
+	var ex exemplar.Exemplar
+
+	for {
+		et, err := p.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			b.Fatalf("Parse error: %v", err)
+		}
+		switch et {
+		case textparse.EntryType:
+			mName, mType := p.Type()
+			currMFName = string(mName)
+			currMeta.Type = mType
+			md := scrape.MetricMetadata{
+				MetricFamily: currMFName,
+				Type:         mType,
+				Help:         currMeta.Help,
+				Unit:         currMeta.Unit,
+			}
+			metaMap[currMFName] = md
+			switch mType {
+			case model.MetricTypeCounter:
+				metaMap[currMFName+"_total"] = md
+			case model.MetricTypeHistogram:
+				metaMap[currMFName+"_bucket"] = md
+				metaMap[currMFName+"_sum"] = md
+				metaMap[currMFName+"_count"] = md
+			case model.MetricTypeSummary:
+				metaMap[currMFName+"_sum"] = md
+				metaMap[currMFName+"_count"] = md
+			}
+		case textparse.EntryHelp:
+			mName, mHelp := p.Help()
+			currMFName = string(mName)
+			currMeta.Help = string(mHelp)
+			md := metaMap[currMFName]
+			md.MetricFamily = currMFName
+			md.Help = currMeta.Help
+			metaMap[currMFName] = md
+		case textparse.EntryUnit:
+			mName, mUnit := p.Unit()
+			currMFName = string(mName)
+			currMeta.Unit = string(mUnit)
+			md := metaMap[currMFName]
+			md.MetricFamily = currMFName
+			md.Unit = currMeta.Unit
+			metaMap[currMFName] = md
+		case textparse.EntrySeries:
+			_, tsPtr, val := p.Series()
+			p.Labels(&lset)
+			ts := int64(1700000000000)
+			if tsPtr != nil {
+				ts = *tsPtr
+			}
+			exs = exs[:0]
+			for p.Exemplar(&ex) {
+				exs = append(exs, ex)
+			}
+			if len(exs) == 0 {
+				exs = append(exs, exemplar.Exemplar{
+					Labels: fallbackExemplarLabels,
+					Value:  val,
+					Ts:     ts,
+				})
+			}
+			if _, err := tx.Append(0, lset, 0, ts, val, nil, nil, storage.AOptions{
+				MetricFamilyName: currMFName,
+				Metadata:         currMeta,
+				Exemplars:        exs,
+			}); err != nil {
+				b.Fatalf("Append error: %v", err)
+			}
+		case textparse.EntryHistogram:
+			_, tsPtr, h, fh := p.Histogram()
+			p.Labels(&lset)
+			ts := int64(1700000000000)
+			if tsPtr != nil {
+				ts = *tsPtr
+			}
+			exs = exs[:0]
+			for p.Exemplar(&ex) {
+				exs = append(exs, ex)
+			}
+			if len(exs) == 0 {
+				exs = append(exs, exemplar.Exemplar{
+					Labels: fallbackExemplarLabels,
+					Value:  1.0,
+					Ts:     ts,
+				})
+			}
+			if _, err := tx.Append(0, lset, 0, ts, 0, h, fh, storage.AOptions{
+				MetricFamilyName: currMFName,
+				Metadata:         currMeta,
+				Exemplars:        exs,
+			}); err != nil {
+				b.Fatalf("Append histogram error: %v", err)
+			}
+		}
+	}
+}
+
+func writeDelimitedProto(buf *bytes.Buffer, mf *dto.MetricFamily) {
+	data, err := mf.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	var varintBuf [binary.MaxVarintLen32]byte
+	n := binary.PutUvarint(varintBuf[:], uint64(len(data)))
+	buf.Write(varintBuf[:n])
+	buf.Write(data)
+}
+
+func commonProtoLabels(f, i int) []dto.LabelPair {
+	return []dto.LabelPair{
+		{Name: "job", Value: "benchmark"},
+		{Name: "instance", Value: "localhost:8080"},
+		{Name: "service", Value: fmt.Sprintf("svc_%d", f)},
+		{Name: "env", Value: "prod"},
+		{Name: "region", Value: "us-east-1"},
+		{Name: "pod", Value: fmt.Sprintf("pod_%d", i)},
+		{Name: "endpoint", Value: "/api/v1/items"},
+		{Name: "method", Value: "GET"},
+		{Name: "status", Value: "200"},
+	}
+}
+
+func protoExemplar(val float64, tsProto *types.Timestamp) *dto.Exemplar {
+	return &dto.Exemplar{
+		Value:     val,
+		Timestamp: tsProto,
+		Label: []dto.LabelPair{
+			{Name: "trace_id", Value: "0102030405060708090a0b0c0d0e0f10"},
+			{Name: "span_id", Value: "0102030405060708"},
+		},
+	}
+}
+
+func generateProtobufCounterPayload(count int) []byte {
+	var buf bytes.Buffer
+	numFamilies := 10
+	if count < numFamilies {
+		numFamilies = count
+	}
+	perFamily := count / numFamilies
+	tsProto := &types.Timestamp{Seconds: 1700000000, Nanos: 0}
+	for f := 0; f < numFamilies; f++ {
+		mfName := fmt.Sprintf("bench_counter_%d_total", f)
+		mf := &dto.MetricFamily{
+			Name:   mfName,
+			Help:   fmt.Sprintf("Benchmark counter metric family %d", f),
+			Type:   dto.MetricType_COUNTER,
+			Metric: make([]dto.Metric, 0, perFamily),
+		}
+		for i := 0; i < perFamily; i++ {
+			mf.Metric = append(mf.Metric, dto.Metric{
+				Label:       commonProtoLabels(f, i),
+				TimestampMs: 1700000000000,
+				Counter: &dto.Counter{
+					Value:    float64(i + 1),
+					Exemplar: protoExemplar(1.0, tsProto),
+				},
+			})
+		}
+		writeDelimitedProto(&buf, mf)
+	}
+	return buf.Bytes()
+}
+
+func generateProtobufGaugePayload(count int) []byte {
+	var buf bytes.Buffer
+	numFamilies := 10
+	if count < numFamilies {
+		numFamilies = count
+	}
+	perFamily := count / numFamilies
+	for f := 0; f < numFamilies; f++ {
+		mfName := fmt.Sprintf("bench_gauge_%d", f)
+		mf := &dto.MetricFamily{
+			Name:   mfName,
+			Help:   fmt.Sprintf("Benchmark gauge metric family %d", f),
+			Type:   dto.MetricType_GAUGE,
+			Metric: make([]dto.Metric, 0, perFamily),
+		}
+		for i := 0; i < perFamily; i++ {
+			mf.Metric = append(mf.Metric, dto.Metric{
+				Label:       commonProtoLabels(f, i),
+				TimestampMs: 1700000000000,
+				Gauge: &dto.Gauge{
+					Value: float64(i) + 0.5,
+				},
+			})
+		}
+		writeDelimitedProto(&buf, mf)
+	}
+	return buf.Bytes()
+}
+
+func generateProtobufClassicHistogramPayload(numHistograms int) []byte {
+	var buf bytes.Buffer
+	numFamilies := 10
+	if numHistograms < numFamilies {
+		numFamilies = numHistograms
+	}
+	perFamily := numHistograms / numFamilies
+	bounds := []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, math.Inf(1)}
+	tsProto := &types.Timestamp{Seconds: 1700000000, Nanos: 0}
+	for f := 0; f < numFamilies; f++ {
+		mfName := fmt.Sprintf("bench_classic_hist_%d", f)
+		mf := &dto.MetricFamily{
+			Name:   mfName,
+			Help:   fmt.Sprintf("Benchmark classic histogram family %d", f),
+			Type:   dto.MetricType_HISTOGRAM,
+			Metric: make([]dto.Metric, 0, perFamily),
+		}
+		for i := 0; i < perFamily; i++ {
+			buckets := make([]dto.Bucket, len(bounds))
+			for bIdx, ub := range bounds {
+				cumCount := uint64((bIdx + 1) * 10)
+				buckets[bIdx] = dto.Bucket{
+					CumulativeCount: cumCount,
+					UpperBound:      ub,
+					Exemplar:        protoExemplar(0.042, tsProto),
+				}
+			}
+			mf.Metric = append(mf.Metric, dto.Metric{
+				Label:       commonProtoLabels(f, i),
+				TimestampMs: 1700000000000,
+				Histogram: &dto.Histogram{
+					SampleCount: 80,
+					SampleSum:   45.67,
+					Bucket:      buckets,
+				},
+			})
+		}
+		writeDelimitedProto(&buf, mf)
+	}
+	return buf.Bytes()
+}
+
+func generatePromTextClassicHistogramPayload(numHistograms int) []byte {
+	var buf bytes.Buffer
+	numFamilies := 10
+	if numHistograms < numFamilies {
+		numFamilies = numHistograms
+	}
+	perFamily := numHistograms / numFamilies
+	bounds := []string{"0.005", "0.01", "0.025", "0.05", "0.1", "0.25", "0.5", "+Inf"}
+	for f := 0; f < numFamilies; f++ {
+		mf := fmt.Sprintf("bench_classic_hist_%d", f)
+		fmt.Fprintf(&buf, "# TYPE %s histogram\n", mf)
+		fmt.Fprintf(&buf, "# HELP %s Benchmark classic histogram family %d\n", mf, f)
+		for i := 0; i < perFamily; i++ {
+			baseLabels := fmt.Sprintf("job=\"benchmark\",instance=\"localhost:8080\",service=\"svc_%d\",env=\"prod\",region=\"us-east-1\",pod=\"pod_%d\",endpoint=\"/api/v1/items\",method=\"GET\",status=\"200\"", f, i)
+			for bIdx, le := range bounds {
+				cumCount := (bIdx + 1) * 10
+				fmt.Fprintf(&buf, "%s_bucket{%s,le=\"%s\"} %d 1700000000000\n", mf, baseLabels, le, cumCount)
+			}
+			fmt.Fprintf(&buf, "%s_sum{%s} 45.67 1700000000000\n", mf, baseLabels)
+			fmt.Fprintf(&buf, "%s_count{%s} 80 1700000000000\n", mf, baseLabels)
+		}
+	}
+	return buf.Bytes()
+}
+
+func generateProtobufSummaryPayload(numSummaries int) []byte {
+	var buf bytes.Buffer
+	numFamilies := 10
+	if numSummaries < numFamilies {
+		numFamilies = numSummaries
+	}
+	perFamily := numSummaries / numFamilies
+	quantiles := []dto.Quantile{
+		{Quantile: 0.5, Value: 0.12},
+		{Quantile: 0.9, Value: 0.45},
+		{Quantile: 0.99, Value: 0.89},
+	}
+	for f := 0; f < numFamilies; f++ {
+		mfName := fmt.Sprintf("bench_summary_%d", f)
+		mf := &dto.MetricFamily{
+			Name:   mfName,
+			Help:   fmt.Sprintf("Benchmark summary family %d", f),
+			Type:   dto.MetricType_SUMMARY,
+			Metric: make([]dto.Metric, 0, perFamily),
+		}
+		for i := 0; i < perFamily; i++ {
+			mf.Metric = append(mf.Metric, dto.Metric{
+				Label:       commonProtoLabels(f, i),
+				TimestampMs: 1700000000000,
+				Summary: &dto.Summary{
+					SampleCount: 50,
+					SampleSum:   23.45,
+					Quantile:    quantiles,
+				},
+			})
+		}
+		writeDelimitedProto(&buf, mf)
+	}
+	return buf.Bytes()
+}
+
+func generateProtobufNativeHistogramPayload(count int) []byte {
+	var buf bytes.Buffer
+	numFamilies := 10
+	if count < numFamilies {
+		numFamilies = count
+	}
+	perFamily := count / numFamilies
+	tsProto := &types.Timestamp{Seconds: 1700000000, Nanos: 0}
+	for f := 0; f < numFamilies; f++ {
+		mfName := fmt.Sprintf("bench_native_hist_%d", f)
+		mf := &dto.MetricFamily{
+			Name:   mfName,
+			Help:   fmt.Sprintf("Benchmark native histogram family %d", f),
+			Type:   dto.MetricType_HISTOGRAM,
+			Metric: make([]dto.Metric, 0, perFamily),
+		}
+		for i := 0; i < perFamily; i++ {
+			mf.Metric = append(mf.Metric, dto.Metric{
+				Label:       commonProtoLabels(f, i),
+				TimestampMs: 1700000000000,
+				Histogram: &dto.Histogram{
+					SampleCount:   66,
+					SampleSum:     1004.78,
+					Schema:        3,
+					ZeroThreshold: 0.001,
+					ZeroCount:     2,
+					PositiveSpan: []dto.BucketSpan{
+						{Offset: 0, Length: 4},
+					},
+					PositiveDelta: []int64{10, 5, -3, 2},
+					Exemplars: []*dto.Exemplar{
+						protoExemplar(0.42, tsProto),
+					},
+				},
+			})
+		}
+		writeDelimitedProto(&buf, mf)
+	}
+	return buf.Bytes()
 }
