@@ -69,7 +69,7 @@ When `emit_strategy: service` is set, the processor groups spans at service gran
 
 This is useful for reducing latency when a downstream consumer performs processing for all spans from a given service within a trace and it isn't necessary to wait for the full distributed trace to arrive. The `wait_duration` option can sometimes be lowered when using this mode, as spans from a single service in a trace can arrive before the full trace completes, particularly in traces that contain asynchronous operations.
 
-Spans are buffered under `(trace, service)`, where the service is taken from `service.namespace`, `service.name` and `service.instance.id` on the span's resource, falling back to a hash of every resource attribute when `service.name` is absent. Other resource attributes are not part of the identity, so one service reporting from several pods stays a single group; the distinct resources are preserved within the released batch.
+Spans are buffered under `(trace, service)`, where the service is taken from `service.namespace`, `service.name` and `service.instance.id` on the span's resource, falling back to a hash of every resource attribute when `service.name` is absent. Other resource attributes are not considered for determining service identity.
 
 ### Separating repeat calls
 
