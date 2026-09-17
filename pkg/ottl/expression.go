@@ -725,6 +725,18 @@ func (path StandardPMapGetSetter[K]) Set(ctx context.Context, tCtx K, val pcommo
 	return path.Setter(ctx, tCtx, val)
 }
 
+// newStandardPMapGetSetter creates a new StandardPMapGetSetter from a GetSetter[K]
+func newStandardPMapGetSetter[K any](getSetter GetSetter[K]) (PMapGetSetter[K], error) {
+	g, err := newStandardPMapGetter(getSetter)
+	if err != nil {
+		return nil, err
+	}
+	return StandardPMapGetSetter[K]{
+		Getter: g.Get,
+		Setter: getSetter.Set,
+	}, nil
+}
+
 // PMapGetter is a Getter that must return a pcommon.Map.
 type PMapGetter[K any] interface {
 	// Get retrieves a pcommon.Map value.

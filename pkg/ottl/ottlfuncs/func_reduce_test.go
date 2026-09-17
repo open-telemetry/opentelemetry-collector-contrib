@@ -246,14 +246,14 @@ func Test_ReduceFactory(t *testing.T) {
 		factory := NewReduceFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ReduceArguments[any]{}, args)
+		assert.IsType(t, &reduceArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Source", "Seed", "Accumulator"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewReduceFactory[any]()
 		args := factory.CreateDefaultArguments()
-		reduceArgs, ok := args.(*ReduceArguments[any])
+		reduceArgs, ok := args.(*reduceArguments[any])
 		require.True(t, ok)
 		reduceArgs.Source = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -276,6 +276,36 @@ func Test_ReduceFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createReduceFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ReduceFactory args must be of type *ReduceArguments[K]")
+		assert.ErrorContains(t, err, "ReduceFactory args must be of type *reduceArguments[K]")
 	})
+}
+
+func BenchmarkReduce(b *testing.B) {
+	source := ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			m := pcommon.NewMap()
+			m.PutInt("a", 1)
+			m.PutInt("b", 2)
+			return m, nil
+		},
+	}
+	seed := ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return int64(0), nil
+		},
+	}
+	accumulator := ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		acc := resolveBinding("acc")
+		v := resolveBinding("v")
+		return acc.(int64) + v.(int64), nil
+	})
+	exprFunc, err := reduce(source, seed, accumulator)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

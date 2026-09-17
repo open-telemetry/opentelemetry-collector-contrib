@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ToKeyValueStringArguments[K any] struct {
+type toKeyValueStringArguments[K any] struct {
 	Target        ottl.PMapGetter[K]
 	Delimiter     ottl.Optional[string]
 	PairDelimiter ottl.Optional[string]
@@ -23,14 +23,14 @@ type ToKeyValueStringArguments[K any] struct {
 }
 
 func NewToKeyValueStringFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ToKeyValueString", &ToKeyValueStringArguments[K]{}, createToKeyValueStringFunction[K])
+	return ottl.NewFactory("ToKeyValueString", &toKeyValueStringArguments[K]{}, createToKeyValueStringFunction[K])
 }
 
 func createToKeyValueStringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ToKeyValueStringArguments[K])
+	args, ok := oArgs.(*toKeyValueStringArguments[K])
 
 	if !ok {
-		return nil, errors.New("ToKeyValueStringFactory args must be of type *ToKeyValueStringArguments[K]")
+		return nil, errors.New("ToKeyValueStringFactory args must be of type *toKeyValueStringArguments[K]")
 	}
 
 	return toKeyValueString[K](args.Target, args.Delimiter, args.PairDelimiter, args.SortOutput)

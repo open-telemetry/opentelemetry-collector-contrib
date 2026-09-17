@@ -223,7 +223,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 	s.processCurrentOp(ctx, operations, now)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, serverAddress, serverPort)
+	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 }
 
@@ -535,12 +535,15 @@ func clientAddressAndPort(clientAddr string) (string, int64) {
 	return host, parsedPort
 }
 
-func setResourceAttributes(rb *metadata.ResourceBuilder, serverAddress string, serverPort int64) {
+func setResourceAttributes(rb *metadata.ResourceBuilder, serverAddress string, serverPort int64, mongoVersion *version.Version) {
 	rb.SetServerAddress(serverAddress)
 	rb.SetServerPort(serverPort)
 	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
+	if mongoVersion != nil && !mongoVersion.Equal(unknownVersion()) {
+		rb.SetDbSystemVersion(mongoVersion.String())
+	}
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
@@ -583,7 +586,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 
 	// Emit single resource for the server
 	rb := s.mb.NewResourceBuilder()
-	setResourceAttributes(rb, serverAddress, serverPort)
+	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -746,6 +749,26 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbWtcacheBytesRead.Enabled {
 		s.recordWTCacheBytes(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogWrite.Enabled {
+		s.recordWTLogWrite(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled {
+		s.recordWTLogOperations(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogSyncTime.Enabled {
+		s.recordWTLogSyncTime(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled {
+		s.recordWTFsyncCount(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.Enabled {
+		s.recordWTConcurrentTransactionsOut(now, document, errs)
 	}
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbPageFaults.Enabled {

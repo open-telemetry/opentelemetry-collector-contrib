@@ -6,14 +6,14 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| cloud.account.id | The IBM Cloud account ID. | Any Str | true | [cloud.account.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-account-id) | - |
-| cloud.availability_zone | The IBM Cloud availability zone (e.g., us-south-1). | Any Str | true | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
-| cloud.platform | The cloud platform (ibm_cloud.vpc). | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
-| cloud.provider | The cloud provider (ibm_cloud). | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
-| cloud.region | The IBM Cloud region (e.g., us-south). | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
-| cloud.resource_id | The CRN (Cloud Resource Name) of the instance. | Any Str | true | [cloud.resource_id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-resource-id) | - |
-| host.id | The unique ID of the virtual server instance. | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
-| host.image.id | The VM image ID of the virtual server instance. | Any Str | true | [host.image.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-image-id) | - |
-| host.image.name | The VM image name of the virtual server instance. | Any Str | true | [host.image.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-image-name) | - |
-| host.name | The name of the virtual server instance. | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
-| host.type | The instance profile name (e.g., bx2-2x8). | Any Str | true | [host.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-type) | - |
+| cloud.account.id | The IBM Cloud account ID. | Any Str | true | [cloud.account.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-account-id) | - |
+| cloud.availability_zone | The IBM Cloud availability zone (e.g., us-south-1). | Any Str | true | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
+| cloud.platform | The cloud platform (ibm_cloud.vpc). | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud provider (ibm_cloud). | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.region | The IBM Cloud region (e.g., us-south). | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| cloud.resource_id | The CRN (Cloud Resource Name) of the instance. | Any Str | true | [cloud.resource_id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-resource-id) | - |
+| host.id | The unique ID of the virtual server instance. | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-id) | - |
+| host.image.id | The VM image ID of the virtual server instance. | Any Str | true | [host.image.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-image-id) | - |
+| host.image.name | The VM image name of the virtual server instance. | Any Str | true | [host.image.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-image-name) | - |
+| host.name | The name of the virtual server instance. | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-name) | - |
+| host.type | The instance profile name (e.g., bx2-2x8). | Any Str | true | [host.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-type) | - |
