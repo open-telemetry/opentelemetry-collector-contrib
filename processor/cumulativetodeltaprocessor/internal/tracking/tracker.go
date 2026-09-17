@@ -195,9 +195,6 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 	case pmetric.MetricTypeHistogram:
 		value := metricPoint.HistogramValue
 		prevValue := state.prevPoint.HistogramValue
-		if math.IsNaN(value.Sum) {
-			value.Sum = prevValue.Sum
-		}
 
 		if len(value.BucketCounts) != len(prevValue.BucketCounts) {
 			valid = false
@@ -219,6 +216,11 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 			}
 			delta.Count -= prevValue.Count
 			delta.Sum -= prevValue.Sum
+			// NaN Sum in either the current or the previous (reset) point produces a
+			// NaN delta; treat it as zero so Sum is never reported as negative.
+			if math.IsNaN(delta.Sum) {
+				delta.Sum = 0
+			}
 			for index, prevBucket := range prevValue.BucketCounts {
 				delta.BucketCounts[index] -= prevBucket
 			}

@@ -411,6 +411,48 @@ func TestMetricTracker_ConvertExponentialHistogramResetRecovery(t *testing.T) {
 	assert.InDelta(t, 150.0, out.ExponentialHistogramPoint.Sum, 1e-9)
 }
 
+func TestMetricTracker_ConvertHistogramResetRecoveryNaNSum(t *testing.T) {
+	miHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeHistogram,
+		MetricName:             "hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64, buckets []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				HistogramValue: &HistogramPoint{
+					Count:        count,
+					Sum:          sum,
+					BucketBounds: []float64{1, 2},
+					BucketCounts: buckets,
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	m.Convert(point(10, 100, []uint64{4, 6}))
+	m.Convert(point(20, 200, []uint64{8, 12}))
+
+	// Reset frame omits Sum (NaN). It becomes the new baseline.
+	_, valid, reason := m.Convert(point(5, math.NaN(), []uint64{2, 3}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// Post-reset growth. The Sum delta must never be negative for a monotonic
+	// histogram; a NaN reset frame must not leave the pre-reset Sum as the baseline.
+	out, valid, _ := m.Convert(point(8, 80, []uint64{3, 5}))
+	require.True(t, valid)
+	assert.GreaterOrEqual(t, out.HistogramValue.Sum, 0.0)
+}
+
 func TestMetricTracker_ConvertHistogramBucketDropResetRecovery(t *testing.T) {
 	miHist := MetricIdentity{
 		Resource:               pcommon.NewResource(),
