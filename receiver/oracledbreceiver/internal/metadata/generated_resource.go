@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetDbSystemEdition sets provided value as "db.system.edition" attribute.
+func (rb *ResourceBuilder) SetDbSystemEdition(val string) {
+	if rb.config.DbSystemEdition.Enabled {
+		rb.res.Attributes().PutStr("db.system.edition", val)
+	}
+}
+
 // SetHostName sets provided value as "host.name" attribute.
 func (rb *ResourceBuilder) SetHostName(val string) {
 	if rb.config.HostName.Enabled {

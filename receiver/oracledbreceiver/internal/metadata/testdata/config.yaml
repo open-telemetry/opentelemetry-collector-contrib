@@ -373,6 +373,8 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.edition:
+      enabled: true
     host.name:
       enabled: true
     oracle.db.hosting_type:
@@ -769,6 +771,8 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.edition:
+      enabled: true
     host.name:
       enabled: true
     oracle.db.hosting_type:
@@ -1165,6 +1169,8 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.edition:
+      enabled: false
     host.name:
       enabled: false
     oracle.db.hosting_type:
@@ -1189,6 +1195,9 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
+    db.system.edition:
+      enabled: true
+      override_value: "override-db.system.edition"
     host.name:
       enabled: true
       override_value: "override-host.name"
@@ -1224,6 +1233,12 @@ override_set:
       override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
+    db.system.edition:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     host.name:
       enabled: true
       metrics_include:
@@ -1292,6 +1307,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.edition:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.edition-val"
+      events_exclude:
+        - strict: "db.system.edition-val"
     host.name:
       enabled: true
       metrics_exclude:

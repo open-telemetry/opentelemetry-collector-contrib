@@ -16,6 +16,10 @@ status:
     active: [dmitryax, crobert-1, atoulme, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
 
 resource_attributes:
+  db.system.edition:
+    description: The edition of the Oracle Database instance (e.g. "EE", "SE2", "XE").
+    enabled: true
+    type: string
   host.name:
     description: The host name of Oracle Server
     enabled: true

@@ -850,6 +850,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			rb := mb.NewResourceBuilder()
+			rb.SetDbSystemEdition("db.system.edition-val")
 			rb.SetHostName("host.name-val")
 			rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 			rb.SetOracleDbOpenMode("oracle.db.open_mode-val")

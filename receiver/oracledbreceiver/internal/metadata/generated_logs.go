@@ -289,6 +289,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
+	if lbc.ResourceAttributes.DbSystemEdition.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["db.system.edition"] = filter.CreateFilter(lbc.ResourceAttributes.DbSystemEdition.EventsInclude)
+	}
+	if lbc.ResourceAttributes.DbSystemEdition.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["db.system.edition"] = filter.CreateFilter(lbc.ResourceAttributes.DbSystemEdition.EventsExclude)
+	}
 	if lbc.ResourceAttributes.HostName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsInclude)
 	}

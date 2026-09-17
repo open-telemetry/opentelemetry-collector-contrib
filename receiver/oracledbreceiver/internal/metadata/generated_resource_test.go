@@ -15,6 +15,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetDbSystemEdition("db.system.edition-val")
 			rb.SetHostName("host.name-val")
 			rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 			rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
@@ -32,14 +33,19 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 11, res.Attributes().Len())
+				assert.Equal(t, 12, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			dbSystemEditionAttrVal, ok := res.Attributes().Get("db.system.edition")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "db.system.edition-val", dbSystemEditionAttrVal.Str())
 			}
 			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
@@ -104,6 +110,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
 	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemEdition("db.system.edition-val")
 	rb.SetHostName("host.name-val")
 	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
@@ -117,6 +124,13 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("db.system.edition")
+		assert.True(t, ok, "db.system.edition should be present")
+		if ok {
+			assert.Equal(t, "override-db.system.edition", val.Str())
+		}
+	}
 	{
 		val, ok := res.Attributes().Get("host.name")
 		assert.True(t, ok, "host.name should be present")
@@ -204,6 +218,13 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 
 	res := rb.Emit()
 	{
+		val, ok := res.Attributes().Get("db.system.edition")
+		assert.True(t, ok, "db.system.edition should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-db.system.edition", val.Str())
+		}
+	}
+	{
 		val, ok := res.Attributes().Get("host.name")
 		assert.True(t, ok, "host.name should be present even without calling Set")
 		if ok {
@@ -285,6 +306,7 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 // TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
 func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.DbSystemEdition.Enabled = false
 	cfg.HostName.Enabled = false
 	cfg.OracleDbHostingType.Enabled = false
 	cfg.OracleDbOpenMode.Enabled = false
@@ -307,6 +329,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
 	require.NoError(t, confmap.Validate(cfg))
+	assert.Nil(t, cfg.DbSystemEdition.OverrideValue, "OverrideValue should be nil for db.system.edition")
 	assert.Nil(t, cfg.HostName.OverrideValue, "OverrideValue should be nil for host.name")
 	assert.Nil(t, cfg.OracleDbHostingType.OverrideValue, "OverrideValue should be nil for oracle.db.hosting_type")
 	assert.Nil(t, cfg.OracleDbOpenMode.OverrideValue, "OverrideValue should be nil for oracle.db.open_mode")
@@ -319,6 +342,7 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.Nil(t, cfg.ServiceName.OverrideValue, "OverrideValue should be nil for service.name")
 	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
 	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemEdition("db.system.edition-val")
 	rb.SetHostName("host.name-val")
 	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
@@ -332,7 +356,12 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 11, res.Attributes().Len())
+	assert.Equal(t, 12, res.Attributes().Len())
+	dbSystemEditionAttrVal, ok := res.Attributes().Get("db.system.edition")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "db.system.edition-val", dbSystemEditionAttrVal.Str())
+	}
 	hostNameAttrVal, ok := res.Attributes().Get("host.name")
 	assert.True(t, ok)
 	if ok {
