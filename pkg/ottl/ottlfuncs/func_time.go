@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type TimeArguments[K any] struct {
+type timeArguments[K any] struct {
 	Time     ottl.StringGetter[K]
 	Format   string
 	Location ottl.Optional[string]
@@ -20,14 +20,14 @@ type TimeArguments[K any] struct {
 }
 
 func NewTimeFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Time", &TimeArguments[K]{}, createTimeFunction[K])
+	return ottl.NewFactory("Time", &timeArguments[K]{}, createTimeFunction[K])
 }
 
 func createTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*TimeArguments[K])
+	args, ok := oArgs.(*timeArguments[K])
 
 	if !ok {
-		return nil, errors.New("TimeFactory args must be of type *TimeArguments[K]")
+		return nil, errors.New("TimeFactory args must be of type *timeArguments[K]")
 	}
 
 	return Time(args.Time, args.Format, args.Location, args.Locale)

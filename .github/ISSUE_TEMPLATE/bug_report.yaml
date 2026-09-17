@@ -111,6 +111,7 @@ body:
       - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/filetelemetrypolicy
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
@@ -176,7 +177,6 @@ body:
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
       - pkg/pdatatest
-      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
       - pkg/semconvtest
@@ -249,6 +249,7 @@ body:
       - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
+      - processor/telemetrypolicy
       - processor/transform
       - processor/transform/internal/logparsingfuncs
       - processor/unroll

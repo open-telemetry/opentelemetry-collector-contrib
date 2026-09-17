@@ -54,14 +54,14 @@ func Test_UnixFactory(t *testing.T) {
 		factory := NewUnixFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &UnixArguments[any]{}, args)
+		assert.IsType(t, &unixArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Seconds", "Nanoseconds"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewUnixFactory[any]()
 		args := factory.CreateDefaultArguments()
-		unixArgs, ok := args.(*UnixArguments[any])
+		unixArgs, ok := args.(*unixArguments[any])
 		require.True(t, ok)
 		unixArgs.Seconds = &ottl.StandardIntGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -76,6 +76,21 @@ func Test_UnixFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createUnixFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "UnixFactory args must be of type *UnixArguments[K]")
+		assert.ErrorContains(t, err, "UnixFactory args must be of type *unixArguments[K]")
 	})
+}
+
+func BenchmarkUnix(b *testing.B) {
+	exprFunc, err := Unix[any](
+		&ottl.StandardIntGetter[any]{Getter: func(context.Context, any) (any, error) { return int64(1672527600), nil }},
+		ottl.Optional[ottl.IntGetter[any]]{},
+	)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

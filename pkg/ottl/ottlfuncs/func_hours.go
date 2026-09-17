@@ -10,19 +10,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type HoursArguments[K any] struct {
+type hoursArguments[K any] struct {
 	Duration ottl.DurationGetter[K]
 }
 
 func NewHoursFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Hours", &HoursArguments[K]{}, createHoursFunction[K])
+	return ottl.NewFactory("Hours", &hoursArguments[K]{}, createHoursFunction[K])
 }
 
 func createHoursFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*HoursArguments[K])
+	args, ok := oArgs.(*hoursArguments[K])
 
 	if !ok {
-		return nil, errors.New("HoursFactory args must be of type *HoursArguments[K]")
+		return nil, errors.New("HoursFactory args must be of type *hoursArguments[K]")
 	}
 
 	return Hours(args.Duration)

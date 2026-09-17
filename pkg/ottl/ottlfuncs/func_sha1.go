@@ -12,19 +12,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type SHA1Arguments[K any] struct {
+type sHA1Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewSHA1Factory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("SHA1", &SHA1Arguments[K]{}, createSHA1Function[K])
+	return ottl.NewFactory("SHA1", &sHA1Arguments[K]{}, createSHA1Function[K])
 }
 
 func createSHA1Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*SHA1Arguments[K])
+	args, ok := oArgs.(*sHA1Arguments[K])
 
 	if !ok {
-		return nil, errors.New("SHA1Factory args must be of type *SHA1Arguments[K]")
+		return nil, errors.New("SHA1Factory args must be of type *sHA1Arguments[K]")
 	}
 
 	return SHA1HashString(args.Target)
