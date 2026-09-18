@@ -60,12 +60,12 @@ processors:
 
       # --- env provider — asymmetric ---
       # env:
-      #   certificate: SIGNING_CERT_PEM   # PEM or base64-encoded PEM
-      #   private_key: SIGNING_KEY_PEM
+      #   certificate: ${env:SIGNING_CERT_PEM}   # PEM or base64-encoded PEM
+      #   private_key: ${env:SIGNING_KEY_PEM}
 
       # --- env provider — HMAC-SHA256 ---
       # env:
-      #   hmac_key: SIGNING_HMAC_KEY   # value must be standard base64-encoded
+      #   hmac_key: ${env:SIGNING_HMAC_KEY}
 
       # --- Kubernetes Secret provider — asymmetric ---
       # k8s_secret:
@@ -100,12 +100,20 @@ processors:
 
 ## Key source providers
 
-| Provider     | Description                                                                                                                                                                                                                                         |
-|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `file`       | Reads PEM-encoded certificate and private key (RSA, ECDSA, or Ed25519) from local files, or a standard base64-encoded HMAC secret. Supports plain PEM and base64-encoded PEM for asymmetric keys.                                                   |
-| `env`        | Reads asymmetric key material (cert + private key) or a standard base64-encoded HMAC secret from environment variables. Useful for container deployments where secrets are injected via env.                                                        |
-| `k8s_secret` | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. Store the raw HMAC key bytes in the Secret data field; Kubernetes base64-encodes Secret data internally and the processor receives the decoded bytes directly. |
-| `bao`        | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) KV v2 secret engine. HMAC key field value must be standard base64-encoded.                                                                                            |
+| Provider | Description |
+| --- | --- |
+| `file` | Reads PEM-encoded certificate and private key (RSA, ECDSA, or Ed25519) from local files, or a raw HMAC secret. Supports plain PEM and base64-encoded PEM. |
+| `env` | Holds key material resolved by the collector's confmap layer. Field values must be the actual PEM text or base64-encoded key, typically supplied via `${env:VAR_NAME}` substitution in the collector config. Useful for container deployments where secrets are injected via environment variables. |
+| `k8s_secret` | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
+| `bao` | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine. |
+
+> **Note on the `env` key source:** The `certificate`, `private_key`, and `hmac_key`
+> fields hold the actual PEM text or base64-encoded key material, **not** environment
+> variable names. The collector's confmap layer expands `${env:VAR_NAME}` references
+> before the processor starts, so the processor always receives resolved values. See
+> [confmap environment variable substitution](https://opentelemetry.io/docs/specs/otel/configuration/data-model/#environment-variable-substitution)
+> for details. Configs that previously passed bare variable names (e.g. `certificate:
+> SIGNING_CERT_PEM`) will fail at provider construction time.
 
 ## Output attributes
 
