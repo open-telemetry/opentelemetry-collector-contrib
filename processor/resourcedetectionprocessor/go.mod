@@ -50,6 +50,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.18.0
 	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.18.0
 	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.18.0
+	go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.18.0
 	go.opentelemetry.io/contrib/detectors/hetzner v0.18.0
 	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.18.0
 	go.opentelemetry.io/contrib/detectors/vultr v0.18.0
