@@ -253,6 +253,31 @@ resources/count: 3
 `,
 			wantErr: `resources/count must be a mapping, write "exact: 3" for an exact size`,
 		},
+		// A null scalar decodes into an int as zero, so an empty bound would
+		// otherwise be accepted as a constraint that asserts nothing.
+		"empty min": {
+			body: `version: 1
+signal: metrics
+resources/count:
+  min:
+`,
+			wantErr: "resources/count min has no value",
+		},
+		"null exact": {
+			body: `version: 1
+signal: metrics
+resources/count:
+  exact: null
+`,
+			wantErr: "resources/count exact has no value",
+		},
+		"empty count": {
+			body: `version: 1
+signal: metrics
+resources/count:
+`,
+			wantErr: `resources/count has no value, want a mapping with "exact", "min" or "max"`,
+		},
 		"negative min": {
 			body: `version: 1
 signal: metrics

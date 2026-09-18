@@ -78,6 +78,9 @@ func decodeCount(raw map[string]yaml.Node, key string) (*countMatcher, error) {
 	}
 
 	if node.Kind == yaml.ScalarNode {
+		if node.Tag == "!!null" {
+			return nil, fmt.Errorf("%s has no value, want a mapping with %q, %q or %q", countKey, "exact", "min", "max")
+		}
 		return nil, fmt.Errorf("%s must be a mapping, write %q for an exact size", countKey, "exact: "+node.Value)
 	}
 	var fields map[string]yaml.Node
@@ -127,14 +130,20 @@ func decodeBound(fields map[string]yaml.Node, countKey, name string) (*int, erro
 	if !ok {
 		return nil, nil
 	}
-	var v int
+	// A null scalar decodes into an int as zero without error, so decode through
+	// a pointer to tell an explicit `min: 0` from an empty `min:`. The latter
+	// would otherwise pass as a bound that asserts nothing.
+	var v *int
 	if err := node.Decode(&v); err != nil {
 		return nil, fmt.Errorf("decode %s %s: %w", countKey, name, err)
 	}
-	if v < 0 {
-		return nil, fmt.Errorf("%s %s must not be negative, got %d", countKey, name, v)
+	if v == nil {
+		return nil, fmt.Errorf("%s %s has no value", countKey, name)
 	}
-	return &v, nil
+	if *v < 0 {
+		return nil, fmt.Errorf("%s %s must not be negative, got %d", countKey, name, *v)
+	}
+	return v, nil
 }
 
 // check reports whether n satisfies the matcher. A nil matcher accepts any size.
