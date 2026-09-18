@@ -32,6 +32,9 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 
 func compareDocuments(expected, actual *document) error {
 	var errs []error
+	if err := expected.ResourcesCount.check("resources", len(actual.Resources)); err != nil {
+		errs = append(errs, err)
+	}
 	matched := make([]bool, len(actual.Resources))
 
 	for _, er := range expected.Resources {
@@ -60,6 +63,9 @@ func compareDocuments(expected, actual *document) error {
 
 func compareResource(expected, actual resourceAssertion) error {
 	var errs []error
+	if err := expected.ScopesCount.check("scopes", len(actual.Scopes)); err != nil {
+		errs = append(errs, err)
+	}
 	matched := make([]bool, len(actual.Scopes))
 
 	for _, es := range expected.Scopes {
@@ -140,6 +146,9 @@ func versionMatcherString(m versionMatcher) string {
 
 func compareScope(expected, actual scopeAssertion) error {
 	var errs []error
+	if err := expected.MetricsCount.check("metrics", len(actual.Metrics)); err != nil {
+		errs = append(errs, err)
+	}
 	expMetrics := indexMetrics(expected.Metrics)
 	actMetrics := indexMetrics(actual.Metrics)
 
@@ -187,6 +196,9 @@ func compareMetric(expected, actual metricAssertion) error {
 	if !boolPtrEqual(expected.Monotonic, actual.Monotonic) {
 		errs = append(errs, fmt.Errorf("monotonic mismatch: expected %v, got %v",
 			boolPtrString(expected.Monotonic), boolPtrString(actual.Monotonic)))
+	}
+	if err := expected.DatapointsCount.check("datapoints", len(actual.Datapoints)); err != nil {
+		errs = append(errs, err)
 	}
 	if err := compareDatapoints(expected.Datapoints, expected.DatapointsMode, actual.Datapoints); err != nil {
 		errs = append(errs, err)
