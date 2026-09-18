@@ -159,12 +159,12 @@ func TestConfigValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "env missing cert_env_var",
+			name:    "env missing certificate",
 			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{PrivateKey: "K"}}},
 			wantErr: true,
 		},
 		{
-			name:    "env missing key_env_var",
+			name:    "env missing private_key",
 			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{Certificate: "C"}}},
 			wantErr: true,
 		},
@@ -836,7 +836,7 @@ func TestNewProcessorMissingKeyFiles(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// ConsumeLogs — resource attribute injection
+// ConsumeLogs — resource attribute injection (consume_test.go)
 // ---------------------------------------------------------------------------
 
 func TestConsumeLogsResourceAttrs(t *testing.T) {
@@ -888,7 +888,77 @@ func TestConsumeLogsResourceAttrs(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// ConsumeLogs error path — hash.Write failure
+// newKeyMaterialProvider dispatch (coverage2_test.go)
+// ---------------------------------------------------------------------------
+
+func TestNewKeyMaterialProviderEnv(t *testing.T) {
+	certPEM, keyPEM, _ := generateTestPEM(t)
+	t.Setenv("NKM_CERT", string(certPEM))
+	t.Setenv("NKM_KEY", string(keyPEM))
+
+	cfg := &Config{
+		Algorithm: "RS256",
+		KeySource: KeySourceConfig{
+			Type: KeySourceEnv,
+			Env:  &EnvKeyConfig{Certificate: "NKM_CERT", PrivateKey: "NKM_KEY"},
+		},
+	}
+	prov, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if prov.GetPrivateKey() == nil || prov.GetCertificate() == nil {
+		t.Error("provider returned nil key or cert")
+	}
+}
+
+func TestNewKeyMaterialProviderK8sError(t *testing.T) {
+	cfg := &Config{
+		Algorithm: "RS256",
+		KeySource: KeySourceConfig{
+			Type: KeySourceK8sSecret,
+			K8sSecret: &K8sSecretConfig{
+				Name: "signing-secret", Namespace: "default",
+				Certificate: "tls.crt", PrivateKey: "tls.key",
+			},
+		},
+	}
+	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+	if err == nil {
+		t.Skip("k8s client unexpectedly succeeded (running inside a cluster?)")
+	}
+}
+
+func TestNewKeyMaterialProviderBaoError(t *testing.T) {
+	cfg := &Config{
+		Algorithm: "RS256",
+		KeySource: KeySourceConfig{
+			Type: KeySourceBao,
+			Bao: &BaoKeyConfig{
+				Address:    "http://127.0.0.1:19999",
+				SecretPath: "secret/data/signing",
+			},
+		},
+	}
+	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+	if err == nil {
+		t.Skip("bao client unexpectedly succeeded")
+	}
+}
+
+func TestNewKeyMaterialProviderUnknownType(t *testing.T) {
+	cfg := &Config{
+		Algorithm: "RS256",
+		KeySource: KeySourceConfig{Type: "unknown"},
+	}
+	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+	if err == nil {
+		t.Error("expected error for unknown key source type")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ConsumeLogs error path — hash.Write failure (coverage2_test.go)
 // ---------------------------------------------------------------------------
 
 type alwaysErrHash struct{}

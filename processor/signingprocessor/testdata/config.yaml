@@ -17,7 +17,7 @@ signing/sha512_full:
       certificate: /etc/otelcol/signing-cert.pem
       private_key: /etc/otelcol/signing-key.pem
 
-# Environment-variable key material.
+# Environment-variable key material (confmap ${env:VAR} expansion).
 signing/env:
   key_source:
     type: env
@@ -46,7 +46,7 @@ signing/bao:
       certificate: certificate
       private_key: private_key
 
-# HMAC-SHA256 with key from environment variable.
+# HMAC-SHA256 with key from environment variable (confmap ${env:VAR} expansion).
 signing/hmac:
   algorithm: HMAC-SHA256
   key_source:

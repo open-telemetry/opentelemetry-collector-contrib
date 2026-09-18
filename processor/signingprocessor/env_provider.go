@@ -4,7 +4,6 @@
 package signingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/signingprocessor"
 
 import (
-	"encoding/base64"
 	"fmt"
 	"os"
 )
@@ -20,13 +19,7 @@ func newEnvKeyMaterialProvider(cfg *EnvKeyConfig) (KeyMaterialProvider, error) {
 		if raw == "" {
 			return nil, fmt.Errorf("environment variable %q is not set or empty", cfg.HMACKey)
 		}
-		key, err := base64.StdEncoding.DecodeString(raw)
-		if err != nil {
-			return nil, fmt.Errorf("environment variable %q: HMAC key must be standard base64-encoded: %w", cfg.HMACKey, err)
-		}
-		if len(key) == 0 {
-			return nil, fmt.Errorf("environment variable %q: HMAC key is empty after base64 decoding", cfg.HMACKey)
-		}
+		key := []byte(raw)
 		return &envKeyMaterialProvider{baseKeyMaterialProvider{hmacKey: key}}, nil
 	}
 
