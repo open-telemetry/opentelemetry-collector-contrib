@@ -878,16 +878,9 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 // drop-policy prefix the caller already ruled out via evaluateDropPolicies.
 func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropPolicies int, id pcommon.TraceID, traceData *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string) {
 	finalDecision := samplingpolicy.NotSampled
-	samplingDecisions := map[samplingpolicy.Decision]*policy{
-		samplingpolicy.Error:      nil,
-		samplingpolicy.Sampled:    nil,
-		samplingpolicy.NotSampled: nil,
-		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-		samplingpolicy.InvertSampled: nil,
-		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-		samplingpolicy.InvertNotSampled: nil,
-		samplingpolicy.Dropped:          nil,
-	}
+	// Decision is a small closed integer set. Indexing by it keeps
+	// first-policy-wins as a nil check without allocating a map on every trace.
+	var samplingDecisions [samplingpolicy.NumDecisions]*policy
 
 	effectiveThreshold := pkgsampling.NeverSampleThreshold
 	haveThreshold := false
