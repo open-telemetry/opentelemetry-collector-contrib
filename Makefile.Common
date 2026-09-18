@@ -17,6 +17,7 @@ COVER_DIR_ABS?=$(SRC_ROOT)/$(COVER_DIR)
 GO_BUILD_TAGS=""
 # These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
 GO_BUILD_LDFLAGS="-s -w"
+GO_COMPAT_VERSION=$(shell awk '/^go /{print $$2}' go.mod)
 GOTEST_TIMEOUT?= 900s
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
@@ -273,6 +274,22 @@ MDATAGEN_METADATA_YAML?= metadata.yaml
 .PHONY: mdatagen
 mdatagen:
 	@$(MDATAGEN) $(MDATAGEN_METADATA_YAML)
+
+COVERAGE_PROFILE ?= $(SRC_ROOT)/coverage.txt
+
+.PHONY: check-stability
+check-stability:
+ifeq ($(CURDIR),$(SRC_ROOT))
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="check-stability-mod" COVERAGE_PROFILE="$(SRC_ROOT)/$(GROUP)-coverage.txt"
+else
+	@$(MDATAGEN) check-stability --profile=$(COVERAGE_PROFILE) $(MDATAGEN_METADATA_YAML)
+endif
+
+.PHONY: check-stability-mod
+check-stability-mod:
+	@for dir in $$(find . -name '$(MDATAGEN_METADATA_YAML)' -exec dirname {} \; | sort -u); do \
+		$(MAKE) --no-print-directory -C "$$dir" check-stability COVERAGE_PROFILE="$(COVERAGE_PROFILE)" || exit 1; \
+	done
 
 .PHONY: generate
 generate:

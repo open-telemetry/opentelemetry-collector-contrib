@@ -4,6 +4,12 @@ resourceLogs:
         - key: mysql.instance.endpoint
           value:
             stringValue: localhost:3306
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "3306"
         - key: service.instance.id
           value:
             stringValue: placeholder

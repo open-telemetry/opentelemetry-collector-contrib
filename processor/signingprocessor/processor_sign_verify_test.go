@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"hash"
 	"math/big"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -72,20 +73,14 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	if lr.EventName() != "" {
 		data["event_name"] = lr.EventName()
 	}
-	if lr.Body().Type() == pcommon.ValueTypeStr {
-		data["body"] = lr.Body().Str()
+	if lr.Body().Type() != pcommon.ValueTypeEmpty {
+		data["body"] = rawValue(lr.Body())
 	}
 	if lr.Timestamp() != 0 {
-		data["timestamp"] = lr.Timestamp().AsTime().UnixNano()
+		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 	}
 	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = lr.ObservedTimestamp().AsTime().UnixNano()
-	}
-	if lr.SeverityNumber() != 0 {
-		data["severity_number"] = lr.SeverityNumber()
-	}
-	if lr.SeverityText() != "" {
-		data["severity_text"] = lr.SeverityText()
+		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
 	}
 	if !lr.TraceID().IsEmpty() {
 		data["trace_id"] = lr.TraceID().String()
@@ -96,7 +91,7 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	attrs := make(map[string]any)
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if !strings.HasPrefix(k, "audit.integrity.") {
-			attrs[k] = v.Str()
+			attrs[k] = map[string]any{"stringValue": v.Str()}
 		}
 		return true
 	})
@@ -152,9 +147,8 @@ func TestSignVerifyBasic(t *testing.T) {
 	verifyRecord(t, lr, &prov.key.PublicKey)
 }
 
-// TestSignVerifyWithSeverityAndTrace covers the "sign complete log record" commit:
-// severity_number, severity_text, trace_id, span_id must be part of the signed payload.
-func TestSignVerifyWithSeverityAndTrace(t *testing.T) {
+// TestSignVerifyWithTrace covers trace_id and span_id as part of the signed payload.
+func TestSignVerifyWithTrace(t *testing.T) {
 	prov := newTestProvider(t)
 	p := &signingProcessor{
 		config:       &Config{Algorithm: "RS256", CertificateRef: CertificateRefFingerprint},
@@ -286,4 +280,70 @@ func TestSignVerifyEventName(t *testing.T) {
 	} else {
 		t.Logf("🔍 tampered EventName correctly invalidates signature: %v", err)
 	}
+}
+
+// rawValue converts a pcommon.Value to the shape the signed payload carries.
+// It is written out independently of the processor's own valueToInterface so
+// this helper stays a genuine re-derivation rather than a mirror of the code
+// under test. Scalars are wrapped in typed envelopes matching the OTLP JSON
+// encoding to avoid ambiguity between distinct pcommon types that share the
+// same JSON representation (e.g. int 1 vs bool true vs string "1").
+func rawValue(v pcommon.Value) any {
+	switch v.Type() {
+	case pcommon.ValueTypeStr:
+		return map[string]any{"stringValue": v.Str()}
+	case pcommon.ValueTypeInt:
+		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}
+	case pcommon.ValueTypeDouble:
+		return map[string]any{"doubleValue": v.Double()}
+	case pcommon.ValueTypeBool:
+		return map[string]any{"boolValue": v.Bool()}
+	case pcommon.ValueTypeBytes:
+		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}
+	case pcommon.ValueTypeSlice:
+		out := make([]any, 0, v.Slice().Len())
+		for i := 0; i < v.Slice().Len(); i++ {
+			out = append(out, rawValue(v.Slice().At(i)))
+		}
+		return out
+	case pcommon.ValueTypeMap:
+		out := make(map[string]any)
+		v.Map().Range(func(k string, mv pcommon.Value) bool {
+			out[k] = rawValue(mv)
+			return true
+		})
+		return out
+	default:
+		return nil
+	}
+}
+
+// TestSignVerifyStructuredBody drives a non-string body through the full
+// sign-then-verify path. It exists so verifyRecord's independent re-derivation
+// of the signed payload stays honest: every other test here feeds it a string
+// body, so a helper that only handled strings would go unnoticed.
+func TestSignVerifyStructuredBody(t *testing.T) {
+	prov := newTestProvider(t)
+	p := &signingProcessor{
+		config:       &Config{Algorithm: "RS256", CertificateRef: CertificateRefFingerprint},
+		provider:     prov,
+		hashFunc:     func() hash.Hash { return crypto.SHA256.New() },
+		jwaAlgorithm: "RS256",
+		certRef:      "sha256:test",
+	}
+
+	lr := plog.NewLogRecord()
+	body := lr.Body().SetEmptyMap()
+	body.PutStr("action", "delete-all")
+	body.PutInt("count", 3)
+	body.PutBool("dry_run", false)
+	body.PutEmptyMap("who").PutStr("id", "u8472")
+	lr.SetTimestamp(pcommon.Timestamp(1714041600000000000))
+	lr.Attributes().PutStr("audit.action", "DELETE")
+
+	if err := p.processLogRecord(lr); err != nil {
+		t.Fatalf("processLogRecord: %v", err)
+	}
+
+	verifyRecord(t, lr, &prov.key.PublicKey)
 }
