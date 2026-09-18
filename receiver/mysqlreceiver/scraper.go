@@ -11,8 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -57,6 +55,7 @@ type mySQLScraper struct {
 	obfuscator             *obfuscator
 	lastExecutionTimestamp time.Time
 	serviceInstanceID      string
+	serverEndpoint         resolvedEndpoint
 
 	// detectedVersion is the database product and version detected at Connect time.
 	// It is set once during start() and used to stamp the db.system.name and
@@ -81,8 +80,8 @@ func newMySQLScraper(
 			return nil, err
 		}
 	}
-	seed := resolveServiceInstanceSeed(config.AddrConfig.Endpoint, settings.Logger)
-	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(seed)).String()
+	serverEndpoint := resolveServerEndpoint(config, settings.Logger)
+	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(serverEndpoint.instanceIDSeed)).String()
 	return &mySQLScraper{
 		logger:                 settings.Logger,
 		config:                 config,
@@ -94,33 +93,8 @@ func newMySQLScraper(
 		obfuscator:             newObfuscator(),
 		lastExecutionTimestamp: time.Unix(0, 0),
 		serviceInstanceID:      serviceInstanceID,
+		serverEndpoint:         serverEndpoint,
 	}, nil
-}
-
-// resolveServiceInstanceSeed returns the endpoint string to use as the UUID v5
-// seed for service.instance.id. For local endpoints (localhost, loopback IPs),
-// it substitutes the machine hostname so that co-hosted receivers on different
-// machines produce distinct IDs. The port is preserved so two local databases
-// on different ports remain distinguishable.
-func resolveServiceInstanceSeed(endpoint string, logger *zap.Logger) string {
-	host, port, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		logger.Warn("Failed to parse endpoint for service.instance.id; using raw endpoint as UUID seed",
-			zap.String("endpoint", endpoint),
-			zap.Error(err))
-		return endpoint
-	}
-	if host == "localhost" || (net.ParseIP(host) != nil && net.ParseIP(host).IsLoopback()) {
-		hostname, hostnameErr := os.Hostname()
-		if hostnameErr != nil {
-			logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers on different machines",
-				zap.String("endpoint", endpoint),
-				zap.Error(hostnameErr))
-			return endpoint
-		}
-		return net.JoinHostPort(hostname, port)
-	}
-	return endpoint
 }
 
 // start starts the scraper by initializing the db client connection.
@@ -245,6 +219,12 @@ func (m *mySQLScraper) emitLogs(errs *scrapererror.ScrapeErrors) (plog.Logs, err
 
 func (m *mySQLScraper) setResourceAttributes(rb *metadata.ResourceBuilder) {
 	rb.SetMysqlInstanceEndpoint(m.config.AddrConfig.Endpoint)
+	if m.serverEndpoint.address != "" {
+		rb.SetServerAddress(m.serverEndpoint.address)
+	}
+	if m.serverEndpoint.hasPort {
+		rb.SetServerPort(m.serverEndpoint.port)
+	}
 	rb.SetServiceInstanceID(m.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
