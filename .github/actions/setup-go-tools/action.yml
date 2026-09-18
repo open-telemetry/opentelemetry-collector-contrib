@@ -41,7 +41,7 @@ runs:
         echo "gocache=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
 
     - name: Restore Go module cache (shared across OS/arch)
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v6.1.0
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       id: gomodcache
       with:
         path: ${{ steps.go-cache-paths.outputs.gomodcache }}
@@ -55,7 +55,7 @@ runs:
           gomodcache-
 
     - name: Restore Go build cache (per OS/arch)
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v6.1.0
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       id: gocache
       with:
         path: ${{ steps.go-cache-paths.outputs.gocache }}
