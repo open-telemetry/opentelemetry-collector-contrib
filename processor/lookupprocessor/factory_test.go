@@ -21,21 +21,21 @@ import (
 
 type mockInvalidSourceConfig struct{}
 
-func (m *mockInvalidSourceConfig) Validate() error {
+func (*mockInvalidSourceConfig) Validate() error {
 	return errors.New("mock validation failure")
 }
 
 type mockInvalidSourceFactory struct{}
 
-func (m *mockInvalidSourceFactory) Type() string {
+func (*mockInvalidSourceFactory) Type() string {
 	return "invalid_mock"
 }
 
-func (m *mockInvalidSourceFactory) CreateDefaultConfig() lookupsource.SourceConfig {
+func (*mockInvalidSourceFactory) CreateDefaultConfig() lookupsource.SourceConfig {
 	return &mockInvalidSourceConfig{}
 }
 
-func (m *mockInvalidSourceFactory) CreateSource(_ context.Context, _ lookupsource.CreateSettings, _ lookupsource.SourceConfig) (lookupsource.Source, error) {
+func (*mockInvalidSourceFactory) CreateSource(_ context.Context, _ lookupsource.CreateSettings, _ lookupsource.SourceConfig) (lookupsource.Source, error) {
 	return nil, nil
 }
 
@@ -398,7 +398,7 @@ func TestInvalidKeyExpression(t *testing.T) {
 }
 
 func TestFactory_CreateSource_ErrorPaths(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	set := processortest.NewNopSettings(processortest.NopType)
 
 	f := &lookupProcessorFactory{
@@ -452,7 +452,7 @@ func TestFactory_CreateSource_ErrorPaths(t *testing.T) {
 }
 
 func TestFactory_CreateProcessor_InvalidOTTLKey(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	set := processortest.NewNopSettings(processortest.NopType)
 
 	f := &lookupProcessorFactory{
