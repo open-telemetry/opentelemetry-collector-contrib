@@ -5,6 +5,7 @@ package signingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -24,18 +25,18 @@ func newInlineKeyMaterialProvider(cfg *EnvKeyConfig) (KeyMaterialProvider, error
 			return nil, fmt.Errorf("env.hmac_key: must be standard base64-encoded: %w", err)
 		}
 		if len(key) == 0 {
-			return nil, fmt.Errorf("env.hmac_key: empty after base64 decoding")
+			return nil, errors.New("env.hmac_key: empty after base64 decoding")
 		}
 		return &inlineKeyMaterialProvider{baseKeyMaterialProvider{hmacKey: key}}, nil
 	}
 
 	certPEM := []byte(cfg.Certificate)
 	if len(certPEM) == 0 {
-		return nil, fmt.Errorf("env.certificate: value is empty")
+		return nil, errors.New("env.certificate: value is empty")
 	}
 	keyPEM := []byte(cfg.PrivateKey)
 	if len(keyPEM) == 0 {
-		return nil, fmt.Errorf("env.private_key: value is empty")
+		return nil, errors.New("env.private_key: value is empty")
 	}
 	certPEM = decodeIfBase64(certPEM)
 	keyPEM = decodeIfBase64(keyPEM)
