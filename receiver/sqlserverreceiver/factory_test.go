@@ -407,7 +407,7 @@ func TestDBProviderCloseIsSafe(t *testing.T) {
 
 func TestDBProviderDetectVersionCaches(t *testing.T) {
 	// Open a real *sql.DB then close it so queries fail — we only need the
-	// provider's caching behaviour, not a live SQL Server.
+	// provider's caching behavior, not a live SQL Server.
 	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
 	require.NoError(t, err)
 	defer db.Close()

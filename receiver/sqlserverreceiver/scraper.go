@@ -37,8 +37,8 @@ const (
 	databaseNameKey = "database_name"
 	instanceNameKey = "sql_instance"
 
-	defaultServiceName   = "unknown_service:microsoft.sql_server"
-	versionQueryTimeout  = 5 * time.Second
+	defaultServiceName  = "unknown_service:microsoft.sql_server"
+	versionQueryTimeout = 5 * time.Second
 )
 
 type sqlServerScraperHelper struct {
@@ -118,7 +118,7 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 	return s.id
 }
 
-func (s *sqlServerScraperHelper) Start(ctx context.Context, _ component.Host) error {
+func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) error {
 	// The connection pool is owned by the receiver and shared across all
 	// scrapers. Fetch the shared pool (opened once by the provider) rather than
 	// opening a new one here.
