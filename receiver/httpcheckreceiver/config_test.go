@@ -15,57 +15,43 @@ import (
 
 func TestValidate(t *testing.T) {
 	clientConfigMissingEndpoint := confighttp.NewDefaultClientConfig()
-	clientConfigMissingEndpoint.ForceAttemptHTTP2 = false
 
 	clientConfigInvalidEndpoint := confighttp.NewDefaultClientConfig()
-	clientConfigInvalidEndpoint.ForceAttemptHTTP2 = false
 	clientConfigInvalidEndpoint.Endpoint = "invalid://endpoint:  12efg"
 
 	clientConfigMultiValid := confighttp.NewDefaultClientConfig()
-	clientConfigMultiValid.ForceAttemptHTTP2 = false
 	clientConfigMultiValid.Endpoint = "https://localhost:80"
 
 	clientConfigMultiInvalid := confighttp.NewDefaultClientConfig()
-	clientConfigMultiInvalid.ForceAttemptHTTP2 = false
 	clientConfigMultiInvalid.Endpoint = "invalid://endpoint:  12efg"
 
 	clientConfigMissingScheme := confighttp.NewDefaultClientConfig()
-	clientConfigMissingScheme.ForceAttemptHTTP2 = false
 	clientConfigMissingScheme.Endpoint = "www.opentelemetry.io/docs"
 
 	clientConfigValid1 := confighttp.NewDefaultClientConfig()
-	clientConfigValid1.ForceAttemptHTTP2 = false
 	clientConfigValid1.Endpoint = "https://opentelemetry.io"
 
 	clientConfigValid2 := confighttp.NewDefaultClientConfig()
-	clientConfigValid2.ForceAttemptHTTP2 = false
 	clientConfigValid2.Endpoint = "https://opentelemetry.io:80/docs"
 
 	clientConfigMissingBoth := confighttp.NewDefaultClientConfig()
-	clientConfigMissingBoth.ForceAttemptHTTP2 = false
 
 	clientConfigInvalidSingle := confighttp.NewDefaultClientConfig()
-	clientConfigInvalidSingle.ForceAttemptHTTP2 = false
 	clientConfigInvalidSingle.Endpoint = "invalid://endpoint:  12efg"
 
 	clientConfigMissingSchemeSingle := confighttp.NewDefaultClientConfig()
-	clientConfigMissingSchemeSingle.ForceAttemptHTTP2 = false
 	clientConfigMissingSchemeSingle.Endpoint = "www.opentelemetry.io/docs"
 
 	clientConfigValidSingle := confighttp.NewDefaultClientConfig()
-	clientConfigValidSingle.ForceAttemptHTTP2 = false
 	clientConfigValidSingle.Endpoint = "https://opentelemetry.io"
 
 	clientConfigAutoContentTypeEnabled := confighttp.NewDefaultClientConfig()
-	clientConfigAutoContentTypeEnabled.ForceAttemptHTTP2 = false
 	clientConfigAutoContentTypeEnabled.Endpoint = "https://opentelemetry.io"
 
 	clientConfigAutoContentTypeDisabled := confighttp.NewDefaultClientConfig()
-	clientConfigAutoContentTypeDisabled.ForceAttemptHTTP2 = false
 	clientConfigAutoContentTypeDisabled.Endpoint = "https://opentelemetry.io"
 
 	clientConfigAutoContentTypeDefault := confighttp.NewDefaultClientConfig()
-	clientConfigAutoContentTypeDefault.ForceAttemptHTTP2 = false
 	clientConfigAutoContentTypeDefault.Endpoint = "https://opentelemetry.io"
 
 	testCases := []struct {

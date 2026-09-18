@@ -68,7 +68,6 @@ func (cfg *targetConfig) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 	cfg.ClientConfig = confighttp.NewDefaultClientConfig()
-	cfg.ClientConfig.ForceAttemptHTTP2 = false
 	return conf.Unmarshal(cfg)
 }
 
