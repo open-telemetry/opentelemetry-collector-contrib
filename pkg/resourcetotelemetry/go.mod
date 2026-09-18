@@ -20,8 +20,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/collector/component v1.67.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260917142259-65d9c38b188c // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
