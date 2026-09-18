@@ -169,6 +169,21 @@ func TestConfigValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "env hmac_key set for asymmetric algorithm",
+			cfg: Config{
+				Algorithm: "RS256",
+				KeySource: KeySourceConfig{
+					Type: KeySourceEnv,
+					Env: &EnvKeyConfig{
+						Certificate: "${env:SIGNING_CERT_PEM}",
+						PrivateKey:  "${env:SIGNING_KEY_PEM}",
+						HMACKey:     "${env:SIGNING_HMAC_KEY}",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name:    "file missing config block",
 			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file"}},
 			wantErr: true,
@@ -907,7 +922,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(component.MustNewType("signing"), "hmac"),
 			expected: &Config{
 				Algorithm:      "HMAC-SHA256",
-				CertificateRef: "fingerprint",
+				CertificateRef: "",
 				KeySource: KeySourceConfig{
 					Type: KeySourceEnv,
 					Env:  &EnvKeyConfig{HMACKey: "${env:SIGNING_HMAC_KEY}"},

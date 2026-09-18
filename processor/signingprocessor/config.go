@@ -183,6 +183,9 @@ func (c *Config) Validate() error {
 			if c.KeySource.Env.PrivateKey == "" {
 				return errors.New("key_source.env.private_key is required")
 			}
+			if c.KeySource.Env.HMACKey != "" {
+				return errors.New("key_source.env.hmac_key must not be set for asymmetric algorithm")
+			}
 		}
 	case KeySourceFile:
 		if c.KeySource.File == nil {

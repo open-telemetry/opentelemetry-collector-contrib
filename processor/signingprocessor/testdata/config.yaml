@@ -49,6 +49,7 @@ signing/bao:
 # HMAC-SHA256 with key from environment variable (confmap ${env:VAR} expansion).
 signing/hmac:
   algorithm: HMAC-SHA256
+  certificate_ref: ""
   key_source:
     type: env
     env:
