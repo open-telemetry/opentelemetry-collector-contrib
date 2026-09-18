@@ -116,6 +116,7 @@ func TestScrape(t *testing.T) {
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceAttributeValue("server.address"),
 			pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 
 		actualQuerySamples, err := scraper.scrapeQuerySampleFunc(t.Context())
@@ -128,6 +129,7 @@ func TestScrape(t *testing.T) {
 
 		require.NoError(t, plogtest.CompareLogs(expectedQuerySample, actualQuerySamples,
 			plogtest.IgnoreTimestamp(),
+			plogtest.IgnoreResourceAttributeValue("server.address"),
 			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
 		assertLogsHaveInstanceEndpoint(t, actualQuerySamples, cfg.AddrConfig.Endpoint)
 
@@ -144,6 +146,7 @@ func TestScrape(t *testing.T) {
 
 		require.NoError(t, plogtest.CompareLogs(expectedTopQueries, actualTopQueries,
 			plogtest.IgnoreTimestamp(),
+			plogtest.IgnoreResourceAttributeValue("server.address"),
 			plogtest.IgnoreResourceAttributeValue("service.instance.id")))
 		assertLogsHaveInstanceEndpoint(t, actualTopQueries, cfg.AddrConfig.Endpoint)
 	})
@@ -182,7 +185,9 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 		assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceAttributeValue("server.address"),
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 
 		var partialError scrapererror.PartialScrapeError
 		require.ErrorAs(t, scrapeErr, &partialError, "returned error was not PartialScrapeError")
@@ -984,6 +989,7 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceAttributeValue("server.address"),
 		pmetrictest.IgnoreResourceAttributeValue("service.instance.id")))
 }
 
