@@ -629,7 +629,9 @@ func TestArrowExporterHeaders(t *testing.T) {
 				}
 
 				sent, err := tc.exporter.SendAndWait(sendCtx, input)
-				sendCancel()
+				if sendCancel != nil {
+					sendCancel()
+				}
 				require.NoError(t, err)
 				require.True(t, sent)
 			}
