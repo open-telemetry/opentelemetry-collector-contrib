@@ -47,12 +47,14 @@ func newBaoTestServer(t *testing.T, statusCode int, body []byte) *httptest.Serve
 // cfg builds a BaoKeyConfig pointing at the given server address.
 func baoTestCfg(addr string) *BaoKeyConfig {
 	return &BaoKeyConfig{
-		Address:     addr,
-		Token:       "test-token",
-		MountPath:   "secret",
-		SecretPath:  "signing",
-		Certificate: "certificate",
-		PrivateKey:  "private_key",
+		Address:    addr,
+		Token:      "test-token",
+		MountPath:  "secret",
+		SecretPath: "signing",
+		SecretConfig: SecretConfig{
+			Certificate: "certificate",
+			PrivateKey:  "private_key",
+		},
 	}
 }
 

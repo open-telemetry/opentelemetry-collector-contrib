@@ -99,10 +99,12 @@ func TestK8sKeyMaterialProviderHappyPath(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:        "signing-secret",
-		Namespace:   "default",
-		Certificate: "tls.crt",
-		PrivateKey:  "tls.key",
+		Name:      "signing-secret",
+		Namespace: "default",
+		SecretConfig: SecretConfig{
+			Certificate: "tls.crt",
+			PrivateKey:  "tls.key",
+		},
 	}
 	prov, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err != nil {
@@ -125,10 +127,12 @@ func TestK8sKeyMaterialProviderCertFetchError(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:        "signing-secret",
-		Namespace:   "default",
-		Certificate: "tls.crt",
-		PrivateKey:  "tls.key",
+		Name:      "signing-secret",
+		Namespace: "default",
+		SecretConfig: SecretConfig{
+			Certificate: "tls.crt",
+			PrivateKey:  "tls.key",
+		},
 	}
 	_, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err == nil {
@@ -145,10 +149,12 @@ func TestK8sKeyMaterialProviderKeyFetchError(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:        "signing-secret",
-		Namespace:   "default",
-		Certificate: "tls.crt",
-		PrivateKey:  "tls.key",
+		Name:      "signing-secret",
+		Namespace: "default",
+		SecretConfig: SecretConfig{
+			Certificate: "tls.crt",
+			PrivateKey:  "tls.key",
+		},
 	}
 	_, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err == nil {
@@ -165,9 +171,9 @@ func TestK8sKeyMaterialProviderHMACHappyPath(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:      "signing-secret",
-		Namespace: "default",
-		HMACKey:   "hmac.key",
+		Name:         "signing-secret",
+		Namespace:    "default",
+		SecretConfig: SecretConfig{HMACKey: "hmac.key"},
 	}
 	prov, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err != nil {
@@ -184,9 +190,9 @@ func TestK8sKeyMaterialProviderHMACEmptyKey(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:      "signing-secret",
-		Namespace: "default",
-		HMACKey:   "hmac.key",
+		Name:         "signing-secret",
+		Namespace:    "default",
+		SecretConfig: SecretConfig{HMACKey: "hmac.key"},
 	}
 	_, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err == nil {
@@ -201,10 +207,12 @@ func TestK8sKeyMaterialProviderBadPEM(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:        "signing-secret",
-		Namespace:   "default",
-		Certificate: "tls.crt",
-		PrivateKey:  "tls.key",
+		Name:      "signing-secret",
+		Namespace: "default",
+		SecretConfig: SecretConfig{
+			Certificate: "tls.crt",
+			PrivateKey:  "tls.key",
+		},
 	}
 	_, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err == nil {

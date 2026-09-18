@@ -54,7 +54,7 @@ func TestConfigValidateHMAC(t *testing.T) {
 				Algorithm: AlgorithmHMACSHA256,
 				KeySource: KeySourceConfig{
 					Type:      KeySourceK8sSecret,
-					K8sSecret: &K8sSecretConfig{Name: "s", HMACKey: "hmac.key"},
+					K8sSecret: &K8sSecretConfig{Name: "s", SecretConfig: SecretConfig{HMACKey: "hmac.key"}},
 				},
 			},
 			wantErr: false,
@@ -65,7 +65,7 @@ func TestConfigValidateHMAC(t *testing.T) {
 				Algorithm: AlgorithmHMACSHA256,
 				KeySource: KeySourceConfig{
 					Type: KeySourceBao,
-					Bao:  &BaoKeyConfig{SecretPath: "s", HMACKey: "hmac"},
+					Bao:  &BaoKeyConfig{SecretPath: "s", SecretConfig: SecretConfig{HMACKey: "hmac"}},
 				},
 			},
 			wantErr: false,
@@ -245,7 +245,7 @@ func TestSignVerifyHMACSHA256(t *testing.T) {
 		t.Fatalf("serialize: %v", err)
 	}
 
-	mac := hmac.New(sha256.New, secret)
+	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write(payload)
 	if !hmac.Equal(sigBytes, mac.Sum(nil)) {
 		t.Error("HMAC verification failed")
@@ -319,7 +319,7 @@ func TestHMACTamperedPayloadDetected(t *testing.T) {
 	lr.SetEventName("tampered.event")
 	tamperedPayload, _ := p.serializeLogRecord(lr)
 
-	mac := hmac.New(sha256.New, secret)
+	mac := hmac.New(sha256.New, []byte("tamper-test-secret"))
 	mac.Write(tamperedPayload)
 
 	if hmac.Equal(storedMAC, mac.Sum(nil)) {

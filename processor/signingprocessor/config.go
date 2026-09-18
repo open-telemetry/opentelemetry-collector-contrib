@@ -50,18 +50,16 @@ type Config struct {
 
 type KeySourceConfig struct {
 	Type      string           `mapstructure:"type"`
-	K8sSecret *K8sSecretConfig `mapstructure:"k8s_secret"`
 	Env       *EnvKeyConfig    `mapstructure:"env"`
 	File      *FileKeyConfig   `mapstructure:"file"`
+	K8sSecret *K8sSecretConfig `mapstructure:"k8s_secret"`
 	Bao       *BaoKeyConfig    `mapstructure:"bao"`
 }
 
-// K8sSecretConfig configures a Kubernetes Secret key source.
+// SecretConfig basic configuration, holds the key material for signing.
 // For asymmetric algorithms set Certificate and PrivateKey.
 // For HMAC-SHA256 set HMACKey instead.
-type K8sSecretConfig struct {
-	Name      string `mapstructure:"name"`
-	Namespace string `mapstructure:"namespace"`
+type SecretConfig struct {
 	// Asymmetric key fields
 	Certificate string `mapstructure:"certificate"`
 	PrivateKey  string `mapstructure:"private_key"`
@@ -73,25 +71,16 @@ type K8sSecretConfig struct {
 // confmap provider (e.g. via ${env:VAR_NAME} substitution in the collector
 // config). Each field holds the actual PEM text or base64-encoded key, not an
 // env-var name.
-// For asymmetric algorithms set Certificate and PrivateKey.
-// For HMAC-SHA256 set HMACKey instead.
-type EnvKeyConfig struct {
-	// Asymmetric key fields — PEM text (or base64-encoded PEM) of the cert/key.
-	Certificate string `mapstructure:"certificate"`
-	PrivateKey  string `mapstructure:"private_key"`
-	// HMAC-SHA256 field — standard base64-encoded symmetric key.
-	HMACKey string `mapstructure:"hmac_key"`
-}
+type EnvKeyConfig SecretConfig
 
 // FileKeyConfig configures file-based key material.
-// For asymmetric algorithms set Certificate and PrivateKey.
-// For HMAC-SHA256 set HMACKey instead.
-type FileKeyConfig struct {
-	// Asymmetric key fields
-	Certificate string `mapstructure:"certificate"`
-	PrivateKey  string `mapstructure:"private_key"`
-	// HMAC-SHA256 field
-	HMACKey string `mapstructure:"hmac_key"`
+type FileKeyConfig SecretConfig
+
+// K8sSecretConfig configures a Kubernetes Secret key source.
+type K8sSecretConfig struct {
+	Name         string `mapstructure:"name"`
+	Namespace    string `mapstructure:"namespace"`
+	SecretConfig `mapstructure:",squash"`
 }
 
 // BaoKeyConfig configures the OpenBao (Vault-compatible) key material source.
@@ -99,18 +88,12 @@ type FileKeyConfig struct {
 // BAO_TOKEN (or any other supported BAO_* environment variables) automatically.
 // MountPath is the KV v2 engine mount point (default: "secret").
 // SecretPath is the path to the secret within that mount (e.g. "signing").
-// For asymmetric algorithms set Certificate and PrivateKey.
-// For HMAC-SHA256 set HMACKey instead.
 type BaoKeyConfig struct {
-	Address    string `mapstructure:"address"`
-	Token      string `mapstructure:"token"`
-	MountPath  string `mapstructure:"mount_path"`
-	SecretPath string `mapstructure:"secret_path"`
-	// Asymmetric key fields
-	Certificate string `mapstructure:"certificate"`
-	PrivateKey  string `mapstructure:"private_key"`
-	// HMAC-SHA256 field
-	HMACKey string `mapstructure:"hmac_key"`
+	Address      string `mapstructure:"address"`
+	Token        string `mapstructure:"token"`
+	MountPath    string `mapstructure:"mount_path"`
+	SecretPath   string `mapstructure:"secret_path"`
+	SecretConfig `mapstructure:",squash"`
 }
 
 func createDefaultConfig() component.Config {

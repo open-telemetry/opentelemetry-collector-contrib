@@ -135,22 +135,22 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "k8s_secret missing name",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Certificate: "c", PrivateKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{SecretConfig: SecretConfig{Certificate: "c", PrivateKey: "k"}}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret missing cert_key",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", PrivateKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", SecretConfig: SecretConfig{PrivateKey: "k"}}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret missing key_key",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Certificate: "c"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", SecretConfig: SecretConfig{Certificate: "c"}}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret valid with namespace",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Namespace: "ns", Certificate: "c", PrivateKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Namespace: "ns", SecretConfig: SecretConfig{Certificate: "c", PrivateKey: "k"}}}},
 			wantErr: false,
 		},
 		{
@@ -205,17 +205,17 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "bao missing secret_path",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{Certificate: "c", PrivateKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretConfig: SecretConfig{Certificate: "c", PrivateKey: "k"}}}},
 			wantErr: true,
 		},
 		{
 			name:    "bao missing cert_field",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", PrivateKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", SecretConfig: SecretConfig{PrivateKey: "k"}}}},
 			wantErr: true,
 		},
 		{
 			name:    "bao missing key_field",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", Certificate: "c"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", SecretConfig: SecretConfig{Certificate: "c"}}}},
 			wantErr: true,
 		},
 	}
@@ -278,8 +278,8 @@ func TestLoadConfig(t *testing.T) {
 				KeySource: KeySourceConfig{
 					Type: KeySourceEnv,
 					Env: &EnvKeyConfig{
-						Certificate: "SIGNING_CERT_PEM",
-						PrivateKey:  "SIGNING_KEY_PEM",
+						Certificate: "${env:SIGNING_CERT_PEM}",
+						PrivateKey:  "${env:SIGNING_KEY_PEM}",
 					},
 				},
 			},
@@ -292,10 +292,12 @@ func TestLoadConfig(t *testing.T) {
 				KeySource: KeySourceConfig{
 					Type: KeySourceK8sSecret,
 					K8sSecret: &K8sSecretConfig{
-						Name:        "signing-secret",
-						Namespace:   "default",
-						Certificate: "tls.crt",
-						PrivateKey:  "tls.key",
+						Name:      "signing-secret",
+						Namespace: "default",
+						SecretConfig: SecretConfig{
+							Certificate: "tls.crt",
+							PrivateKey:  "tls.key",
+						},
 					},
 				},
 			},
@@ -308,11 +310,13 @@ func TestLoadConfig(t *testing.T) {
 				KeySource: KeySourceConfig{
 					Type: KeySourceBao,
 					Bao: &BaoKeyConfig{
-						Address:     "https://bao.example.com",
-						MountPath:   "secret",
-						SecretPath:  "signing",
-						Certificate: "certificate",
-						PrivateKey:  "private_key",
+						Address:    "https://bao.example.com",
+						MountPath:  "secret",
+						SecretPath: "signing",
+						SecretConfig: SecretConfig{
+							Certificate: "certificate",
+							PrivateKey:  "private_key",
+						},
 					},
 				},
 			},
@@ -321,10 +325,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(component.MustNewType("signing"), "hmac"),
 			expected: &Config{
 				Algorithm:      "HMAC-SHA256",
-				CertificateRef: "fingerprint",
+				CertificateRef: "",
 				KeySource: KeySourceConfig{
 					Type: KeySourceEnv,
-					Env:  &EnvKeyConfig{HMACKey: "SIGNING_HMAC_KEY"},
+					Env:  &EnvKeyConfig{HMACKey: "${env:SIGNING_HMAC_KEY}"},
 				},
 			},
 		},
@@ -833,112 +837,6 @@ func TestCreateLogsProcessorInvalidConfig(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestLoadConfig (config_test.go)
-// ---------------------------------------------------------------------------
-
-func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-
-	tests := []struct {
-		id       component.ID
-		expected *Config
-	}{
-		{
-			id: component.NewID(component.MustNewType("signing")),
-			expected: &Config{
-				Algorithm:      "RS256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceFile,
-					File: &FileKeyConfig{
-						CertFile: "/etc/otelcol/signing-cert.pem",
-						KeyFile:  "/etc/otelcol/signing-key.pem",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "sha512_full"),
-			expected: &Config{
-				Algorithm:      "RS512",
-				CertificateRef: "full",
-				KeySource: KeySourceConfig{
-					Type: KeySourceFile,
-					File: &FileKeyConfig{
-						CertFile: "/etc/otelcol/signing-cert.pem",
-						KeyFile:  "/etc/otelcol/signing-key.pem",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "env"),
-			expected: &Config{
-				Algorithm:      "RS256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceEnv,
-					Env: &EnvKeyConfig{
-						Certificate: "${env:SIGNING_CERT_PEM}",
-						PrivateKey:  "${env:SIGNING_KEY_PEM}",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "k8s"),
-			expected: &Config{
-				Algorithm:      "RS256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceK8sSecret,
-					K8sSecret: &K8sSecretConfig{
-						Name:      "signing-secret",
-						Namespace: "default",
-						CertKey:   "tls.crt",
-						KeyKey:    "tls.key",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "bao"),
-			expected: &Config{
-				Algorithm:      "RS256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceBao,
-					Bao: &BaoKeyConfig{
-						Address:    "https://bao.example.com",
-						SecretPath: "secret/data/signing",
-						CertField:  "certificate",
-						KeyField:   "private_key",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "hmac"),
-			expected: &Config{
-				Algorithm:      "HMAC-SHA256",
-				CertificateRef: "",
-				KeySource: KeySourceConfig{
-					Type: KeySourceEnv,
-					Env:  &EnvKeyConfig{HMACKey: "${env:SIGNING_HMAC_KEY}"},
-				},
-			},
-		},
-	}
-	f := NewFactory()
-	settings := processortest.NewNopSettings(f.Type())
-	_, err := newProcessor(t.Context(), cfg, &logSink{}, settings)
-	if err == nil {
-		t.Error("expected error when key files do not exist")
-	}
-}
-
-// ---------------------------------------------------------------------------
 // ConsumeLogs — resource attribute injection (consume_test.go)
 // ---------------------------------------------------------------------------
 
@@ -1020,7 +918,7 @@ func TestNewKeyMaterialProviderK8sError(t *testing.T) {
 			Type: KeySourceK8sSecret,
 			K8sSecret: &K8sSecretConfig{
 				Name: "signing-secret", Namespace: "default",
-				Certificate: "tls.crt", PrivateKey: "tls.key",
+				SecretConfig: SecretConfig{Certificate: "tls.crt", PrivateKey: "tls.key"},
 			},
 		},
 	}
