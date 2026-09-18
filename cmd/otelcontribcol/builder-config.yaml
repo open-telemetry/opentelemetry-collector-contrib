@@ -61,7 +61,6 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension v0.161.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.161.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension v0.161.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sdnotifyextension v0.161.0
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.161.1-0.20260916171901-3e8af656214a
