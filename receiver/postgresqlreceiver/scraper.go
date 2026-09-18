@@ -469,8 +469,13 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 		database, _ := row[string(semconv.DBNamespaceKey)].(string)
 		rolname, _ := row[dbAttributePrefix+"rolname"].(string)
-		// pg_stat_statements is keyed on (userid, dbid, queryid); queryid alone
-		// repeats across databases and roles. NUL cannot occur in PostgreSQL identifiers.
+		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel).
+		// Include database and role to separate their independent counter streams.
+		// NUL cannot occur in PostgreSQL identifiers.
+		//
+		// Note: the SQL template does not select toplevel, so this key does not
+		// distinguish it. With pg_stat_statements.track=all, top-level and nested
+		// statements sharing the same database, role, and queryid can still collide.
 		cacheKeyPrefix := database + "\x00" + rolname + "\x00" + queryID.(string) + "\x00"
 
 		for columnName, info := range updatedOnly {
