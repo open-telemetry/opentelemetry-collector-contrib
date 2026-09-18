@@ -27,6 +27,8 @@ func NewFactory() receiver.Factory {
 type ReceiverType struct{}
 
 // Type is the receiver type
+func (ReceiverType) ScopeName() string { return metadata.ScopeName }
+
 func (ReceiverType) Type() component.Type {
 	return metadata.Type
 }
