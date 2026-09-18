@@ -31,7 +31,6 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
 		ClientConfig:  clientConfig,
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
