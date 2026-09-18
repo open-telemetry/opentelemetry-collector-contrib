@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/informer"
 	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
 	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
@@ -42,8 +43,10 @@ type k8sobjectsreceiver struct {
 	storageClient   storage.Client
 	mu              sync.Mutex
 	cancel          context.CancelFunc
-	observerFunc    func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error)
+	registry        *informer.FactoryRegistry
+	observerFunc    func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error)
 	wg              sync.WaitGroup
+	stopped         bool
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -65,6 +68,12 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		for _, item := range objects[i].ExcludeWatchType {
 			objects[i].exclude[item] = true
 		}
+		if objects[i].ResourceVersion != "" && metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
+			params.Logger.Warn(
+				"resource_version is deprecated and ignored when receiver.k8s_objects.useInformerObserver is enabled. Use `storage` to persist resourceVersion across restarts.",
+				zap.String("object", objects[i].Name),
+			)
+		}
 	}
 
 	kr := &k8sobjectsreceiver{
@@ -81,8 +90,8 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 	return kr, nil
 }
 
-func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
-	return func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
+func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
+	return func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
 		obsConf := k8sinventory.Config{
 			Gvr:             *object.gvr,
 			Namespaces:      object.Namespaces,
@@ -91,8 +100,28 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 			ResourceVersion: object.ResourceVersion,
 		}
 
+		useInformer := metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled()
+
 		switch object.Mode {
 		case k8sinventory.PullMode:
+			if useInformer {
+				return informer.NewPull(
+					reg,
+					informer.PullConfig{
+						Config:           obsConf,
+						Interval:         object.Interval,
+						CacheSyncTimeout: kr.config.CacheSyncTimeout,
+					},
+					kr.setting.Logger,
+					func(objects *unstructured.UnstructuredList) {
+						logs := pullObjectsToLogData(objects, time.Now(), object, kr.setting.BuildInfo.Version)
+						obsCtx := kr.obsrecv.StartLogsOp(ctx)
+						logRecordCount := logs.LogRecordCount()
+						err := kr.consumer.ConsumeLogs(obsCtx, logs)
+						kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+					},
+				)
+			}
 			return pullobserver.New(
 				kr.client,
 				pullobserver.Config{
@@ -109,16 +138,33 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 				},
 			)
 		case k8sinventory.WatchMode:
+			if useInformer {
+				return informer.NewWatch(
+					reg,
+					informer.WatchConfig{
+						Config:              obsConf,
+						IncludeInitialState: kr.config.IncludeInitialState,
+						Exclude:             object.exclude,
+						CacheSyncTimeout:    kr.config.CacheSyncTimeout,
+						StorageClient:       kr.storageClient,
+					},
+					kr.setting.Logger,
+					func(data *apiWatch.Event) {
+						logs, err := watchObjectsToLogData(data, time.Now(), object, kr.setting.BuildInfo.Version)
+						if err != nil {
+							kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
+						} else {
+							obsCtx := kr.obsrecv.StartLogsOp(ctx)
+							err := kr.consumer.ConsumeLogs(obsCtx, logs)
+							kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
+						}
+					},
+				)
+			}
 			return watchobserver.New(
 				kr.client,
 				watchobserver.Config{
-					Config: k8sinventory.Config{
-						Gvr:             *object.gvr,
-						Namespaces:      object.Namespaces,
-						LabelSelector:   object.LabelSelector,
-						FieldSelector:   object.FieldSelector,
-						ResourceVersion: object.ResourceVersion,
-					},
+					Config:              obsConf,
 					IncludeInitialState: kr.config.IncludeInitialState,
 					Exclude:             object.exclude,
 				},
@@ -211,29 +257,48 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		elector.SetCallBackFuncs(
 			func(ctx context.Context) {
 				cctx, cancel := context.WithCancel(ctx)
+				var registry *informer.FactoryRegistry
+				if metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
+					registry = informer.NewFactoryRegistry(kr.client, 0)
+				}
+				kr.mu.Lock()
+				if kr.stopped {
+					kr.mu.Unlock()
+					cancel()
+					if registry != nil {
+						registry.Shutdown()
+					}
+					return
+				}
 				kr.cancel = cancel
+				kr.registry = registry
+				kr.mu.Unlock()
 				for _, object := range validConfigs {
-					if err = kr.start(cctx, object); err != nil {
-						kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", object.Name))
+					if err = kr.start(cctx, registry, object); err != nil {
+						kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", object.Name), zap.Error(err))
 					}
 				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
 			func() {
-				// Shutdown on leader loss. The receiver will restart if leadership is regained
-				// since the callbacks remain registered with the leader elector extension.
+				// Tear down observers on leader loss so a leadership regain
+				// gets a fresh registry. Stays reversible: no permanent stop.
 				kr.setting.Logger.Info("no longer leader, stopping")
-				err = kr.Shutdown(context.Background())
-				if err != nil {
-					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
-				}
+				kr.stopObservers()
 			},
 		)
 	} else {
 		cctx, cancel := context.WithCancel(ctx)
+		var registry *informer.FactoryRegistry
+		if metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
+			registry = informer.NewFactoryRegistry(kr.client, 0)
+		}
+		kr.mu.Lock()
 		kr.cancel = cancel
+		kr.registry = registry
+		kr.mu.Unlock()
 		for _, object := range validConfigs {
-			if err := kr.start(cctx, object); err != nil {
+			if err := kr.start(cctx, registry, object); err != nil {
 				return err
 			}
 		}
@@ -242,14 +307,33 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-func (kr *k8sobjectsreceiver) Shutdown(ctx context.Context) error {
-	kr.setting.Logger.Info("Object Receiver stopped")
-	if kr.cancel != nil {
-		kr.cancel()
+// stopObservers tears down the current leader term: cancels the term context,
+// stops observers, and shuts down the factory registry.
+func (kr *k8sobjectsreceiver) stopObservers() {
+	kr.mu.Lock()
+	cancel := kr.cancel
+	registry := kr.registry
+	kr.cancel = nil
+	kr.registry = nil
+	kr.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
 	}
 	kr.stopWatches()
+	if registry != nil {
+		registry.Shutdown()
+	}
+}
 
-	// Close storage client if it exists
+func (kr *k8sobjectsreceiver) Shutdown(ctx context.Context) error {
+	kr.setting.Logger.Info("Object Receiver stopped")
+	kr.mu.Lock()
+	kr.stopped = true
+	kr.mu.Unlock()
+
+	kr.stopObservers()
+
 	if kr.storageClient != nil {
 		if err := kr.storageClient.Close(ctx); err != nil {
 			kr.setting.Logger.Error("failed to close storage client", zap.Error(err))
@@ -269,7 +353,7 @@ func (kr *k8sobjectsreceiver) stopWatches() {
 	kr.wg.Wait()
 }
 
-func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) error {
+func (kr *k8sobjectsreceiver) start(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) error {
 	// Handle exclude_namespaces: compile regexes and filter namespaces
 	// TODO: when using informers, we should find a way to get just the metadata.name of the namespace, and then filter on that
 	if len(object.ExcludeNamespaces) > 0 {
@@ -303,7 +387,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		kr.setting.Logger.Info("Collecting from namespaces", zap.Strings("namespaces", object.Namespaces))
 	}
 
-	obs, err := kr.observerFunc(ctx, object)
+	obs, err := kr.observerFunc(ctx, reg, object)
 	if err != nil {
 		return err
 	}
