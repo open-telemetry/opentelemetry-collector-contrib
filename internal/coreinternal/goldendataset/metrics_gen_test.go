@@ -79,6 +79,9 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 
 	// A smaller value moves Min but leaves Max alone.
 	addDoubleHistogramVal(pt, 0)
+	require.EqualValues(t, 4, pt.Count())
+	require.EqualValues(t, 5, pt.Sum())
+	require.EqualValues(t, 2, pt.BucketCounts().At(0))
 	require.EqualValues(t, 0, pt.Min())
 	require.EqualValues(t, 2, pt.Max())
 }

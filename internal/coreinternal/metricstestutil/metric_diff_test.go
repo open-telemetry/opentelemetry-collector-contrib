@@ -76,55 +76,63 @@ func newHistogramMetrics(mutate func(pmetric.HistogramDataPoint)) pmetric.Metric
 // TestHistogramSumMinMax covers the HasSum, Min, HasMin, Max and HasMax fields of
 // HistogramDataPoint, which the goldendataset-based tests above never vary.
 func TestHistogramSumMinMax(t *testing.T) {
-	// Each case asserts only that the diffs it cares about are reported, so that the test does not
-	// have to be updated whenever an unrelated field is added to or reordered in diffHistogramPt.
+	// Each case asserts that the diffs it cares about are reported (Subset) and that no other diffs
+	// slip in (Len), while staying independent of the order in which diffHistogramPt compares fields.
 	// TestNoDiffForIdenticalHistogramSumMinMax covers the other direction, that no diff is reported
 	// for points that are equal.
 	//
-	// Removing an optional field reports both the presence flag and the value, because the value
-	// accessor falls back to the zero value once the field is unset. This mirrors how
-	// diffExponentialHistogramPt reports its optional fields.
+	// The "* presence" cases set the field to zero on the expected side and leave it unset on the
+	// actual side. Both read back as zero, so only the Has* comparison can tell them apart; that is
+	// exactly the case a value-only comparison misses.
 	tests := []struct {
-		name     string
-		mutate   func(pmetric.HistogramDataPoint)
-		wantMsgs []string
+		name           string
+		mutateExpected func(pmetric.HistogramDataPoint)
+		mutateActual   func(pmetric.HistogramDataPoint)
+		wantMsgs       []string
 	}{
 		{
-			name:     "different sum",
-			mutate:   func(pt pmetric.HistogramDataPoint) { pt.SetSum(7) },
-			wantMsgs: []string{"HistogramDataPoint Sum"},
+			name:         "different sum",
+			mutateActual: func(pt pmetric.HistogramDataPoint) { pt.SetSum(7) },
+			wantMsgs:     []string{"HistogramDataPoint Sum"},
 		},
 		{
-			name:     "different min",
-			mutate:   func(pt pmetric.HistogramDataPoint) { pt.SetMin(0) },
-			wantMsgs: []string{"HistogramDataPoint Min"},
+			name:         "different min",
+			mutateActual: func(pt pmetric.HistogramDataPoint) { pt.SetMin(0) },
+			wantMsgs:     []string{"HistogramDataPoint Min"},
 		},
 		{
-			name:     "different max",
-			mutate:   func(pt pmetric.HistogramDataPoint) { pt.SetMax(4) },
-			wantMsgs: []string{"HistogramDataPoint Max"},
+			name:         "different max",
+			mutateActual: func(pt pmetric.HistogramDataPoint) { pt.SetMax(4) },
+			wantMsgs:     []string{"HistogramDataPoint Max"},
 		},
 		{
-			name:     "sum unset",
-			mutate:   func(pt pmetric.HistogramDataPoint) { pt.RemoveSum() },
-			wantMsgs: []string{"HistogramDataPoint HasSum", "HistogramDataPoint Sum"},
+			name:           "sum presence",
+			mutateExpected: func(pt pmetric.HistogramDataPoint) { pt.SetSum(0) },
+			mutateActual:   func(pt pmetric.HistogramDataPoint) { pt.RemoveSum() },
+			wantMsgs:       []string{"HistogramDataPoint HasSum"},
 		},
 		{
-			name:     "min unset",
-			mutate:   func(pt pmetric.HistogramDataPoint) { pt.RemoveMin() },
-			wantMsgs: []string{"HistogramDataPoint HasMin", "HistogramDataPoint Min"},
+			name:           "min presence",
+			mutateExpected: func(pt pmetric.HistogramDataPoint) { pt.SetMin(0) },
+			mutateActual:   func(pt pmetric.HistogramDataPoint) { pt.RemoveMin() },
+			wantMsgs:       []string{"HistogramDataPoint HasMin"},
 		},
 		{
-			name:     "max unset",
-			mutate:   func(pt pmetric.HistogramDataPoint) { pt.RemoveMax() },
-			wantMsgs: []string{"HistogramDataPoint HasMax", "HistogramDataPoint Max"},
+			name:           "max presence",
+			mutateExpected: func(pt pmetric.HistogramDataPoint) { pt.SetMax(0) },
+			mutateActual:   func(pt pmetric.HistogramDataPoint) { pt.RemoveMax() },
+			wantMsgs:       []string{"HistogramDataPoint HasMax"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expected := newHistogramMetrics(func(pmetric.HistogramDataPoint) {})
-			actual := newHistogramMetrics(tt.mutate)
+			mutateExpected := tt.mutateExpected
+			if mutateExpected == nil {
+				mutateExpected = func(pmetric.HistogramDataPoint) {}
+			}
+			expected := newHistogramMetrics(mutateExpected)
+			actual := newHistogramMetrics(tt.mutateActual)
 
 			diffs := DiffMetrics(nil, expected, actual)
 
@@ -133,6 +141,7 @@ func TestHistogramSumMinMax(t *testing.T) {
 				msgs = append(msgs, d.Msg)
 			}
 			assert.Subset(t, msgs, tt.wantMsgs)
+			assert.Len(t, diffs, len(tt.wantMsgs))
 		})
 	}
 }
