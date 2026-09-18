@@ -19,6 +19,8 @@ type convertCaseArguments[K any] struct {
 	ToCase string
 }
 
+// NewConvertCaseFactory returns a factory for the ConvertCase OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#convertcase
 func NewConvertCaseFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ConvertCase", &convertCaseArguments[K]{}, createConvertCaseFunction[K])
 }

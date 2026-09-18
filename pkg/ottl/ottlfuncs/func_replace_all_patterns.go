@@ -27,6 +27,8 @@ type replaceAllPatternsArguments[K any] struct {
 	ReplacementFormat ottl.Optional[ottl.StringGetter[K]]
 }
 
+// NewReplaceAllPatternsFactory returns a factory for the replace_all_patterns OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#replace_all_patterns
 func NewReplaceAllPatternsFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("replace_all_patterns", &replaceAllPatternsArguments[K]{}, createReplaceAllPatternsFunction[K])
 }

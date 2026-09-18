@@ -21,6 +21,11 @@ type mapEachArguments[K any] struct {
 	Mapper *ottl.LambdaExpression[K]
 }
 
+// NewMapEachFactory returns a factory for the MapEach OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#mapeach
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future. It
+// requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewMapEachFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("MapEach", &mapEachArguments[K]{}, createMapEachFunction[K])
 }

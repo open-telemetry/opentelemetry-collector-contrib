@@ -14,6 +14,8 @@ type minutesArguments[K any] struct {
 	Duration ottl.DurationGetter[K]
 }
 
+// NewMinutesFactory returns a factory for the Minutes OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#minutes
 func NewMinutesFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Minutes", &minutesArguments[K]{}, createMinutesFunction[K])
 }
@@ -25,15 +27,15 @@ func createMinutesFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 		return nil, errors.New("MinutesFactory args must be of type *minutesArguments[K]")
 	}
 
-	return Minutes(args.Duration)
+	return minutes(args.Duration), nil
 }
 
-func Minutes[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
+func minutes[K any](duration ottl.DurationGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return d.Minutes(), nil
-	}, nil
+	}
 }
