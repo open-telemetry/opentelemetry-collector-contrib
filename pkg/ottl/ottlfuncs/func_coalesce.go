@@ -14,6 +14,8 @@ type coalesceArguments[K any] struct {
 	Values []ottl.Getter[K]
 }
 
+// NewCoalesceFactory returns a factory for the Coalesce OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#coalesce
 func NewCoalesceFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Coalesce", &coalesceArguments[K]{}, createCoalesceFunction[K])
 }

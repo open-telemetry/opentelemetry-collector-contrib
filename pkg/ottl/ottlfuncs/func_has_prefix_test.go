@@ -73,7 +73,7 @@ func Test_HasPrefix_Error(t *testing.T) {
 			return "test", nil
 		},
 	}
-	exprFunc := HasPrefix[any](target, prefix)
+	exprFunc := hasPrefix[any](target, prefix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -89,7 +89,7 @@ func Test_HasPrefix_Error_prefix(t *testing.T) {
 			return true, nil
 		},
 	}
-	exprFunc := HasPrefix[any](target, prefix)
+	exprFunc := hasPrefix[any](target, prefix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -142,7 +142,7 @@ func BenchmarkHasPrefix(b *testing.B) {
 	prefix := &ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) { return "hello ", nil },
 	}
-	exprFunc := HasPrefix[any](target, prefix)
+	exprFunc := hasPrefix[any](target, prefix)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {
