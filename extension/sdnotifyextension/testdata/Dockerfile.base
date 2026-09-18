@@ -1,12 +1,11 @@
 # Shared base image for the integration tests.
-#
-# otelcontribcol (built from the repo's own source tree via `make
-# docker-otelcontribcol`, which must run before this Dockerfile is built)
-# already includes sdnotifyextension plus every other core+contrib
-# component, so it's reused here instead of running a separate,
-# version-pinned OCB build just for this extension's tests.
 
-FROM otelcontribcol AS build-stage
+FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-builder:latest AS build-stage
+
+WORKDIR /src
+COPY --chmod=755 . /src
+
+RUN ocb --config /src/extension/sdnotifyextension/testdata/builder-config.yaml
 
 FROM ghcr.io/fauust/docker-systemd:debian-13@sha256:ee4902c979bf30dd9cabefa8fdd4fa642feea5e12ca0d1f44c839704738f4357
 
@@ -15,7 +14,7 @@ RUN apt-get update \
         ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build-stage --chmod=755 /otelcontribcol /bin/otelcol
+COPY --from=build-stage /home/ocb/build/otelcol /bin/otelcol
 
 # To allow systemd (and other programs) to identify that it is executed within
 # a container, please set the $container environment variable for PID 1 in the

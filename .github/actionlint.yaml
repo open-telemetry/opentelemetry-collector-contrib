@@ -9,3 +9,6 @@ config-variables: null
 paths:
   .github/workflows/**/*.{yml,yaml}:
     ignore:
+      # actionlint v1.7.12 doesn't support GitHub's '$/' self-repository syntax required by zizmor.
+      # Remove once https://github.com/rhysd/actionlint/issues/711 is released.
+      - 'specifying action "\$/.+" in invalid format because ref is missing'
