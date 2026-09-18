@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/postgresql
+note: Prevent top-query records from being dropped when the same query ID appears under multiple databases or roles.
+issues: [51067]
+subtext:
+change_logs: [user]

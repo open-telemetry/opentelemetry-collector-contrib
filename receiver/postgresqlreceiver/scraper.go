@@ -467,6 +467,12 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		database, _ := row[string(semconv.DBNamespaceKey)].(string)
+		rolname, _ := row[dbAttributePrefix+"rolname"].(string)
+		// pg_stat_statements is keyed on (userid, dbid, queryid); queryid alone
+		// repeats across databases and roles. NUL cannot occur in PostgreSQL identifiers.
+		cacheKeyPrefix := database + "\x00" + rolname + "\x00" + queryID.(string) + "\x00"
+
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]
@@ -475,14 +481,15 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			} else {
 				valInAtts = _val.(float64)
 			}
-			valInCache, exist := p.cache.Get(queryID.(string) + columnName)
+			cacheKey := cacheKeyPrefix + columnName
+			valInCache, exist := p.cache.Get(cacheKey)
 			valDelta := valInAtts
 			if exist {
 				valDelta = valInAtts - valInCache
 			}
 			finalValue := float64(0)
 			if valDelta > 0 {
-				p.cache.Add(queryID.(string)+columnName, valInAtts)
+				p.cache.Add(cacheKey, valInAtts)
 				finalValue = valDelta
 			}
 			if info.finalConverter != nil {
