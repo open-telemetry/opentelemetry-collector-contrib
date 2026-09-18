@@ -664,7 +664,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 									name := tagPrefix + tagName
 									attributes[name] = value
 								}
-								attributes["timegrain"] = &compositeKey.timeGrain
+								attributes[attributeTimeGrain] = &compositeKey.timeGrain
 
 								var metricName string
 								if metric.Name != nil && metric.Name.Value != nil {
