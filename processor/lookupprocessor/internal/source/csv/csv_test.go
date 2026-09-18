@@ -221,3 +221,100 @@ func TestReloadPicksUpChanges(t *testing.T) {
 		return lookupErr == nil && ok && v == "closed_store"
 	}, 2*time.Second, 10*time.Millisecond)
 }
+
+func TestCreateDefaultConfig(t *testing.T) {
+	cfg := createDefaultConfig()
+	csvCfg, ok := cfg.(*Config)
+
+	require.True(t, ok)
+	assert.True(t, csvCfg.HasHeader)
+	assert.Equal(t, ",", csvCfg.Delimiter)
+}
+
+func TestConfigValidation_EdgeCases(t *testing.T) {
+	intPtr := func(v int) *int { return &v }
+
+	tests := []struct {
+		name        string
+		cfg         Config
+		expectedErr string
+	}{
+		{
+			name: "negative value_column_index",
+			cfg: Config{
+				FileSourceConfig: lookupsource.FileSourceConfig{Path: "data.csv"},
+				Delimiter:        ",",
+				KeyColumn:        "id",
+				HasHeader:        true,
+				ValueColumnIndex: intPtr(-1),
+			},
+			expectedErr: "value_column_index must not be negative",
+		},
+		{
+			name: "value_column by name without header",
+			cfg: Config{
+				FileSourceConfig: lookupsource.FileSourceConfig{Path: "data.csv"},
+				Delimiter:        ",",
+				KeyColumnIndex:   intPtr(0),
+				HasHeader:        false,
+				ValueColumn:      "val",
+			},
+			expectedErr: "value_column (by name) requires has_header: true",
+		},
+		{
+			name: "both value_column and value_column_index set",
+			cfg: Config{
+				FileSourceConfig: lookupsource.FileSourceConfig{Path: "data.csv"},
+				Delimiter:        ",",
+				KeyColumn:        "id",
+				HasHeader:        true,
+				ValueColumn:      "val",
+				ValueColumnIndex: intPtr(1),
+			},
+			expectedErr: "only one of value_column or value_column_index may be set",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectedErr)
+		})
+	}
+}
+
+func TestMakeParse_ShortRowsSkipped(t *testing.T) {
+	intPtr := func(v int) *int { return &v }
+
+	t.Run("skips row when key index is out of bounds", func(t *testing.T) {
+		cfg := &Config{
+			HasHeader:      false,
+			KeyColumnIndex: intPtr(2),
+		}
+		parse := makeParse(cfg)
+
+		content := []byte("a,b\nc,d\n")
+		res, err := parse(content)
+
+		require.NoError(t, err)
+		assert.Empty(t, res)
+	})
+
+	t.Run("skips row when value index is out of bounds", func(t *testing.T) {
+		cfg := &Config{
+			HasHeader:        false,
+			KeyColumnIndex:   intPtr(0),
+			ValueColumnIndex: intPtr(2),
+		}
+		parse := makeParse(cfg)
+
+		content := []byte("key1,val1\nkey2,val2,val3\n")
+		res, err := parse(content)
+
+		require.NoError(t, err)
+		assert.Len(t, res, 1)
+		assert.Equal(t, "val3", res["key2"])
+		assert.NotContains(t, res, "key1")
+	})
+}
