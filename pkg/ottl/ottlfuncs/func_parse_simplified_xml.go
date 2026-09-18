@@ -18,6 +18,8 @@ type parseSimplifiedXMLArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewParseSimplifiedXMLFactory returns a factory for the ParseSimplifiedXML OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#parsesimplifiedxml
 func NewParseSimplifiedXMLFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ParseSimplifiedXML", &parseSimplifiedXMLArguments[K]{}, createParseSimplifiedXMLFunction[K])
 }

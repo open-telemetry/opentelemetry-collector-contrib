@@ -16,6 +16,8 @@ type logArguments[K any] struct {
 	Target ottl.FloatLikeGetter[K]
 }
 
+// NewLogFactory returns a factory for the Log OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#log
 func NewLogFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Log", &logArguments[K]{}, createLogFunction[K])
 }

@@ -7,6 +7,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "27 0,12 * * *" # Run at 00:27 and 12:27 UTC every day.
+  pull_request:
+    types: [ opened, synchronize, reopened, labeled, unlabeled ]
+    branches:
+      - main
 
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
@@ -25,7 +29,7 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
-    if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' }}
+    if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' && (contains(github.event.pull_request.labels.*.name, 'Run Load Tests') || github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
@@ -86,7 +90,7 @@ jobs:
         id: filename
         env:
           MATRIX_TEST: ${{ matrix.test }}
-        run: echo "name=$(echo "${MATRIX_TEST}" | sed -e 's/|/_/g')" >> "$GITHUB_OUTPUT"
+        run: echo "name=${MATRIX_TEST//|/_}" >> "$GITHUB_OUTPUT"
       - name: Create Test Result Archive
         if: ${{ failure() || success() }}
         continue-on-error: true
@@ -147,7 +151,7 @@ jobs:
       - setup-environment
       - loadtest
       - update-benchmarks
-    if: always()
+    if: always() && github.event_name != 'pull_request'
     uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@03559ef555db0eae5d85c3c6347d1530243e7aa7 # v0.13.0
     with:
       success: >-
