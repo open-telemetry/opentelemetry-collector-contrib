@@ -42,7 +42,6 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Timeout = 5 * time.Second
 	clientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},

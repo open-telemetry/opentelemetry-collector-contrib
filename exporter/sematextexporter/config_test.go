@@ -49,7 +49,6 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	overrideClientConfig := confighttp.NewDefaultClientConfig()
-	overrideClientConfig.ForceAttemptHTTP2 = false
 	overrideClientConfig.Timeout = 500 * time.Millisecond
 	overrideClientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
