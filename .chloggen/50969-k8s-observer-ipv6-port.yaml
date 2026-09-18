@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: extension/k8s_observer
+note: Format IPv6 Kubernetes port endpoints correctly.
+issues: [50969]
+subtext:
+change_logs: [user]
