@@ -59,6 +59,18 @@ func TestStringSliceLabelValueMetadata(t *testing.T) {
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
 
+func TestIntSliceLabelValueMetadata(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, IntSliceValueType)
+
+	assert.Equal(t, IntSliceValueType, metadata.ValueType())
+	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, labelColumnName, metadata.ColumnName())
+
+	var expectedType *[]int64
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
 func TestByteSliceLabelValueMetadata(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, ByteSliceValueType)
 
@@ -170,6 +182,26 @@ func TestStringSliceLabelValue(t *testing.T) {
 	assert.Equal(t, stringValue, attributeValue.Str())
 }
 
+func TestIntSliceLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, IntSliceValueType)
+	labelValue := intSliceLabelValue{
+		metadata: metadata,
+		value:    stringValue,
+	}
+
+	assert.Equal(t, IntSliceValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, stringValue, labelValue.Value())
+
+	attributes := pcommon.NewMap()
+
+	labelValue.SetValueTo(attributes)
+
+	attributeValue, exists := attributes.Get(labelName)
+
+	assert.True(t, exists)
+	assert.Equal(t, stringValue, attributeValue.Str())
+}
+
 func TestByteSliceLabelValue(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, ByteSliceValueType)
 	labelValue := byteSliceLabelValue{
@@ -255,6 +287,18 @@ func TestNewStringSliceLabelValue(t *testing.T) {
 	labelValue := newStringSliceLabelValue(metadata, valueHolder)
 
 	assert.Equal(t, StringSliceValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, expectedValue, labelValue.Value())
+}
+
+func TestNewIntSliceLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, IntSliceValueType)
+	value := []int64{2, 1, 3}
+	expectedValue := "1,2,3"
+	valueHolder := &value
+
+	labelValue := newIntSliceLabelValue(metadata, valueHolder)
+
+	assert.Equal(t, IntSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, expectedValue, labelValue.Value())
 }
 
