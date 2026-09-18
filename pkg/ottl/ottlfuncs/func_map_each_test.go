@@ -345,14 +345,14 @@ func Test_MapEachFactory(t *testing.T) {
 		factory := NewMapEachFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &MapEachArguments[any]{}, args)
+		assert.IsType(t, &mapEachArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Source", "Mapper"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewMapEachFactory[any]()
 		args := factory.CreateDefaultArguments()
-		mapEachArgs, ok := args.(*MapEachArguments[any])
+		mapEachArgs, ok := args.(*mapEachArguments[any])
 		require.True(t, ok)
 		mapEachArgs.Source = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -370,6 +370,30 @@ func Test_MapEachFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createMapEachFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "MapEachFactory args must be of type *MapEachArguments[K]")
+		assert.ErrorContains(t, err, "MapEachFactory args must be of type *mapEachArguments[K]")
 	})
+}
+
+func BenchmarkMapEach(b *testing.B) {
+	source := ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			m := pcommon.NewMap()
+			m.PutInt("a", 1)
+			m.PutInt("b", 2)
+			m.PutInt("c", 3)
+			return m, nil
+		},
+	}
+	mapper := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		return resolveBinding("v").(int64) * 2, nil
+	})
+	exprFunc, err := mapEach(source, mapper)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

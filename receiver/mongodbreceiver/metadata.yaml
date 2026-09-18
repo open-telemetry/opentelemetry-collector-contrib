@@ -13,12 +13,16 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [justinianvoss22, dyl10s, ishleenk17, shrenikjain38]
+    active: [justinianvoss22, dyl10s, ishleenk17, shrenikjain38, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
     seeking_new: true
 
 override_value_enabled: true
 
 resource_attributes:
+  db.system.version:
+    description: The database version of the instance. Examples include "5.0.0", "6.0.4".
+    enabled: false
+    type: string
   server.address:
     description: The address of the MongoDB host.
     enabled: true
@@ -201,6 +205,47 @@ attributes:
   mongodb.query.truncated:
     description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
     type: bool
+  mongodb.replica.name:
+    description: The name of the replica, in host:port form.
+    type: string
+    requirement_level: recommended
+  mongodb.replica.state:
+    description: The state of a replica within the replica set.
+    type: string
+    requirement_level: recommended
+    enum:
+      - startup
+      - primary
+      - secondary
+      - recovering
+      - startup2
+      - unknown
+      - arbiter
+      - down
+      - rollback
+      - removed
+  mongodb.replica_set.lag.type:
+    description: The replication progress that the lag is measured against.
+    type: string
+    requirement_level: recommended
+    enum:
+      - applied
+      - durable
+  mongodb.wt.concurrent_transaction.ticket.type:
+    description: The WiredTiger concurrent-transaction ticket type.
+    type: string
+    requirement_level: recommended
+    enum:
+      - read
+      - write
+  mongodb.wt.log.operation.type:
+    description: The WiredTiger journal operation type.
+    type: string
+    requirement_level: recommended
+    enum:
+      - write
+      - sync
+      - flush
   operation:
     description: The MongoDB operation being counted.
     type: string
@@ -627,6 +672,34 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [operation]
+  mongodb.oplog.limit:
+    description: The maximum amount of storage the oplog is allowed to use.
+    stability: development
+    unit: By
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.oplog.usage:
+    description: The amount of storage the oplog is using.
+    stability: development
+    unit: By
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.oplog.window:
+    description: The time span between the oldest and the newest entry retained in the oplog.
+    stability: development
+    unit: s
+    enabled: false
+    gauge:
+      value_type: double
+    attributes: []
   mongodb.page_faults:
     description: The number of page faults.
     stability: development
@@ -700,6 +773,43 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
+  mongodb.replica.status:
+    description: The current state of the scraped replica.
+    extended_documentation: A timeseries is produced for every possible state. The value is 1 for the state the instance is currently in, and 0 for all others.
+    stability: development
+    unit: "1"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [mongodb.replica.state]
+  mongodb.replica_set.headroom:
+    description: The time margin a replica set member has before it falls off the end of the oplog.
+    stability: development
+    unit: s
+    enabled: false
+    gauge:
+      value_type: double
+    attributes: [mongodb.replica.name]
+  mongodb.replica_set.lag:
+    description: The time a replica set member is behind the primary.
+    stability: development
+    unit: s
+    enabled: false
+    gauge:
+      value_type: double
+    attributes: [mongodb.replica.name, mongodb.replica_set.lag.type]
+  mongodb.replica_set.member.count:
+    description: The number of members in the replica set.
+    stability: development
+    unit: "{member}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [mongodb.replica.state]
   mongodb.session.count:
     description: The total number of active sessions.
     stability: development
@@ -739,6 +849,56 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: []
+  mongodb.wt.concurrent_transaction.ticket.in_use:
+    description: The number of in-flight WiredTiger read/write concurrent-transaction tickets.
+    stability: development
+    unit: "{ticket}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [mongodb.wt.concurrent_transaction.ticket.type]
+  mongodb.wt.fsync.count:
+    description: The total number of fsync I/Os issued by the WiredTiger storage engine.
+    stability: development
+    unit: "{fsync}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []
+  mongodb.wt.log.operation.count:
+    description: The total number of WiredTiger journal operations.
+    stability: development
+    unit: "{operation}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [mongodb.wt.log.operation.type]
+  mongodb.wt.log.sync.time:
+    description: The cumulative time spent syncing the WiredTiger journal.
+    stability: development
+    unit: s
+    enabled: false
+    sum:
+      value_type: double
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []
+  mongodb.wt.log.write:
+    description: The total number of bytes written to the WiredTiger journal.
+    stability: development
+    unit: By
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
     attributes: []
   mongodb.wtcache.bytes.read:
     description: The number of bytes read into the WiredTiger cache.
