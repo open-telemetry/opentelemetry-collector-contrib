@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: breaking
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: exporter/elasticsearch
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Ingest OTel profiling signals as Elasticsearch datastreams
+note: Ingest OTel profiles as Elasticsearch (9.6.0) datastreams
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50589]
@@ -20,7 +20,6 @@ subtext: |
   (e.g. `profiling-events-all.otel-default`) that require **Elasticsearch 9.6.0 or later**.
   Sending profiles to an older cluster will result in `index_not_found_exception` errors and data loss.
   Users on Elasticsearch < 9.6.0 must restrict the exporter to ECS mode via `mapping.allowed_modes: [ecs]`.
-  Profiles are still in tech preview.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
