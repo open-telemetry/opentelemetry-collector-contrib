@@ -286,7 +286,7 @@ func (tsp *tailSamplingSpanProcessor) SetMaximumTraceSizeBytes(size uint64) {
 // traceBatch contains all spans from a single batch for a single trace.
 type traceBatch struct {
 	id        pcommon.TraceID
-	rootSpan  *ptrace.Span
+	hasRoot   bool
 	rss       ptrace.ResourceSpans
 	spanCount int64
 }
@@ -295,12 +295,12 @@ type newPolicyCmd struct {
 	policies []*policy
 }
 
-// spanAndScope a structure for holding information about span and its instrumentation scope.
-// required for preserving the instrumentation library information while sampling.
-// We use pointers there to fast find the span in the map.
+// spanAndScope holds a span handle and the index of its instrumentation
+// scope in the source ResourceSpans. Handles are stored by value so grouping
+// does not heap-allocate a pointer per span.
 type spanAndScope struct {
-	span                 *ptrace.Span
-	instrumentationScope *pcommon.InstrumentationScope
+	span     ptrace.Span
+	scopeIdx int
 }
 
 var (
@@ -582,7 +582,7 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 				tsp.waitForSpace(tickChan)
 			}
 
-			tsp.processTrace(trace.id, trace.rss, trace.spanCount, trace.rootSpan != nil)
+			tsp.processTrace(trace.id, trace.rss, trace.spanCount, trace.hasRoot)
 		}
 	case cmd := <-tsp.newPolicyChan:
 		tsp.policies = cmd.policies
@@ -1030,14 +1030,13 @@ func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceI
 	for j := 0; j < ilss.Len(); j++ {
 		scope := ilss.At(j)
 		spans := scope.Spans()
-		is := scope.Scope()
 		spansLen := spans.Len()
 		for k := range spansLen {
 			span := spans.At(k)
 			key := span.TraceID()
 			idToSpans[key] = append(idToSpans[key], spanAndScope{
-				span:                 &span,
-				instrumentationScope: &is,
+				span:     span,
+				scopeIdx: j,
 			})
 		}
 	}
@@ -1296,29 +1295,28 @@ func appendAllTraces(dest, src ptrace.Traces) {
 	}
 }
 
-func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, *ptrace.Span) {
+func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, bool) {
 	rs := ptrace.NewResourceSpans()
 	rss.Resource().CopyTo(rs.Resource())
-	var rootSpan *ptrace.Span
+	var hasRoot bool
 
-	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
+	scopeIdxToNewScope := make(map[int]ptrace.ScopeSpans)
+	srcScopes := rss.ScopeSpans()
 	for _, spanAndScope := range spanAndScopes {
-		// If the scope of the spanAndScope is not in the map, add it to the map and the destination.
 		var sp ptrace.Span
-		if scope, ok := scopePointerToNewScope[spanAndScope.instrumentationScope]; !ok {
+		if dest, ok := scopeIdxToNewScope[spanAndScope.scopeIdx]; !ok {
 			is := rs.ScopeSpans().AppendEmpty()
-			spanAndScope.instrumentationScope.CopyTo(is.Scope())
-			scopePointerToNewScope[spanAndScope.instrumentationScope] = &is
-
+			srcScopes.At(spanAndScope.scopeIdx).Scope().CopyTo(is.Scope())
+			scopeIdxToNewScope[spanAndScope.scopeIdx] = is
 			sp = is.Spans().AppendEmpty()
 		} else {
-			sp = scope.Spans().AppendEmpty()
+			sp = dest.Spans().AppendEmpty()
 		}
 
 		spanAndScope.span.CopyTo(sp)
 		if sp.ParentSpanID().IsEmpty() {
-			rootSpan = &sp
+			hasRoot = true
 		}
 	}
-	return rs, rootSpan
+	return rs, hasRoot
 }
