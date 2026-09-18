@@ -1139,3 +1139,10 @@ statements against each signal at 10,000 items/second:
 - Logs: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-ram-mib)
 
 Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/testbed/tests/transform_processor_test.go) for more information about the setup.
+
+Each function that is unique to the transform processor also has a Go benchmark covering its
+execution. Run them with:
+
+```sh
+make benchmark-transform
+```
