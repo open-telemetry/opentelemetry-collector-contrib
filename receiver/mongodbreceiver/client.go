@@ -26,6 +26,8 @@ type client interface {
 	DBStats(ctx context.Context, DBName string) (bson.M, error)
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
+	OplogStats(ctx context.Context) (bson.M, error)
+	OplogBounds(ctx context.Context) (bson.Timestamp, bson.Timestamp, error)
 	// RunCommand accepts any BSON-serializable command (bson.M or bson.D).
 	RunCommand(ctx context.Context, db string, command any) (bson.M, error)
 	CurrentOp(ctx context.Context) ([]bson.M, error)
@@ -108,6 +110,63 @@ func (c *mongodbClient) IndexStats(ctx context.Context, database, collectionName
 		return nil, err
 	}
 	return indexStats, nil
+}
+
+const (
+	oplogDatabase   = "local"
+	oplogCollection = "oplog.rs"
+)
+
+// OplogStats returns the storage statistics of the oplog collection
+// more information can be found here: https://www.mongodb.com/docs/manual/reference/operator/aggregation/collStats/
+func (c *mongodbClient) OplogStats(ctx context.Context) (bson.M, error) {
+	collection := c.Database(oplogDatabase).Collection(oplogCollection)
+	pipeline := mongo.Pipeline{bson.D{bson.E{Key: "$collStats", Value: bson.M{"storageStats": bson.M{}}}}}
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if !cursor.Next(ctx) {
+		if err := cursor.Err(); err != nil {
+			return nil, err
+		}
+		return nil, mongo.ErrNoDocuments
+	}
+	var document bson.M
+	if err := cursor.Decode(&document); err != nil {
+		return nil, err
+	}
+	return document, nil
+}
+
+// OplogBounds returns the timestamps of the oldest and the newest entry currently retained in
+// the oplog. Both are read in natural order, which is insertion order on a capped collection.
+func (c *mongodbClient) OplogBounds(ctx context.Context) (bson.Timestamp, bson.Timestamp, error) {
+	oldest, err := c.oplogEntryTimestamp(ctx, 1)
+	if err != nil {
+		return bson.Timestamp{}, bson.Timestamp{}, err
+	}
+	newest, err := c.oplogEntryTimestamp(ctx, -1)
+	if err != nil {
+		return bson.Timestamp{}, bson.Timestamp{}, err
+	}
+	return oldest, newest, nil
+}
+
+func (c *mongodbClient) oplogEntryTimestamp(ctx context.Context, order int) (bson.Timestamp, error) {
+	opts := options.FindOne().
+		SetSort(bson.D{bson.E{Key: "$natural", Value: order}}).
+		SetProjection(bson.D{bson.E{Key: "ts", Value: 1}})
+
+	var entry struct {
+		Timestamp bson.Timestamp `bson:"ts"`
+	}
+	if err := c.Database(oplogDatabase).Collection(oplogCollection).FindOne(ctx, bson.D{}, opts).Decode(&entry); err != nil {
+		return bson.Timestamp{}, err
+	}
+	return entry.Timestamp, nil
 }
 
 const currentOpNamespaceFilterRegex = `^(?:admin|local)(?:\.|$)`

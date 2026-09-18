@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: receiver/macos_unified_logging
+note: Add predicate field aliases and support additional fields
+issues: [50626]
+subtext: |-
+  Extended logType validation to include messageType alias and type validation to include eventType alias.
+  Added support for eventMessage and signpostName predicate fields.
+  Updated the README example to use the supported OR form for messageType/logType comparisons.
+change_logs: [user]
