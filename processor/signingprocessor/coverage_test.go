@@ -569,6 +569,14 @@ func TestFileKeyMaterialProviderMissingFiles(t *testing.T) {
 	}
 }
 
+// mustGenerateTestCertAndKey is a convenience wrapper around generateTestPEM
+// that returns only the PEM-encoded cert and key bytes, failing the test on error.
+func mustGenerateTestCertAndKey(t *testing.T) (certPEM, keyPEM []byte) {
+	t.Helper()
+	c, k, _ := generateTestPEM(t)
+	return c, k
+}
+
 // ---------------------------------------------------------------------------
 // env provider
 // ---------------------------------------------------------------------------
@@ -600,75 +608,68 @@ func TestEnvKeyMaterialProviderMissingEnv(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// newKeyMaterialProvider dispatch
+// inline provider (confmap-resolved values)
 // ---------------------------------------------------------------------------
 
-func TestNewKeyMaterialProviderEnv(t *testing.T) {
-	certPEM, keyPEM, _ := generateTestPEM(t)
-	t.Setenv("NKM_CERT", string(certPEM))
-	t.Setenv("NKM_KEY", string(keyPEM))
-
-	cfg := &Config{
-		Algorithm: "RS256",
-		KeySource: KeySourceConfig{
-			Type: KeySourceEnv,
-			Env:  &EnvKeyConfig{Certificate: "NKM_CERT", PrivateKey: "NKM_KEY"},
-		},
-	}
-	prov, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+func TestInlineKeyMaterialProvider(t *testing.T) {
+	certPEM, keyPEM := mustGenerateTestCertAndKey(t)
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{
+		Certificate: string(certPEM),
+		PrivateKey:  string(keyPEM),
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if prov.GetPrivateKey() == nil || prov.GetCertificate() == nil {
-		t.Error("provider returned nil key or cert")
+	if prov.GetCertificate() == nil {
+		t.Error("expected non-nil certificate")
+	}
+	if prov.GetPrivateKey() == nil {
+		t.Error("expected non-nil private key")
 	}
 }
 
-func TestNewKeyMaterialProviderK8sError(t *testing.T) {
-	cfg := &Config{
-		Algorithm: "RS256",
-		KeySource: KeySourceConfig{
-			Type: KeySourceK8sSecret,
-			K8sSecret: &K8sSecretConfig{
-				Name: "signing-secret", Namespace: "default",
-				Certificate: "tls.crt", PrivateKey: "tls.key",
-			},
-		},
+func TestInlineKeyMaterialProviderHMAC(t *testing.T) {
+	key := make([]byte, 32)
+	for i := range key {
+		key[i] = byte(i)
 	}
-	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
-	if err == nil {
-		t.Skip("k8s client unexpectedly succeeded (running inside a cluster?)")
+	encoded := base64.StdEncoding.EncodeToString(key)
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: encoded})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !bytes.Equal(prov.GetHMACKey(), key) {
+		t.Errorf("HMAC key mismatch: got %x, want %x", prov.GetHMACKey(), key)
 	}
 }
 
-func TestNewKeyMaterialProviderBaoError(t *testing.T) {
-	cfg := &Config{
-		Algorithm: "RS256",
-		KeySource: KeySourceConfig{
-			Type: KeySourceBao,
-			Bao: &BaoKeyConfig{
-				Address:     "http://127.0.0.1:19999",
-				MountPath:   "secret",
-				SecretPath:  "signing",
-				Certificate: "certificate",
-				PrivateKey:  "private_key",
-			},
-		},
-	}
-	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+func TestInlineKeyMaterialProviderEmptyHMAC(t *testing.T) {
+	empty := base64.StdEncoding.EncodeToString([]byte{})
+	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: empty})
 	if err == nil {
-		t.Skip("bao client unexpectedly succeeded")
+		t.Error("expected error for empty HMAC key")
 	}
 }
 
-func TestNewKeyMaterialProviderUnknownType(t *testing.T) {
-	cfg := &Config{
-		Algorithm: "RS256",
-		KeySource: KeySourceConfig{Type: "unknown"},
-	}
-	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+func TestInlineKeyMaterialProviderInvalidBase64HMAC(t *testing.T) {
+	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: "not-valid-base64!!!"})
 	if err == nil {
-		t.Error("expected error for unknown key source type")
+		t.Error("expected error for invalid base64 HMAC key")
+	}
+}
+
+func TestInlineKeyMaterialProviderEmptyCert(t *testing.T) {
+	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{Certificate: "", PrivateKey: "something"})
+	if err == nil {
+		t.Error("expected error for empty certificate")
+	}
+}
+
+func TestInlineKeyMaterialProviderEmptyKey(t *testing.T) {
+	certPEM, _ := mustGenerateTestCertAndKey(t)
+	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{Certificate: string(certPEM), PrivateKey: ""})
+	if err == nil {
+		t.Error("expected error for empty private key")
 	}
 }
 

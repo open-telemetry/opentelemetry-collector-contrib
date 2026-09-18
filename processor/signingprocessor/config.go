@@ -72,12 +72,14 @@ type K8sSecretConfig struct {
 // EnvKeyConfig configures environment-variable key material.
 // For asymmetric algorithms set Certificate and PrivateKey.
 // For HMAC-SHA256 set HMACKey instead.
+//
+// The inline (confmap-resolved) variant uses Certificate, PrivateKey, and
+// HMACKey, which hold the already-resolved PEM text or base64-encoded key.
+// Use ${env:VAR_NAME} substitution in the collector config to supply the values.
 type EnvKeyConfig struct {
-	// Asymmetric key fields
 	Certificate string `mapstructure:"certificate"`
 	PrivateKey  string `mapstructure:"private_key"`
-	// HMAC-SHA256 field
-	HMACKey string `mapstructure:"hmac_key"`
+	HMACKey     string `mapstructure:"hmac_key"`
 }
 
 // FileKeyConfig configures file-based key material.
