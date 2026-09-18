@@ -817,11 +817,103 @@ func TestCreateLogsProcessorInvalidConfig(t *testing.T) {
 	}
 }
 
-func TestNewProcessorMissingKeyFiles(t *testing.T) {
-	cfg := &Config{
-		Algorithm:      "RS256",
-		CertificateRef: CertificateRefFingerprint,
-		KeySource:      KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{Certificate: "/no/such/cert.pem", PrivateKey: "/no/such/key.pem"}},
+// ---------------------------------------------------------------------------
+// TestLoadConfig (config_test.go)
+// ---------------------------------------------------------------------------
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewID(component.MustNewType("signing")),
+			expected: &Config{
+				Algorithm:      "RS256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceFile,
+					File: &FileKeyConfig{
+						CertFile: "/etc/otelcol/signing-cert.pem",
+						KeyFile:  "/etc/otelcol/signing-key.pem",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "sha512_full"),
+			expected: &Config{
+				Algorithm:      "RS512",
+				CertificateRef: "full",
+				KeySource: KeySourceConfig{
+					Type: KeySourceFile,
+					File: &FileKeyConfig{
+						CertFile: "/etc/otelcol/signing-cert.pem",
+						KeyFile:  "/etc/otelcol/signing-key.pem",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "env"),
+			expected: &Config{
+				Algorithm:      "RS256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceEnv,
+					Env: &EnvKeyConfig{
+						Certificate: "${env:SIGNING_CERT_PEM}",
+						PrivateKey:  "${env:SIGNING_KEY_PEM}",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "k8s"),
+			expected: &Config{
+				Algorithm:      "RS256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceK8sSecret,
+					K8sSecret: &K8sSecretConfig{
+						Name:      "signing-secret",
+						Namespace: "default",
+						CertKey:   "tls.crt",
+						KeyKey:    "tls.key",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "bao"),
+			expected: &Config{
+				Algorithm:      "RS256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceBao,
+					Bao: &BaoKeyConfig{
+						Address:    "https://bao.example.com",
+						SecretPath: "secret/data/signing",
+						CertField:  "certificate",
+						KeyField:   "private_key",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "hmac"),
+			expected: &Config{
+				Algorithm:      "HMAC-SHA256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceEnv,
+					Env:  &EnvKeyConfig{HMACKey: "${env:SIGNING_HMAC_KEY}"},
+				},
+			},
+		},
 	}
 	f := NewFactory()
 	settings := processortest.NewNopSettings(f.Type())

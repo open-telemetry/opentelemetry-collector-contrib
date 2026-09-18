@@ -22,8 +22,8 @@ signing/env:
   key_source:
     type: env
     env:
-      certificate: SIGNING_CERT_PEM
-      private_key: SIGNING_KEY_PEM
+      certificate: ${env:SIGNING_CERT_PEM}
+      private_key: ${env:SIGNING_KEY_PEM}
 
 # Kubernetes Secret key material.
 signing/k8s:
@@ -52,4 +52,4 @@ signing/hmac:
   key_source:
     type: env
     env:
-      hmac_key: SIGNING_HMAC_KEY
+      hmac_key: ${env:SIGNING_HMAC_KEY}

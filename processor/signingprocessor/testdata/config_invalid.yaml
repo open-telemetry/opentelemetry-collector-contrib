@@ -34,7 +34,7 @@ signing/env_missing_key:
   key_source:
     type: env
     env:
-      certificate: SIGNING_CERT_PEM
+      certificate: ${env:SIGNING_CERT_PEM}
 
 # k8s_secret provider — missing secret name.
 signing/k8s_missing_name:
