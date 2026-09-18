@@ -3,11 +3,10 @@
 package filestorage
 
 import (
-	"testing"
-
 	"go.uber.org/goleak"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("go.etcd.io/bbolt.verifyKeyOrder"), goleak.IgnoreAnyFunction("go.etcd.io/bbolt.(*Tx).recursivelyCheckBucket"))
 }

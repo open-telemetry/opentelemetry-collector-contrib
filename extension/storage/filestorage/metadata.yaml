@@ -3,6 +3,16 @@ type: file_storage
 
 description: The File Storage Extension can persist state to the local file system.
 
+tests:
+  goleak:
+    ignore:
+      any:
+        # Recovering from a corrupt database leaves bbolt's reachability-check
+        # goroutine blocked sending on a channel nobody reads any more.
+        # See https://github.com/etcd-io/bbolt/blob/v1.5.0/db.go#L1293-L1301
+        - "go.etcd.io/bbolt.verifyKeyOrder"
+        - "go.etcd.io/bbolt.(*Tx).recursivelyCheckBucket"
+
 status:
   class: extension
   stability:
