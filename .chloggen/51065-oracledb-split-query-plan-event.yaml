@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add a new `db.server.query_plan` event that carries `oracledb.query_plan` on its own record, so an oversized execution plan no longer risks dropping the lightweight query statistics alongside it."
+note: "Add a new `db.server.query_plan` event that reports the query execution plan on a record of its own, so it can be filtered, routed or dropped independently of the query statistics."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51065]
@@ -16,12 +16,7 @@ issues: [51065]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `db.server.query_plan` is disabled by default, and while it is disabled `db.server.top_query`
-  keeps carrying `oracledb.query_plan` exactly as before. Enabling it reports the plan on the new
-  event, joined back via `oracledb.sql_id` + `oracledb.child_number` and
-  `oracledb.plan_hash_value`, and `db.server.top_query` then reports `oracledb.query_plan` as an
-  empty string. It is collected as part of top query collection, so it does nothing unless
-  `db.server.top_query` is also enabled.
+  Disabled by default, and requires `db.server.top_query`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

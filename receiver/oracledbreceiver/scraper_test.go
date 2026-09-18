@@ -1744,14 +1744,14 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 // TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent covers both sides of the db.server.query_plan switch.
 func TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent(t *testing.T) {
-	defaultRecords := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, true, false))
+	defaultRecords := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{topQueryEnabled: true}))
 	require.Len(t, defaultRecords, 1)
 	require.Equal(t, "db.server.top_query", defaultRecords[0].EventName())
 	planOnTopQuery, ok := defaultRecords[0].Attributes().Get("oracledb.query_plan")
 	require.True(t, ok, "db.server.top_query must keep oracledb.query_plan while db.server.query_plan is disabled")
 	require.NotEmpty(t, planOnTopQuery.Str())
 
-	records := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, true, true))
+	records := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{topQueryEnabled: true, queryPlanEnabled: true}))
 	require.Len(t, records, 2)
 
 	byEventName := make(map[string]plog.LogRecord, len(records))
@@ -1769,11 +1769,13 @@ func TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent(t *testing.T) {
 	require.True(t, ok, "db.server.query_plan record is missing")
 	// oracledb.query_plan is compared against the disabled scrape's value: the payload has to survive
 	// the move byte for byte.
-	assert.Equal(t, 4, queryPlan.Attributes().Len())
+	assert.Equal(t, 6, queryPlan.Attributes().Len())
 	for attribute, want := range map[string]string{
 		"oracledb.sql_id":          "fxk8aq3nds8aw",
 		"oracledb.child_number":    "0",
+		"oracledb.child_address":   "0000000074C6E830",
 		"oracledb.plan_hash_value": "3123456789",
+		"db.namespace":             "ORCLPDB1",
 		"oracledb.query_plan":      planOnTopQuery.Str(),
 	} {
 		got, found := queryPlan.Attributes().Get(attribute)
@@ -1785,16 +1787,39 @@ func TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent(t *testing.T) {
 // TestScraper_ScrapeTopNLogsDbServerQueryPlanEventOnly asserts db.server.query_plan collects nothing
 // unless db.server.top_query is enabled too.
 func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventOnly(t *testing.T) {
-	assert.Empty(t, logRecordsFrom(scrapeTopNLogsForPlanEvent(t, false, true)))
+	assert.Empty(t, logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{queryPlanEnabled: true})))
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventNoPlanRows asserts a cursor with no rows in
+// V$SQL_PLAN_STATISTICS_ALL yields a db.server.top_query record and no db.server.query_plan record.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventNoPlanRows(t *testing.T) {
+	records := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{
+		topQueryEnabled:  true,
+		queryPlanEnabled: true,
+		noPlanRows:       true,
+	}))
+	require.Len(t, records, 1)
+	assert.Equal(t, "db.server.top_query", records[0].EventName())
+}
+
+// planEventScrape describes one canned top-N collection for the db.server.query_plan tests.
+type planEventScrape struct {
+	topQueryEnabled  bool
+	queryPlanEnabled bool
+	// noPlanRows makes V$SQL_PLAN_STATISTICS_ALL return nothing for the cursor.
+	noPlanRows bool
 }
 
 // scrapeTopNLogsForPlanEvent runs a log collection over the canned query metrics and plan rows in testdata.
-func scrapeTopNLogsForPlanEvent(t *testing.T, topQueryEventEnabled, queryPlanEventEnabled bool) plog.Logs {
+func scrapeTopNLogsForPlanEvent(t *testing.T, opts planEventScrape) plog.Logs {
 	t.Helper()
 
 	clientProviderFunc := func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
 		file := "oracleQueryMetricsData.txt"
 		if strings.Contains(s, SQLPlanTable) {
+			if opts.noPlanRows {
+				return &fakeDbClient{Responses: [][]metricRow{nil}}
+			}
 			file = "oracleQueryPlanData.txt"
 		}
 		var rows []metricRow
@@ -1804,8 +1829,8 @@ func scrapeTopNLogsForPlanEvent(t *testing.T, topQueryEventEnabled, queryPlanEve
 
 	logsCfg := metadata.DefaultLogsBuilderConfig()
 	logsCfg.ResourceAttributes.HostName.Enabled = true
-	logsCfg.Events.DbServerTopQuery.Enabled = topQueryEventEnabled
-	logsCfg.Events.DbServerQueryPlan.Enabled = queryPlanEventEnabled
+	logsCfg.Events.DbServerTopQuery.Enabled = opts.topQueryEnabled
+	logsCfg.Events.DbServerQueryPlan.Enabled = opts.queryPlanEnabled
 
 	lruCache, err := lru.New[string, map[string]int64](500)
 	require.NoError(t, err)

@@ -2063,7 +2063,8 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 
 	for i := range hits {
 		hit := &hits[i]
-		planBytes, err := json.Marshal(childAddressToPlanMap[hit.childAddress])
+		planRows, hasPlan := childAddressToPlanMap[hit.childAddress]
+		planBytes, err := json.Marshal(planRows)
 		if err != nil {
 			s.logger.Error("Error marshaling plan data to JSON", zap.Error(err))
 		}
@@ -2109,12 +2110,18 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.firstLoadTime,
 			hit.lastLoadTime)
 
-		s.lb.RecordDbServerQueryPlanEvent(context.Background(),
-			pcommon.NewTimestampFromTime(collectionTime),
-			hit.sqlID,
-			hit.childNumber,
-			hit.planHashValue,
-			planString)
+		// A cursor with no rows in V$SQL_PLAN_STATISTICS_ALL has no plan to report, so it gets no
+		// record rather than one carrying the JSON encoding of an absent plan.
+		if hasPlan {
+			s.lb.RecordDbServerQueryPlanEvent(ctx,
+				pcommon.NewTimestampFromTime(collectionTime),
+				hit.sqlID,
+				hit.childNumber,
+				hit.childAddress,
+				hit.planHashValue,
+				hit.dbNamespace,
+				planString)
+		}
 	}
 
 	hitCount := len(hits)

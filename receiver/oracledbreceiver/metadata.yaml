@@ -401,11 +401,13 @@ attributes:
 events:
   db.server.query_plan:
     enabled: false
-    description: query execution plan. When enabled, the plan is reported here and db.server.top_query reports oracledb.query_plan as an empty string, so an oversized plan payload cannot drop the lightweight query statistics alongside it
+    description: The execution plan for a query.
     attributes:
       - oracledb.sql_id
       - oracledb.child_number
+      - oracledb.child_address
       - oracledb.plan_hash_value
+      - db.namespace
       - oracledb.query_plan
 
   db.server.query_sample:

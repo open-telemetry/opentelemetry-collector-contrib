@@ -18,7 +18,7 @@ type eventDbServerQueryPlan struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbPlanHashValueAttributeValue string, oracledbQueryPlanAttributeValue string) {
+func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbPlanHashValueAttributeValue string, dbNamespaceAttributeValue string, oracledbQueryPlanAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -32,7 +32,9 @@ func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcom
 	}
 	dp.Attributes().PutStr("oracledb.sql_id", oracledbSQLIDAttributeValue)
 	dp.Attributes().PutStr("oracledb.child_number", oracledbChildNumberAttributeValue)
+	dp.Attributes().PutStr("oracledb.child_address", oracledbChildAddressAttributeValue)
 	dp.Attributes().PutStr("oracledb.plan_hash_value", oracledbPlanHashValueAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	dp.Attributes().PutStr("oracledb.query_plan", oracledbQueryPlanAttributeValue)
 
 }
@@ -481,8 +483,8 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.
-func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbPlanHashValueAttributeValue string, oracledbQueryPlanAttributeValue string) {
-	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbPlanHashValueAttributeValue, oracledbQueryPlanAttributeValue)
+func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbPlanHashValueAttributeValue string, dbNamespaceAttributeValue string, oracledbQueryPlanAttributeValue string) {
+	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbChildAddressAttributeValue, oracledbPlanHashValueAttributeValue, dbNamespaceAttributeValue, oracledbQueryPlanAttributeValue)
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.

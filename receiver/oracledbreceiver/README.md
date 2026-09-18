@@ -220,24 +220,21 @@ ALTER SYSTEM SET statistics_level = ALL;
 #### `db.server.query_plan`
 
 By default, `db.server.top_query` carries the query's execution plan in its `oracledb.query_plan`
-attribute. A plan is a JSON payload holding one entry per plan step, so an oversized plan can push
-its record past a transport/buffer limit and take the lightweight query statistics down with it.
-Enabling `db.server.query_plan` moves the plan payload onto its own record: `db.server.top_query`
-still carries an `oracledb.query_plan` attribute but reports it as an **empty string**, and the plan
-itself is reported on `db.server.query_plan`, joined back via `oracledb.sql_id` +
-`oracledb.child_number` (the cursor the plan belongs to) and `oracledb.plan_hash_value`. Leaving
+attribute. A plan is a JSON payload holding one entry per plan step, so it can dominate the record it
+travels on. Enabling `db.server.query_plan` isolates the plan on a record of its own, where it can be
+filtered, routed or dropped independently of the query statistics, and where an oversized plan does
+not take those statistics with it when a batcher splits by size.
+
+`db.server.top_query` then reports `oracledb.query_plan` as an **empty string**, and the plan itself
+is reported on `db.server.query_plan`, joined back to its cursor via `oracledb.sql_id` +
+`oracledb.child_number` + `oracledb.child_address`, with `oracledb.plan_hash_value` identifying the
+plan and `db.namespace` the database it came from. A cursor with no rows in
+`V$SQL_PLAN_STATISTICS_ALL` produces no `db.server.query_plan` record. Leaving
 `db.server.query_plan` disabled preserves the previous behavior exactly.
 
-> [!NOTE]
-> While `db.server.query_plan` is enabled, an empty `oracledb.query_plan` on `db.server.top_query`
-> means the plan was reported on `db.server.query_plan` — not that plan collection failed. When no
-> plan rows are returned for a cursor, `db.server.query_plan` reports `oracledb.query_plan` as
-> `null`, which is the value `db.server.top_query` carried for such a cursor before this event
-> existed.
-
 `db.server.query_plan` is sourced from the same collection as `db.server.top_query` and only splits
-the plan out of it, so it needs no grants of its own and collects nothing unless
-`db.server.top_query` is enabled too.
+the plan out of it, so it needs no grants of its own, and enabling it without `db.server.top_query`
+is a configuration error.
 
 #### `db.server.session.wait_sample`
 

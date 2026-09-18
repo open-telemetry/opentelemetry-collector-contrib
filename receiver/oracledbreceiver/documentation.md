@@ -1704,7 +1704,7 @@ events:
 
 ### db.server.query_plan
 
-query execution plan. When enabled, the plan is reported here and db.server.top_query reports oracledb.query_plan as an empty string, so an oversized plan payload cannot drop the lightweight query statistics alongside it
+The execution plan for a query.
 
 #### Attributes
 
@@ -1712,7 +1712,9 @@ query execution plan. When enabled, the plan is reported here and db.server.top_
 | ---- | ----------- | ------ | ------------------- |
 | oracledb.sql_id | The SQL ID of the query. | Any Str | - |
 | oracledb.child_number | The child number of the query. | Any Str | - |
+| oracledb.child_address | Address of the child cursor. | Any Str | - |
 | oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
 | oracledb.query_plan | The query execution plan used by the Oracle database. | Any Str | - |
 
 ### db.server.query_sample
