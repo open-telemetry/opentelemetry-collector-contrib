@@ -809,3 +809,13 @@ An OpenShift cluster resource quota
 
 **Descriptive Attributes:**
 - `openshift.clusterquota.name`
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.k8sclusterreceiver.sidecarContainerMetrics` | alpha | When enabled, collect k8s.container metrics and entities for native sidecar containers (init containers with restartPolicy: Always). | v0.162.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42571) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

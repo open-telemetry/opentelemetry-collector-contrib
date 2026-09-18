@@ -731,6 +731,10 @@ exclusions:
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+    feature_gates:
+      - name: receiver.k8sclusterreceiver.sidecarContainerMetrics
+        validation:
+          enabled: false
     lifecycle_test:
       enabled: false
     goleak:
