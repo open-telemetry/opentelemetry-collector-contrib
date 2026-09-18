@@ -69,7 +69,7 @@ var (
 
 func newSQLServerScraper(id component.ID,
 	query string,
-	telemetry sqlquery.TelemetryConfig,
+	telemetry sqlquery.TelemetryConfig, //nolint:unparam
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
 	params receiver.Settings,
