@@ -11,19 +11,19 @@ require (
 	github.com/twmb/franz-go/pkg/kadm v1.18.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
 	github.com/twmb/franz-go/pkg/kmsg v1.13.1
-	go.opentelemetry.io/collector/component v1.67.0
-	go.opentelemetry.io/collector/component/componenttest v0.161.0
-	go.opentelemetry.io/collector/confmap v1.67.0
-	go.opentelemetry.io/collector/consumer v1.67.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.161.0
-	go.opentelemetry.io/collector/featuregate v1.67.0
-	go.opentelemetry.io/collector/filter v0.161.0
-	go.opentelemetry.io/collector/pdata v1.67.0
-	go.opentelemetry.io/collector/receiver v1.67.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.161.0
-	go.opentelemetry.io/collector/receiver/xreceiver v0.161.0
-	go.opentelemetry.io/collector/scraper v0.161.0
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.161.0
+	go.opentelemetry.io/collector/component v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/confmap v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/consumer v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/consumer/consumertest v0.161.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/filter v0.161.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/pdata v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/receiver v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/receiver/receivertest v0.161.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/receiver/xreceiver v0.161.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/scraper v0.161.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.161.1-0.20260917142259-65d9c38b188c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 )
@@ -72,16 +72,16 @@ require (
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
 	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.67.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.67.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.67.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.161.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.161.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.161.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.67.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.161.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/config/configtls v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.161.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
