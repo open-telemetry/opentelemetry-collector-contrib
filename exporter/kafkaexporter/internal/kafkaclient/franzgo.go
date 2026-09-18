@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -133,15 +134,22 @@ func NewFranzSyncProducer(client *kgo.Client,
 }
 
 // ExportData sends a batch of records to Kafka. It attaches configured
-// record headers and per-call metadata-derived headers to each record before
-// producing.
+// record headers, per-call metadata-derived headers, and trace context headers
+// to each record before producing.
 func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Record) error {
 	metadataHeaders := metadataToHeaders(ctx, p.metadataKeys)
+	propagator := otel.GetTextMapPropagator()
+	fields := propagator.Fields()
+	var traceHeaders []kgo.RecordHeader
+	if len(fields) > 0 {
+		traceHeaders = traceContextToHeaders(ctx, propagator)
+	}
 	var headers []kgo.RecordHeader
-	if n := len(p.recordHeaders) + len(metadataHeaders); n > 0 {
+	if n := len(p.recordHeaders) + len(metadataHeaders) + len(traceHeaders); n > 0 {
 		headers = make([]kgo.RecordHeader, 0, n)
-		headers = append(headers, p.recordHeaders...)
-		headers = append(headers, metadataHeaders...)
+		headers = appendHeadersExcept(headers, p.recordHeaders, fields)
+		headers = appendHeadersExcept(headers, metadataHeaders, fields)
+		headers = append(headers, traceHeaders...)
 	}
 	for _, r := range records {
 		r.Headers = headers

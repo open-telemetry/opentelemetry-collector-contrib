@@ -5,9 +5,12 @@ package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"slices"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/plugin/kotel"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 // metadataToHeaders converts context metadata into a kgo.RecordHeader slice.
@@ -26,4 +29,22 @@ func metadataToHeaders(ctx context.Context, keys []string) []kgo.RecordHeader {
 		}
 	}
 	return headers
+}
+
+// traceContextToHeaders converts the trace context in ctx into a
+// kgo.RecordHeader slice using propagator.
+func traceContextToHeaders(ctx context.Context, propagator propagation.TextMapPropagator) []kgo.RecordHeader {
+	var record kgo.Record
+	propagator.Inject(ctx, kotel.NewRecordCarrier(&record))
+	return record.Headers
+}
+
+// appendHeadersExcept appends the headers whose keys are not in excludeKeys to dst.
+func appendHeadersExcept(dst, headers []kgo.RecordHeader, excludeKeys []string) []kgo.RecordHeader {
+	for _, h := range headers {
+		if !slices.Contains(excludeKeys, h.Key) {
+			dst = append(dst, h)
+		}
+	}
+	return dst
 }
