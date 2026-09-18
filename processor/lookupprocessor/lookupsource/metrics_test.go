@@ -4,7 +4,6 @@
 package lookupsource
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,7 @@ func TestReloadMetrics_Record(t *testing.T) {
 	rm, err := NewReloadMetrics(ts, "test_scope")
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("record success", func(t *testing.T) {
 		assert.NotPanics(t, func() {
