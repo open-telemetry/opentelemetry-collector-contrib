@@ -30,7 +30,7 @@ const ottlPkgPath = "github.com/open-telemetry/opentelemetry-collector-contrib/p
 //
 //	make update-ottl-signatures
 func Test_FunctionSignatures(t *testing.T) {
-	got := renderSignatures(StandardFuncs[any]())
+	got := renderSignatures()
 
 	if os.Getenv("OTTL_UPDATE_SIGNATURES") != "" {
 		require.NoError(t, os.MkdirAll(filepath.Dir(signaturesGolden), 0o750))
@@ -45,21 +45,23 @@ func Test_FunctionSignatures(t *testing.T) {
 			"If intended, regenerate the golden (make update-ottl-signatures) and add a changelog entry.")
 }
 
-func renderSignatures(funcs map[string]ottl.Factory[any]) string {
-	names := make([]string, 0, len(funcs))
-	for name := range funcs {
-		names = append(names, name)
+func renderSignatures() string {
+	var lines []string
+	for _, f := range StandardFuncs[any]() {
+		lines = append(lines, renderSignature(f))
 	}
-	slices.Sort(names)
+
+	lines = append(lines, renderSignature(NewIsRootSpanFactory()))
+	slices.Sort(lines)
 
 	var b strings.Builder
-	for _, name := range names {
-		fmt.Fprintln(&b, renderSignature(funcs[name]))
+	for _, line := range lines {
+		fmt.Fprintln(&b, line)
 	}
 	return b.String()
 }
 
-func renderSignature(f ottl.Factory[any]) string {
+func renderSignature[K any](f ottl.Factory[K]) string {
 	args := f.CreateDefaultArguments()
 	if args == nil {
 		return f.Name() + "()"

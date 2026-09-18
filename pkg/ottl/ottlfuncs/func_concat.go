@@ -16,6 +16,8 @@ type concatArguments[K any] struct {
 	Delimiter ottl.StringGetter[K]
 }
 
+// NewConcatFactory returns a factory for the Concat OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#concat
 func NewConcatFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Concat", &concatArguments[K]{}, createConcatFunction[K])
 }

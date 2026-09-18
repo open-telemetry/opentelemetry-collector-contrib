@@ -18,6 +18,8 @@ type parseJSONArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewParseJSONFactory returns a factory for the ParseJSON OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#parsejson
 func NewParseJSONFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ParseJSON", &parseJSONArguments[K]{}, createParseJSONFunction[K])
 }

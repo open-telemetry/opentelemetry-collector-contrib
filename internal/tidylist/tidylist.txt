@@ -1,5 +1,4 @@
 cmd/codecovgen
-pkg/pdatautil
 pkg/golden
 pkg/pdatatest
 cmd/golden
@@ -8,6 +7,7 @@ extension/internal/credentialsfile
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/oauth2clientauthextension
+internal/common
 internal/coreinternal
 pkg/ottl
 pkg/ottl/contexts/xprofile
@@ -24,7 +24,6 @@ receiver/otelarrowreceiver
 internal/otelarrow
 exporter/otelarrowexporter
 receiver/otelarrowreceiver
-internal/common
 pkg/resourcetotelemetry
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite

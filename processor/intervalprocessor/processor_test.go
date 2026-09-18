@@ -6,6 +6,7 @@ package intervalprocessor // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
@@ -32,7 +33,8 @@ func TestAggregation(t *testing.T) {
 		{name: "exp_histograms_are_aggregated"},
 		{name: "gauges_are_aggregated"},
 		{name: "summaries_are_aggregated"},
-		{name: "all_delta_metrics_are_passed_through"},  // Deltas are passed through even when aggregation is enabled
+		{name: "all_delta_metrics_are_aggregated"}, // Deltas are aggregated
+		{name: "delta_metrics_aggregation_multiple_points"},
 		{name: "non_monotonic_sums_are_passed_through"}, // Non-monotonic sums are passed through even when aggregation is enabled
 		{name: "gauges_are_passed_through", passThrough: true},
 		{name: "summaries_are_passed_through", passThrough: true},
@@ -60,12 +62,20 @@ func TestAggregation(t *testing.T) {
 
 			dir := filepath.Join("testdata", tc.name)
 
-			md, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
+			inputFields, err := filepath.Glob(filepath.Join(dir, "input*.yaml"))
 			require.NoError(t, err)
+			require.NotEmpty(t, inputFields)
 
-			// Test that ConsumeMetrics works
-			err = mgp.ConsumeMetrics(ctx, md)
-			require.NoError(t, err)
+			sort.Strings(inputFields)
+
+			for _, inputFile := range inputFields {
+				md, readErr := golden.ReadMetrics(inputFile)
+				require.NoError(t, readErr)
+
+				// Test that ConsumeMetrics works
+				consumeErr := mgp.ConsumeMetrics(ctx, md)
+				require.NoError(t, consumeErr)
+			}
 
 			require.IsType(t, &intervalProcessor{}, mgp)
 			processor := mgp.(*intervalProcessor)
@@ -85,16 +95,17 @@ func TestAggregation(t *testing.T) {
 			// Exporting again should return nothing
 			processor.exportMetrics(ctx)
 
-			// Next should have gotten three data sets:
-			// 1. Anything left over from ConsumeMetrics()
+			// Next should have gotten N + 2 data sets:
+			// 1. Anything left over from each ConsumeMetrics() call (N calls)
 			// 2. Anything exported from exportMetrics()
 			// 3. An empty entry for the second call to exportMetrics()
 			allMetrics := next.AllMetrics()
-			require.Len(t, allMetrics, 3)
+			numInputs := len(inputFields)
+			require.Len(t, allMetrics, numInputs+2)
 
-			nextData := allMetrics[0]
-			exportData := allMetrics[1]
-			secondExportData := allMetrics[2]
+			nextData := allMetrics[0] // Only comparing the first pass-through
+			exportData := allMetrics[numInputs]
+			secondExportData := allMetrics[numInputs+1]
 
 			expectedNextData, err := golden.ReadMetrics(filepath.Join(dir, "next.yaml"))
 			require.NoError(t, err)
