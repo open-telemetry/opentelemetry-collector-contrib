@@ -4,7 +4,7 @@ status:
   class: pkg
   stability:
     development: [ profiles ]
-    beta: [ traces, metrics, logs ]
+    stable: [ traces, metrics, logs ]
   codeowners:
     active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
     emeritus: [anuraaga, kentquirk]
