@@ -29,6 +29,8 @@ type flattenData struct {
 	maxDepth        int64
 }
 
+// NewFlattenFactory returns a factory for the flatten OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#flatten
 func NewFlattenFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("flatten", &flattenArguments[K]{}, createFlattenFunction[K])
 }

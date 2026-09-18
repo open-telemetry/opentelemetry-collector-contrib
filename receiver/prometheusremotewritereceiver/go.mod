@@ -8,7 +8,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.161.0
 	github.com/prometheus/client_golang/exp v0.0.0-20260724065723-ecdb8254ba61
 	github.com/prometheus/common v0.71.0
@@ -24,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/consumer/consumertest v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260916171901-3e8af656214a
+	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/receiver v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/receiver/receivertest v0.161.1-0.20260916171901-3e8af656214a
@@ -117,7 +117,6 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/processor v1.67.1-0.20260916171901-3e8af656214a // indirect
@@ -153,8 +152,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.3 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 

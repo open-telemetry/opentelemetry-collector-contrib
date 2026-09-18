@@ -32,8 +32,7 @@ func Test_Minute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Minute(tt.time)
-			require.NoError(t, err)
+			exprFunc := minute(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -47,8 +46,7 @@ func Test_Minute_Error(t *testing.T) {
 			return "not a time", nil
 		},
 	}
-	exprFunc, err := Minute(getter)
-	require.NoError(t, err)
+	exprFunc := minute(getter)
 	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
@@ -91,12 +89,11 @@ func Test_MinuteFactory(t *testing.T) {
 }
 
 func BenchmarkMinute(b *testing.B) {
-	exprFunc, err := Minute[any](&ottl.StandardTimeGetter[any]{
+	exprFunc := minute[any](&ottl.StandardTimeGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC), nil
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

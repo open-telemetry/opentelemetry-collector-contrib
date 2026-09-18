@@ -14,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/config/confighttp v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/config/configopaque v1.67.1-0.20260916171901-3e8af656214a
-	go.opentelemetry.io/collector/config/configoptional v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/config/configtls v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/confmap v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/consumer v1.67.1-0.20260916171901-3e8af656214a
@@ -74,7 +73,6 @@ require (
 	github.com/moby/term v0.5.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.30 // indirect
@@ -92,6 +90,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/config/confignet v1.67.1-0.20260916171901-3e8af656214a // indirect
+	go.opentelemetry.io/collector/config/configoptional v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.67.1-0.20260916171901-3e8af656214a // indirect
@@ -123,8 +122,6 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 

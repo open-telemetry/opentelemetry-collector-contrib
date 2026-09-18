@@ -14,6 +14,8 @@ type weekdayArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewWeekdayFactory returns a factory for the Weekday OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#weekday
 func NewWeekdayFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Weekday", &weekdayArguments[K]{}, createWeekdayFunction[K])
 }
@@ -25,15 +27,15 @@ func createWeekdayFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 		return nil, errors.New("WeekdayFactory args must be of type *weekdayArguments[K]")
 	}
 
-	return Weekday(args.Time)
+	return weekday(args.Time), nil
 }
 
-func Weekday[K any](time ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func weekday[K any](time ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := time.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return int64(t.Weekday()), nil
-	}, nil
+	}
 }
