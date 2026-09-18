@@ -488,24 +488,38 @@ func TestRowsIterationErrorIsReturned(t *testing.T) {
 		name    string
 		columns []string
 		values  []driver.Value
-		call    func(*mySQLClient) error
+		call    func(*mySQLClient) (any, error)
 	}{
+		{
+			name:    "getGlobalStats",
+			columns: []string{"Variable_name", "Value"},
+			values:  []driver.Value{"Threads_connected", "12"},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getGlobalStats()
+			},
+		},
 		{
 			name:    "getTableStats",
 			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "TABLE_ROWS", "AVG_ROW_LENGTH", "DATA_LENGTH", "INDEX_LENGTH"},
 			values:  []driver.Value{"schema", "table", 1, 2, 3, 4},
-			call: func(c *mySQLClient) error {
-				_, err := c.getTableStats()
-				return err
+			call: func(c *mySQLClient) (any, error) {
+				return c.getTableStats()
 			},
 		},
 		{
 			name:    "getTableIoWaitsStats",
 			columns: []string{"OBJECT_SCHEMA", "OBJECT_NAME", "COUNT_DELETE", "COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "SUM_TIMER_DELETE", "SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE"},
 			values:  []driver.Value{"schema", "table", 1, 2, 3, 4, 5, 6, 7, 8},
-			call: func(c *mySQLClient) error {
-				_, err := c.getTableIoWaitsStats()
-				return err
+			call: func(c *mySQLClient) (any, error) {
+				return c.getTableIoWaitsStats()
+			},
+		},
+		{
+			name:    "getIndexIoWaitsStats",
+			columns: []string{"OBJECT_SCHEMA", "OBJECT_NAME", "INDEX_NAME", "COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "COUNT_DELETE", "SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE", "SUM_TIMER_DELETE"},
+			values:  []driver.Value{"schema", "table", "index", 1, 2, 3, 4, 5, 6, 7, 8},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getIndexIoWaitsStats()
 			},
 		},
 	}
@@ -524,9 +538,11 @@ func TestRowsIterationErrorIsReturned(t *testing.T) {
 			mock.ExpectQuery(".*").WillReturnRows(rows)
 
 			c := &mySQLClient{client: db}
-			err = tt.call(c)
+			got, err := tt.call(c)
 			require.Error(t, err, "iteration error must not be swallowed")
 			assert.ErrorIs(t, err, assert.AnError)
+			assert.Nil(t, got, "no partial results should be returned alongside the error")
+			require.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
