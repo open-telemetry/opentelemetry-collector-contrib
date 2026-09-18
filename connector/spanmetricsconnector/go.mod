@@ -10,7 +10,6 @@ require (
 	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.161.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.1-0.20260916171901-3e8af656214a
@@ -50,6 +49,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
@@ -61,8 +61,6 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 retract (
 	v0.76.2

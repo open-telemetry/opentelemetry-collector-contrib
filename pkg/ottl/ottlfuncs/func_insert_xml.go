@@ -19,6 +19,8 @@ type insertXMLArguments[K any] struct {
 	SubDocument ottl.StringGetter[K]
 }
 
+// NewInsertXMLFactory returns a factory for the InsertXML OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#insertxml
 func NewInsertXMLFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("InsertXML", &insertXMLArguments[K]{}, createInsertXMLFunction[K])
 }

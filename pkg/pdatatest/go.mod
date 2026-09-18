@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a
@@ -24,8 +23,6 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../pdatautil
 
 retract (
 	v0.76.2

@@ -13,7 +13,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.161.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/common v0.71.0
@@ -36,6 +35,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/otelcol v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260916171901-3e8af656214a
+	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/processor v1.67.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/processor/batchprocessor v0.161.1-0.20260916171901-3e8af656214a
 	go.opentelemetry.io/collector/receiver v1.67.1-0.20260916171901-3e8af656214a
@@ -290,7 +290,6 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.1-0.20260916171901-3e8af656214a // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.161.1-0.20260916171901-3e8af656214a // indirect
@@ -359,8 +358,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prome
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
