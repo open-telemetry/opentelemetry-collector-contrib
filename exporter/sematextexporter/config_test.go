@@ -43,7 +43,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
-	defaultClientConfig.ForceAttemptHTTP2 = false
 	defaultClientConfig.Timeout = 5 * time.Second
 	defaultClientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
