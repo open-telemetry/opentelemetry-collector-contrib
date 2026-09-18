@@ -5,6 +5,7 @@ package kafkareceiver
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -56,10 +57,10 @@ func TestClearPauseReasons(t *testing.T) {
 	}
 }
 
-// TestProcessPartitionBatchStopsOnRevoke checks that the batch loop stops once
-// the partition is revoked, so the rest of the batch stays unmarked and the next
-// owner gets it. Shutdown has no next owner, so it finishes the batch.
-func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
+// TestProcessPartitionBatchStopsWhenCancelled checks that the batch loop stops
+// once the partition consumer is cancelled, so the rest of the batch stays
+// unmarked. A revocation hands it to the next owner, a shutdown to the next run.
+func TestProcessPartitionBatchStopsWhenCancelled(t *testing.T) {
 	const topic = "test"
 	const records = 10
 
@@ -68,8 +69,7 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 		independent      bool
 		marking          MessageMarking
 		shutdown         bool
-		closeClosing     bool
-		revokeBeforeLoop bool
+		cancelBeforeLoop bool
 		wantConsumed     int
 		wantMarkedOffset int64
 	}{
@@ -87,50 +87,44 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 			wantMarkedOffset: 1,
 		},
 		{
-			// after+on_error swallows the cancellation error, so the loop is
-			// again the only thing that can stop it.
+			// on_error marks records the pipeline refused, but a cancelled
+			// record was never offered to it, so the interrupted one stays
+			// unmarked too.
 			name:             "legacy after marking with on_error",
 			marking:          MessageMarking{After: true, OnError: true},
 			wantConsumed:     1,
-			wantMarkedOffset: 1,
+			wantMarkedOffset: -1,
 		},
 		{
 			name:             "independent after marking with on_error",
 			independent:      true,
 			marking:          MessageMarking{After: true, OnError: true},
 			wantConsumed:     1,
-			wantMarkedOffset: 1,
+			wantMarkedOffset: -1,
 		},
 		{
-			// Revoked before the first record: nothing is consumed and nothing
-			// is marked, so the next owner gets the whole batch.
-			name:             "revoked before the first record",
-			revokeBeforeLoop: true,
+			// Cancelled before the first record: nothing is consumed and
+			// nothing is marked, so the whole batch is redelivered.
+			name:             "cancelled before the first record",
+			cancelBeforeLoop: true,
 			wantConsumed:     0,
 			wantMarkedOffset: -1,
 		},
 		{
-			// Shutdown starting after the revocation must not turn the tail
-			// into shutdown work: the partition still has a next owner.
-			name:             "shutdown starts after the revocation",
-			closeClosing:     true,
+			// Shutdown stops the loop too. Finishing the batch would mark
+			// records against a context that is already cancelled, and the
+			// next run would never see them again.
+			name:             "shutdown stops the batch",
+			shutdown:         true,
 			wantConsumed:     1,
 			wantMarkedOffset: 1,
 		},
 		{
-			// No one takes the rest of the batch over while the receiver is
-			// leaving, so finish it instead of dropping it.
-			name:             "shutdown finishes the batch",
-			shutdown:         true,
-			wantConsumed:     records,
-			wantMarkedOffset: records,
-		},
-		{
-			name:             "independent shutdown finishes the batch",
+			name:             "independent shutdown stops the batch",
 			independent:      true,
 			shutdown:         true,
-			wantConsumed:     records,
-			wantMarkedOffset: records,
+			wantConsumed:     1,
+			wantMarkedOffset: 1,
 		},
 	}
 
@@ -143,7 +137,7 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 			consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
 			require.NoError(t, err)
 			consumer.client = kafkaClient
-			if tc.shutdown || tc.closeClosing {
+			if tc.shutdown {
 				close(consumer.closing)
 			}
 
@@ -157,24 +151,20 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 			}
 			consumer.assignments[topicPartition{topic: topic, partition: 0}] = partitionConsumer
 
-			// Stands in for lost(), which picks the cause and cancels the
-			// partition context before it waits for the in-flight call.
-			revoke := func() {
-				cause := errPartitionRevoked
-				if tc.shutdown {
-					cause = errReceiverStopping
-				}
-				partitionConsumer.cancelContext(cause)
+			// Stands in for lost(), which cancels the partition context before
+			// it waits for the in-flight call.
+			cancelPartition := func() {
+				partitionConsumer.cancelContext(errors.New("stopping processing"))
 			}
-			if tc.revokeBeforeLoop {
-				revoke()
+			if tc.cancelBeforeLoop {
+				cancelPartition()
 			}
 
 			consumed := 0
 			consumer.consumeMessage = func(msgCtx context.Context, _ *kgo.Record, _ attribute.Set) error {
 				consumed++
-				if consumed == 1 && !tc.revokeBeforeLoop {
-					revoke()
+				if consumed == 1 && !tc.cancelBeforeLoop {
+					cancelPartition()
 				}
 				return msgCtx.Err()
 			}
@@ -193,20 +183,19 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 				"records sent to the pipeline")
 			marked := kafkaClient.MarkedOffsets()[topic]
 			if tc.wantMarkedOffset < 0 {
+				// Nothing counted as processed, so nothing may be marked and
+				// there is no lag to report.
 				require.Empty(t, marked, "an unprocessed batch must stay unmarked")
-			} else {
-				require.Len(t, marked, 1)
-				require.Equal(t, tc.wantMarkedOffset, marked[0].Offset,
-					"marked records are committed and never redelivered")
-			}
-
-			if tc.wantConsumed == 0 {
 				return
 			}
+			require.Len(t, marked, 1)
+			require.Equal(t, tc.wantMarkedOffset, marked[0].Offset,
+				"marked records are committed and never redelivered")
+
 			// The loop breaks instead of returning, so the records it did
 			// process still report their lag.
 			metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
-				Value: (records - 1) - int64(tc.wantConsumed-1),
+				Value: (records - 1) - (tc.wantMarkedOffset - 1),
 			}}, metricdatatest.IgnoreTimestamp())
 		})
 	}

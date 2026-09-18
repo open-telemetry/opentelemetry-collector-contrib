@@ -73,30 +73,6 @@ func (p *pc) cancelContext(err error) {
 	p.cancel(err)
 }
 
-// Cancellation causes for a partition consumer. lost() picks one when it
-// cancels, so the reason cannot change afterwards.
-var (
-	errPartitionRevoked = errors.New("stopping processing: partition reassigned or lost")
-	errReceiverStopping = errors.New("stopping processing: receiver shutting down")
-)
-
-// revoked reports whether a revocation, not receiver shutdown, cancelled the
-// partition consumer. Both cancel p.ctx, but only a revocation gives the
-// partition to another member, which redelivers what is left unmarked.
-//
-// Any other cause, including a cancellation from closing the client, counts as
-// shutdown: no one takes the remaining records over, so the batch is finished.
-func (p *pc) revoked() bool {
-	select {
-	case <-p.ctx.Done():
-	default:
-		// Fast path for the common case, so a live partition never reads the
-		// cause.
-		return false
-	}
-	return errors.Is(context.Cause(p.ctx), errPartitionRevoked)
-}
-
 // addPauseReason records why fetching must remain paused.
 func (p *pc) addPauseReason(reason partitionPauseReason) {
 	p.pauseReasons.Or(uint32(reason))
@@ -194,17 +170,20 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
 	for _, msg := range p.Records {
-		// Stop before marking once the partition is revoked. lost() commits the
-		// marks, so a record marked here is never redelivered even though nothing
-		// processed it. It also keeps the wait in lost() down to the in-flight
-		// record instead of the whole batch, and that wait has to fit in the
-		// re-balance timeout. Shutdown cancels the same context, but no one takes
-		// the rest over, so finish the batch in that case.
+		// Stop before marking once the partition consumer is cancelled. The
+		// records left here are still committable, and lost() commits the marks,
+		// so marking one now drops it: nothing processed it and nothing
+		// redelivers it. Leaving them unmarked hands them to the next owner
+		// after a revocation, or to the next run after a shutdown.
+		//
+		// This also keeps the wait in lost() down to the in-flight record
+		// instead of the whole batch, and that wait has to fit in the re-balance
+		// timeout.
 		//
 		// break, not return, so processed records still get their After mark and
 		// lag telemetry below.
-		if pc.revoked() {
-			pc.logger.Debug("leaving remaining records to the next partition owner",
+		if pc.ctx.Err() != nil {
+			pc.logger.Debug("stopped processing records, leaving the rest of the batch unmarked",
 				zap.Int64("offset", msg.Offset),
 			)
 			break
@@ -225,14 +204,13 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 					zap.Int64("offset", msg.Offset),
 				)
 			}
-			// handleMessage only returns an error when After=true and
-			// the message should not be marked, so checking !shouldMark
-			// here is consistent with that contract.
-			isPermanent := consumererror.IsPermanent(err)
-			shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
-			if !shouldMark {
+			// handleMessage only returns an error when After=true and the
+			// message should not be marked, so asking again here is consistent
+			// with that contract. The backoff path is the exception: it returns
+			// the cancellation cause without consulting the config.
+			if !c.shouldMarkOnError(pc, err) {
 				fatalRecord = msg
-				fatalIsPermanent = isPermanent
+				fatalIsPermanent = consumererror.IsPermanent(err)
 				break
 			}
 		}

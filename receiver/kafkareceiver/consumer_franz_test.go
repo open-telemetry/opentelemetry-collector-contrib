@@ -526,18 +526,18 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			name:       "BackOff default marking",
 			testConfig: tCfg{MessageMarking{}, configretry.NewDefaultBackOffConfig(), false},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		{
 			name:       "NoBackoff default marking",
 			testConfig: tCfg{MessageMarking{}, configretry.BackOffConfig{Enabled: false}, false},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		{
@@ -553,27 +553,27 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			name:       "NoBackoff default marking with error",
 			testConfig: tCfg{MessageMarking{}, configretry.BackOffConfig{Enabled: false}, true},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		{
 			name:       "BackOff after marking",
 			testConfig: tCfg{MessageMarking{After: true}, configretry.NewDefaultBackOffConfig(), false},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		{
 			name:       "NoBackoff after marking",
 			testConfig: tCfg{MessageMarking{After: true}, configretry.BackOffConfig{Enabled: false}, false},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		// With error
@@ -600,18 +600,18 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			name:       "BackOff after marking with error and OnError=true",
 			testConfig: tCfg{MessageMarking{After: true, OnError: true}, configretry.NewDefaultBackOffConfig(), true},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           0,
 			},
 		},
 		{
 			name:       "NoBackoff after marking with error and OnError=true",
 			testConfig: tCfg{MessageMarking{After: true, OnError: true}, configretry.BackOffConfig{Enabled: false}, true},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           0,
 			},
 		},
 	}

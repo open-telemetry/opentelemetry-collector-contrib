@@ -576,18 +576,6 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	independent := c.config.PartitionProcessing.Independent
 
 	c.mu.Lock()
-	// Pick the cause here, under the lock that also serializes triggerShutdown.
-	// triggerShutdown closes c.closing before it closes the client, so a revoke
-	// the close triggers always sees it closed. Workers read the cause instead
-	// of c.closing, which can be closed after the cancellation and would make a
-	// revoked partition look like a shutdown.
-	cause := errPartitionRevoked
-	select {
-	case <-c.closing:
-		cause = errReceiverStopping
-	default:
-	}
-
 	stopping := make(map[topicPartition]*pc)
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
@@ -603,7 +591,9 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			if !ok {
 				continue
 			}
-			pc.cancelContext(cause)
+			pc.cancelContext(errors.New(
+				"stopping processing: partition reassigned or lost",
+			))
 			// Discard the queue at cancel time. Fatal loss can return while
 			// the worker is still inside consumeMessage, and the wait helper
 			// keeps pc reachable until that call ends. The in-flight batch
@@ -689,6 +679,22 @@ func (c *franzConsumer) deleteStoppingAssignments(stopping map[topicPartition]*p
 	}
 }
 
+// shouldMarkOnError reports whether a record the pipeline rejected may still be
+// marked, following the message_marking on_error and on_permanent_error config.
+//
+// A cancelled partition consumer never marks. The error then only says the
+// record was interrupted, not that the pipeline refused it, and marking it
+// would commit a record nothing processed.
+func (c *franzConsumer) shouldMarkOnError(pc *pc, err error) bool {
+	if pc.ctx.Err() != nil {
+		return false
+	}
+	if consumererror.IsPermanent(err) {
+		return c.config.MessageMarking.OnPermanentError
+	}
+	return c.config.MessageMarking.OnError
+}
+
 // handleMessage is called on a per-partition basis.
 func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 	if pc.backOff != nil {
@@ -728,10 +734,7 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 			)
 		}
 
-		isPermanent := consumererror.IsPermanent(err)
-		shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
-
-		if c.config.MessageMarking.After && !shouldMark {
+		if c.config.MessageMarking.After && !c.shouldMarkOnError(pc, err) {
 			// Only return an error if messages are marked after successful processing.
 			return err
 		}
