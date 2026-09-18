@@ -58,7 +58,7 @@ func (notAStoreExtension) Start(context.Context, component.Host) error { return 
 func (notAStoreExtension) Shutdown(context.Context) error              { return nil }
 
 func TestResolveCounterStore(t *testing.T) {
-	extID := component.MustNewID("redis_sampler_state")
+	extID := component.MustNewID("redis_sampling_state")
 
 	t.Run("unset config defaults to in-memory", func(t *testing.T) {
 		store, err := resolveCounterStore(nil, nil)
@@ -105,7 +105,7 @@ func TestProcessorStart_SharedCountersExtensionMissing(t *testing.T) {
 				Type:                  AdaptiveThroughput,
 				GoalThroughput:        100,
 				FingerprintAttributes: []string{`resource.attributes["service.name"]`},
-				SharedCounters:        &SharedCountersConfig{Extension: component.MustNewID("redis_sampler_state")},
+				SharedCounters:        &SharedCountersConfig{Extension: component.MustNewID("redis_sampling_state")},
 			}},
 		},
 	}
@@ -117,7 +117,7 @@ func TestProcessorStart_SharedCountersExtensionMissing(t *testing.T) {
 }
 
 func TestProcessor_SharedCountersEndToEnd(t *testing.T) {
-	extID := component.MustNewID("redis_sampler_state")
+	extID := component.MustNewID("redis_sampling_state")
 	ext := &fakeCounterExtension{store: samplingstate.NewMemoryCounterStore()}
 	sink := &consumertest.TracesSink{}
 	cfg := throughputTestConfig(&SharedCountersConfig{Extension: extID})

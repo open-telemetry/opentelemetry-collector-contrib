@@ -387,7 +387,7 @@ sampler:
   fingerprint_attributes:
     - resource.attributes["service.name"]
   shared_counters:
-    extension: my_sampler_state           # component ID of a sampling-state extension
+    extension: my_sampling_state           # component ID of a sampling-state extension
     sync_timeout: 5s                      # per round-trip bound; 0 or omitted = half the interval
 ```
 

@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/adaptive_tail_sampling
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `shared_counters` to `adaptive_throughput` samplers, making `goal_throughput` a fleet-wide budget shared across collector instances via a sampler-state extension.
+note: Add `shared_counters` to `adaptive_throughput` samplers, making `goal_throughput` a fleet-wide budget shared across collector instances via a sampling-state extension.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50577]
