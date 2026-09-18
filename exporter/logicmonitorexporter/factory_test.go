@@ -23,7 +23,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.ForceAttemptHTTP2 = false
 	assert.Equal(t, &Config{
 		ClientConfig:  clientConfig,
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
@@ -35,7 +34,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateLogs(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "http://example.logicmonitor.com/rest"
 
 	tests := []struct {
@@ -77,7 +75,6 @@ func TestCreateLogs(t *testing.T) {
 
 func TestCreateTraces(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "http://example.logicmonitor.com/rest"
 
 	tests := []struct {

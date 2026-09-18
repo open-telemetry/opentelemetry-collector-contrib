@@ -24,19 +24,15 @@ import (
 
 func TestConfigValidation(t *testing.T) {
 	emptyEndpointClientConfig := confighttp.NewDefaultClientConfig()
-	emptyEndpointClientConfig.ForceAttemptHTTP2 = false
 	emptyEndpointClientConfig.Endpoint = ""
 
 	missingSchemeClientConfig := confighttp.NewDefaultClientConfig()
-	missingSchemeClientConfig.ForceAttemptHTTP2 = false
 	missingSchemeClientConfig.Endpoint = "test.com/dummy"
 
 	invalidFormatClientConfig := confighttp.NewDefaultClientConfig()
-	invalidFormatClientConfig.ForceAttemptHTTP2 = false
 	invalidFormatClientConfig.Endpoint = "invalid.com@#$%"
 
 	validClientConfig := confighttp.NewDefaultClientConfig()
-	validClientConfig.ForceAttemptHTTP2 = false
 	validClientConfig.Endpoint = "http://validurl.com/rest"
 
 	testcases := []struct {
@@ -105,18 +101,15 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	apitokenClientConfig := confighttp.NewDefaultClientConfig()
-	apitokenClientConfig.ForceAttemptHTTP2 = false
 	apitokenClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
 
 	bearertokenClientConfig := confighttp.NewDefaultClientConfig()
-	bearertokenClientConfig.ForceAttemptHTTP2 = false
 	bearertokenClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
 	bearertokenClientConfig.Headers = configopaque.MapList{
 		{Name: "Authorization", Value: "Bearer <token>"},
 	}
 
 	resourceMappingClientConfig := confighttp.NewDefaultClientConfig()
-	resourceMappingClientConfig.ForceAttemptHTTP2 = false
 	resourceMappingClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
 	resourceMappingClientConfig.Headers = configopaque.MapList{
 		{Name: "Authorization", Value: "Bearer <token>"},
