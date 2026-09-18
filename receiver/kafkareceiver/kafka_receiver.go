@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/plugin/kotel"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
@@ -362,6 +364,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	}
 
 	ctx = contextWithMetadata(ctx, record)
+	ctx = otel.GetTextMapPropagator().Extract(ctx, kotel.NewRecordCarrier(record))
 
 	obsCtx := handler.startObsReport(ctx)
 	data, n, err := handler.unmarshalData(record.Value)
@@ -384,7 +387,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 		}
 	}
 
-	err = handler.consumeData(ctx, data)
+	err = handler.consumeData(obsCtx, data)
 	handler.endObsReport(obsCtx, n, err)
 	return err
 }
