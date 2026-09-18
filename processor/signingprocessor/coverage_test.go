@@ -578,15 +578,13 @@ func mustGenerateTestCertAndKey(t *testing.T) (certPEM, keyPEM []byte) {
 }
 
 // ---------------------------------------------------------------------------
-// env provider
+// env provider (now backed by inline provider)
 // ---------------------------------------------------------------------------
 
 func TestEnvKeyMaterialProvider(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
-	t.Setenv("TEST_CERT", string(certPEM))
-	t.Setenv("TEST_KEY", string(keyPEM))
 
-	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{Certificate: "TEST_CERT", PrivateKey: "TEST_KEY"})
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{Certificate: string(certPEM), PrivateKey: string(keyPEM)})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -599,11 +597,9 @@ func TestEnvKeyMaterialProvider(t *testing.T) {
 }
 
 func TestEnvKeyMaterialProviderMissingEnv(t *testing.T) {
-	os.Unsetenv("MISSING_CERT")
-	os.Unsetenv("MISSING_KEY")
-	_, err := newEnvKeyMaterialProvider(&EnvKeyConfig{Certificate: "MISSING_CERT", PrivateKey: "MISSING_KEY"})
+	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{Certificate: "", PrivateKey: ""})
 	if err == nil {
-		t.Error("expected error for missing env vars")
+		t.Error("expected error for empty certificate and private key")
 	}
 }
 
@@ -893,14 +889,12 @@ func TestConsumeLogsResourceAttrs(t *testing.T) {
 
 func TestNewKeyMaterialProviderEnv(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
-	t.Setenv("NKM_CERT", string(certPEM))
-	t.Setenv("NKM_KEY", string(keyPEM))
 
 	cfg := &Config{
 		Algorithm: "RS256",
 		KeySource: KeySourceConfig{
 			Type: KeySourceEnv,
-			Env:  &EnvKeyConfig{Certificate: "NKM_CERT", PrivateKey: "NKM_KEY"},
+			Env:  &EnvKeyConfig{Certificate: string(certPEM), PrivateKey: string(keyPEM)},
 		},
 	}
 	prov, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())

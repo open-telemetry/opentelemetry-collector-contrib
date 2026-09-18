@@ -55,17 +55,8 @@ func newKeyMaterialProvider(ctx context.Context, cfg *Config, logger *zap.Logger
 		)
 		return newK8sKeyMaterialProvider(ctx, cfg.KeySource.K8sSecret, logger)
 	case KeySourceEnv:
-		if cfg.Algorithm == AlgorithmHMACSHA256 {
-			logger.Info("Initializing HMAC key material provider from environment variable",
-				zap.String("hmac_key", cfg.KeySource.Env.HMACKey),
-			)
-		} else {
-			logger.Info("Initializing key material provider from environment variables",
-				zap.String("certificate", cfg.KeySource.Env.Certificate),
-				zap.String("private_key", cfg.KeySource.Env.PrivateKey),
-			)
-		}
-		return newEnvKeyMaterialProvider(cfg.KeySource.Env)
+		logger.Info("Initializing key material provider from inline env config (use ${env:VAR} in YAML)")
+		return newInlineKeyMaterialProvider(cfg.KeySource.Env)
 	case KeySourceFile:
 		if cfg.Algorithm == AlgorithmHMACSHA256 {
 			logger.Info("Initializing HMAC key material provider from file",

@@ -10,7 +10,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"hash"
-	"os"
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -163,8 +162,7 @@ func TestConfigGetHashHMAC(t *testing.T) {
 
 func TestHMACProviderFromEnv(t *testing.T) {
 	secret := []byte("super-secret-key")
-	t.Setenv("TEST_HMAC_KEY", "super-secret-key")
-	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKey: "TEST_HMAC_KEY"})
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString(secret)})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -192,10 +190,9 @@ func TestHMACProviderFromFile(t *testing.T) {
 }
 
 func TestHMACProviderMissingEnv(t *testing.T) {
-	os.Unsetenv("MISSING_HMAC_KEY")
-	_, err := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKey: "MISSING_HMAC_KEY"})
+	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: ""})
 	if err == nil {
-		t.Error("expected error for missing env var")
+		t.Error("expected error for empty HMAC key")
 	}
 }
 
@@ -211,9 +208,8 @@ func TestHMACProviderMissingFile(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSignVerifyHMACSHA256(t *testing.T) {
-	secret := []byte("test-hmac-secret-32-bytes-padded!")
-	t.Setenv("HMAC_TEST_KEY", string(secret))
-	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKey: "HMAC_TEST_KEY"})
+	secret := "test-hmac-secret-32-bytes-padded!"
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString([]byte(secret))})
 	if err != nil {
 		t.Fatalf("create provider: %v", err)
 	}
@@ -262,8 +258,7 @@ func TestSignVerifyHMACSHA256(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestConsumeLogsHMACNoCertAttribute(t *testing.T) {
-	t.Setenv("HMAC_NO_CERT_KEY", "secret")
-	prov, _ := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKey: "HMAC_NO_CERT_KEY"})
+	prov, _ := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString([]byte("secret"))})
 	sink := &logSink{}
 
 	p := &signingProcessor{
@@ -301,9 +296,7 @@ func TestConsumeLogsHMACNoCertAttribute(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestHMACTamperedPayloadDetected(t *testing.T) {
-	secret := []byte("tamper-test-secret")
-	t.Setenv("HMAC_TAMPER_KEY", string(secret))
-	prov, _ := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKey: "HMAC_TAMPER_KEY"})
+	prov, _ := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString([]byte("tamper-test-secret"))})
 
 	p := &signingProcessor{
 		config:       &Config{Algorithm: AlgorithmHMACSHA256},
