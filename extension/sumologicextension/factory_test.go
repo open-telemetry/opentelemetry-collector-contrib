@@ -25,7 +25,6 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	defaultCredsPath := path.Join(homePath, credentials.DefaultCollectorDataDirectory)
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.ForceAttemptHTTP2 = false
 	assert.Equal(t, &Config{
 		ClientConfig:                  clientConfig,
 		HeartBeatInterval:             DefaultHeartbeatInterval,
