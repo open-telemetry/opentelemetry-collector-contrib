@@ -1416,7 +1416,7 @@ func TestDetectSQLServerVersion_WarnOnScanFailure(t *testing.T) {
 	core, logs := observer.New(zap.WarnLevel)
 	version := detectSQLServerVersion(t.Context(), db, zap.New(core))
 
-	assert.Equal(t, "", version)
+	assert.Empty(t, version)
 	assert.Equal(t, 1, logs.FilterMessage("sqlserverreceiver: failed to detect SQL Server version; db.system.version attribute will not be set").Len())
 }
 
