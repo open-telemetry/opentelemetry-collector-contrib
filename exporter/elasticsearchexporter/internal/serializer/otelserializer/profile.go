@@ -144,26 +144,26 @@ func (s *Serializer) createLRUs() error {
 	s.loadLRUsOnce.Do(func() {
 		var err error
 
-		// Create LRUs with MinILMRolloverTime as lifetime to avoid losing data by ILM roll-over.
-		s.knownTraces, err = lru.NewLRUSet(knownTracesCacheSize, minILMRolloverTime)
+		// Expire LRU entries so documents still in use are re-written before data retention deletes them.
+		s.knownTraces, err = lru.NewLRUSet(knownTracesCacheSize, knownDocsRefreshInterval)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create traces LRU: %w", err)
 			return
 		}
 
-		s.knownFrames, err = lru.NewLRUSet(knownFramesCacheSize, minILMRolloverTime)
+		s.knownFrames, err = lru.NewLRUSet(knownFramesCacheSize, knownDocsRefreshInterval)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create frames LRU: %w", err)
 			return
 		}
 
-		s.knownExecutables, err = lru.NewLRUSet(knownExecutablesCacheSize, minILMRolloverTime)
+		s.knownExecutables, err = lru.NewLRUSet(knownExecutablesCacheSize, knownDocsRefreshInterval)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create executables LRU: %w", err)
 			return
 		}
 
-		s.knownHosts, err = lru.NewLRUSet(knownHostsCacheSize, minILMRolloverTime)
+		s.knownHosts, err = lru.NewLRUSet(knownHostsCacheSize, knownDocsRefreshInterval)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create hosts LRU: %w", err)
 			return
