@@ -5,7 +5,6 @@ package serializeprofiles // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -103,30 +102,30 @@ type StackFrame struct {
 // ResourceData represents the resources metadata related to a sample for the
 // profiling-hosts index.
 type ResourceData struct {
-	HostID string `json:"host.id"`
-	Data   map[string]string
+	Data map[string]string
 }
 
-// MarshalJSON customizes the JSON marshaling for HostResourceData.
+func (h ResourceData) HostID() string {
+	return h.Data[string(conventions.HostIDKey)]
+}
+
+// MarshalJSON serializes ResourceData with resource.attributes as a nested object
+// to match the Elasticsearch passthrough mapping.
 func (h ResourceData) MarshalJSON() ([]byte, error) {
-	// Create a temporary map to hold the combined data
-	combinedData := make(map[string]any)
-
-	combinedData[string(conventions.HostIDKey)] = h.HostID
-	// The ES index profiling-hosts expects a second-precise timestamp
-	combinedData["@timestamp"] = time.Now().UTC().Unix()
-
-	// Iterate over the Data map and add the key-value pairs with lowercase keys and values
+	attrs := make(map[string]any, len(h.Data))
 	for key, value := range h.Data {
 		if value == "" {
 			// Do not populate keys without value
 			continue
 		}
-		combinedData["resource.attributes."+strings.ToLower(key)] = strings.ToLower(value)
+		attrs[key] = value
 	}
 
-	// Marshal the combined map into JSON
-	return json.Marshal(combinedData)
+	return json.Marshal(map[string]any{
+		// The ES index profiling-hosts expects a second-precise timestamp
+		"@timestamp": time.Now().UTC().Unix(),
+		"resource":   map[string]any{"attributes": attrs},
+	})
 }
 
 // ExeMetadata represents executable metadata serializable into the profiling-executables datastream.

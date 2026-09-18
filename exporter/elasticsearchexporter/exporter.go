@@ -628,7 +628,8 @@ func (*elasticsearchExporter) pushProfileRecord(
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
 		case ecsserializer.ExecutablesSymQueueIndex,
 			ecsserializer.LeafFramesSymQueueIndex,
-			ecsserializer.HostsMetadataIndex:
+			ecsserializer.HostsMetadataIndex,
+			otelserializer.HostsMetadataIndex:
 			// These regular indices have a low write-frequency and can share the executablesSession.
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		default:

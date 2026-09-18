@@ -148,6 +148,15 @@ func TestSerializeProfile(t *testing.T) {
 						},
 					},
 				},
+				{
+					"@timestamp": json.Number("0"),
+					"resource": map[string]any{
+						"attributes": map[string]any{
+							"host.id":                 "localhost",
+							"process.executable.name": "libc.so.6",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -180,6 +189,13 @@ func TestSerializeProfile(t *testing.T) {
 				require.NoError(t, decoder.Decode(&d))
 				results = append(results, d)
 			}
+
+			// The hosts document is written last and carries the current time.
+			hosts := results[len(results)-1]
+			ts, err := hosts["@timestamp"].(json.Number).Int64()
+			require.NoError(t, err)
+			assert.WithinDuration(t, time.Now(), time.Unix(ts, 0), time.Minute)
+			hosts["@timestamp"] = json.Number("0")
 
 			assert.Equal(t, tt.expected, results)
 		})

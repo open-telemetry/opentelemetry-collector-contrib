@@ -3457,7 +3457,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 
 		sendProfiles()
 		sendProfiles()
-		rec.WaitItems(3) // 3 profile documents: StackTrace + 2×Event (StackTrace deduped by LRU on second call; no unsymbolized docs in otel mode)
+		rec.WaitItems(4) // 4 profile documents: StackTrace + Event + Host (call 1) + Event (call 2); StackTrace and Host deduped by LRU
 	})
 }
 

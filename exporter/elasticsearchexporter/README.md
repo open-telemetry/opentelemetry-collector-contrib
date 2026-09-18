@@ -502,6 +502,7 @@ Each profiling signal type is written to a dedicated backing index:
 | Stack frames   | `profiling-stackframes.otel-default`          |
 | Executables    | `profiling-executables.otel-default`          |
 | Trace events   | `profiling-events-all.otel-default`           |
+| Host metadata  | `profiling-hosts.otel-default`                |
 
 Trace events also produce downsampled copies written to `profiling-events-5powNN.otel-default` indices (where NN ranges from 01 to 11). The downsampling follows powers of 5, storing progressively smaller fractions of the events to support efficient range queries over varying time windows.
 
