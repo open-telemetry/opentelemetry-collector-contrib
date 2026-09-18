@@ -596,7 +596,7 @@ func TestEnvKeyMaterialProvider(t *testing.T) {
 	}
 }
 
-func TestEnvKeyMaterialProviderMissingEnv(t *testing.T) {
+func TestEnvKeyMaterialProviderEmptyValues(t *testing.T) {
 	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{Certificate: "", PrivateKey: ""})
 	if err == nil {
 		t.Error("expected error for empty certificate and private key")
