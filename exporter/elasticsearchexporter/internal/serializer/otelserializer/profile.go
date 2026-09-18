@@ -54,10 +54,6 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 				if err != nil {
 					return err
 				}
-				err = serializeprofiles.IndexDownsampledEvent(event, ".otel-default", pushDataAsJSON)
-				if err != nil {
-					return err
-				}
 			}
 
 			if payload.StackTrace.DocID != "" {

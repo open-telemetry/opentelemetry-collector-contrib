@@ -504,10 +504,9 @@ Each profiling signal type is written to a dedicated backing index:
 | Trace events   | `profiling-events-all.otel-default`           |
 | Host metadata  | `profiling-hosts.otel-default`                |
 
-Trace events also produce downsampled copies written to `profiling-events-5powNN.otel-default` indices (where NN ranges from 01 to 11). The downsampling follows powers of 5, storing progressively smaller fractions of the events to support efficient range queries over varying time windows.
-
 > [!NOTE]
-> Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations) is not yet supported in OTel profiling datastream mode.
+> Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations)
+> and downsampled event indices (`profiling-events-5powNN.otel-default`) are not yet supported in OTel profiling datastream mode.
 
 > [!WARNING]
 > The `.otel-default` profiling datastream index templates are only available in **Elasticsearch 9.6.0 and later**.
