@@ -1440,6 +1440,29 @@ var standardTests = []metricsTransformTest{
 			metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 		},
 	},
+	{
+		name: "combine_error_summary_single_match",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric1$")},
+				Action:              Combine,
+				NewName:             "new",
+				AggregationType:     aggregateutil.Sum,
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1").
+				addSummaryDatapoint(1, 2, 20, 200.0, "label1-value2").build(),
+			metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1").
+				addSummaryDatapoint(1, 2, 20, 200.0, "label1-value2").build(),
+			metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+		},
+	},
 	// Toggle Data Type
 	{
 		name: "metric_toggle_scalar_data_type_int64_to_double",
@@ -2062,5 +2085,64 @@ var standardTests = []metricsTransformTest{
 				addIntDatapoint(1, 2, 3, "label1value1", "label2value").build(),
 		},
 		out: []pmetric.Metric{},
+	},
+	{
+		name: "metric_aggregate_labels_summary_passthrough",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabels,
+							AggregationType: aggregateutil.Sum,
+							LabelSet:        []string{"label1"},
+						},
+						labelSetMap: map[string]bool{"label1": true},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1", "label2").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1", "label2-value1").
+				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1", "label2").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1", "label2-value1").
+				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
+		},
+	},
+	{
+		name: "metric_aggregate_label_values_summary_passthrough",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabelValues,
+							Label:           "label2",
+							NewValue:        "new-label2",
+							AggregationType: aggregateutil.Sum,
+						},
+						aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1", "label2").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1", "label2-value1").
+				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1", "label2").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1", "label2-value1").
+				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
+		},
 	},
 }

@@ -45,8 +45,8 @@ func testScraper(cfg *Config) *cloudWatchMetricsScraper {
 	if cfg.Metrics.Delay == 0 {
 		cfg.Metrics.Delay = defaults.Delay
 	}
-	if cfg.Metrics.CollectionInterval == 0 {
-		cfg.Metrics.CollectionInterval = defaults.CollectionInterval
+	if cfg.Metrics.ControllerConfig.CollectionInterval == 0 {
+		cfg.Metrics.ControllerConfig.CollectionInterval = defaults.ControllerConfig.CollectionInterval
 	}
 	return newCloudWatchMetricsScraper(cfg, receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},

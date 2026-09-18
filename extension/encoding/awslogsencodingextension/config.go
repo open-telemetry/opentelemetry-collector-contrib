@@ -7,14 +7,14 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
-var _ xconfmap.Validator = (*Config)(nil)
+var _ confmap.Validator = (*Config)(nil)
 
 var (
 	supportedLogFormats = []string{

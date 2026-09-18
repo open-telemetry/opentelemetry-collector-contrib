@@ -540,3 +540,34 @@ func assertCLFMap(t *testing.T, m pcommon.Map, expected map[string]any) {
 		}
 	}
 }
+
+// benchCLFMessage and benchCombinedMessage are representative Apache access
+// log entries in Common Log Format and NCSA Combined Log Format.
+const benchCLFMessage = `172.224.24.114 - frank [15/Jul/2026:00:00:01 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326`
+
+const benchCombinedMessage = benchCLFMessage +
+	` "https://example.com/start.html?q=otel+collector" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"`
+
+func benchmarkParseCLF(b *testing.B, message, format string) {
+	ctx := b.Context()
+	b.ReportAllocs()
+
+	exprFunc := parseCLF(ottl.StandardStringGetter[*ottllog.TransformContext]{
+		Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+			return message, nil
+		},
+	}, format)
+
+	for b.Loop() {
+		_, err := exprFunc(ctx, &ottllog.TransformContext{})
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkParseCLF(b *testing.B) {
+	benchmarkParseCLF(b, benchCLFMessage, clfFormatCLF)
+}
+
+func BenchmarkParseCLFCombined(b *testing.B) {
+	benchmarkParseCLF(b, benchCombinedMessage, clfFormatCombined)
+}

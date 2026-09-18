@@ -44,7 +44,8 @@ func createLogsProcessor(
 		processor.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(processor.start),
-		processorhelper.WithShutdown(processor.shutdown))
+		processorhelper.WithShutdown(processor.shutdown),
+	)
 }
 
 func createMetricsProcessor(
@@ -62,7 +63,8 @@ func createMetricsProcessor(
 		processor.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(processor.start),
-		processorhelper.WithShutdown(processor.shutdown))
+		processorhelper.WithShutdown(processor.shutdown),
+	)
 }
 
 func createTracesProcessor(
@@ -80,5 +82,6 @@ func createTracesProcessor(
 		processor.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(processor.start),
-		processorhelper.WithShutdown(processor.shutdown))
+		processorhelper.WithShutdown(processor.shutdown),
+	)
 }

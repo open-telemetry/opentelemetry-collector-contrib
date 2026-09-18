@@ -1,5 +1,0 @@
-change_type: enhancement
-component: processor/gen_ai_normalizer
-note: Add an opt-in `overwrite_schema_url` setting to replace an existing scope schema URL after normalization writes an attribute.
-issues: [48280]
-change_logs: [user]

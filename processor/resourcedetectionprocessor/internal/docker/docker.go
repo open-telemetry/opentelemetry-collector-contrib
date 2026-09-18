@@ -26,24 +26,26 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider docker.Provider
-	logger   *zap.Logger
-	rb       *metadata.ResourceBuilder
-	cfg      metadata.ResourceAttributesConfig
+	provider              docker.Provider
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	cfg                   metadata.ResourceAttributesConfig
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p processor.Settings, cfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, cfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	dockerProvider, err := docker.NewProvider()
 	if err != nil {
 		return nil, fmt.Errorf("failed creating detector: %w", err)
 	}
 
 	return &Detector{
-		provider: dockerProvider,
-		logger:   p.Logger,
-		rb:       metadata.NewResourceBuilder(cfg.(Config).ResourceAttributes),
-		cfg:      cfg.(Config).ResourceAttributes,
+		provider:              dockerProvider,
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.(Config).ResourceAttributes),
+		cfg:                   cfg.(Config).ResourceAttributes,
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
@@ -52,7 +54,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.cfg.OsType.Enabled {
 		osType, err := d.provider.OSType(ctx)
 		if err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("docker metadata unavailable: %w", err)
+			}
+			d.logger.Debug("docker metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
 		}
 		d.rb.SetOsType(osType)
 	}
@@ -60,7 +66,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.cfg.HostName.Enabled {
 		hostname, err := d.provider.Hostname(ctx)
 		if err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("docker metadata unavailable: %w", err)
+			}
+			d.logger.Debug("docker metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
 		}
 		d.rb.SetHostName(hostname)
 	}
@@ -68,7 +78,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.cfg.ContainerName.Enabled || d.cfg.ContainerImageName.Enabled {
 		info, err := d.provider.ContainerInfo(ctx)
 		if err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting container info: %w", err)
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("docker metadata unavailable: %w", err)
+			}
+			d.logger.Debug("docker metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
 		}
 		d.rb.SetContainerName(info.Name)
 		d.rb.SetContainerImageName(info.Image)

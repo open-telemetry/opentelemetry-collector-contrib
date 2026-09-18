@@ -5,6 +5,7 @@ package netflowreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
+	"fmt"
 	"net/netip"
 	"time"
 
@@ -224,6 +225,8 @@ func addMessageAttributes(m producer.ProducerMessage, r *plog.LogRecord) error {
 	srcAddr, _ := netip.AddrFromSlice(pm.SrcAddr)
 	dstAddr, _ := netip.AddrFromSlice(pm.DstAddr)
 	samplerAddr, _ := netip.AddrFromSlice(pm.SamplerAddress)
+	nextHop, _ := netip.AddrFromSlice(pm.NextHop)
+	bgpNextHop, _ := netip.AddrFromSlice(pm.BgpNextHop)
 
 	// Time the receiver received the message
 	receivedTime := time.Unix(0, int64(pm.TimeReceivedNs))
@@ -253,6 +256,53 @@ func addMessageAttributes(m producer.ProducerMessage, r *plog.LogRecord) error {
 	r.Attributes().PutInt("flow.sampling_rate", int64(pm.SamplingRate))
 	r.Attributes().PutStr("flow.sampler_address", samplerAddr.String())
 	r.Attributes().PutInt("flow.tcp_flags", int64(pm.TcpFlags))
+	r.Attributes().PutInt("flow.in_if", int64(pm.InIf))
+	r.Attributes().PutInt("flow.out_if", int64(pm.OutIf))
+
+	// IP header
+	r.Attributes().PutInt("flow.ip_tos", int64(pm.IpTos))
+	r.Attributes().PutInt("flow.ip_ttl", int64(pm.IpTtl))
+	r.Attributes().PutInt("flow.ip_flags", int64(pm.IpFlags))
+	r.Attributes().PutInt("flow.fragment_id", int64(pm.FragmentId))
+	r.Attributes().PutInt("flow.fragment_offset", int64(pm.FragmentOffset))
+	r.Attributes().PutInt("flow.ipv6_flow_label", int64(pm.Ipv6FlowLabel))
+
+	// ICMP
+	r.Attributes().PutInt("flow.icmp_type", int64(pm.IcmpType))
+	r.Attributes().PutInt("flow.icmp_code", int64(pm.IcmpCode))
+
+	// L2
+	r.Attributes().PutStr("flow.src_mac", formatMAC(pm.SrcMac))
+	r.Attributes().PutStr("flow.dst_mac", formatMAC(pm.DstMac))
+	r.Attributes().PutInt("flow.src_vlan", int64(pm.SrcVlan))
+	r.Attributes().PutInt("flow.dst_vlan", int64(pm.DstVlan))
+	r.Attributes().PutInt("flow.vlan_id", int64(pm.VlanId))
+
+	// Routing / BGP
+	if nextHop.IsValid() {
+		r.Attributes().PutStr("flow.next_hop", nextHop.String())
+	}
+	r.Attributes().PutInt("flow.next_hop_as", int64(pm.NextHopAs))
+	r.Attributes().PutInt("flow.src_as", int64(pm.SrcAs))
+	r.Attributes().PutInt("flow.dst_as", int64(pm.DstAs))
+	if bgpNextHop.IsValid() {
+		r.Attributes().PutStr("flow.bgp_next_hop", bgpNextHop.String())
+	}
+	r.Attributes().PutInt("flow.src_net", int64(pm.SrcNet))
+	r.Attributes().PutInt("flow.dst_net", int64(pm.DstNet))
+
+	// Forwarding
+	r.Attributes().PutInt("flow.forwarding_status", int64(pm.ForwardingStatus))
+
+	// IPFIX observation
+	r.Attributes().PutInt("flow.observation_domain_id", int64(pm.ObservationDomainId))
+	r.Attributes().PutInt("flow.observation_point_id", int64(pm.ObservationPointId))
 
 	return nil
+}
+
+func formatMAC(mac uint64) string {
+	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x",
+		(mac>>40)&0xff, (mac>>32)&0xff, (mac>>24)&0xff,
+		(mac>>16)&0xff, (mac>>8)&0xff, mac&0xff)
 }

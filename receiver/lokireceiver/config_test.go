@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver/internal/metadata"
 )
@@ -26,21 +26,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultsHTTPServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultsHTTPServerConfig.WriteTimeout = 0
-	defaultsHTTPServerConfig.ReadHeaderTimeout = 0
-	defaultsHTTPServerConfig.IdleTimeout = 0
-	defaultsHTTPServerConfig.KeepAlivesEnabled = false
 	defaultsHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:3500",
 	}
 	mixedHTTPServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	mixedHTTPServerConfig.WriteTimeout = 0
-	mixedHTTPServerConfig.ReadHeaderTimeout = 0
-	mixedHTTPServerConfig.IdleTimeout = 0
-	mixedHTTPServerConfig.KeepAlivesEnabled = false
 	mixedHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:4500",
@@ -89,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -118,7 +108,7 @@ func TestInvalidConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			assert.Error(t, err, tt.err)
 		})
 	}

@@ -22,9 +22,9 @@ func TestIntegration(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = 100 * time.Millisecond
+				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 				rCfg.MetricsBuilderConfig.ResourceAttributes.IisSite.MetricsInclude = []filter.Config{{Strict: "Default Web Site"}}
-				rCfg.ResourceAttributes.IisApplicationPool.MetricsInclude = []filter.Config{{Strict: "DefaultAppPool"}}
+				rCfg.MetricsBuilderConfig.ResourceAttributes.IisApplicationPool.MetricsInclude = []filter.Config{{Strict: "DefaultAppPool"}}
 			},
 		),
 		scraperinttest.WithCompareOptions(
@@ -32,6 +32,7 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()),
+			pmetrictest.IgnoreTimestamp(),
+		),
 	).Run(t)
 }

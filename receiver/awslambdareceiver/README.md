@@ -6,7 +6,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fawslambda%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fawslambda) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fawslambda%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fawslambda) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_awslambda)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_awslambda&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@MichaelKatsoulis](https://www.github.com/MichaelKatsoulis), [@Kavindu-Dodan](https://www.github.com/Kavindu-Dodan), [@axw](https://www.github.com/axw), [@pjanotti](https://www.github.com/pjanotti) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@MichaelKatsoulis](https://www.github.com/MichaelKatsoulis), [@Kavindu-Dodan](https://www.github.com/Kavindu-Dodan), [@pjanotti](https://www.github.com/pjanotti) |
+| Emeritus      | [@axw](https://www.github.com/axw) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -243,12 +244,12 @@ The following receiver configuration parameters are supported.
 |:------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|
 | `s3::encoding`          | Optional encoder to use for S3 event processing                                                                                                  |
 | `s3::encodings`         | Optional list of path-based encoders for multi-format S3 routing (see [Multi-Format S3 Configuration](#multi-format-s3-configuration-encodings)) |
-| `s3::access_key_id`     | Optional static AWS access key ID for S3 access                                                                                                  |
-| `s3::secret_access_key` | Optional static AWS secret access key for S3 access                                                                                              |
-| `s3::session_token`     | Optional static AWS session token for S3 access                                                                                                  |
+| `s3::access_key_id`     | Optional static AWS access key ID for S3 access. Applies only to S3 event handling.                                                              |
+| `s3::secret_access_key` | Optional static AWS secret access key for S3 access. Applies only to S3 event handling.                                                          |
+| `s3::session_token`     | Optional static AWS session token for S3 access. Applies only to S3 event handling.                                                              |
 | `cloudwatch::encoding`  | Optional encoder to use for CloudWatch event processing                                                                                          |
 | `custom::encoding`      | Optional encoder to use for custom event processing                                                                                              |
-| `failure_bucket_arn`    | Optional S3 bucket ARN holding failed Lambda records for replay                                                                                  | 
+| `failure_bucket_arn`    | Optional S3 bucket ARN holding failed Lambda records for replay. Bucket access utilize default credentials of the Lambda runtime environment     | 
 
 Consider following notes on default behaviors:
 

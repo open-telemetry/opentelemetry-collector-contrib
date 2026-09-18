@@ -38,7 +38,7 @@ type signalConfigWrapper struct {
 }
 
 func (w *signalConfigWrapper) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, opts ...configgrpc.ToClientConnOption) (*grpc.ClientConn, error) {
-	return w.config.ToClientConn(ctx, host.GetExtensions(), settings, opts...)
+	return w.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), settings, opts...)
 }
 
 func (w *signalConfigWrapper) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
@@ -46,11 +46,11 @@ func (w *signalConfigWrapper) ToHTTPClient(ctx context.Context, host component.H
 }
 
 func (w *signalConfigWrapper) GetWaitForReady() bool {
-	return w.config.WaitForReady
+	return w.config.ClientConfig.WaitForReady
 }
 
 func (w *signalConfigWrapper) GetEndpoint() string {
-	return w.config.Endpoint
+	return w.config.ClientConfig.Endpoint
 }
 
 func (w *signalConfigWrapper) GetAcceptEncoding() string {
@@ -126,9 +126,9 @@ func (e *signalExporter) enhanceContext(ctx context.Context) context.Context {
 
 func (e *signalExporter) startSignalExporter(ctx context.Context, host component.Host, signalConfig signalConfig) (err error) {
 	if signalConfigWrapper, ok := signalConfig.(*signalConfigWrapper); ok {
-		signalConfigWrapper.config.Headers.Set("Authorization", configopaque.String("Bearer "+string(e.config.PrivateKey)))
+		signalConfigWrapper.config.ClientConfig.Headers.Set("Authorization", configopaque.String("Bearer "+string(e.config.PrivateKey)))
 		if e.config.Protocol != httpProtocol {
-			for k, v := range signalConfigWrapper.config.Headers.Iter {
+			for k, v := range signalConfigWrapper.config.ClientConfig.Headers.Iter {
 				e.metadata.Set(k, string(v))
 			}
 		}
@@ -145,7 +145,7 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 			return err
 		}
 	} else {
-		if e.clientConn, err = signalConfigWrapper.config.ToClientConn(ctx, host.GetExtensions(), e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
+		if e.clientConn, err = signalConfigWrapper.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 		callOptions := []grpc.CallOption{

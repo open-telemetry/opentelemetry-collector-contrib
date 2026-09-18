@@ -73,7 +73,7 @@ func (s *mongodbatlasreceiver) scrape(ctx context.Context) (pmetric.Metrics, err
 func (s *mongodbatlasreceiver) timeConstraints(now time.Time) timeconstraints {
 	var start time.Time
 	if s.lastRun.IsZero() {
-		start = now.Add(s.cfg.CollectionInterval * -1)
+		start = now.Add(s.cfg.ControllerConfig.CollectionInterval * -1)
 	} else {
 		start = s.lastRun
 	}

@@ -5,10 +5,10 @@ package awscloudwatchmetricstreamsencodingextension // import "github.com/open-t
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
-var _ xconfmap.Validator = (*Config)(nil)
+var _ confmap.Validator = (*Config)(nil)
 
 const (
 	formatJSON            = "json"

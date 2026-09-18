@@ -7,11 +7,10 @@ status:
     alpha: [logs, metrics]
   distributions: [contrib]
   codeowners:
-    active: [MichaelKatsoulis, Kavindu-Dodan, axw, pjanotti]
+    active: [MichaelKatsoulis, Kavindu-Dodan, pjanotti]
+    emeritus: [axw]
 
 tests:
-  # TODO Fix this
-  skip_lifecycle: true
   config:
     s3:
       encoding: awslogs

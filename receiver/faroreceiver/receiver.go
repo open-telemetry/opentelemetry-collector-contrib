@@ -41,7 +41,7 @@ func newFaroReceiver(cfg *Config, set *receiver.Settings) (*faroReceiver, error)
 	}
 
 	transport := "http"
-	if cfg.TLS.HasValue() {
+	if cfg.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -109,14 +109,14 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return nil
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.ServerConfig.NetAddr.Endpoint))
 
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc(faroPath, func(resp http.ResponseWriter, req *http.Request) {
 		r.handleFaroRequest(resp, req)
 	})
 	var err error
-	if r.serverHTTP, err = r.cfg.ToServer(
+	if r.serverHTTP, err = r.cfg.ServerConfig.ToServer(
 		ctx,
 		host.GetExtensions(),
 		r.settings.TelemetrySettings,
@@ -127,7 +127,7 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return err
 	}
 
-	listener, err := r.cfg.ToListener(ctx)
+	listener, err := r.cfg.ServerConfig.ToListener(ctx)
 	if err != nil {
 		r.settings.Logger.Error("Failed to create faro receiver listener", zap.Error(err))
 		return err

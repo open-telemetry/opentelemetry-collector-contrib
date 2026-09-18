@@ -34,14 +34,14 @@ func GetEventTime(etHeader string) time.Time {
 					// then chop it into the int part and the fractional part
 					if epochFloat, err := strconv.ParseFloat(fractionalTime, 64); err == nil {
 						sec, dec := math.Modf(epochFloat)
-						eventTime = time.Unix(int64(sec), int64(dec*(1e9)))
+						eventTime = time.Unix(int64(sec), int64(dec*1e9))
 					}
 				}
 			} else {
 				epochFloat, err := strconv.ParseFloat(etHeader, 64)
 				if err == nil {
 					sec, dec := math.Modf(epochFloat)
-					eventTime = time.Unix(int64(sec), int64(dec*(1e9)))
+					eventTime = time.Unix(int64(sec), int64(dec*1e9))
 				}
 			}
 		}

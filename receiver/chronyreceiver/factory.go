@@ -42,9 +42,9 @@ func newMetricsReceiver(
 			var chronyc chrony.Client
 			var err error
 			if cfg.FileMountPath != "" {
-				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout, chrony.WithFileMountPath(cfg.FileMountPath))
+				chronyc, err = chrony.New(cfg.Endpoint, cfg.ControllerConfig.Timeout, chrony.WithFileMountPath(cfg.FileMountPath))
 			} else {
-				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout)
+				chronyc, err = chrony.New(cfg.Endpoint, cfg.ControllerConfig.Timeout)
 			}
 			s.client = chronyc
 			return err

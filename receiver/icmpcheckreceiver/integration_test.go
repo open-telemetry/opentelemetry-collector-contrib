@@ -70,7 +70,7 @@ func TestIntegrationWithSudo(t *testing.T) {
 					t.Error("Failed to get container IP")
 				} else {
 					rCfg := cfg.(*Config)
-					rCfg.CollectionInterval = 100 * time.Millisecond
+					rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 					rCfg.Targets = []PingTarget{
 						{Host: hostIP, PingCount: 4},
 					}

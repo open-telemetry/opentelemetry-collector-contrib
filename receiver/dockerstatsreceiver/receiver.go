@@ -53,7 +53,7 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 
 func (r *metricsReceiver) clientOptions() []client.Opt {
 	var opts []client.Opt
-	if r.config.Endpoint == "" {
+	if r.config.Config.Endpoint == "" {
 		opts = append(opts, client.WithHostFromEnv())
 	}
 	return opts
@@ -93,19 +93,30 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	var errs error
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	if r.config.StreamStats {
+	// holds the value for number of containers in each state
+	containerStatus := make(map[string]int64)
+
+	if r.config.Config.StreamStats {
 		for _, container := range containers {
-			stats, ok := r.client.LatestContainerStats(container.ID, r.config.CollectionInterval)
+			stats, ok := r.client.LatestContainerStats(container.ID, r.config.ControllerConfig.CollectionInterval)
 			if !ok {
 				// Stream is still starting up; skip until first frame arrives.
 				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(
-					fmt.Errorf("no stats available yet for container %s", container.ID), 0))
+					fmt.Errorf("no stats available yet for container %s", container.ID), 0,
+				))
 				continue
 			}
-			if err := r.recordContainerStats(now, stats, &container); err != nil {
+			if container.State.Health != nil {
+				if updated, ok := r.client.InspectAndPersistContainer(ctx, container.ID); ok {
+					container.InspectResponse = updated
+				}
+			}
+			if err := r.recordContainerStats(now, stats, &container, containerStatus); err != nil {
 				errs = multierr.Append(errs, err)
 			}
 		}
+		// We emit container status without the default resource attributes.
+		r.recordContainerStatus(now, containerStatus)
 		return r.mb.Emit(), errs
 	}
 
@@ -121,6 +132,11 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 			if err != nil {
 				results <- resultV2{nil, &c, err}
 				return
+			}
+			if c.State.Health != nil {
+				if updated, ok := r.client.InspectAndPersistContainer(ctx, c.ID); ok {
+					c.InspectResponse = updated
+				}
 			}
 
 			results <- resultV2{
@@ -140,15 +156,22 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		if err := r.recordContainerStats(now, res.stats, res.container); err != nil {
+		if err := r.recordContainerStats(now, res.stats, res.container, containerStatus); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 
+	// We emit container status without the default resource attributes.
+	r.recordContainerStatus(now, containerStatus)
 	return r.mb.Emit(), errs
 }
 
-func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerStats *ctypes.StatsResponse, container *docker.Container) error {
+func (r *metricsReceiver) recordContainerStats(
+	now pcommon.Timestamp,
+	containerStats *ctypes.StatsResponse,
+	container *docker.Container,
+	containerStatus map[string]int64,
+) error {
 	var errs error
 	r.recordCPUMetrics(now, containerStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
@@ -162,6 +185,9 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 		errs = multierr.Append(errs, err)
 	}
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
+
+	// Record container health status metrics
+	r.recordContainerHealthMetrics(now, container)
 
 	// Always-present resource attrs + the user-configured resource attrs
 	rb := r.mb.NewResourceBuilder()
@@ -185,8 +211,17 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 		}
 	}
 
+	containerStatus[string(container.State.Status)]++
+
 	r.mb.EmitForResource(metadata.WithResource(resource))
 	return errs
+}
+
+// recordContainerStatus records number of containers in each state
+func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, containerStatus map[string]int64) {
+	for status, count := range containerStatus {
+		r.mb.RecordContainerStateStatusDataPoint(now, count, metadata.MapAttributeContainerStateStatus[status])
+	}
 }
 
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {
@@ -265,7 +300,8 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []ctypes.BlkioStat
 			int64(stat.Value),
 			strconv.FormatUint(stat.Major, 10),
 			strconv.FormatUint(stat.Minor, 10),
-			strings.ToLower(stat.Op))
+			strings.ToLower(stat.Op),
+		)
 	}
 }
 
@@ -336,4 +372,23 @@ func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, contain
 		r.mb.RecordContainerCPULimitDataPoint(now, cpuLimit)
 	}
 	return nil
+}
+
+func (r *metricsReceiver) recordContainerHealthMetrics(now pcommon.Timestamp, container *docker.Container) {
+	if container.State != nil && container.State.Health != nil {
+		switch container.State.Health.Status {
+		case "starting":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateUnhealthy)
+		case "healthy":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateUnhealthy)
+		case "unhealthy":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateUnhealthy)
+		}
+	}
 }

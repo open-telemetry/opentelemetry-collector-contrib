@@ -42,7 +42,7 @@ The following settings are available:
   - `copy`: Matched data is copied to the target pipeline(s) but remains available for evaluation by subsequent routes. This allows the same data to be routed to multiple pipelines.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
-- `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
+- `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `ignore` is used.
 
 ### Context Inference
 

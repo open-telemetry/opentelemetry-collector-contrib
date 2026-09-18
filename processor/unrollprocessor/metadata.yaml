@@ -11,7 +11,8 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [axw, schmikei, rnishtala-sumo]
+    active: [schmikei, rnishtala-sumo]
+    emeritus: [axw]
 tests:
   config:
     recursive: false

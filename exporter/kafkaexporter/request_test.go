@@ -115,8 +115,8 @@ func TestCreateExporters_RequestTypeGateEnabled(t *testing.T) {
 	setUseRequestTypeFeatureGate(t, true)
 
 	conf := applyConfigOption(func(conf *Config) {
-		conf.Metadata.Full = false
-		conf.Brokers = []string{"invalid:9092"}
+		conf.ClientConfig.Metadata.Full = false
+		conf.ClientConfig.Brokers = []string{"invalid:9092"}
 	})
 	f := NewFactory()
 

@@ -484,8 +484,7 @@ func commonShouldSampleLogic[T any](
 	}
 	var threshold sampling.Threshold
 	if err != nil {
-		var se samplerError
-		if errors.As(err, &se) {
+		if _, ok := errors.AsType[samplerError](err); ok {
 			logger.Debug(description, zap.Error(err))
 		} else {
 			logger.Info(description, zap.Error(err))

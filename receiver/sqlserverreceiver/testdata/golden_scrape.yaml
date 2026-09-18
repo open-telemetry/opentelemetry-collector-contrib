@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: service.instance.id
+          value:
+            stringValue: placeholder
         - key: service.name
           value:
             stringValue: unknown_service:microsoft.sql_server

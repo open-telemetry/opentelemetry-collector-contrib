@@ -12,7 +12,7 @@ import (
 
 // Config defines configuration for the Wavefront receiver.
 type Config struct {
-	confignet.TCPAddrConfig `mapstructure:",squash"`
+	TCPAddrConfig confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// TCPIdleTimeout is the timeout for idle TCP connections.
 	TCPIdleTimeout time.Duration `mapstructure:"tcp_idle_timeout"`

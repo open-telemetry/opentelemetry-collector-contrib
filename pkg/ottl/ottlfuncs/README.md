@@ -8,6 +8,16 @@ This document contains documentation for both types of OTTL functions:
 - [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+Profiles converters that fall outside of OTTL's stability guarantees are documented separately. See the [`xprofile` module](../contexts/xprofile/README.md) for the profiles converters, including `ProfileID`.
+
+## Contents
+
+- [Design principles](#design-principles)
+- [Working with functions](#working-with-functions)
+- [Editors](#editors)
+- [Converters](#converters)
+- [Function stability](#function-stability)
+
 ## Design principles
 
 For the standard OTTL functions described in this document, we specify design principles to ensure they are always
@@ -46,6 +56,7 @@ Editors:
 Available Editors:
 
 - [append](#append)
+- [clear](#clear)
 - [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
@@ -74,6 +85,39 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
+
+### clear
+
+`clear(target)`
+
+The `clear` function reads the current value of `target`, computes that value's default empty form, and passes it to the target's setter. How that value is ultimately applied depends on the specific target implementation.
+
+The table below shows what `clear` passes to setters for the common target types supported by OTTL paths.
+
+| Current target value type | Value passed by `clear` |
+| --- | --- |
+| `string` | `""` |
+| `int64` | `0` |
+| `float64` | `0` |
+| `bool` | `false` |
+| `[]byte` | `nil` |
+| slices (for example `[]any`) | `nil` |
+| maps (for example `map[string]any`) | `nil` |
+| `pcommon.Map` | empty `pcommon.Map` |
+| `pcommon.Slice` | empty `pcommon.Slice` |
+| `pcommon.Value` | empty `pcommon.Value` |
+| `pcommon.TraceID` | empty TraceID (`[16]byte{}`) |
+| `pcommon.SpanID` | empty SpanID (`[8]byte{}`) |
+| `time.Time` | `time.Time{}` |
+| `time.Duration` | `0` |
+| pointers | `nil` pointer |
+| `nil` | `nil` |
+
+Whether `nil` is accepted depends on the target setter. Some setters treat `nil` as "clear the field", while others return an error.
+
+**Examples:**
+- `clear(attributes["http.method"])`
+- `clear(resource.attributes["host.name"])`
 
 ### delete_index
 
@@ -430,9 +474,9 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 The `set` function allows users to set a telemetry field using a value.
 
-`target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
+`target` is a path expression to a telemetry field. `value` is any value type, including `nil`.
 
-How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `ottl.ParseStatements`.
+How the underlying telemetry field is updated is decided by the path expression.
 
 Examples:
 
@@ -500,7 +544,6 @@ Available Converters:
 
 - [All](#all)
 - [Any](#any)
-- [Base64Decode](#base64decode-deprecated)
 - [Base64Encode](#base64encode)
 - [Bool](#bool)
 - [Decode](#decode)
@@ -545,6 +588,7 @@ Available Converters:
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
 - [MapEach](#mapeach)
+- [MapKeys](#mapkeys)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -563,7 +607,6 @@ Available Converters:
 - [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
-- [ProfileID](#profileid)
 - [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
@@ -607,7 +650,7 @@ Available Converters:
 ### All
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `All(source, predicate)`
 
@@ -641,7 +684,7 @@ Use in a condition:
 ### Any
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `Any(source, predicate)`
 
@@ -671,23 +714,6 @@ Check whether any map key matches:
 Use in a condition:
 
 - `set(log.attributes["has_prod"], true) where Any(log.attributes["tags"], (_, v) => v == "prod")`
-
-### Base64Decode (Deprecated)
-
-*This function has been deprecated. Please use the [Decode](#decode) function instead.*
-
-`Base64Decode(value)`
-
-The `Base64Decode` Converter takes a base64 encoded string and returns the decoded string.
-
-`value` is a valid base64 encoded string.
-
-Examples:
-
-- `Base64Decode("aGVsbG8gd29ybGQ=")`
-
-
-- `Base64Decode(resource.attributes["encoded field"])`
 
 ### Base64Encode
 
@@ -802,7 +828,7 @@ Examples:
 
 The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`values` is a list of values. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`values` can be a list of values or an expression/path that resolves to a slice. Its values support paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
 `delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
@@ -815,6 +841,10 @@ Examples:
 
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
+
+- `Concat(Split(span.attributes["request.id"], "-"), "")`
+
+- `Concat(log.attributes["values"], ",")`
 
 ### ContainsValue
 
@@ -1074,7 +1104,7 @@ Examples:
 ### Filter
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `Filter(source, predicate)`
 
@@ -1106,7 +1136,7 @@ Store the filtered result:
 ### Find
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `Find(source, predicate, Optional[mapper])`
 
@@ -1437,11 +1467,11 @@ The returned type is int64.
 The input `value` types:
 
 - float64. Fraction is discharged (truncation towards zero).
-- string. Trying to parse an integer from string if it fails then nil will be returned.
+- string. Trying to parse an integer from string. If parsing fails, an error is returned.
 - bool. If `value` is true, then the function will return 1 otherwise 0.
 - int64. The function returns the `value` without changes.
 
-If `value` is another type or parsing failed nil is always returned.
+If `value` is `nil`, `nil` is returned. If `value` is an unsupported type or a string that cannot be parsed as an integer, an error is returned.
 
 The `value` is either a path expression to a telemetry field to retrieve or a literal.
 
@@ -1715,7 +1745,7 @@ Examples:
 ### MapEach
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `MapEach(source, mapper)`
 
@@ -1743,6 +1773,40 @@ Stringify map values:
 Store the mapped result:
 
 - `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
+
+### MapKeys
+
+> [!IMPORTANT]
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`MapKeys(source, keyMapper)`
+
+The `MapKeys` converter returns a new `pcommon.Map` with each key transformed by `keyMapper`. Values are unchanged.
+
+`source` is a path expression or another getter that resolves to a map.
+
+`keyMapper` is a lambda expression with exactly two parameters that returns a `string`.
+The first parameter is the element key (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+If `keyMapper` produces duplicate keys, only one value is retained and which one is unspecified. 
+Keys are processed in the order they appear in the `source` map, though this is not guaranteed.
+
+If `source` is not a map, or if `keyMapper` does not return a `string`, it returns an error.
+
+Examples:
+
+Prefix map keys:
+
+- `MapKeys(log.attributes, (k, _) => Concat(["http.", k], ""))`
+
+Derive keys from key and value:
+
+- `MapKeys(log.attributes, (k, v) => Concat([k, ":", String(v)], ""))`
+
+Store the result:
+
+- `set(log.attributes["prefixed"], MapKeys(log.attributes, (k, _) => Concat(["http.", k], "")))`
 
 ### MD5
 
@@ -2247,24 +2311,10 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
-### ProfileID
-
-`ProfileID(bytes|string)`
-
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
-
-`bytes`  byte slice of exactly 16 bytes.
-`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
-
-Examples:
-
-- `ProfileID(0x00112233445566778899aabbccddeeff)`
-- `ProfileID("a389023abaa839283293ed323892389d")`
-
 ### Reduce
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `Reduce(source, seed, accumulator)`
 
@@ -3064,7 +3114,7 @@ Examples:
 ### When
 
 > [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+> This function is experimental and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
 
 `When(condition, trueValue, falseValue)`
 
@@ -3137,3 +3187,40 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
+
+## Function stability
+
+Once OTTL is `1.0`, the standard functions returned by `StandardFuncs` and `StandardConverters` are **frozen**.
+For the life of `1.x` no standard function will be removed and no existing signature will change in a
+backward-incompatible way.
+
+Because the standard set is frozen, new functions are introduced as experimental functions first, and become
+part of the frozen standard set only after they have proven stable.
+
+### Experimental functions
+
+New functions are introduced as experimental functions. While a function is experimental, it is **not covered by
+the stability guarantee**: its name, signature, and behavior may change in a backward-incompatible way, and the
+function may be removed entirely, in any `1.x` release without a major version bump. Experimental functions are
+documented in this README alongside the standard functions and clearly marked as experimental.
+
+### Promotion to standard
+
+Promotion moves the function out of the experimental set and into the frozen standard set. This is an additive,
+backward-compatible change and ships in a **minor** release (never a patch). Promotion also **freezes the
+function's signature**: the signature a function has at promotion is the signature it keeps for the life of
+`1.x`, so any desired signature change must be made while the function is still experimental.
+
+A function may be promoted only when all of the following hold:
+
+1. It has been available as an experimental function for at least two minor releases, giving users time to try
+   it and give feedback.
+2. It has complete tests that validate its behavior and complete documentation in this README.
+3. Its name, arguments, and behavior are settled — there are no open issues or pull requests proposing changes
+   to them.
+4. It adheres to the [design principles](#design-principles) for standard functions (no I/O, no infinite loops,
+   communicates only through parameters and results).
+5. There is demonstrated user demand for the function to be part of the standard set.
+6. It has sign-off from the OTTL code owners.
+
+A function that cannot meet these criteria stays experimental; there is no obligation to promote it.

@@ -12,6 +12,6 @@ const (
 
 // Config contains the information necessary for configuring the local metadata HTTP server.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
-	Path                    string `mapstructure:"path"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
+	Path         string                  `mapstructure:"path"`
 }

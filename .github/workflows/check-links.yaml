@@ -9,21 +9,23 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   changedfiles:
     name: changed files
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     if: ${{ github.actor != 'dependabot[bot]' }}
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
       files: ${{ steps.changes.outputs.files }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Get changed files
         id: changes
         run: |
@@ -36,13 +38,14 @@ jobs:
           echo "files=$files" >> "$GITHUB_OUTPUT"
 
   check-links:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: changedfiles
     if: ${{needs.changedfiles.outputs.files}}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Link Checker
         id: lychee

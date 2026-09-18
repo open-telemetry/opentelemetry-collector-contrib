@@ -18,7 +18,8 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment))
+		processor.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
+	)
 }
 
 func createDefaultConfig() component.Config {

@@ -91,7 +91,7 @@ func TestLogsExporter_Start(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.grpcLogsExporter)
-	_, ok := exp.config.Logs.Headers.Get("Authorization")
+	_, ok := exp.config.Logs.ClientConfig.Headers.Get("Authorization")
 	assert.True(t, ok)
 
 	// Test shutdown

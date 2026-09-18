@@ -45,10 +45,6 @@ kafka/logs:
     max_elapsed_time: 1m
     multiplier: 1.5
 
-kafka/rebalance_strategy:
-  group_rebalance_strategy: sticky
-  group_instance_id: test-instance
-
 kafka/rebalance_strategies:
   group_rebalance_strategies:
     - cooperative-sticky
@@ -89,3 +85,107 @@ kafka/regex_topic_with_exclusion:
 
 kafka/conn_idle_timeout:
   conn_idle_timeout: 5m
+
+kafka/valid_exclude_topics_logs:
+  logs:
+    topics:
+    - "^logs-.*"
+    exclude_topics:
+    - "^logs-test$"
+    encoding: otlp_proto
+
+kafka/valid_logs_without_exclude:
+  logs:
+    topics:
+    - logs
+    encoding: otlp_proto
+
+kafka/partition_processing:
+  partition_processing:
+    independent: true
+    max_buffered_batches: 2
+
+kafka/invalid_exclude_topics_logs_non_regex:
+  logs:
+    topics:
+    - logs
+    exclude_topics:
+    - "^logs-test$"
+    encoding: otlp_proto
+
+kafka/invalid_exclude_topics_metrics_non_regex:
+  metrics:
+    topics:
+    - metrics
+    exclude_topics:
+    - "^metrics-test$"
+    encoding: otlp_proto
+
+kafka/invalid_exclude_topics_traces_non_regex:
+  traces:
+    topics:
+    - traces
+    exclude_topics:
+    - "^traces-test$"
+    encoding: otlp_proto
+
+kafka/invalid_exclude_topics_profiles_non_regex:
+  profiles:
+    topics:
+    - profiles
+    exclude_topics:
+    - "^profiles-test$"
+    encoding: otlp_proto
+
+kafka/invalid_exclude_topics_regex:
+  logs:
+    topics:
+    - "^logs-.*"
+    exclude_topics:
+    - "^logs-[invalid(regex"
+    encoding: otlp_proto
+
+kafka/invalid_exclude_topics_logs_empty:
+  logs:
+    topics:
+    - "^logs-.*"
+    exclude_topics:
+    - ""
+    encoding: otlp_proto
+
+kafka/invalid_exclude_topics_metrics_empty:
+  metrics:
+    topics:
+    - "^metrics-.*"
+    exclude_topics:
+    - ""
+    - "^metrics-test$"
+    encoding: otlp_proto
+
+kafka/invalid_exclude_topics_traces_empty:
+  traces:
+    topics:
+    - "^traces-.*"
+    exclude_topics:
+    - "^traces-test$"
+    - ""
+    encoding: otlp_proto
+
+kafka/invalid_exclude_topics_profiles_empty:
+  profiles:
+    topics:
+    - "^profiles-.*"
+    exclude_topics:
+    - ""
+    encoding: otlp_proto
+
+kafka/invalid_partition_processing_zero_buffered_batches:
+  partition_processing:
+    independent: true
+    max_buffered_batches: 0
+
+kafka/invalid_partition_processing_manual_commit:
+  autocommit:
+    enable: false
+  partition_processing:
+    independent: true

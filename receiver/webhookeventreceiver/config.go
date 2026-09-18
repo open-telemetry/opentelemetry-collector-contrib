@@ -26,17 +26,17 @@ var (
 
 // Config defines configuration for the Generic Webhook receiver.
 type Config struct {
-	confighttp.ServerConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ReadTimeout                string                   `mapstructure:"read_timeout"`                  // wait time for reading request headers in ms. Default is 500ms.
-	WriteTimeout               string                   `mapstructure:"write_timeout"`                 // wait time for writing request response in ms. Default is 500ms.
-	Path                       string                   `mapstructure:"path"`                          // path for data collection. Default is /events
-	HealthPath                 string                   `mapstructure:"health_path"`                   // path for health check api. Default is /health_check
-	RequiredHeader             RequiredHeader           `mapstructure:"required_header"`               // optional setting to set a required header for all requests to have
-	SplitLogsAtNewLine         bool                     `mapstructure:"split_logs_at_newline"`         // optional setting to split logs into multiple log records
-	SplitLogsAtJSONBoundary    bool                     `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
-	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
-	HeaderAttributeRegex       string                   `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
-	HMACSignature              HMACSignature            `mapstructure:"hmac_signature"`                // optional HMAC hex digest signature verification
+	ServerConfig               confighttp.ServerConfig `mapstructure:",squash"`                       // squash ensures fields are correctly decoded in embedded struct
+	ReadTimeout                string                  `mapstructure:"read_timeout"`                  // wait time for reading request headers in ms. Default is 500ms.
+	WriteTimeout               string                  `mapstructure:"write_timeout"`                 // wait time for writing request response in ms. Default is 500ms.
+	Path                       string                  `mapstructure:"path"`                          // path for data collection. Default is /events
+	HealthPath                 string                  `mapstructure:"health_path"`                   // path for health check api. Default is /health_check
+	RequiredHeader             RequiredHeader          `mapstructure:"required_header"`               // optional setting to set a required header for all requests to have
+	SplitLogsAtNewLine         bool                    `mapstructure:"split_logs_at_newline"`         // optional setting to split logs into multiple log records
+	SplitLogsAtJSONBoundary    bool                    `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
+	ConvertHeadersToAttributes bool                    `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
+	HeaderAttributeRegex       string                  `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
+	HMACSignature              HMACSignature           `mapstructure:"hmac_signature"`                // optional HMAC hex digest signature verification
 }
 
 type RequiredHeader struct {
@@ -61,7 +61,7 @@ func (cfg *Config) Validate() error {
 
 	maxReadWriteTimeout, _ := time.ParseDuration("10s")
 
-	if cfg.NetAddr.Endpoint == "" {
+	if cfg.ServerConfig.NetAddr.Endpoint == "" {
 		errs = multierr.Append(errs, errMissingEndpointFromConfig)
 	}
 
@@ -90,8 +90,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Set default MaxRequestBodySize if not configured
-	if cfg.MaxRequestBodySize == 0 {
-		cfg.MaxRequestBodySize = int64(20 * 1024 * 1024) // 20MiB
+	if cfg.ServerConfig.MaxRequestBodySize == 0 {
+		cfg.ServerConfig.MaxRequestBodySize = int64(20 * 1024 * 1024) // 20MiB
 		// to match default value http://github.com/open-telemetry/opentelemetry-collector/blob/release/v0.139.x/config/confighttp/server.go#L31
 	}
 

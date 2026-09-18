@@ -5,7 +5,6 @@ capabilities:
   reports_effective_config: true
   reports_health: true
   accepts_packages: true
-  reports_package_statuses: true
 
 storage:
   directory: '{{.storage_dir}}'

@@ -18,9 +18,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
@@ -33,7 +33,7 @@ type Config struct {
 	// Valid values are `ignore` and `propagate`.
 	// `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode.
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
-	// The default value is `ignore`, which can be changed back to `propagate` by disabling the `processor.transform.defaultErrorModeIgnore` feature gate.
+	// The default value is `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
 	TraceStatements   []common.ContextStatements `mapstructure:"trace_statements"`

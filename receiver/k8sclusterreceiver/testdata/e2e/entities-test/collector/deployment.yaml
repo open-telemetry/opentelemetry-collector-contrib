@@ -21,6 +21,9 @@ spec:
           command:
             - /otelcontribcol
             - --config=/conf/relay.yaml
+            {{ if .FeatureGates }}
+            - --feature-gates={{ .FeatureGates }}
+            {{ end }}
           image: "otelcontribcol:latest"
           imagePullPolicy: Never
           ports:

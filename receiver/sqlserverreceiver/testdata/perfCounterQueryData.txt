@@ -3341,6 +3341,16 @@
   },
   {
     "computer_name": "abcde",
+    "counter": "Active cursors",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Cursor Manager by Type",
+    "sql_instance": "d26d40521426",
+    "value": "12"
+  },
+  {
+    "computer_name": "abcde",
     "counter": "Connection Reset/sec",
     "counter_type": "272696576",
     "instance": "",
@@ -3348,6 +3358,76 @@
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
     "value": "12"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Cached Cursor Counts",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Cursor Manager by Type",
+    "sql_instance": "d26d40521426",
+    "value": "5"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Number of active cursor plans",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Cursor Manager by Type",
+    "sql_instance": "d26d40521426",
+    "value": "8"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Cursor memory usage",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Cursor Manager by Type",
+    "sql_instance": "d26d40521426",
+    "value": "256"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Cursor Requests/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Cursor Manager by Type",
+    "sql_instance": "d26d40521426",
+    "value": "42"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "CLR Execution",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:CLR",
+    "sql_instance": "d26d40521426",
+    "value": "1500"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Tasks Running",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Broker Activation",
+    "sql_instance": "d26d40521426",
+    "value": "3"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Task Limit Reached",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Broker Activation",
+    "sql_instance": "d26d40521426",
+    "value": "0"
   },
   {
     "computer_name": "abcde",
@@ -3368,6 +3448,36 @@
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
     "value": "0"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Tasks Started/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Broker Activation",
+    "sql_instance": "d26d40521426",
+    "value": "10"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Tasks Aborted/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Broker Activation",
+    "sql_instance": "d26d40521426",
+    "value": "1"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Stored Procedures Invoked/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Broker Activation",
+    "sql_instance": "d26d40521426",
+    "value": "7"
   },
   {
     "computer_name": "abcde",

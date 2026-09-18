@@ -1007,6 +1007,48 @@ func Test_parseLEEFAttributes(t *testing.T) {
 	}
 }
 
+// benchLEEF1Message is a representative security event: a syslog header
+// followed by a LEEF 1.0 message with 15 tab-delimited attribute keys.
+const benchLEEF1Message = "<134>Feb 14 19:04:54 qradar01 LEEF:1.0|IBM|QRadar|9.1|NEW_PORT_DISCOVERED|" +
+	"src=10.1.1.15\tdst=203.0.113.9\tsrcPort=54321\tdstPort=443\tproto=TCP\tsev=5\tcat=anomaly\t" +
+	"usrName=joe.black\tdevTime=Feb 14 2026 19:04:54\tdevTimeFormat=MMM dd yyyy HH:mm:ss\t" +
+	"srcBytes=1234\tdstBytes=5678\tpolicy=default\taction=allow\tmsg=New port discovered on host"
+
+// benchLEEF2Message is the same event as a LEEF 2.0 message with an explicit
+// 0x09 delimiter spec.
+const benchLEEF2Message = "<134>Feb 14 19:04:54 qradar01 LEEF:2.0|IBM|QRadar|9.1|NEW_PORT_DISCOVERED|0x09|" +
+	"src=10.1.1.15\tdst=203.0.113.9\tsrcPort=54321\tdstPort=443\tproto=TCP\tsev=5\tcat=anomaly\t" +
+	"usrName=joe.black\tdevTime=Feb 14 2026 19:04:54\tdevTimeFormat=MMM dd yyyy HH:mm:ss\t" +
+	"srcBytes=1234\tdstBytes=5678\tpolicy=default\taction=allow\tmsg=New port discovered on host"
+
+func BenchmarkParseLEEF(b *testing.B) {
+	benchmarks := []struct {
+		name    string
+		message string
+	}{
+		{name: "1.0", message: benchLEEF1Message},
+		{name: "2.0", message: benchLEEF2Message},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			ctx := b.Context()
+			b.ReportAllocs()
+
+			exprFunc := parseLEEF(ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return bm.message, nil
+				},
+			})
+
+			for b.Loop() {
+				_, err := exprFunc(ctx, &ottllog.TransformContext{})
+				require.NoError(b, err)
+			}
+		})
+	}
+}
+
 func assertMapValue(t *testing.T, m pcommon.Map, key string, expected any) {
 	t.Helper()
 	val, ok := m.Get(key)
