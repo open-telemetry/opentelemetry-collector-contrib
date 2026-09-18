@@ -5,12 +5,12 @@ go 1.26.0
 require (
 	github.com/cockroachdb/pebble/v2 v2.1.7
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.67.0
-	go.opentelemetry.io/collector/component/componenttest v0.161.0
-	go.opentelemetry.io/collector/confmap v1.67.0
-	go.opentelemetry.io/collector/extension v1.67.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.161.0
-	go.opentelemetry.io/collector/pdata v1.67.0
+	go.opentelemetry.io/collector/component v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/confmap v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/extension v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/extension/extensiontest v0.161.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/pdata v1.67.1-0.20260917142259-65d9c38b188c
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/sdk/metric v1.46.0
@@ -61,8 +61,8 @@ require (
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.67.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect

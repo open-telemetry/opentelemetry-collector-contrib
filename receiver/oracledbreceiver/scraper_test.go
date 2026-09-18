@@ -2489,6 +2489,154 @@ func TestScraper_StartCDBRoot_FallbackWhenGrantsMissing(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// On a direct-PDB connection (e.g. RDS Oracle), V$SYSMETRIC returns no rows even
+// though CDB reads "yes" — RDS never grants access to the CDB root. The scraper
+// must route sysmetric collection through V$CON_SYSMETRIC instead of relying on
+// the standalone V$SYSMETRIC client, and fall through to it harmlessly rather
+// than skip it outright. Shared Pool Free % is intentionally not recovered here:
+// V$SGASTAT is container-scoped, so a PDB-derived free % conflates CDB-wide
+// unclaimed memory with the PDB's own usage and comes out systematically wrong.
+func TestScraper_ScrapeSysMetrics_ConnectedToPDB_RDSFallback(t *testing.T) {
+	const floatDelta = 0.001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbSessionAverage.Enabled = true
+	cfg.Metrics.OracledbCPUUsageRate.Enabled = true
+	cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
+	cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
+	cfg.Metrics.OracledbSharedPoolUtilization.Enabled = true
+
+	pdbResponses := map[string][]metricRow{
+		sysmetricCDBSQL: {
+			{"METRIC_NAME": sysmetricAverageActiveSessions, "VALUE": "2.50", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricCPUUsagePerSec, "VALUE": "150.00", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricCursorCacheHitRatio, "VALUE": "96.40", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricResponseTimePerTxn, "VALUE": "12.34", "PDB_NAME": "PDB1"},
+		},
+		// V$SYSMETRIC genuinely returns 0 rows from a PDB connection; an empty
+		// response (not an error) reflects real RDS behavior after the scraper
+		// falls through to it.
+		sysmetricSQL: {},
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if rows, ok := pdbResponses[s]; ok {
+				return &fakeDbClient{Responses: [][]metricRow{rows}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: true, pdbName: "PDB1"},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	require.False(t, scrpr.isCDBRoot, "a direct-PDB connection must not use CDB-root queries")
+	require.NotNil(t, scrpr.sysmetricCDBClient)
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metricMap := make(map[string]float64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+			metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+		}
+	}
+
+	assert.InDelta(t, 2.50, metricMap["oracledb.session.average"], floatDelta)
+	assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
+	assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
+	assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
+	_, hasSharedPool := metricMap["oracledb.shared_pool.utilization"]
+	assert.False(t, hasSharedPool, "Shared Pool Free % cannot be measured accurately from a PDB connection and must not be recorded")
+}
+
+// On a direct-PDB connection (e.g. RDS Oracle), V$RESOURCE_LIMIT returns no rows
+// even though CDB reads "yes" — RDS restricts access to that CDB-root view. The
+// scraper must derive resource limits from V$PARAMETER/V$PROCESS/V$SESSION/
+// V$TRANSACTION instead of falling back to the (empty) standalone query.
+func TestScraper_ScrapeResourceLimits_ConnectedToPDB_RDSFallback(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbProcessesUsage.Enabled = true
+	cfg.Metrics.OracledbProcessesLimit.Enabled = true
+	cfg.Metrics.OracledbSessionsLimit.Enabled = true
+	cfg.Metrics.OracledbDmlLocksUsage.Enabled = true
+	cfg.Metrics.OracledbDmlLocksLimit.Enabled = true
+	cfg.Metrics.OracledbTransactionsUsage.Enabled = true
+	cfg.Metrics.OracledbTransactionsLimit.Enabled = true
+
+	pdbLimitRows := []metricRow{
+		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "12", "LIMIT_VALUE": "1000"},
+		{"RESOURCE_NAME": "sessions", "CURRENT_UTILIZATION": "20", "LIMIT_VALUE": "1105"},
+		{"RESOURCE_NAME": "transactions", "CURRENT_UTILIZATION": "3", "LIMIT_VALUE": "1215"},
+		{"RESOURCE_NAME": "dml_locks", "CURRENT_UTILIZATION": "5", "LIMIT_VALUE": "220"},
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			// V$RESOURCE_LIMIT is empty from a PDB connection on RDS; trap it so
+			// the test fails if the scraper ever falls back to querying it.
+			if s == systemResourceLimitsSQL {
+				return &fakeDbClient{Err: errors.New("should not be called: v$resource_limit returns 0 rows from a PDB connection")}
+			}
+			if s == systemResourceLimitsPDBSQL {
+				return &fakeDbClient{Responses: [][]metricRow{pdbLimitRows}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: true, pdbName: "PDB1"},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	require.NotNil(t, scrpr.systemResourceLimitsPDBClient)
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metricMap := make(map[string]int64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+			metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).IntValue()
+		}
+	}
+
+	assert.Equal(t, int64(12), metricMap["oracledb.processes.usage"])
+	assert.Equal(t, int64(1000), metricMap["oracledb.processes.limit"])
+	assert.Equal(t, int64(1105), metricMap["oracledb.sessions.limit"])
+	assert.Equal(t, int64(5), metricMap["oracledb.dml_locks.usage"])
+	assert.Equal(t, int64(220), metricMap["oracledb.dml_locks.limit"])
+	assert.Equal(t, int64(3), metricMap["oracledb.transactions.usage"])
+	assert.Equal(t, int64(1215), metricMap["oracledb.transactions.limit"])
+}
+
 // sysmetricDirectionValues collects gauge data points keyed by metric name then by
 // the disk.io.direction attribute value, so consolidated read/write rates can be
 // asserted independently.

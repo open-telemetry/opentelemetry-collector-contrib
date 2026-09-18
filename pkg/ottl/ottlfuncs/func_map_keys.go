@@ -15,19 +15,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type MapKeysArguments[K any] struct {
+type mapKeysArguments[K any] struct {
 	Source    ottl.PMapGetter[K]
 	KeyMapper *ottl.LambdaExpression[K]
 }
 
+// NewMapKeysFactory returns a factory for the MapKeys OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#mapkeys
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future. It
+// requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewMapKeysFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("MapKeys", &MapKeysArguments[K]{}, createMapKeysFunction[K])
+	return ottl.NewFactory("MapKeys", &mapKeysArguments[K]{}, createMapKeysFunction[K])
 }
 
 func createMapKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*MapKeysArguments[K])
+	args, ok := oArgs.(*mapKeysArguments[K])
 	if !ok {
-		return nil, errors.New("MapKeysFactory args must be of type *MapKeysArguments[K]")
+		return nil, errors.New("MapKeysFactory args must be of type *mapKeysArguments[K]")
 	}
 	return mapKeys(args.Source, args.KeyMapper)
 }

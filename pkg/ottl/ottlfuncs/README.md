@@ -8,6 +8,8 @@ This document contains documentation for both types of OTTL functions:
 - [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+Profiles converters that fall outside of OTTL's stability guarantees are documented separately. See the [`xprofile` module](../contexts/xprofile/README.md) for the profiles converters, including `ProfileID`.
+
 ## Contents
 
 - [Design principles](#design-principles)
@@ -470,14 +472,11 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 `set(target, value)`
 
-> [!NOTE]
-> The [`ottl.set.allowNil`](../documentation.md#feature-gates) feature gate changes the behavior of `set` when a `nil` value is passed. Prior to this gate, passing `nil` was a no-op. When enabled, `set` will pass the `nil` value directly to the target, which may result in an error or an empty value depending on the target's underlying type.
-
 The `set` function allows users to set a telemetry field using a value.
 
-`target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
+`target` is a path expression to a telemetry field. `value` is any value type, including `nil`.
 
-How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `ottl.ParseStatements`.
+How the underlying telemetry field is updated is decided by the path expression.
 
 Examples:
 
@@ -608,7 +607,6 @@ Available Converters:
 - [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
-- [ProfileID](#profileid)
 - [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
@@ -2312,20 +2310,6 @@ Examples:
 - `ParseXML(log.attributes["xml"])`
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
-
-### ProfileID
-
-`ProfileID(bytes|string)`
-
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
-
-`bytes`  byte slice of exactly 16 bytes.
-`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
-
-Examples:
-
-- `ProfileID(0x00112233445566778899aabbccddeeff)`
-- `ProfileID("a389023abaa839283293ed323892389d")`
 
 ### Reduce
 

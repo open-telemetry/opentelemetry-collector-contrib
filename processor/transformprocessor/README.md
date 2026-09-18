@@ -263,6 +263,7 @@ In addition to the common OTTL functions, the processor defines its own function
 
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
+- [extract_avg_metric](#extract_avg_metric)
 - [extract_count_metric](#extract_count_metric)
 - [extract_percentile_metric](#extract_percentile_metric)
 - [extract_sum_metric](#extract_sum_metric)
@@ -315,6 +316,27 @@ Examples:
 
 
 - `convert_gauge_to_sum("delta", true)`
+
+### extract_avg_metric
+
+> [!NOTE]  
+> This function supports Histograms, ExponentialHistograms and Summaries.
+
+`extract_avg_metric(Optional[suffix])`
+
+The `extract_avg_metric` function creates a new Gauge metric from a Histogram, ExponentialHistogram or Summary by dividing the sum value by the count value for each data point. Data points where the sum value is missing or the count value is `0` are skipped, to avoid division by zero. A metric will only be created if there is at least one data point.
+
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_avg`.
+
+The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `unit`.
+
+The new metric that is created will be passed to all subsequent statements in the metrics statements list.
+
+Examples:
+
+- `extract_avg_metric()`
+
+- `extract_avg_metric(".avg")`
 
 ### extract_count_metric
 

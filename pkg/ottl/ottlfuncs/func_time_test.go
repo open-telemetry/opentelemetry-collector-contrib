@@ -234,7 +234,7 @@ func Test_Time(t *testing.T) {
 			if tt.locale != "" {
 				localeOptional = ottl.NewTestingOptional(tt.locale)
 			}
-			exprFunc, err := Time(tt.time, tt.format, locationOptional, localeOptional)
+			exprFunc, err := parseTime(tt.time, tt.format, locationOptional, localeOptional)
 			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
@@ -275,7 +275,7 @@ func Test_TimeError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var locationOptional ottl.Optional[string]
 			var localeOptional ottl.Optional[string]
-			exprFunc, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
+			exprFunc, err := parseTime[any](tt.time, tt.format, locationOptional, localeOptional)
 			require.NoError(t, err)
 			_, err = exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
@@ -335,7 +335,7 @@ func Test_TimeFormatError(t *testing.T) {
 			if tt.locale != "" {
 				localeOptional = ottl.NewTestingOptional(tt.locale)
 			}
-			_, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
+			_, err := parseTime[any](tt.time, tt.format, locationOptional, localeOptional)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -521,14 +521,14 @@ func Benchmark_Time(t *testing.B) {
 		if tt.location != "" {
 			locOptional = ottl.NewTestingOptional(tt.location)
 		}
-		exprFunc, err := Time(tt.time, tt.format, locOptional, ottl.Optional[string]{})
+		exprFunc, err := parseTime(tt.time, tt.format, locOptional, ottl.Optional[string]{})
 		require.NoError(t, err)
 
 		t.Run(tt.name, func(t *testing.B) {
 			for t.Loop() {
-				result, err := exprFunc(nil, nil)
-				require.NoError(t, err)
-				assert.Equal(t, tt.expected.UnixNano(), result.(time.Time).UnixNano())
+				if _, err := exprFunc(nil, nil); err != nil {
+					t.Fatal(err)
+				}
 			}
 		})
 	}
@@ -544,14 +544,14 @@ func Test_TimeFactory(t *testing.T) {
 		factory := NewTimeFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &TimeArguments[any]{}, args)
+		assert.IsType(t, &timeArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time", "Format", "Location", "Locale"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewTimeFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*TimeArguments[any])
+		timeArgs, ok := args.(*timeArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -567,6 +567,6 @@ func Test_TimeFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createTimeFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "TimeFactory args must be of type *TimeArguments[K]")
+		assert.ErrorContains(t, err, "TimeFactory args must be of type *timeArguments[K]")
 	})
 }
