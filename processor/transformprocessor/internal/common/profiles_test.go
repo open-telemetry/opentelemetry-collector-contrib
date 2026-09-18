@@ -15,12 +15,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func newProfileParserCollection(t *testing.T, errorMode ottl.ErrorMode) *ProfileParserCollection {
+func newProfileParserCollection(t *testing.T) *ProfileParserCollection {
 	t.Helper()
 	pc, err := NewProfileParserCollection(
 		componenttest.NewNopTelemetrySettings(),
 		WithProfileParser(ottlfuncs.StandardFuncs[*ottlprofile.TransformContext]()),
-		WithProfileErrorMode(errorMode),
+		WithProfileErrorMode(ottl.PropagateError),
 	)
 	require.NoError(t, err)
 	return pc
@@ -37,7 +37,7 @@ func TestProfileParserCollection_ConsumeProfiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pc := newProfileParserCollection(t, ottl.PropagateError)
+			pc := newProfileParserCollection(t)
 			consumer, err := pc.ParseContextStatements(tt.cs)
 			require.NoError(t, err)
 			assert.Equal(t, Profile, consumer.Context())
@@ -52,14 +52,14 @@ func TestProfileParserCollection_ConsumeProfiles(t *testing.T) {
 }
 
 func TestProfileParserCollection_ConsumeProfiles_PropagatesError(t *testing.T) {
-	pc := newProfileParserCollection(t, ottl.PropagateError)
+	pc := newProfileParserCollection(t)
 	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Profile, Statements: []string{`set(original_payload_format, ParseJSON("1"))`}})
 	require.NoError(t, err)
 	require.Error(t, consumer.ConsumeProfiles(t.Context(), newTestProfiles(), nil))
 }
 
 func TestProfileParserCollection_ParseContextStatements_Error(t *testing.T) {
-	pc := newProfileParserCollection(t, ottl.PropagateError)
+	pc := newProfileParserCollection(t)
 	_, err := pc.ParseContextStatements(ContextStatements{Context: Profile, Statements: []string{`not a valid statement`}})
 	require.Error(t, err)
 }

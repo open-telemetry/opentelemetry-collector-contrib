@@ -17,13 +17,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func newTraceParserCollection(t *testing.T, errorMode ottl.ErrorMode) *TraceParserCollection {
+func newTraceParserCollection(t *testing.T) *TraceParserCollection {
 	t.Helper()
 	pc, err := NewTraceParserCollection(
 		componenttest.NewNopTelemetrySettings(),
 		WithSpanParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()),
 		WithSpanEventParser(ottlfuncs.StandardFuncs[*ottlspanevent.TransformContext]()),
-		WithTraceErrorMode(errorMode),
+		WithTraceErrorMode(ottl.PropagateError),
 	)
 	require.NoError(t, err)
 	return pc
@@ -60,7 +60,7 @@ func TestTraceParserCollection_ConsumeTraces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pc := newTraceParserCollection(t, ottl.PropagateError)
+			pc := newTraceParserCollection(t)
 			consumer, err := pc.ParseContextStatements(tt.cs)
 			require.NoError(t, err)
 
@@ -82,7 +82,7 @@ func TestTraceParserCollection_ConsumeTraces(t *testing.T) {
 }
 
 func TestTraceParserCollection_Context(t *testing.T) {
-	pc := newTraceParserCollection(t, ottl.PropagateError)
+	pc := newTraceParserCollection(t)
 
 	span, err := pc.ParseContextStatements(ContextStatements{Context: Span, Statements: []string{`set(attributes["x"], "y")`}})
 	require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestTraceParserCollection_Context(t *testing.T) {
 }
 
 func TestTraceParserCollection_ConsumeTraces_PropagatesError(t *testing.T) {
-	pc := newTraceParserCollection(t, ottl.PropagateError)
+	pc := newTraceParserCollection(t)
 	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Span, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}})
 	require.NoError(t, err)
 
@@ -103,7 +103,7 @@ func TestTraceParserCollection_ConsumeTraces_PropagatesError(t *testing.T) {
 }
 
 func TestTraceParserCollection_ParseContextStatements_Error(t *testing.T) {
-	pc := newTraceParserCollection(t, ottl.PropagateError)
+	pc := newTraceParserCollection(t)
 	_, err := pc.ParseContextStatements(ContextStatements{Context: Span, Statements: []string{`not a valid statement`}})
 	require.Error(t, err)
 }

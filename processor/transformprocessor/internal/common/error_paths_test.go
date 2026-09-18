@@ -25,7 +25,7 @@ func TestConsume_EvalError(t *testing.T) {
 	t.Run("traces", func(t *testing.T) {
 		for _, ctx := range []ContextID{Resource, Scope, Span, SpanEvent} {
 			t.Run(string(ctx), func(t *testing.T) {
-				consumer, err := newTraceParserCollection(t, ottl.PropagateError).
+				consumer, err := newTraceParserCollection(t).
 					ParseContextStatements(ContextStatements{Context: ctx, Conditions: []string{errCond}, Statements: []string{`set(attributes["x"], "y")`}})
 				require.NoError(t, err)
 				require.Error(t, consumer.ConsumeTraces(t.Context(), newTestTraces(), nil))
@@ -40,7 +40,7 @@ func TestConsume_EvalError(t *testing.T) {
 				if ctx == Metric {
 					stmt = `set(description, "y")`
 				}
-				consumer, err := newMetricParserCollection(t, ottl.PropagateError).
+				consumer, err := newMetricParserCollection(t).
 					ParseContextStatements(ContextStatements{Context: ctx, Conditions: []string{errCond}, Statements: []string{stmt}})
 				require.NoError(t, err)
 				require.Error(t, consumer.ConsumeMetrics(t.Context(), newTestMetrics(), nil))
@@ -51,7 +51,7 @@ func TestConsume_EvalError(t *testing.T) {
 	t.Run("logs", func(t *testing.T) {
 		for _, ctx := range []ContextID{Resource, Scope, Log} {
 			t.Run(string(ctx), func(t *testing.T) {
-				consumer, err := newLogParserCollection(t, ottl.PropagateError).
+				consumer, err := newLogParserCollection(t).
 					ParseContextStatements(ContextStatements{Context: ctx, Conditions: []string{errCond}, Statements: []string{`set(attributes["x"], "y")`}})
 				require.NoError(t, err)
 				require.Error(t, consumer.ConsumeLogs(t.Context(), newTestLogs(), nil))
@@ -66,7 +66,7 @@ func TestConsume_EvalError(t *testing.T) {
 				if ctx == Profile {
 					stmt = `set(original_payload_format, "y")`
 				}
-				consumer, err := newProfileParserCollection(t, ottl.PropagateError).
+				consumer, err := newProfileParserCollection(t).
 					ParseContextStatements(ContextStatements{Context: ctx, Conditions: []string{errCond}, Statements: []string{stmt}})
 				require.NoError(t, err)
 				require.Error(t, consumer.ConsumeProfiles(t.Context(), newTestProfiles(), nil))
@@ -88,13 +88,13 @@ func TestConsumeMetrics_DataPointErrors(t *testing.T) {
 	}
 	for _, tc := range types {
 		t.Run(tc.name+"/execute", func(t *testing.T) {
-			consumer, err := newMetricParserCollection(t, ottl.PropagateError).
+			consumer, err := newMetricParserCollection(t).
 				ParseContextStatements(ContextStatements{Context: DataPoint, Statements: []string{errStmt}})
 			require.NoError(t, err)
 			require.Error(t, consumer.ConsumeMetrics(t.Context(), tc.md(), nil))
 		})
 		t.Run(tc.name+"/eval", func(t *testing.T) {
-			consumer, err := newMetricParserCollection(t, ottl.PropagateError).
+			consumer, err := newMetricParserCollection(t).
 				ParseContextStatements(ContextStatements{Context: DataPoint, Conditions: []string{errCond}, Statements: []string{`set(attributes["x"], "y")`}})
 			require.NoError(t, err)
 			require.Error(t, consumer.ConsumeMetrics(t.Context(), tc.md(), nil))
@@ -113,13 +113,13 @@ func TestConsumeMetrics_ExemplarErrors(t *testing.T) {
 	}
 	for _, tc := range types {
 		t.Run(tc.name+"/execute", func(t *testing.T) {
-			consumer, err := newMetricParserCollection(t, ottl.PropagateError).
+			consumer, err := newMetricParserCollection(t).
 				ParseContextStatements(ContextStatements{Context: Exemplar, Statements: []string{`set(filtered_attributes["test"], ParseJSON("1"))`}})
 			require.NoError(t, err)
 			require.Error(t, consumer.ConsumeMetrics(t.Context(), tc.md(), nil))
 		})
 		t.Run(tc.name+"/eval", func(t *testing.T) {
-			consumer, err := newMetricParserCollection(t, ottl.PropagateError).
+			consumer, err := newMetricParserCollection(t).
 				ParseContextStatements(ContextStatements{Context: Exemplar, Conditions: []string{errCond}, Statements: []string{`set(filtered_attributes["x"], "y")`}})
 			require.NoError(t, err)
 			require.Error(t, consumer.ConsumeMetrics(t.Context(), tc.md(), nil))
@@ -128,10 +128,10 @@ func TestConsumeMetrics_ExemplarErrors(t *testing.T) {
 }
 
 func TestParse_ErrorModeOverride(t *testing.T) {
-	traces := newTraceParserCollection(t, ottl.PropagateError)
-	metrics := newMetricParserCollection(t, ottl.PropagateError)
-	logs := newLogParserCollection(t, ottl.PropagateError)
-	profiles := newProfileParserCollection(t, ottl.PropagateError)
+	traces := newTraceParserCollection(t)
+	metrics := newMetricParserCollection(t)
+	logs := newLogParserCollection(t)
+	profiles := newProfileParserCollection(t)
 
 	cases := []struct {
 		name  string
@@ -158,10 +158,10 @@ func TestParse_ErrorModeOverride(t *testing.T) {
 }
 
 func TestParse_InvalidCondition(t *testing.T) {
-	traces := newTraceParserCollection(t, ottl.PropagateError)
-	metrics := newMetricParserCollection(t, ottl.PropagateError)
-	logs := newLogParserCollection(t, ottl.PropagateError)
-	profiles := newProfileParserCollection(t, ottl.PropagateError)
+	traces := newTraceParserCollection(t)
+	metrics := newMetricParserCollection(t)
+	logs := newLogParserCollection(t)
+	profiles := newProfileParserCollection(t)
 
 	badCond := []string{`NotARealFunction() == true`}
 	cases := []struct {
@@ -188,7 +188,7 @@ func TestParse_InvalidCondition(t *testing.T) {
 }
 
 func TestParse_InferredResourceScope(t *testing.T) {
-	pc := newTraceParserCollection(t, ottl.PropagateError)
+	pc := newTraceParserCollection(t)
 
 	resource, err := pc.ParseContextStatements(ContextStatements{Statements: []string{`set(resource.attributes["x"], "y")`}})
 	require.NoError(t, err)
@@ -202,7 +202,7 @@ func TestParse_InferredResourceScope(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, SpanEvent, spanEvent.Context())
 
-	mc := newMetricParserCollection(t, ottl.PropagateError)
+	mc := newMetricParserCollection(t)
 
 	metric, err := mc.ParseContextStatements(ContextStatements{Statements: []string{`set(metric.description, "y")`}})
 	require.NoError(t, err)
@@ -218,7 +218,7 @@ func TestParse_InferredResourceScope(t *testing.T) {
 }
 
 func TestConsumeTraces_SpanEventExecuteError(t *testing.T) {
-	consumer, err := newTraceParserCollection(t, ottl.PropagateError).
+	consumer, err := newTraceParserCollection(t).
 		ParseContextStatements(ContextStatements{Context: SpanEvent, Statements: []string{errStmt}})
 	require.NoError(t, err)
 	require.Error(t, consumer.ConsumeTraces(t.Context(), newTestTraces(), nil))

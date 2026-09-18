@@ -17,21 +17,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func newMetricParserCollection(t *testing.T, errorMode ottl.ErrorMode) *MetricParserCollection {
+func newMetricParserCollection(t *testing.T) *MetricParserCollection {
 	t.Helper()
 	pc, err := NewMetricParserCollection(
 		componenttest.NewNopTelemetrySettings(),
 		WithMetricParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext]()),
 		WithDataPointParser(ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()),
 		WithExemplarParser(ottlfuncs.StandardFuncs[*ottlexemplar.TransformContext]()),
-		WithMetricErrorMode(errorMode),
+		WithMetricErrorMode(ottl.PropagateError),
 	)
 	require.NoError(t, err)
 	return pc
 }
 
 func TestMetricParserCollection_MetricContext(t *testing.T) {
-	pc := newMetricParserCollection(t, ottl.PropagateError)
+	pc := newMetricParserCollection(t)
 	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Metric, Statements: []string{`set(description, "pass")`}})
 	require.NoError(t, err)
 	assert.Equal(t, Metric, consumer.Context())
@@ -46,7 +46,7 @@ func TestMetricParserCollection_MetricContext(t *testing.T) {
 }
 
 func TestMetricParserCollection_DataPointContext(t *testing.T) {
-	pc := newMetricParserCollection(t, ottl.PropagateError)
+	pc := newMetricParserCollection(t)
 	consumer, err := pc.ParseContextStatements(ContextStatements{Context: DataPoint, Statements: []string{`set(attributes["test"], "pass")`}})
 	require.NoError(t, err)
 	assert.Equal(t, DataPoint, consumer.Context())
@@ -61,7 +61,7 @@ func TestMetricParserCollection_DataPointContext(t *testing.T) {
 }
 
 func TestMetricParserCollection_ExemplarContext(t *testing.T) {
-	pc := newMetricParserCollection(t, ottl.PropagateError)
+	pc := newMetricParserCollection(t)
 	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Exemplar, Statements: []string{`set(filtered_attributes["test"], "pass")`}})
 	require.NoError(t, err)
 	assert.Equal(t, Exemplar, consumer.Context())
@@ -86,7 +86,7 @@ func TestMetricParserCollection_ConsumeMetrics_PropagatesError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pc := newMetricParserCollection(t, ottl.PropagateError)
+			pc := newMetricParserCollection(t)
 			consumer, err := pc.ParseContextStatements(tt.cs)
 			require.NoError(t, err)
 			require.Error(t, consumer.ConsumeMetrics(t.Context(), newTestMetrics(), nil))
@@ -95,7 +95,7 @@ func TestMetricParserCollection_ConsumeMetrics_PropagatesError(t *testing.T) {
 }
 
 func TestMetricParserCollection_ParseContextStatements_Error(t *testing.T) {
-	pc := newMetricParserCollection(t, ottl.PropagateError)
+	pc := newMetricParserCollection(t)
 	_, err := pc.ParseContextStatements(ContextStatements{Context: Metric, Statements: []string{`not a valid statement`}})
 	require.Error(t, err)
 }

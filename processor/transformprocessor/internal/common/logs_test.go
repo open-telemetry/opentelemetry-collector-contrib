@@ -15,12 +15,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func newLogParserCollection(t *testing.T, errorMode ottl.ErrorMode) *LogParserCollection {
+func newLogParserCollection(t *testing.T) *LogParserCollection {
 	t.Helper()
 	pc, err := NewLogParserCollection(
 		componenttest.NewNopTelemetrySettings(),
 		WithLogParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext]()),
-		WithLogErrorMode(errorMode),
+		WithLogErrorMode(ottl.PropagateError),
 	)
 	require.NoError(t, err)
 	return pc
@@ -37,7 +37,7 @@ func TestLogParserCollection_ConsumeLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pc := newLogParserCollection(t, ottl.PropagateError)
+			pc := newLogParserCollection(t)
 			consumer, err := pc.ParseContextStatements(tt.cs)
 			require.NoError(t, err)
 			assert.Equal(t, Log, consumer.Context())
@@ -53,14 +53,14 @@ func TestLogParserCollection_ConsumeLogs(t *testing.T) {
 }
 
 func TestLogParserCollection_ConsumeLogs_PropagatesError(t *testing.T) {
-	pc := newLogParserCollection(t, ottl.PropagateError)
+	pc := newLogParserCollection(t)
 	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Log, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}})
 	require.NoError(t, err)
 	require.Error(t, consumer.ConsumeLogs(t.Context(), newTestLogs(), nil))
 }
 
 func TestLogParserCollection_ParseContextStatements_Error(t *testing.T) {
-	pc := newLogParserCollection(t, ottl.PropagateError)
+	pc := newLogParserCollection(t)
 	_, err := pc.ParseContextStatements(ContextStatements{Context: Log, Statements: []string{`not a valid statement`}})
 	require.Error(t, err)
 }

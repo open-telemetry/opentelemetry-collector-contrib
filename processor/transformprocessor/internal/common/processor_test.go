@@ -8,15 +8,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestResourceStatements_ConsumeAllSignals(t *testing.T) {
 	cs := ContextStatements{Context: Resource, Statements: []string{`set(attributes["test"], "pass")`}}
 
 	t.Run("traces", func(t *testing.T) {
-		consumer, err := newTraceParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+		consumer, err := newTraceParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
 		assert.Equal(t, Resource, consumer.Context())
 		td := newTestTraces()
@@ -27,7 +25,7 @@ func TestResourceStatements_ConsumeAllSignals(t *testing.T) {
 	})
 
 	t.Run("metrics", func(t *testing.T) {
-		consumer, err := newMetricParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+		consumer, err := newMetricParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
 		md := newTestMetrics()
 		require.NoError(t, consumer.ConsumeMetrics(t.Context(), md, nil))
@@ -37,7 +35,7 @@ func TestResourceStatements_ConsumeAllSignals(t *testing.T) {
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		consumer, err := newLogParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+		consumer, err := newLogParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
 		ld := newTestLogs()
 		require.NoError(t, consumer.ConsumeLogs(t.Context(), ld, nil))
@@ -47,7 +45,7 @@ func TestResourceStatements_ConsumeAllSignals(t *testing.T) {
 	})
 
 	t.Run("profiles", func(t *testing.T) {
-		consumer, err := newProfileParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+		consumer, err := newProfileParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
 		pd := newTestProfiles()
 		require.NoError(t, consumer.ConsumeProfiles(t.Context(), pd, nil))
@@ -61,7 +59,7 @@ func TestScopeStatements_ConsumeAllSignals(t *testing.T) {
 	cs := ContextStatements{Context: Scope, Conditions: []string{`name == "scope"`}, Statements: []string{`set(attributes["test"], "pass")`}}
 
 	t.Run("traces", func(t *testing.T) {
-		consumer, err := newTraceParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+		consumer, err := newTraceParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
 		assert.Equal(t, Scope, consumer.Context())
 		td := newTestTraces()
@@ -72,7 +70,7 @@ func TestScopeStatements_ConsumeAllSignals(t *testing.T) {
 	})
 
 	t.Run("metrics", func(t *testing.T) {
-		consumer, err := newMetricParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+		consumer, err := newMetricParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
 		md := newTestMetrics()
 		require.NoError(t, consumer.ConsumeMetrics(t.Context(), md, nil))
@@ -82,7 +80,7 @@ func TestScopeStatements_ConsumeAllSignals(t *testing.T) {
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		consumer, err := newLogParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+		consumer, err := newLogParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
 		ld := newTestLogs()
 		require.NoError(t, consumer.ConsumeLogs(t.Context(), ld, nil))
@@ -92,7 +90,7 @@ func TestScopeStatements_ConsumeAllSignals(t *testing.T) {
 	})
 
 	t.Run("profiles", func(t *testing.T) {
-		consumer, err := newProfileParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+		consumer, err := newProfileParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
 		pd := newTestProfiles()
 		require.NoError(t, consumer.ConsumeProfiles(t.Context(), pd, nil))
@@ -110,19 +108,19 @@ func TestResourceScopeStatements_PropagateError(t *testing.T) {
 	for _, ctx := range []ContextID{Resource, Scope} {
 		cs := ContextStatements{Context: ctx, Statements: stmt}
 		t.Run(string(ctx), func(t *testing.T) {
-			traceConsumer, err := newTraceParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+			traceConsumer, err := newTraceParserCollection(t).ParseContextStatements(cs)
 			require.NoError(t, err)
 			require.Error(t, traceConsumer.ConsumeTraces(t.Context(), newTestTraces(), nil))
 
-			metricConsumer, err := newMetricParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+			metricConsumer, err := newMetricParserCollection(t).ParseContextStatements(cs)
 			require.NoError(t, err)
 			require.Error(t, metricConsumer.ConsumeMetrics(t.Context(), newTestMetrics(), nil))
 
-			logConsumer, err := newLogParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+			logConsumer, err := newLogParserCollection(t).ParseContextStatements(cs)
 			require.NoError(t, err)
 			require.Error(t, logConsumer.ConsumeLogs(t.Context(), newTestLogs(), nil))
 
-			profileConsumer, err := newProfileParserCollection(t, ottl.PropagateError).ParseContextStatements(cs)
+			profileConsumer, err := newProfileParserCollection(t).ParseContextStatements(cs)
 			require.NoError(t, err)
 			require.Error(t, profileConsumer.ConsumeProfiles(t.Context(), newTestProfiles(), nil))
 		})
