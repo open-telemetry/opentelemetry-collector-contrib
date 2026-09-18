@@ -20,6 +20,8 @@ type parseKeyValueArguments[K any] struct {
 	PairDelimiter ottl.Optional[string]
 }
 
+// NewParseKeyValueFactory returns a factory for the ParseKeyValue OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#parsekeyvalue
 func NewParseKeyValueFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ParseKeyValue", &parseKeyValueArguments[K]{}, createParseKeyValueFunction[K])
 }

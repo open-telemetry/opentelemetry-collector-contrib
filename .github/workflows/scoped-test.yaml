@@ -96,6 +96,7 @@ jobs:
       - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          gomoddownload: "false"
 
       - name: Run changed tests
         if: needs.changedfiles.outputs.go_tests

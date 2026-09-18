@@ -286,15 +286,15 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.30.1-0.20260702202003-335e29c1ae8a // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/component v1.67.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/confmap v1.67.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.67.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/filter v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/internal/schemagen v0.161.1-0.20260916171901-3e8af656214a // indirect
-	go.opentelemetry.io/collector/pdata v1.67.1-0.20260916171901-3e8af656214a // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/component v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/confmap v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/filter v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/internal/schemagen v0.161.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/pdata v1.67.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
@@ -328,3 +328,8 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+// actionlint v1.7.12 doesn't compile against go.yaml.in/yaml/v4 v4.0.0-rc.6, which other
+// tools pull in transitively. Pin to rc.3 until a compatible actionlint release exists.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51106.
+replace go.yaml.in/yaml/v4 => go.yaml.in/yaml/v4 v4.0.0-rc.3

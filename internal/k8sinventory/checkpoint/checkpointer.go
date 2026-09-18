@@ -23,6 +23,17 @@ type Checkpointer struct {
 	mu      sync.Mutex
 	pending map[string]string
 
+	// storageMu orders persistent writes and deletes without blocking
+	// SetCheckpoint from buffering new resourceVersions.
+	storageMu sync.Mutex
+
+	// deleted is a tombstone set of storage keys removed by DeleteCheckpoint.
+	// It is guarded by mu. Flush skips any key present here so that an in-flight
+	// flush (which snapshotted pending before the delete) cannot resurrect a
+	// checkpoint that was just deleted from storage. A subsequent SetCheckpoint
+	// clears the tombstone, marking the key alive again.
+	deleted map[string]bool
+
 	// persistedRVs holds RVs loaded from storage at startup for dedup.
 	// Populated by Load(); read by AlreadySeen().
 	persistedMu  sync.RWMutex
@@ -36,6 +47,7 @@ func New(client storage.Client, logger *zap.Logger) *Checkpointer {
 		client:  client,
 		logger:  logger,
 		pending: make(map[string]string),
+		deleted: make(map[string]bool),
 	}
 }
 
@@ -94,6 +106,9 @@ func (c *Checkpointer) SetCheckpoint(
 		}
 	}
 	c.pending[key] = resourceVersion
+	// A fresh resourceVersion means the key is alive again; clear any tombstone
+	// left by a prior DeleteCheckpoint so this value is allowed to flush.
+	delete(c.deleted, key)
 	c.mu.Unlock()
 
 	c.logger.Debug("buffered resourceVersion checkpoint",
@@ -124,7 +139,24 @@ func (c *Checkpointer) Flush(ctx context.Context) error {
 
 	failed := false
 	for key, rv := range snapshot {
-		if err := c.client.Set(ctx, key, []byte(rv)); err != nil {
+		c.storageMu.Lock()
+
+		// Skip keys tombstoned by DeleteCheckpoint after this snapshot was taken.
+		// Without this, an in-flight flush could re-Set a key that was just
+		// deleted from storage, resurrecting a stale resourceVersion.
+		c.mu.Lock()
+		tombstoned := c.deleted[key]
+		c.mu.Unlock()
+		if tombstoned {
+			c.storageMu.Unlock()
+			c.logger.Debug("skipping flush of deleted checkpoint",
+				zap.String("key", key),
+				zap.String("resourceVersion", rv))
+			continue
+		}
+		err := c.client.Set(ctx, key, []byte(rv))
+		c.storageMu.Unlock()
+		if err != nil {
 			c.logger.Error("failed to flush checkpoint",
 				zap.String("key", key),
 				zap.String("resourceVersion", rv),
@@ -193,7 +225,19 @@ func (c *Checkpointer) DeleteCheckpoint(
 		return fmt.Errorf("checkpoint key is empty: %s, %s", namespace, objectType)
 	}
 
-	if err := c.client.Delete(ctx, key); err != nil {
+	// When deleting a checkpoint, make sure it won't be flushed again in Flush()
+	// by clearing the in-memory pending state first. Also set a tombstone so an
+	// in-flight flush (which already snapshotted pending) cannot resurrect the
+	// key. The tombstone is cleared by the next SetCheckpoint for this key.
+	c.mu.Lock()
+	delete(c.pending, key)
+	c.deleted[key] = true
+	c.mu.Unlock()
+
+	c.storageMu.Lock()
+	err := c.client.Delete(ctx, key)
+	c.storageMu.Unlock()
+	if err != nil {
 		return fmt.Errorf("failed to delete resourceVersion with key %s: %w", key, err)
 	}
 

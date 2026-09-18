@@ -135,6 +135,30 @@ receivers:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
+### Resource attributes
+
+The receiver reports the network location of the monitored instance as the `server.address` and
+`server.port` resource attributes.
+
+When `endpoint` is a loopback address (for example `localhost:3306` or `127.0.0.1:3306`),
+`server.address` reports the host name of the machine running the collector rather than the
+configured host. A loopback endpoint is only reachable when the instance is co-located with the
+collector, so the collector host's name is the instance's real network identity; reported verbatim,
+every monitored host would emit the same address. A non-loopback endpoint is reported as configured.
+With `transport: unix`, `server.address` is the socket path and `server.port` is not reported.
+
+Both attributes are enabled by default and can be turned off individually:
+
+```yaml
+receivers:
+  mysql:
+    resource_attributes:
+      server.address:
+        enabled: false
+      server.port:
+        enabled: false
+```
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
