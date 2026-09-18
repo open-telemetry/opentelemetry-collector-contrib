@@ -520,9 +520,9 @@ Trace events also produce downsampled copies written to `profiling-events-5powNN
 >   allowed_modes: [ecs]
 > ```
 >
-> This is a **breaking change** for existing OTel-mode profiling users (profiles were in tech preview):
-> the backing indices are different from the ECS-schema indices used by prior versions
-> (profiles are still in tech preview), and existing profiling data in the old indices is not migrated automatically.
+> This is a **breaking change** for existing OTel-mode profiling users (profiles are still in tech preview):
+> the backing indices are different from the ECS-schema indices used by prior versions,
+> and existing profiling data in the old indices is not migrated automatically.
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings

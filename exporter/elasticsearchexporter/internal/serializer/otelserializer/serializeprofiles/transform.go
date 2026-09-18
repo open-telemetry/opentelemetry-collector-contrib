@@ -4,6 +4,7 @@
 package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -96,7 +97,12 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 
 	if len(stackPayload) > 0 {
 		if dic.MappingTable().Len() > 0 {
-			stackPayload[0].Executables = executables(dic, dic.MappingTable())
+			exeMetadata, err := executables(dic, dic.MappingTable())
+			if err != nil {
+				return nil, err
+			}
+
+			stackPayload[0].Executables = exeMetadata
 		}
 	}
 
@@ -166,7 +172,7 @@ func stackTrace(stackTraceID string, frames []serializer.Frame, frameTypes []lib
 	}
 }
 
-func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) []ExeMetadata {
+func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) ([]ExeMetadata, error) {
 	metadata := make([]ExeMetadata, 0, mappings.Len())
 	lastSeen := serializer.GetStartOfWeekFromTime(time.Now())
 
@@ -182,11 +188,15 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 		}
 
 		buildIDStr, err := serializer.GetStringFromAttribute(dic, mapping, string(conventions.ProcessExecutableBuildIDHtlhashKey))
-		if err != nil || buildIDStr == "" {
-			// No build ID was specified or could be fetched.
+		if errors.Is(err, serializer.ErrMissingAttribute) || (err == nil && buildIDStr == "") {
+			// No build ID was specified.
 			continue
 		}
+		if err != nil {
+			return nil, err
+		}
 
+		// The htlhash is stored as sent, the ECS documents use its base64 FileID form instead.
 		metadata = append(metadata, ExeMetadata{
 			DocID:     buildIDStr,
 			Timestamp: lastSeen,
@@ -195,5 +205,5 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 		})
 	}
 
-	return metadata
+	return metadata, nil
 }
