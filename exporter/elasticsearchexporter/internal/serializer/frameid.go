@@ -14,7 +14,10 @@ import (
 // FrameID represents a frame as an address in an executable file
 // or as a line in a source code file.
 type FrameID struct {
-	fileID          libpf.FileID
+	// fileID is the fileID of the frame
+	fileID libpf.FileID
+
+	// addressOrLineno is the address or lineno of the frame
 	addressOrLineno libpf.AddressOrLineno
 }
 
@@ -57,8 +60,9 @@ func NewFrameIDFromBytes(bytes []byte) (FrameID, error) {
 	return fID, nil
 }
 
-// Bytes returns the FrameID as byte sequence.
+// Bytes returns the frameid as byte sequence.
 func (f FrameID) Bytes() []byte {
+	// Using frameID := make([byte, 24]) here makes the function ~5% slower.
 	var fID [24]byte
 
 	copy(fID[:], f.fileID.Bytes())
@@ -71,12 +75,12 @@ func (f FrameID) String() string {
 	return base64.RawURLEncoding.EncodeToString(f.Bytes())
 }
 
-// FileID returns the fileID part of the FrameID.
+// FileID returns the fileID part of the frameID.
 func (f FrameID) FileID() libpf.FileID {
 	return f.fileID
 }
 
-// AddressOrLine returns the addressOrLine part of the FrameID.
+// AddressOrLine returns the addressOrLine part of the frameID.
 func (f FrameID) AddressOrLine() libpf.AddressOrLineno {
 	return f.addressOrLineno
 }
