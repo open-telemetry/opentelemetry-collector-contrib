@@ -3249,12 +3249,11 @@ func TestExporterBatcher(t *testing.T) {
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
 		cfg.QueueBatchConfig.GetOrInsertDefault()
 		cfg.QueueBatchConfig.Get().WaitForResult = true
-		cfg.QueueBatchConfig.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      8192,
-			MaxSize:      10000,
-		})
+		batch := cfg.QueueBatchConfig.Get().Batch.GetOrInsertDefault()
+		batch.FlushTimeout = 200 * time.Millisecond
+		batch.Sizer = exporterhelper.RequestSizerTypeItems
+		batch.MinSize = 8192
+		batch.MaxSize = 10000
 		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
