@@ -258,9 +258,6 @@ func TestLoadConfig(t *testing.T) {
 		expected.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
 			Metrics: metadata.DefaultMetricsConfig(),
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				DbSystemVersion: metadata.DbSystemVersionResourceAttributeConfig{
-					Enabled: true,
-				},
 				HostName: metadata.HostNameResourceAttributeConfig{
 					Enabled: true,
 				},
@@ -294,9 +291,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			ResourceAttributes: metadata.ResourceAttributesConfig{
-				DbSystemVersion: metadata.DbSystemVersionResourceAttributeConfig{
-					Enabled: true,
-				},
 				HostName: metadata.HostNameResourceAttributeConfig{
 					Enabled: true,
 				},

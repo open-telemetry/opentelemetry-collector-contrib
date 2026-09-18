@@ -1417,13 +1417,14 @@ func TestDetectSQLServerVersion_WarnOnScanFailure(t *testing.T) {
 	version := detectSQLServerVersion(t.Context(), db, zap.New(core))
 
 	assert.Empty(t, version)
-	assert.Equal(t, 1, logs.FilterMessage("sqlserverreceiver: failed to detect SQL Server version; db.system.version attribute will not be set").Len())
+	assert.Equal(t, 1, logs.FilterMessage("failed to detect SQL Server version; db.system.version will not be set").Len())
 }
 
 func TestDetectSQLServerVersion_EmittedInResourceBuilder(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Server = "testserver.example.com"
 	cfg.Port = 1433
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	scraper := newSQLServerScraper(

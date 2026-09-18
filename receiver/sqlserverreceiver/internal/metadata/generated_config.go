@@ -3853,7 +3853,7 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		DbSystemVersion: DbSystemVersionResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostName: HostNameResourceAttributeConfig{
 			Enabled: true,

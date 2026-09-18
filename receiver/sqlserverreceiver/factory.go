@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -182,12 +183,14 @@ type dbProvider struct {
 	pool        ConnectionPool
 	numScrapers int
 
-	mu       sync.Mutex
-	db       *sql.DB
-	openErr  error
-	opened   bool
-	closed   bool
-	closeErr error
+	mu           sync.Mutex
+	db           *sql.DB
+	openErr      error
+	opened       bool
+	closed       bool
+	closeErr     error
+	dbVersion    string
+	versionReady bool
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -239,6 +242,31 @@ func (p *dbProvider) close() error {
 		p.closeErr = p.db.Close()
 	}
 	return p.closeErr
+}
+
+// detectVersion lazily queries SERVERPROPERTY('ProductVersion') and caches the
+// result. It retries on every call until the query succeeds, so a scrape
+// that starts before SQL Server is reachable will pick up the version on the
+// next interval. Safe for concurrent use; all scrapers on this provider share
+// the cached result.
+func (p *dbProvider) detectVersion(ctx context.Context, logger *zap.Logger) string {
+	p.mu.Lock()
+	if p.versionReady {
+		v := p.dbVersion
+		p.mu.Unlock()
+		return v
+	}
+	db := p.db
+	p.mu.Unlock()
+
+	v := detectSQLServerVersion(ctx, db, logger)
+	if v != "" {
+		p.mu.Lock()
+		p.dbVersion = v
+		p.versionReady = true
+		p.mu.Unlock()
+	}
+	return v
 }
 
 // setConnectionPoolSettings applies the configured pool settings, falling back
@@ -307,6 +335,7 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			params,
 			cfg,
 			cache)
+		sqlServerScraper.versionFunc = provider.detectVersion
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}
@@ -363,6 +392,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			params,
 			cfg,
 			cache)
+		sqlServerScraper.versionFunc = provider.detectVersion
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}

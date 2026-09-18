@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -31,7 +32,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 6, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
@@ -41,7 +42,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 			dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
 			}
