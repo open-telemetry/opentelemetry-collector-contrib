@@ -39,7 +39,6 @@ func createDefaultConfig() component.Config {
 	}
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
 		ClientConfig:                  clientConfig,
 		APIBaseURL:                    DefaultAPIBaseURL,
