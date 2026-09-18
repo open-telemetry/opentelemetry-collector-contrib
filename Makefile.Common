@@ -373,18 +373,7 @@ gci:
 	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $$($(ALL_SRC_AND_DOC_CMD))
 
 CHANGED_GOLANG_SOURCES?=$(shell git diff main --name-only | grep -E '.*\.go$$' | grep -v -E '.*_test\.go$$')
-# FREE_DISK_THRESHOLD_MIB, when set to a positive number, makes
-# for-affected-components free the Go build and test caches between components
-# once the available disk space drops below that many MiB. This keeps a very
-# large affected set (e.g. a change to a broadly-imported module, whose affected
-# set is close to the whole repo) from exhausting the disk while building and
-# testing every component on space-constrained CI runners such as Windows. It is
-# empty by default, so local and roomy (e.g. Linux) runs are unaffected.
-#
-# Free space is measured on '/' to match check-disk-space.sh: on the Windows
-# runners the repo is checked out on D: but GOCACHE, GOMODCACHE and the build
-# temp dir all live on C: (the constrained drive), which is what '/' resolves to
-# under Git Bash and what 'go clean -cache' actually reclaims.
+# FREE_DISK_THRESHOLD_MIB: if set, runs `$(GOCMD) clean -cache -testcache` when free disk space is less than threshold.
 FREE_DISK_THRESHOLD_MIB?=
 .PHONY: for-affected-components
 for-affected-components:
