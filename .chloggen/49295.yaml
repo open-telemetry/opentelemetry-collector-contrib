@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/fluent_forward
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix a denial-of-service (memory exhaustion) vulnerability in the `fluentforward` receiver by validating msgpack array and map length fields before allocation.
+note: Cap decoded msgpack array entries at 1,000,000 and map options at 1,000 to avoid excessive memory allocation.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49223]
