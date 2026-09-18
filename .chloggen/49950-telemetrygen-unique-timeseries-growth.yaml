@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: cmd/telemetrygen
+
+note: Prevent unbounded attribute growth and declining metric generation rates when using `--unique-timeseries`.
+
+issues: [49950]
+
+change_logs: [user]
