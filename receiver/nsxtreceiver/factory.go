@@ -30,7 +30,6 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
 		ClientConfig:         clientConfig,
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),

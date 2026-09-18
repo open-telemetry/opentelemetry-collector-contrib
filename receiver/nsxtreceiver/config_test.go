@@ -21,16 +21,12 @@ import (
 func TestMetricValidation(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	notValidSchemeClientConfig := confighttp.NewDefaultClientConfig()
-	notValidSchemeClientConfig.ForceAttemptHTTP2 = false
 	notValidSchemeClientConfig.Endpoint = "wss://not-supported-websockets"
 	unparsableURLClientConfig := confighttp.NewDefaultClientConfig()
-	unparsableURLClientConfig.ForceAttemptHTTP2 = false
 	unparsableURLClientConfig.Endpoint = "\x00"
 	usernameNotProvidedClientConfig := confighttp.NewDefaultClientConfig()
-	usernameNotProvidedClientConfig.ForceAttemptHTTP2 = false
 	usernameNotProvidedClientConfig.Endpoint = "http://localhost"
 	passwordNotProvidedClientConfig := confighttp.NewDefaultClientConfig()
-	passwordNotProvidedClientConfig.ForceAttemptHTTP2 = false
 	passwordNotProvidedClientConfig.Endpoint = "http://localhost"
 	cases := []struct {
 		desc          string
