@@ -34,6 +34,9 @@ type subtraceStorage interface {
 	// subtraceIDs returns every subtrace currently held.
 	subtraceIDs() []subtraceID
 
+	// count returns the number of (trace, service) pairs currently buffered.
+	count() int
+
 	start() error
 	shutdown() error
 }
@@ -226,6 +229,17 @@ func (s *subtraceMemoryStorage) subtraceIDs() []subtraceID {
 		}
 	}
 	return ids
+}
+
+// count returns the number of (trace, service) pairs currently buffered.
+func (s *subtraceMemoryStorage) count() int {
+	s.RLock()
+	defer s.RUnlock()
+	n := 0
+	for _, tb := range s.traces {
+		n += len(tb.services)
+	}
+	return n
 }
 
 func (*subtraceMemoryStorage) start() error    { return nil }

@@ -159,6 +159,16 @@ func (em *eventMachine) periodicMetrics() {
 	em.logger.Debug("recording current state of the queue", zap.Int("num-events", numEvents))
 	em.telemetry.ProcessorGroupbytraceNumEventsInQueue.Record(context.Background(), int64(numEvents))
 
+	if em.onSubtraceExpired != nil {
+		var numSubtraces int
+		for _, w := range em.workers {
+			if w.subSt != nil {
+				numSubtraces += w.subSt.count()
+			}
+		}
+		em.telemetry.ProcessorGroupbytraceNumTracesInMemory.Record(context.Background(), int64(numSubtraces))
+	}
+
 	em.shutdownLock.RLock()
 	closed := em.closed
 	em.shutdownLock.RUnlock()
