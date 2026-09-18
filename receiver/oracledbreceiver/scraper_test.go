@@ -1761,9 +1761,8 @@ func TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent(t *testing.T) {
 
 	topQuery, ok := byEventName["db.server.top_query"]
 	require.True(t, ok, "db.server.top_query is still expected once db.server.query_plan is enabled")
-	planOnTopQueryWhenSplit, hasPlan := topQuery.Attributes().Get("oracledb.query_plan")
-	require.True(t, hasPlan, "db.server.top_query is expected to keep declaring oracledb.query_plan")
-	assert.Empty(t, planOnTopQueryWhenSplit.Str(), "db.server.top_query must report oracledb.query_plan empty once db.server.query_plan is enabled")
+	_, hasPlan := topQuery.Attributes().Get("oracledb.query_plan")
+	assert.False(t, hasPlan, "oracledb.query_plan must be removed from db.server.top_query once db.server.query_plan is enabled")
 
 	queryPlan, ok := byEventName["db.server.query_plan"]
 	require.True(t, ok, "db.server.query_plan record is missing")
@@ -1800,6 +1799,25 @@ func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventNoPlanRows(t *testing.T) {
 	}))
 	require.Len(t, records, 1)
 	assert.Equal(t, "db.server.top_query", records[0].EventName())
+	_, hasPlan := records[0].Attributes().Get("oracledb.query_plan")
+	assert.False(t, hasPlan, "oracledb.query_plan is removed from db.server.top_query whenever db.server.query_plan is enabled")
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden covers the enabled path over three cursors:
+// two child cursors of one SQL_ID in different PDBs, and a third with no plan rows.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden(t *testing.T) {
+	logs := scrapeTopNLogsForPlanEvent(t, planEventScrape{
+		topQueryEnabled:  true,
+		queryPlanEnabled: true,
+		multiCursor:      true,
+	})
+
+	expectedFile := filepath.Join("testdata", "expectedQueryPlanEvent.yaml")
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, logs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	assert.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp()))
 }
 
 // planEventScrape describes one canned top-N collection for the db.server.query_plan tests.
@@ -1808,19 +1826,27 @@ type planEventScrape struct {
 	queryPlanEnabled bool
 	// noPlanRows makes V$SQL_PLAN_STATISTICS_ALL return nothing for the cursor.
 	noPlanRows bool
+	// multiCursor swaps in fixtures holding three cursors: two child cursors of the same SQL_ID in
+	// different PDBs, and a third cursor with no plan rows.
+	multiCursor bool
 }
 
 // scrapeTopNLogsForPlanEvent runs a log collection over the canned query metrics and plan rows in testdata.
 func scrapeTopNLogsForPlanEvent(t *testing.T, opts planEventScrape) plog.Logs {
 	t.Helper()
 
+	metricsFile, planFile := "oracleQueryMetricsData.txt", "oracleQueryPlanData.txt"
+	if opts.multiCursor {
+		metricsFile, planFile = "oracleQueryMetricsMultiData.txt", "oracleQueryPlanMultiData.txt"
+	}
+
 	clientProviderFunc := func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-		file := "oracleQueryMetricsData.txt"
+		file := metricsFile
 		if strings.Contains(s, SQLPlanTable) {
 			if opts.noPlanRows {
 				return &fakeDbClient{Responses: [][]metricRow{nil}}
 			}
-			file = "oracleQueryPlanData.txt"
+			file = planFile
 		}
 		var rows []metricRow
 		require.NoError(t, json.Unmarshal(readFile(file), &rows))
@@ -1835,6 +1861,10 @@ func scrapeTopNLogsForPlanEvent(t *testing.T, opts planEventScrape) plog.Logs {
 	lruCache, err := lru.New[string, map[string]int64](500)
 	require.NoError(t, err)
 	lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
+	if opts.multiCursor {
+		lruCache.Add("fxk8aq3nds8aw:1", cacheValue)
+		lruCache.Add("9xnp4vd2z3k7b:0", cacheValue)
+	}
 
 	scrpr := oracleScraper{
 		logger: zap.NewNop(),

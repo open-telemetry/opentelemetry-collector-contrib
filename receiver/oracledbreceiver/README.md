@@ -225,8 +225,8 @@ travels on. Enabling `db.server.query_plan` isolates the plan on a record of its
 filtered, routed or dropped independently of the query statistics, and where an oversized plan does
 not take those statistics with it when a batcher splits by size.
 
-`db.server.top_query` then reports `oracledb.query_plan` as an **empty string**, and the plan itself
-is reported on `db.server.query_plan`, joined back to its cursor via `oracledb.sql_id` +
+`db.server.top_query` is then emitted **without** its `oracledb.query_plan` attribute, and the plan
+itself is reported on `db.server.query_plan`, joined back to its cursor via `oracledb.sql_id` +
 `oracledb.child_number` + `oracledb.child_address`, with `oracledb.plan_hash_value` identifying the
 plan and `db.namespace` the database it came from. A cursor with no rows in
 `V$SQL_PLAN_STATISTICS_ALL` produces no `db.server.query_plan` record. Leaving
@@ -370,7 +370,7 @@ receivers:
         enabled: true
       db.server.top_procedure:
         enabled: true
-      db.server.query_plan:                      # reports the execution plan on its own event; db.server.top_query then reports it empty
+      db.server.query_plan:                      # reports the execution plan on its own event, off db.server.top_query
         enabled: true
     top_query_collection:                        # this collection exports the most expensive queries as logs
       max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N
