@@ -2074,6 +2074,69 @@ func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
 	require.Zero(t, attrs.Len())
 }
 
+func TestGetScopeID_ScopeAttributes(t *testing.T) {
+	scope, attrs := getScopeID(labels.FromStrings(
+		string(model.MetricNameLabel), "metric_x",
+		prometheus.ScopeNameLabelKey, "scope.with.attrs",
+		prometheus.ScopeVersionLabelKey, "v1.0.0",
+		prometheus.ScopeSchemaURLLabelKey, "https://example.com/schema",
+		prometheus.ScopeLabelPrefix+"animal", "bear",
+		prometheus.ScopeLabelPrefix+"color", "brown",
+		"not_a_scope_label", "ignored",
+	))
+
+	require.Equal(t, "scope.with.attrs", scope.name)
+	require.Equal(t, "v1.0.0", scope.version)
+	require.Equal(t, "https://example.com/schema", scope.schemaURL)
+	require.NotZero(t, scope.attrsHash)
+	require.Equal(t, map[string]any{"animal": "bear", "color": "brown"}, attrs.AsRaw())
+
+	same, sameAttrs := getScopeID(labels.FromStrings(
+		string(model.MetricNameLabel), "metric_y",
+		prometheus.ScopeNameLabelKey, "scope.with.attrs",
+		prometheus.ScopeVersionLabelKey, "v1.0.0",
+		prometheus.ScopeSchemaURLLabelKey, "https://example.com/schema",
+		prometheus.ScopeLabelPrefix+"animal", "bear",
+		prometheus.ScopeLabelPrefix+"color", "brown",
+	))
+	require.Equal(t, scope, same)
+	require.Equal(t, attrs.AsRaw(), sameAttrs.AsRaw())
+
+	other, _ := getScopeID(labels.FromStrings(
+		string(model.MetricNameLabel), "metric_x",
+		prometheus.ScopeNameLabelKey, "scope.with.attrs",
+		prometheus.ScopeVersionLabelKey, "v1.0.0",
+		prometheus.ScopeSchemaURLLabelKey, "https://example.com/schema",
+		prometheus.ScopeLabelPrefix+"animal", "fox",
+		prometheus.ScopeLabelPrefix+"color", "brown",
+	))
+	require.NotEqual(t, scope, other)
+}
+
+func TestGetScopeID_SharedEmptyMapNotMutated(t *testing.T) {
+	noAttrs := labels.FromStrings(
+		string(model.MetricNameLabel), "metric_x",
+		prometheus.ScopeNameLabelKey, "scope.no.attrs",
+	)
+	withAttrs := labels.FromStrings(
+		string(model.MetricNameLabel), "metric_y",
+		prometheus.ScopeNameLabelKey, "scope.with.attrs",
+		prometheus.ScopeLabelPrefix+"animal", "bear",
+	)
+
+	scopeBefore, attrsBefore := getScopeID(noAttrs)
+	_, populated := getScopeID(withAttrs)
+	require.Equal(t, 1, populated.Len())
+
+	scopeAfter, attrsAfter := getScopeID(noAttrs)
+
+	require.Zero(t, attrsBefore.Len())
+	require.Zero(t, attrsAfter.Len())
+	require.Zero(t, scopeBefore.attrsHash)
+	require.Zero(t, scopeAfter.attrsHash)
+	require.Zero(t, emptyScopeAttributes.Len())
+}
+
 func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {
 	tr := newTxn(t, false)
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
