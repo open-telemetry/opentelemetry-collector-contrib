@@ -52,6 +52,9 @@ and allows you to configure a list of statements for the processor to execute. T
 - OTTL statements. This option will meet most user's needs. See [Basic Config](#basic-config) for more details.
 - Objects, which allows users to apply configuration options to a specific list of statements. See [Advanced Config](#advanced-config) for more details.
 
+> [!NOTE]
+> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is experimental and subject to change or removal in the future.
+
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
 | Signal             | Path Prefix Values                                          |
