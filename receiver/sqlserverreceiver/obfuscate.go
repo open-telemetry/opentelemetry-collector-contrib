@@ -75,6 +75,16 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 	var buffer bytes.Buffer
 	encoder := xml.NewEncoder(&buffer)
 
+	// depth tracks how deep we are in the element tree. The decoder resolves the
+	// default namespace onto every element's Name.Space and additionally surfaces
+	// the root's xmlns declaration as an attribute. Re-encoding the tokens verbatim
+	// would therefore write xmlns on the root twice (once from Name.Space, once from
+	// the attribute) and repeat it on every descendant, producing XML that is not
+	// well-formed. We strip the decoder-surfaced xmlns attributes and keep Name.Space
+	// only on the root element, so the encoder emits a single default-namespace
+	// declaration that descendants inherit — matching the plan SQL Server returns.
+	depth := 0
+
 	for {
 		token, err := decoder.Token()
 		if err != nil {
@@ -102,6 +112,11 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 					}
 				}
 			}
+			elem.Attr = stripXMLNSAttrs(elem.Attr)
+			if depth > 0 {
+				elem.Name.Space = ""
+			}
+			depth++
 			err := encoder.EncodeToken(elem)
 			if err != nil {
 				return "", err
@@ -113,6 +128,10 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 				return "", err
 			}
 		case xml.EndElement:
+			depth--
+			if depth > 0 {
+				elem.Name.Space = ""
+			}
 			err := encoder.EncodeToken(elem)
 			if err != nil {
 				return "", err
@@ -131,4 +150,19 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 	}
 
 	return buffer.String(), nil
+}
+
+// stripXMLNSAttrs removes namespace-declaration attributes (xmlns and xmlns:*)
+// that the decoder surfaces on a StartElement. The encoder re-derives the
+// declaration from the element's Name.Space, so retaining these attributes would
+// emit the same xmlns twice on the element.
+func stripXMLNSAttrs(attrs []xml.Attr) []xml.Attr {
+	out := attrs[:0]
+	for _, a := range attrs {
+		if a.Name.Local == "xmlns" || a.Name.Space == "xmlns" {
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
 }
