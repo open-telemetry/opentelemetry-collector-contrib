@@ -82,7 +82,7 @@ var (
 	errMetricsIndexTimeFormatInvalid  = errors.New("metrics_index_time_format contains unsupported or invalid tokens")
 	errOTelV1DatasetNamespaceUnused   = errors.New(`dataset and namespace are not used by mapping.mode "otel-v1"; remove them or pick a different mode`)
 	errMetricsMappingModeUnsupported  = errors.New(`metrics are only supported by mapping.mode "ss4o" and "otel-v1"`)
-	errManageIndexTemplateInvalidMode = errors.New("mapping.manage_index_template is only supported with mapping.mode \"otel-v1\"")
+	errManageIndexTemplateInvalidMode = errors.New("mapping.manage_index_template is only supported with mapping.mode \"otel-v1\" or \"ss4o\"")
 )
 
 type MappingsSettings struct {
@@ -114,7 +114,15 @@ type MappingsSettings struct {
 	Mode string `mapstructure:"mode"`
 
 	// ManageIndexTemplate controls whether the exporter creates index templates on startup.
-	// Only supported when Mode is "otel-v1". Validation will reject this option with other modes.
+	// Only supported when Mode is "otel-v1" or "ss4o". Validation will reject this option
+	// with other modes.
+	//
+	// In "ss4o" mode the templates map attribute bags (attributes, resource and scope/event/
+	// link attributes) as flat_object so OpenSearch does not expand dots in attribute keys
+	// into nested objects, preventing mapper_parsing_exception conflicts between an attribute
+	// used as a value ("code.function") and the same prefix used as an object
+	// ("code.function.name"). Note that flat_object indexes all values as strings, so
+	// type-aware (e.g. numeric range) queries on attribute values are not available.
 	ManageIndexTemplate bool `mapstructure:"manage_index_template"`
 
 	// Additional field mappings.
@@ -234,7 +242,9 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errMappingModeInvalid)
 	}
 
-	if cfg.MappingsSettings.ManageIndexTemplate && cfg.MappingsSettings.Mode != MappingOTelV1.String() {
+	if cfg.MappingsSettings.ManageIndexTemplate &&
+		cfg.MappingsSettings.Mode != MappingOTelV1.String() &&
+		cfg.MappingsSettings.Mode != MappingSS4O.String() {
 		multiErr = append(multiErr, errManageIndexTemplateInvalidMode)
 	}
 

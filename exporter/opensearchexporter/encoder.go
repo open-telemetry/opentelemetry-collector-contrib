@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,6 +23,80 @@ import (
 )
 
 var errInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
+
+// resolveAttributeKeyConflicts rewrites attribute keys that would otherwise
+// cause an OpenSearch mapping conflict.
+//
+// OpenSearch expands dots in JSON field names into nested objects during
+// dynamic mapping. A flat OTel attribute map that contains both a concrete key
+// (e.g. "code.function") and a longer key that uses it as an object prefix
+// (e.g. "code.function.name") makes OpenSearch try to map
+// "attributes.code.function" as both a concrete value and an object, which it
+// rejects with a mapper_parsing_exception. This is common while migrating
+// between semantic-convention versions (code.function -> code.function.name).
+//
+// To keep the document indexable, the concrete value is moved under a ".value"
+// sub-key ("code.function" -> "code.function.value"), mirroring the behavior
+// of the ECS mapping mode's objmodel.Dedup step. The rewrite only triggers when
+// a conflicting sibling is present in the same map, i.e. only for documents
+// OpenSearch would otherwise reject, so well-formed documents are unchanged.
+// It recurses into nested maps and arrays of maps so conflicts within map-typed
+// attribute values are handled too.
+func resolveAttributeKeyConflicts(m map[string]any) {
+	if len(m) == 0 {
+		return
+	}
+
+	// Handle nested maps and arrays of maps first.
+	for _, v := range m {
+		switch vv := v.(type) {
+		case map[string]any:
+			resolveAttributeKeyConflicts(vv)
+		case []any:
+			for _, e := range vv {
+				if em, ok := e.(map[string]any); ok {
+					resolveAttributeKeyConflicts(em)
+				}
+			}
+		}
+	}
+
+	// Repeatedly rename the shortest conflicting key until the map is stable.
+	// Renaming can, in pathological cases, create a new adjacency, so re-scan
+	// with a fresh, sorted key set after each rename.
+	for {
+		keys := make([]string, 0, len(m))
+		for k := range m {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		renamed := false
+		for i := 0; i < len(keys)-1; i++ {
+			key, next := keys[i], keys[i+1]
+			// next must use key as a strict, dot-delimited object prefix.
+			if len(key) >= len(next) || !strings.HasPrefix(next, key) || next[len(key)] != '.' {
+				continue
+			}
+			// Only a concrete (non-object) value conflicts with the prefix use.
+			if _, isObj := m[key].(map[string]any); isObj {
+				continue
+			}
+			target := key + ".value"
+			if _, exists := m[target]; !exists {
+				m[target] = m[key]
+			}
+			// If target already exists it is an object being built from other
+			// keys; drop the concrete value rather than clobber it.
+			delete(m, key)
+			renamed = true
+			break
+		}
+		if !renamed {
+			return
+		}
+	}
+}
 
 type mappingModel interface {
 	encodeLog(resource pcommon.Resource,
@@ -130,6 +206,7 @@ func (m *encodeModel) encodeLogSSO(
 ) ([]byte, error) {
 	sso := ssoRecord{}
 	sso.Attributes = record.Attributes().AsRaw()
+	resolveAttributeKeyConflicts(sso.Attributes)
 	sso.Body = record.Body().AsString()
 	sso.EventName = record.EventName()
 
@@ -161,6 +238,7 @@ func (m *encodeModel) encodeLogSSO(
 	sso.InstrumentationScope.Version = scope.Version()
 	sso.InstrumentationScope.SchemaURL = schemaURL
 	sso.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
+	resolveAttributeKeyConflicts(sso.InstrumentationScope.Attributes)
 
 	sso.Severity.Text = record.SeverityText()
 	sso.Severity.Number = int64(record.SeverityNumber())
@@ -226,6 +304,7 @@ func (m *encodeModel) encodeTrace(
 
 	sso := ssoSpan{}
 	sso.Attributes = span.Attributes().AsRaw()
+	resolveAttributeKeyConflicts(sso.Attributes)
 	sso.DroppedAttributesCount = span.DroppedAttributesCount()
 	sso.DroppedEventsCount = span.DroppedEventsCount()
 	sso.DroppedLinksCount = span.DroppedLinksCount()
@@ -247,6 +326,7 @@ func (m *encodeModel) encodeTrace(
 			e := span.Events().At(i)
 			ssoEvent := &sso.Events[i]
 			ssoEvent.Attributes = e.Attributes().AsRaw()
+			resolveAttributeKeyConflicts(ssoEvent.Attributes)
 			ssoEvent.DroppedAttributesCount = e.DroppedAttributesCount()
 			ssoEvent.Name = e.Name()
 			ts := e.Timestamp().AsTime()
@@ -278,6 +358,7 @@ func (m *encodeModel) encodeTrace(
 	sso.InstrumentationScope.Version = scope.Version()
 	sso.InstrumentationScope.SchemaURL = schemaURL
 	sso.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
+	resolveAttributeKeyConflicts(sso.InstrumentationScope.Attributes)
 
 	if span.Links().Len() > 0 {
 		sso.Links = make([]ssoSpanLinks, span.Links().Len())
@@ -285,6 +366,7 @@ func (m *encodeModel) encodeTrace(
 			link := span.Links().At(i)
 			ssoLink := &sso.Links[i]
 			ssoLink.Attributes = link.Attributes().AsRaw()
+			resolveAttributeKeyConflicts(ssoLink.Attributes)
 			ssoLink.DroppedAttributesCount = link.DroppedAttributesCount()
 			ssoLink.TraceID = link.TraceID().String()
 			ssoLink.TraceState = link.TraceState().AsRaw()
@@ -330,6 +412,8 @@ func (*encodeModel) encodeLogOTelV1(
 			DroppedAttributesCount: scope.DroppedAttributesCount(),
 		},
 	}
+	resolveAttributeKeyConflicts(doc.Attributes)
+	resolveAttributeKeyConflicts(doc.InstrumentationScope.Attributes)
 	return json.Marshal(doc)
 }
 
@@ -378,6 +462,8 @@ func (*encodeModel) encodeTraceOTelV1(
 			DroppedAttributesCount: scope.DroppedAttributesCount(),
 		},
 	}
+	resolveAttributeKeyConflicts(doc.Attributes)
+	resolveAttributeKeyConflicts(doc.InstrumentationScope.Attributes)
 
 	// Extract serviceName from resource attributes
 	if sn, ok := resource.Attributes().Get("service.name"); ok {
@@ -405,6 +491,7 @@ func (*encodeModel) encodeTraceOTelV1(
 				DroppedAttributesCount: e.DroppedAttributesCount(),
 				Time:                   e.Timestamp().AsTime(),
 			}
+			resolveAttributeKeyConflicts(doc.Events[i].Attributes)
 		}
 	}
 
@@ -420,6 +507,7 @@ func (*encodeModel) encodeTraceOTelV1(
 				Attributes:             l.Attributes().AsRaw(),
 				DroppedAttributesCount: l.DroppedAttributesCount(),
 			}
+			resolveAttributeKeyConflicts(doc.Links[i].Attributes)
 		}
 	}
 
