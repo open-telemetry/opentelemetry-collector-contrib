@@ -14,7 +14,7 @@ import (
 
 type keepKeysArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
-	Keys   []ottl.StringGetter[K]
+	Keys   ottl.SliceGetter[K, ottl.StringGetter[K]]
 }
 
 // NewKeepKeysFactory returns a factory for the keep_keys OTTL function.
@@ -30,19 +30,20 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, errors.New("KeepKeysFactory args must be of type *keepKeysArguments[K]")
 	}
 
-	return keepKeys(args.Target, args.Keys), nil
+	return keepKeys(args.Target, &args.Keys), nil
 }
 
-func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) ottl.ExprFunc[K] {
-	// Check if all keys are literals and pre-build the key set if so
-	literalKeySet := make(map[string]struct{}, len(keys))
-	for _, key := range keys {
-		k, isLiteral := ottl.GetLiteralValue(key)
-		if !isLiteral {
-			literalKeySet = nil
-			break
+func keepKeys[K any](target ottl.PMapGetSetter[K], keys *ottl.SliceGetter[K, ottl.StringGetter[K]]) ottl.ExprFunc[K] {
+	// Pre-build the key set when the slice length and all values are known at parse time
+	var literalKeySet map[string]struct{}
+
+	if length, known := keys.Len(); known {
+		if literalValues, allLiteral := ottl.GetLiteralValues[K, string](keys); allLiteral {
+			literalKeySet = make(map[string]struct{}, length)
+			for _, key := range literalValues {
+				literalKeySet[key] = struct{}{}
+			}
 		}
-		literalKeySet[k] = struct{}{}
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -51,14 +52,19 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) 
 			return nil, err
 		}
 
-		var keySet map[string]struct{}
-		if literalKeySet != nil {
-			// Use pre-built key set for literal keys
-			keySet = literalKeySet
-		} else {
-			// Build key set at runtime for dynamic keys
-			keySet = make(map[string]struct{}, len(keys))
-			for _, key := range keys {
+		keySet := literalKeySet
+		if keySet == nil {
+			// Resolve dynamic or runtime-generated keys for the current transform context
+			resolvedKeys, err := keys.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			if resolvedKeys == nil {
+				return nil, errors.New("keys cannot be nil")
+			}
+
+			keySet = make(map[string]struct{}, len(resolvedKeys))
+			for _, key := range resolvedKeys {
 				k, err := key.Get(ctx, tCtx)
 				if err != nil {
 					return nil, err

@@ -322,7 +322,7 @@ Examples:
 
 The `keep_keys` function removes all keys from the `pcommon.Map` that do not match one of the supplied keys.
 
-`target` is a path expression to a `pcommon.Map` type field. `keys` is a slice of one or more strings.
+`target` is a path expression to a `pcommon.Map` type field. `keys` can be a list of strings or an expression or path that resolves to a slice. Each slice element must be a string.
 
 The map will be changed to only contain the keys specified by the list of strings.
 
@@ -332,6 +332,10 @@ Examples:
 
 
 - `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
+
+- `keep_keys(log.attributes, Split(log.attributes["keys"], ","))`
+
+- `keep_keys(log.attributes, cache["keys"])`
 
 ### limit
 
