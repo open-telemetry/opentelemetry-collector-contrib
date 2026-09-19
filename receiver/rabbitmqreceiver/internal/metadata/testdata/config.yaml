@@ -167,6 +167,8 @@ all_set:
     rabbitmq.node.uptime:
       enabled: true
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: true
     rabbitmq.exchange.name:
       enabled: true
     rabbitmq.exchange.type:
@@ -345,6 +347,8 @@ reaggregate_set:
     rabbitmq.node.uptime:
       enabled: true
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: true
     rabbitmq.exchange.name:
       enabled: true
     rabbitmq.exchange.type:
@@ -523,6 +527,8 @@ none_set:
     rabbitmq.node.uptime:
       enabled: false
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: false
     rabbitmq.exchange.name:
       enabled: false
     rabbitmq.exchange.type:
@@ -535,6 +541,10 @@ none_set:
       enabled: false
 filter_set_include:
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     rabbitmq.exchange.name:
       enabled: true
       metrics_include:
@@ -557,6 +567,10 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "rabbitmq.cluster.name-val"
     rabbitmq.exchange.name:
       enabled: true
       metrics_exclude:

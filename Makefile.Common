@@ -275,6 +275,25 @@ MDATAGEN_METADATA_YAML?= metadata.yaml
 mdatagen:
 	@$(MDATAGEN) $(MDATAGEN_METADATA_YAML)
 
+COVERAGE_PROFILE ?= $(SRC_ROOT)/coverage.txt
+
+.PHONY: check-stability
+check-stability:
+ifeq ($(CURDIR),$(SRC_ROOT))
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="check-stability-mod" COVERAGE_PROFILE="$(SRC_ROOT)/$(GROUP)-coverage.txt"
+else
+	@$(MDATAGEN) check-stability --profile=$(COVERAGE_PROFILE) $(MDATAGEN_METADATA_YAML)
+endif
+
+.PHONY: check-stability-mod
+check-stability-mod:
+	@for dir in $$(find . -name '$(MDATAGEN_METADATA_YAML)' -exec dirname {} \; | sort -u); do \
+		if ! grep -qrl 'go:generate make mdatagen' "$$dir"/*.go 2>/dev/null; then \
+			continue; \
+		fi; \
+		$(MAKE) --no-print-directory -C "$$dir" check-stability COVERAGE_PROFILE="$(COVERAGE_PROFILE)" || exit 1; \
+	done
+
 .PHONY: generate
 generate:
 ifeq ($(CURDIR),$(SRC_ROOT))
