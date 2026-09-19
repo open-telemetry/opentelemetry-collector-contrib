@@ -1,0 +1,6 @@
+change_type: "enhancement"
+component: processor/redaction
+note: Adds the `masking_string` configuration to allow for configurable masking
+issues: [50801]
+subtext:
+change_logs: [user]
