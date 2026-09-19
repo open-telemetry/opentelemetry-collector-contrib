@@ -58,15 +58,7 @@ func TestClientConfig(t *testing.T) {
 				ConnIdleTimeout: 5 * time.Minute,
 			},
 		},
-		"sasl_aws_msk_iam_oauthbearer": {
-			expected: func() ClientConfig {
-				cfg := NewDefaultClientConfig()
-				cfg.Authentication.SASL = &SASLConfig{
-					Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
-				}
-				return cfg
-			}(),
-		},
+
 		"sasl_aws_msk_iam_oauthbearer_with_region": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()
@@ -113,7 +105,10 @@ func TestClientConfig(t *testing.T) {
 			expectedErr: `invalid protocol version: "none"`,
 		},
 		"sasl_invalid_mechanism": {
-			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
+			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
+		},
+		"sasl_aws_msk_iam_oauthbearer_missing_region": {
+			expectedErr: "auth::sasl: region is required for AWS_MSK_IAM_OAUTHBEARER mechanism",
 		},
 		"sasl_plain_username_required": {
 			expectedErr: "auth::sasl: username is required",
