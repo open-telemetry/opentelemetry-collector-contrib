@@ -1,0 +1,7 @@
+change_type: enhancement
+component: pkg/stanza
+note: Add default scope name and version for stanza log entries without scope name
+issues: [51084]
+subtext: |
+  This introduces the `pkg.stanza.addDefaultScopeName` feature gate (currently in beta) to ensure Stanza log entries are assigned a default scope name and version when not explicitly provided.
+change_logs: [user]

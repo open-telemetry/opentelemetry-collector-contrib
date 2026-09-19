@@ -127,6 +127,8 @@ type receiverType struct{}
 var _ adapter.LogReceiverType = (*receiverType)(nil)
 
 // Type is the receiver type
+func (receiverType) ScopeName() string { return metadata.ScopeName }
+
 func (receiverType) Type() component.Type {
 	return metadata.Type
 }
