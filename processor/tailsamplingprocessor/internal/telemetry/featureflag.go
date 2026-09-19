@@ -22,3 +22,7 @@ func IsRecordPolicyEnabled() bool {
 func IsUseTracestateEnabled() bool {
 	return metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled()
 }
+
+func IsDefaultErrorModeIgnoreEnabled() bool {
+	return metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.IsEnabled()
+}
