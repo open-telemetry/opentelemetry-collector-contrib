@@ -570,18 +570,16 @@ func (p *postgreSQLScraper) start(ctx context.Context, host component.Host) erro
 		p.clientFactory.setCredentialProvider(provider)
 	}
 
-	if p.config.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled {
-		vctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
-		defer cancel()
-		if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
-			p.logger.Warn("failed to connect for version detection. db.system.version will not be set", zap.Error(err))
+	vctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+	defer cancel()
+	if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
+		p.logger.Warn("failed to connect for version detection. db.system.version will not be set", zap.Error(err))
+	} else {
+		defer c.Close()
+		if v, err := c.getVersion(vctx); err != nil {
+			p.logger.Warn("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
 		} else {
-			defer c.Close()
-			if v, err := c.getVersion(vctx); err != nil {
-				p.logger.Warn("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
-			} else {
-				p.dbVersion = v
-			}
+			p.dbVersion = v
 		}
 	}
 

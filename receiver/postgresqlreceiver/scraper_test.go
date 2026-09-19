@@ -1889,7 +1889,7 @@ func TestStart_VersionDetectionConnectFailure(t *testing.T) {
 
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 	assert.Equal(t, "", scraper.dbVersion)
-	assert.Equal(t, 1, logs.FilterMessage("postgresqlreceiver: failed to connect for version detection; db.system.version attribute will not be set").Len())
+	assert.Equal(t, 1, logs.FilterMessage("failed to connect for version detection. db.system.version will not be set").Len())
 }
 
 func TestStart_VersionDetectionQueryFailure(t *testing.T) {
@@ -1908,7 +1908,7 @@ func TestStart_VersionDetectionQueryFailure(t *testing.T) {
 
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 	assert.Equal(t, "", scraper.dbVersion)
-	assert.Equal(t, 1, logs.FilterMessage("postgresqlreceiver: failed to detect PostgreSQL version; db.system.version attribute will not be set").Len())
+	assert.Equal(t, 1, logs.FilterMessage("failed to detect PostgreSQL version. db.system.version will not be set").Len())
 	factory.AssertExpectations(t)
 	versionClient.AssertExpectations(t)
 }
