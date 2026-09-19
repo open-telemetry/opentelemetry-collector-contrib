@@ -894,7 +894,7 @@ func TestObjMetadata(t *testing.T) {
 		set := receivertest.NewNopSettings(metadata.Type)
 		set.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
-			dc := &resourceWatcher{metadataStore: tt.metadataStore}
+			dc := &resourceWatcher{metadataStore: tt.metadataStore, config: &Config{}}
 
 			actual := dc.objMetadata(tt.resource)
 			require.Len(t, actual, len(tt.want))
