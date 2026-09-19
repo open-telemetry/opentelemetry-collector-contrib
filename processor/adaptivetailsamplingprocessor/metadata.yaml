@@ -18,6 +18,14 @@ tests:
 
 telemetry:
   metrics:
+    processor_adaptive_tail_sampling_counter_sync_errors:
+      enabled: true
+      description: Number of counter store sync failures for adaptive_throughput samplers, labelled by rule and operation (add, read). Each failure fails open to this instance's own counts for that interval.
+      unit: "{errors}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
     processor_adaptive_tail_sampling_decision_sample_rate:
       enabled: true
       description: Distribution of effective sample rates produced per rule. Useful for detecting adaptive samplers settling at unexpected rates.
