@@ -42,8 +42,6 @@ SELECT
 	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
 FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs'
 + @JoinClause + N'
-WHERE 1=1
-
 GROUP BY CASE
 		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
 		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
