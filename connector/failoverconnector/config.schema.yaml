@@ -11,6 +11,7 @@ $defs:
     type: object
     properties:
       contains:
+        description: Contains is a case-sensitive substring matched against the downstream error message. Only errors containing this string trigger failover.
         type: string
 type: object
 properties:

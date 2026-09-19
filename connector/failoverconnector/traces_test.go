@@ -187,3 +187,48 @@ func sampleTrace() ptrace.Traces {
 	span.SetName("SampleSpan")
 	return tr
 }
+
+func TestTracesWithErrorCondition(t *testing.T) {
+	var sinkFirst, sinkSecond consumertest.TracesSink
+
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}},
+		RetryInterval:    50 * time.Millisecond,
+		Condition: configoptional.Some(ConditionsConfig{
+			ErrorCond: &ErrorCondition{Contains: "network failure"},
+		}),
+	}
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesFirst:  &sinkFirst,
+		tracesSecond: &sinkSecond,
+	})
+
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*tracesFailover)
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+	}()
+
+	tr := sampleTrace()
+
+	// A non-matching error must not trigger failover: it is returned directly
+	// and the stable pipeline stays at index 0.
+	nonMatching := errors.New("sending_queue is full: data dropped")
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(nonMatching))
+	require.ErrorIs(t, failoverConnector.ConsumeTraces(t.Context(), tr), nonMatching)
+	assert.Equal(t, 0, failoverConnector.failover.TestGetCurrentConsumerIndex())
+	assert.Empty(t, sinkSecond.AllTraces(), "failover pipeline must not receive data on non-matching error")
+
+	// A matching error must trigger failover to the next priority level.
+	matching := errors.New("connection reset: network failure while exporting")
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(matching))
+	require.NoError(t, failoverConnector.ConsumeTraces(t.Context(), tr))
+	assert.Equal(t, 1, failoverConnector.failover.TestGetCurrentConsumerIndex())
+}

@@ -41,3 +41,11 @@ failover/emptycondition:
     - [ traces/first ]
     - [ traces/second ]
   condition: {}
+
+failover/emptyerrorcontains:
+  priority_levels:
+    - [ traces/first ]
+    - [ traces/second ]
+  retry_interval: 5m
+  condition:
+    error: {}
