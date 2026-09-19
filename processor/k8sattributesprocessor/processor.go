@@ -310,6 +310,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
 	}
+
+	hpa := getHPAUID(resource.Attributes())
+	if hpa != "" {
+		attrsToAdd := kp.getAttributesForHPA(hpa)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
 }
 
 func setResourceAttribute(attributes pcommon.Map, key, val string) {
@@ -373,6 +381,13 @@ func getCronJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.CronJobUID
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SCronJobUIDKey))
+}
+
+// getHPAUID reads the HPA UID directly from the resource's own attributes. Unlike the other
+// workload types above, a HorizontalPodAutoscaler has no owning Pod to resolve it through: the
+// telemetry it enriches (emitted by the k8sclusterreceiver) already carries k8s.hpa.uid.
+func getHPAUID(resAttrs pcommon.Map) string {
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SHPAUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -523,6 +538,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsCronJob(cronJobUID string) ma
 		return nil
 	}
 	return j.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForHPA(hpaUID string) map[string]string {
+	h, ok := kp.kc.GetHPA(hpaUID)
+	if !ok {
+		return nil
+	}
+	return h.Attributes
 }
 
 func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
