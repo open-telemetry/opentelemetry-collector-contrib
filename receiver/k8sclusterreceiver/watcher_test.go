@@ -4,6 +4,7 @@
 package k8sclusterreceiver
 
 import (
+	"errors"
 	maps0 "maps"
 	"testing"
 	"time"
@@ -19,13 +20,18 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -137,6 +143,144 @@ func TestIsKindSupported(t *testing.T) {
 			assert.Equal(t, tt.expected, supported)
 		})
 	}
+}
+
+func TestFetchClusterUID(t *testing.T) {
+	tests := []struct {
+		name        string
+		namespace   *corev1.Namespace
+		getErr      error
+		expected    string
+		expectedLog string
+	}{
+		{
+			name: "kube-system namespace exists",
+			namespace: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{Name: "kube-system", UID: types.UID("cluster1-uid")},
+			},
+			expected: "cluster1-uid",
+		},
+		{
+			name:        "kube-system namespace is not available",
+			expected:    "",
+			expectedLog: "Failed to get the kube-system namespace",
+		},
+		{
+			name: "not allowed to get the kube-system namespace",
+			getErr: apierrors.NewForbidden(
+				schema.GroupResource{Resource: "namespaces"}, kubeSystemNamespace, errors.New("RBAC denied"),
+			),
+			expected:    "",
+			expectedLog: "Not allowed to get the kube-system namespace",
+		},
+		{
+			name:        "getting the kube-system namespace fails for another reason",
+			getErr:      apierrors.NewInternalError(errors.New("API server is having a bad day")),
+			expected:    "",
+			expectedLog: "Failed to get the kube-system namespace",
+		},
+		{
+			name: "kube-system namespace has no UID",
+			namespace: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{Name: "kube-system"},
+			},
+			expected:    "",
+			expectedLog: "The kube-system namespace has no UID",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewClientset()
+			if tt.namespace != nil {
+				_, err := client.CoreV1().Namespaces().Create(t.Context(), tt.namespace, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+			if tt.getErr != nil {
+				client.PrependReactor("get", "namespaces",
+					func(k8stesting.Action) (bool, runtime.Object, error) {
+						return true, nil, tt.getErr
+					})
+			}
+
+			observedLogs, logs := observer.New(zapcore.WarnLevel)
+			rw := &resourceWatcher{
+				client: client,
+				logger: zap.New(observedLogs),
+			}
+
+			assert.Equal(t, tt.expected, rw.fetchClusterUID(t.Context()))
+			if tt.expectedLog == "" {
+				assert.Empty(t, logs.All())
+			} else {
+				require.Len(t, logs.All(), 1)
+				assert.Contains(t, logs.All()[0].Message, tt.expectedLog)
+			}
+		})
+	}
+}
+
+func TestInitializeClusterUID(t *testing.T) {
+	tests := []struct {
+		name     string
+		enabled  bool
+		expected string
+	}{
+		{
+			name:     "k8s.cluster.uid enabled",
+			enabled:  true,
+			expected: "cluster1-uid",
+		},
+		{
+			name:     "k8s.cluster.uid disabled",
+			enabled:  false,
+			expected: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := newFakeClientWithAllResources()
+			createKubeSystemNamespace(t, client, "cluster1-uid")
+
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
+			mbc.ResourceAttributes.K8sClusterUID.Enabled = tt.enabled
+			rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type),
+				&Config{Distribution: distributionKubernetes, MetricsBuilderConfig: mbc}, metadata.NewStore())
+			rw.makeClient = func(k8sconfig.APIConfig) (kubernetes.Interface, error) {
+				return client, nil
+			}
+
+			require.NoError(t, rw.initialize(t.Context()))
+			assert.Equal(t, tt.expected, rw.getClusterUID())
+		})
+	}
+}
+
+// With leader election in place, the receiver starts over, and thus initializes the watcher again,
+// every time it re-acquires the lease. A fetch failing on a later attempt must not discard the UID
+// that an earlier attempt already determined.
+func TestInitializeKeepsClusterUIDItAlreadyHas(t *testing.T) {
+	client := newFakeClientWithAllResources()
+	createKubeSystemNamespace(t, client, "cluster1-uid")
+
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
+	mbc.ResourceAttributes.K8sClusterUID.Enabled = true
+	rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type),
+		&Config{Distribution: distributionKubernetes, MetricsBuilderConfig: mbc}, metadata.NewStore())
+	rw.makeClient = func(k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return client, nil
+	}
+
+	require.NoError(t, rw.initialize(t.Context()))
+	require.Equal(t, "cluster1-uid", rw.getClusterUID())
+
+	client.PrependReactor("get", "namespaces", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewForbidden(
+			schema.GroupResource{Resource: "namespaces"}, kubeSystemNamespace, errors.New("RBAC denied"),
+		)
+	})
+
+	require.NoError(t, rw.initialize(t.Context()))
+	assert.Equal(t, "cluster1-uid", rw.getClusterUID())
 }
 
 func TestPrepareSharedInformerFactory(t *testing.T) {
@@ -427,6 +571,27 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	}
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
+}
+
+func TestSyncMetadataAndEmitEntityEventsWithClusterUID(t *testing.T) {
+	client := newFakeClientWithAllResources()
+
+	logsConsumer := new(consumertest.LogsSink)
+	pods := createPods(t, client, 1, false)
+
+	rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
+	rw.entityLogConsumer = logsConsumer
+	clusterUID := "cluster1-uid"
+	rw.clusterUID.Store(&clusterUID)
+
+	rw.syncMetadataUpdate(nil, rw.objMetadata(pods[0]))
+
+	require.Equal(t, 1, logsConsumer.LogRecordCount())
+	rls := logsConsumer.AllLogs()[0].ResourceLogs()
+	require.Positive(t, rls.Len())
+	for i := 0; i < rls.Len(); i++ {
+		assert.Equal(t, map[string]any{"k8s.cluster.uid": "cluster1-uid"}, rls.At(i).Resource().Attributes().AsRaw())
+	}
 }
 
 func TestSyncMetadataAndEmitEntityEventsWithEntityEventsSpecificationFeatureGate(t *testing.T) {
