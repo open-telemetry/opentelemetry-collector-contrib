@@ -5,6 +5,7 @@ package lookupprocessor
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
+
+type mockInvalidSourceConfig struct{}
+
+func (*mockInvalidSourceConfig) Validate() error {
+	return errors.New("mock validation failure")
+}
+
+type mockInvalidSourceFactory struct{}
+
+func (*mockInvalidSourceFactory) Type() string {
+	return "invalid_mock"
+}
+
+func (*mockInvalidSourceFactory) CreateDefaultConfig() lookupsource.SourceConfig {
+	return &mockInvalidSourceConfig{}
+}
+
+func (*mockInvalidSourceFactory) CreateSource(_ context.Context, _ lookupsource.CreateSettings, _ lookupsource.SourceConfig) (lookupsource.Source, error) {
+	return nil, nil
+}
 
 func testLookupConfig(key string) LookupConfig {
 	return LookupConfig{
@@ -374,4 +395,96 @@ func TestInvalidKeyExpression(t *testing.T) {
 	_, err := factory.CreateLogs(t.Context(), settings, cfg, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse key expression")
+}
+
+func TestFactory_CreateSource_ErrorPaths(t *testing.T) {
+	ctx := t.Context()
+	set := processortest.NewNopSettings(processortest.NopType)
+
+	f := &lookupProcessorFactory{
+		sources: defaultSources(),
+	}
+
+	t.Run("mapstructure decode error", func(t *testing.T) {
+		cfg := &Config{
+			Source: SourceConfig{
+				Type: "yaml",
+				Config: map[string]any{
+					"reload_interval": "not-a-duration",
+				},
+			},
+		}
+
+		_, err := f.createSource(ctx, set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to decode config for source \"yaml\"")
+	})
+
+	t.Run("source validation error", func(t *testing.T) {
+		customFactory := &lookupProcessorFactory{
+			sources: map[string]lookupsource.SourceFactory{
+				"invalid_mock": &mockInvalidSourceFactory{},
+			},
+		}
+
+		cfg := &Config{
+			Source: SourceConfig{
+				Type: "invalid_mock",
+			},
+		}
+
+		_, err := customFactory.createSource(ctx, set, cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid config for source \"invalid_mock\"")
+	})
+
+	t.Run("empty source type falls back to noop", func(t *testing.T) {
+		cfg := &Config{
+			Source: SourceConfig{
+				Type: "",
+			},
+		}
+
+		source, err := f.createSource(ctx, set, cfg)
+		require.NoError(t, err)
+		assert.Equal(t, "noop", source.Type())
+	})
+}
+
+func TestFactory_CreateProcessor_InvalidOTTLKey(t *testing.T) {
+	ctx := t.Context()
+	set := processortest.NewNopSettings(processortest.NopType)
+
+	f := &lookupProcessorFactory{
+		sources: defaultSources(),
+	}
+
+	invalidConfig := &Config{
+		Source: SourceConfig{
+			Type: "noop",
+		},
+		Lookups: []LookupConfig{
+			{
+				Key: "invalid_ottl_expr({{{",
+			},
+		},
+	}
+
+	t.Run("logs processor OTTL parse error", func(t *testing.T) {
+		_, err := f.createLogsProcessor(ctx, set, invalidConfig, consumertest.NewNop())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse key expression")
+	})
+
+	t.Run("traces processor OTTL parse error", func(t *testing.T) {
+		_, err := f.createTracesProcessor(ctx, set, invalidConfig, consumertest.NewNop())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse key expression")
+	})
+
+	t.Run("metrics processor OTTL parse error", func(t *testing.T) {
+		_, err := f.createMetricsProcessor(ctx, set, invalidConfig, consumertest.NewNop())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse key expression")
+	})
 }
