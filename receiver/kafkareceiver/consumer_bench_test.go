@@ -296,6 +296,7 @@ func BenchmarkLogsReceiverPartitionProcessing(b *testing.B) {
 			partitionProcessing: PartitionProcessing{
 				Independent:        true,
 				MaxBufferedBatches: 1,
+				MaxInFlight:        1,
 			},
 		},
 		{

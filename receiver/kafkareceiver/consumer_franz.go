@@ -681,8 +681,13 @@ func (c *franzConsumer) deleteStoppingAssignments(stopping map[topicPartition]*p
 
 // handleMessage is called on a per-partition basis.
 func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
-	if pc.backOff != nil {
-		defer pc.backOff.Reset()
+	backOff := pc.backOff
+	if backOff != nil && c.maxInFlight() > 1 {
+		// pc.backOff is not safe for concurrent use, so each call gets its own.
+		backOff = newExponentialBackOff(c.config.ErrorBackOff)
+	}
+	if backOff != nil {
+		defer backOff.Reset()
 	}
 
 	for {
@@ -699,8 +704,8 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 		// https://cwiki.apache.org/confluence/display/KAFKA/KIP-932%3A+Queues+for+Kafka.
 		// One possible exception is if the OTel collector is used for analytics
 		// pipelines, where it may make sense to make share groups opt-in.
-		if pc.backOff != nil && !consumererror.IsPermanent(err) {
-			backOffDelay := pc.backOff.NextBackOff()
+		if backOff != nil && !consumererror.IsPermanent(err) {
+			backOffDelay := backOff.NextBackOff()
 			if backOffDelay != backoff.Stop {
 				pc.logger.Info("Backing off due to error from the next consumer.",
 					zap.Error(err),
@@ -714,14 +719,11 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 				}
 			}
 			pc.logger.Warn("Stop error backoff because the configured max_elapsed_time is reached",
-				zap.Duration("max_elapsed_time", pc.backOff.MaxElapsedTime),
+				zap.Duration("max_elapsed_time", backOff.MaxElapsedTime),
 			)
 		}
 
-		isPermanent := consumererror.IsPermanent(err)
-		shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
-
-		if c.config.MessageMarking.After && !shouldMark {
+		if c.config.MessageMarking.After && !c.shouldMark(err) {
 			// Only return an error if messages are marked after successful processing.
 			return err
 		}
