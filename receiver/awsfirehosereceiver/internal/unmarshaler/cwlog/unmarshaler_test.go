@@ -5,7 +5,6 @@ package cwlog
 
 import (
 	"bytes"
-	"compress/gzip"
 	"os"
 	"path/filepath"
 	"testing"
@@ -58,10 +57,7 @@ func TestUnmarshal(t *testing.T) {
 			record, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			compressedRecord, err := gzipData(record)
-			require.NoError(t, err)
-
-			got, err := unmarshaler.UnmarshalLogs(compressedRecord)
+			got, err := unmarshaler.UnmarshalLogs(record)
 			if testCase.wantErr != nil {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, testCase.wantErr.Error())
@@ -98,10 +94,7 @@ func TestLogTimestamp(t *testing.T) {
 	record, err := os.ReadFile(filepath.Join(".", "testdata", "single_record"))
 	require.NoError(t, err)
 
-	compressedRecord, err := gzipData(record)
-	require.NoError(t, err)
-
-	got, err := unmarshaler.UnmarshalLogs(compressedRecord)
+	got, err := unmarshaler.UnmarshalLogs(record)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, 1, got.ResourceLogs().Len())
@@ -125,24 +118,8 @@ func TestUnmarshalLargePayload(t *testing.T) {
 	}
 	largePayload.WriteString(`"}]}`)
 
-	compressedRecord, err := gzipData(largePayload.Bytes())
+	_, err := unmarshaler.UnmarshalLogs(largePayload.Bytes())
 	require.NoError(t, err)
-
-	_, err = unmarshaler.UnmarshalLogs(compressedRecord)
-	require.NoError(t, err)
-}
-
-func gzipData(data []byte) ([]byte, error) {
-	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
-
-	if _, err := w.Write(data); err != nil {
-		return nil, err
-	}
-	if err := w.Close(); err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
 }
 
 func assertString(t *testing.T, m pcommon.Map, key, expected string) {
