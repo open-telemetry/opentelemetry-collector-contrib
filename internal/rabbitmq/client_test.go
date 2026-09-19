@@ -107,6 +107,37 @@ func TestDialConfig(t *testing.T) {
 	assert.NotNil(t, conn)
 }
 
+func TestConnectCreatesFreshAuthentication(t *testing.T) {
+	authFactory := func() amqp.Authentication {
+		return &amqp.PlainAuth{
+			Username: "guest",
+			Password: "guest",
+		}
+	}
+
+	connection := &connectionHolder{
+		logger:      zap.NewNop(),
+		url:         "amqp://127.0.0.1:1/",
+		authFactory: authFactory,
+		config: amqp.Config{
+			Dial: amqp.DefaultDial(10 * time.Millisecond),
+		},
+	}
+
+	_ = connection.connect()
+
+	firstAuth := connection.config.SASL[0].(*amqp.PlainAuth)
+	firstAuth.Password = ""
+
+	_ = connection.connect()
+
+	secondAuth := connection.config.SASL[0].(*amqp.PlainAuth)
+
+	assert.NotSame(t, firstAuth, secondAuth)
+	assert.Equal(t, "guest", secondAuth.Username)
+	assert.Equal(t, "guest", secondAuth.Password)
+}
+
 func TestReconnectIfUnhealthy(t *testing.T) {
 	connection := &connectionHolder{
 		logger:           zap.NewNop(),
