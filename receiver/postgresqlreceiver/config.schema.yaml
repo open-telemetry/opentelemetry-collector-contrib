@@ -44,6 +44,9 @@ $defs:
         x-customType: int64
 type: object
 properties:
+  connect_database:
+    description: ConnectDatabase is the connection target for cluster-wide queries. Defaults to "postgres". Independent of Databases (the reporting scope).
+    type: string
   connection_pool:
     $ref: connection_pool
   databases:

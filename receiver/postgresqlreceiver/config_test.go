@@ -100,6 +100,16 @@ func TestValidate(t *testing.T) {
 			expected: nil,
 		},
 		{
+			desc: "connect_database outside databases is not a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = "mon"
+				cfg.Databases = []string{"landonline"}
+			},
+			expected: nil,
+		},
+		{
 			desc: "no error",
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
@@ -180,6 +190,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
 		expected.ExcludeDatabases = []string{"template0"}
+		expected.ConnectDatabase = "mon"
 		expected.ControllerConfig.CollectionInterval = 10 * time.Second
 		expected.ClientConfig = configtls.ClientConfig{
 			Insecure:           false,
