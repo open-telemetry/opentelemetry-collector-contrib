@@ -1147,6 +1147,10 @@ func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRe
 	return nil
 }
 
+func (mockOpAMPClient) SetConnectionSettingsStatus(*protobufs.ConnectionSettingsStatus) error {
+	return nil
+}
+
 func (mockOpAMPClient) SetCustomCapabilities(*protobufs.CustomCapabilities) error {
 	return nil
 }
@@ -1162,25 +1166,29 @@ func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) er
 }
 
 type mockStatusEvent struct {
-	status    componentstatus.Status
-	err       error
-	timestamp time.Time
+	status     componentstatus.Status
+	err        error
+	timestamp  time.Time
+	attributes *pcommon.Map
 }
 
-func (m mockStatusEvent) Status() componentstatus.Status {
+func (m *mockStatusEvent) Status() componentstatus.Status {
 	return m.status
 }
 
-func (m mockStatusEvent) Err() error {
+func (m *mockStatusEvent) Err() error {
 	return m.err
 }
 
-func (m mockStatusEvent) Timestamp() time.Time {
+func (m *mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
 }
 
-func (mockStatusEvent) Attributes() pcommon.Map {
-	return pcommon.NewMap()
+func (m *mockStatusEvent) Attributes() pcommon.Map {
+	if m.attributes == nil {
+		return pcommon.NewMap()
+	}
+	return *m.attributes
 }
 
 func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *mockOpAMPClient, sa *mockStatusAggregator) *opampAgent {

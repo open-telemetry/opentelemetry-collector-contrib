@@ -763,6 +763,10 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 		componentHealth.LastError = statusUpdate.Err().Error()
 	}
 
+	if attrs := pcommonMapToKeyValues(statusUpdate.Attributes()); len(attrs) > 0 {
+		componentHealth.Attributes = attrs
+	}
+
 	if len(statusUpdate.ComponentStatusMap) > 0 {
 		componentHealth.ComponentHealthMap = map[string]*protobufs.ComponentHealth{}
 		for comp, compState := range statusUpdate.ComponentStatusMap {
