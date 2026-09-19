@@ -126,7 +126,7 @@ func setupLogQueries(cfg *Config) []string {
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
-		queries = append(queries, getSQLServerTopProcedureQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerTopProcedureQuery())
 	}
 
 	return queries
@@ -350,7 +350,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			cache = newCache(1)
 		}
 
-		if query == getSQLServerTopProcedureQuery(cfg.InstanceName) {
+		if query == getSQLServerTopProcedureQuery() {
 			// every candidate row caches 7 counters, and multiply by 2 so that a procedure
 			// dropping out of one scrape's sample still has its previous values on the next.
 			cache = newCache(int(cfg.TopProcedureCollection.MaxProcedureSampleCount * 7 * 2))

@@ -516,7 +516,7 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
-	case getSQLServerTopProcedureQuery(mc.instanceName):
+	case getSQLServerTopProcedureQuery():
 		fixture := "topProcedureQueryData.txt"
 		if mc.procedureFixtureFile != "" {
 			fixture = mc.procedureFixtureFile
@@ -747,7 +747,6 @@ func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -833,7 +832,6 @@ func TestQueryTextAndPlanQueryDbServerQueryPlanEventDisabled(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -1826,8 +1824,7 @@ func newTopProcedureScraper(t *testing.T) *sqlServerScraperHelper {
 	scraper := scrapers[0]
 	require.NotNil(t, scraper.cache)
 	scraper.client = mockClient{
-		instanceName: scraper.config.InstanceName,
-		SQL:          scraper.sqlQuery,
+		SQL: scraper.sqlQuery,
 	}
 	return scraper
 }

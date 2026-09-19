@@ -442,12 +442,8 @@ func getSQLServerPropertiesQuery() string {
 //go:embed templates/topProcedureQuery.tmpl
 var sqlServerTopProcedureQueryTemplate string
 
-func getSQLServerTopProcedureQuery(instanceName string) string {
-	instanceFilter := ""
-	if instanceName != "" {
-		instanceFilter = fmt.Sprintf("  AND @@SERVERNAME = '%s'", instanceName)
-	}
-	return fmt.Sprintf(sqlServerTopProcedureQueryTemplate, instanceFilter)
+func getSQLServerTopProcedureQuery() string {
+	return sqlServerTopProcedureQueryTemplate
 }
 
 //go:embed templates/dbQueryAndTextQuery.tmpl
