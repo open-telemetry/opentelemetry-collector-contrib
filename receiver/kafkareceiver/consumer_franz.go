@@ -9,6 +9,7 @@ import (
 	"maps"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -63,6 +64,12 @@ type franzConsumer struct {
 	client      *kgo.Client
 	obsrecv     *receiverhelper.ObsReport
 	assignments map[topicPartition]*pc
+
+	// assignmentsSnapshot is an immutable snapshot published by assignment
+	// lifecycle hooks. This allows readers to use the snapshot without
+	// acquiring a read lock on the `mu` mutex.
+	assignmentsSnapshot atomic.Pointer[[]*pc]
+
 	// controls serializes SetOffsets between PollRecords calls.
 	controls chan partitionControl
 
@@ -97,7 +104,7 @@ func newFranzKafkaConsumer(
 		return nil, err
 	}
 
-	return &franzConsumer{
+	consumer := &franzConsumer{
 		config:           config,
 		topics:           topics,
 		excludeTopics:    excludeTopics,
@@ -110,7 +117,42 @@ func newFranzKafkaConsumer(
 		assignments:      make(map[topicPartition]*pc),
 		controls:         make(chan partitionControl, 1),
 		brokerReadOpts:   make(map[brokerReadKey]metric.MeasurementOption),
-	}, nil
+	}
+
+	// otelcol_kafka_receiver_offset_lag is an observable gauge which requires a callback
+	// to report the lag once every metric collection cycle.
+	if err := telemetryBuilder.RegisterKafkaReceiverOffsetLagCallback(consumer.observeOffsetLag); err != nil {
+		return nil, err
+	}
+	return consumer, nil
+}
+
+// observeOffsetLag report offset lag for all current partition assignments.
+func (c *franzConsumer) observeOffsetLag(_ context.Context, observer metric.Int64Observer) error {
+	assignmentsSnapshot := c.assignmentsSnapshot.Load()
+	if assignmentsSnapshot == nil {
+		return nil
+	}
+	for _, pc := range *assignmentsSnapshot {
+		// Avoid reporting when the assignment has not yet a processed batch
+		// and if a partition assignment has been lost/revoked
+		if pc.hasOffsetLag.Load() && !pc.partitionLost.Load() {
+			observer.Observe(pc.offsetLag.Load(), metric.WithAttributeSet(pc.attrs))
+		}
+	}
+	return nil
+}
+
+// storeAssignmentSnapshot store current partition assignments.
+// The caller must hold c.mu for writing.
+func (c *franzConsumer) storeAssignmentSnapshot() {
+	assignments := make([]*pc, 0, len(c.assignments))
+	for _, partitionAssignment := range c.assignments {
+		if !partitionAssignment.partitionLost.Load() {
+			assignments = append(assignments, partitionAssignment)
+		}
+	}
+	c.assignmentsSnapshot.Store(&assignments)
 }
 
 // reportStatus emits a component status event if we have a host.
@@ -471,6 +513,8 @@ func (c *franzConsumer) dispatchPartitionBatches(
 }
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
+	c.telemetryBuilder.Shutdown()
+
 	// Report Stopping at shutdown start.
 	c.stoppingOnce.Do(func() { c.reportStatus(componentstatus.StatusStopping) })
 
@@ -535,6 +579,7 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	haveAssignmentsChanged := false
 	for topic, partitions := range assigned {
 		for _, partition := range partitions {
 			c.telemetryBuilder.KafkaReceiverPartitionStart.Add(context.Background(), 1)
@@ -552,6 +597,7 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 			partitionConsumer.ctx, partitionConsumer.cancel = context.WithCancelCause(ctx)
 			tp := topicPartition{topic: topic, partition: partition}
 			c.assignments[tp] = &partitionConsumer
+			haveAssignmentsChanged = true
 			if c.config.PartitionProcessing.Independent {
 				partitionConsumer.mailbox = newPartitionMailbox(
 					partitionConsumer.ctx,
@@ -562,6 +608,9 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 				}
 			}
 		}
+	}
+	if haveAssignmentsChanged {
+		c.storeAssignmentSnapshot()
 	}
 }
 
@@ -591,6 +640,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			if !ok {
 				continue
 			}
+			pc.partitionLost.Store(true)
 			pc.cancelContext(errors.New(
 				"stopping processing: partition reassigned or lost",
 			))
@@ -607,6 +657,9 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			}
 			c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(), 1)
 		}
+	}
+	if len(stopping) > 0 {
+		c.storeAssignmentSnapshot()
 	}
 	c.mu.Unlock()
 
