@@ -325,6 +325,7 @@ SELECT
 	,pc.[counter_name] AS [counter]
 	,CASE pc.[instance_name] WHEN '_Total' THEN 'Total' ELSE ISNULL(pc.[instance_name],'') END AS [instance]
 	,CAST(CASE WHEN pc.[cntr_type] = 537003264 AND pc1.[cntr_value] > 0 THEN (pc.[cntr_value] * 1.0) / (pc1.[cntr_value] * 1.0) * 100 ELSE pc.[cntr_value] END AS float(10)) AS [value]
+	,pc.[cntr_value] AS [raw_value]
 	,CAST(pc.[cntr_type] AS varchar(25)) AS [counter_type]
 FROM @PCounters AS pc
 LEFT OUTER JOIN @PCounters AS pc1

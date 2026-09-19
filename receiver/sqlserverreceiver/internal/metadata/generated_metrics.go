@@ -5453,14 +5453,14 @@ func (m *metricSqlserverPageBufferCacheFreeListStallsRate) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricSqlserverPageBufferCacheFreeListStallsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverPageBufferCacheFreeListStallsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -8579,7 +8579,7 @@ func (mb *MetricsBuilder) RecordSqlserverPageAllocationRateDataPoint(ts pcommon.
 }
 
 // RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint adds a data point to sqlserver.page.buffer_cache.free_list.stalls.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverPageBufferCacheFreeListStallsRate.recordDataPoint(mb.startTime, ts, val)
 }
 

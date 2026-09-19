@@ -1158,7 +1158,7 @@ metrics:
     stability: development
     unit: "{stalls}/s"
     gauge:
-      value_type: int
+      value_type: double
     attributes: []
   sqlserver.page.buffer_cache.hit_ratio:
     enabled: true
