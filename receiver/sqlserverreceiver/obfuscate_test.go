@@ -4,6 +4,9 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"encoding/xml"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,6 +82,45 @@ func TestObfuscateQueryPlan(t *testing.T) {
 	result, err := newObfuscator(zap.NewNop()).obfuscateXMLPlan(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedQueryPlan, result)
+}
+
+// TestObfuscatedQueryPlanIsWellFormedXML guards against the encoder re-declaring
+// the plan's default namespace: it used to emit xmlns twice on the root (which
+// no XML parser accepts) and once more on every descendant.
+func TestObfuscatedQueryPlanIsWellFormedXML(t *testing.T) {
+	input, err := os.ReadFile(filepath.Join("testdata", "inputQueryPlan.xml"))
+	require.NoError(t, err)
+
+	result, err := newObfuscator(zap.NewNop()).obfuscateXMLPlan(string(input))
+	require.NoError(t, err)
+
+	decoder := xml.NewDecoder(strings.NewReader(result))
+	root := true
+	for {
+		token, err := decoder.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		require.NoError(t, err, "obfuscated plan is not well-formed XML")
+
+		elem, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+
+		var declarations int
+		for _, attr := range elem.Attr {
+			if attr.Name.Local == "xmlns" && attr.Name.Space == "" {
+				declarations++
+			}
+		}
+		if root {
+			assert.Equal(t, 1, declarations, "root element must declare the namespace exactly once")
+			root = false
+			continue
+		}
+		assert.Zero(t, declarations, "descendant %q must not re-declare the namespace", elem.Name.Local)
+	}
 }
 
 func TestInvalidQueryPlans(t *testing.T) {
