@@ -21,6 +21,9 @@ var _ reflectTypedArg = (*SliceGetter[any, any])(nil)
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 type SliceGetter[K, V any] struct {
+	// typedValues holds the values when they are known without evaluation, and
+	// runtimeSlice the source to evaluate otherwise. A literal nil leaves both
+	// unset, in which case the getter behaves as an empty slice.
 	typedValues  []V
 	runtimeSlice *runtimeSliceSource[K]
 }
@@ -150,6 +153,9 @@ func (s *SliceGetter[K, V]) Range(ctx context.Context, tCtx K, yield func(value 
 	if s.typedValues != nil {
 		return rangeTypedSlice(s.typedValues, yield)
 	}
+	if s.runtimeSlice == nil {
+		return nil
+	}
 	return s.rangeRuntimeSlice(ctx, tCtx, yield)
 }
 
@@ -208,6 +214,9 @@ func (s *SliceGetter[K, V]) Len() (int, bool) {
 func (s *SliceGetter[K, V]) Get(ctx context.Context, tCtx K) ([]V, error) {
 	if s.typedValues != nil {
 		return s.typedValues, nil
+	}
+	if s.runtimeSlice == nil {
+		return nil, nil
 	}
 
 	values, err := s.runtimeSlice.Get(ctx, tCtx)

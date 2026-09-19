@@ -43,6 +43,15 @@ func TestSliceGetter_setReflectValue(t *testing.T) {
 		require.NotNil(t, sg.runtimeSlice)
 	})
 
+	t.Run("literal nil runtime source leaves both unset", func(t *testing.T) {
+		var sg SliceGetter[any, string]
+		src := newTestRuntimeSliceSource[any, string](newLiteral[any, any](nil))
+		err := sg.setReflectValue(reflect.ValueOf(*src))
+		require.NoError(t, err)
+		require.Nil(t, sg.typedValues)
+		require.Nil(t, sg.runtimeSlice)
+	})
+
 	t.Run("invalid value type", func(t *testing.T) {
 		var sg SliceGetter[any, string]
 		err := sg.setReflectValue(reflect.ValueOf(123))
@@ -260,6 +269,20 @@ func TestSliceGetter_Get(t *testing.T) {
 		require.Empty(t, vals)
 	})
 
+	t.Run("literal nil", func(t *testing.T) {
+		sg := newLiteralNilSliceGetter[any, string](t)
+		vals, err := sg.Get(t.Context(), nil)
+		require.NoError(t, err)
+		require.Nil(t, vals)
+	})
+
+	t.Run("unset getter", func(t *testing.T) {
+		var sg SliceGetter[any, string]
+		vals, err := sg.Get(t.Context(), nil)
+		require.NoError(t, err)
+		require.Nil(t, vals)
+	})
+
 	t.Run("dynamic literal slice direct []V", func(t *testing.T) {
 		sg := NewTestingSliceGetter[any, string](true, []string{"x", "y"})
 		vals, err := sg.Get(t.Context(), nil)
@@ -385,6 +408,28 @@ func TestSliceGetter_Range(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Equal(t, []int{1, 2}, collected)
+	})
+
+	t.Run("literal nil", func(t *testing.T) {
+		sg := newLiteralNilSliceGetter[any, string](t)
+		calls := 0
+		err := sg.Range(t.Context(), nil, func(string) bool {
+			calls++
+			return true
+		})
+		require.NoError(t, err)
+		require.Zero(t, calls)
+	})
+
+	t.Run("unset getter", func(t *testing.T) {
+		var sg SliceGetter[any, string]
+		calls := 0
+		err := sg.Range(t.Context(), nil, func(string) bool {
+			calls++
+			return true
+		})
+		require.NoError(t, err)
+		require.Zero(t, calls)
 	})
 
 	t.Run("dynamic []V fast path", func(t *testing.T) {
@@ -874,6 +919,13 @@ func Test_getRuntimeSliceLiterals(t *testing.T) {
 		require.Len(t, vals, 2)
 	})
 
+	t.Run("literal getter with nil value", func(t *testing.T) {
+		source := newTestRuntimeSliceSource[any, string](newLiteral[any, any](nil))
+		vals, ok := getRuntimeSliceLiterals[any, string](source)
+		require.True(t, ok)
+		require.Nil(t, vals)
+	})
+
 	t.Run("getter error", func(t *testing.T) {
 		source := newTestRuntimeSliceSource[any, string](errSliceGetter{err: errors.New("literal get failed")})
 		vals, ok := getRuntimeSliceLiterals[any, string](source)
@@ -951,4 +1003,16 @@ func newTestRuntimeSliceSourceWithCoercer[K any](getter Getter[K], coercer *slic
 
 func newTestSliceGetterWithRuntimeSource[K, V any](src *runtimeSliceSource[K]) SliceGetter[K, V] {
 	return SliceGetter[K, V]{runtimeSlice: src}
+}
+
+// newLiteralNilSliceGetter builds a SliceGetter the way the parser does for a
+// literal nil argument, which leaves both typedValues and runtimeSlice unset.
+func newLiteralNilSliceGetter[K, V any](t *testing.T) SliceGetter[K, V] {
+	t.Helper()
+	var sg SliceGetter[K, V]
+	src := newTestRuntimeSliceSource[K, V](newLiteral[K, any](nil))
+	require.NoError(t, sg.setReflectValue(reflect.ValueOf(*src)))
+	require.Nil(t, sg.typedValues)
+	require.Nil(t, sg.runtimeSlice)
+	return sg
 }
