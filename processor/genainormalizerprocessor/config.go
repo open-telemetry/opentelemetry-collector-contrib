@@ -22,11 +22,20 @@ const (
 	SourceOpenInference SourceName = "openinference"
 	// SourceOpenLLMetry enables normalization of OpenLLMetry (Traceloop) attributes.
 	SourceOpenLLMetry SourceName = "openllmetry"
+	// SourceLangChain enables normalization of LangChain / LangGraph attributes.
+	SourceLangChain SourceName = "langchain"
+	// SourceCrewAI enables normalization of CrewAI attributes.
+	SourceCrewAI SourceName = "crewai"
+	// SourcePydanticAI enables normalization of PydanticAI attributes.
+	SourcePydanticAI SourceName = "pydanticai"
 )
 
 var builtInSources = map[SourceName]struct{}{
 	SourceOpenInference: {},
 	SourceOpenLLMetry:   {},
+	SourceLangChain:     {},
+	SourceCrewAI:        {},
+	SourcePydanticAI:    {},
 }
 
 // Source configures normalization behavior for a single source convention.
