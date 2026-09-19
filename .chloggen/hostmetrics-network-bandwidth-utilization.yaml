@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/host_metrics
+note: Add an optional network bandwidth utilization metric to the network scraper.
+issues: [49169]
+change_logs: [user]
