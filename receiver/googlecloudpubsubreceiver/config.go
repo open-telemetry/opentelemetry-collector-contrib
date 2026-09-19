@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 )
 
-var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*(:[a-z0-9\-]+)?/subscriptions/`)
+var subscriptionMatcher = regexp.MustCompile(`^projects/[a-z]([a-z0-9\-.:]*[a-z0-9])?/subscriptions/`)
 
 type Config struct {
 	// Google Cloud Project ID where the Pubsub client will connect to
