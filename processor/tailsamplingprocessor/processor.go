@@ -1099,6 +1099,16 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
 		tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
 		tsp.releaseNotSampledTrace(id, actualData)
+		// releaseNotSampledTrace only evicts the trace from memory and storage
+		// (via dropTrace) on a decision cache hit; with NopCache that never
+		// happens. Since the trace was just removed from the batcher, no tick
+		// will take its spans from storage either, so any batches already
+		// appended for it would leak idToTrace, deleteTraceQueue and the
+		// tailStorage entry. This path is terminal for the trace, so drop it
+		// unconditionally. dropTrace is idempotent, so the eviction already
+		// performed by releaseNotSampledTrace when a decision cache is
+		// configured is harmless.
+		tsp.dropTrace(id, time.Now())
 		return
 	}
 
