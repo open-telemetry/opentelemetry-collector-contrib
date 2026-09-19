@@ -2013,7 +2013,7 @@ func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *test
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
 	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
 		string(model.MetricNameLabel): "foo",
-	}))
+	}), false)
 	require.False(t, ok, "expected false when metadata type != histogram")
 }
 
@@ -2062,7 +2062,7 @@ func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
 }
 
 func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
-	scope, attrs := getScopeID(labels.FromStrings(
+	scope, attrs, _ := getScopeID(labels.FromStrings(
 		string(model.MetricNameLabel), "metric_x",
 		prometheus.ScopeNameLabelKey, "scope.with.info",
 		prometheus.ScopeVersionLabelKey, "v1.0.0",
@@ -2071,7 +2071,9 @@ func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
 	require.Equal(t, "scope.with.info", scope.name)
 	require.Equal(t, "v1.0.0", scope.version)
 	require.Zero(t, scope.attrsHash)
-	require.Zero(t, attrs.Len())
+	if attrs != (pcommon.Map{}) {
+		require.Zero(t, attrs.Len())
+	}
 }
 
 func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {
@@ -2341,4 +2343,32 @@ func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
 	errField, ok := logs[0].ContextMap()["error"]
 	assert.True(t, ok)
 	assert.Equal(t, "connection refused", errField)
+}
+
+func TestGetOrCreateMetricFamily_StandaloneSuffixMetricAfterHistogram(t *testing.T) {
+	tr := newTxn(t, true)
+	metaMap := map[string]scrape.MetricMetadata{
+		"foo": {MetricFamily: "foo", Type: model.MetricTypeHistogram},
+	}
+	tr.mc = testMetadataStore(metaMap)
+
+	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
+
+	// 1. Scrape foo_bucket as part of histogram foo (no standalone foo_bucket metadata yet)
+	mfBucketHist := tr.getOrCreateMetricFamily(rk, emptyScopeID, "foo_bucket")
+	require.NotNil(t, mfBucketHist)
+	require.Equal(t, "foo", mfBucketHist.name)
+	require.Equal(t, pmetric.MetricTypeHistogram, mfBucketHist.mtype)
+
+	// 2. Now foo_bucket has its own standalone gauge metadata
+	metaMap["foo_bucket"] = scrape.MetricMetadata{
+		MetricFamily: "foo_bucket",
+		Type:         model.MetricTypeGauge,
+	}
+
+	mfStandalone := tr.getOrCreateMetricFamily(rk, emptyScopeID, "foo_bucket")
+	require.NotNil(t, mfStandalone)
+	require.Equal(t, "foo_bucket", mfStandalone.name)
+	require.Equal(t, pmetric.MetricTypeGauge, mfStandalone.mtype)
+	require.NotEqual(t, mfBucketHist, mfStandalone)
 }
