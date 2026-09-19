@@ -17,6 +17,13 @@ import (
 
 var errTCPServerDone = errors.New("server stopped")
 
+// maxLineSize bounds how many bytes handleTCPConn buffers while waiting for
+// a newline. It matches the max UDP/UDS packet body size the packet-based
+// transports already treat as one message's ceiling (see packet_server.go),
+// so a TCP client that never sends '\n' can't grow the per-connection
+// remainder buffer without limit.
+const maxLineSize = 65527
+
 type tcpServer struct {
 	listener  net.Listener
 	wg        sync.WaitGroup
@@ -68,6 +75,7 @@ func (t *tcpServer) ListenAndServe(nextConsumer consumer.Metrics, reporter Repor
 
 // handleTCPConn is helper that parses the buffer and split it line by line to be parsed upstream.
 func handleTCPConn(c net.Conn, reporter Reporter, transferChan chan<- Metric) {
+	defer c.Close()
 	payload := make([]byte, 4096)
 	var remainder []byte
 	for {
@@ -82,9 +90,17 @@ func handleTCPConn(c net.Conn, reporter Reporter, transferChan chan<- Metric) {
 		for {
 			bytes, err := buf.ReadBytes(byte('\n'))
 			if errors.Is(err, io.EOF) {
-				if len(bytes) != 0 {
-					remainder = bytes
+				if len(bytes) > maxLineSize {
+					reporter.OnDebugf("TCP transport (%s): line exceeded %d bytes without a newline, closing connection", c.LocalAddr(), maxLineSize)
+					return
 				}
+				// Always replace remainder with what ReadBytes returned on this
+				// EOF, including when it's empty. If the buffer's last line ended
+				// exactly at a '\n', bytes is empty here and remainder must be
+				// cleared to nil - otherwise a stale partial line from an earlier
+				// read would survive and get re-prepended (and duplicated) on the
+				// next outer iteration.
+				remainder = bytes
 				break
 			}
 			line := strings.TrimSpace(string(bytes))
