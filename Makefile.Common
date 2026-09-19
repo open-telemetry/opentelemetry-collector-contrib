@@ -288,6 +288,9 @@ endif
 .PHONY: check-stability-mod
 check-stability-mod:
 	@for dir in $$(find . -name '$(MDATAGEN_METADATA_YAML)' -exec dirname {} \; | sort -u); do \
+		if ! grep -qrl 'go:generate make mdatagen' "$$dir"/*.go 2>/dev/null; then \
+			continue; \
+		fi; \
 		$(MAKE) --no-print-directory -C "$$dir" check-stability COVERAGE_PROFILE="$(COVERAGE_PROFILE)" || exit 1; \
 	done
 
