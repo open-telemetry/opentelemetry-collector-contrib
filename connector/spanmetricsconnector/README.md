@@ -150,6 +150,8 @@ The following settings can be optionally configured:
 - `events`: Use to configure the events metric.
   - `enabled`: (default: `false`): enabling will add the events metric.
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
+- `self_time`: Use to configure the optional self-time histogram metric. Requires the `groupbytrace` processor, or an equivalent processor that assembles complete traces, ahead of this connector in the traces pipeline.
+  - `enabled`: (default: `false`): enabling will compute exclusive/self time from parent-child span intervals in each consumed trace batch and emit `traces.span.metrics.self_time`. Complete traces must be present in the batch; place `groupbytrace` before this connector in the traces pipeline. The self-time metric uses the same dimension set as duration by default.
 - `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash(It's only used to build the hash key, not copy the attributes to metrics resource attributes).
    Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
