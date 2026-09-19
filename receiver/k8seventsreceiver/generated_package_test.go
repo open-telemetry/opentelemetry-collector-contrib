@@ -9,5 +9,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("golang.org/x/net/http2.(*ClientConn).readLoop"))
+	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("golang.org/x/net/http2.(*ClientConn).readLoop"), goleak.IgnoreAnyFunction("net/http.(*persistConn).readLoop"), goleak.IgnoreAnyFunction("net/http.(*persistConn).writeLoop"))
 }
