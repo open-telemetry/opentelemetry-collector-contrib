@@ -660,11 +660,8 @@ type capturedTTLRequest struct {
 	err    error
 }
 
-// Regression test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50940.
-// Splunk's setttl action reads the ttl argument as a whole number of seconds. The configured
-// Timeout was formatted straight out of a time.Duration, which emits its raw nanosecond count, so
-// a 60s timeout asked Splunk to retain every dispatched job for roughly 1900 years and the search
-// dispatch directory never drained.
+// TestSetSearchJobTTLByID verifies that the control request sends the configured timeout
+// as a whole number of seconds, as required by Splunk's setttl action.
 func TestSetSearchJobTTLByID(t *testing.T) {
 	const sid = "test-search-id"
 
@@ -707,11 +704,14 @@ func TestSetSearchJobTTLByID(t *testing.T) {
 			require.NoError(t, scraper.setSearchJobTTLByID(sid))
 
 			var got capturedTTLRequest
-			select {
-			case got = <-captured:
-			default:
-				t.Fatal("control endpoint was never called")
-			}
+			require.Eventually(t, func() bool {
+				select {
+				case got = <-captured:
+					return true
+				default:
+					return false
+				}
+			}, time.Second, 10*time.Millisecond, "control endpoint was never called")
 			require.Empty(t, captured, "expected exactly one request to the control endpoint")
 
 			require.NoError(t, got.err)
