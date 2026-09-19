@@ -15,17 +15,7 @@ issues: [49842]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  `metrics.discovery.filters` is now a list of entries, each selecting a namespace, optionally a set
-  of `metric_names` within it, and optionally the `stats` to fetch for those metrics. This allows
-  discovering a subset of metrics per namespace, using different statistics per metric, and covering
-  multiple namespaces with a single receiver instance. `limit` remains a global cap across all
-  entries, and when entries overlap the first entry that discovers a metric wins.
-
-  The deprecated single-object form (`filters: {namespace: X, metric_name: Y}`) keeps working and is
-  treated as a one-entry list. The deprecated top-level `discovery.stats` also keeps working and
-  applies to any filter entry that does not set its own `stats`. Both log a deprecation warning at
-  startup.
+subtext: The deprecated single-object `filters` form and top-level `discovery.stats` keep working and log a deprecation warning.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
