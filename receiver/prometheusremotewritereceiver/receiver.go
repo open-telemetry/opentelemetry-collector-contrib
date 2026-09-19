@@ -694,7 +694,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
 			}
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, expLayout, attrs, ls, stats)
+			addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, expLayout, attrs, stats)
 			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
 				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
 			}
@@ -759,7 +759,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 
 // addExponentialHistogramDatapoint converts one exponential Native Histogram to an OTLP data
 // point. layout must come from validateExponentialHistogram for the same histogram.
-func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, layout exponentialHistogramLayout, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
+func addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, layout exponentialHistogramLayout, attrs pcommon.Map, stats *promremote.WriteResponseStats) {
 	// A stale marker carries no distribution: the specification ignores the remaining fields when
 	// the sum is the stale NaN, so none of them are read.
 	if value.IsStaleNaN(histogram.Sum) {
@@ -774,37 +774,24 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 		return
 	}
 
-	// Built aside from the slice so that a histogram whose population cannot be represented is
-	// never published as a half filled data point.
-	dp := pmetric.NewExponentialHistogramDataPoint()
+	dp := datapoints.AppendEmpty()
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 	dp.SetScale(histogram.Schema)
 	dp.SetZeroThreshold(histogram.ZeroThreshold)
 
-	zeroCount := histogram.GetZeroCountInt()
-	dp.SetZeroCount(zeroCount)
+	dp.SetZeroCount(histogram.GetZeroCountInt())
 
-	positive, positiveOK := convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive(), layout.positive)
-	negative, negativeOK := convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative(), layout.negative)
+	convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive(), layout.positive)
+	convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative(), layout.negative)
 
-	// The compatibility specification derives Count from what the data point actually holds,
-	// rather than from the count Prometheus sent. The two differ whenever observations are not
-	// represented by a bucket, which happens for NaN observations and for the overflow bucket.
-	count, ok := addPopulations(zeroCount, positive, negative)
-	if !positiveOK || !negativeOK || !ok {
-		prw.settings.Logger.Error("Dropping Native Histogram whose bucket population is too large to represent",
-			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-		return
-	}
-	dp.SetCount(count)
-	if count > 0 {
+	dp.SetCount(layout.count)
+	if layout.count > 0 {
 		// OTLP requires a data point with no count to carry no sum.
 		dp.SetSum(histogram.Sum)
 	}
 
 	attrs.CopyTo(dp.Attributes())
-	dp.MoveTo(datapoints.AppendEmpty())
 	stats.Histograms++
 }
 
@@ -878,14 +865,16 @@ func (b *histogramBucketBudget) reserve(layout exponentialHistogramLayout) bool 
 type exponentialHistogramLayout struct {
 	positive bucketSpanLayout
 	negative bucketSpanLayout
+	count    uint64 // Count rebuilt from what the data point will hold
 }
 
 // bucketSpanLayout is the dense OTLP bucket range a validated span list expands into.
 type bucketSpanLayout struct {
-	hasBuckets bool  // false for an empty span list, and when every bucket overflows
-	firstIndex int64 // Prometheus index of the first bucket within the overflow limit
-	lastIndex  int64 // Prometheus index of the last bucket within the overflow limit
-	numBuckets int64 // bucket_counts length; may exceed a 32-bit int before validation
+	hasBuckets bool   // false for an empty span list, and when every bucket overflows
+	firstIndex int64  // Prometheus index of the first bucket within the overflow limit
+	lastIndex  int64  // Prometheus index of the last bucket within the overflow limit
+	numBuckets int64  // bucket_counts length; may exceed a 32-bit int before validation
+	retained   uint64 // population of the buckets it keeps, leaving out the overflow bucket
 }
 
 // otelOffset returns the OTLP offset of the layout, one below firstIndex: an OTLP offset
@@ -969,21 +958,15 @@ func validateNHCB(histogram *writev2.Histogram) error {
 // validateExponentialHistogram returns the dense layout the spans of an exponential Native
 // Histogram expand into. An error means it cannot be translated. The caller checks the schema.
 func validateExponentialHistogram(histogram *writev2.Histogram) (exponentialHistogramLayout, error) {
-	// Checked before the budget is reserved, so a histogram that is going to be dropped never
-	// takes buckets a later valid one needs.
-	if hasNegativeCounts(histogram) {
-		return exponentialHistogramLayout{}, errors.New("histogram has negative counts")
-	}
-
 	finiteLimit := exponentialHistogramFiniteLimit(histogram.Schema)
 
-	positiveValues, negativeValues := len(histogram.PositiveDeltas), len(histogram.NegativeDeltas)
-
-	positive, err := validateBucketSpanLayout(histogram.PositiveSpans, positiveValues, finiteLimit)
+	// Validated before the budget is reserved, so a histogram that is going to be dropped never
+	// takes buckets a later valid one needs.
+	positive, err := validateBucketSpanLayout(histogram.PositiveSpans, histogram.PositiveDeltas, finiteLimit)
 	if err != nil {
 		return exponentialHistogramLayout{}, fmt.Errorf("positive spans: %w", err)
 	}
-	negative, err := validateBucketSpanLayout(histogram.NegativeSpans, negativeValues, finiteLimit)
+	negative, err := validateBucketSpanLayout(histogram.NegativeSpans, histogram.NegativeDeltas, finiteLimit)
 	if err != nil {
 		return exponentialHistogramLayout{}, fmt.Errorf("negative spans: %w", err)
 	}
@@ -996,7 +979,15 @@ func validateExponentialHistogram(histogram *writev2.Histogram) (exponentialHist
 		)
 	}
 
-	return exponentialHistogramLayout{positive: positive, negative: negative}, nil
+	// The compatibility specification derives Count from what the data point actually holds,
+	// rather than from the count Prometheus sent. The two differ whenever observations are not
+	// represented by a bucket, which happens for NaN observations and for the overflow bucket.
+	count, ok := addPopulations(histogram.GetZeroCountInt(), positive.retained, negative.retained)
+	if !ok {
+		return exponentialHistogramLayout{}, errors.New("bucket populations are too large to represent")
+	}
+
+	return exponentialHistogramLayout{positive: positive, negative: negative, count: count}, nil
 }
 
 // validateBucketSpanLayout validates one bucket span list and computes the dense OTLP range it
@@ -1006,11 +997,15 @@ func validateExponentialHistogram(histogram *writev2.Histogram) (exponentialHist
 //
 // Offsets are untrusted int32 wire fields, so indexes are computed in int64 and the expansion is
 // bounded here, before it can reach an allocation, a loop bound or a slice index.
-func validateBucketSpanLayout(spans []writev2.BucketSpan, valueCount int, finiteLimit int32) (bucketSpanLayout, error) {
+func validateBucketSpanLayout(spans []writev2.BucketSpan, deltas []int64, finiteLimit int32) (bucketSpanLayout, error) {
+	valueCount := len(deltas)
+
 	var (
 		layout      bucketSpanLayout
 		nextIndex   int64 // index the next span's offset is relative to
 		spanBuckets uint64
+		valueIdx    int
+		bucketCount int64 // deltas are cumulative, so this carries across spans
 	)
 
 	for spanIdx, span := range spans {
@@ -1037,6 +1032,25 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, valueCount int, finite
 		// well inside int64, since offsets after the first span only ever move forwards.
 		if nextIndex-1 > int64(finiteLimit)+1 {
 			return bucketSpanLayout{}, fmt.Errorf("bucket index %d is past the overflow bucket at %d", nextIndex-1, finiteLimit+1)
+		}
+
+		// Reading the deltas on the pass that already walks the spans lets a histogram no data
+		// point can hold be dropped before one is built for it. A bucket is kept exactly when its
+		// index is within the finite range, which is known here because indexes only move forwards.
+		for i := uint32(0); i < span.Length; i++ {
+			bucketCount += deltas[valueIdx]
+			valueIdx++
+			if bucketCount < 0 {
+				return bucketSpanLayout{}, fmt.Errorf("bucket %d holds a negative population of %d", valueIdx, bucketCount)
+			}
+			if start+int64(i) > int64(finiteLimit) {
+				continue
+			}
+			total, ok := addPopulations(layout.retained, uint64(bucketCount))
+			if !ok {
+				return bucketSpanLayout{}, errors.New("bucket populations are too large to represent")
+			}
+			layout.retained = total
 		}
 
 		// The overflow bucket itself is consumed but dropped, so it must not widen the range.
@@ -1067,19 +1081,17 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, valueCount int, finite
 	return layout, nil
 }
 
-// convertDeltaBuckets converts Prometheus spans and deltas to OTLP bucket counts, returning the
-// population it emitted, which leaves out the overflow bucket so the caller can rebuild Count from
-// what the data point holds. Deltas are cumulative: 1,2,-2 means 1,3,1. Reports false if that
-// population does not fit a uint64. layout comes from validateBucketSpanLayout for the same spans.
-func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, dest pmetric.ExponentialHistogramDataPointBuckets, layout bucketSpanLayout) (uint64, bool) {
+// convertDeltaBuckets converts Prometheus spans and deltas to OTLP bucket counts. Deltas are
+// cumulative: 1,2,-2 means 1,3,1. layout comes from validateBucketSpanLayout for the same spans,
+// which has already read the same deltas and rejected anything a data point cannot hold.
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, dest pmetric.ExponentialHistogramDataPointBuckets, layout bucketSpanLayout) {
 	buckets := prepareBuckets(dest, layout)
 
 	var (
-		bucketIdx     int
-		bucketCount   int64
-		retainedCount uint64
-		nextIndex     int64
-		nextAppend    = layout.firstIndex // no gap before the first bucket, the OTLP offset places it
+		bucketIdx   int
+		bucketCount int64
+		nextIndex   int64
+		nextAppend  = layout.firstIndex // no gap before the first bucket, the OTLP offset places it
 	)
 
 	for _, span := range spans {
@@ -1098,15 +1110,8 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, dest pmetri
 			}
 			nextAppend = appendGap(buckets, nextAppend, index)
 			buckets.Append(uint64(bucketCount))
-
-			total, ok := addPopulations(retainedCount, uint64(bucketCount))
-			if !ok {
-				return 0, false
-			}
-			retainedCount = total
 		}
 	}
-	return retainedCount, true
 }
 
 // prepareBuckets sets the OTLP offset and reserves exactly what the validated layout needs.

@@ -3917,7 +3917,8 @@ func TestValidateBucketSpanLayout(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
 		spans         []writev2.BucketSpan
-		valueCount    int
+		valueCount    int     // shorthand for valueCount zero deltas, for the cases about layout
+		deltas        []int64 // set instead of valueCount for the cases about population
 		overflowLimit int32
 		expected      bucketSpanLayout
 		expectError   string
@@ -4066,9 +4067,48 @@ func TestValidateBucketSpanLayout(t *testing.T) {
 			overflowLimit: schema0Limit,
 			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 1024, lastIndex: 1024, numBuckets: 1},
 		},
+		{
+			// Deltas are cumulative: 1,2,-2 holds 1,3,1.
+			name:          "population is the running total of the deltas",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 3}},
+			deltas:        []int64{1, 2, -2},
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 2, numBuckets: 3, retained: 5},
+		},
+		{
+			// The overflow bucket is consumed so the deltas after it still add up, but it holds
+			// observations no OTLP bucket can carry, so it is left out of the population.
+			name:          "the overflow bucket is not counted",
+			spans:         []writev2.BucketSpan{{Offset: 1024, Length: 2}},
+			deltas:        []int64{7, 0},
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 1024, lastIndex: 1024, numBuckets: 1, retained: 7},
+		},
+		{
+			name:          "a delta that takes a bucket below zero is rejected",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 2}},
+			deltas:        []int64{1, -3},
+			overflowLimit: schema0Limit,
+			expectError:   "bucket 2 holds a negative population of -2",
+		},
+		{
+			// Deltas are cumulative, so these are five buckets holding 2^62 each. Every bucket
+			// fits an int64; their total does not fit a uint64.
+			name:          "a population no uint64 can hold is rejected",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 5}},
+			deltas:        []int64{1 << 62, 0, 0, 0, 0},
+			overflowLimit: schema0Limit,
+			expectError:   "bucket populations are too large to represent",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			layout, err := validateBucketSpanLayout(tc.spans, tc.valueCount, tc.overflowLimit)
+			// A zero delta leaves every bucket empty, so a case that says nothing about the
+			// deltas keeps the layout it asserted before they were read here.
+			deltas := tc.deltas
+			if deltas == nil {
+				deltas = make([]int64, tc.valueCount)
+			}
+			layout, err := validateBucketSpanLayout(tc.spans, deltas, tc.overflowLimit)
 			if tc.expectError != "" {
 				assert.ErrorContains(t, err, tc.expectError)
 				return
@@ -4088,7 +4128,7 @@ func TestSpanRangeWiderThanInt32(t *testing.T) {
 		{Offset: math.MaxInt32, Length: 1},
 		{Offset: 1023, Length: 1},
 	}
-	layout, err := validateBucketSpanLayout(spans, 3, exponentialHistogramFiniteLimit(0))
+	layout, err := validateBucketSpanLayout(spans, make([]int64, 3), exponentialHistogramFiniteLimit(0))
 	require.NoError(t, err)
 
 	// Comparing against an int64 also pins the field's type: narrowing it to an int makes this
@@ -4200,16 +4240,15 @@ func TestConvertDeltaBucketsWhenEveryBucketOverflows(t *testing.T) {
 	spans := []writev2.BucketSpan{{Offset: 1025, Length: 1}}
 	deltas := []int64{10}
 
-	layout, err := validateBucketSpanLayout(spans, len(deltas), exponentialHistogramFiniteLimit(0))
+	layout, err := validateBucketSpanLayout(spans, deltas, exponentialHistogramFiniteLimit(0))
 	require.NoError(t, err)
 	require.False(t, layout.hasBuckets)
 
 	dp := pmetric.NewExponentialHistogramDataPoint()
-	retained, ok := convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
-	require.True(t, ok)
+	convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
 
 	// The overflow bucket is consumed but never emitted, so it contributes nothing to Count.
-	assert.Equal(t, uint64(0), retained)
+	assert.Equal(t, uint64(0), layout.retained)
 	assert.Empty(t, dp.Positive().BucketCounts().AsRaw())
 	assert.Equal(t, int32(0), dp.Positive().Offset())
 }
@@ -4220,7 +4259,7 @@ func TestExponentialHistogramSpanExpansionIsBounded(t *testing.T) {
 	spans := []writev2.BucketSpan{{Offset: 0, Length: 2}, {Offset: 100_000_000, Length: 0}}
 	deltas := []int64{1, 2}
 
-	layout, err := validateBucketSpanLayout(spans, len(deltas), exponentialHistogramFiniteLimit(0))
+	layout, err := validateBucketSpanLayout(spans, deltas, exponentialHistogramFiniteLimit(0))
 	require.NoError(t, err)
 	require.Equal(t, int64(2), layout.numBuckets)
 
@@ -4229,14 +4268,12 @@ func TestExponentialHistogramSpanExpansionIsBounded(t *testing.T) {
 	runtime.ReadMemStats(&before)
 
 	dp := pmetric.NewExponentialHistogramDataPoint()
-	retained, ok := convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
+	convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
 
 	runtime.ReadMemStats(&after)
 
-	require.True(t, ok)
-
 	// Both buckets are emitted, holding 1 and 3.
-	assert.Equal(t, uint64(4), retained)
+	assert.Equal(t, uint64(4), layout.retained)
 	assert.Equal(t, int32(-1), dp.Positive().Offset())
 	assert.Equal(t, []uint64{1, 3}, dp.Positive().BucketCounts().AsRaw())
 	// Reserving one bucket per unit of offset would allocate 800MB here, so the budget only has
@@ -4677,37 +4714,63 @@ func TestHistogramWithOnlyOverflowBucketHasNoSum(t *testing.T) {
 }
 
 func TestHistogramWithUnrepresentablePopulationIsDropped(t *testing.T) {
-	// Five buckets holding 2^62 each sum to more than a uint64 can hold, so no data point can
-	// satisfy the OTLP rule that the count equals the bucket populations. The histogram has to be
-	// dropped rather than emitted with a count that silently wrapped.
+	// No data point can satisfy the OTLP rule that the count equals the bucket populations when
+	// those populations do not fit a uint64, so the histogram is dropped rather than emitted with
+	// a count that silently wrapped. Deltas are cumulative, so a leading 2^62 and then zeroes is
+	// a run of buckets holding 2^62 each.
 	const huge = int64(1) << 62
 
-	prwReceiver := setupMetricsReceiver(t)
-	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
-		Symbols: []string{"", "__name__", "test_hist", "job", "service-x/test", "instance", "107cn001"},
-		Timeseries: []writev2.TimeSeries{
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
-				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
-				Histograms: []writev2.Histogram{{
-					Schema:         0,
-					Count:          &writev2.Histogram_CountInt{CountInt: 5},
-					Sum:            1,
-					Timestamp:      1,
-					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 5}},
-					PositiveDeltas: []int64{huge, 0, 0, 0, 0},
-				}},
+	for _, tc := range []struct {
+		name      string
+		histogram writev2.Histogram
+	}{
+		{
+			// Five buckets of 2^62 pass the limit within the positive range on its own.
+			name: "one range overflows by itself",
+			histogram: writev2.Histogram{
+				Schema:         0,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 5}},
+				PositiveDeltas: []int64{huge, 0, 0, 0, 0},
 			},
 		},
-	})
-	require.NoError(t, err)
+		{
+			// Three buckets of 2^62 fit a uint64, so neither range reaches the limit alone. They
+			// only pass it once both are added to the count the data point has to carry.
+			name: "the two ranges only overflow together",
+			histogram: writev2.Histogram{
+				Schema:         0,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+				PositiveDeltas: []int64{huge, 0, 0},
+				NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+				NegativeDeltas: []int64{huge, 0, 0},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			histogram := tc.histogram
+			histogram.Count = &writev2.Histogram_CountInt{CountInt: 5}
+			histogram.Sum = 1
+			histogram.Timestamp = 1
 
-	// The metric container is created before the buckets are converted, so it is still there,
-	// empty. That shape is the same for every late rejection and is tracked in #50340.
-	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
-		ExponentialHistogram().DataPoints()
-	assert.Equal(t, 0, dps.Len(), "no data point can represent this population")
-	assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
+			prwReceiver := setupMetricsReceiver(t)
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{"", "__name__", "test_hist", "job", "service-x/test", "instance", "107cn001"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{histogram},
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			// The population is read while the spans are validated, which is before the series is
+			// given a resource, a scope or a metric, so the rejection leaves nothing behind.
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "no data point can represent this population")
+			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
+		})
+	}
 }
 
 // assertExponentialHistogramInvariants checks the two rules the OTLP data model states for an
