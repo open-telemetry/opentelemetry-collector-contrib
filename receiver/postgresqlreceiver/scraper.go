@@ -39,7 +39,8 @@ const (
 	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
 
-	defaultServiceName = "unknown_service:postgresql"
+	defaultServiceName  = "unknown_service:postgresql"
+	versionQueryTimeout = 5 * time.Second
 )
 
 // otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation,
@@ -569,16 +570,18 @@ func (p *postgreSQLScraper) start(ctx context.Context, host component.Host) erro
 		p.clientFactory.setCredentialProvider(provider)
 	}
 
-	vctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
-		p.logger.Warn("postgresqlreceiver: failed to connect for version detection; db.system.version attribute will not be set", zap.Error(err))
-	} else {
-		defer c.Close()
-		if v, err := c.getVersion(vctx); err != nil {
-			p.logger.Warn("postgresqlreceiver: failed to detect PostgreSQL version; db.system.version attribute will not be set", zap.Error(err))
+	if p.config.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled {
+		vctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+		defer cancel()
+		if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
+			p.logger.Warn("failed to connect for version detection. db.system.version will not be set", zap.Error(err))
 		} else {
-			p.dbVersion = v
+			defer c.Close()
+			if v, err := c.getVersion(vctx); err != nil {
+				p.logger.Warn("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
+			} else {
+				p.dbVersion = v
+			}
 		}
 	}
 

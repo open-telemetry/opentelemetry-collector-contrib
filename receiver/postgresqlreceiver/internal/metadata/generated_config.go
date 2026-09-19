@@ -2617,7 +2617,7 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		DbSystemVersion: DbSystemVersionResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		PostgresqlDatabaseName: PostgresqlDatabaseNameResourceAttributeConfig{
 			Enabled: true,
