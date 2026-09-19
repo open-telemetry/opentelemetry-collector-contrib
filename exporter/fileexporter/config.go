@@ -19,12 +19,16 @@ import (
 const (
 	rotationFieldName = "rotation"
 	backupsFieldName  = "max_backups"
+	defaultFilePermissions = 0o644
 )
 
 var (
 	errInvalidOctal          = errors.New("directory_permissions value must be a valid octal representation")
 	errInvalidPermissionBits = errors.New("directory_permissions contain invalid bits for file access")
 	errDirPermsRequireCreate = errors.New("directory_permissions requires create_directory to be true")
+
+	errInvalidFilePermissionsOctal = errors.New("file_permissions value must be a valid octal representation")
+	errInvalidFilePermissionsBits  = errors.New("file_permissions contain invalid bits for file access")
 )
 
 // Config defines configuration for file exporter.
@@ -76,6 +80,11 @@ type Config struct {
 	// Value must be an octal string like "0755".
 	DirectoryPermissions       string `mapstructure:"directory_permissions"`
 	directoryPermissionsParsed int64  `mapstructure:"-"`
+
+	// FilePermissions specifies permissions used when creating new output files (minus process umask).
+	// Value must be an octal string like "0644".
+	FilePermissions       string `mapstructure:"file_permissions"`
+	filePermissionsParsed int64  `mapstructure:"-"`
 }
 
 // Rotation an option to rolling log files
@@ -177,6 +186,19 @@ func (cfg *Config) Validate() error {
 		// If not creating directories, directory_permissions must not be set.
 		return errDirPermsRequireCreate
 	}
+
+	// Validate and parse file permissions, defaulting to 0644 if not provided.
+	if cfg.FilePermissions == "" {
+		cfg.FilePermissions = "0644"
+	}
+	filePermissions, err := strconv.ParseInt(cfg.FilePermissions, 8, 32)
+	if err != nil {
+		return errInvalidFilePermissionsOctal
+	}
+	if filePermissions&int64(os.ModePerm) != filePermissions {
+		return errInvalidFilePermissionsBits
+	}
+	cfg.filePermissionsParsed = filePermissions
 
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -811,7 +812,7 @@ func TestFlushing(t *testing.T) {
 	}
 	export := buildExportFunc(fe.conf)
 	var err error
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level), os.FileMode(fe.conf.filePermissionsParsed))
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
@@ -866,7 +867,7 @@ func TestAppend(t *testing.T) {
 	}
 	export := buildExportFunc(fe.conf)
 	var err error
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level), os.FileMode(fe.conf.filePermissionsParsed))
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
@@ -892,7 +893,7 @@ func TestAppend(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(ctx))
 
 	// Restart the exporter
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level), os.FileMode(fe.conf.filePermissionsParsed))
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
@@ -968,8 +969,9 @@ func TestCreateDirectoryOption(t *testing.T) {
 
 func TestFileExporterPermissions(t *testing.T) {
 	tests := []struct {
-		name     string
-		rotation *Rotation
+		name            string
+		rotation        *Rotation
+		filePermissions string
 	}{
 		{
 			name:     "without rotation",
@@ -982,6 +984,19 @@ func TestFileExporterPermissions(t *testing.T) {
 				MaxBackups:   defaultMaxBackups,
 			},
 		},
+		{
+			name:            "custom permissions without rotation",
+			rotation:        nil,
+			filePermissions: "0600",
+		},
+		{
+			name: "custom permissions with rotation",
+			rotation: &Rotation{
+				MaxMegabytes: 1,
+				MaxBackups:   defaultMaxBackups,
+			},
+			filePermissions: "0600",
+		},
 	}
 
 	for _, tt := range tests {
@@ -989,11 +1004,13 @@ func TestFileExporterPermissions(t *testing.T) {
 			path := tempFileName(t)
 			fe := &fileExporter{
 				conf: &Config{
-					Path:       path,
-					FormatType: formatTypeJSON,
-					Rotation:   tt.rotation,
+					Path:            path,
+					FormatType:      formatTypeJSON,
+					Rotation:        tt.rotation,
+					FilePermissions: tt.filePermissions,
 				},
 			}
+			require.NoError(t, fe.conf.Validate())
 
 			require.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
 			require.NoError(t, fe.consumeLogs(t.Context(), testdata.GenerateLogsTwoLogRecordsSameResource()))
@@ -1002,8 +1019,15 @@ func TestFileExporterPermissions(t *testing.T) {
 			info, err := os.Stat(path)
 			require.NoError(t, err)
 
+			expectedPerms := os.FileMode(0o644)
+			if tt.filePermissions != "" {
+				parsed, err := strconv.ParseInt(tt.filePermissions, 8, 32)
+				require.NoError(t, err)
+				expectedPerms = os.FileMode(parsed)
+			}
+
 			expectedPath := filepath.Join(t.TempDir(), "expected_perms.tmp")
-			f, err := os.OpenFile(expectedPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
+			f, err := os.OpenFile(expectedPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, expectedPerms)
 			require.NoError(t, err)
 			require.NoError(t, f.Close())
 			expectedInfo, err := os.Stat(expectedPath)
@@ -1011,6 +1035,76 @@ func TestFileExporterPermissions(t *testing.T) {
 			assert.Equal(t, expectedInfo.Mode().Perm(), info.Mode().Perm())
 		})
 	}
+}
+
+func TestFilePermissionsAfterRotation(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "rot.log")
+	fe := &fileExporter{
+		conf: &Config{
+			Path:       path,
+			FormatType: formatTypeJSON,
+			Rotation: &Rotation{
+				MaxMegabytes: 1,
+				MaxBackups:   defaultMaxBackups,
+			},
+			FilePermissions: "0600",
+		},
+	}
+	require.NoError(t, fe.conf.Validate())
+
+	require.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+
+	// Fill the active file, then exceed MaxMegabytes to force a rotation.
+	_, err := safeFileExporterWrite(fe, bytes.Repeat([]byte{1}, 512*1024))
+	require.NoError(t, err)
+	_, err = safeFileExporterWrite(fe, bytes.Repeat([]byte{1}, 1024*1024))
+	require.NoError(t, err)
+
+	require.NoError(t, fe.Shutdown(t.Context()))
+
+	// Rotation must have happened: at least one timestamped backup exists.
+	files, err := filepath.Glob(filepath.Join(dir, "rot*"))
+	require.NoError(t, err)
+	require.Greater(t, len(files), 1, "rotation should have created a backup, found: %v", files)
+
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+
+	expectedPath := filepath.Join(t.TempDir(), "expected_perms.tmp")
+	f, err := os.OpenFile(expectedPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+	expectedInfo, err := os.Stat(expectedPath)
+	require.NoError(t, err)
+	assert.Equal(t, expectedInfo.Mode().Perm(), info.Mode().Perm())
+}
+
+func TestFilePermissionsNotAppliedToExistingFile(t *testing.T) {
+	path := tempFileName(t)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+	beforeInfo, err := os.Stat(path)
+	require.NoError(t, err)
+
+	fe := &fileExporter{
+		conf: &Config{
+			Path:            path,
+			FormatType:      formatTypeJSON,
+			Append:          true,
+			FilePermissions: "0600",
+		},
+	}
+	require.NoError(t, fe.conf.Validate())
+
+	require.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, fe.consumeLogs(t.Context(), testdata.GenerateLogsOneLogRecord()))
+	require.NoError(t, fe.Shutdown(t.Context()))
+
+	afterInfo, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, beforeInfo.Mode().Perm(), afterInfo.Mode().Perm())
 }
 
 func TestFileAppendLogsExporter(t *testing.T) {

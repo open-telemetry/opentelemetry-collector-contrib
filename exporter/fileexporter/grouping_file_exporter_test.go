@@ -523,6 +523,44 @@ func BenchmarkExporters(b *testing.B) {
 	}
 }
 
+func TestGroupingFileExporterFilePermissions(t *testing.T) {
+	tmpDir := t.TempDir()
+	conf := &Config{
+		Path:            tmpDir + "/*.log",
+		FormatType:      formatTypeJSON,
+		FilePermissions: "0600",
+		GroupBy: &GroupBy{
+			Enabled:           true,
+			ResourceAttribute: defaultResourceAttribute,
+			MaxOpenFiles:      defaultMaxOpenFiles,
+		},
+	}
+	require.NoError(t, conf.Validate())
+
+	zapCore, _ := observer.New(zap.DebugLevel)
+	feI := newFileExporter(conf, zap.New(zapCore))
+	require.IsType(t, &groupingFileExporter{}, feI)
+	gfe := feI.(*groupingFileExporter)
+
+	ld := testdata.GenerateLogsOneLogRecord()
+	ld.ResourceLogs().At(0).Resource().Attributes().PutStr(defaultResourceAttribute, "one")
+
+	require.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, gfe.consumeLogs(t.Context(), ld))
+	require.NoError(t, gfe.Shutdown(t.Context()))
+
+	info, err := os.Stat(tmpDir + "/one.log")
+	require.NoError(t, err)
+
+	expectedPath := filepath.Join(t.TempDir(), "expected_perms.tmp")
+	f, err := os.OpenFile(expectedPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+	expectedInfo, err := os.Stat(expectedPath)
+	require.NoError(t, err)
+	assert.Equal(t, expectedInfo.Mode().Perm(), info.Mode().Perm())
+}
+
 func TestGroupingFileExporterWithRotation(t *testing.T) {
 	tmpDir := t.TempDir()
 

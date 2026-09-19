@@ -79,6 +79,7 @@ NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and
 
 - `create_directory`[default: false]: when set, the exporter will create the parent directory of the configured `path` if it does not exist.
 - `directory_permissions`[default: 0755]: file mode (octal string) used when creating directories, minus the process umask. This also applies to directories created by `group_by`.
+- `file_permissions`[default: 0644]: file mode (octal string) used when creating new output files, minus the process umask. This also applies to output files created by `group_by` and by rotation. The mode only applies when a file is created; existing files keep their permissions.
 
 - `group_by` enables writing to separate files based on a resource attribute.
   - enabled: [default: false] enables group_by.

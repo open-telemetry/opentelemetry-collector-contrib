@@ -50,6 +50,9 @@ properties:
     x-pointer: true
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
+  file_permissions:
+    description: FilePermissions specifies permissions used when creating new output files (minus process umask). Value must be an octal string like "0644". Permissions only apply when the file is created; existing files keep their permissions.
+    type: string
   flush_interval:
     description: FlushInterval is the duration between flushes. See time.ParseDuration for valid values.
     type: string

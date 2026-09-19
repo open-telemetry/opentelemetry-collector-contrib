@@ -81,7 +81,7 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 		return migrateErr
 	}
 
-	writer, err := newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
+	writer, err := newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level), os.FileMode(e.conf.filePermissionsParsed))
 	if err != nil {
 		return err
 	}
