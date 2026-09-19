@@ -10,9 +10,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
 func Test_keepKeys(t *testing.T) {
@@ -93,6 +96,106 @@ func Test_keepKeys(t *testing.T) {
 			tt.want(expected)
 
 			assert.Equal(t, expected, scenarioMap)
+		})
+	}
+}
+
+func Test_keepKeys_parser_slice_arguments(t *testing.T) {
+	tests := []struct {
+		name        string
+		statement   string
+		setupCache  func(pcommon.Map)
+		wantKeys    []string
+		wantErrPart string
+	}{
+		{
+			name:      "populated cache slice",
+			statement: `keep_keys(attributes, cache["x"])`,
+			setupCache: func(cache pcommon.Map) {
+				cache.PutEmptySlice("x").AppendEmpty().SetStr("a")
+			},
+			wantKeys: []string{"a"},
+		},
+		{
+			name:        "unset cache entry",
+			statement:   `keep_keys(attributes, cache["x"])`,
+			wantErrPart: "keys cannot be nil",
+		},
+		{
+			name:      "scalar cache value",
+			statement: `keep_keys(attributes, cache["x"])`,
+			setupCache: func(cache pcommon.Map) {
+				cache.PutStr("x", "not a slice")
+			},
+			wantErrPart: "expected a slice",
+		},
+		{
+			name:      "cache slice with non-string element",
+			statement: `keep_keys(attributes, cache["x"])`,
+			setupCache: func(cache pcommon.Map) {
+				slice := cache.PutEmptySlice("x")
+				slice.AppendEmpty().SetStr("a")
+				slice.AppendEmpty().SetInt(1)
+			},
+			wantErrPart: "expected string",
+		},
+		{
+			name:      "empty cache slice",
+			statement: `keep_keys(attributes, cache["x"])`,
+			setupCache: func(cache pcommon.Map) {
+				cache.PutEmptySlice("x")
+			},
+			wantKeys: []string{},
+		},
+		{
+			name:      "literal slice",
+			statement: `keep_keys(attributes, ["a", "b"])`,
+			wantKeys:  []string{"a", "b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parser, err := ottllog.NewParser(
+				map[string]ottl.Factory[*ottllog.TransformContext]{
+					"keep_keys": NewKeepKeysFactory[*ottllog.TransformContext](),
+				},
+				componenttest.NewNopTelemetrySettings(),
+			)
+			require.NoError(t, err)
+			statement, err := parser.ParseStatement(tt.statement)
+			require.NoError(t, err)
+
+			cache := pcommon.NewMap()
+			if tt.setupCache != nil {
+				tt.setupCache(cache)
+			}
+
+			resourceLogs := plog.NewResourceLogs()
+			scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+			logRecord := scopeLogs.LogRecords().AppendEmpty()
+			attributes := logRecord.Attributes()
+			attributes.PutStr("a", "value-a")
+			attributes.PutStr("b", "value-b")
+			attributes.PutStr("c", "value-c")
+			originalAttributes := attributes.AsRaw()
+
+			tCtx := ottllog.NewTransformContext(resourceLogs, scopeLogs, logRecord, ottllog.WithCache(&cache))
+			t.Cleanup(tCtx.Close)
+			_, _, err = statement.Execute(t.Context(), tCtx)
+
+			if tt.wantErrPart != "" {
+				require.ErrorContains(t, err, tt.wantErrPart)
+				assert.Equal(t, originalAttributes, attributes.AsRaw())
+				return
+			}
+			require.NoError(t, err)
+
+			expected := make(map[string]any, len(tt.wantKeys))
+			for _, key := range tt.wantKeys {
+				expected[key] = "value-" + key
+			}
+			assert.Equal(t, expected, attributes.AsRaw())
 		})
 	}
 }
