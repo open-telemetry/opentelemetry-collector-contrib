@@ -33,6 +33,22 @@ The receiver collects service endpoint metrics (`k8s.service.endpoint.count`) fr
 
 Refer to [documentation.md](./documentation.md) for detailed information on these metrics and their semantics.
 
+## Feature Gates
+
+### `receiver.k8sclusterreceiver.sidecarContainerMetrics`
+
+Alpha, disabled by default. When enabled, the receiver collects `k8s.container` metrics and entities for
+[native sidecar containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) (init
+containers with `restartPolicy: Always`). Regular init containers and ephemeral containers are not collected.
+
+Enable with:
+
+```text
+--feature-gates=receiver.k8sclusterreceiver.sidecarContainerMetrics
+```
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this receiver.
+
 ## Configuration
 
 The following settings are required:
