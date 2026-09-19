@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -1132,6 +1133,62 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	assert.Equal(t, int64(3), val.Int())
 	val, found = attrs.Get(redactionMaskedCount)
 	assert.True(t, found)
+	assert.Equal(t, int64(2), val.Int())
+}
+
+// TestDiagnosticAttrsSurviveReentry validates that the summary attributes the
+// processor writes are allowed through a second redaction processor instead of
+// being treated as unknown attributes and deleted.
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50770
+func TestDiagnosticAttrsSurviveReentry(t *testing.T) {
+	config := &Config{
+		AllowedKeys: []string{"id"},
+		Summary:     "debug",
+	}
+	processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	// The summary a previous redaction processor in the pipeline left behind.
+	diagnostics := map[string]any{
+		redactionRedactedKeys:      "dropped_attr",
+		redactionRedactedCount:     int64(1),
+		redactionMaskedKeys:        "mystery",
+		redactionMaskedCount:       int64(1),
+		redactionAllowedKeys:       "email",
+		redactionAllowedCount:      int64(1),
+		redactionIgnoredCount:      int64(1),
+		redactionBodyRedactedKeys:  "body_dropped_attr",
+		redactionBodyRedactedCount: int64(1),
+		redactionBodyMaskedKeys:    "body_mystery",
+		redactionBodyMaskedCount:   int64(1),
+		redactionBodyAllowedKeys:   "body",
+		redactionBodyAllowedCount:  int64(1),
+		redactionBodyIgnoredCount:  int64(1),
+	}
+
+	raw := map[string]any{"id": 5, "redundant": 1.2}
+	maps.Copy(raw, diagnostics)
+
+	attrs := pcommon.NewMap()
+	require.NoError(t, attrs.FromRaw(raw))
+	processor.processAttrs(t.Context(), attrs)
+
+	for key, want := range diagnostics {
+		val, found := attrs.Get(key)
+		require.Truef(t, found, "%s was deleted on re-entry", key)
+		// redaction.redacted.* is updated by this pass and asserted separately.
+		if key == redactionRedactedKeys || key == redactionRedactedCount {
+			continue
+		}
+		assert.Equalf(t, want, val.AsRaw(), "%s was modified on re-entry", key)
+	}
+
+	// Only the unknown attribute is redacted, and the running summary accumulates.
+	val, found := attrs.Get(redactionRedactedKeys)
+	require.True(t, found)
+	assert.Equal(t, "dropped_attr,redundant", val.Str())
+	val, found = attrs.Get(redactionRedactedCount)
+	require.True(t, found)
 	assert.Equal(t, int64(2), val.Int())
 }
 
