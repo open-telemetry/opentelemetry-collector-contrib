@@ -1958,10 +1958,10 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
-		lookbackTimeCounter := calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
-		if lookbackTimeCounter < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
+		if !collectionIntervalElapsed(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval) {
 			s.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
 		} else {
+			lookbackTimeCounter := calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
 			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
@@ -1986,10 +1986,10 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
 		currentCollectionTime := time.Now()
-		lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
-		if lookbackTimeCounter < int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
+		if !collectionIntervalElapsed(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval) {
 			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
 		} else {
+			lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
 			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if procedureCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, procedureCollectionErrors)
@@ -2726,6 +2726,15 @@ func constructInstanceID(host, port, service string) string {
 // vsqlRefreshLag is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
 // PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
 const vsqlRefreshLag = 10 * time.Second
+
+// collectionIntervalElapsed reports whether the configured collection
+// interval has elapsed since lastTimestamp.
+func collectionIntervalElapsed(lastTimestamp time.Time, collectionInterval time.Duration) bool {
+	if lastTimestamp.IsZero() {
+		return true
+	}
+	return time.Since(lastTimestamp) >= collectionInterval
+}
 
 // calculateLookbackSeconds reports how far back the query window should reach. The vsqlRefreshLag
 // buffer is included so rows whose V$SQL entry lagged the previous scrape are still picked up.
