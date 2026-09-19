@@ -14,7 +14,10 @@ type DataPointSlice[DP DataPoint[DP]] interface {
 }
 
 type DataPoint[Self any] interface {
+	StartTimestamp() pcommon.Timestamp
+	SetStartTimestamp(pcommon.Timestamp)
 	Timestamp() pcommon.Timestamp
+	SetTimestamp(pcommon.Timestamp)
 	Attributes() pcommon.Map
 	CopyTo(dest Self)
 }
