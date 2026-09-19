@@ -1371,6 +1371,7 @@ top query
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.version | The version of the SQL Server instance (e.g. "15.0.4261.1"). | Any Str | false | - | - |
 | host.name | The host name of SQL Server | Any Str | true | - | - |
 | server.address | The address of the monitored SQL Server instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. | Any Str | true | - | - |
 | server.port | The port of the monitored SQL Server instance, defaulting to 1433 when not configured. | Any Int | true | - | - |

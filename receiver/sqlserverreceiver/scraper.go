@@ -37,7 +37,8 @@ const (
 	databaseNameKey = "database_name"
 	instanceNameKey = "sql_instance"
 
-	defaultServiceName = "unknown_service:microsoft.sql_server"
+	defaultServiceName  = "unknown_service:microsoft.sql_server"
+	versionQueryTimeout = 5 * time.Second
 )
 
 type sqlServerScraperHelper struct {
@@ -59,6 +60,8 @@ type sqlServerScraperHelper struct {
 	serviceInstanceID      string
 	serverAddress          string
 	serverPort             int64
+	dbVersion              string
+	versionFunc            func(context.Context, *zap.Logger) string
 }
 
 var (
@@ -68,7 +71,7 @@ var (
 
 func newSQLServerScraper(id component.ID,
 	query string,
-	telemetry sqlquery.TelemetryConfig,
+	telemetry sqlquery.TelemetryConfig, //nolint:unparam // Parameter is currently unused as callers always pass sqlquery.TelemetryConfig{}. cleanup in a follow-up PR.
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
 	params receiver.Settings,
@@ -115,7 +118,7 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 	return s.id
 }
 
-func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
+func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) error {
 	// The connection pool is owned by the receiver and shared across all
 	// scrapers. Fetch the shared pool (opened once by the provider) rather than
 	// opening a new one here.
@@ -129,7 +132,34 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 	return nil
 }
 
+// detectSQLServerVersion queries SERVERPROPERTY('ProductVersion').
+// Returns an empty string and logs a warning on failure.
+func detectSQLServerVersion(ctx context.Context, db *sql.DB, logger *zap.Logger) string {
+	if db == nil {
+		return ""
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+	defer cancel()
+
+	var version sql.NullString
+	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128))")
+	if err := row.Scan(&version); err != nil {
+		logger.Warn("failed to detect SQL Server version; db.system.version will not be set", zap.Error(err))
+		return ""
+	}
+	if !version.Valid {
+		logger.Warn("failed to detect SQL Server version: SERVERPROPERTY returned NULL")
+		return ""
+	}
+	return version.String
+}
+
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	if s.dbVersion == "" && s.versionFunc != nil {
+		s.dbVersion = s.versionFunc(ctx, s.logger)
+	}
+
 	var err error
 
 	switch s.sqlQuery {
@@ -163,6 +193,10 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
+	if s.dbVersion == "" && s.versionFunc != nil {
+		s.dbVersion = s.versionFunc(ctx, s.logger)
+	}
+
 	var err error
 	var resources pcommon.Resource
 	var isQuerySample bool
@@ -396,6 +430,9 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceNamespace("")
 	rb.SetServerAddress(s.serverAddress)
 	rb.SetServerPort(s.serverPort)
+	if s.dbVersion != "" {
+		rb.SetDbSystemVersion(s.dbVersion)
+	}
 
 	return rb
 }
