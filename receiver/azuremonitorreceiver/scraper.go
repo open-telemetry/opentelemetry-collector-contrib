@@ -72,6 +72,7 @@ type azureSubscription struct {
 
 type azureResource struct {
 	attributes                map[string]*string
+	metricDefinitionGroup     string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
 	tags                      map[string]*string
