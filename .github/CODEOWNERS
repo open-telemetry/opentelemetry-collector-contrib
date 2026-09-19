@@ -71,7 +71,7 @@ exporter/honeycombmarkerexporter/                                @open-telemetry
 exporter/influxdbexporter/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/kafkaexporter/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @paulojmdias
 exporter/loadbalancingexporter/                                  @open-telemetry/collector-contrib-approvers @rlankfo @iblancasa
-exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
+exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers @bogdandrutu @avadhut123pisal
 exporter/logzioexporter/                                         @open-telemetry/collector-contrib-approvers @yotamloe
 exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers @ps48 @kylehounslow
 exporter/otelarrowexporter/                                      @open-telemetry/collector-contrib-approvers @jmacd @JakeDern

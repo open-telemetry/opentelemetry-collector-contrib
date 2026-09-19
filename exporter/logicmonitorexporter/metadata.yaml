@@ -7,7 +7,8 @@ status:
     alpha: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [bogdandrutu, khyatigandhi6, avadhut123pisal]
+    active: [bogdandrutu, avadhut123pisal]
+    emeritus: [khyatigandhi6]
 
 tests:
   config:
