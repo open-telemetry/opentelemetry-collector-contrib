@@ -103,7 +103,7 @@ func TestMetricsDataPoint_CopyTo(t *testing.T) {
 }
 
 func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPII(t *testing.T) {
-	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType)
+	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType, false)
 	labelValue1 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table1.s(23,hello,23+)"}
 	labelValue2 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table2(23,hello)"}
 	metricValues := allPossibleMetricValues(metricDataType)
@@ -131,9 +131,31 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPII(t *testing.T) {
 	assert.Equal(t, metricsDataPoint.labelValues[1].Value(), "table2("+hashOf23+","+hashOfHello+")")
 }
 
+func TestMetricsDataPoint_HidePIIValues(t *testing.T) {
+	hashLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType, true)
+	labelValue1 := byteSliceLabelValue{metadata: hashLabelValueMetadata, value: "table1.s(23,hello,23+)"}
+	normalLabelValueMetadata, _ := NewLabelValueMetadata("other_label", "otherColumnName", StringValueType, false)
+	labelValue2 := byteSliceLabelValue{metadata: normalLabelValueMetadata, value: "untouched(1,2)"}
+	metricValues := allPossibleMetricValues(metricDataType)
+	labelValues := []LabelValue{labelValue1, labelValue2}
+	timestamp := time.Now().UTC()
+	metricsDataPoint := &MetricsDataPoint{
+		metricName:  metricName,
+		timestamp:   timestamp,
+		databaseID:  databaseID(),
+		labelValues: labelValues,
+		metricValue: metricValues[0],
+	}
+
+	metricsDataPoint.HidePIIValues()
+	assert.Len(t, metricsDataPoint.labelValues, 2)
+	assert.Equal(t, "table1.s(1398776589,754077114,1398776589+)", metricsDataPoint.labelValues[0].Value())
+	assert.Equal(t, "untouched(1,2)", metricsDataPoint.labelValues[1].Value())
+}
+
 func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(t *testing.T) {
 	// We are checking that function HideLockStatsRowrangestartkeyPII() does not panic for invalid label values.
-	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType)
+	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType, false)
 	labelValue1 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: ""}
 	labelValue2 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table22(hello"}
 	labelValue3 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table22,hello"}
@@ -153,7 +175,7 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(
 }
 
 func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
-	strLabelValueMetadata, _ := NewLabelValueMetadata("query_text", "stringLabelColumnName", StringValueType)
+	strLabelValueMetadata, _ := NewLabelValueMetadata("query_text", "stringLabelColumnName", StringValueType, false)
 	labelValue1 := stringLabelValue{metadata: strLabelValueMetadata, value: "SELECT 1"}
 	metricValues := allPossibleMetricValues(metricDataType)
 	labelValues := []LabelValue{labelValue1}
@@ -173,32 +195,32 @@ func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
 }
 
 func allPossibleLabelValues() []LabelValue {
-	strLabelValueMetadata, _ := NewLabelValueMetadata("stringLabelName", "stringLabelColumnName", StringValueType)
+	strLabelValueMetadata, _ := NewLabelValueMetadata("stringLabelName", "stringLabelColumnName", StringValueType, false)
 	strLabelValue := stringLabelValue{
 		metadata: strLabelValueMetadata,
 		value:    stringValue,
 	}
-	bLabelValueMetadata, _ := NewLabelValueMetadata("boolLabelName", "boolLabelColumnName", BoolValueType)
+	bLabelValueMetadata, _ := NewLabelValueMetadata("boolLabelName", "boolLabelColumnName", BoolValueType, false)
 	bLabelValue := boolLabelValue{
 		metadata: bLabelValueMetadata,
 		value:    boolValue,
 	}
-	i64LabelValueMetadata, _ := NewLabelValueMetadata("int64LabelName", "int64LabelColumnName", StringValueType)
+	i64LabelValueMetadata, _ := NewLabelValueMetadata("int64LabelName", "int64LabelColumnName", StringValueType, false)
 	i64LabelValue := int64LabelValue{
 		metadata: i64LabelValueMetadata,
 		value:    int64Value,
 	}
-	strSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringValueType)
+	strSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringValueType, false)
 	strSliceLabelValue := stringSliceLabelValue{
 		metadata: strSliceLabelValueMetadata,
 		value:    stringValue,
 	}
-	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", StringValueType)
+	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", StringValueType, false)
 	btSliceLabelValue := byteSliceLabelValue{
 		metadata: btSliceLabelValueMetadata,
 		value:    stringValue,
 	}
-	lckReqSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
+	lckReqSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType, false)
 	lckReqSliceLabelValue := lockRequestSliceLabelValue{
 		metadata: lckReqSliceLabelValueMetadata,
 		value:    stringValue,
@@ -293,4 +315,30 @@ func metricsDataPointForTests() *MetricsDataPoint {
 		labelValues: labelValues,
 		metricValue: allPossibleMetricValues(metricDataType)[0],
 	}
+}
+
+func TestMetricsDataPoint_HidePIIValues_SplitStats(t *testing.T) {
+	// Create mock label value for split_start
+	splitStartMetadata, _ := NewLabelValueMetadata("split_start", "splitStartColumnName", StringValueType, true)
+	labelValue1 := stringLabelValue{metadata: splitStartMetadata, value: "test_db_user_123"}
+
+	// Create mock label value for split_limit
+	splitLimitMetadata, _ := NewLabelValueMetadata("split_limit", "splitLimitColumnName", StringValueType, true)
+	labelValue2 := stringLabelValue{metadata: splitLimitMetadata, value: "test_db_user_999"}
+
+	labelValues := []LabelValue{labelValue1, labelValue2}
+	timestamp := time.Now().UTC()
+	metricsDataPoint := &MetricsDataPoint{
+		metricName:  metricName,
+		timestamp:   timestamp,
+		databaseID:  databaseID(),
+		labelValues: labelValues,
+		metricValue: allPossibleMetricValues(metricDataType)[0],
+	}
+
+	metricsDataPoint.HidePIIValues()
+
+	assert.Len(t, metricsDataPoint.labelValues, 2)
+	assert.Equal(t, "3335628364", metricsDataPoint.labelValues[0].Value())
+	assert.Equal(t, "2876074327", metricsDataPoint.labelValues[1].Value())
 }

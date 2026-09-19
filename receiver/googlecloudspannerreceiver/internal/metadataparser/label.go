@@ -8,11 +8,12 @@ import (
 )
 
 type Label struct {
-	Name       string             `yaml:"name"`
-	ColumnName string             `yaml:"column_name"`
-	ValueType  metadata.ValueType `yaml:"value_type"`
+	Name         string             `yaml:"name"`
+	ColumnName   string             `yaml:"column_name"`
+	ValueType    metadata.ValueType `yaml:"value_type"`
+	GenerateHash bool               `yaml:"generate_hash"`
 }
 
 func (label Label) toLabelValueMetadata() (metadata.LabelValueMetadata, error) {
-	return metadata.NewLabelValueMetadata(label.Name, label.ColumnName, label.ValueType)
+	return metadata.NewLabelValueMetadata(label.Name, label.ColumnName, label.ValueType, label.GenerateHash)
 }

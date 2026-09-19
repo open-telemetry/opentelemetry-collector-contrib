@@ -4,6 +4,7 @@ google_cloud_spanner:
   backfill_enabled: true
   cardinality_total_limit: 200000
   hide_topn_lockstats_rowrangestartkey: true
+  hide_pii_values: true
   truncate_text: true
   projects:
     - project_id: "spanner project 1"

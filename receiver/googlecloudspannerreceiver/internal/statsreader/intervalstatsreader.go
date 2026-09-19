@@ -29,6 +29,7 @@ type intervalStatsReader struct {
 	timestampsGenerator               *timestampsGenerator
 	lastPullTimestamp                 time.Time
 	hideTopnLockstatsRowrangestartkey bool
+	hidePIIValues                     bool
 	truncateText                      bool
 }
 
@@ -54,6 +55,7 @@ func newIntervalStatsReader(
 		currentStatsReader:                reader,
 		timestampsGenerator:               tsGenerator,
 		hideTopnLockstatsRowrangestartkey: config.HideTopnLockstatsRowrangestartkey,
+		hidePIIValues:                     config.HidePIIValues,
 		truncateText:                      config.TruncateText,
 	}
 }
@@ -84,6 +86,12 @@ func (reader *intervalStatsReader) Read(ctx context.Context) ([]*metadata.Metric
 				dataPoint.HideLockStatsRowrangestartkeyPII()
 			}
 		}
+		if reader.hidePIIValues {
+			for _, dataPoint := range dataPoints {
+				dataPoint.HidePIIValues()
+			}
+		}
+
 		if reader.truncateText && metricMetadata != nil && metricMetadata.Name == topQueryStatsMetricName {
 			for _, dataPoint := range dataPoints {
 				dataPoint.TruncateQueryText(maxLengthTruncateText)

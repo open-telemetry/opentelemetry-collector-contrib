@@ -34,7 +34,7 @@ func createMetricsMetadata(query string) *metadata.MetricsMetadata {
 
 func createMetricsMetadataFromTimestampColumn(query, timestampColumn string) *metadata.MetricsMetadata {
 	labelValueMetadata, _ := metadata.NewLabelValueMetadata("metric_label", "METRIC_LABEL",
-		metadata.StringValueType)
+		metadata.StringValueType, false)
 	// Labels
 	queryLabelValuesMetadata := []metadata.LabelValueMetadata{labelValueMetadata}
 

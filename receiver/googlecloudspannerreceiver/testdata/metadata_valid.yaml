@@ -29,6 +29,7 @@ metadata:
       - name: "label_name"
         column_name: "LABEL_NAME"
         value_type: "string"
+        generate_hash: true
     metrics:
       - name: "metric_name"
         column_name: "METRIC_NAME"
