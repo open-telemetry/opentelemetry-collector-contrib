@@ -181,6 +181,22 @@ type Config struct {
 	// attribute correlation for aggregation groups.
 	OutlierAnalysis OutlierAnalysisConfig `mapstructure:"outlier_analysis"`
 
+	// MergeExistingSummaries makes the processor recognize summary spans emitted
+	// by an earlier run and merge new spans into them instead of treating them
+	// as ordinary spans. It is intended for a second pruning pass over a trace
+	// that mixes summaries from an upstream prune with raw spans that arrived
+	// late.
+	//
+	// When enabled, a span carrying `<prefix>is_summary=true` contributes its
+	// stored span_count/duration rollups (rather than one duration sample) to
+	// the merged summary, lets its group bypass min_spans_to_aggregate, and is
+	// excluded from outlier detection and exemplar sampling (which need
+	// individual duration observations). Summary bookkeeping attributes are
+	// also excluded from grouping keys and attribute-loss analysis.
+	//
+	// Default: false
+	MergeExistingSummaries bool `mapstructure:"merge_existing_summaries"`
+
 	// EnableExemplarSampling toggles preservation of randomly sampled spans
 	// from each aggregation group as exemplars. Exemplars are kept as siblings
 	// of the summary span and have their TraceState threshold updated so

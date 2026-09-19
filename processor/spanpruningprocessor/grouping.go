@@ -47,9 +47,17 @@ func (p *spanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 
 	attrs := span.Attributes()
 
-	// Collect all matching attribute key-value pairs
+	// Collect all matching attribute key-value pairs. While merging existing
+	// summaries, aggregation bookkeeping attributes are skipped: they only exist
+	// on a prior run's summary, so a group_by_attributes pattern broad enough to
+	// match them (say "*") would key that summary away from the very spans it
+	// should merge with.
+	ignorePrefix := p.mergeSummaryPrefix
 	matchedAttrs := make(map[string]pcommon.Value)
 	attrs.Range(func(key string, value pcommon.Value) bool {
+		if ignorePrefix != "" && isAggregationAttr(key, ignorePrefix) {
+			return true
+		}
 		for _, pattern := range p.attributePatterns {
 			if pattern.glob.Match(key) {
 				matchedAttrs[key] = value

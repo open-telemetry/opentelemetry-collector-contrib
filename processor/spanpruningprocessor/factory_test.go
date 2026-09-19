@@ -31,6 +31,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, 5, oCfg.MinSpansToAggregate)
 	assert.Equal(t, "aggregation.", oCfg.AggregationAttributePrefix)
 	assert.False(t, oCfg.EnableOutlierAnalysis)
+	assert.False(t, oCfg.MergeExistingSummaries)
 	assert.Equal(t, OutlierMethodIQR, oCfg.OutlierAnalysis.Method)
 	assert.Equal(t, 1.5, oCfg.OutlierAnalysis.IQRMultiplier)
 	assert.Equal(t, 3.0, oCfg.OutlierAnalysis.MADMultiplier)
