@@ -1,0 +1,20 @@
+change_type: bug_fix
+
+component: receiver/kafka
+
+note: Stop processing a fetched batch once the partition consumer is cancelled, instead of marking and dropping the rest of it
+
+issues: [50753]
+
+subtext: |
+  A rebalance or a shutdown cancels the partition context and then waits for the
+  in-flight batch, but the loop kept going through the remaining records. With
+  the default `message_marking.after: false` each one was marked and then failed
+  on the cancelled context, and those marks were committed, so nothing ever
+  delivered them. The loop now stops at the cancellation and leaves the rest
+  unmarked: a revocation hands them to the next owner, a shutdown to the next
+  run. The interrupted record itself is no longer marked under
+  `message_marking.on_error: true` either, because it was cut short rather than
+  refused by the pipeline.
+
+change_logs: [user]
