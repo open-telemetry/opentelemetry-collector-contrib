@@ -72,7 +72,71 @@ var MapAttributeFsType = map[string]AttributeFsType{
 	"logs":   AttributeFsTypeLogs,
 }
 
+// AttributePsiType specifies the value psi.type attribute.
+type AttributePsiType int
+
+const (
+	_ AttributePsiType = iota
+	AttributePsiTypeSome
+	AttributePsiTypeFull
+)
+
+// String returns the string representation of the AttributePsiType.
+func (av AttributePsiType) String() string {
+	switch av {
+	case AttributePsiTypeSome:
+		return "some"
+	case AttributePsiTypeFull:
+		return "full"
+	}
+	return ""
+}
+
+// MapAttributePsiType is a helper map of string to AttributePsiType attribute value.
+var MapAttributePsiType = map[string]AttributePsiType{
+	"some": AttributePsiTypeSome,
+	"full": AttributePsiTypeFull,
+}
+
+// AttributePsiWindow specifies the value psi.window attribute.
+type AttributePsiWindow int
+
+const (
+	_ AttributePsiWindow = iota
+	AttributePsiWindow10s
+	AttributePsiWindow60s
+	AttributePsiWindow300s
+)
+
+// String returns the string representation of the AttributePsiWindow.
+func (av AttributePsiWindow) String() string {
+	switch av {
+	case AttributePsiWindow10s:
+		return "10s"
+	case AttributePsiWindow60s:
+		return "60s"
+	case AttributePsiWindow300s:
+		return "300s"
+	}
+	return ""
+}
+
+// MapAttributePsiWindow is a helper map of string to AttributePsiWindow attribute value.
+var MapAttributePsiWindow = map[string]AttributePsiWindow{
+	"10s":  AttributePsiWindow10s,
+	"60s":  AttributePsiWindow60s,
+	"300s": AttributePsiWindow300s,
+}
+
 var MetricsInfo = metricsInfo{
+	ContainerCPUPressureAvg: metricInfo{
+		Name:       "container.cpu.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	ContainerCPUPressureTime: metricInfo{
+		Name:       "container.cpu.pressure.time",
+		Attributes: []string{"psi.type"},
+	},
 	ContainerCPUTime: metricInfo{
 		Name: "container.cpu.time",
 	},
@@ -88,6 +152,14 @@ var MetricsInfo = metricsInfo{
 	ContainerFilesystemUsage: metricInfo{
 		Name: "container.filesystem.usage",
 	},
+	ContainerIoPressureAvg: metricInfo{
+		Name:       "container.io.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	ContainerIoPressureTime: metricInfo{
+		Name:       "container.io.pressure.time",
+		Attributes: []string{"psi.type"},
+	},
 	ContainerMemoryAvailable: metricInfo{
 		Name: "container.memory.available",
 	},
@@ -96,6 +168,14 @@ var MetricsInfo = metricsInfo{
 	},
 	ContainerMemoryPageFaults: metricInfo{
 		Name: "container.memory.page_faults",
+	},
+	ContainerMemoryPressureAvg: metricInfo{
+		Name:       "container.memory.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	ContainerMemoryPressureTime: metricInfo{
+		Name:       "container.memory.pressure.time",
+		Attributes: []string{"psi.type"},
 	},
 	ContainerMemoryRss: metricInfo{
 		Name: "container.memory.rss",
@@ -131,6 +211,14 @@ var MetricsInfo = metricsInfo{
 	K8sContainerMemoryRequestUtilization: metricInfo{
 		Name: "k8s.container.memory_request_utilization",
 	},
+	K8sNodeCPUPressureAvg: metricInfo{
+		Name:       "k8s.node.cpu.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	K8sNodeCPUPressureTime: metricInfo{
+		Name:       "k8s.node.cpu.pressure.time",
+		Attributes: []string{"psi.type"},
+	},
 	K8sNodeCPUTime: metricInfo{
 		Name: "k8s.node.cpu.time",
 	},
@@ -152,6 +240,14 @@ var MetricsInfo = metricsInfo{
 	K8sNodeFilesystemUsage: metricInfo{
 		Name: "k8s.node.filesystem.usage",
 	},
+	K8sNodeIoPressureAvg: metricInfo{
+		Name:       "k8s.node.io.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	K8sNodeIoPressureTime: metricInfo{
+		Name:       "k8s.node.io.pressure.time",
+		Attributes: []string{"psi.type"},
+	},
 	K8sNodeMemoryAvailable: metricInfo{
 		Name: "k8s.node.memory.available",
 	},
@@ -160,6 +256,14 @@ var MetricsInfo = metricsInfo{
 	},
 	K8sNodeMemoryPageFaults: metricInfo{
 		Name: "k8s.node.memory.page_faults",
+	},
+	K8sNodeMemoryPressureAvg: metricInfo{
+		Name:       "k8s.node.memory.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	K8sNodeMemoryPressureTime: metricInfo{
+		Name:       "k8s.node.memory.pressure.time",
+		Attributes: []string{"psi.type"},
 	},
 	K8sNodeMemoryRss: metricInfo{
 		Name: "k8s.node.memory.rss",
@@ -196,6 +300,14 @@ var MetricsInfo = metricsInfo{
 	K8sPodCPUNodeUtilization: metricInfo{
 		Name: "k8s.pod.cpu.node.utilization",
 	},
+	K8sPodCPUPressureAvg: metricInfo{
+		Name:       "k8s.pod.cpu.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	K8sPodCPUPressureTime: metricInfo{
+		Name:       "k8s.pod.cpu.pressure.time",
+		Attributes: []string{"psi.type"},
+	},
 	K8sPodCPUTime: metricInfo{
 		Name: "k8s.pod.cpu.time",
 	},
@@ -217,6 +329,14 @@ var MetricsInfo = metricsInfo{
 	K8sPodFilesystemUsage: metricInfo{
 		Name: "k8s.pod.filesystem.usage",
 	},
+	K8sPodIoPressureAvg: metricInfo{
+		Name:       "k8s.pod.io.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	K8sPodIoPressureTime: metricInfo{
+		Name:       "k8s.pod.io.pressure.time",
+		Attributes: []string{"psi.type"},
+	},
 	K8sPodMemoryAvailable: metricInfo{
 		Name: "k8s.pod.memory.available",
 	},
@@ -228,6 +348,14 @@ var MetricsInfo = metricsInfo{
 	},
 	K8sPodMemoryPageFaults: metricInfo{
 		Name: "k8s.pod.memory.page_faults",
+	},
+	K8sPodMemoryPressureAvg: metricInfo{
+		Name:       "k8s.pod.memory.pressure.avg",
+		Attributes: []string{"psi.type", "psi.window"},
+	},
+	K8sPodMemoryPressureTime: metricInfo{
+		Name:       "k8s.pod.memory.pressure.time",
+		Attributes: []string{"psi.type"},
 	},
 	K8sPodMemoryRss: metricInfo{
 		Name: "k8s.pod.memory.rss",
@@ -276,14 +404,20 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
+	ContainerCPUPressureAvg                metricInfo
+	ContainerCPUPressureTime               metricInfo
 	ContainerCPUTime                       metricInfo
 	ContainerCPUUsage                      metricInfo
 	ContainerFilesystemAvailable           metricInfo
 	ContainerFilesystemCapacity            metricInfo
 	ContainerFilesystemUsage               metricInfo
+	ContainerIoPressureAvg                 metricInfo
+	ContainerIoPressureTime                metricInfo
 	ContainerMemoryAvailable               metricInfo
 	ContainerMemoryMajorPageFaults         metricInfo
 	ContainerMemoryPageFaults              metricInfo
+	ContainerMemoryPressureAvg             metricInfo
+	ContainerMemoryPressureTime            metricInfo
 	ContainerMemoryRss                     metricInfo
 	ContainerMemoryUsage                   metricInfo
 	ContainerMemoryWorkingSet              metricInfo
@@ -295,6 +429,8 @@ type metricsInfo struct {
 	K8sContainerMemoryNodeUtilization      metricInfo
 	K8sContainerMemoryLimitUtilization     metricInfo
 	K8sContainerMemoryRequestUtilization   metricInfo
+	K8sNodeCPUPressureAvg                  metricInfo
+	K8sNodeCPUPressureTime                 metricInfo
 	K8sNodeCPUTime                         metricInfo
 	K8sNodeCPUUsage                        metricInfo
 	K8sNodeFilesystemAvailable             metricInfo
@@ -302,9 +438,13 @@ type metricsInfo struct {
 	K8sNodeFilesystemInodeCount            metricInfo
 	K8sNodeFilesystemInodeFree             metricInfo
 	K8sNodeFilesystemUsage                 metricInfo
+	K8sNodeIoPressureAvg                   metricInfo
+	K8sNodeIoPressureTime                  metricInfo
 	K8sNodeMemoryAvailable                 metricInfo
 	K8sNodeMemoryMajorPageFaults           metricInfo
 	K8sNodeMemoryPageFaults                metricInfo
+	K8sNodeMemoryPressureAvg               metricInfo
+	K8sNodeMemoryPressureTime              metricInfo
 	K8sNodeMemoryRss                       metricInfo
 	K8sNodeMemoryUsage                     metricInfo
 	K8sNodeMemoryWorkingSet                metricInfo
@@ -316,6 +456,8 @@ type metricsInfo struct {
 	K8sNodeSystemContainerMemoryWorkingSet metricInfo
 	K8sNodeUptime                          metricInfo
 	K8sPodCPUNodeUtilization               metricInfo
+	K8sPodCPUPressureAvg                   metricInfo
+	K8sPodCPUPressureTime                  metricInfo
 	K8sPodCPUTime                          metricInfo
 	K8sPodCPUUsage                         metricInfo
 	K8sPodCPULimitUtilization              metricInfo
@@ -323,10 +465,14 @@ type metricsInfo struct {
 	K8sPodFilesystemAvailable              metricInfo
 	K8sPodFilesystemCapacity               metricInfo
 	K8sPodFilesystemUsage                  metricInfo
+	K8sPodIoPressureAvg                    metricInfo
+	K8sPodIoPressureTime                   metricInfo
 	K8sPodMemoryAvailable                  metricInfo
 	K8sPodMemoryMajorPageFaults            metricInfo
 	K8sPodMemoryNodeUtilization            metricInfo
 	K8sPodMemoryPageFaults                 metricInfo
+	K8sPodMemoryPressureAvg                metricInfo
+	K8sPodMemoryPressureTime               metricInfo
 	K8sPodMemoryRss                        metricInfo
 	K8sPodMemoryUsage                      metricInfo
 	K8sPodMemoryWorkingSet                 metricInfo
@@ -346,6 +492,189 @@ type metricsInfo struct {
 type metricInfo struct {
 	Name       string
 	Attributes []string
+}
+
+type metricContainerCPUPressureAvg struct {
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        ContainerCPUPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills container.cpu.pressure.avg metric with initial data.
+func (m *metricContainerCPUPressureAvg) init() {
+	m.data.SetName("container.cpu.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricContainerCPUPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerCPUPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerCPUPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerCPUPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerCPUPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerCPUPressureAvg(cfg ContainerCPUPressureAvgMetricConfig) metricContainerCPUPressureAvg {
+	m := metricContainerCPUPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerCPUPressureTime struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        ContainerCPUPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+}
+
+// init fills container.cpu.pressure.time metric with initial data.
+func (m *metricContainerCPUPressureTime) init() {
+	m.data.SetName("container.cpu.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricContainerCPUPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerCPUPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerCPUPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerCPUPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerCPUPressureTime(cfg ContainerCPUPressureTimeMetricConfig) metricContainerCPUPressureTime {
+	m := metricContainerCPUPressureTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricContainerCPUTime struct {
@@ -600,6 +929,189 @@ func newMetricContainerFilesystemUsage(cfg ContainerFilesystemUsageMetricConfig)
 	return m
 }
 
+type metricContainerIoPressureAvg struct {
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        ContainerIoPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
+}
+
+// init fills container.io.pressure.avg metric with initial data.
+func (m *metricContainerIoPressureAvg) init() {
+	m.data.SetName("container.io.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricContainerIoPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerIoPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerIoPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerIoPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerIoPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerIoPressureAvg(cfg ContainerIoPressureAvgMetricConfig) metricContainerIoPressureAvg {
+	m := metricContainerIoPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerIoPressureTime struct {
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        ContainerIoPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills container.io.pressure.time metric with initial data.
+func (m *metricContainerIoPressureTime) init() {
+	m.data.SetName("container.io.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricContainerIoPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerIoPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerIoPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerIoPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerIoPressureTime(cfg ContainerIoPressureTimeMetricConfig) metricContainerIoPressureTime {
+	m := metricContainerIoPressureTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerMemoryAvailable struct {
 	data     pmetric.Metric                       // data buffer for generated metric.
 	config   ContainerMemoryAvailableMetricConfig // metric config provided by user.
@@ -742,6 +1254,189 @@ func (m *metricContainerMemoryPageFaults) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryPageFaults(cfg ContainerMemoryPageFaultsMetricConfig) metricContainerMemoryPageFaults {
 	m := metricContainerMemoryPageFaults{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerMemoryPressureAvg struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        ContainerMemoryPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
+}
+
+// init fills container.memory.pressure.avg metric with initial data.
+func (m *metricContainerMemoryPressureAvg) init() {
+	m.data.SetName("container.memory.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricContainerMemoryPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerMemoryPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, ContainerMemoryPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryPressureAvg(cfg ContainerMemoryPressureAvgMetricConfig) metricContainerMemoryPressureAvg {
+	m := metricContainerMemoryPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerMemoryPressureTime struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        ContainerMemoryPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []float64                               // slice containing number of aggregated datapoints at each index
+}
+
+// init fills container.memory.pressure.time metric with initial data.
+func (m *metricContainerMemoryPressureTime) init() {
+	m.data.SetName("container.memory.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricContainerMemoryPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerMemoryPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryPressureTime(cfg ContainerMemoryPressureTimeMetricConfig) metricContainerMemoryPressureTime {
+	m := metricContainerMemoryPressureTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1343,6 +2038,189 @@ func newMetricK8sContainerMemoryRequestUtilization(cfg K8sContainerMemoryRequest
 	return m
 }
 
+type metricK8sNodeCPUPressureAvg struct {
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        K8sNodeCPUPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.node.cpu.pressure.avg metric with initial data.
+func (m *metricK8sNodeCPUPressureAvg) init() {
+	m.data.SetName("k8s.node.cpu.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sNodeCPUPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeCPUPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeCPUPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeCPUPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeCPUPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeCPUPressureAvg(cfg K8sNodeCPUPressureAvgMetricConfig) metricK8sNodeCPUPressureAvg {
+	m := metricK8sNodeCPUPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeCPUPressureTime struct {
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        K8sNodeCPUPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.node.cpu.pressure.time metric with initial data.
+func (m *metricK8sNodeCPUPressureTime) init() {
+	m.data.SetName("k8s.node.cpu.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sNodeCPUPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeCPUPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeCPUPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeCPUPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeCPUPressureTime(cfg K8sNodeCPUPressureTimeMetricConfig) metricK8sNodeCPUPressureTime {
+	m := metricK8sNodeCPUPressureTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sNodeCPUTime struct {
 	data     pmetric.Metric             // data buffer for generated metric.
 	config   K8sNodeCPUTimeMetricConfig // metric config provided by user.
@@ -1699,6 +2577,189 @@ func newMetricK8sNodeFilesystemUsage(cfg K8sNodeFilesystemUsageMetricConfig) met
 	return m
 }
 
+type metricK8sNodeIoPressureAvg struct {
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        K8sNodeIoPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.node.io.pressure.avg metric with initial data.
+func (m *metricK8sNodeIoPressureAvg) init() {
+	m.data.SetName("k8s.node.io.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sNodeIoPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeIoPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeIoPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeIoPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeIoPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeIoPressureAvg(cfg K8sNodeIoPressureAvgMetricConfig) metricK8sNodeIoPressureAvg {
+	m := metricK8sNodeIoPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeIoPressureTime struct {
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        K8sNodeIoPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.node.io.pressure.time metric with initial data.
+func (m *metricK8sNodeIoPressureTime) init() {
+	m.data.SetName("k8s.node.io.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sNodeIoPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeIoPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeIoPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeIoPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeIoPressureTime(cfg K8sNodeIoPressureTimeMetricConfig) metricK8sNodeIoPressureTime {
+	m := metricK8sNodeIoPressureTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sNodeMemoryAvailable struct {
 	data     pmetric.Metric                     // data buffer for generated metric.
 	config   K8sNodeMemoryAvailableMetricConfig // metric config provided by user.
@@ -1841,6 +2902,189 @@ func (m *metricK8sNodeMemoryPageFaults) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeMemoryPageFaults(cfg K8sNodeMemoryPageFaultsMetricConfig) metricK8sNodeMemoryPageFaults {
 	m := metricK8sNodeMemoryPageFaults{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeMemoryPressureAvg struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        K8sNodeMemoryPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.node.memory.pressure.avg metric with initial data.
+func (m *metricK8sNodeMemoryPressureAvg) init() {
+	m.data.SetName("k8s.node.memory.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sNodeMemoryPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeMemoryPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeMemoryPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeMemoryPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeMemoryPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeMemoryPressureAvg(cfg K8sNodeMemoryPressureAvgMetricConfig) metricK8sNodeMemoryPressureAvg {
+	m := metricK8sNodeMemoryPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeMemoryPressureTime struct {
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        K8sNodeMemoryPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []float64                             // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.node.memory.pressure.time metric with initial data.
+func (m *metricK8sNodeMemoryPressureTime) init() {
+	m.data.SetName("k8s.node.memory.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sNodeMemoryPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sNodeMemoryPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeMemoryPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeMemoryPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeMemoryPressureTime(cfg K8sNodeMemoryPressureTimeMetricConfig) metricK8sNodeMemoryPressureTime {
+	m := metricK8sNodeMemoryPressureTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -2491,6 +3735,189 @@ func newMetricK8sPodCPUNodeUtilization(cfg K8sPodCPUNodeUtilizationMetricConfig)
 	return m
 }
 
+type metricK8sPodCPUPressureAvg struct {
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        K8sPodCPUPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.pod.cpu.pressure.avg metric with initial data.
+func (m *metricK8sPodCPUPressureAvg) init() {
+	m.data.SetName("k8s.pod.cpu.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sPodCPUPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sPodCPUPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, K8sPodCPUPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodCPUPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodCPUPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodCPUPressureAvg(cfg K8sPodCPUPressureAvgMetricConfig) metricK8sPodCPUPressureAvg {
+	m := metricK8sPodCPUPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodCPUPressureTime struct {
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        K8sPodCPUPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.pod.cpu.pressure.time metric with initial data.
+func (m *metricK8sPodCPUPressureTime) init() {
+	m.data.SetName("k8s.pod.cpu.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sPodCPUPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sPodCPUPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodCPUPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodCPUPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodCPUPressureTime(cfg K8sPodCPUPressureTimeMetricConfig) metricK8sPodCPUPressureTime {
+	m := metricK8sPodCPUPressureTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodCPUTime struct {
 	data     pmetric.Metric            // data buffer for generated metric.
 	config   K8sPodCPUTimeMetricConfig // metric config provided by user.
@@ -2843,6 +4270,189 @@ func newMetricK8sPodFilesystemUsage(cfg K8sPodFilesystemUsageMetricConfig) metri
 	return m
 }
 
+type metricK8sPodIoPressureAvg struct {
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        K8sPodIoPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []float64                       // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.pod.io.pressure.avg metric with initial data.
+func (m *metricK8sPodIoPressureAvg) init() {
+	m.data.SetName("k8s.pod.io.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sPodIoPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sPodIoPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, K8sPodIoPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodIoPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodIoPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodIoPressureAvg(cfg K8sPodIoPressureAvgMetricConfig) metricK8sPodIoPressureAvg {
+	m := metricK8sPodIoPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodIoPressureTime struct {
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        K8sPodIoPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.pod.io.pressure.time metric with initial data.
+func (m *metricK8sPodIoPressureTime) init() {
+	m.data.SetName("k8s.pod.io.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sPodIoPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sPodIoPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodIoPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodIoPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodIoPressureTime(cfg K8sPodIoPressureTimeMetricConfig) metricK8sPodIoPressureTime {
+	m := metricK8sPodIoPressureTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodMemoryAvailable struct {
 	data     pmetric.Metric                    // data buffer for generated metric.
 	config   K8sPodMemoryAvailableMetricConfig // metric config provided by user.
@@ -3035,6 +4645,189 @@ func (m *metricK8sPodMemoryPageFaults) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodMemoryPageFaults(cfg K8sPodMemoryPageFaultsMetricConfig) metricK8sPodMemoryPageFaults {
 	m := metricK8sPodMemoryPageFaults{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodMemoryPressureAvg struct {
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        K8sPodMemoryPressureAvgMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.pod.memory.pressure.avg metric with initial data.
+func (m *metricK8sPodMemoryPressureAvg) init() {
+	m.data.SetName("k8s.pod.memory.pressure.avg")
+	m.data.SetDescription("Rolling average percentage of time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sPodMemoryPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sPodMemoryPressureAvgMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, K8sPodMemoryPressureAvgMetricAttributeKeyPsiWindow) {
+		dp.Attributes().PutStr("psi.window", psiWindowAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodMemoryPressureAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodMemoryPressureAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodMemoryPressureAvg(cfg K8sPodMemoryPressureAvgMetricConfig) metricK8sPodMemoryPressureAvg {
+	m := metricK8sPodMemoryPressureAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodMemoryPressureTime struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        K8sPodMemoryPressureTimeMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+}
+
+// init fills k8s.pod.memory.pressure.time metric with initial data.
+func (m *metricK8sPodMemoryPressureTime) init() {
+	m.data.SetName("k8s.pod.memory.pressure.time")
+	m.data.SetDescription("Cumulative total time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricK8sPodMemoryPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sPodMemoryPressureTimeMetricAttributeKeyPsiType) {
+		dp.Attributes().PutStr("psi.type", psiTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodMemoryPressureTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodMemoryPressureTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodMemoryPressureTime(cfg K8sPodMemoryPressureTimeMetricConfig) metricK8sPodMemoryPressureTime {
+	m := metricK8sPodMemoryPressureTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3845,14 +5638,20 @@ type MetricsBuilder struct {
 	buildInfo                                    component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter               map[string]filter.Filter
 	resourceAttributeExcludeFilter               map[string]filter.Filter
+	metricContainerCPUPressureAvg                metricContainerCPUPressureAvg
+	metricContainerCPUPressureTime               metricContainerCPUPressureTime
 	metricContainerCPUTime                       metricContainerCPUTime
 	metricContainerCPUUsage                      metricContainerCPUUsage
 	metricContainerFilesystemAvailable           metricContainerFilesystemAvailable
 	metricContainerFilesystemCapacity            metricContainerFilesystemCapacity
 	metricContainerFilesystemUsage               metricContainerFilesystemUsage
+	metricContainerIoPressureAvg                 metricContainerIoPressureAvg
+	metricContainerIoPressureTime                metricContainerIoPressureTime
 	metricContainerMemoryAvailable               metricContainerMemoryAvailable
 	metricContainerMemoryMajorPageFaults         metricContainerMemoryMajorPageFaults
 	metricContainerMemoryPageFaults              metricContainerMemoryPageFaults
+	metricContainerMemoryPressureAvg             metricContainerMemoryPressureAvg
+	metricContainerMemoryPressureTime            metricContainerMemoryPressureTime
 	metricContainerMemoryRss                     metricContainerMemoryRss
 	metricContainerMemoryUsage                   metricContainerMemoryUsage
 	metricContainerMemoryWorkingSet              metricContainerMemoryWorkingSet
@@ -3864,6 +5663,8 @@ type MetricsBuilder struct {
 	metricK8sContainerMemoryNodeUtilization      metricK8sContainerMemoryNodeUtilization
 	metricK8sContainerMemoryLimitUtilization     metricK8sContainerMemoryLimitUtilization
 	metricK8sContainerMemoryRequestUtilization   metricK8sContainerMemoryRequestUtilization
+	metricK8sNodeCPUPressureAvg                  metricK8sNodeCPUPressureAvg
+	metricK8sNodeCPUPressureTime                 metricK8sNodeCPUPressureTime
 	metricK8sNodeCPUTime                         metricK8sNodeCPUTime
 	metricK8sNodeCPUUsage                        metricK8sNodeCPUUsage
 	metricK8sNodeFilesystemAvailable             metricK8sNodeFilesystemAvailable
@@ -3871,9 +5672,13 @@ type MetricsBuilder struct {
 	metricK8sNodeFilesystemInodeCount            metricK8sNodeFilesystemInodeCount
 	metricK8sNodeFilesystemInodeFree             metricK8sNodeFilesystemInodeFree
 	metricK8sNodeFilesystemUsage                 metricK8sNodeFilesystemUsage
+	metricK8sNodeIoPressureAvg                   metricK8sNodeIoPressureAvg
+	metricK8sNodeIoPressureTime                  metricK8sNodeIoPressureTime
 	metricK8sNodeMemoryAvailable                 metricK8sNodeMemoryAvailable
 	metricK8sNodeMemoryMajorPageFaults           metricK8sNodeMemoryMajorPageFaults
 	metricK8sNodeMemoryPageFaults                metricK8sNodeMemoryPageFaults
+	metricK8sNodeMemoryPressureAvg               metricK8sNodeMemoryPressureAvg
+	metricK8sNodeMemoryPressureTime              metricK8sNodeMemoryPressureTime
 	metricK8sNodeMemoryRss                       metricK8sNodeMemoryRss
 	metricK8sNodeMemoryUsage                     metricK8sNodeMemoryUsage
 	metricK8sNodeMemoryWorkingSet                metricK8sNodeMemoryWorkingSet
@@ -3885,6 +5690,8 @@ type MetricsBuilder struct {
 	metricK8sNodeSystemContainerMemoryWorkingSet metricK8sNodeSystemContainerMemoryWorkingSet
 	metricK8sNodeUptime                          metricK8sNodeUptime
 	metricK8sPodCPUNodeUtilization               metricK8sPodCPUNodeUtilization
+	metricK8sPodCPUPressureAvg                   metricK8sPodCPUPressureAvg
+	metricK8sPodCPUPressureTime                  metricK8sPodCPUPressureTime
 	metricK8sPodCPUTime                          metricK8sPodCPUTime
 	metricK8sPodCPUUsage                         metricK8sPodCPUUsage
 	metricK8sPodCPULimitUtilization              metricK8sPodCPULimitUtilization
@@ -3892,10 +5699,14 @@ type MetricsBuilder struct {
 	metricK8sPodFilesystemAvailable              metricK8sPodFilesystemAvailable
 	metricK8sPodFilesystemCapacity               metricK8sPodFilesystemCapacity
 	metricK8sPodFilesystemUsage                  metricK8sPodFilesystemUsage
+	metricK8sPodIoPressureAvg                    metricK8sPodIoPressureAvg
+	metricK8sPodIoPressureTime                   metricK8sPodIoPressureTime
 	metricK8sPodMemoryAvailable                  metricK8sPodMemoryAvailable
 	metricK8sPodMemoryMajorPageFaults            metricK8sPodMemoryMajorPageFaults
 	metricK8sPodMemoryNodeUtilization            metricK8sPodMemoryNodeUtilization
 	metricK8sPodMemoryPageFaults                 metricK8sPodMemoryPageFaults
+	metricK8sPodMemoryPressureAvg                metricK8sPodMemoryPressureAvg
+	metricK8sPodMemoryPressureTime               metricK8sPodMemoryPressureTime
 	metricK8sPodMemoryRss                        metricK8sPodMemoryRss
 	metricK8sPodMemoryUsage                      metricK8sPodMemoryUsage
 	metricK8sPodMemoryWorkingSet                 metricK8sPodMemoryWorkingSet
@@ -3953,14 +5764,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                pmetric.NewMetrics(),
 		buildInfo:                                    settings.BuildInfo,
+		metricContainerCPUPressureAvg:                newMetricContainerCPUPressureAvg(mbc.Metrics.ContainerCPUPressureAvg),
+		metricContainerCPUPressureTime:               newMetricContainerCPUPressureTime(mbc.Metrics.ContainerCPUPressureTime),
 		metricContainerCPUTime:                       newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
 		metricContainerCPUUsage:                      newMetricContainerCPUUsage(mbc.Metrics.ContainerCPUUsage),
 		metricContainerFilesystemAvailable:           newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
 		metricContainerFilesystemCapacity:            newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
 		metricContainerFilesystemUsage:               newMetricContainerFilesystemUsage(mbc.Metrics.ContainerFilesystemUsage),
+		metricContainerIoPressureAvg:                 newMetricContainerIoPressureAvg(mbc.Metrics.ContainerIoPressureAvg),
+		metricContainerIoPressureTime:                newMetricContainerIoPressureTime(mbc.Metrics.ContainerIoPressureTime),
 		metricContainerMemoryAvailable:               newMetricContainerMemoryAvailable(mbc.Metrics.ContainerMemoryAvailable),
 		metricContainerMemoryMajorPageFaults:         newMetricContainerMemoryMajorPageFaults(mbc.Metrics.ContainerMemoryMajorPageFaults),
 		metricContainerMemoryPageFaults:              newMetricContainerMemoryPageFaults(mbc.Metrics.ContainerMemoryPageFaults),
+		metricContainerMemoryPressureAvg:             newMetricContainerMemoryPressureAvg(mbc.Metrics.ContainerMemoryPressureAvg),
+		metricContainerMemoryPressureTime:            newMetricContainerMemoryPressureTime(mbc.Metrics.ContainerMemoryPressureTime),
 		metricContainerMemoryRss:                     newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
 		metricContainerMemoryUsage:                   newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
 		metricContainerMemoryWorkingSet:              newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
@@ -3972,6 +5789,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sContainerMemoryNodeUtilization:      newMetricK8sContainerMemoryNodeUtilization(mbc.Metrics.K8sContainerMemoryNodeUtilization),
 		metricK8sContainerMemoryLimitUtilization:     newMetricK8sContainerMemoryLimitUtilization(mbc.Metrics.K8sContainerMemoryLimitUtilization),
 		metricK8sContainerMemoryRequestUtilization:   newMetricK8sContainerMemoryRequestUtilization(mbc.Metrics.K8sContainerMemoryRequestUtilization),
+		metricK8sNodeCPUPressureAvg:                  newMetricK8sNodeCPUPressureAvg(mbc.Metrics.K8sNodeCPUPressureAvg),
+		metricK8sNodeCPUPressureTime:                 newMetricK8sNodeCPUPressureTime(mbc.Metrics.K8sNodeCPUPressureTime),
 		metricK8sNodeCPUTime:                         newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
 		metricK8sNodeCPUUsage:                        newMetricK8sNodeCPUUsage(mbc.Metrics.K8sNodeCPUUsage),
 		metricK8sNodeFilesystemAvailable:             newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
@@ -3979,9 +5798,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sNodeFilesystemInodeCount:            newMetricK8sNodeFilesystemInodeCount(mbc.Metrics.K8sNodeFilesystemInodeCount),
 		metricK8sNodeFilesystemInodeFree:             newMetricK8sNodeFilesystemInodeFree(mbc.Metrics.K8sNodeFilesystemInodeFree),
 		metricK8sNodeFilesystemUsage:                 newMetricK8sNodeFilesystemUsage(mbc.Metrics.K8sNodeFilesystemUsage),
+		metricK8sNodeIoPressureAvg:                   newMetricK8sNodeIoPressureAvg(mbc.Metrics.K8sNodeIoPressureAvg),
+		metricK8sNodeIoPressureTime:                  newMetricK8sNodeIoPressureTime(mbc.Metrics.K8sNodeIoPressureTime),
 		metricK8sNodeMemoryAvailable:                 newMetricK8sNodeMemoryAvailable(mbc.Metrics.K8sNodeMemoryAvailable),
 		metricK8sNodeMemoryMajorPageFaults:           newMetricK8sNodeMemoryMajorPageFaults(mbc.Metrics.K8sNodeMemoryMajorPageFaults),
 		metricK8sNodeMemoryPageFaults:                newMetricK8sNodeMemoryPageFaults(mbc.Metrics.K8sNodeMemoryPageFaults),
+		metricK8sNodeMemoryPressureAvg:               newMetricK8sNodeMemoryPressureAvg(mbc.Metrics.K8sNodeMemoryPressureAvg),
+		metricK8sNodeMemoryPressureTime:              newMetricK8sNodeMemoryPressureTime(mbc.Metrics.K8sNodeMemoryPressureTime),
 		metricK8sNodeMemoryRss:                       newMetricK8sNodeMemoryRss(mbc.Metrics.K8sNodeMemoryRss),
 		metricK8sNodeMemoryUsage:                     newMetricK8sNodeMemoryUsage(mbc.Metrics.K8sNodeMemoryUsage),
 		metricK8sNodeMemoryWorkingSet:                newMetricK8sNodeMemoryWorkingSet(mbc.Metrics.K8sNodeMemoryWorkingSet),
@@ -3993,6 +5816,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sNodeSystemContainerMemoryWorkingSet: newMetricK8sNodeSystemContainerMemoryWorkingSet(mbc.Metrics.K8sNodeSystemContainerMemoryWorkingSet),
 		metricK8sNodeUptime:                          newMetricK8sNodeUptime(mbc.Metrics.K8sNodeUptime),
 		metricK8sPodCPUNodeUtilization:               newMetricK8sPodCPUNodeUtilization(mbc.Metrics.K8sPodCPUNodeUtilization),
+		metricK8sPodCPUPressureAvg:                   newMetricK8sPodCPUPressureAvg(mbc.Metrics.K8sPodCPUPressureAvg),
+		metricK8sPodCPUPressureTime:                  newMetricK8sPodCPUPressureTime(mbc.Metrics.K8sPodCPUPressureTime),
 		metricK8sPodCPUTime:                          newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
 		metricK8sPodCPUUsage:                         newMetricK8sPodCPUUsage(mbc.Metrics.K8sPodCPUUsage),
 		metricK8sPodCPULimitUtilization:              newMetricK8sPodCPULimitUtilization(mbc.Metrics.K8sPodCPULimitUtilization),
@@ -4000,10 +5825,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sPodFilesystemAvailable:              newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
 		metricK8sPodFilesystemCapacity:               newMetricK8sPodFilesystemCapacity(mbc.Metrics.K8sPodFilesystemCapacity),
 		metricK8sPodFilesystemUsage:                  newMetricK8sPodFilesystemUsage(mbc.Metrics.K8sPodFilesystemUsage),
+		metricK8sPodIoPressureAvg:                    newMetricK8sPodIoPressureAvg(mbc.Metrics.K8sPodIoPressureAvg),
+		metricK8sPodIoPressureTime:                   newMetricK8sPodIoPressureTime(mbc.Metrics.K8sPodIoPressureTime),
 		metricK8sPodMemoryAvailable:                  newMetricK8sPodMemoryAvailable(mbc.Metrics.K8sPodMemoryAvailable),
 		metricK8sPodMemoryMajorPageFaults:            newMetricK8sPodMemoryMajorPageFaults(mbc.Metrics.K8sPodMemoryMajorPageFaults),
 		metricK8sPodMemoryNodeUtilization:            newMetricK8sPodMemoryNodeUtilization(mbc.Metrics.K8sPodMemoryNodeUtilization),
 		metricK8sPodMemoryPageFaults:                 newMetricK8sPodMemoryPageFaults(mbc.Metrics.K8sPodMemoryPageFaults),
+		metricK8sPodMemoryPressureAvg:                newMetricK8sPodMemoryPressureAvg(mbc.Metrics.K8sPodMemoryPressureAvg),
+		metricK8sPodMemoryPressureTime:               newMetricK8sPodMemoryPressureTime(mbc.Metrics.K8sPodMemoryPressureTime),
 		metricK8sPodMemoryRss:                        newMetricK8sPodMemoryRss(mbc.Metrics.K8sPodMemoryRss),
 		metricK8sPodMemoryUsage:                      newMetricK8sPodMemoryUsage(mbc.Metrics.K8sPodMemoryUsage),
 		metricK8sPodMemoryWorkingSet:                 newMetricK8sPodMemoryWorkingSet(mbc.Metrics.K8sPodMemoryWorkingSet),
@@ -4186,14 +6015,20 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricContainerCPUPressureAvg.emit(ils.Metrics())
+	mb.metricContainerCPUPressureTime.emit(ils.Metrics())
 	mb.metricContainerCPUTime.emit(ils.Metrics())
 	mb.metricContainerCPUUsage.emit(ils.Metrics())
 	mb.metricContainerFilesystemAvailable.emit(ils.Metrics())
 	mb.metricContainerFilesystemCapacity.emit(ils.Metrics())
 	mb.metricContainerFilesystemUsage.emit(ils.Metrics())
+	mb.metricContainerIoPressureAvg.emit(ils.Metrics())
+	mb.metricContainerIoPressureTime.emit(ils.Metrics())
 	mb.metricContainerMemoryAvailable.emit(ils.Metrics())
 	mb.metricContainerMemoryMajorPageFaults.emit(ils.Metrics())
 	mb.metricContainerMemoryPageFaults.emit(ils.Metrics())
+	mb.metricContainerMemoryPressureAvg.emit(ils.Metrics())
+	mb.metricContainerMemoryPressureTime.emit(ils.Metrics())
 	mb.metricContainerMemoryRss.emit(ils.Metrics())
 	mb.metricContainerMemoryUsage.emit(ils.Metrics())
 	mb.metricContainerMemoryWorkingSet.emit(ils.Metrics())
@@ -4205,6 +6040,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sContainerMemoryNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryLimitUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryRequestUtilization.emit(ils.Metrics())
+	mb.metricK8sNodeCPUPressureAvg.emit(ils.Metrics())
+	mb.metricK8sNodeCPUPressureTime.emit(ils.Metrics())
 	mb.metricK8sNodeCPUTime.emit(ils.Metrics())
 	mb.metricK8sNodeCPUUsage.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemAvailable.emit(ils.Metrics())
@@ -4212,9 +6049,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sNodeFilesystemInodeCount.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemInodeFree.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemUsage.emit(ils.Metrics())
+	mb.metricK8sNodeIoPressureAvg.emit(ils.Metrics())
+	mb.metricK8sNodeIoPressureTime.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryAvailable.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryMajorPageFaults.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryPageFaults.emit(ils.Metrics())
+	mb.metricK8sNodeMemoryPressureAvg.emit(ils.Metrics())
+	mb.metricK8sNodeMemoryPressureTime.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryRss.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryUsage.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryWorkingSet.emit(ils.Metrics())
@@ -4226,6 +6067,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sNodeSystemContainerMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sNodeUptime.emit(ils.Metrics())
 	mb.metricK8sPodCPUNodeUtilization.emit(ils.Metrics())
+	mb.metricK8sPodCPUPressureAvg.emit(ils.Metrics())
+	mb.metricK8sPodCPUPressureTime.emit(ils.Metrics())
 	mb.metricK8sPodCPUTime.emit(ils.Metrics())
 	mb.metricK8sPodCPUUsage.emit(ils.Metrics())
 	mb.metricK8sPodCPULimitUtilization.emit(ils.Metrics())
@@ -4233,10 +6076,14 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sPodFilesystemAvailable.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemCapacity.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemUsage.emit(ils.Metrics())
+	mb.metricK8sPodIoPressureAvg.emit(ils.Metrics())
+	mb.metricK8sPodIoPressureTime.emit(ils.Metrics())
 	mb.metricK8sPodMemoryAvailable.emit(ils.Metrics())
 	mb.metricK8sPodMemoryMajorPageFaults.emit(ils.Metrics())
 	mb.metricK8sPodMemoryNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sPodMemoryPageFaults.emit(ils.Metrics())
+	mb.metricK8sPodMemoryPressureAvg.emit(ils.Metrics())
+	mb.metricK8sPodMemoryPressureTime.emit(ils.Metrics())
 	mb.metricK8sPodMemoryRss.emit(ils.Metrics())
 	mb.metricK8sPodMemoryUsage.emit(ils.Metrics())
 	mb.metricK8sPodMemoryWorkingSet.emit(ils.Metrics())
@@ -4282,6 +6129,16 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
+// RecordContainerCPUPressureAvgDataPoint adds a data point to container.cpu.pressure.avg metric.
+func (mb *MetricsBuilder) RecordContainerCPUPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricContainerCPUPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordContainerCPUPressureTimeDataPoint adds a data point to container.cpu.pressure.time metric.
+func (mb *MetricsBuilder) RecordContainerCPUPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricContainerCPUPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
+}
+
 // RecordContainerCPUTimeDataPoint adds a data point to container.cpu.time metric.
 func (mb *MetricsBuilder) RecordContainerCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricContainerCPUTime.recordDataPoint(mb.startTime, ts, val)
@@ -4307,6 +6164,16 @@ func (mb *MetricsBuilder) RecordContainerFilesystemUsageDataPoint(ts pcommon.Tim
 	mb.metricContainerFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordContainerIoPressureAvgDataPoint adds a data point to container.io.pressure.avg metric.
+func (mb *MetricsBuilder) RecordContainerIoPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricContainerIoPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordContainerIoPressureTimeDataPoint adds a data point to container.io.pressure.time metric.
+func (mb *MetricsBuilder) RecordContainerIoPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricContainerIoPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
+}
+
 // RecordContainerMemoryAvailableDataPoint adds a data point to container.memory.available metric.
 func (mb *MetricsBuilder) RecordContainerMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
@@ -4320,6 +6187,16 @@ func (mb *MetricsBuilder) RecordContainerMemoryMajorPageFaultsDataPoint(ts pcomm
 // RecordContainerMemoryPageFaultsDataPoint adds a data point to container.memory.page_faults metric.
 func (mb *MetricsBuilder) RecordContainerMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerMemoryPageFaults.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerMemoryPressureAvgDataPoint adds a data point to container.memory.pressure.avg metric.
+func (mb *MetricsBuilder) RecordContainerMemoryPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricContainerMemoryPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordContainerMemoryPressureTimeDataPoint adds a data point to container.memory.pressure.time metric.
+func (mb *MetricsBuilder) RecordContainerMemoryPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricContainerMemoryPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
 }
 
 // RecordContainerMemoryRssDataPoint adds a data point to container.memory.rss metric.
@@ -4377,6 +6254,16 @@ func (mb *MetricsBuilder) RecordK8sContainerMemoryRequestUtilizationDataPoint(ts
 	mb.metricK8sContainerMemoryRequestUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordK8sNodeCPUPressureAvgDataPoint adds a data point to k8s.node.cpu.pressure.avg metric.
+func (mb *MetricsBuilder) RecordK8sNodeCPUPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricK8sNodeCPUPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordK8sNodeCPUPressureTimeDataPoint adds a data point to k8s.node.cpu.pressure.time metric.
+func (mb *MetricsBuilder) RecordK8sNodeCPUPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricK8sNodeCPUPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
+}
+
 // RecordK8sNodeCPUTimeDataPoint adds a data point to k8s.node.cpu.time metric.
 func (mb *MetricsBuilder) RecordK8sNodeCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sNodeCPUTime.recordDataPoint(mb.startTime, ts, val)
@@ -4412,6 +6299,16 @@ func (mb *MetricsBuilder) RecordK8sNodeFilesystemUsageDataPoint(ts pcommon.Times
 	mb.metricK8sNodeFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordK8sNodeIoPressureAvgDataPoint adds a data point to k8s.node.io.pressure.avg metric.
+func (mb *MetricsBuilder) RecordK8sNodeIoPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricK8sNodeIoPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordK8sNodeIoPressureTimeDataPoint adds a data point to k8s.node.io.pressure.time metric.
+func (mb *MetricsBuilder) RecordK8sNodeIoPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricK8sNodeIoPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
+}
+
 // RecordK8sNodeMemoryAvailableDataPoint adds a data point to k8s.node.memory.available metric.
 func (mb *MetricsBuilder) RecordK8sNodeMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sNodeMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
@@ -4425,6 +6322,16 @@ func (mb *MetricsBuilder) RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts pcommon
 // RecordK8sNodeMemoryPageFaultsDataPoint adds a data point to k8s.node.memory.page_faults metric.
 func (mb *MetricsBuilder) RecordK8sNodeMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sNodeMemoryPageFaults.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeMemoryPressureAvgDataPoint adds a data point to k8s.node.memory.pressure.avg metric.
+func (mb *MetricsBuilder) RecordK8sNodeMemoryPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricK8sNodeMemoryPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordK8sNodeMemoryPressureTimeDataPoint adds a data point to k8s.node.memory.pressure.time metric.
+func (mb *MetricsBuilder) RecordK8sNodeMemoryPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricK8sNodeMemoryPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
 }
 
 // RecordK8sNodeMemoryRssDataPoint adds a data point to k8s.node.memory.rss metric.
@@ -4482,6 +6389,16 @@ func (mb *MetricsBuilder) RecordK8sPodCPUNodeUtilizationDataPoint(ts pcommon.Tim
 	mb.metricK8sPodCPUNodeUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordK8sPodCPUPressureAvgDataPoint adds a data point to k8s.pod.cpu.pressure.avg metric.
+func (mb *MetricsBuilder) RecordK8sPodCPUPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricK8sPodCPUPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordK8sPodCPUPressureTimeDataPoint adds a data point to k8s.pod.cpu.pressure.time metric.
+func (mb *MetricsBuilder) RecordK8sPodCPUPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricK8sPodCPUPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
+}
+
 // RecordK8sPodCPUTimeDataPoint adds a data point to k8s.pod.cpu.time metric.
 func (mb *MetricsBuilder) RecordK8sPodCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sPodCPUTime.recordDataPoint(mb.startTime, ts, val)
@@ -4517,6 +6434,16 @@ func (mb *MetricsBuilder) RecordK8sPodFilesystemUsageDataPoint(ts pcommon.Timest
 	mb.metricK8sPodFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordK8sPodIoPressureAvgDataPoint adds a data point to k8s.pod.io.pressure.avg metric.
+func (mb *MetricsBuilder) RecordK8sPodIoPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricK8sPodIoPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordK8sPodIoPressureTimeDataPoint adds a data point to k8s.pod.io.pressure.time metric.
+func (mb *MetricsBuilder) RecordK8sPodIoPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricK8sPodIoPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
+}
+
 // RecordK8sPodMemoryAvailableDataPoint adds a data point to k8s.pod.memory.available metric.
 func (mb *MetricsBuilder) RecordK8sPodMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sPodMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
@@ -4535,6 +6462,16 @@ func (mb *MetricsBuilder) RecordK8sPodMemoryNodeUtilizationDataPoint(ts pcommon.
 // RecordK8sPodMemoryPageFaultsDataPoint adds a data point to k8s.pod.memory.page_faults metric.
 func (mb *MetricsBuilder) RecordK8sPodMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sPodMemoryPageFaults.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPodMemoryPressureAvgDataPoint adds a data point to k8s.pod.memory.pressure.avg metric.
+func (mb *MetricsBuilder) RecordK8sPodMemoryPressureAvgDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType, psiWindowAttributeValue AttributePsiWindow) {
+	mb.metricK8sPodMemoryPressureAvg.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String(), psiWindowAttributeValue.String())
+}
+
+// RecordK8sPodMemoryPressureTimeDataPoint adds a data point to k8s.pod.memory.pressure.time metric.
+func (mb *MetricsBuilder) RecordK8sPodMemoryPressureTimeDataPoint(ts pcommon.Timestamp, val float64, psiTypeAttributeValue AttributePsiType) {
+	mb.metricK8sPodMemoryPressureTime.recordDataPoint(mb.startTime, ts, val, psiTypeAttributeValue.String())
 }
 
 // RecordK8sPodMemoryRssDataPoint adds a data point to k8s.pod.memory.rss metric.
