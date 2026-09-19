@@ -59,8 +59,7 @@ func Test_TimeUnixSeconds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := UnixSeconds(tt.time)
-			require.NoError(t, err)
+			exprFunc := unixSeconds(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := tt.expected.Unix()
@@ -79,14 +78,14 @@ func Test_UnixSecondsFactory(t *testing.T) {
 		factory := NewUnixSecondsFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &UnixSecondsArguments[any]{}, args)
+		assert.IsType(t, &unixSecondsArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewUnixSecondsFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*UnixSecondsArguments[any])
+		timeArgs, ok := args.(*unixSecondsArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -101,6 +100,22 @@ func Test_UnixSecondsFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createUnixSecondsFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "UnixSecondsFactory args must be of type *UnixSecondsArguments[K]")
+		assert.ErrorContains(t, err, "UnixSecondsFactory args must be of type *unixSecondsArguments[K]")
 	})
+}
+
+func BenchmarkUnixSeconds(b *testing.B) {
+	inputTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
+	exprFunc := unixSeconds(&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return inputTime, nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

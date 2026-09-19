@@ -41,12 +41,11 @@ func createDefaultConfig() component.Config {
 	qs := exporterhelper.NewDefaultQueueConfig()
 	qs.QueueSize = 10
 	qs.BlockOnOverflow = true
-	qs.Batch = configoptional.Some(exporterhelper.BatchConfig{
-		FlushTimeout: 10 * time.Second,
-		MinSize:      1e+6,
-		MaxSize:      5e+6,
-		Sizer:        exporterhelper.RequestSizerTypeBytes,
-	})
+	batch := qs.Batch.GetOrInsertDefault()
+	batch.FlushTimeout = 10 * time.Second
+	batch.MinSize = 1e+6
+	batch.MaxSize = 5e+6
+	batch.Sizer = exporterhelper.RequestSizerTypeBytes
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second

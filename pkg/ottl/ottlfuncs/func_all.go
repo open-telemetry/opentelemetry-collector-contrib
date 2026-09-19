@@ -14,19 +14,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type AllArguments[K any] struct {
+type allArguments[K any] struct {
 	Source    ottl.Getter[K]
 	Predicate *ottl.LambdaExpression[K]
 }
 
+// NewAllFactory returns a factory for the All OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#all
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future. It
+// requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewAllFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("All", &AllArguments[K]{}, createAllFunction[K])
+	return ottl.NewFactory("All", &allArguments[K]{}, createAllFunction[K])
 }
 
 func createAllFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*AllArguments[K])
+	args, ok := oArgs.(*allArguments[K])
 	if !ok {
-		return nil, errors.New("AllFactory args must be of type *AllArguments[K]")
+		return nil, errors.New("AllFactory args must be of type *allArguments[K]")
 	}
 	return allMatch(args.Source, args.Predicate)
 }
