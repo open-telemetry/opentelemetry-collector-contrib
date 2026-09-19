@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 )
 
@@ -131,6 +133,73 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		),
+	).Run(t)
+}
+
+func Test_HardwareScrape(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("hardwarescraper only supported on linux")
+	}
+
+	expectedFile := filepath.Join("testdata", "e2e", "expected_hardware.yaml")
+	rootPath := filepath.Join("testdata", "e2e")
+
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithCustomConfig(
+			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.ControllerConfig.CollectionInterval = time.Second
+				rCfg.RootPath = rootPath
+				f := hardwarescraper.NewFactory()
+				hCfg := f.CreateDefaultConfig().(*hardwarescraper.Config)
+				hCfg.Temperature.Include.Sensors = []string{".*"}
+				hCfg.MetricsBuilderConfig.Metrics.HwTemperatureLimit.Enabled = true
+				rCfg.Scrapers = map[component.Type]component.Config{
+					f.Type(): hCfg,
+				}
+			},
+		),
+		scraperinttest.WithExpectedFile(expectedFile),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		),
+	).Run(t)
+}
+
+func Test_HardwareScrapeWithSensorFiltering(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("hardwarescraper only supported on linux")
+	}
+
+	expectedFile := filepath.Join("testdata", "e2e", "expected_hardware_filtered_sensors.yaml")
+	rootPath := filepath.Join("testdata", "e2e")
+
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithCustomConfig(
+			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.ControllerConfig.CollectionInterval = time.Second
+				rCfg.RootPath = rootPath
+				f := hardwarescraper.NewFactory()
+				hCfg := f.CreateDefaultConfig().(*hardwarescraper.Config)
+				hCfg.Temperature.Include.Sensors = []string{"Composite"}
+				rCfg.Scrapers = map[component.Type]component.Config{
+					f.Type(): hCfg,
+				}
+			},
+		),
+		scraperinttest.WithExpectedFile(expectedFile),
+		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
