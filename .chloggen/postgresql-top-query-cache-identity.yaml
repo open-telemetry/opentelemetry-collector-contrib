@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: receiver/postgresql
+note: Prevent top-query records from being dropped when the same query ID appears under multiple databases or roles.
+issues: [51067]
+subtext: |
+  Rows from different databases or roles that shared a query ID previously used the same counter-cache entries.
+  This could calculate deltas against unrelated counters and silently drop top-query records.
+  Cache entries are now isolated by database, role, query ID, and counter column.
+change_logs: [user]

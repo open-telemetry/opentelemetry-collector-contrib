@@ -107,3 +107,58 @@ func TestTopQueryCacheRetainsFetchedStatements(t *testing.T) {
 	}
 	mock.ExpectClose()
 }
+
+func TestTopQueryCacheSeparatesDatabaseAndRole(t *testing.T) {
+	columns := []string{
+		callsColumnName, "datname", sharedBlksDirtiedColumnName, sharedBlksHitColumnName,
+		sharedBlksReadColumnName, sharedBlksWrittenColumnName, tempBlksReadColumnName,
+		tempBlksWrittenColumnName, "query", queryidColumnName, "rolname", rowsColumnName,
+		totalExecTimeColumnName, totalPlanTimeColumnName,
+	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.MaxRowsPerQuery = 3
+	cfg.TopQueryCollection.TopNQuery = 3
+	cfg.TopQueryCollection.MaxExplainEachInterval = 0
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, db.Close()) })
+
+	scraper, err := newTopQueryScraper(receivertest.NewNopSettings(metadata.Type), cfg, mockSimpleClientFactory{db: db})
+	require.NoError(t, err)
+
+	rows := sqlmock.NewRows(columns)
+	for _, identity := range []struct {
+		database string
+		role     string
+	}{
+		{database: "db_a", role: "app"},
+		{database: "db_b", role: "app"},
+		{database: "db_a", role: "reporting"},
+	} {
+		values := map[string]driver.Value{
+			"datname":         identity.database,
+			"query":           "SELECT count(*) FROM pg_class",
+			queryidColumnName: "42",
+			"rolname":         identity.role,
+		}
+		for _, column := range columns {
+			if _, exists := values[column]; !exists {
+				values[column] = "10000"
+			}
+		}
+		row := make([]driver.Value, len(columns))
+		for i, column := range columns {
+			row[i] = values[column]
+		}
+		rows.AddRow(row...)
+	}
+
+	mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
+	logs, err := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+	require.Equal(t, 3, logs.LogRecordCount())
+	mock.ExpectClose()
+}
