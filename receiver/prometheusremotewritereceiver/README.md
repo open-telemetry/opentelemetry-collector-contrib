@@ -99,6 +99,12 @@ As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic 
 
 Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
 
+### Only integer, counter flavored Native Histograms are translated
+
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, and this receiver drops them. A native histogram whose bounds or bucket spans do not describe a histogram it can represent is dropped as well, and logged at error level with the metric name.
+
+The data point count is rebuilt from the buckets the translation emitted, rather than copied from the count Prometheus sent. Those differ whenever an observation is not represented by a bucket, which happens for observations of NaN and for the overflow bucket, so a count here can be lower than the one in Prometheus. When nothing could be represented the count is zero and the sum is left unset, which is what OpenTelemetry requires of a data point that recorded nothing.
+
 ### Native Histogram expansion limits
 
 Prometheus sends Native Histogram buckets as spans of populated buckets separated by gaps, while OTLP wants one contiguous list, so a short list of spans can describe a very wide one. Two limits bound what that expansion is allowed to cost:
