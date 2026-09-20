@@ -1021,8 +1021,8 @@ func TestFileExporterPermissions(t *testing.T) {
 
 			expectedPerms := os.FileMode(0o644)
 			if tt.filePermissions != "" {
-				parsed, err := strconv.ParseInt(tt.filePermissions, 8, 32)
-				require.NoError(t, err)
+				parsed, parseErr := strconv.ParseInt(tt.filePermissions, 8, 32)
+				require.NoError(t, parseErr)
 				expectedPerms = os.FileMode(parsed)
 			}
 
