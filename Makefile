@@ -8,7 +8,6 @@ OTEL_STABLE_VERSION=main
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
 CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
-GO_COMPAT_VERSION=$(shell grep '^go ' go.mod | awk '{print $$2}')
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -176,15 +175,15 @@ ifndef VERSION
 	$(error VERSION is required. Usage: make bump-go-version VERSION=1.24.11)
 endif
 	@echo "Bumping Go version to $(VERSION)..."
-	
+
 	# Update main go.mod
 	@echo "Updating main go.mod..."
 	@sed -i '' -E 's/^go [0-9]+\.[0-9]+.*/go $(VERSION)/' go.mod
-	
+
 	# Update all module go.mod files
 	@echo "Updating all module go.mod files..."
 	@find . -name "go.mod" -type f -not -path "./go.mod" -exec sed -i '' -E 's/^go [0-9]+\.[0-9]+\.[0-9]+/go $(VERSION)/g' {} \;
-	
+
 	@echo ""
 	@echo "✓ Successfully bumped golang version to $(VERSION)"
 	@echo ""
@@ -433,7 +432,7 @@ gendistributions:
 
 .PHONY: gencodecov
 gencodecov:
-	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
+	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
 
 # Regenerates all code, then updates CODEOWNERS, issue templates and component labels in .github
 .PHONY: update-codeowners
@@ -723,7 +722,11 @@ crosslink:
 
 .PHONY: actionlint
 actionlint:
-	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(filter-out $(wildcard .github/workflows/*windows.y*), $(wildcard .github/workflows/*.y*))
+	@if [ -z "$(ACTIONLINT)" ]; then \
+		echo "actionlint failed to build (see errors above); refusing to report success"; \
+		exit 1; \
+	fi
+	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(wildcard .github/workflows/*.y*)
 
 .PHONY: clean
 clean:

@@ -88,6 +88,12 @@ all_set:
     mongodb.operation.time:
       enabled: true
       attributes: ["operation"]
+    mongodb.oplog.limit:
+      enabled: true
+    mongodb.oplog.usage:
+      enabled: true
+    mongodb.oplog.window:
+      enabled: true
     mongodb.page_faults:
       enabled: true
     mongodb.queries.rate:
@@ -104,6 +110,18 @@ all_set:
       enabled: true
     mongodb.repl_updates_per_sec:
       enabled: true
+    mongodb.replica.status:
+      enabled: true
+      attributes: ["mongodb.replica.state"]
+    mongodb.replica_set.headroom:
+      enabled: true
+      attributes: ["mongodb.replica.name"]
+    mongodb.replica_set.lag:
+      enabled: true
+      attributes: ["mongodb.replica.name","mongodb.replica_set.lag.type"]
+    mongodb.replica_set.member.count:
+      enabled: true
+      attributes: ["mongodb.replica.state"]
     mongodb.session.count:
       enabled: true
     mongodb.storage.size:
@@ -133,6 +151,8 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     server.address:
       enabled: true
     server.port:
@@ -232,6 +252,12 @@ reaggregate_set:
     mongodb.operation.time:
       enabled: true
       attributes: []
+    mongodb.oplog.limit:
+      enabled: true
+    mongodb.oplog.usage:
+      enabled: true
+    mongodb.oplog.window:
+      enabled: true
     mongodb.page_faults:
       enabled: true
     mongodb.queries.rate:
@@ -248,6 +274,18 @@ reaggregate_set:
       enabled: true
     mongodb.repl_updates_per_sec:
       enabled: true
+    mongodb.replica.status:
+      enabled: true
+      attributes: []
+    mongodb.replica_set.headroom:
+      enabled: true
+      attributes: []
+    mongodb.replica_set.lag:
+      enabled: true
+      attributes: []
+    mongodb.replica_set.member.count:
+      enabled: true
+      attributes: []
     mongodb.session.count:
       enabled: true
     mongodb.storage.size:
@@ -277,6 +315,8 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     server.address:
       enabled: true
     server.port:
@@ -376,6 +416,12 @@ none_set:
     mongodb.operation.time:
       enabled: false
       attributes: ["operation"]
+    mongodb.oplog.limit:
+      enabled: false
+    mongodb.oplog.usage:
+      enabled: false
+    mongodb.oplog.window:
+      enabled: false
     mongodb.page_faults:
       enabled: false
     mongodb.queries.rate:
@@ -392,6 +438,18 @@ none_set:
       enabled: false
     mongodb.repl_updates_per_sec:
       enabled: false
+    mongodb.replica.status:
+      enabled: false
+      attributes: ["mongodb.replica.state"]
+    mongodb.replica_set.headroom:
+      enabled: false
+      attributes: ["mongodb.replica.name"]
+    mongodb.replica_set.lag:
+      enabled: false
+      attributes: ["mongodb.replica.name","mongodb.replica_set.lag.type"]
+    mongodb.replica_set.member.count:
+      enabled: false
+      attributes: ["mongodb.replica.state"]
     mongodb.session.count:
       enabled: false
     mongodb.storage.size:
@@ -421,6 +479,8 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.version:
+      enabled: false
     server.address:
       enabled: false
     server.port:
@@ -433,6 +493,9 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      override_value: "override-db.system.version"
     server.address:
       enabled: true
       override_value: "override-server.address"
@@ -450,6 +513,12 @@ override_set:
       override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     server.address:
       enabled: true
       metrics_include:
@@ -482,6 +551,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     server.address:
       enabled: true
       metrics_exclude:
