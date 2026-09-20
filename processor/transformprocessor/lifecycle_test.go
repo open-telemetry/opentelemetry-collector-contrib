@@ -17,19 +17,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
+type contextKey struct{}
+
 type contextCapturingLogsConsumer struct {
 	ctx context.Context
 }
 
-func (c *contextCapturingLogsConsumer) ConsumeLogs(
-	ctx context.Context,
-	_ plog.Logs,
-) error {
+func (c *contextCapturingLogsConsumer) ConsumeLogs(ctx context.Context, _ plog.Logs) error {
 	c.ctx = ctx
 	return nil
 }
 
-func (c *contextCapturingLogsConsumer) Capabilities() consumer.Capabilities {
+func (*contextCapturingLogsConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
@@ -58,7 +57,7 @@ func TestTransformProcessorLifecycle(t *testing.T) {
 
 	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
-	ctxKey := struct{}{}
+	var ctxKey contextKey
 	ctx := context.WithValue(t.Context(), ctxKey, "test-value")
 
 	require.NoError(t, p.ConsumeLogs(ctx, plog.NewLogs()))
