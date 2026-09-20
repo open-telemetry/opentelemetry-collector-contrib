@@ -274,10 +274,12 @@ metrics:
     enabled: false
     description: "Container cpu utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `container.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.container.cpu_limit_utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's limits"
@@ -308,10 +310,12 @@ metrics:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `container.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.container.memory_limit_utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the container's limits"
@@ -560,10 +564,12 @@ metrics:
     enabled: false
     description: "Pod cpu utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.pod.cpu.pressure.avg:
     enabled: false
     description: "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
@@ -678,10 +684,12 @@ metrics:
     enabled: false
     description: "Pod memory utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.pod.memory.page_faults:
     enabled: true
     description: "Pod memory page_faults"
