@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
@@ -30,6 +31,9 @@ const (
 var (
 	ErrURINotSupported     = errors.New("uri is not supported by Google Secret Manager Provider")
 	ErrAccessSecretVersion = errors.New("failed to access secret version")
+	ErrInvalidURI          = errors.New("invalid google secret manager uri format")
+
+	gcpSecretVersionRegexp = regexp.MustCompile(`^projects/[^/]+/secrets/[^/]+/versions/[^/]+$`)
 )
 
 type provider struct {
@@ -49,6 +53,9 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 		return nil, fmt.Errorf("%q: %w", uri, ErrURINotSupported)
 	}
 	secretName := strings.TrimPrefix(uri, schemeName+":")
+	if !gcpSecretVersionRegexp.MatchString(secretName) {
+		return nil, fmt.Errorf("%q: %w", uri, ErrInvalidURI)
+	}
 	if p.client == nil {
 		client, err := secretmanager.NewClient(ctx)
 		if err != nil {

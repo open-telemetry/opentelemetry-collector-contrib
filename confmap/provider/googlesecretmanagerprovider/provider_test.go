@@ -82,6 +82,26 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 			wantError: ErrURINotSupported,
 		},
 		{
+			name:      "Empty secret path",
+			uri:       schemeName + ":",
+			wantError: ErrInvalidURI,
+		},
+		{
+			name:      "Double slash URL format",
+			uri:       schemeName + "://projects/my-project/secrets/secret-1/versions/1",
+			wantError: ErrInvalidURI,
+		},
+		{
+			name:      "Missing version in resource path",
+			uri:       schemeName + ":projects/my-project/secrets/secret-1",
+			wantError: ErrInvalidURI,
+		},
+		{
+			name:      "Malformed path string",
+			uri:       schemeName + ":invalid-resource-format",
+			wantError: ErrInvalidURI,
+		},
+		{
 			name:      "secret entry does not exist in the secret manager",
 			uri:       schemeName + ":projects/my-project/secrets/non-existent/versions/1",
 			wantError: ErrAccessSecretVersion,
