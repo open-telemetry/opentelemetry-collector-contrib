@@ -17,14 +17,17 @@ const (
 	conntrackMetricsLen = 2
 )
 
+// allTCPStates lists the TCP connection state names gopsutil's Linux implementation
+// reports (see shirou/gopsutil/v4/net/net_linux.go's tcpStatuses map), so that states
+// with zero current connections are still reported as an explicit zero.
 var allTCPStates = []string{
 	"CLOSE_WAIT",
 	"CLOSE",
 	"CLOSING",
 	"DELETE",
 	"ESTABLISHED",
-	"FIN_WAIT_1",
-	"FIN_WAIT_2",
+	"FIN_WAIT1",
+	"FIN_WAIT2",
 	"LAST_ACK",
 	"LISTEN",
 	"SYN_SENT",
