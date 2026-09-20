@@ -335,7 +335,7 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			params,
 			cfg,
 			cache)
-			
+
 		if isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
 			sqlServerScraper.versionFunc = provider.detectVersion
 		}
