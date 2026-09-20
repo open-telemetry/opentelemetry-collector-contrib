@@ -335,7 +335,10 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			params,
 			cfg,
 			cache)
-		sqlServerScraper.versionFunc = provider.detectVersion
+			
+		if isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.versionFunc = provider.detectVersion
+		}
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}
@@ -392,7 +395,10 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			params,
 			cfg,
 			cache)
-		sqlServerScraper.versionFunc = provider.detectVersion
+
+		if isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.versionFunc = provider.detectVersion
+		}
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}
@@ -590,4 +596,11 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverDiskOperations.Enabled ||
 		metrics.SqlserverDiskIo.Enabled
+}
+
+func isDbSystemVersionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {
+	if resourceAttrs == nil {
+		return false
+	}
+	return resourceAttrs.DbSystemVersion.Enabled
 }
