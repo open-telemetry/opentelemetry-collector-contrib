@@ -311,7 +311,7 @@ type metricActiveDirectoryDsBindRate struct {
 func (m *metricActiveDirectoryDsBindRate) init() {
 	m.data.SetName("active_directory.ds.bind.rate")
 	m.data.SetDescription("The number of binds per second serviced by this domain controller.")
-	m.data.SetUnit("{binds}/s")
+	m.data.SetUnit("{bind}/s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -451,7 +451,7 @@ type metricActiveDirectoryDsLdapBindRate struct {
 func (m *metricActiveDirectoryDsLdapBindRate) init() {
 	m.data.SetName("active_directory.ds.ldap.bind.rate")
 	m.data.SetDescription("The number of successful LDAP binds per second.")
-	m.data.SetUnit("{binds}/s")
+	m.data.SetUnit("{bind}/s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -503,7 +503,7 @@ type metricActiveDirectoryDsLdapClientSessionCount struct {
 func (m *metricActiveDirectoryDsLdapClientSessionCount) init() {
 	m.data.SetName("active_directory.ds.ldap.client.session.count")
 	m.data.SetDescription("The number of connected LDAP client sessions.")
-	m.data.SetUnit("{sessions}")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -555,7 +555,7 @@ type metricActiveDirectoryDsLdapSearchRate struct {
 func (m *metricActiveDirectoryDsLdapSearchRate) init() {
 	m.data.SetName("active_directory.ds.ldap.search.rate")
 	m.data.SetDescription("The number of LDAP searches per second.")
-	m.data.SetUnit("{searches}/s")
+	m.data.SetUnit("{search}/s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -657,7 +657,7 @@ type metricActiveDirectoryDsNotificationQueued struct {
 func (m *metricActiveDirectoryDsNotificationQueued) init() {
 	m.data.SetName("active_directory.ds.notification.queued")
 	m.data.SetDescription("The number of pending update notifications that have been queued to push to clients.")
-	m.data.SetUnit("{notifications}")
+	m.data.SetUnit("{notification}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -710,7 +710,7 @@ type metricActiveDirectoryDsOperationRate struct {
 func (m *metricActiveDirectoryDsOperationRate) init() {
 	m.data.SetName("active_directory.ds.operation.rate")
 	m.data.SetDescription("The number of operations performed per second.")
-	m.data.SetUnit("{operations}/s")
+	m.data.SetUnit("{operation}/s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -895,7 +895,7 @@ type metricActiveDirectoryDsReplicationObjectRate struct {
 func (m *metricActiveDirectoryDsReplicationObjectRate) init() {
 	m.data.SetName("active_directory.ds.replication.object.rate")
 	m.data.SetDescription("The number of objects transmitted by the Directory Replication Agent per second.")
-	m.data.SetUnit("{objects}/s")
+	m.data.SetUnit("{object}/s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -985,7 +985,7 @@ type metricActiveDirectoryDsReplicationOperationPending struct {
 func (m *metricActiveDirectoryDsReplicationOperationPending) init() {
 	m.data.SetName("active_directory.ds.replication.operation.pending")
 	m.data.SetDescription("The number of pending replication operations for the Directory Replication Agent.")
-	m.data.SetUnit("{operations}")
+	m.data.SetUnit("{operation}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1038,7 +1038,7 @@ type metricActiveDirectoryDsReplicationPropertyRate struct {
 func (m *metricActiveDirectoryDsReplicationPropertyRate) init() {
 	m.data.SetName("active_directory.ds.replication.property.rate")
 	m.data.SetDescription("The number of properties transmitted by the Directory Replication Agent per second.")
-	m.data.SetUnit("{properties}/s")
+	m.data.SetUnit("{property}/s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1128,7 +1128,7 @@ type metricActiveDirectoryDsReplicationSyncObjectPending struct {
 func (m *metricActiveDirectoryDsReplicationSyncObjectPending) init() {
 	m.data.SetName("active_directory.ds.replication.sync.object.pending")
 	m.data.SetDescription("The number of objects remaining until the full sync completes for the Directory Replication Agent.")
-	m.data.SetUnit("{objects}")
+	m.data.SetUnit("{object}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1181,7 +1181,7 @@ type metricActiveDirectoryDsReplicationSyncRequestCount struct {
 func (m *metricActiveDirectoryDsReplicationSyncRequestCount) init() {
 	m.data.SetName("active_directory.ds.replication.sync.request.count")
 	m.data.SetDescription("The number of sync requests made by the Directory Replication Agent.")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1272,7 +1272,7 @@ type metricActiveDirectoryDsReplicationValueRate struct {
 func (m *metricActiveDirectoryDsReplicationValueRate) init() {
 	m.data.SetName("active_directory.ds.replication.value.rate")
 	m.data.SetDescription("The number of values transmitted by the Directory Replication Agent per second.")
-	m.data.SetUnit("{values}/s")
+	m.data.SetUnit("{value}/s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1365,7 +1365,7 @@ type metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued struct {
 func (m *metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued) init() {
 	m.data.SetName("active_directory.ds.security_descriptor_propagations_event.queued")
 	m.data.SetDescription("The number of security descriptor propagation events that are queued for processing.")
-	m.data.SetUnit("{events}")
+	m.data.SetUnit("{event}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1418,7 +1418,7 @@ type metricActiveDirectoryDsSuboperationRate struct {
 func (m *metricActiveDirectoryDsSuboperationRate) init() {
 	m.data.SetName("active_directory.ds.suboperation.rate")
 	m.data.SetDescription("The rate of sub-operations performed.")
-	m.data.SetUnit("{suboperations}/s")
+	m.data.SetUnit("{suboperation}/s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1508,7 +1508,7 @@ type metricActiveDirectoryDsThreadCount struct {
 func (m *metricActiveDirectoryDsThreadCount) init() {
 	m.data.SetName("active_directory.ds.thread.count")
 	m.data.SetDescription("The number of threads in use by the directory service.")
-	m.data.SetUnit("{threads}")
+	m.data.SetUnit("{thread}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
