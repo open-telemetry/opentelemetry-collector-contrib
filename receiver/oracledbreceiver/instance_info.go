@@ -93,6 +93,9 @@ func detectInstanceInfo(
 	}
 	info.dbVersion = rows[0][colVersion]
 	info.dbEdition = rows[0][colEdition]
+	if info.dbEdition == "" {
+		logger.Debug("Oracle edition not reported by v$instance. db.system.edition will not be set")
+	}
 	logger.Info("detected Oracle version", zap.String("version", info.dbVersion), zap.String("edition", info.dbEdition))
 
 	if majorVersion(info.dbVersion) < minMultitenantVersion {
