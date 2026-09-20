@@ -847,6 +847,43 @@ func TestSubtrace_EvictedSubtracesAreReleasedNotDropped(t *testing.T) {
 	assert.Equal(t, capacity+overflow, sink.SpanCount())
 }
 
+func TestSubtrace_EvictionDoesNotIncrementIncompleteReleases(t *testing.T) {
+	const (
+		capacity = 3
+		overflow = 2
+	)
+
+	tel := componenttest.NewTelemetry()
+	defer func() { assert.NoError(t, tel.Shutdown(t.Context())) }()
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    capacity,
+		NumWorkers:   1,
+		WaitDuration: 50 * time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessorWithSettings(t, cfg, sink, metadatatest.NewSettings(tel))
+
+	for i := byte(1); i <= byte(capacity+overflow); i++ {
+		spanID := makeSpanID(i)
+		require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(makeTraceID(i), "svc", spanID)))
+	}
+
+	// Wait until all spans have been released: evicted ones go right away, the
+	// rest go after wait_duration. Once all are out, the pending timers for the
+	// evicted subtraces must have already fired.
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == capacity+overflow
+	}, 5*time.Second, 5*time.Millisecond, "not all spans reached the next consumer")
+
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	metadatatest.AssertEqualProcessorGroupbytraceIncompleteReleases(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 0}},
+		metricdatatest.IgnoreTimestamp())
+}
+
 // spanIDsAcross returns the span IDs found in all of the given batches.
 func spanIDsAcross(batches []ptrace.Traces) map[pcommon.SpanID]bool {
 	ids := map[pcommon.SpanID]bool{}
@@ -1071,6 +1108,7 @@ func newSubtraceProcessorWithSettings(t *testing.T, cfg Config, sink *consumerte
 	p.eventMachine.onSubtraceRemoved = p.onSubtraceRemoved
 	for _, w := range p.eventMachine.workers {
 		w.subtraceBuffer = newSubtraceRingBuffer(cfg.NumTraces / cfg.NumWorkers)
+		w.evictedSubtraces = make(map[subtraceID]struct{})
 		w.subSt = newSubtraceMemoryStorage(p.telemetryBuilder)
 	}
 
