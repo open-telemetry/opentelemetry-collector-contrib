@@ -1866,6 +1866,7 @@ func TestStart_VersionDetectionSuccess(t *testing.T) {
 	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(versionClient, nil)
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
@@ -1881,6 +1882,7 @@ func TestStart_VersionDetectionConnectFailure(t *testing.T) {
 		Return((*mockClient)(nil), errors.New("connection refused"))
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	core, logs := observer.New(zapcore.WarnLevel)
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = zap.New(core)
@@ -1900,6 +1902,7 @@ func TestStart_VersionDetectionQueryFailure(t *testing.T) {
 	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(versionClient, nil)
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	core, logs := observer.New(zapcore.WarnLevel)
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = zap.New(core)
