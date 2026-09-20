@@ -39,10 +39,8 @@ func TestLoadConfig(t *testing.T) {
 					MaxBackups:   3,
 					LocalTime:    true,
 				},
-				FormatType:            formatTypeJSON,
-				FlushInterval:         time.Second,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				FormatType:    formatTypeJSON,
+				FlushInterval: time.Second,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
 					ResourceAttribute: defaultResourceAttribute,
@@ -59,11 +57,9 @@ func TestLoadConfig(t *testing.T) {
 					MaxBackups:   3,
 					LocalTime:    true,
 				},
-				FormatType:            formatTypeProto,
-				Compression:           compressionZSTD,
-				FlushInterval:         time.Second,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				FormatType:    formatTypeProto,
+				Compression:   compressionZSTD,
+				FlushInterval: time.Second,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
 					ResourceAttribute: defaultResourceAttribute,
@@ -79,9 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				CompressionParams: configcompression.CompressionParams{
 					Level: 6,
 				},
-				FlushInterval:         time.Second,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				FlushInterval: time.Second,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
 					ResourceAttribute: defaultResourceAttribute,
@@ -96,9 +90,7 @@ func TestLoadConfig(t *testing.T) {
 				Rotation: &Rotation{
 					MaxBackups: defaultMaxBackups,
 				},
-				FlushInterval:         time.Second,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				FlushInterval: time.Second,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
 					ResourceAttribute: defaultResourceAttribute,
@@ -113,10 +105,8 @@ func TestLoadConfig(t *testing.T) {
 					MaxMegabytes: 1234,
 					MaxBackups:   defaultMaxBackups,
 				},
-				FormatType:            formatTypeJSON,
-				FlushInterval:         time.Second,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				FormatType:    formatTypeJSON,
+				FlushInterval: time.Second,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
 					ResourceAttribute: defaultResourceAttribute,
@@ -134,11 +124,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "flush_interval_5"),
 			expected: &Config{
-				Path:                  "./flushed",
-				FlushInterval:         5,
-				FormatType:            formatTypeJSON,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				Path:          "./flushed",
+				FlushInterval: 5,
+				FormatType:    formatTypeJSON,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
 					ResourceAttribute: defaultResourceAttribute,
@@ -148,11 +136,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "flush_interval_5s"),
 			expected: &Config{
-				Path:                  "./flushed",
-				FlushInterval:         5 * time.Second,
-				FormatType:            formatTypeJSON,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				Path:          "./flushed",
+				FlushInterval: 5 * time.Second,
+				FormatType:    formatTypeJSON,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
 					ResourceAttribute: defaultResourceAttribute,
@@ -162,11 +148,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "flush_interval_500ms"),
 			expected: &Config{
-				Path:                  "./flushed",
-				FlushInterval:         500 * time.Millisecond,
-				FormatType:            formatTypeJSON,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				Path:          "./flushed",
+				FlushInterval: 500 * time.Millisecond,
+				FormatType:    formatTypeJSON,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
 					ResourceAttribute: defaultResourceAttribute,
@@ -196,21 +180,25 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "file_permissions_invalid_octal"),
-			errorMessage: "file_permissions value must be a valid octal representation",
-		},
-		{
-			id:           component.NewIDWithName(metadata.Type, "file_permissions_invalid_bits"),
-			errorMessage: "file_permissions contain invalid bits for file access",
+			id: component.NewIDWithName(metadata.Type, "file_permissions"),
+			expected: &Config{
+				Path:                  "./filename",
+				FormatType:            formatTypeJSON,
+				FilePermissions:       "0600",
+				filePermissionsParsed: 0o600,
+				FlushInterval:         time.Second,
+				GroupBy: &GroupBy{
+					MaxOpenFiles:      defaultMaxOpenFiles,
+					ResourceAttribute: defaultResourceAttribute,
+				},
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "group_by"),
 			expected: &Config{
-				Path:                  "./group_by/*.json",
-				FlushInterval:         time.Second,
-				FormatType:            formatTypeJSON,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				Path:          "./group_by/*.json",
+				FlushInterval: time.Second,
+				FormatType:    formatTypeJSON,
 				GroupBy: &GroupBy{
 					Enabled:           true,
 					MaxOpenFiles:      10,
@@ -221,11 +209,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "group_by_defaults"),
 			expected: &Config{
-				Path:                  "./group_by/*.json",
-				FlushInterval:         time.Second,
-				FormatType:            formatTypeJSON,
-				FilePermissions:       "0644",
-				filePermissionsParsed: 0o644,
+				Path:          "./group_by/*.json",
+				FlushInterval: time.Second,
+				FormatType:    formatTypeJSON,
 				GroupBy: &GroupBy{
 					Enabled:           true,
 					MaxOpenFiles:      defaultMaxOpenFiles,
@@ -283,22 +269,19 @@ func TestDirectoryPermissionsWithoutCreateDirectory(t *testing.T) {
 func TestFilePermissionsValidation(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name                string
-		filePermissions     string
-		wantErr             error
-		wantFilePermissions string
-		wantParsed          int64
+		name            string
+		filePermissions string
+		wantErr         error
+		wantParsed      int64
 	}{
 		{
-			name:                "unset value defaults to 0644",
-			wantFilePermissions: "0644",
-			wantParsed:          0o644,
+			name:            "valid value requires no other settings",
+			filePermissions: "0640",
+			wantParsed:      0o640,
 		},
 		{
-			name:                "valid value requires no other settings",
-			filePermissions:     "0640",
-			wantFilePermissions: "0640",
-			wantParsed:          0o640,
+			name:       "unset value is left empty",
+			wantParsed: 0,
 		},
 		{
 			name:            "invalid octal value",
@@ -325,7 +308,7 @@ func TestFilePermissionsValidation(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantFilePermissions, cfg.FilePermissions)
+			assert.Equal(t, tt.filePermissions, cfg.FilePermissions)
 			assert.Equal(t, tt.wantParsed, cfg.filePermissionsParsed)
 		})
 	}

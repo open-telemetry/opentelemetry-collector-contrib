@@ -19,6 +19,8 @@ import (
 const (
 	rotationFieldName = "rotation"
 	backupsFieldName  = "max_backups"
+
+	// Permissions used when creating new export files.
 	defaultFilePermissions = 0o644
 )
 
@@ -187,18 +189,18 @@ func (cfg *Config) Validate() error {
 		return errDirPermsRequireCreate
 	}
 
-	// Validate and parse file permissions, defaulting to 0644 if not provided.
-	if cfg.FilePermissions == "" {
-		cfg.FilePermissions = "0644"
+	// Validate and parse file permissions. When unset, the writer falls back
+	// to defaultFilePermissions; no default is materialized here.
+	if cfg.FilePermissions != "" {
+		filePermissions, err := strconv.ParseInt(cfg.FilePermissions, 8, 32)
+		if err != nil {
+			return errInvalidFilePermissionsOctal
+		}
+		if filePermissions&int64(os.ModePerm) != filePermissions {
+			return errInvalidFilePermissionsBits
+		}
+		cfg.filePermissionsParsed = filePermissions
 	}
-	filePermissions, err := strconv.ParseInt(cfg.FilePermissions, 8, 32)
-	if err != nil {
-		return errInvalidFilePermissionsOctal
-	}
-	if filePermissions&int64(os.ModePerm) != filePermissions {
-		return errInvalidFilePermissionsBits
-	}
-	cfg.filePermissionsParsed = filePermissions
 
 	return nil
 }

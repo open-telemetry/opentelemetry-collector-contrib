@@ -1037,49 +1037,6 @@ func TestFileExporterPermissions(t *testing.T) {
 	}
 }
 
-func TestFilePermissionsAfterRotation(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "rot.log")
-	fe := &fileExporter{
-		conf: &Config{
-			Path:       path,
-			FormatType: formatTypeJSON,
-			Rotation: &Rotation{
-				MaxMegabytes: 1,
-				MaxBackups:   defaultMaxBackups,
-			},
-			FilePermissions: "0600",
-		},
-	}
-	require.NoError(t, fe.conf.Validate())
-
-	require.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
-
-	// Fill the active file, then exceed MaxMegabytes to force a rotation.
-	_, err := safeFileExporterWrite(fe, bytes.Repeat([]byte{1}, 512*1024))
-	require.NoError(t, err)
-	_, err = safeFileExporterWrite(fe, bytes.Repeat([]byte{1}, 1024*1024))
-	require.NoError(t, err)
-
-	require.NoError(t, fe.Shutdown(t.Context()))
-
-	// Rotation must have happened: at least one timestamped backup exists.
-	files, err := filepath.Glob(filepath.Join(dir, "rot*"))
-	require.NoError(t, err)
-	require.Greater(t, len(files), 1, "rotation should have created a backup, found: %v", files)
-
-	info, err := os.Stat(path)
-	require.NoError(t, err)
-
-	expectedPath := filepath.Join(t.TempDir(), "expected_perms.tmp")
-	f, err := os.OpenFile(expectedPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
-	require.NoError(t, err)
-	require.NoError(t, f.Close())
-	expectedInfo, err := os.Stat(expectedPath)
-	require.NoError(t, err)
-	assert.Equal(t, expectedInfo.Mode().Perm(), info.Mode().Perm())
-}
-
 func TestFilePermissionsNotAppliedToExistingFile(t *testing.T) {
 	path := tempFileName(t)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)

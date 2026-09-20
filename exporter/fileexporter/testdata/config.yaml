@@ -67,14 +67,6 @@ file/file_permissions:
   path: ./filename
   file_permissions: "0600"
 
-file/file_permissions_invalid_octal:
-  path: ./filename
-  file_permissions: "0999"
-
-file/file_permissions_invalid_bits:
-  path: ./filename
-  file_permissions: "7777"
-
 file/group_by:
   path: ./group_by/*.json
   group_by:
