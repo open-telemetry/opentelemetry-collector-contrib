@@ -1,0 +1,4 @@
+change_type: new_component
+component: extension/file_telemetry_policy
+note: Add filetelemetrypolicy extension skeleton.
+issues: [50965]

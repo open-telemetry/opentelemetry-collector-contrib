@@ -191,14 +191,14 @@ func Test_IsMatchFactory(t *testing.T) {
 		factory := NewIsMatchFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IsMatchArguments[any]{}, args)
+		assert.IsType(t, &isMatchArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Pattern"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewIsMatchFactory[any]()
 		args := factory.CreateDefaultArguments()
-		isMatchArgs, ok := args.(*IsMatchArguments[any])
+		isMatchArgs, ok := args.(*isMatchArguments[any])
 		require.True(t, ok)
 		isMatchArgs.Target = &ottl.StandardStringLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -218,6 +218,21 @@ func Test_IsMatchFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createIsMatchFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "IsMatchFactory args must be of type *IsMatchArguments[K]")
+		assert.ErrorContains(t, err, "IsMatchFactory args must be of type *isMatchArguments[K]")
 	})
+}
+
+func BenchmarkIsMatch(b *testing.B) {
+	exprFunc, err := isMatch[any](
+		ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "payment-service-42", nil }},
+		ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return `^[a-z-]+-\d+$`, nil }},
+	)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
