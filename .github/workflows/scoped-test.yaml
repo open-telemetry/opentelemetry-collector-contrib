@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   changedfiles:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: ${{ github.actor != 'dependabot[bot]' }}
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
@@ -81,6 +81,11 @@ jobs:
     env:
       # The gcc installed on the Windows arm64 runner doesn't ship native ARM libraries so we need to disable CGO.
       CGO_ENABLED: ${{ matrix.runner == 'windows-11-arm' && '0' || '' }}
+      # On the disk-constrained Windows runners, free the Go caches between
+      # components once free space drops below this many MiB so a large affected
+      # set does not exhaust the disk. Left empty on Linux, which has plenty of
+      # disk after free-disk-space.sh runs in setup-go-tools.
+      FREE_DISK_THRESHOLD_MIB: ${{ startsWith(matrix.runner, 'windows') && '4096' || '' }}
     steps:
       - name: Echo changed files
         shell: bash
@@ -96,6 +101,7 @@ jobs:
       - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          gomoddownload: "false"
 
       - name: Run changed tests
         if: needs.changedfiles.outputs.go_tests
@@ -122,7 +128,7 @@ jobs:
   scoped-tests:
     # Keeps the name of the job required for merging in the GH configuration, make it
     # wait for all runners completion
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [scoped-tests-matrix]
     steps:
       - name: Print result
