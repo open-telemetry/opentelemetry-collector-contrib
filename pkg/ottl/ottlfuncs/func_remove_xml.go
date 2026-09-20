@@ -20,6 +20,8 @@ type removeXMLArguments[K any] struct {
 	XPath  string
 }
 
+// NewRemoveXMLFactory returns a factory for the RemoveXML OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#removexml
 func NewRemoveXMLFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("RemoveXML", &removeXMLArguments[K]{}, createRemoveXMLFunction[K])
 }

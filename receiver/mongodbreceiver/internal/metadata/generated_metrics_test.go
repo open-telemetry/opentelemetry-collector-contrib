@@ -86,6 +86,10 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mongodb.operation.latency.time"] = mb.metricMongodbOperationLatencyTime.config.AggregationStrategy
 			aggMap["mongodb.operation.repl.count"] = mb.metricMongodbOperationReplCount.config.AggregationStrategy
 			aggMap["mongodb.operation.time"] = mb.metricMongodbOperationTime.config.AggregationStrategy
+			aggMap["mongodb.replica.status"] = mb.metricMongodbReplicaStatus.config.AggregationStrategy
+			aggMap["mongodb.replica_set.headroom"] = mb.metricMongodbReplicaSetHeadroom.config.AggregationStrategy
+			aggMap["mongodb.replica_set.lag"] = mb.metricMongodbReplicaSetLag.config.AggregationStrategy
+			aggMap["mongodb.replica_set.member.count"] = mb.metricMongodbReplicaSetMemberCount.config.AggregationStrategy
 			aggMap["mongodb.storage.size"] = mb.metricMongodbStorageSize.config.AggregationStrategy
 			aggMap["mongodb.wt.concurrent_transaction.ticket.in_use"] = mb.metricMongodbWtConcurrentTransactionTicketInUse.config.AggregationStrategy
 			aggMap["mongodb.wt.log.operation.count"] = mb.metricMongodbWtLogOperationCount.config.AggregationStrategy
@@ -258,6 +262,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordMongodbOplogLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMongodbOplogUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMongodbOplogWindowDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordMongodbPageFaultsDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -280,6 +293,30 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbReplUpdatesPerSecDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMongodbReplicaStatusDataPoint(ts, 1, AttributeMongodbReplicaStateStartup)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbReplicaStatusDataPoint(ts, 3, AttributeMongodbReplicaStatePrimary)
+			}
+
+			allMetricsCount++
+			mb.RecordMongodbReplicaSetHeadroomDataPoint(ts, 1, "mongodb.replica.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbReplicaSetHeadroomDataPoint(ts, 3, "mongodb.replica.name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordMongodbReplicaSetLagDataPoint(ts, 1, "mongodb.replica.name-val", AttributeMongodbReplicaSetLagTypeApplied)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbReplicaSetLagDataPoint(ts, 3, "mongodb.replica.name-val-2", AttributeMongodbReplicaSetLagTypeDurable)
+			}
+
+			allMetricsCount++
+			mb.RecordMongodbReplicaSetMemberCountDataPoint(ts, 1, AttributeMongodbReplicaStateStartup)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbReplicaSetMemberCountDataPoint(ts, 3, AttributeMongodbReplicaStatePrimary)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbSessionCountDataPoint(ts, 1)
@@ -349,6 +386,10 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMongodbOperationLatencyTime.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbOperationReplCount.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbOperationTime.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbReplicaStatus.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbReplicaSetHeadroom.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbReplicaSetLag.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbReplicaSetMemberCount.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbStorageSize.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbWtConcurrentTransactionTicketInUse.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbWtLogOperationCount.aggDataPoints)
@@ -1469,6 +1510,46 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("operation")
 						assert.False(t, ok)
 					}
+				case "mongodb.oplog.limit":
+					assert.False(t, validatedMetrics["mongodb.oplog.limit"], "Found a duplicate in the metrics slice: mongodb.oplog.limit")
+					validatedMetrics["mongodb.oplog.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The maximum amount of storage the oplog is allowed to use.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.oplog.usage":
+					assert.False(t, validatedMetrics["mongodb.oplog.usage"], "Found a duplicate in the metrics slice: mongodb.oplog.usage")
+					validatedMetrics["mongodb.oplog.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of storage the oplog is using.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.oplog.window":
+					assert.False(t, validatedMetrics["mongodb.oplog.window"], "Found a duplicate in the metrics slice: mongodb.oplog.window")
+					validatedMetrics["mongodb.oplog.window"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The time span between the oldest and the newest entry retained in the oplog.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.page_faults":
 					assert.False(t, validatedMetrics["mongodb.page_faults"], "Found a duplicate in the metrics slice: mongodb.page_faults")
 					validatedMetrics["mongodb.page_faults"] = true
@@ -1567,6 +1648,179 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "mongodb.replica.status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.replica.status"], "Found a duplicate in the metrics slice: mongodb.replica.status")
+						validatedMetrics["mongodb.replica.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The current state of the scraped replica.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mongodbReplicaStateAttrVal, ok := dp.Attributes().Get("mongodb.replica.state")
+						assert.True(t, ok)
+						assert.Equal(t, "startup", mongodbReplicaStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.replica.status"], "Found a duplicate in the metrics slice: mongodb.replica.status")
+						validatedMetrics["mongodb.replica.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The current state of the scraped replica.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.replica.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("mongodb.replica.state")
+						assert.False(t, ok)
+					}
+				case "mongodb.replica_set.headroom":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.replica_set.headroom"], "Found a duplicate in the metrics slice: mongodb.replica_set.headroom")
+						validatedMetrics["mongodb.replica_set.headroom"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The time margin a replica set member has before it falls off the end of the oplog.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						mongodbReplicaNameAttrVal, ok := dp.Attributes().Get("mongodb.replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "mongodb.replica.name-val", mongodbReplicaNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.replica_set.headroom"], "Found a duplicate in the metrics slice: mongodb.replica_set.headroom")
+						validatedMetrics["mongodb.replica_set.headroom"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The time margin a replica set member has before it falls off the end of the oplog.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodb.replica_set.headroom"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("mongodb.replica.name")
+						assert.False(t, ok)
+					}
+				case "mongodb.replica_set.lag":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.replica_set.lag"], "Found a duplicate in the metrics slice: mongodb.replica_set.lag")
+						validatedMetrics["mongodb.replica_set.lag"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The time a replica set member is behind the primary.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						mongodbReplicaNameAttrVal, ok := dp.Attributes().Get("mongodb.replica.name")
+						assert.True(t, ok)
+						assert.Equal(t, "mongodb.replica.name-val", mongodbReplicaNameAttrVal.Str())
+						mongodbReplicaSetLagTypeAttrVal, ok := dp.Attributes().Get("mongodb.replica_set.lag.type")
+						assert.True(t, ok)
+						assert.Equal(t, "applied", mongodbReplicaSetLagTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.replica_set.lag"], "Found a duplicate in the metrics slice: mongodb.replica_set.lag")
+						validatedMetrics["mongodb.replica_set.lag"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The time a replica set member is behind the primary.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mongodb.replica_set.lag"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("mongodb.replica.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mongodb.replica_set.lag.type")
+						assert.False(t, ok)
+					}
+				case "mongodb.replica_set.member.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.replica_set.member.count"], "Found a duplicate in the metrics slice: mongodb.replica_set.member.count")
+						validatedMetrics["mongodb.replica_set.member.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of members in the replica set.", mi.Description())
+						assert.Equal(t, "{member}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mongodbReplicaStateAttrVal, ok := dp.Attributes().Get("mongodb.replica.state")
+						assert.True(t, ok)
+						assert.Equal(t, "startup", mongodbReplicaStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.replica_set.member.count"], "Found a duplicate in the metrics slice: mongodb.replica_set.member.count")
+						validatedMetrics["mongodb.replica_set.member.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of members in the replica set.", mi.Description())
+						assert.Equal(t, "{member}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.replica_set.member.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("mongodb.replica.state")
+						assert.False(t, ok)
+					}
 				case "mongodb.session.count":
 					assert.False(t, validatedMetrics["mongodb.session.count"], "Found a duplicate in the metrics slice: mongodb.session.count")
 					validatedMetrics["mongodb.session.count"] = true

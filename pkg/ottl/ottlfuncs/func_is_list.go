@@ -19,6 +19,8 @@ type isListArguments[K any] struct {
 	Target ottl.Getter[K]
 }
 
+// NewIsListFactory returns a factory for the IsList OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#islist
 func NewIsListFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("IsList", &isListArguments[K]{}, createIsListFunction[K])
 }

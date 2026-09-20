@@ -80,6 +80,8 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 
 // NewTransformContext returns a new TransformContext from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
+// dataPoint is the exemplar's parent datapoint and must be one of pmetric.NumberDataPoint,
+// pmetric.HistogramDataPoint, pmetric.ExponentialHistogramDataPoint, or pmetric.SummaryDataPoint.
 func NewTransformContext(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dataPoint any, exemplar pmetric.Exemplar, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.resourceMetrics = resourceMetrics
@@ -112,6 +114,8 @@ func (tCtx *TransformContext) GetExemplar() pmetric.Exemplar {
 }
 
 // GetDataPoint returns the parent datapoint from the TransformContext.
+// The returned value is one of pmetric.NumberDataPoint, pmetric.HistogramDataPoint,
+// pmetric.ExponentialHistogramDataPoint, or pmetric.SummaryDataPoint.
 func (tCtx *TransformContext) GetDataPoint() any {
 	return tCtx.dataPoint
 }

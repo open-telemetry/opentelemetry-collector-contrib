@@ -27,6 +27,14 @@ resource_attributes:
     description: Endpoint of the MySQL instance.
     enabled: true
     type: string
+  server.address:
+    description: The address of the monitored MySQL instance. A loopback endpoint (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. With a Unix socket transport this is the socket path.
+    enabled: true
+    type: string
+  server.port:
+    description: The port of the monitored MySQL instance. Not reported with a Unix socket transport.
+    enabled: true
+    type: int
   service.instance.id:
     description: A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace.
     enabled: true
