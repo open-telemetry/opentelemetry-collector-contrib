@@ -44,16 +44,16 @@ func grpcExporterOptions(cfg *Config) ([]otlpmetricgrpc.Option, error) {
 // It configures the exporter with the provided endpoint, URL path, connection security settings, and headers.
 func httpExporterOptions(cfg *Config) ([]otlpmetrichttp.Option, error) {
 	endpoint := cfg.Endpoint()
-	httpExpOpt := []otlpmetrichttp.Option{otlpmetrichttp.WithURLPath(cfg.HTTPPath)}
+	var httpExpOpt []otlpmetrichttp.Option
 	if config.EndpointHasScheme(endpoint) {
 		httpExpOpt = append(httpExpOpt,
 			otlpmetrichttp.WithEndpointURL(endpoint),
 			otlpmetrichttp.WithURLPath(config.HTTPURLPath(endpoint, cfg.HTTPPath)),
 		)
 	} else {
-		endpoint, urlPath := config.ResolveHTTPEndpoint(endpoint, cfg.HTTPPath)
+		resolvedEndpoint, urlPath := config.ResolveHTTPEndpoint(endpoint, cfg.HTTPPath)
 		httpExpOpt = append(httpExpOpt,
-			otlpmetrichttp.WithEndpoint(endpoint),
+			otlpmetrichttp.WithEndpoint(resolvedEndpoint),
 			otlpmetrichttp.WithURLPath(urlPath),
 		)
 	}
