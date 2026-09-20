@@ -18,7 +18,7 @@ status:
 resource_attributes:
   db.system.edition:
     description: The edition of the Oracle Database instance (e.g. "EE", "SE2", "XE").
-    enabled: true
+    enabled: false
     type: string
   host.name:
     description: The host name of Oracle Server

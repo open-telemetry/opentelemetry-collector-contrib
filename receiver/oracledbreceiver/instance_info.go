@@ -87,13 +87,13 @@ func detectInstanceInfo(
 
 	rows, err := versionClient.metricRows(ctx)
 	if err != nil || len(rows) == 0 {
-		logger.Warn("oracledbreceiver: failed to detect Oracle version; oracle.db.version attribute will not be set",
+		logger.Warn("failed to detect Oracle version. db.system.version and db.system.edition will not be set",
 			zap.Error(err))
 		return info
 	}
 	info.dbVersion = rows[0][colVersion]
 	info.dbEdition = rows[0][colEdition]
-	logger.Info("oracledbreceiver: detected Oracle version", zap.String("version", info.dbVersion), zap.String("edition", info.dbEdition))
+	logger.Info("detected Oracle version", zap.String("version", info.dbVersion), zap.String("edition", info.dbEdition))
 
 	if majorVersion(info.dbVersion) < minMultitenantVersion {
 		logger.Info("oracledbreceiver: Oracle version is pre-12c; multitenant detection skipped",

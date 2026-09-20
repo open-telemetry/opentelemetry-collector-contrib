@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 12, res.Attributes().Len())
 			case "none_set":
@@ -43,7 +43,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 			dbSystemEditionAttrVal, ok := res.Attributes().Get("db.system.edition")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "db.system.edition-val", dbSystemEditionAttrVal.Str())
 			}
