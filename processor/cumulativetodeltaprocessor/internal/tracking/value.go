@@ -73,10 +73,7 @@ func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
 // Diff computes the delta between two sets of buckets with the same scale.
 func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out ExponentialBuckets, reset bool) {
 	if buckets.Offset > old.Offset {
-		preShiftLen := int(buckets.Offset - old.Offset)
-		if preShiftLen > len(old.BucketCounts) {
-			preShiftLen = len(old.BucketCounts)
-		}
+		preShiftLen := min(int(buckets.Offset-old.Offset), len(old.BucketCounts))
 		for _, oldCount := range old.BucketCounts[:preShiftLen] {
 			if oldCount > 0 {
 				return out, true
