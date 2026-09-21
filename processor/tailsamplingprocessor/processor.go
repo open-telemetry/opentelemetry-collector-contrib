@@ -296,14 +296,6 @@ type newPolicyCmd struct {
 	policies []*policy
 }
 
-// spanAndScope holds a span handle and the index of its instrumentation
-// scope in the source ResourceSpans. Handles are stored by value so grouping
-// does not heap-allocate a pointer per span.
-type spanAndScope struct {
-	span     ptrace.Span
-	scopeIdx int
-}
-
 var (
 	attrDecisionSampled    = metric.WithAttributes(attribute.String("sampled", "true"), attribute.String("decision", "sampled"))
 	attrDecisionNotSampled = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "not_sampled"))
@@ -1025,23 +1017,66 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 	return samplingpolicy.Pending, "", pkgsampling.AlwaysSampleThreshold
 }
 
-func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
-	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
-	ilss := resourceSpans.ScopeSpans()
-	for j := 0; j < ilss.Len(); j++ {
-		scope := ilss.At(j)
-		spans := scope.Spans()
-		spansLen := spans.Len()
-		for k := range spansLen {
+// splitResourceSpansByTrace copies spans from rss into one ResourceSpans per
+// trace ID. MutatesData is false, so we can't move the source. We copy in one
+// pass instead of grouping into a slice first.
+//
+// We walk scopes in order and never go back, so lastScope is enough to open
+// dest scopes in first-seen order.
+func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
+	srcScopes := rss.ScopeSpans()
+	type builder struct {
+		id        pcommon.TraceID
+		rs        ptrace.ResourceSpans
+		destScope ptrace.ScopeSpans
+		lastScope int // Last opened source scope for a dest (-1 until the first span)
+		count     int64
+		hasRoot   bool
+	}
+	builders := make([]builder, 0, 4)
+	index := make(map[pcommon.TraceID]int)
+
+	for j := 0; j < srcScopes.Len(); j++ {
+		srcScope := srcScopes.At(j)
+		spans := srcScope.Spans()
+		for k := 0; k < spans.Len(); k++ {
 			span := spans.At(k)
-			key := span.TraceID()
-			idToSpans[key] = append(idToSpans[key], spanAndScope{
-				span:     span,
-				scopeIdx: j,
-			})
+			id := span.TraceID()
+			i, ok := index[id]
+			if !ok {
+				rs := ptrace.NewResourceSpans()
+				rss.Resource().CopyTo(rs.Resource())
+				i = len(builders)
+				builders = append(builders, builder{id: id, rs: rs, lastScope: -1})
+				index[id] = i
+			}
+			b := &builders[i]
+			if b.lastScope != j {
+				dest := b.rs.ScopeSpans().AppendEmpty()
+				srcScope.Scope().CopyTo(dest.Scope())
+				b.destScope = dest
+				b.lastScope = j
+			}
+			destSpan := b.destScope.Spans().AppendEmpty()
+			span.CopyTo(destSpan)
+			b.count++
+			if destSpan.ParentSpanID().IsEmpty() {
+				b.hasRoot = true
+			}
 		}
 	}
-	return idToSpans
+
+	batches := make([]traceBatch, len(builders))
+	for i := range builders {
+		b := &builders[i]
+		batches[i] = traceBatch{
+			id:        b.id,
+			hasRoot:   b.hasRoot,
+			rss:       b.rs,
+			spanCount: b.count,
+		}
+	}
+	return batches
 }
 
 func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {
@@ -1301,30 +1336,4 @@ func appendAllTraces(dest, src ptrace.Traces) {
 	for i := 0; i < rs.Len(); i++ {
 		appendToTraces(dest, rs.At(i))
 	}
-}
-
-func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, bool) {
-	rs := ptrace.NewResourceSpans()
-	rss.Resource().CopyTo(rs.Resource())
-	var hasRoot bool
-
-	scopeIdxToNewScope := make(map[int]ptrace.ScopeSpans)
-	srcScopes := rss.ScopeSpans()
-	for _, spanAndScope := range spanAndScopes {
-		var sp ptrace.Span
-		if dest, ok := scopeIdxToNewScope[spanAndScope.scopeIdx]; !ok {
-			is := rs.ScopeSpans().AppendEmpty()
-			srcScopes.At(spanAndScope.scopeIdx).Scope().CopyTo(is.Scope())
-			scopeIdxToNewScope[spanAndScope.scopeIdx] = is
-			sp = is.Spans().AppendEmpty()
-		} else {
-			sp = dest.Spans().AppendEmpty()
-		}
-
-		spanAndScope.span.CopyTo(sp)
-		if sp.ParentSpanID().IsEmpty() {
-			hasRoot = true
-		}
-	}
-	return rs, hasRoot
 }
