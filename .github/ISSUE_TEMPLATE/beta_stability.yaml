@@ -241,6 +241,7 @@ body:
       - processor/resourcedetection/internal/vultr
       - processor/rollingspanlatency
       - processor/schema
+        - processor/certificatelogverify
       - processor/signing
       - processor/span
       - processor/spanpruning

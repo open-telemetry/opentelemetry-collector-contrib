@@ -244,6 +244,7 @@ processor/resourcedetectionprocessor/internal/vultr/             @open-telemetry
 processor/resourceprocessor/                                     @open-telemetry/collector-contrib-approvers @dmitryax
 processor/rollingspanlatencyprocessor/                           @open-telemetry/collector-contrib-approvers @atoulme @rnterbush @pavankrish123
 processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96 @dineshg13 @MikeGoldsmith
+processor/certificatelogverifyprocessor/                   @open-telemetry/collector-contrib-approvers @MJarmo
 processor/signingprocessor/                                      @open-telemetry/collector-contrib-approvers @hilmarf @jmacd
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/spanpruningprocessor/                                  @open-telemetry/collector-contrib-approvers @portertech @csmarchbanks

@@ -225,6 +225,7 @@ processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/
 processor/resourceprocessor processor/resource
 processor/rollingspanlatencyprocessor processor/rollingspanlatency
 processor/schemaprocessor processor/schema
+processor/certificatelogverifyprocessor processor/certificatelogverify
 processor/signingprocessor processor/signing
 processor/spanprocessor processor/span
 processor/spanpruningprocessor processor/spanpruning

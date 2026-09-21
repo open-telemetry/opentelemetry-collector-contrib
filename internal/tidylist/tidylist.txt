@@ -243,6 +243,7 @@ processor/remotetapprocessor
 processor/resourceprocessor
 processor/rollingspanlatencyprocessor
 processor/schemaprocessor
+processor/certificatelogverifyprocessor
 processor/signingprocessor
 processor/spanprocessor
 processor/spanpruningprocessor

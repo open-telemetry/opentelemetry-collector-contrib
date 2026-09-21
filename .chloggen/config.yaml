@@ -227,6 +227,7 @@ components:
     - processor/rolling_span_latency
     - processor/scalewaydetector
     - processor/schema
+    - processor/certificatelogverify
     - processor/signing
     - processor/span
     - processor/span_pruning
