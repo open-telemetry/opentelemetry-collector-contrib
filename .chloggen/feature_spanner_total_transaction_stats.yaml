@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add total minute transaction stats metrics to googlecloudspannerreceiver.
+issues: [00000]
