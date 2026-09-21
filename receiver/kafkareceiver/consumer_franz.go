@@ -380,7 +380,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		go func(pc *pc, partition kgo.FetchTopicPartition) {
 			defer wg.Done()
 			defer pc.wg.Done()
-			c.processPartitionBatch(ctx, pc, partition)
+			c.processPartitionBatch(pc, partition)
 		}(assign, p)
 	})
 	// Wait for all records to be processed and commit if autocommit=false.

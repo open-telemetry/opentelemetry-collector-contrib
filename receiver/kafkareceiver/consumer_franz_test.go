@@ -1319,7 +1319,7 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 						Offset:    offset,
 					})
 				}
-				return c.processPartitionBatch(t.Context(), pc, kgo.FetchTopicPartition{
+				return c.processPartitionBatch(pc, kgo.FetchTopicPartition{
 					Topic: topic,
 					FetchPartition: kgo.FetchPartition{
 						Partition:     partition,

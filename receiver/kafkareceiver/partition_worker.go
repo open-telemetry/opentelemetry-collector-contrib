@@ -131,7 +131,7 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 				break
 			}
 
-			result := c.processPartitionBatch(pc.ctx, pc, batch)
+			result := c.processPartitionBatch(pc, batch)
 			if result.rewindRecord != nil {
 				pc.mailbox.requestRewind(result.rewindRecord, true, func() {
 					pc.addPauseReason(partitionPauseRewind)
@@ -177,7 +177,7 @@ func (c *franzConsumer) applyMailboxRewind(pc *pc, tp topicPartition, partition 
 //     dequeues the batch. Records still waiting in the mailbox are not marked.
 //   - Legacy with autocommit disabled marks records here. consume commits all
 //     marked partitions after the fetched batch finishes.
-func (c *franzConsumer) processPartitionBatch(_ context.Context, pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
+func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
 	var fatalRecord *kgo.Record
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
