@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/googlecloudspannerreceiver
+note: "Add minute table operations stats metrics"
+issues: [00000]
+subtext: ""
+change_logs: []
