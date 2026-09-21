@@ -679,7 +679,7 @@ func (p *Parser[K]) warnExperimentalFuncs(funcs map[string]struct{}) {
 	}
 	sort.Strings(names)
 	p.telemetrySettings.Logger.Warn(
-		"OTTL configuration uses experimental functions that are not covered by the 1.0 stability guarantee; their names, arguments, and behavior may change or be removed",
+		"OTTL configuration uses experimental functions that are not covered by stability guarantees; their names, arguments, and behavior may change or be removed",
 		zap.Strings("functions", names),
 	)
 }
