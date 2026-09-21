@@ -141,7 +141,7 @@ func TestDetectInstanceInfo_VersionQueryFails(t *testing.T) {
 	assert.False(t, info.isCDB)
 	assert.False(t, info.connectedToPDB)
 	assert.Empty(t, info.pdbName)
-	assert.Equal(t, 1, logs.FilterMessage("failed to detect Oracle version. db.system.version and db.system.edition will not be set").Len())
+	assert.Equal(t, 1, logs.FilterMessage("failed to detect Oracle version. oracle.db.version and db.system.edition will not be set").Len())
 }
 
 func TestDetectInstanceInfo_Pre12c(t *testing.T) {
@@ -675,6 +675,7 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 
 func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.ResourceAttributes.DbSystemEdition.Enabled = true
 	scrpr := oracleScraper{
 		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 		metricsBuilderConfig: cfg,

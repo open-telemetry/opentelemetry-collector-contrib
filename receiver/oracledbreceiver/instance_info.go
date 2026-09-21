@@ -87,12 +87,15 @@ func detectInstanceInfo(
 
 	rows, err := versionClient.metricRows(ctx)
 	if err != nil || len(rows) == 0 {
-		logger.Warn("failed to detect Oracle version. db.system.version and db.system.edition will not be set",
+		logger.Warn("failed to detect Oracle version. oracle.db.version and db.system.edition will not be set",
 			zap.Error(err))
 		return info
 	}
 	info.dbVersion = rows[0][colVersion]
 	info.dbEdition = rows[0][colEdition]
+	if info.dbEdition == "UNKNOWN" {
+		info.dbEdition = ""
+	}
 	if info.dbEdition == "" {
 		logger.Debug("Oracle edition not reported by v$instance. db.system.edition will not be set")
 	}
