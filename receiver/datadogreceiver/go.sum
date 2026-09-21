@@ -4,8 +4,8 @@ github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.1 h1:Dq1
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.1/go.mod h1:VlKJvz1OMk1BqbYGGufAYM2/rCvdFdsZRpmFNKLwd3U=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.1 h1:2cWsZD+rvUSY1mCbkOUeoXX6gQGG7WaEPVrxeBVQBLM=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.1/go.mod h1:Wtw6XsoH0feiu9qV9zizVVxwrKfmarI3hpn2u2UrMW4=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.1 h1:EIK22tSrMOOzKvRoNQbAyYfbBeO14ZWJsW++dihtsOk=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.1/go.mod h1:NdP+h7D3ISSFsAavfJaJ0iav99C1wTfosp6EMwpf+A0=
+github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9 h1:7Y67wcAGNwLMbeSMLewuJtCeCwcqobINq+OW5kl9/fI=
+github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9/go.mod h1:STfiDM3cNuJJlNfLTXhm1kfZa888sF59g3wzikFBEmU=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0 h1:buzQiu650Big790IpvMD44TKfeaftCn8YV/sfTw8PNQ=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0/go.mod h1:5J8Zm8fXvvabODc2f6DoRoH5OCs/p8OHWCX9W4rB9uw=
 github.com/DataDog/datadog-agent/pkg/proto v0.83.1 h1:R6dUHu9HwvU4EiXYmeOAC9Mqd+WpemskZSn5opaz+Zk=
