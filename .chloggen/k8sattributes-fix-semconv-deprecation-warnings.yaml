@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/k8s_attributes
+
+note: Emit the semantic convention deprecation warnings that were unreachable because they were evaluated before the extraction rules were populated
+
+issues: [51188]
+
+subtext:
+
+change_logs: [user]

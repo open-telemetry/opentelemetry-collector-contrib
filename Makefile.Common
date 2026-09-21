@@ -288,6 +288,9 @@ endif
 .PHONY: check-stability-mod
 check-stability-mod:
 	@for dir in $$(find . -name '$(MDATAGEN_METADATA_YAML)' -exec dirname {} \; | sort -u); do \
+		if ! grep -qrl 'go:generate make mdatagen' "$$dir"/*.go 2>/dev/null; then \
+			continue; \
+		fi; \
 		$(MAKE) --no-print-directory -C "$$dir" check-stability COVERAGE_PROFILE="$(COVERAGE_PROFILE)" || exit 1; \
 	done
 
@@ -373,6 +376,8 @@ gci:
 	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $$($(ALL_SRC_AND_DOC_CMD))
 
 CHANGED_GOLANG_SOURCES?=$(shell git diff main --name-only | grep -E '.*\.go$$' | grep -v -E '.*_test\.go$$')
+# FREE_DISK_THRESHOLD_MIB: if set, runs `$(GOCMD) clean -cache -testcache` when free disk space is less than threshold.
+FREE_DISK_THRESHOLD_MIB?=
 .PHONY: for-affected-components
 for-affected-components:
 	@echo "Checking for affected components..."
@@ -389,6 +394,13 @@ for-affected-components:
 			(cd "$${dir}" && \
 				echo "running $${CMD} in $${dir}" && \
 				$${CMD} ); \
+			if [ -n "$${FREE_DISK_THRESHOLD_MIB}" ]; then \
+				avail=$$(df -BM --output=avail / | sed '1d;s/[^0-9]//g'); \
+				if [ "$${avail}" -lt "$${FREE_DISK_THRESHOLD_MIB}" ]; then \
+					echo "Available disk space $${avail} MiB is below threshold $${FREE_DISK_THRESHOLD_MIB} MiB; running 'go clean -cache -testcache'"; \
+					$(GOCMD) clean -cache -testcache; \
+				fi; \
+			fi; \
 			done \
 		fi \
 	fi

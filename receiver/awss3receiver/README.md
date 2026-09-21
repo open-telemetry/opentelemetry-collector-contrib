@@ -23,6 +23,10 @@ The receiver supports:
   - **Event-driven**: Process new objects as they arrive via SQS notifications
 
 ## Configuration
+
+> **Note:** This receiver was renamed from `awss3` to `aws_s3` to match the snake_case naming convention.
+> The deprecated component type `awss3` is still accepted as an alias and will log a deprecation warning.
+
 The following exporter configuration parameters are supported.
 
 | Name                    | Description                                                                                                                                | Default     | Required |
@@ -97,7 +101,7 @@ extension:
     unmarshaling_separator: "\r?\n"
 
 receivers:
-  awss3:
+  aws_s3:
     starttime: "2024-01-01 01:00"
     endtime: "2024-01-02"
     s3downloader:
@@ -112,7 +116,7 @@ receivers:
         suffix: ".txt"
 
 receivers:
-  awss3/sqs_traces:
+  aws_s3/sqs_traces:
     s3downloader:
       region: us-east-1
       s3_bucket: mybucket
@@ -128,11 +132,11 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [awss3/traces]
+      receivers: [aws_s3/traces]
       exporters: [otlp_grpc]
 
     traces/sqs:
-      receivers: [awss3/sqs_traces]
+      receivers: [aws_s3/sqs_traces]
       exporters: [otlp_grpc]
 ```
 

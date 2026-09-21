@@ -25,22 +25,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	customNameServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	customNameServerConfig.WriteTimeout = 0
-	customNameServerConfig.ReadHeaderTimeout = 0
-	customNameServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	customNameServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	customNameServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:8765",
 	}
 
 	parseStringsServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	parseStringsServerConfig.WriteTimeout = 0
-	parseStringsServerConfig.ReadHeaderTimeout = 0
-	parseStringsServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	parseStringsServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	parseStringsServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  defaultHTTPEndpoint,
