@@ -523,7 +523,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
 		rolname := item.Value[dbAttributePrefix+"rolname"].(string)
-		planCacheKey := database + "\x00" + rolname + "\x00" + queryID + "\x00plan"
+		planCacheKey := database + "\x00" + rolname + "\x00" + queryID
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
 		plan, ok := p.queryPlanCache.Get(planCacheKey)
