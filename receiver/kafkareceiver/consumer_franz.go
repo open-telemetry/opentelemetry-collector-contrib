@@ -513,7 +513,7 @@ func (c *franzConsumer) dispatchPartitionBatches(
 }
 
 func (c *franzConsumer) Shutdown(ctx context.Context) error {
-	c.telemetryBuilder.Shutdown()
+	defer c.telemetryBuilder.Shutdown()
 
 	// Report Stopping at shutdown start.
 	c.stoppingOnce.Do(func() { c.reportStatus(componentstatus.StatusStopping) })
