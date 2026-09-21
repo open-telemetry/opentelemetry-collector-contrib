@@ -52,6 +52,9 @@ and allows you to configure a list of statements for the processor to execute. T
 - OTTL statements. This option will meet most user's needs. See [Basic Config](#basic-config) for more details.
 - Objects, which allows users to apply configuration options to a specific list of statements. See [Advanced Config](#advanced-config) for more details.
 
+> [!NOTE]
+> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is experimental and subject to change or removal in the future.
+
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
 | Signal             | Path Prefix Values                                          |
@@ -1097,10 +1100,6 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 
 ## Feature Gate
 
-### `processor.transform.defaultErrorModeIgnore`
-
-The `processor.transform.defaultErrorModeIgnore` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) changes the default top-level `error_mode` of the transform processor from `propagate` to `ignore`. This gate is currently in `beta` (enabled by default), meaning the default `error_mode` is `ignore`. To revert to the previous default of `propagate`, disable the gate: `--feature-gates=-processor.transform.defaultErrorModeIgnore`.
-
 ### `transform.flatten.logs`
 
 The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the `flatten_data` configuration option (default `false`). With `flatten_data: true`, the processor provides each log record with a distinct copy of its resource and scope. Then, after applying all transformations, the log records are regrouped by resource and scope.
@@ -1139,3 +1138,10 @@ statements against each signal at 10,000 items/second:
 - Logs: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-ram-mib)
 
 Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/testbed/tests/transform_processor_test.go) for more information about the setup.
+
+Each function that is unique to the transform processor also has a Go benchmark covering its
+execution. Run them with:
+
+```sh
+make benchmark-transform
+```

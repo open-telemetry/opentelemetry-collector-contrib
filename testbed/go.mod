@@ -90,7 +90,7 @@ require (
 	github.com/DataDog/agent-payload/v5 v5.0.210 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.83.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.83.1 // indirect
