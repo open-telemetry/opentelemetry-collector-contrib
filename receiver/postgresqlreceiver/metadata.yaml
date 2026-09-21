@@ -50,7 +50,7 @@ feature_gates:
 
 resource_attributes:
   db.system.version:
-    description: The version of the PostgreSQL instance (e.g. "14.5").
+    description: The database version of the instance. Examples include "13.18" and "17.2".
     enabled: false
     type: string
   postgresql.database.name:

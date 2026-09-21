@@ -222,11 +222,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	defer listClient.Close()
 
-	if p.dbVersion == "" && p.dbSystemVersionEnabled() {
-		if v, vErr := listClient.getVersion(ctx); vErr == nil {
-			p.dbVersion = v
-		}
-	}
+	p.ensureDBVersion(ctx, listClient)
 
 	if len(databases) == 0 {
 		dbList, dbErr := listClient.listDatabases(ctx)
@@ -297,11 +293,7 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 		return plog.NewLogs(), err
 	}
 
-	if p.dbVersion == "" && p.dbSystemVersionEnabled() {
-		if v, vErr := dbClient.getVersion(ctx); vErr == nil {
-			p.dbVersion = v
-		}
-	}
+	p.ensureDBVersion(ctx, dbClient)
 
 	var errs errsMux
 
@@ -427,11 +419,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 	defer defaultDbClient.Close()
 
-	if p.dbVersion == "" && p.dbSystemVersionEnabled() {
-		if v, vErr := defaultDbClient.getVersion(ctx); vErr == nil {
-			p.dbVersion = v
-		}
-	}
+	p.ensureDBVersion(ctx, defaultDbClient)
 
 	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
 	if err != nil {
@@ -588,7 +576,7 @@ func (p *postgreSQLScraper) start(ctx context.Context, host component.Host) erro
 		p.clientFactory.setCredentialProvider(provider)
 	}
 
-	if p.dbSystemVersionEnabled() {
+	if p.metricsVersionEnabled() || p.logsVersionEnabled() {
 		vctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
 		defer cancel()
 		if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
@@ -613,8 +601,22 @@ func (p *postgreSQLScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (p *postgreSQLScraper) dbSystemVersionEnabled() bool {
+func (p *postgreSQLScraper) metricsVersionEnabled() bool {
 	return p.config.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled
+}
+
+func (p *postgreSQLScraper) logsVersionEnabled() bool {
+	return p.config.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled
+}
+
+func (p *postgreSQLScraper) ensureDBVersion(ctx context.Context, c client) {
+	if p.dbVersion == "" && p.metricsVersionEnabled() || p.logsVersionEnabled() {
+		if v, err := c.getVersion(ctx); err == nil {
+			p.dbVersion = v
+		} else {
+			p.logger.Debug("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
+		}
+	}
 }
 
 func (p *postgreSQLScraper) backendsMetricsEnabled() bool {
