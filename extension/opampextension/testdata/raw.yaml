@@ -1,0 +1,13 @@
+exporters:
+  otlp_grpc:
+    endpoint: ${env:OTLP_ENDPOINT}
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: []
+      exporters: [otlp_grpc]

@@ -6,6 +6,7 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"slices"
 	"sort"
@@ -46,9 +47,12 @@ func compareDocuments(expected, actual *document) error {
 			errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
 		}
 	}
-	for i, ar := range actual.Resources {
-		if !matched[i] {
-			errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
+	// Under /include, actual resources with no expected counterpart are allowed.
+	if expected.ResourcesMode == collectionModeExact {
+		for i, ar := range actual.Resources {
+			if !matched[i] {
+				errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
+			}
 		}
 	}
 	return errors.Join(errs...)
@@ -69,9 +73,11 @@ func compareResource(expected, actual resourceAssertion) error {
 			errs = append(errs, fmt.Errorf("scope %s: %w", scopeIdentityString(es), err))
 		}
 	}
-	for i, as := range actual.Scopes {
-		if !matched[i] {
-			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version.value))
+	if expected.ScopesMode == collectionModeExact {
+		for i, as := range actual.Scopes {
+			if !matched[i] {
+				errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version.value))
+			}
 		}
 	}
 	return errors.Join(errs...)
@@ -137,7 +143,8 @@ func compareScope(expected, actual scopeAssertion) error {
 	expMetrics := indexMetrics(expected.Metrics)
 	actMetrics := indexMetrics(actual.Metrics)
 
-	for name, em := range expMetrics {
+	for name := range expMetrics {
+		em := expMetrics[name]
 		am, ok := actMetrics[name]
 		if !ok {
 			errs = append(errs, fmt.Errorf("missing expected metric %q", name))
@@ -147,9 +154,11 @@ func compareScope(expected, actual scopeAssertion) error {
 			errs = append(errs, fmt.Errorf("metric %q: %w", name, err))
 		}
 	}
-	for name := range actMetrics {
-		if _, ok := expMetrics[name]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected metric %q", name))
+	if expected.MetricsMode == collectionModeExact {
+		for name := range actMetrics {
+			if _, ok := expMetrics[name]; !ok {
+				errs = append(errs, fmt.Errorf("unexpected metric %q", name))
+			}
 		}
 	}
 	return errors.Join(errs...)
@@ -157,7 +166,8 @@ func compareScope(expected, actual scopeAssertion) error {
 
 func indexMetrics(ms []metricAssertion) map[string]metricAssertion {
 	out := make(map[string]metricAssertion, len(ms))
-	for _, m := range ms {
+	for i := range ms {
+		m := ms[i]
 		out[m.Name] = m
 	}
 	return out
@@ -178,13 +188,13 @@ func compareMetric(expected, actual metricAssertion) error {
 		errs = append(errs, fmt.Errorf("monotonic mismatch: expected %v, got %v",
 			boolPtrString(expected.Monotonic), boolPtrString(actual.Monotonic)))
 	}
-	if err := compareDatapoints(expected.Datapoints, actual.Datapoints); err != nil {
+	if err := compareDatapoints(expected.Datapoints, expected.DatapointsMode, actual.Datapoints); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
 }
 
-func compareDatapoints(expected, actual []datapointAssertion) error {
+func compareDatapoints(expected []datapointAssertion, mode collectionMode, actual []datapointAssertion) error {
 	matched := make([]bool, len(actual))
 	var missing, unexpected []string
 	var valErrs []error
@@ -203,9 +213,11 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
 		}
 	}
-	for i, adp := range actual {
-		if !matched[i] {
-			unexpected = append(unexpected, canonKey(adp.Attributes))
+	if mode == collectionModeExact {
+		for i, adp := range actual {
+			if !matched[i] {
+				unexpected = append(unexpected, canonKey(adp.Attributes))
+			}
 		}
 	}
 	if len(missing) == 0 && len(unexpected) == 0 && len(valErrs) == 0 {
@@ -224,6 +236,12 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	return errors.Join(errs...)
 }
 
+// roundTo matches how pmetrictest's IgnoreMetricFloatPrecision rounds.
+func roundTo(v float64, n int) float64 {
+	factor := math.Pow(10, float64(n))
+	return math.Round(v*factor) / factor
+}
+
 func compareDatapointValues(expected, actual datapointAssertion) error {
 	var errs []error
 	if expected.IntValue != nil {
@@ -234,9 +252,15 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 		}
 	}
 	if expected.DoubleValue != nil {
-		if actual.DoubleValue == nil {
+		switch {
+		case actual.DoubleValue == nil:
 			errs = append(errs, errors.New("missing expected double_value"))
-		} else if *expected.DoubleValue != *actual.DoubleValue {
+		case expected.DoublePrecision != nil:
+			digits := *expected.DoublePrecision
+			if roundTo(*expected.DoubleValue, digits) != roundTo(*actual.DoubleValue, digits) {
+				errs = append(errs, fmt.Errorf("double_value mismatch at %d decimal places: expected %v, got %v", digits, *expected.DoubleValue, *actual.DoubleValue))
+			}
+		case *expected.DoubleValue != *actual.DoubleValue:
 			errs = append(errs, fmt.Errorf("double_value mismatch: expected %v, got %v", *expected.DoubleValue, *actual.DoubleValue))
 		}
 	}

@@ -25,6 +25,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: resource-group
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.ServiceA/namespace1
@@ -48,6 +51,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: resource-group
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.ServiceB/namespace2
@@ -71,6 +77,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: resource-group
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.ServiceB/namespace2
@@ -94,6 +103,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: resource-group
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.ServiceB/namespace2
@@ -117,6 +129,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: resource-group
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.ServiceB/namespace2
@@ -140,6 +155,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: resource-group
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.ServiceB/namespace2
@@ -163,6 +181,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: resource-group
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.ServiceB/namespace2
@@ -186,6 +207,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: resource-group
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.ServiceB/namespace2
