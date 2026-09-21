@@ -18,7 +18,7 @@ type eventDbServerQueryPlan struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlQueryPlanAttributeValue string) {
+func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlQueryPlanAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -32,6 +32,7 @@ func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcom
 	}
 	dp.Attributes().PutStr("postgresql.queryid", postgresqlQueryidAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("postgresql.rolname", postgresqlRolnameAttributeValue)
 	dp.Attributes().PutStr("postgresql.query_plan", postgresqlQueryPlanAttributeValue)
 
 }
@@ -327,8 +328,8 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.
-func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlQueryPlanAttributeValue string) {
-	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, postgresqlQueryidAttributeValue, dbNamespaceAttributeValue, postgresqlQueryPlanAttributeValue)
+func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlQueryPlanAttributeValue string) {
+	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, postgresqlQueryidAttributeValue, dbNamespaceAttributeValue, postgresqlRolnameAttributeValue, postgresqlQueryPlanAttributeValue)
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.

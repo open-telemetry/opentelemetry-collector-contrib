@@ -297,6 +297,7 @@ events:
     attributes:
       - postgresql.queryid
       - db.namespace
+      - postgresql.rolname
       - postgresql.query_plan
 
   db.server.query_sample:

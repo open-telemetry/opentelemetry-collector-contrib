@@ -318,13 +318,10 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery,
 	return logs, nil
 }
 
-// removeQueryPlanFromTopQuery drops postgresql.query_plan from db.server.top_query records, so the
-// plan is carried only by db.server.query_plan. mdatagen sets every attribute declared for an event,
-// so the attribute has to be removed after the fact rather than skipped while recording. This
-// mirrors removeQueryPlanFromTopQuery in the oracledb receiver.
-//
-// The event name must be checked: db.server.query_plan records sit in the same scope and have to
-// keep their postgresql.query_plan.
+// removeQueryPlanFromTopQuery drops postgresql.query_plan from db.server.top_query records once
+// db.server.query_plan carries it instead. mdatagen sets every declared attribute, so this has to
+// run after recording rather than be skipped during it; the event name check keeps it off
+// db.server.query_plan's own records, which share the scope.
 func removeQueryPlanFromTopQuery(logs plog.Logs) {
 	resourceLogs := logs.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
@@ -580,16 +577,15 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			plan,
 		)
 
-		// db.server.query_plan is sourced from top query collection, so it reports nothing
-		// without db.server.top_query. A query with no plan available yet (not yet explained,
-		// or the EXPLAIN failed) has nothing to report either, so it gets no record rather
-		// than one carrying an empty plan.
+		// Requires db.server.top_query, and skips a query with no plan yet (not explained,
+		// or EXPLAIN failed) rather than record one with an empty plan.
 		if p.config.LogsBuilderConfig.Events.DbServerTopQuery.Enabled && plan != "" {
 			p.lb.RecordDbServerQueryPlanEvent(
 				context.Background(),
 				timestamp,
 				queryID,
 				database,
+				item.Value[dbAttributePrefix+"rolname"].(string),
 				plan,
 			)
 		}
