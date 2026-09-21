@@ -54,9 +54,6 @@ type pc struct {
 	// currentOffsetReportable flag to track when an active partition has a reportable current offset
 	currentOffsetReportable atomic.Bool
 
-	// partitionLost indicates if a partition assignment has been lost or revoked
-	partitionLost atomic.Bool
-
 	// mu prevents cancellation from racing a new wg.Add.
 	mu sync.RWMutex
 	// wg tracks the number of in-flight message processing goroutines for this

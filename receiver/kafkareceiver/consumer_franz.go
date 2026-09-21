@@ -170,7 +170,9 @@ func (c *franzConsumer) observeCurrentOffset(_ context.Context, observer metric.
 func (c *franzConsumer) storeAssignmentSnapshot() {
 	assignments := make([]*pc, 0, len(c.assignments))
 	for _, partitionAssignment := range c.assignments {
-		if !partitionAssignment.partitionLost.Load() {
+		// A cancelled context means the partition was lost, revoked, or hit a
+		// terminal error, so it must not be reported.
+		if partitionAssignment.ctx.Err() == nil {
 			assignments = append(assignments, partitionAssignment)
 		}
 	}
@@ -662,7 +664,6 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			if !ok {
 				continue
 			}
-			pc.partitionLost.Store(true)
 			pc.cancelContext(errors.New(
 				"stopping processing: partition reassigned or lost",
 			))

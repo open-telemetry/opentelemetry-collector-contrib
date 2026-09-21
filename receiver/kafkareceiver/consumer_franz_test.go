@@ -357,7 +357,7 @@ func TestObserveGaugeDoesNotBlockAssignmentLifecycle(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Publish one assignment with observable values.
-			partitionConsumer := &pc{}
+			partitionConsumer := &pc{ctx: t.Context()}
 			partitionConsumer.offsetLagReportable.Store(true)
 			partitionConsumer.currentOffsetReportable.Store(true)
 			consumer := &franzConsumer{
@@ -420,7 +420,7 @@ func TestObserveGaugeSkipsUnreportablePartitions(t *testing.T) {
 			setup: func(p *pc) {
 				p.offsetLagReportable.Store(true)
 				p.currentOffsetReportable.Store(true)
-				p.partitionLost.Store(true)
+				p.cancel(errors.New("partition lost"))
 			},
 			expected: 0,
 		},
@@ -438,6 +438,7 @@ func TestObserveGaugeSkipsUnreportablePartitions(t *testing.T) {
 		for _, tc := range cases {
 			t.Run(obs.name+"/"+tc.name, func(t *testing.T) {
 				partitionConsumer := &pc{}
+				partitionConsumer.ctx, partitionConsumer.cancel = context.WithCancelCause(t.Context())
 				tc.setup(partitionConsumer)
 				consumer := &franzConsumer{
 					assignments: map[topicPartition]*pc{
@@ -1238,7 +1239,7 @@ func TestOffsetLagMetricSuppressedOnForcedRebalance(t *testing.T) {
 				h.consumer.client.ForceRebalance()
 				require.Eventually(
 					t,
-					previous.partitionLost.Load,
+					func() bool { return previous.ctx.Err() != nil },
 					5*time.Second,
 					10*time.Millisecond,
 					"previous partition assignment was not marked lost during rebalance",
@@ -1402,7 +1403,7 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 				})
 				require.Eventually(
 					t,
-					current.partitionLost.Load,
+					func() bool { return current.ctx.Err() != nil },
 					5*time.Second,
 					10*time.Millisecond,
 					"previous partition assignment was not marked lost during rebalance",
