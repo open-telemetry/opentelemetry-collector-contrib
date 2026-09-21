@@ -76,7 +76,7 @@ attributes:
 metrics:
   active_directory.ds.bind.rate:
     description: "The number of binds per second serviced by this domain controller."
-    unit: "{binds}/s"
+    unit: "{bind}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -93,7 +93,7 @@ metrics:
     stability: development
   active_directory.ds.ldap.bind.rate:
     description: "The number of successful LDAP binds per second."
-    unit: "{binds}/s"
+    unit: "{bind}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -102,7 +102,7 @@ metrics:
     stability: development
   active_directory.ds.ldap.client.session.count:
     description: "The number of connected LDAP client sessions."
-    unit: "{sessions}"
+    unit: "{session}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -111,7 +111,7 @@ metrics:
     stability: development
   active_directory.ds.ldap.search.rate:
     description: "The number of LDAP searches per second."
-    unit: "{searches}/s"
+    unit: "{search}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -127,7 +127,7 @@ metrics:
     stability: development
   active_directory.ds.notification.queued:
     description: "The number of pending update notifications that have been queued to push to clients."
-    unit: "{notifications}"
+    unit: "{notification}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -136,7 +136,7 @@ metrics:
     stability: development
   active_directory.ds.operation.rate:
     description: "The number of operations performed per second."
-    unit: "{operations}/s"
+    unit: "{operation}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -156,7 +156,7 @@ metrics:
     stability: development
   active_directory.ds.replication.object.rate:
     description: "The number of objects transmitted by the Directory Replication Agent per second."
-    unit: "{objects}/s"
+    unit: "{object}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -166,7 +166,7 @@ metrics:
     stability: development
   active_directory.ds.replication.operation.pending:
     description: "The number of pending replication operations for the Directory Replication Agent."
-    unit: "{operations}"
+    unit: "{operation}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -175,7 +175,7 @@ metrics:
     stability: development
   active_directory.ds.replication.property.rate:
     description: "The number of properties transmitted by the Directory Replication Agent per second."
-    unit: "{properties}/s"
+    unit: "{property}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -185,7 +185,7 @@ metrics:
     stability: development
   active_directory.ds.replication.sync.object.pending:
     description: "The number of objects remaining until the full sync completes for the Directory Replication Agent."
-    unit: "{objects}"
+    unit: "{object}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -194,7 +194,7 @@ metrics:
     stability: development
   active_directory.ds.replication.sync.request.count:
     description: "The number of sync requests made by the Directory Replication Agent."
-    unit: "{requests}"
+    unit: "{request}"
     sum:
       monotonic: true
       aggregation_temporality: cumulative
@@ -204,7 +204,7 @@ metrics:
     stability: development
   active_directory.ds.replication.value.rate:
     description: "The number of values transmitted by the Directory Replication Agent per second."
-    unit: "{values}/s"
+    unit: "{value}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -214,7 +214,7 @@ metrics:
     stability: development
   active_directory.ds.security_descriptor_propagations_event.queued:
     description: "The number of security descriptor propagation events that are queued for processing."
-    unit: "{events}"
+    unit: "{event}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -223,7 +223,7 @@ metrics:
     stability: development
   active_directory.ds.suboperation.rate:
     description: "The rate of sub-operations performed."
-    unit: "{suboperations}/s"
+    unit: "{suboperation}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -233,7 +233,7 @@ metrics:
     stability: development
   active_directory.ds.thread.count:
     description: "The number of threads in use by the directory service."
-    unit: "{threads}"
+    unit: "{thread}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
