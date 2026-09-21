@@ -141,59 +141,8 @@ func NewEMAPercentage(cfg EMAPercentageConfig) (Sampler, error) {
 	}, nil
 }
 
-// EMAThroughputConfig configures the EMA throughput sampler, which targets a
-// fixed spans-per-second rate while preserving per-key proportions via EMA.
-type EMAThroughputConfig struct {
-	GoalThroughputPerSec int
-	InitialSamplingRate  int
-	AdjustmentInterval   time.Duration
-	Weight               float64
-	MaxKeys              int
-}
-
-// NewEMAThroughput constructs an EMA throughput sampler.
-func NewEMAThroughput(cfg EMAThroughputConfig) (Sampler, error) {
-	if cfg.GoalThroughputPerSec <= 0 {
-		return nil, errors.New("adaptive_throughput (ema) sampler: goal_throughput must be greater than zero")
-	}
-	return &dynsamplerWrapper{
-		inner: &dynsampler.EMAThroughput{
-			GoalThroughputPerSec: cfg.GoalThroughputPerSec,
-			InitialSampleRate:    cfg.InitialSamplingRate,
-			AdjustmentInterval:   cfg.AdjustmentInterval,
-			Weight:               cfg.Weight,
-			MaxKeys:              cfg.MaxKeys,
-		},
-		fallbackRate: cfg.InitialSamplingRate,
-	}, nil
-}
-
-// WindowedThroughputConfig configures the windowed throughput sampler, which
-// adjusts rates faster than EMA by decoupling the update frequency from the
-// lookback window.
-type WindowedThroughputConfig struct {
-	GoalThroughputPerSec float64
-	InitialSamplingRate  int
-	UpdateFrequency      time.Duration
-	LookbackFrequency    time.Duration
-	MaxKeys              int
-}
-
-// NewWindowedThroughput constructs a windowed throughput sampler.
-func NewWindowedThroughput(cfg WindowedThroughputConfig) (Sampler, error) {
-	if cfg.GoalThroughputPerSec <= 0 {
-		return nil, errors.New("adaptive_throughput (windowed) sampler: goal_throughput must be greater than zero")
-	}
-	// The windowed sampler has no bootstrap rate of its own: it returns 0 for
-	// any key it has no computed rate for, which the wrapper's fallback maps
-	// to InitialSamplingRate.
-	return &dynsamplerWrapper{
-		inner: &dynsampler.WindowedThroughput{
-			GoalThroughputPerSec:      cfg.GoalThroughputPerSec,
-			UpdateFrequencyDuration:   cfg.UpdateFrequency,
-			LookbackFrequencyDuration: cfg.LookbackFrequency,
-			MaxKeys:                   cfg.MaxKeys,
-		},
-		fallbackRate: cfg.InitialSamplingRate,
-	}, nil
-}
+// Throughput samplers (adaptive_throughput) do not live here: they run
+// through SharedThroughput (shared_throughput.go), which recomputes rates
+// from counter-store merged counts rather than dynsampler-go's internal
+// update loop. The initial_sampling_percentage bootstrap is applied via
+// SharedThroughputConfig.InitialSamplingRate.

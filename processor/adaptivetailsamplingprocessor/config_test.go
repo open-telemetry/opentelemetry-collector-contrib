@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestConfig_Validate(t *testing.T) {
@@ -341,6 +342,70 @@ func TestConfig_Validate(t *testing.T) {
 					LookbackFrequency:     30 * time.Second,
 				},
 			}),
+		},
+		{
+			name: "valid_shared_counters",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  AdaptiveThroughput,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					SharedCounters:        &SharedCountersConfig{Extension: component.MustNewID("redis_sampling_state")},
+				},
+			}),
+		},
+		{
+			name: "valid_shared_counters_windowed",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  AdaptiveThroughput,
+					Algorithm:             AlgorithmWindowed,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					SharedCounters:        &SharedCountersConfig{Extension: component.MustNewID("redis_sampling_state")},
+				},
+			}),
+		},
+		{
+			name: "shared_counters_negative_sync_timeout",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  AdaptiveThroughput,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					SharedCounters:        &SharedCountersConfig{Extension: component.MustNewID("redis_sampling_state"), SyncTimeout: -time.Second},
+				},
+			}),
+			wantErr: "shared_counters.sync_timeout must be non-negative",
+		},
+		{
+			name: "shared_counters_missing_extension",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  AdaptiveThroughput,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					SharedCounters:        &SharedCountersConfig{},
+				},
+			}),
+			wantErr: "shared_counters.extension is required",
+		},
+		{
+			name: "shared_counters_rejected_on_adaptive_percentage",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  AdaptivePercentage,
+					GoalPercentage:        10,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					SharedCounters:        &SharedCountersConfig{Extension: component.MustNewID("redis_sampling_state")},
+				},
+			}),
+			wantErr: "adaptive_percentage does not use shared_counters",
 		},
 		{
 			name: "algorithm_rejected_on_probabilistic",

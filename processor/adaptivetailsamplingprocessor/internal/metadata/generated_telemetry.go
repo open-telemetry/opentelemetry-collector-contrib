@@ -25,6 +25,7 @@ type TelemetryBuilder struct {
 	meter                                                      metric.Meter
 	mu                                                         sync.Mutex
 	registrations                                              []metric.Registration
+	ProcessorAdaptiveTailSamplingCounterSyncErrors             metric.Int64Counter
 	ProcessorAdaptiveTailSamplingDecisionSampleRate            metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingDecisionTriggers              metric.Int64Counter
 	ProcessorAdaptiveTailSamplingFingerprintDuration           metric.Int64Histogram
@@ -66,6 +67,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ProcessorAdaptiveTailSamplingCounterSyncErrors, err = builder.meter.Int64Counter(
+		"otelcol_processor_adaptive_tail_sampling_counter_sync_errors",
+		metric.WithDescription("Number of counter store sync failures for adaptive_throughput samplers, labelled by rule and operation (add, read). Each failure fails open to this instance's own counts for that interval. [Development]"),
+		metric.WithUnit("{errors}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingDecisionSampleRate, err = builder.meter.Int64Histogram(
 		"otelcol_processor_adaptive_tail_sampling_decision_sample_rate",
 		metric.WithDescription("Distribution of effective sample rates produced per rule. Useful for detecting adaptive samplers settling at unexpected rates. [Development]"),

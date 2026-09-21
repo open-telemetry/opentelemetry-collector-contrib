@@ -6,6 +6,14 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_processor_adaptive_tail_sampling_counter_sync_errors
+
+Number of counter store sync failures for adaptive_throughput samplers, labelled by rule and operation (add, read). Each failure fails open to this instance's own counts for that interval.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {errors} | Sum | Int | true | Development |
+
 ### otelcol_processor_adaptive_tail_sampling_decision_sample_rate
 
 Distribution of effective sample rates produced per rule. Useful for detecting adaptive samplers settling at unexpected rates.
