@@ -115,13 +115,8 @@ jobs:
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
         shell: bash
-        # Only run linter on windows-2025 to avoid redundant runs
         run: |
-          if [[ "${{ matrix.runner }}" == "windows-2025" ]]; then
-            make for-affected-components CMD="make lint test-twice"
-          else
             make for-affected-components CMD="make test-twice"
-          fi
 
       - run: ./.github/workflows/scripts/check-disk-space.sh
 

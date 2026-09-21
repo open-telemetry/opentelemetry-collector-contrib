@@ -366,7 +366,7 @@ func (f *factory) createMetricsExporter(
 				if err2 != nil {
 					return "", err2
 				}
-				return h.Identifier, nil
+				return h.SourceIdentifier.Primary, nil
 			},
 			ShutdownFunc: func(context.Context) error {
 				cancel()  // first cancel context
