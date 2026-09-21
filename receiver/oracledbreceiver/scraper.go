@@ -208,7 +208,45 @@ const (
 	// sessionCountCDBSQL extends sessionCountSQL with per-PDB breakdown via v$containers join.
 	sessionCountCDBSQL      = "select s.status, s.type, c.name as PDB_NAME, count(*) as VALUE FROM v$session s, v$containers c WHERE s.con_id = c.con_id(+) GROUP BY s.status, s.type, c.name"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
-	tablespaceUsageSQL      = `
+	// systemResourceLimitsPDBSQL derives resource limits for PDB connections (e.g. RDS Oracle) where
+	// v$resource_limit returns no rows. Limits from v$parameter; usage from v$process, v$session,
+	// v$transaction, v$lock. enqueue_locks and enqueue_resources are auto-managed in Oracle 19c and
+	// not exposed as init parameters, so they are omitted.
+	//
+	// Caveat: transactions and dml_locks are auto-tuned when left at their
+	// Oracle-computed default, so v$resource_limit reports them as UNLIMITED
+	// (-1) from a root/standalone connection, while this query reports the
+	// real computed value (e.g. 354, 1416) from a PDB connection. Same metric
+	// name, different meaning depending on connection type.
+	systemResourceLimitsPDBSQL = `SELECT
+    RESOURCE_NAME,
+    CURRENT_UTILIZATION,
+    CASE
+        WHEN LIMIT_VALUE IS NULL OR TRIM(LIMIT_VALUE) = 'UNLIMITED' THEN '-1'
+        ELSE TRIM(LIMIT_VALUE)
+    END AS LIMIT_VALUE
+FROM (
+  SELECT 'processes' AS RESOURCE_NAME,
+         (SELECT COUNT(*) FROM v$process) AS CURRENT_UTILIZATION,
+         (SELECT value FROM v$parameter WHERE name = 'processes') AS LIMIT_VALUE
+  FROM dual
+  UNION ALL
+  SELECT 'sessions',
+         (SELECT COUNT(*) FROM v$session),
+         (SELECT value FROM v$parameter WHERE name = 'sessions')
+  FROM dual
+  UNION ALL
+  SELECT 'transactions',
+         (SELECT COUNT(*) FROM v$transaction),
+         (SELECT value FROM v$parameter WHERE name = 'transactions')
+  FROM dual
+  UNION ALL
+  SELECT 'dml_locks',
+         (SELECT COUNT(*) FROM v$lock WHERE type = 'TM'),
+         (SELECT value FROM v$parameter WHERE name = 'dml_locks')
+  FROM dual
+)`
+	tablespaceUsageSQL = `
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
@@ -375,10 +413,11 @@ type dbProviderFunc func() (*sql.DB, error)
 type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
 
 type oracleScraper struct {
-	statsClient                dbClient
-	tablespaceUsageClient      dbClient
-	systemResourceLimitsClient dbClient
-	sessionCountClient         dbClient
+	statsClient                   dbClient
+	tablespaceUsageClient         dbClient
+	systemResourceLimitsClient    dbClient
+	systemResourceLimitsPDBClient dbClient
+	sessionCountClient            dbClient
 	// isCDBRoot is true when connected to a CDB root (Oracle 12c+); enables per-PDB queries.
 	isCDBRoot bool
 	// useCDBProceduresView enables the CDB_PROCEDURES-qualified join for top_query and top_procedure. Separate
@@ -567,6 +606,9 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
+	if s.instanceInfo.connectedToPDB {
+		s.systemResourceLimitsPDBClient = s.clientProviderFunc(s.db, systemResourceLimitsPDBSQL, s.logger)
+	}
 	s.samplesQueryClient = s.clientProviderFunc(s.db, s.buildQuerySampleSQL(), s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
@@ -577,7 +619,9 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.asmDiskgroupClient = s.clientProviderFunc(s.db, asmDiskgroupSQL, s.logger)
 	s.asmDiskClient = s.clientProviderFunc(s.db, asmDiskSQL, s.logger)
 	s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricSQL, s.logger)
-	if s.isCDBRoot {
+	// sysmetricCDBSQL works from both CDB root and PDB connections (v$containers is accessible in both).
+	// For PDB connections (e.g. RDS Oracle), it returns the sysmetric metrics available in PDB context.
+	if s.isCDBRoot || (s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB) {
 		s.sysmetricCDBClient = s.clientProviderFunc(s.db, sysmetricCDBSQL, s.logger)
 	}
 	return nil
@@ -1157,9 +1201,16 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueResourcesLimit.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksLimit.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksUsage.Enabled {
-		rows, err := s.systemResourceLimitsClient.metricRows(ctx)
+		// For PDB connections (e.g. RDS), v$resource_limit returns no rows; use derived query instead.
+		resourceLimitsQueryName := systemResourceLimitsSQL
+		resourceLimitsClient := s.systemResourceLimitsClient
+		if s.instanceInfo.connectedToPDB && s.systemResourceLimitsPDBClient != nil {
+			resourceLimitsQueryName = systemResourceLimitsPDBSQL
+			resourceLimitsClient = s.systemResourceLimitsPDBClient
+		}
+		rows, err := resourceLimitsClient.metricRows(ctx)
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", systemResourceLimitsSQL, err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", resourceLimitsQueryName, err))
 		}
 		for _, row := range rows {
 			resourceName := row["RESOURCE_NAME"]
@@ -1587,10 +1638,14 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	now := pcommon.NewTimestampFromTime(time.Now())
 	seenInContainerMetrics := make(map[string]bool)
 
-	// Skip per-PDB rows when oracle.db.pdb is not enabled on any sysmetric
-	// metric; otherwise the rows collapse to an average instead of the
-	// instance-wide value.
-	if s.isCDBRoot && s.sysmetricCDBClient != nil && s.anySysmetricPdbAttrEnabled() {
+	// isCDBRoot: skip per-PDB rows when oracle.db.pdb is not enabled on any
+	// sysmetric metric; otherwise the rows collapse to an average instead of
+	// the instance-wide value. connectedToPDB (e.g. RDS Oracle): always query,
+	// since a direct-PDB connection only ever returns rows for its own
+	// container — there's no multi-PDB averaging risk to guard against.
+	if s.sysmetricCDBClient != nil &&
+		((s.isCDBRoot && s.anySysmetricPdbAttrEnabled()) ||
+			(s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB)) {
 		rows, err := s.sysmetricCDBClient.metricRows(ctx)
 		if err != nil {
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricCDBSQL, err))
@@ -1611,6 +1666,10 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	}
 
 	// Query V$SYSMETRIC for metrics not already seen in V$CON_SYSMETRIC (or all 12 for non-CDB).
+	// On a direct-PDB connection (e.g. RDS Oracle) this returns 0 rows in PDB
+	// context; querying it anyway costs one empty round-trip but means a
+	// V$CON_SYSMETRIC error above still leaves a path to whatever V$SYSMETRIC
+	// can offer, instead of returning with no sysmetrics at all.
 	rows, err := s.sysmetricClient.metricRows(ctx)
 	if err != nil {
 		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", sysmetricSQL, err))

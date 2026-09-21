@@ -175,7 +175,7 @@ jobs:
         env:
           MATRIX_GOOS: ${{ matrix.goos }}
           MATRIX_GROUP: ${{ matrix.group }}
-        run: GOGC=50 GOMEMLIMIT=2GiB GOOS="${MATRIX_GOOS}" GOARCH=amd64 make -j2 golint GROUP="${MATRIX_GROUP}"
+        run: GOMEMLIMIT=3GiB GOOS="${MATRIX_GOOS}" GOARCH=amd64 make -j4 golint GROUP="${MATRIX_GROUP}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
@@ -230,7 +230,7 @@ jobs:
           # is resolved.
           go-version: oldstable
       - name: Run `govulncheck`
-        run: make gogovulncheck GROUP=${{ matrix.group }}
+        run: GOMEMLIMIT=3GiB make -j4 gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks-matrix:
     runs-on: ubuntu-24.04
@@ -743,6 +743,11 @@ jobs:
         env:
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
         run: ./.github/workflows/scripts/prepare-release-notes.sh
+      
+      - name: Prepare release title
+        id: release-title
+        run: |
+          echo "title=$(grep -A 2 '<!-- next version -->' CHANGELOG.md | awk '/##/{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Generate new contributor celebration text
         id: new-contributor-text
@@ -765,10 +770,11 @@ jobs:
 
       - name: Create Github Release
         run: |
-          gh release create "$RELEASE_TAG" -t "$RELEASE_TAG" -F ${{ env.RELEASE_NOTES }}
+          gh release create "${RELEASE_TAG}" -t "${STEPS_RELEASE_TITLE_OUTPUTS_TITLE}" -F ${{ env.RELEASE_NOTES }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+          STEPS_RELEASE_TITLE_OUTPUTS_TITLE: ${{ steps.release-title.outputs.title }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
   rotate-milestone:
     # This job updates the "next release" milestone

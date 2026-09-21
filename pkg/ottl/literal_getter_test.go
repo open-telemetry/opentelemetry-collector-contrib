@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// nonLiteralStringGetter implements typedGetter but NOT literalGetter.
+// nonLiteralStringGetter implements TypedGetter but NOT literalGetter.
 // Used to verify GetLiteralValue returns false when literalGetter isn't implemented.
 type nonLiteralStringGetter[K any] struct{ v string }
 
 func (g nonLiteralStringGetter[K]) Get(_ context.Context, _ K) (string, error) { return g.v, nil }
 
-// errOptionalLiteral is an optionalGetter literal (three-value Get) that always returns an error.
+// errOptionalLiteral is an OptionalGetter literal (three-value Get) that always returns an error.
 // Used to verify TryGetLiteralValue returns false when the literal evaluation fails.
 type errOptionalLiteral[K any] struct{ err error }
 

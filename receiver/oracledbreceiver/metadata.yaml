@@ -675,7 +675,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{gets}"
+    unit: "{get}"
   oracledb.cpu.usage.rate:
     attributes:
       - oracle.db.pdb
@@ -785,7 +785,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{gets}"
+    unit: "{get}"
   oracledb.ddl_statements_parallelized:
     attributes:
       - oracle.db.pdb
@@ -797,7 +797,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{statements}"
+    unit: "{statement}"
   oracledb.dml_locks.limit:
     description: Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
     enabled: true
@@ -805,7 +805,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{locks}"
+    unit: "{lock}"
   oracledb.dml_locks.usage:
     description: Current count of active DML (Data Manipulation Language) locks.
     enabled: true
@@ -813,7 +813,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{locks}"
+    unit: "{lock}"
   oracledb.dml_statements_parallelized:
     attributes:
       - oracle.db.pdb
@@ -825,7 +825,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{statements}"
+    unit: "{statement}"
   oracledb.enqueue.deadlocks.rate:
     description: Rate of enqueue deadlocks.
     enabled: false
@@ -864,7 +864,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{deadlocks}"
+    unit: "{deadlock}"
   oracledb.enqueue_locks.limit:
     description: Maximum limit of active enqueue locks, -1 if unlimited.
     enabled: true
@@ -872,7 +872,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{locks}"
+    unit: "{lock}"
   oracledb.enqueue_locks.usage:
     description: Current count of active enqueue locks.
     enabled: true
@@ -880,7 +880,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{locks}"
+    unit: "{lock}"
   oracledb.enqueue_resources.limit:
     description: Maximum limit of active enqueue resources, -1 if unlimited.
     enabled: true
@@ -888,7 +888,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{resources}"
+    unit: "{resource}"
   oracledb.enqueue_resources.usage:
     description: Current count of active enqueue resources.
     enabled: true
@@ -896,7 +896,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{resources}"
+    unit: "{resource}"
   oracledb.exchange_deadlocks:
     attributes:
       - oracle.db.pdb
@@ -908,7 +908,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{deadlocks}"
+    unit: "{deadlock}"
   oracledb.execution.utilization:
     attributes:
       - oracledb.parse.type
@@ -930,7 +930,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{executions}"
+    unit: "{execution}"
   oracledb.executions.rate:
     description: Rate of SQL statement executions.
     enabled: false
@@ -961,7 +961,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{parses}"
+    unit: "{parse}"
   oracledb.hard_parses.rate:
     description: Rate of hard parses.
     enabled: false
@@ -1074,7 +1074,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{reads}"
+    unit: "{read}"
   oracledb.logical_reads.rate:
     description: Rate of logical reads performed by the database.
     enabled: false
@@ -1124,7 +1124,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{executions}"
+    unit: "{execution}"
   oracledb.parallel_operations_downgraded_25_to_50_pct:
     attributes:
       - oracle.db.pdb
@@ -1136,7 +1136,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{executions}"
+    unit: "{execution}"
   oracledb.parallel_operations_downgraded_50_to_75_pct:
     attributes:
       - oracle.db.pdb
@@ -1148,7 +1148,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{executions}"
+    unit: "{execution}"
   oracledb.parallel_operations_downgraded_75_to_99_pct:
     attributes:
       - oracle.db.pdb
@@ -1160,7 +1160,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{executions}"
+    unit: "{execution}"
   oracledb.parallel_operations_downgraded_to_serial:
     attributes:
       - oracle.db.pdb
@@ -1172,7 +1172,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{executions}"
+    unit: "{execution}"
   oracledb.parallel_operations_not_downgraded:
     attributes:
       - oracle.db.pdb
@@ -1184,7 +1184,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{executions}"
+    unit: "{execution}"
   oracledb.parse.cpu.time:
     description: Total CPU time spent on SQL parsing.
     enabled: false
@@ -1212,7 +1212,7 @@ metrics:
     stability: development
     gauge:
       value_type: double
-    unit: "{parses}/s"
+    unit: "{parse}/s"
   oracledb.parse.utilization:
     attributes:
       - oracle.db.pdb
@@ -1233,7 +1233,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{parses}"
+    unit: "{parse}"
   oracledb.pga.cache.utilization:
     description: Percentage of PGA work-area memory requests satisfied without spilling to temporary disk.
     enabled: false
@@ -1263,7 +1263,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{writes}"
+    unit: "{write}"
   oracledb.physical_io.requests:
     description: Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (disk.io.block_size=all) and physical read/write total multi block requests (disk.io.block_size=multi).
     enabled: false
@@ -1273,7 +1273,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{requests}"
+    unit: "{request}"
     attributes: [disk.io.direction, disk.io.block_size, oracle.db.pdb]
   oracledb.physical_io.requests.rate:
     description: Rate of physical I/O requests issued to storage.
@@ -1321,7 +1321,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{requests}"
+    unit: "{request}"
   oracledb.physical_reads:
     attributes:
       - oracle.db.pdb
@@ -1333,7 +1333,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{reads}"
+    unit: "{read}"
   oracledb.physical_reads_direct:
     attributes:
       - oracle.db.pdb
@@ -1345,7 +1345,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{reads}"
+    unit: "{read}"
   oracledb.physical_write_io_requests:
     attributes:
       - oracle.db.pdb
@@ -1357,7 +1357,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{requests}"
+    unit: "{request}"
   oracledb.physical_writes:
     attributes:
       - oracle.db.pdb
@@ -1369,7 +1369,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{writes}"
+    unit: "{write}"
   oracledb.physical_writes_direct:
     attributes:
       - oracle.db.pdb
@@ -1381,7 +1381,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{writes}"
+    unit: "{write}"
   oracledb.processes.limit:
     description: Maximum limit of active processes, -1 if unlimited.
     enabled: true
@@ -1389,7 +1389,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{processes}"
+    unit: "{process}"
   oracledb.processes.usage:
     description: Current count of active processes.
     enabled: true
@@ -1397,7 +1397,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{processes}"
+    unit: "{process}"
   oracledb.queries_parallelized:
     attributes:
       - oracle.db.pdb
@@ -1409,7 +1409,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{queries}"
+    unit: "{query}"
   oracledb.recovery.blocks:
     description: Number of blocks read during instance or media recovery.
     enabled: false
@@ -1579,7 +1579,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{sessions}"
+    unit: "{session}"
   oracledb.sessions.usage:
     attributes:
       - session_type
@@ -1591,7 +1591,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{sessions}"
+    unit: "{session}"
   oracledb.sga.limit:
     description: Maximum size of the System Global Area (SGA).
     enabled: false
@@ -1796,7 +1796,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{transactions}"
+    unit: "{transaction}"
   oracledb.transactions.rate:
     description: Rate of user transactions.
     enabled: false
@@ -1812,7 +1812,7 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    unit: "{transactions}"
+    unit: "{transaction}"
   oracledb.user_commits:
     attributes:
       - oracle.db.pdb
@@ -1824,7 +1824,7 @@ metrics:
       monotonic: true
       value_type: int
       input_type: string
-    unit: "{commits}"
+    unit: "{commit}"
   oracledb.user_rollbacks:
     attributes:
       - oracle.db.pdb
