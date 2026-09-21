@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 // subtraceID identifies one service's spans within a distributed trace.
@@ -165,7 +165,7 @@ func serviceIdentity(r pcommon.Resource) string {
 // fallback service identity when service.name is absent and as a grouping key
 // for resources and scopes.
 func hashMapAttrs(attrs pcommon.Map) string {
-	h := pdatautil.MapHash(attrs)
+	h := xhash.MapHash(attrs)
 	return hex.EncodeToString(h[:])
 }
 
