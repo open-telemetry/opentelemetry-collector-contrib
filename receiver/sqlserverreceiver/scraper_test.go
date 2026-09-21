@@ -189,6 +189,28 @@ func gaugeIntValues(metrics pmetric.Metrics, name string) []int64 {
 	return values
 }
 
+func sumDoubleValues(metrics pmetric.Metrics, name string) []float64 {
+	var values []float64
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() != name {
+					continue
+				}
+
+				dps := metric.Sum().DataPoints()
+				for d := 0; d < dps.Len(); d++ {
+					values = append(values, dps.At(d).DoubleValue())
+				}
+			}
+		}
+	}
+	return values
+}
+
 func setupPerformanceCounterTestScraper(
 	t *testing.T,
 	enableMetric func(*Config),
@@ -315,7 +337,7 @@ func TestSuccessfulScrape(t *testing.T) {
 
 							if queryCall == 0 {
 								for _, row := range rows {
-									if isPerformanceCounterRate(row["counter_type"]) {
+									if isPerformanceCounterRate(row["counter_type"], row["counter"]) {
 										row["value"] = "0"
 										row["raw_value"] = "0"
 									}
@@ -365,6 +387,70 @@ func TestSuccessfulScrape(t *testing.T) {
 					pmetrictest.IgnoreTimestamp(),
 					pmetrictest.IgnoreResourceMetricsOrder()), expectedFile)
 			}
+		})
+	}
+}
+
+func TestIsPerformanceCounterRate(t *testing.T) {
+	tests := []struct {
+		name        string
+		counterType string
+		counterName string
+		expected    bool
+	}{
+		{
+			name:        "bulk rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Batch Requests/sec",
+			expected:    true,
+		},
+		{
+			name:        "counter rate counter",
+			counterType: perfCounterCounterType,
+			counterName: "Batch Requests/sec",
+			expected:    true,
+		},
+		{
+			name:        "bulk cumulative counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Lock Wait Time (ms)",
+			expected:    false,
+		},
+		{
+			name:        "counter cumulative counter",
+			counterType: perfCounterCounterType,
+			counterName: "Lock Wait Time (ms)",
+			expected:    false,
+		},
+		{
+			name:        "latch wait cumulative counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Total Latch Wait Time (ms)",
+			expected:    false,
+		},
+		{
+			name:        "CLR cumulative counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "CLR Execution",
+			expected:    false,
+		},
+		{
+			name:        "transaction delay cumulative counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Transaction Delay",
+			expected:    false,
+		},
+		{
+			name:        "non-rate counter type",
+			counterType: "65792",
+			counterName: "Batch Requests/sec",
+			expected:    false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, isPerformanceCounterRate(test.counterType, test.counterName))
 		})
 	}
 }
@@ -442,6 +528,112 @@ func TestPerformanceCounterRateUsesDeltaOverElapsedTime(t *testing.T) {
 	assert.Equal(t, []float64{5}, gaugeDoubleValues(
 		actualMetrics,
 		metadata.MetricsInfo.SqlserverBatchRequestRate.Name,
+	))
+}
+
+func TestPerformanceCounterCumulativeMetricEmitsRawValue(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitTimeTotal.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	rawValues := []string{"1000", "1300"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			rawValue := rawValues[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:Locks",
+					"counter":       "Lock Wait Time (ms)",
+					"instance":      "Total",
+					"counter_type":  perfCounterBulkCountType,
+					"value":         rawValue,
+					"raw_value":     rawValue,
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{1}, sumDoubleValues(
+		firstMetrics,
+		metadata.MetricsInfo.SqlserverLockWaitTimeTotal.Name,
+	))
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{1.3}, sumDoubleValues(
+		secondMetrics,
+		metadata.MetricsInfo.SqlserverLockWaitTimeTotal.Name,
+	))
+}
+
+func TestPerformanceCounterCLRCumulativeMetricEmitsRawValue(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverClrExecutionTime.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	rawValues := []string{"1000000", "1000005"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			rawValue := rawValues[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:CLR",
+					"counter":       "CLR Execution",
+					"instance":      "",
+					"counter_type":  perfCounterBulkCountType,
+					"value":         rawValue,
+					"raw_value":     rawValue,
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{1}, sumDoubleValues(
+		firstMetrics,
+		metadata.MetricsInfo.SqlserverClrExecutionTime.Name,
+	))
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{1.000005}, sumDoubleValues(
+		secondMetrics,
+		metadata.MetricsInfo.SqlserverClrExecutionTime.Name,
 	))
 }
 
