@@ -123,9 +123,11 @@ func newFranzKafkaConsumer(
 	// observable gauges which require callbacks to report their values once every
 	// metric collection cycle.
 	if err := telemetryBuilder.RegisterKafkaReceiverOffsetLagCallback(consumer.observeOffsetLag); err != nil {
+		telemetryBuilder.Shutdown()
 		return nil, err
 	}
 	if err := telemetryBuilder.RegisterKafkaReceiverCurrentOffsetCallback(consumer.observeCurrentOffset); err != nil {
+		telemetryBuilder.Shutdown()
 		return nil, err
 	}
 	return consumer, nil
