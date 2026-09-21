@@ -610,7 +610,7 @@ func (p *postgreSQLScraper) logsVersionEnabled() bool {
 }
 
 func (p *postgreSQLScraper) ensureDBVersion(ctx context.Context, c client) {
-	if p.dbVersion == "" && p.metricsVersionEnabled() || p.logsVersionEnabled() {
+	if p.dbVersion == "" && (p.metricsVersionEnabled() || p.logsVersionEnabled()) {
 		if v, err := c.getVersion(ctx); err == nil {
 			p.dbVersion = v
 		} else {
