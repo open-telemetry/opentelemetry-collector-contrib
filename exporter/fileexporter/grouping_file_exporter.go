@@ -196,12 +196,7 @@ func (e *groupingFileExporter) write(_ context.Context, pathSegment string, buf 
 		return err
 	}
 
-	err = writer.export(buf)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return errors.Join(writer.export(buf), writer.release())
 }
 
 func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error) {
@@ -212,6 +207,7 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 
 	writer, ok := e.writers.Get(fullPath)
 	if ok {
+		writer.acquire()
 		return writer, nil
 	}
 
@@ -228,7 +224,7 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 	if err != nil {
 		return nil, err
 	}
-
+	writer.acquire()
 	e.writers.Add(fullPath, writer)
 
 	writer.start()
@@ -265,7 +261,7 @@ func (e *groupingFileExporter) fullPath(pathSegment string) string {
 }
 
 func (e *groupingFileExporter) onEvict(_ string, writer *fileWriter) {
-	err := writer.shutdown()
+	err := writer.evict()
 	if err != nil {
 		e.logger.Warn("Failed to close file", zap.Error(err), zap.String("path", writer.path))
 	}
