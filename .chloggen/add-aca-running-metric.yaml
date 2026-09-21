@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Emit `otel.datadog_exporter.metrics.running.azurecontainerapps` tagged with `replica_name`, `name`, `subscription_id`, and `resource_group` for Azure Container Apps workloads sending metrics via the Datadog exporter."
+note: "Emit `otel.datadog_exporter.metrics.running.azurecontainerapps` tagged with `replica`, `name`, `subscription_id`, and `resource_group` for Azure Container Apps workloads sending metrics via the Datadog exporter."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49615]
