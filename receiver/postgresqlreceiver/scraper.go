@@ -309,7 +309,35 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery,
 	}
 
 	rb := p.setupLogsResourceBuilder(p.lb.NewResourceBuilder())
-	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
+	logs := p.lb.Emit(metadata.WithLogsResource(rb.Emit()))
+
+	if p.config.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled {
+		removeQueryPlanFromTopQuery(logs)
+	}
+
+	return logs, nil
+}
+
+// removeQueryPlanFromTopQuery drops postgresql.query_plan from db.server.top_query records, so the
+// plan is carried only by db.server.query_plan. mdatagen sets every attribute declared for an event,
+// so the attribute has to be removed after the fact rather than skipped while recording. This
+// mirrors removeQueryPlanFromTopQuery in the oracledb receiver.
+//
+// The event name must be checked: db.server.query_plan records sit in the same scope and have to
+// keep their postgresql.query_plan.
+func removeQueryPlanFromTopQuery(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				if logRecord := logRecords.At(k); logRecord.EventName() == "db.server.top_query" {
+					logRecord.Attributes().Remove(dbAttributePrefix + "query_plan")
+				}
+			}
+		}
+	}
 }
 
 func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval time.Duration) bool {
@@ -551,6 +579,20 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,
 		)
+
+		// db.server.query_plan is sourced from top query collection, so it reports nothing
+		// without db.server.top_query. A query with no plan available yet (not yet explained,
+		// or the EXPLAIN failed) has nothing to report either, so it gets no record rather
+		// than one carrying an empty plan.
+		if p.config.LogsBuilderConfig.Events.DbServerTopQuery.Enabled && plan != "" {
+			p.lb.RecordDbServerQueryPlanEvent(
+				context.Background(),
+				timestamp,
+				queryID,
+				database,
+				plan,
+			)
+		}
 		count++
 	}
 }

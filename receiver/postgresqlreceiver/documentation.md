@@ -661,6 +661,18 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+The execution plan for a query.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| postgresql.queryid | Hash code to identify identical normalized queries. | Any Str | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | - |
+| postgresql.query_plan | The execution plan used by PostgreSQL for the query. | Any Str | - |
+
 ### db.server.query_sample
 
 query sample

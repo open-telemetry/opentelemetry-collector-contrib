@@ -291,6 +291,14 @@ attributes:
     enum: [flush, replay, write]
     requirement_level: recommended
 events:
+  db.server.query_plan:
+    enabled: false
+    description: The execution plan for a query.
+    attributes:
+      - postgresql.queryid
+      - db.namespace
+      - postgresql.query_plan
+
   db.server.query_sample:
     enabled: false
     description: query sample
