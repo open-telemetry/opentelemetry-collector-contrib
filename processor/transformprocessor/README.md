@@ -52,6 +52,9 @@ and allows you to configure a list of statements for the processor to execute. T
 - OTTL statements. This option will meet most user's needs. See [Basic Config](#basic-config) for more details.
 - Objects, which allows users to apply configuration options to a specific list of statements. See [Advanced Config](#advanced-config) for more details.
 
+> [!NOTE]
+> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is experimental and subject to change or removal in the future.
+
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
 | Signal             | Path Prefix Values                                          |
@@ -1139,3 +1142,10 @@ statements against each signal at 10,000 items/second:
 - Logs: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-ram-mib)
 
 Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/testbed/tests/transform_processor_test.go) for more information about the setup.
+
+Each function that is unique to the transform processor also has a Go benchmark covering its
+execution. Run them with:
+
+```sh
+make benchmark-transform
+```
