@@ -1,0 +1,19 @@
+type: certificatelogverify
+
+status:
+  class: processor
+  stability:
+    development: [logs]
+  distributions: []
+  warnings: []
+  codeowners:
+    active: [MJarmo]
+
+tests:
+  config:
+    mode: sync
+    failure_mode: mark
+    key_source:
+      type: file
+      file:
+        hmac_key_file: testdata/dev_hmac_key.txt
