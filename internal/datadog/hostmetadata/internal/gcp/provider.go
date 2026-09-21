@@ -75,7 +75,7 @@ func (p *Provider) Source(context.Context) (source.Source, error) {
 	}
 
 	identifier := fmt.Sprintf("%s.%s", name, cloudAccount)
-	return source.Source{Kind: source.HostnameKind, Identifier: identifier, SourceIdentifier: source.SourceIdentifier{Primary: identifier}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+	return source.Source{Kind: source.HostnameKind, Identifier: identifier, SourceIdentifier: source.SourceIdentifier{Primary: identifier}}, nil
 }
 
 func (p *Provider) ClusterName(_ context.Context) (string, error) {
