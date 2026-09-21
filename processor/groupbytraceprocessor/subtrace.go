@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
