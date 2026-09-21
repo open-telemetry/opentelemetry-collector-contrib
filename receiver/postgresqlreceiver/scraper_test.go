@@ -1582,6 +1582,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 		require.Len(t, queryPlanRecords, 2, "both roles must produce their own db.server.query_plan record")
 
 		gotRolnames := make(map[string]bool, 2)
+		gotUserids := make(map[string]bool, 2)
 		for _, lr := range queryPlanRecords {
 			queryID, ok := lr.Attributes().Get("postgresql.queryid")
 			require.True(t, ok)
@@ -1589,11 +1590,15 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			namespace, ok := lr.Attributes().Get("db.namespace")
 			require.True(t, ok)
 			assert.Equal(t, "postgres", namespace.Str())
+			userid, ok := lr.Attributes().Get("postgresql.userid")
+			require.True(t, ok)
+			gotUserids[userid.Str()] = true
 			rolname, ok := lr.Attributes().Get("postgresql.rolname")
 			require.True(t, ok, "postgresql.rolname must be present to disambiguate records sharing (queryid, db.namespace)")
 			gotRolnames[rolname.Str()] = true
 		}
 		assert.Equal(t, map[string]bool{"roleA": true, "roleB": true}, gotRolnames)
+		assert.Equal(t, map[string]bool{"16415": true, "16416": true}, gotUserids)
 	})
 
 	// rolname is empty for a dropped role, so two dropped roles sharing a queryid and database
