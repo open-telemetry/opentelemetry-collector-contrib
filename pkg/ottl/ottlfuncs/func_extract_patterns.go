@@ -17,6 +17,8 @@ type extractPatternsArguments[K any] struct {
 	Pattern ottl.StringGetter[K]
 }
 
+// NewExtractPatternsFactory returns a factory for the ExtractPatterns OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#extractpatterns
 func NewExtractPatternsFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ExtractPatterns", &extractPatternsArguments[K]{}, createExtractPatternsFunction[K])
 }

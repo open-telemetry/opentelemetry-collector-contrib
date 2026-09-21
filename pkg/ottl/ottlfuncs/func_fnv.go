@@ -15,6 +15,8 @@ type fnvArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewFnvFactory returns a factory for the FNV OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#fnv
 func NewFnvFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("FNV", &fnvArguments[K]{}, createFnvFunction[K])
 }
@@ -26,10 +28,10 @@ func createFnvFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 		return nil, errors.New("FNVFactory args must be of type *fnvArguments[K]")
 	}
 
-	return FNVHashString(args.Target)
+	return fnvHashString(args.Target), nil
 }
 
-func FNVHashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func fnvHashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -42,5 +44,5 @@ func FNVHashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error)
 		}
 		hashValue := hash.Sum64()
 		return int64(hashValue), nil
-	}, nil
+	}
 }

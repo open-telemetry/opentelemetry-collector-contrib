@@ -59,8 +59,7 @@ func Test_Microseconds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Microseconds(tt.duration)
-			require.NoError(t, err)
+			exprFunc := microseconds(tt.duration)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -105,12 +104,11 @@ func Test_MicrosecondsFactory(t *testing.T) {
 }
 
 func BenchmarkMicroseconds(b *testing.B) {
-	exprFunc, err := Microseconds[any](&ottl.StandardDurationGetter[any]{
+	exprFunc := microseconds[any](&ottl.StandardDurationGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return time.ParseDuration("1h40m3s30ms100us")
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

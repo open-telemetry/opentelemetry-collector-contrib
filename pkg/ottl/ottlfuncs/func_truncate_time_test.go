@@ -69,8 +69,7 @@ func Test_TruncateTime(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := TruncateTime(tt.time, tt.duration)
-			require.NoError(t, err)
+			exprFunc := truncateTime(tt.time, tt.duration)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected.UnixNano(), result.(time.Time).UnixNano())
@@ -117,9 +116,8 @@ func Test_TruncateTimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := TruncateTime[any](tt.time, tt.duration)
-			require.NoError(t, err)
-			_, err = exprFunc(t.Context(), nil)
+			exprFunc := truncateTime[any](tt.time, tt.duration)
+			_, err := exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -167,7 +165,7 @@ func Test_TruncateTimeFactory(t *testing.T) {
 }
 
 func BenchmarkTruncateTime(b *testing.B) {
-	exprFunc, err := TruncateTime[any](
+	exprFunc := truncateTime[any](
 		&ottl.StandardTimeGetter[any]{Getter: func(context.Context, any) (any, error) {
 			return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.UTC), nil
 		}},
@@ -175,7 +173,6 @@ func BenchmarkTruncateTime(b *testing.B) {
 			return time.Second, nil
 		}},
 	)
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

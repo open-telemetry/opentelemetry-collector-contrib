@@ -51,6 +51,8 @@ func (p parseCSVArguments[K]) validate() error {
 	return nil
 }
 
+// NewParseCSVFactory returns a factory for the ParseCSV OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#parsecsv
 func NewParseCSVFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ParseCSV", &parseCSVArguments[K]{}, createParseCSVFunction[K])
 }
