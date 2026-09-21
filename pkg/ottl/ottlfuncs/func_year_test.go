@@ -32,8 +32,7 @@ func Test_Year(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Year(tt.time)
-			require.NoError(t, err)
+			exprFunc := year(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -47,8 +46,7 @@ func Test_Year_Error(t *testing.T) {
 			return "not a time", nil
 		},
 	}
-	exprFunc, err := Year(getter)
-	require.NoError(t, err)
+	exprFunc := year(getter)
 	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
@@ -92,12 +90,11 @@ func Test_YearFactory(t *testing.T) {
 
 func BenchmarkYear(b *testing.B) {
 	inputTime := time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC)
-	exprFunc, err := Year(&ottl.StandardTimeGetter[any]{
+	exprFunc := year(&ottl.StandardTimeGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return inputTime, nil
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

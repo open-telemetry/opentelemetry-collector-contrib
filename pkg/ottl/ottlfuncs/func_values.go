@@ -16,6 +16,8 @@ type valuesArguments[K any] struct {
 	Target ottl.PMapGetter[K]
 }
 
+// NewValuesFactory returns a factory for the Values OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#values
 func NewValuesFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Values", &valuesArguments[K]{}, createValuesFunction[K])
 }

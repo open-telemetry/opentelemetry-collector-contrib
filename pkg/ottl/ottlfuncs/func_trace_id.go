@@ -18,6 +18,8 @@ type traceIDArguments[K any] struct {
 	Target ottl.ByteSliceLikeGetter[K]
 }
 
+// NewTraceIDFactory returns a factory for the TraceID OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#traceid
 func NewTraceIDFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory(traceIDFuncName, &traceIDArguments[K]{}, createTraceIDFunction[K])
 }
