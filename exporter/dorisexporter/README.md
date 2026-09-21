@@ -87,3 +87,18 @@ exporters:
     The Doris exporter uses IANA Time Zone Database (known as tzdata) to handle time zones, so make sure tzdata is on your system.
 
     For example, when you use docker, you should add option `-v your/path/to/tzdata:/usr/share/zoneinfo` when running the container.
+
+2. Traces schema
+
+    Besides the span columns, the traces table has an `is_root` column (1 for spans without a parent) and two
+    synchronous materialized views:
+
+    * `<traces>_services` groups service, instance and span name, answering catalog queries such as
+      `SELECT DISTINCT service_name`.
+    * `<traces>_summary` aggregates each trace by `trace_id` and day (`s_start_time`, `s_end_time`,
+      `s_span_count`, `s_error_count`, `s_first_root` = earliest root span as
+      `<timestamp>|<service_name>|<span_name>`, `s_max_span_duration`). Trace-list queries that group by
+      `trace_id, date_trunc(timestamp, 'day')` are rewritten to this view by Doris.
+
+    Doris builds a synchronous view in the background and rejects a second one while the first is building,
+    so the exporter creates them one after the other. Tables created by older versions are not altered.
