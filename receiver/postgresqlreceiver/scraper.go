@@ -309,7 +309,32 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery,
 	}
 
 	rb := p.setupLogsResourceBuilder(p.lb.NewResourceBuilder())
-	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
+	logs := p.lb.Emit(metadata.WithLogsResource(rb.Emit()))
+
+	if p.config.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled {
+		removeQueryPlanFromTopQuery(logs)
+	}
+
+	return logs, nil
+}
+
+// removeQueryPlanFromTopQuery drops postgresql.query_plan from db.server.top_query records once
+// db.server.query_plan carries it instead. mdatagen sets every declared attribute, so this has to
+// run after recording rather than be skipped during it; the event name check keeps it off
+// db.server.query_plan's own records, which share the scope.
+func removeQueryPlanFromTopQuery(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				if logRecord := logRecords.At(k); logRecord.EventName() == "db.server.top_query" {
+					logRecord.Attributes().Remove(dbAttributePrefix + "query_plan")
+				}
+			}
+		}
+	}
 }
 
 func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval time.Duration) bool {
@@ -546,11 +571,26 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
 			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
+			item.Value[dbAttributePrefix+"userid"].(string),
 			item.Value[dbAttributePrefix+"rolname"].(string),
 			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,
 		)
+
+		// Requires db.server.top_query, and skips a query with no plan yet (not explained,
+		// or EXPLAIN failed) rather than record one with an empty plan.
+		if p.config.LogsBuilderConfig.Events.DbServerTopQuery.Enabled && plan != "" {
+			p.lb.RecordDbServerQueryPlanEvent(
+				context.Background(),
+				timestamp,
+				queryID,
+				database,
+				item.Value[dbAttributePrefix+"userid"].(string),
+				item.Value[dbAttributePrefix+"rolname"].(string),
+				plan,
+			)
+		}
 		count++
 	}
 }

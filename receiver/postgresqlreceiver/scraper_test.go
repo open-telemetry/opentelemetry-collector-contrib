@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -746,6 +747,7 @@ var topQueryColumns = []string{
 	tempBlksWrittenColumnName,
 	"query",
 	queryidColumnName,
+	"userid",
 	"rolname",
 	rowsColumnName,
 	totalExecTimeColumnName,
@@ -1374,6 +1376,7 @@ func TestScrapeTopQueries(t *testing.T) {
 		tempBlksWrittenColumnName:   "1116",
 		"query":                     "select * from pg_stat_activity where id = 32",
 		queryidColumnName:           queryid,
+		"userid":                    "16415",
 		"rolname":                   "master",
 		rowsColumnName:              "30",
 		totalExecTimeColumnName:     "11000",
@@ -1404,6 +1407,272 @@ func TestScrapeTopQueries(t *testing.T) {
 	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
 	assert.Equal(t, float64(12), planTime)
+}
+
+// TestScrapeTopQueriesDbServerQueryPlanEvent covers both sides of the db.server.query_plan switch.
+func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
+	newScraper := func(t *testing.T, topQueryEnabled, queryPlanEnabled bool) (*postgreSQLScraper, sqlmock.Sqlmock) {
+		t.Helper()
+		cfg := createDefaultConfig().(*Config)
+		cfg.Databases = []string{}
+		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = topQueryEnabled
+		cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = queryPlanEnabled
+		db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		t.Cleanup(func() { db.Close() })
+
+		settings := receivertest.NewNopSettings(metadata.Type)
+		logger, err := zap.NewProduction()
+		require.NoError(t, err)
+		settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+		scraper, scraperErr := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
+		require.NoError(t, scraperErr)
+		return scraper, mock
+	}
+
+	t.Run("disabled keeps the plan on db.server.top_query", func(t *testing.T) {
+		scraper, mock := newScraper(t, true, false)
+
+		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
+			callsColumnName:             "123",
+			"datname":                   "postgres",
+			sharedBlksDirtiedColumnName: "1111",
+			sharedBlksHitColumnName:     "1112",
+			sharedBlksReadColumnName:    "1113",
+			sharedBlksWrittenColumnName: "1114",
+			tempBlksReadColumnName:      "1115",
+			tempBlksWrittenColumnName:   "1116",
+			"query":                     "select * from pg_stat_activity where id = 32",
+			queryidColumnName:           "114514",
+			"userid":                    "16415",
+			"rolname":                   "master",
+			rowsColumnName:              "30",
+			totalExecTimeColumnName:     "11000",
+			totalPlanTimeColumnName:     "12000",
+		}))
+		mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+		mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+		mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+		mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+
+		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+		require.NoError(t, err)
+		require.Equal(t, 1, actualLogs.LogRecordCount())
+		lr := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+		assert.Equal(t, "db.server.top_query", lr.EventName())
+		plan, ok := lr.Attributes().Get("postgresql.query_plan")
+		require.True(t, ok, "db.server.top_query must keep postgresql.query_plan while db.server.query_plan is disabled")
+		assert.NotEmpty(t, plan.Str())
+	})
+
+	t.Run("enabled moves the plan to db.server.query_plan", func(t *testing.T) {
+		scraper, mock := newScraper(t, true, true)
+
+		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
+			callsColumnName:             "123",
+			"datname":                   "postgres",
+			sharedBlksDirtiedColumnName: "1111",
+			sharedBlksHitColumnName:     "1112",
+			sharedBlksReadColumnName:    "1113",
+			sharedBlksWrittenColumnName: "1114",
+			tempBlksReadColumnName:      "1115",
+			tempBlksWrittenColumnName:   "1116",
+			"query":                     "select * from pg_stat_activity where id = 32",
+			queryidColumnName:           "114514",
+			"userid":                    "16415",
+			"rolname":                   "master",
+			rowsColumnName:              "30",
+			totalExecTimeColumnName:     "11000",
+			totalPlanTimeColumnName:     "12000",
+		}))
+		mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+		mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+		mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+		mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+
+		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+		require.NoError(t, err)
+		require.Equal(t, 2, actualLogs.LogRecordCount())
+
+		records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		byEventName := make(map[string]int, records.Len())
+		for i := 0; i < records.Len(); i++ {
+			byEventName[records.At(i).EventName()] = i
+		}
+
+		topQuery := records.At(byEventName["db.server.top_query"])
+		_, hasPlan := topQuery.Attributes().Get("postgresql.query_plan")
+		assert.False(t, hasPlan, "postgresql.query_plan must be removed from db.server.top_query once db.server.query_plan is enabled")
+
+		queryPlan := records.At(byEventName["db.server.query_plan"])
+		assert.Equal(t, 5, queryPlan.Attributes().Len())
+		for attribute, want := range map[string]string{
+			"postgresql.queryid":    "114514",
+			"db.namespace":          "postgres",
+			"postgresql.userid":     "16415",
+			"postgresql.rolname":    "master",
+			"postgresql.query_plan": `[{"Plan":{"Node Type":"Seq Scan"}}]`,
+		} {
+			got, found := queryPlan.Attributes().Get(attribute)
+			require.True(t, found, "db.server.query_plan is missing %s", attribute)
+			assert.Equal(t, want, got.Str(), attribute)
+		}
+	})
+
+	t.Run("enabled without db.server.top_query collects nothing", func(t *testing.T) {
+		scraper, mock := newScraper(t, false, true)
+
+		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
+			callsColumnName:             "123",
+			"datname":                   "postgres",
+			sharedBlksDirtiedColumnName: "1111",
+			sharedBlksHitColumnName:     "1112",
+			sharedBlksReadColumnName:    "1113",
+			sharedBlksWrittenColumnName: "1114",
+			tempBlksReadColumnName:      "1115",
+			tempBlksWrittenColumnName:   "1116",
+			"query":                     "select * from pg_stat_activity where id = 32",
+			queryidColumnName:           "114514",
+			"userid":                    "16415",
+			"rolname":                   "master",
+			rowsColumnName:              "30",
+			totalExecTimeColumnName:     "11000",
+			totalPlanTimeColumnName:     "12000",
+		}))
+		mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+		mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+		mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+		mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+
+		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+		require.NoError(t, err)
+		assert.Equal(t, 0, actualLogs.LogRecordCount())
+	})
+
+	// Two roles running the same statement in the same database share (queryid, db.namespace).
+	t.Run("two roles sharing a queryid get distinct db.server.query_plan records", func(t *testing.T) {
+		scraper, mock := newScraper(t, true, true)
+
+		rows := sqlmock.NewRows(topQueryColumns).
+			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
+				"select * from pg_stat_activity where id = 32", "114514", "16415", "roleA", "30", "11000", "12000").
+			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
+				"select * from pg_stat_activity where id = 32", "114514", "16416", "roleB", "30", "22000", "23000")
+		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
+		mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+		mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+		mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+		mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+
+		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+		require.NoError(t, err)
+
+		records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		var queryPlanRecords []plog.LogRecord
+		for i := 0; i < records.Len(); i++ {
+			if records.At(i).EventName() == "db.server.query_plan" {
+				queryPlanRecords = append(queryPlanRecords, records.At(i))
+			}
+		}
+		require.Len(t, queryPlanRecords, 2, "both roles must produce their own db.server.query_plan record")
+
+		gotRolnames := make(map[string]bool, 2)
+		gotUserids := make(map[string]bool, 2)
+		for _, lr := range queryPlanRecords {
+			queryID, ok := lr.Attributes().Get("postgresql.queryid")
+			require.True(t, ok)
+			assert.Equal(t, "114514", queryID.Str())
+			namespace, ok := lr.Attributes().Get("db.namespace")
+			require.True(t, ok)
+			assert.Equal(t, "postgres", namespace.Str())
+			userid, ok := lr.Attributes().Get("postgresql.userid")
+			require.True(t, ok)
+			gotUserids[userid.Str()] = true
+			rolname, ok := lr.Attributes().Get("postgresql.rolname")
+			require.True(t, ok, "postgresql.rolname must be present to disambiguate records sharing (queryid, db.namespace)")
+			gotRolnames[rolname.Str()] = true
+		}
+		assert.Equal(t, map[string]bool{"roleA": true, "roleB": true}, gotRolnames)
+		assert.Equal(t, map[string]bool{"16415": true, "16416": true}, gotUserids)
+	})
+
+	// rolname is empty for a dropped role, so two dropped roles sharing a queryid and database
+	// would collide on rolname too; userid still tells them apart.
+	t.Run("two dropped roles sharing a queryid stay distinct via userid", func(t *testing.T) {
+		scraper, mock := newScraper(t, true, true)
+
+		rows := sqlmock.NewRows(topQueryColumns).
+			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
+				"select * from pg_stat_activity where id = 32", "114514", "16415", "", "30", "11000", "12000").
+			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
+				"select * from pg_stat_activity where id = 32", "114514", "16416", "", "30", "22000", "23000")
+		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
+		mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+		mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+		mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+		mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+
+		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+		require.NoError(t, err)
+
+		records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		var queryPlanRecords []plog.LogRecord
+		for i := 0; i < records.Len(); i++ {
+			if records.At(i).EventName() == "db.server.query_plan" {
+				queryPlanRecords = append(queryPlanRecords, records.At(i))
+			}
+		}
+		require.Len(t, queryPlanRecords, 2, "both dropped-role rows must produce their own db.server.query_plan record")
+
+		gotUserids := make(map[string]bool, 2)
+		for _, lr := range queryPlanRecords {
+			rolname, ok := lr.Attributes().Get("postgresql.rolname")
+			require.True(t, ok)
+			assert.Empty(t, rolname.Str(), "rolname is empty for a dropped role")
+			userid, ok := lr.Attributes().Get("postgresql.userid")
+			require.True(t, ok, "postgresql.userid must be present to disambiguate records with empty rolname")
+			gotUserids[userid.Str()] = true
+		}
+		assert.Equal(t, map[string]bool{"16415": true, "16416": true}, gotUserids)
+	})
+
+	t.Run("no plan available yields db.server.top_query only", func(t *testing.T) {
+		scraper, mock := newScraper(t, true, true)
+
+		// A non-explainable query (GRANT is not in the EXPLAIN whitelist) so
+		// explainQuery short-circuits to ("", nil) without issuing EXPLAIN.
+		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
+			callsColumnName:             "123",
+			"datname":                   "postgres",
+			sharedBlksDirtiedColumnName: "1111",
+			sharedBlksHitColumnName:     "1112",
+			sharedBlksReadColumnName:    "1113",
+			sharedBlksWrittenColumnName: "1114",
+			tempBlksReadColumnName:      "1115",
+			tempBlksWrittenColumnName:   "1116",
+			"query":                     "GRANT SELECT ON pg_locks TO demo",
+			queryidColumnName:           "114514",
+			"userid":                    "16415",
+			"rolname":                   "master",
+			rowsColumnName:              "30",
+			totalExecTimeColumnName:     "11000",
+			totalPlanTimeColumnName:     "12000",
+		}))
+
+		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+		require.NoError(t, err)
+		require.Equal(t, 1, actualLogs.LogRecordCount())
+		lr := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+		assert.Equal(t, "db.server.top_query", lr.EventName())
+		_, hasPlan := lr.Attributes().Get("postgresql.query_plan")
+		assert.False(t, hasPlan, "postgresql.query_plan is removed from db.server.top_query whenever db.server.query_plan is enabled")
+	})
 }
 
 // A database dropped while its stats linger in pg_stat_statements surfaces a row

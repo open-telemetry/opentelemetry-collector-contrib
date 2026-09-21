@@ -249,6 +249,9 @@ attributes:
   postgresql.total_plan_time:
     description: Total time spent planning the statement, in delta seconds.
     type: double
+  postgresql.userid:
+    description: OID of the role that executed the statement. Stays set even after the role is dropped.
+    type: string
   postgresql.wait_event:
     description: Wait event name if backend is currently waiting, otherwise NULL.
     type: string
@@ -291,6 +294,16 @@ attributes:
     enum: [flush, replay, write]
     requirement_level: recommended
 events:
+  db.server.query_plan:
+    enabled: false
+    description: The execution plan for a query.
+    attributes:
+      - postgresql.queryid
+      - db.namespace
+      - postgresql.userid
+      - postgresql.rolname
+      - postgresql.query_plan
+
   db.server.query_sample:
     enabled: false
     description: query sample
@@ -333,6 +346,7 @@ events:
       - postgresql.temp_blks_read
       - postgresql.temp_blks_written
       - postgresql.queryid
+      - postgresql.userid
       - postgresql.rolname
       - postgresql.total_exec_time
       - postgresql.total_plan_time
