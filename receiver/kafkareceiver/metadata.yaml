@@ -109,10 +109,12 @@ telemetry:
     kafka_receiver_current_offset:
       enabled: true
       description: Current message offset
+      extended_documentation: Reported only for currently assigned partitions after processing at least one record. Reporting stops when a partition is lost, revoked, or terminally paused, and resumes after a reassigned partition processes a record. Temporary backpressure and rewind pauses continue reporting the last observed offset.
       stability: development
       unit: "1"
       gauge:
         value_type: int
+        async: true
       attributes: [topic, partition]
     kafka_receiver_latency:
       enabled: true

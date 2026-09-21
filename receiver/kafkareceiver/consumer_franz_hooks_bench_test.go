@@ -58,6 +58,8 @@ func newOffsetLagBenchmark(
 	return c, telemetry, client, assignments
 }
 
+// BenchmarkOffsetLagMetricCollection measures a full metric collection cycle,
+// which observes both async gauges (offset lag and current offset).
 func BenchmarkOffsetLagMetricCollection(b *testing.B) {
 	for _, partitionCount := range []int{1, 100, 1000} {
 		b.Run(fmt.Sprintf("partitions=%d", partitionCount), func(b *testing.B) {
@@ -66,6 +68,8 @@ func BenchmarkOffsetLagMetricCollection(b *testing.B) {
 			for _, pc := range c.assignments {
 				pc.offsetLag.Store(1)
 				pc.offsetLagReportable.Store(true)
+				pc.currentOffset.Store(1)
+				pc.currentOffsetReportable.Store(true)
 			}
 			c.mu.RUnlock()
 

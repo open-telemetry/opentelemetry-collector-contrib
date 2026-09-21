@@ -315,9 +315,9 @@ type partitionProcessingHarness struct {
 	partitions int
 }
 
-type offsetLagSample struct {
+type gaugeSample struct {
 	Partition int64
-	Lag       int64
+	Value     int64
 }
 
 // assignmentLockObserver checks whether the assignment write lock is available
@@ -337,59 +337,161 @@ func (o *assignmentLockObserver) Observe(int64, ...metric.ObserveOption) {
 	}
 }
 
-// TestObserveOffsetLagDoesNotBlockAssignmentLifecycle verifies that recording
-// offset lag does not hold the lock needed by partition lifecycle hooks.
-func TestObserveOffsetLagDoesNotBlockAssignmentLifecycle(t *testing.T) {
-	// Publish one assignment with observable lag.
-	partitionConsumer := &pc{}
-	partitionConsumer.offsetLagReportable.Store(true)
-	consumer := &franzConsumer{
-		assignments: map[topicPartition]*pc{
-			{topic: "test", partition: 0}: partitionConsumer,
+// TestObserveGaugeDoesNotBlockAssignmentLifecycle verifies that recording
+// async gauges does not hold the lock needed by partition lifecycle hooks.
+func TestObserveGaugeDoesNotBlockAssignmentLifecycle(t *testing.T) {
+	cases := []struct {
+		name    string
+		observe func(*franzConsumer, context.Context, metric.Int64Observer) error
+	}{
+		{
+			name:    "offset lag",
+			observe: (*franzConsumer).observeOffsetLag,
+		},
+		{
+			name:    "current offset",
+			observe: (*franzConsumer).observeCurrentOffset,
 		},
 	}
-	consumer.mu.Lock()
-	consumer.storeAssignmentSnapshot()
-	consumer.mu.Unlock()
 
-	observer := &assignmentLockObserver{
-		mu: &consumer.mu, // Use the consumer lock so we can confirm it is not held
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Publish one assignment with observable values.
+			partitionConsumer := &pc{}
+			partitionConsumer.offsetLagReportable.Store(true)
+			partitionConsumer.currentOffsetReportable.Store(true)
+			consumer := &franzConsumer{
+				assignments: map[topicPartition]*pc{
+					{topic: "test", partition: 0}: partitionConsumer,
+				},
+			}
+			consumer.mu.Lock()
+			consumer.storeAssignmentSnapshot()
+			consumer.mu.Unlock()
+
+			observer := &assignmentLockObserver{
+				mu: &consumer.mu, // Use the consumer lock so we can confirm it is not held
+			}
+
+			// Simulate a metric collection cycle
+			require.NoError(t, tc.observe(consumer, t.Context(), observer))
+
+			// Verify the lock was never acquired
+			require.True(t, observer.acquired, "gauge observation held the assignment lock")
+		})
 	}
-
-	// Simulate a metric collection cycle
-	require.NoError(t, consumer.observeOffsetLag(t.Context(), observer))
-
-	// Verify the lock was never acquired
-	require.True(t, observer.acquired, "offset lag observation held the assignment lock")
 }
 
-func readOffsetLagSamples(t *testing.T, telemetry *componenttest.Telemetry) []offsetLagSample {
+// countingObserver counts gauge observations delivered by a metrics callback.
+type countingObserver struct {
+	metric.Int64Observer
+	count int
+}
+
+func (o *countingObserver) Observe(int64, ...metric.ObserveOption) {
+	o.count++
+}
+
+// TestObserveGaugeSkipsUnreportablePartitions verifies both async gauge
+// callbacks skip partitions without a reportable value and that lost
+// assignments are excluded from the snapshot.
+func TestObserveGaugeSkipsUnreportablePartitions(t *testing.T) {
+	observers := []struct {
+		name    string
+		observe func(*franzConsumer, context.Context, metric.Int64Observer) error
+	}{
+		{name: "offset lag", observe: (*franzConsumer).observeOffsetLag},
+		{name: "current offset", observe: (*franzConsumer).observeCurrentOffset},
+	}
+	cases := []struct {
+		name     string
+		setup    func(*pc)
+		expected int
+	}{
+		{
+			// Covers freshly assigned and terminally paused partitions alike:
+			// both leave the reportable flags unset.
+			name:     "not reportable",
+			setup:    func(*pc) {},
+			expected: 0,
+		},
+		{
+			name: "partition lost",
+			setup: func(p *pc) {
+				p.offsetLagReportable.Store(true)
+				p.currentOffsetReportable.Store(true)
+				p.partitionLost.Store(true)
+			},
+			expected: 0,
+		},
+		{
+			name: "reportable",
+			setup: func(p *pc) {
+				p.offsetLagReportable.Store(true)
+				p.currentOffsetReportable.Store(true)
+			},
+			expected: 1,
+		},
+	}
+
+	for _, obs := range observers {
+		for _, tc := range cases {
+			t.Run(obs.name+"/"+tc.name, func(t *testing.T) {
+				partitionConsumer := &pc{}
+				tc.setup(partitionConsumer)
+				consumer := &franzConsumer{
+					assignments: map[topicPartition]*pc{
+						{topic: "test", partition: 0}: partitionConsumer,
+					},
+				}
+				consumer.mu.Lock()
+				consumer.storeAssignmentSnapshot()
+				consumer.mu.Unlock()
+
+				observer := &countingObserver{}
+				require.NoError(t, obs.observe(consumer, t.Context(), observer))
+				require.Equal(t, tc.expected, observer.count)
+			})
+		}
+	}
+}
+
+// TestObserveGaugeNilSnapshot verifies callbacks are a no-op before any assignment.
+func TestObserveGaugeNilSnapshot(t *testing.T) {
+	consumer := &franzConsumer{}
+	observer := &countingObserver{}
+	require.NoError(t, consumer.observeOffsetLag(t.Context(), observer))
+	require.NoError(t, consumer.observeCurrentOffset(t.Context(), observer))
+	require.Equal(t, 0, observer.count)
+}
+
+func readGaugeSamples(t *testing.T, telemetry *componenttest.Telemetry, metricName string) []gaugeSample {
 	t.Helper()
-	metric, err := telemetry.GetMetric("otelcol_kafka_receiver_offset_lag")
+	metric, err := telemetry.GetMetric(metricName)
 	if err != nil {
 		return nil
 	}
 	gauge, ok := metric.Data.(metricdata.Gauge[int64])
-	require.True(t, ok, "offset lag metric must be an int64 gauge")
+	require.True(t, ok, "%s metric must be an int64 gauge", metricName)
 
-	samples := make([]offsetLagSample, 0, len(gauge.DataPoints))
+	samples := make([]gaugeSample, 0, len(gauge.DataPoints))
 	for _, dp := range gauge.DataPoints {
 		partition, ok := dp.Attributes.Value("partition")
-		require.True(t, ok, "offset lag datapoint must have partition")
-		samples = append(samples, offsetLagSample{
+		require.True(t, ok, "%s datapoint must have partition", metricName)
+		samples = append(samples, gaugeSample{
 			Partition: partition.AsInt64(),
-			Lag:       dp.Value,
+			Value:     dp.Value,
 		})
 	}
 	return samples
 }
 
-func requireOffsetLagSamples(t *testing.T, telemetry *componenttest.Telemetry, stage string, expected ...offsetLagSample) {
+func requireGaugeSamples(t *testing.T, telemetry *componenttest.Telemetry, metricName, stage string, expected ...gaugeSample) {
 	t.Helper()
 	require.EventuallyWithT(t, func(ct *assert.CollectT) {
-		actual := readOffsetLagSamples(t, telemetry)
-		assert.Len(ct, actual, len(expected), "unexpected offset lag samples %s: %+v", stage, actual)
-		assert.ElementsMatch(ct, expected, actual, "unexpected offset lag samples %s", stage)
+		actual := readGaugeSamples(t, telemetry, metricName)
+		assert.Len(ct, actual, len(expected), "unexpected %s samples %s: %+v", metricName, stage, actual)
+		assert.ElementsMatch(ct, expected, actual, "unexpected %s samples %s", metricName, stage)
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
@@ -1143,7 +1245,8 @@ func TestOffsetLagMetricSuppressedOnForcedRebalance(t *testing.T) {
 				)
 
 				// Revocation must hide the old assignment before its worker finishes.
-				requireOffsetLagSamples(t, h.telemetry, "during forced rebalance")
+				requireGaugeSamples(t, h.telemetry, "otelcol_kafka_receiver_offset_lag", "during forced rebalance")
+				requireGaugeSamples(t, h.telemetry, "otelcol_kafka_receiver_current_offset", "during forced rebalance")
 				release()
 				h.waitAssignmentChanged(0, previous)
 
@@ -1207,6 +1310,7 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 			require.NoError(t, err)
 
 			process := func(pc *pc, partition int32, highWatermark int64, offsets ...int64) partitionBatchResult {
+				// create records for each offsets
 				records := make([]*kgo.Record, 0, len(offsets))
 				for _, offset := range offsets {
 					records = append(records, &kgo.Record{
@@ -1226,28 +1330,35 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 			}
 
 			// Keep one active partition reporting throughout every transition.
+			// Multi-record batch so the observed offset (2) is non-zero and
+			// distinct from the lag (5).
 			c.assigned(t.Context(), kafkaClient, map[string][]int32{topic: {stablePartition}})
 			stablePC := c.assignments[topicPartition{topic: topic, partition: stablePartition}]
-			process(stablePC, stablePartition, 8, 0)
-			stable := offsetLagSample{Partition: int64(stablePartition), Lag: 7}
+			process(stablePC, stablePartition, 8, 0, 1, 2)
+			stableLag := gaugeSample{Partition: int64(stablePartition), Value: 5}
+			stableOffset := gaugeSample{Partition: int64(stablePartition), Value: 2}
 
 			if tc.terminalPause {
 				// Report lag before a partial batch terminally pauses partition 0.
 				c.assigned(t.Context(), kafkaClient, map[string][]int32{topic: {reassignedPartition}})
 				pausedPC := c.assignments[topicPartition{topic: topic, partition: reassignedPartition}]
-				process(pausedPC, reassignedPartition, 6, 0)
-				requireOffsetLagSamples(t, tel, "before terminal pause",
-					offsetLagSample{Partition: int64(reassignedPartition), Lag: 5},
-					stable,
+				process(pausedPC, reassignedPartition, 6, 0, 1)
+				requireGaugeSamples(t, tel, "otelcol_kafka_receiver_offset_lag", "before terminal pause",
+					gaugeSample{Partition: int64(reassignedPartition), Value: 4},
+					stableLag,
+				)
+				requireGaugeSamples(t, tel, "otelcol_kafka_receiver_current_offset", "before terminal pause",
+					gaugeSample{Partition: int64(reassignedPartition), Value: 1},
+					stableOffset,
 				)
 
-				// Process additional messages to trigger pause
-				result := process(pausedPC, reassignedPartition, 9, 1, 2)
+				// Process the record at offset 2 to trigger the permanent-error pause.
+				result := process(pausedPC, reassignedPartition, 9, 2)
 				require.True(t, result.terminal)
 				require.Contains(t, kafkaClient.PauseFetchPartitions(nil)[topic], reassignedPartition)
-				requireOffsetLagSamples(t, tel, "after terminal pause",
-					stable, // only the stable partition should be reported
-				)
+				// only the stable partition should be reported
+				requireGaugeSamples(t, tel, "otelcol_kafka_receiver_offset_lag", "after terminal pause", stableLag)
+				requireGaugeSamples(t, tel, "otelcol_kafka_receiver_current_offset", "after terminal pause", stableOffset)
 				return
 			}
 
@@ -1260,12 +1371,21 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 					require.NotSame(t, previous, current)
 				}
 
+				// Offsets 0,1 avoid the offset==2 permanent error; last offset 1
+				// stays non-zero and distinct from the lag
 				lag := int64(i + 5)
-				process(current, reassignedPartition, lag+1, 0)
-				requireOffsetLagSamples(t, tel, "before partition loss/revoke",
+				process(current, reassignedPartition, lag+2, 0, 1)
+				requireGaugeSamples(t, tel, "otelcol_kafka_receiver_offset_lag",
+					"before partition loss/revoke",
 					// validate reassigned + stable partition
-					offsetLagSample{Partition: int64(reassignedPartition), Lag: lag},
-					stable,
+					gaugeSample{Partition: int64(reassignedPartition), Value: lag},
+					stableLag,
+				)
+				requireGaugeSamples(t, tel, "otelcol_kafka_receiver_current_offset",
+					"before partition loss/revoke",
+					// validate reassigned + stable partition
+					gaugeSample{Partition: int64(reassignedPartition), Value: 1},
+					stableOffset,
 				)
 
 				// Hold worker shutdown so lag can be checked during loss or revocation.
@@ -1288,7 +1408,9 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 					"previous partition assignment was not marked lost during rebalance",
 				)
 
-				requireOffsetLagSamples(t, tel, "during partition loss/revoke", stable)
+				// Revocation must hide partition 0 gauges before its worker finishes.
+				requireGaugeSamples(t, tel, "otelcol_kafka_receiver_offset_lag", "during partition loss/revoke", stableLag)
+				requireGaugeSamples(t, tel, "otelcol_kafka_receiver_current_offset", "during partition loss/revoke", stableOffset)
 				releaseWorker()
 				waitSignal(t, lostDone, "partition revocation did not finish")
 				previous = current

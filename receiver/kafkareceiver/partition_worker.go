@@ -13,7 +13,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -49,6 +48,11 @@ type pc struct {
 	offsetLag atomic.Int64
 	// offsetLagReportable flag to track when an active partition has a reportable offset lag
 	offsetLagReportable atomic.Bool
+
+	// currentOffset holds the offset of the last record handed to message processing
+	currentOffset atomic.Int64
+	// currentOffsetReportable flag to track when an active partition has a reportable current offset
+	currentOffsetReportable atomic.Bool
 
 	// partitionLost indicates if a partition assignment has been lost or revoked
 	partitionLost atomic.Bool
@@ -173,7 +177,7 @@ func (c *franzConsumer) applyMailboxRewind(pc *pc, tp topicPartition, partition 
 //     dequeues the batch. Records still waiting in the mailbox are not marked.
 //   - Legacy with autocommit disabled marks records here. consume commits all
 //     marked partitions after the fetched batch finishes.
-func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
+func (c *franzConsumer) processPartitionBatch(_ context.Context, pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
 	var fatalRecord *kgo.Record
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
@@ -181,7 +185,8 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 		if !c.config.MessageMarking.After {
 			c.markCommitRecords(pc, p.Topic, p.Partition, msg)
 		}
-		c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
+		// Record the current consumer offset.
+		pc.currentOffset.Store(msg.Offset)
 		if err := c.handleMessage(pc, msg); err != nil {
 			if pc.ctx.Err() != nil {
 				pc.logger.Debug("message processing interrupted",
@@ -207,7 +212,6 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 		}
 		lastProcessed = msg
 	}
-
 	result := partitionBatchResult{}
 	terminallyPaused := false
 	if fatalRecord != nil {
@@ -253,8 +257,10 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 				// unmarked record.
 				c.client.PauseFetchPartitions(map[string][]int32{p.Topic: {p.Partition}})
 
-				// Stop reporting lag because this partition cannot resume without reassignment.
+				// Stop reporting lag and current offset because this partition
+				// cannot resume without reassignment.
 				pc.offsetLagReportable.Store(false)
+				pc.currentOffsetReportable.Store(false)
 				terminallyPaused = true
 			}
 			c.mu.RUnlock()
@@ -275,6 +281,12 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 			}
 			result.terminal = true
 		}
+	}
+
+	if len(p.Records) > 0 && !terminallyPaused {
+		// Every loop iteration stores the record offset before any break, so
+		// currentOffset is set before the flag becomes observable.
+		pc.currentOffsetReportable.Store(true)
 	}
 
 	if lastProcessed == nil {

@@ -111,6 +111,8 @@ The uncompressed size in bytes of received records seen by the client.
 
 Current message offset
 
+Reported only for currently assigned partitions after processing at least one record. Reporting stops when a partition is lost, revoked, or terminally paused, and resumes after a reassigned partition processes a record. Temporary backpressure and rewind pauses continue reporting the last observed offset.
+
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | Development |

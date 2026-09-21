@@ -119,9 +119,13 @@ func newFranzKafkaConsumer(
 		brokerReadOpts:   make(map[brokerReadKey]metric.MeasurementOption),
 	}
 
-	// otelcol_kafka_receiver_offset_lag is an observable gauge which requires a callback
-	// to report the lag once every metric collection cycle.
+	// otelcol_kafka_receiver_offset_lag and otelcol_kafka_receiver_current_offset are
+	// observable gauges which require callbacks to report their values once every
+	// metric collection cycle.
 	if err := telemetryBuilder.RegisterKafkaReceiverOffsetLagCallback(consumer.observeOffsetLag); err != nil {
+		return nil, err
+	}
+	if err := telemetryBuilder.RegisterKafkaReceiverCurrentOffsetCallback(consumer.observeCurrentOffset); err != nil {
 		return nil, err
 	}
 	return consumer, nil
@@ -138,6 +142,22 @@ func (c *franzConsumer) observeOffsetLag(_ context.Context, observer metric.Int6
 		// or if a partition has been terminally paused
 		if pc.offsetLagReportable.Load() {
 			observer.Observe(pc.offsetLag.Load(), metric.WithAttributeSet(pc.attrs))
+		}
+	}
+	return nil
+}
+
+// observeCurrentOffset reports the current offset for all current partition assignments.
+func (c *franzConsumer) observeCurrentOffset(_ context.Context, observer metric.Int64Observer) error {
+	assignmentsSnapshot := c.assignmentsSnapshot.Load()
+	if assignmentsSnapshot == nil {
+		return nil
+	}
+	for _, pc := range *assignmentsSnapshot {
+		// Avoid reporting when the assignment has not yet processed a record
+		// or if a partition has been terminally paused
+		if pc.currentOffsetReportable.Load() {
+			observer.Observe(pc.currentOffset.Load(), metric.WithAttributeSet(pc.attrs))
 		}
 	}
 	return nil
