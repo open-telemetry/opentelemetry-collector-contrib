@@ -1803,8 +1803,10 @@ func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventNoPlanRows(t *testing.T) {
 	assert.False(t, hasPlan, "oracledb.query_plan is removed from db.server.top_query whenever db.server.query_plan is enabled")
 }
 
-// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden covers the enabled path over three cursors:
-// two child cursors of one SQL_ID in different PDBs, and a third with no plan rows.
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden covers the enabled path over three cursors.
+// Two of them are the CDB collision the join keys exist for: identical SQL text in two PDBs, so same
+// SQL_ID, same CHILD_NUMBER and same PLAN_HASH_VALUE, separated only by oracledb.child_address and
+// db.namespace. The third has no rows in V$SQL_PLAN_STATISTICS_ALL.
 func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden(t *testing.T) {
 	logs := scrapeTopNLogsForPlanEvent(t, planEventScrape{
 		topQueryEnabled:  true,
@@ -1826,8 +1828,9 @@ type planEventScrape struct {
 	queryPlanEnabled bool
 	// noPlanRows makes V$SQL_PLAN_STATISTICS_ALL return nothing for the cursor.
 	noPlanRows bool
-	// multiCursor swaps in fixtures holding three cursors: two child cursors of the same SQL_ID in
-	// different PDBs, and a third cursor with no plan rows.
+	// multiCursor swaps in fixtures holding three cursors: two cursors of the same SQL_ID and
+	// CHILD_NUMBER in different PDBs, and a third cursor with no plan rows. The first two share a
+	// metric cache key, so the second one's deltas are computed against the first one's values.
 	multiCursor bool
 }
 
@@ -1862,7 +1865,6 @@ func scrapeTopNLogsForPlanEvent(t *testing.T, opts planEventScrape) plog.Logs {
 	require.NoError(t, err)
 	lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
 	if opts.multiCursor {
-		lruCache.Add("fxk8aq3nds8aw:1", cacheValue)
 		lruCache.Add("9xnp4vd2z3k7b:0", cacheValue)
 	}
 
