@@ -53,8 +53,10 @@ jobs:
 
       - name: Ensure no changes to the CHANGELOG.md or CHANGELOG-API.md
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
+        env:
+          CHANGELOG_UPDATED: ${{ steps.file_changes.outputs.changelogUpdated }}
         run: |
-          if [[ "${{ steps.file_changes.outputs.changelogUpdated }}" == "true" ]]
+          if [[ "$CHANGELOG_UPDATED" == "true" ]]
           then
             echo "CHANGELOG.md and CHANGELOG-API.md should not be directly modified."
             echo "Please add a .yaml file to the ./.chloggen/ directory."
@@ -67,8 +69,10 @@ jobs:
 
       - name: Ensure ./.chloggen/*.yaml addition(s)
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
+        env:
+          CHLOGGEN_ADDED: ${{ steps.file_changes.outputs.chloggenAdded }}
         run: |
-          if [[ "${{ steps.file_changes.outputs.chloggenAdded }}"  == "true" ]]
+          if [[ "$CHLOGGEN_ADDED"  == "true" ]]
           then
             echo "A changelog entry was added to the ./.chloggen/ directory."
           else
