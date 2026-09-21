@@ -17,7 +17,7 @@ issues: [50943]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds 18 new metrics (disabled by default, stability: development) covering `some` and `full`
-  pressure stall percentages and cumulative nanoseconds for CPU, memory, and IO across node,
+  pressure stall percentages and cumulative seconds for CPU, memory, and IO across node,
   pod, and container scopes. Requires Linux >= 4.20 with cgroup v2 on the node.
 
 # If your change doesn't affect end users or the exported elements of any package,

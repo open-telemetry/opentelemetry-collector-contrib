@@ -504,7 +504,6 @@ func TestPSITimeAttributes(t *testing.T) {
 
 // TestAddPSIMetricsWithIOStatsPSI verifies that calling addPSIMetrics directly
 // with an IOStats.PSI value (the inlined call pattern) emits the correct data points.
-// This test must remain GREEN after the addIOPSIMetrics wrapper is removed.
 func TestAddPSIMetricsWithIOStatsPSI(t *testing.T) {
 	cfg := enablePSIConfig()
 	mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))

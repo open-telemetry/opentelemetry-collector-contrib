@@ -63,7 +63,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
 	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime, a.allNetworkInterfaces[NodeMetricGroup])
 	// PSI (Pressure Stall Information) — requires Linux >= 4.20, cgroup v2.
-	// PSI fields are *PSIStats pointers; addPSIMetrics/addIOPSIMetrics are nil-safe.
+	// PSI fields are *PSIStats pointers; addPSIMetrics is nil-safe.
 	if s.CPU != nil {
 		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeCPUPressureMetrics, s.CPU.PSI, currentTime)
 	}
@@ -73,8 +73,6 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	if s.IO != nil {
 		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeIOPressureMetrics, s.IO.PSI, currentTime)
 	}
-	// TODO(#ISSUE): add PSI for system containers (s.SystemContainers[i].CPU.PSI / Memory.PSI / IO).
-	// System containers include etcd, kube-apiserver, etc. Open a GitHub issue and replace #ISSUE.
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sNodeName(s.NodeName)
