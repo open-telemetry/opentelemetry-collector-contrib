@@ -21,7 +21,7 @@ func TestTopQueryCacheRetainsFetchedStatements(t *testing.T) {
 	columns := []string{
 		callsColumnName, "datname", sharedBlksDirtiedColumnName, sharedBlksHitColumnName,
 		sharedBlksReadColumnName, sharedBlksWrittenColumnName, tempBlksReadColumnName,
-		tempBlksWrittenColumnName, "query", queryidColumnName, "rolname", rowsColumnName,
+		tempBlksWrittenColumnName, "query", queryidColumnName, "userid", "rolname", rowsColumnName,
 		totalExecTimeColumnName, totalPlanTimeColumnName,
 	}
 	cfg := createDefaultConfig().(*Config)

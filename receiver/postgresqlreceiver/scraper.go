@@ -571,6 +571,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
 			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
+			item.Value[dbAttributePrefix+"userid"].(string),
 			item.Value[dbAttributePrefix+"rolname"].(string),
 			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
@@ -585,6 +586,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 				timestamp,
 				queryID,
 				database,
+				item.Value[dbAttributePrefix+"userid"].(string),
 				item.Value[dbAttributePrefix+"rolname"].(string),
 				plan,
 			)

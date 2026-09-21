@@ -193,16 +193,15 @@ not take those statistics with it when a batcher splits by size.
 
 `db.server.top_query` is then emitted **without** its `postgresql.query_plan` attribute, and the plan
 itself is reported on `db.server.query_plan`, joined back to its query via `postgresql.queryid`,
-`db.namespace` and `postgresql.rolname` — `queryid` alone can repeat across databases and across
-roles in the same database. A query with no plan available yet (not yet explained, or the `EXPLAIN`
-failed) produces no `db.server.query_plan` record. Leaving `db.server.query_plan` disabled preserves
-the previous behavior exactly.
+`db.namespace` and `postgresql.userid` — `queryid` alone can repeat across databases and across
+roles in the same database. `postgresql.userid` is the OID of the role that ran the statement, used
+here instead of `postgresql.rolname` because it stays stable even after that role is dropped;
+`rolname` is still reported on both events, but only as the human-readable name. A query with no
+plan available yet (not yet explained, or the `EXPLAIN` failed) produces no `db.server.query_plan`
+record. Leaving `db.server.query_plan` disabled preserves the previous behavior exactly.
 
-Known limitations of the join key:
-- It doesn't distinguish `toplevel`, so a top-level statement and a nested one it calls can still
-  collide (only with `pg_stat_statements.track = all`, not the default).
-- `postgresql.rolname` is empty once the role that ran the statement is dropped, so two rows from
-  different dropped roles can collide too (mainly with ephemeral roles or credential rotation).
+Known limitation of the join key: it doesn't distinguish `toplevel`, so a top-level statement and a
+nested one it calls can still collide (only with `pg_stat_statements.track = all`, not the default).
 
 `db.server.query_plan` is sourced from the same collection as `db.server.top_query` and only splits
 the plan out of it, so it needs no grants of its own, and enabling it without `db.server.top_query`
