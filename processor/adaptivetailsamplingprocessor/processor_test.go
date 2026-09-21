@@ -1567,7 +1567,7 @@ func TestProcessor_RootScopedFingerprint(t *testing.T) {
 			{Name: "default", Sampler: SamplerConfig{
 				Type:                  AdaptivePercentage,
 				GoalPercentage:        100,
-				FingerprintAttributes: []string{`root.attributes["http.route"]`, `resource.attributes["service.name"]`},
+				FingerprintAttributes: []string{`root.span.attributes["http.route"]`, `resource.attributes["service.name"]`},
 			}},
 		},
 	}
