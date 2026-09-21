@@ -255,7 +255,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 			GoalSamplingPercentage: sc.GoalPercentage,
 			AdjustmentInterval:     sc.AdjustmentInterval,
 			Weight:                 sc.Weight,
-			MaxKeys:                sc.MaxKeys,
+			MaxKeys:                sc.effectiveMaxKeys(),
 		})
 		if err != nil {
 			return nil, nil, err
@@ -279,7 +279,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 				InitialSamplingRate:  initialRate,
 				UpdateFrequency:      sc.UpdateFrequency,
 				LookbackFrequency:    sc.LookbackFrequency,
-				MaxKeys:              sc.MaxKeys,
+				MaxKeys:              sc.effectiveMaxKeys(),
 			})
 		} else {
 			s, err = sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
@@ -287,7 +287,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 				InitialSamplingRate:  initialRate,
 				AdjustmentInterval:   sc.AdjustmentInterval,
 				Weight:               sc.Weight,
-				MaxKeys:              sc.MaxKeys,
+				MaxKeys:              sc.effectiveMaxKeys(),
 			})
 		}
 		if err != nil {
