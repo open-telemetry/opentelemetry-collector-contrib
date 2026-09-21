@@ -22,4 +22,6 @@ resourceLogs:
             spanId: ""
             timeUnixNano: "1665417425981000000"
             traceId: ""
-        scope: {}
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
+          version: latest
