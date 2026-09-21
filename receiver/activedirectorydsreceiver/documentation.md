@@ -18,7 +18,7 @@ The number of binds per second serviced by this domain controller.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {bind}/s | Sum | Double | Cumulative | false | Development |
+| {binds}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -40,7 +40,7 @@ The number of successful LDAP binds per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {bind}/s | Sum | Double | Cumulative | false | Development |
+| {binds}/s | Sum | Double | Cumulative | false | Development |
 
 ### active_directory.ds.ldap.client.session.count
 
@@ -48,7 +48,7 @@ The number of connected LDAP client sessions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {session} | Sum | Int | Cumulative | false | Development |
+| {sessions} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.ldap.search.rate
 
@@ -56,7 +56,7 @@ The number of LDAP searches per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {search}/s | Sum | Double | Cumulative | false | Development |
+| {searches}/s | Sum | Double | Cumulative | false | Development |
 
 ### active_directory.ds.name_cache.hit_rate
 
@@ -72,7 +72,7 @@ The number of pending update notifications that have been queued to push to clie
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {notification} | Sum | Int | Cumulative | false | Development |
+| {notifications} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.operation.rate
 
@@ -80,7 +80,7 @@ The number of operations performed per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operation}/s | Sum | Double | Cumulative | false | Development |
+| {operations}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -109,7 +109,7 @@ The number of objects transmitted by the Directory Replication Agent per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {object}/s | Sum | Double | Cumulative | false | Development |
+| {objects}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -123,7 +123,7 @@ The number of pending replication operations for the Directory Replication Agent
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operation} | Sum | Int | Cumulative | false | Development |
+| {operations} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.replication.property.rate
 
@@ -131,7 +131,7 @@ The number of properties transmitted by the Directory Replication Agent per seco
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {property}/s | Sum | Double | Cumulative | false | Development |
+| {properties}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -145,7 +145,7 @@ The number of objects remaining until the full sync completes for the Directory 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {object} | Sum | Int | Cumulative | false | Development |
+| {objects} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.replication.sync.request.count
 
@@ -153,7 +153,7 @@ The number of sync requests made by the Directory Replication Agent.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {request} | Sum | Int | Cumulative | true | Development |
+| {requests} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -167,7 +167,7 @@ The number of values transmitted by the Directory Replication Agent per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {value}/s | Sum | Double | Cumulative | false | Development |
+| {values}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -182,7 +182,7 @@ The number of security descriptor propagation events that are queued for process
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {event} | Sum | Int | Cumulative | false | Development |
+| {events} | Sum | Int | Cumulative | false | Development |
 
 ### active_directory.ds.suboperation.rate
 
@@ -190,7 +190,7 @@ The rate of sub-operations performed.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {suboperation}/s | Sum | Double | Cumulative | false | Development |
+| {suboperations}/s | Sum | Double | Cumulative | false | Development |
 
 #### Attributes
 
@@ -204,4 +204,4 @@ The number of threads in use by the directory service.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {thread} | Sum | Int | Cumulative | false | Development |
+| {threads} | Sum | Int | Cumulative | false | Development |
