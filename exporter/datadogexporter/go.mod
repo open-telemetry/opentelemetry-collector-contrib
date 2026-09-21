@@ -16,7 +16,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.83.0
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.83.0
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.83.0
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.84.0-devel.0.20260918174637-8e55c7f268f9
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.84.0-devel.0.20260918174637-8e55c7f268f9
 	github.com/DataDog/datadog-agent/pkg/proto v0.83.0

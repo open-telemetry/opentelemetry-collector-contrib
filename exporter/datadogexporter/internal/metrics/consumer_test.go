@@ -23,7 +23,7 @@ import (
 type testProvider string
 
 func (t testProvider) Source(context.Context) (source.Source, error) {
-	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: string(t), SourceIdentifier: source.SourceIdentifier{Primary: string(t)}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116) so not-yet-migrated readers (e.g. otlp/metrics fallback hostname) still see a value
 }
 
 func newTranslator(t *testing.T, logger *zap.Logger, opts ...metrics.TranslatorOption) metrics.Provider {
