@@ -4,6 +4,7 @@
 package sqlserverreceiver
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"testing"
@@ -417,20 +418,25 @@ func TestDBProviderDetectVersionCaches(t *testing.T) {
 	provider.opened = true
 
 	// Manually inject a version to simulate a successful prior detection.
-	provider.dbVersion = "15.0.4261.1"
-	provider.versionReady = true
+	v := "15.0.4261.1"
+	provider.dbVersion = &v
 
 	// All subsequent calls must return the cached value without touching the DB.
-	require.Equal(t, "15.0.4261.1", provider.detectVersion(t.Context(), zap.NewNop()))
-	require.Equal(t, "15.0.4261.1", provider.detectVersion(t.Context(), zap.NewNop()))
+	got, resolved := provider.detectVersion(t.Context(), zap.NewNop())
+	require.Equal(t, "15.0.4261.1", got)
+	require.True(t, resolved)
+	got, resolved = provider.detectVersion(t.Context(), zap.NewNop())
+	require.Equal(t, "15.0.4261.1", got)
+	require.True(t, resolved)
 }
 
 func TestDBProviderDetectVersionRetriesOnFailure(t *testing.T) {
 	provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
-	// db is nil — first call must return "" and leave versionReady false.
-	result := provider.detectVersion(t.Context(), zap.NewNop())
+	// db is nil — first call must return "" and leave dbVersion nil.
+	result, resolved := provider.detectVersion(t.Context(), zap.NewNop())
 	require.Empty(t, result)
-	require.False(t, provider.versionReady)
+	require.False(t, resolved)
+	require.Nil(t, provider.dbVersion)
 
 	// After a real (closed) DB is injected, the next call should retry.
 	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
@@ -439,10 +445,44 @@ func TestDBProviderDetectVersionRetriesOnFailure(t *testing.T) {
 	provider.db = db
 
 	// Query will fail on a closed DB, so result is still "" — but the retry
-	// path was exercised and versionReady remains false.
-	result = provider.detectVersion(t.Context(), zap.NewNop())
+	// path was exercised and dbVersion remains nil.
+	result, resolved = provider.detectVersion(t.Context(), zap.NewNop())
 	require.Empty(t, result)
-	require.False(t, provider.versionReady)
+	require.False(t, resolved)
+	require.Nil(t, provider.dbVersion)
+}
+
+func TestDBProviderDetectVersionNullLatches(t *testing.T) {
+	// When SERVERPROPERTY returns NULL, detectVersion must latch versionReady so
+	// subsequent intervals do not retry.
+	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+	require.NoError(t, err)
+	defer db.Close()
+
+	provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+	provider.db = db
+
+	// Inject a stub that returns the NULL signal.
+	orig := detectSQLServerVersion
+	t.Cleanup(func() { detectSQLServerVersion = orig })
+	nullStr := ""
+	detectSQLServerVersion = func(_ context.Context, _ *sql.DB) (*string, error) {
+		return &nullStr, nil // NULL: non-nil pointer to empty string
+	}
+
+	result, resolved := provider.detectVersion(t.Context(), zap.NewNop())
+	require.Empty(t, result)
+	require.True(t, resolved)
+	require.NotNil(t, provider.dbVersion) // latched — will not retry
+
+	// Second call must return "" from cache, not re-query.
+	detectSQLServerVersion = func(_ context.Context, _ *sql.DB) (*string, error) {
+		t.Fatal("detectSQLServerVersion called again after NULL was latched")
+		return nil, nil
+	}
+	result, resolved = provider.detectVersion(t.Context(), zap.NewNop())
+	require.Empty(t, result)
+	require.True(t, resolved)
 }
 
 func TestSetupQueries(t *testing.T) {

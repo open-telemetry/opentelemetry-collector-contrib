@@ -1413,11 +1413,10 @@ func TestDetectSQLServerVersion_WarnOnScanFailure(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, db.Close())
 
-	core, logs := observer.New(zap.WarnLevel)
-	version := detectSQLServerVersion(t.Context(), db, zap.New(core))
+	v, err := detectSQLServerVersion(t.Context(), db)
 
-	assert.Empty(t, version)
-	assert.Equal(t, 1, logs.FilterMessage("failed to detect SQL Server version; db.system.version will not be set").Len())
+	assert.Nil(t, v)
+	assert.Error(t, err)
 }
 
 func TestDetectSQLServerVersion_EmittedInResourceBuilder(t *testing.T) {

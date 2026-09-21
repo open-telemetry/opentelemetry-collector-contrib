@@ -61,7 +61,7 @@ type sqlServerScraperHelper struct {
 	serverAddress          string
 	serverPort             int64
 	dbVersion              string
-	versionFunc            func(context.Context, *zap.Logger) string
+	versionFunc            func(context.Context, *zap.Logger) (string, bool)
 }
 
 var (
@@ -133,10 +133,16 @@ func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) erro
 }
 
 // detectSQLServerVersion queries SERVERPROPERTY('ProductVersion').
-// Returns an empty string and logs a warning on failure.
-func detectSQLServerVersion(ctx context.Context, db *sql.DB, logger *zap.Logger) string {
+// Returns (*string, error):
+//   - (&"15.0", nil): success — non-nil pointer means resolved, latch it.
+//   - (&"", nil):     SERVERPROPERTY returned NULL — permanent empty, latch it.
+//   - (nil, err):     transient scan error — caller may retry.
+//   - (nil, nil):     db is nil, not yet connected — silently skip.
+//
+// Declared as a var so tests can stub it.
+var detectSQLServerVersion = func(ctx context.Context, db *sql.DB) (*string, error) {
 	if db == nil {
-		return ""
+		return nil, nil
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
@@ -145,19 +151,22 @@ func detectSQLServerVersion(ctx context.Context, db *sql.DB, logger *zap.Logger)
 	var version sql.NullString
 	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128))")
 	if err := row.Scan(&version); err != nil {
-		logger.Warn("failed to detect SQL Server version; db.system.version will not be set", zap.Error(err))
-		return ""
+		return nil, err
 	}
 	if !version.Valid {
-		logger.Warn("failed to detect SQL Server version: SERVERPROPERTY returned NULL")
-		return ""
+		v := ""
+		return &v, nil
 	}
-	return version.String
+	return &version.String, nil
 }
 
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
-	if s.dbVersion == "" && s.versionFunc != nil {
-		s.dbVersion = s.versionFunc(ctx, s.logger)
+	if s.versionFunc != nil {
+		v, resolved := s.versionFunc(ctx, s.logger)
+		s.dbVersion = v
+		if resolved {
+			s.versionFunc = nil
+		}
 	}
 
 	var err error
@@ -193,8 +202,12 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
-	if s.dbVersion == "" && s.versionFunc != nil {
-		s.dbVersion = s.versionFunc(ctx, s.logger)
+	if s.versionFunc != nil {
+		v, resolved := s.versionFunc(ctx, s.logger)
+		s.dbVersion = v
+		if resolved {
+			s.versionFunc = nil
+		}
 	}
 
 	var err error

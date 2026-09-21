@@ -183,14 +183,14 @@ type dbProvider struct {
 	pool        ConnectionPool
 	numScrapers int
 
-	mu           sync.Mutex
-	db           *sql.DB
-	openErr      error
-	opened       bool
-	closed       bool
-	closeErr     error
-	dbVersion    string
-	versionReady bool
+	mu                 sync.Mutex
+	db                 *sql.DB
+	openErr            error
+	opened             bool
+	closed             bool
+	closeErr           error
+	dbVersion          *string
+	versionErrReported bool
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -245,28 +245,44 @@ func (p *dbProvider) close() error {
 }
 
 // detectVersion lazily queries SERVERPROPERTY('ProductVersion') and caches the
-// result. It retries on every call until the query succeeds, so a scrape
-// that starts before SQL Server is reachable will pick up the version on the
-// next interval. Safe for concurrent use; all scrapers on this provider share
-// the cached result.
-func (p *dbProvider) detectVersion(ctx context.Context, logger *zap.Logger) string {
+// result. Returns (version, resolved): resolved=true means a definitive answer
+// was reached (success or confirmed NULL) and the caller should nil out its
+// versionFunc. resolved=false means a transient error; the caller should retry
+// next interval. The first error is logged at WARN; subsequent ones at DEBUG so
+// a permanent failure does not spam the log every interval. Safe for concurrent
+// use; all scrapers on this provider share the cached result.
+func (p *dbProvider) detectVersion(ctx context.Context, logger *zap.Logger) (string, bool) {
 	p.mu.Lock()
-	if p.versionReady {
-		v := p.dbVersion
+	if p.dbVersion != nil {
+		v := *p.dbVersion
 		p.mu.Unlock()
-		return v
+		return v, true
 	}
 	db := p.db
+	errReported := p.versionErrReported
 	p.mu.Unlock()
 
-	v := detectSQLServerVersion(ctx, db, logger)
-	if v != "" {
+	v, err := detectSQLServerVersion(ctx, db)
+	if v != nil {
+		if *v == "" {
+			logger.Warn("failed to detect SQL Server version: SERVERPROPERTY returned NULL; db.system.version will not be set")
+		}
 		p.mu.Lock()
 		p.dbVersion = v
-		p.versionReady = true
 		p.mu.Unlock()
+		return *v, true
 	}
-	return v
+	if err != nil {
+		if !errReported {
+			logger.Warn("failed to detect SQL Server version; db.system.version will not be set; will retry", zap.Error(err))
+			p.mu.Lock()
+			p.versionErrReported = true
+			p.mu.Unlock()
+		} else {
+			logger.Debug("failed to detect SQL Server version; retrying next interval", zap.Error(err))
+		}
+	}
+	return "", false
 }
 
 // setConnectionPoolSettings applies the configured pool settings, falling back
@@ -396,7 +412,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			cfg,
 			cache)
 
-		if isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+		if isDbSystemVersionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
 			sqlServerScraper.versionFunc = provider.detectVersion
 		}
 
