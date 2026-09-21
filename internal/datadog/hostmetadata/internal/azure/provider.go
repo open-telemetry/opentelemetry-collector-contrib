@@ -31,7 +31,7 @@ func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 		return source.Source{}, err
 	}
 
-	return source.Source{Kind: source.HostnameKind, Identifier: metadata.VMID}, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: metadata.VMID, SourceIdentifier: source.SourceIdentifier{Primary: metadata.VMID}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 }
 
 // ClusterName gets the AKS cluster name from the resource group name.
