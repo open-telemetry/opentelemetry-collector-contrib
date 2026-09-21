@@ -47,8 +47,8 @@ type pc struct {
 
 	// offsetLag holds the last reported offset lag
 	offsetLag atomic.Int64
-	// hasOffsetLag flag to track when the partition has processed the first batch and reported an offset lag
-	hasOffsetLag atomic.Bool
+	// offsetLagReportable flag to track when an active partition has a reportable offset lag
+	offsetLagReportable atomic.Bool
 
 	// partitionLost indicates if a partition assignment has been lost or revoked
 	partitionLost atomic.Bool
@@ -209,6 +209,7 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 	}
 
 	result := partitionBatchResult{}
+	terminallyPaused := false
 	if fatalRecord != nil {
 		switch {
 		case c.config.ErrorBackOff.Enabled && !fatalIsPermanent:
@@ -251,6 +252,10 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 				// Pause to prevent later records from passing the failed,
 				// unmarked record.
 				c.client.PauseFetchPartitions(map[string][]int32{p.Topic: {p.Partition}})
+
+				// Stop reporting lag because this partition cannot resume without reassignment.
+				pc.offsetLagReportable.Store(false)
+				terminallyPaused = true
 			}
 			c.mu.RUnlock()
 			if !canPause {
@@ -271,12 +276,18 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 			result.terminal = true
 		}
 	}
+
 	if lastProcessed == nil {
+		// no messages were processed, return early
 		return result
 	}
-	// Record the current consumer lag.
-	pc.offsetLag.Store((p.HighWatermark - 1) - lastProcessed.Offset)
-	pc.hasOffsetLag.Store(true)
+
+	// Record the current consumer lag
+	// Skip for terminally paused partitions, reporting will resume after rebalance.
+	if !terminallyPaused {
+		pc.offsetLag.Store((p.HighWatermark - 1) - lastProcessed.Offset)
+		pc.offsetLagReportable.Store(true)
+	}
 
 	if c.config.MessageMarking.After {
 		// Mark the latest accepted record after processing. This also covers

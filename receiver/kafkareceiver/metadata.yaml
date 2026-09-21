@@ -140,6 +140,7 @@ telemetry:
     kafka_receiver_offset_lag:
       enabled: true
       description: Current offset lag
+      extended_documentation: Reported only for currently assigned partitions after processing at least one record. Reporting stops when a partition is lost, revoked, or terminally paused, and resumes after a reassigned partition processes a record. Temporary backpressure and rewind pauses continue reporting the last observed lag.
       stability: development
       unit: "1"
       gauge:

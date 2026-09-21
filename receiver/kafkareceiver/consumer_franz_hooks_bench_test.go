@@ -65,7 +65,7 @@ func BenchmarkOffsetLagMetricCollection(b *testing.B) {
 			c.mu.RLock()
 			for _, pc := range c.assignments {
 				pc.offsetLag.Store(1)
-				pc.hasOffsetLag.Store(true)
+				pc.offsetLagReportable.Store(true)
 			}
 			c.mu.RUnlock()
 

@@ -316,7 +316,6 @@ type partitionProcessingHarness struct {
 }
 
 type offsetLagSample struct {
-	PodName   string
 	Partition int64
 	Lag       int64
 }
@@ -343,7 +342,7 @@ func (o *assignmentLockObserver) Observe(int64, ...metric.ObserveOption) {
 func TestObserveOffsetLagDoesNotBlockAssignmentLifecycle(t *testing.T) {
 	// Publish one assignment with observable lag.
 	partitionConsumer := &pc{}
-	partitionConsumer.hasOffsetLag.Store(true)
+	partitionConsumer.offsetLagReportable.Store(true)
 	consumer := &franzConsumer{
 		assignments: map[topicPartition]*pc{
 			{topic: "test", partition: 0}: partitionConsumer,
@@ -377,12 +376,7 @@ func readOffsetLagSamples(t *testing.T, telemetry *componenttest.Telemetry) []of
 	for _, dp := range gauge.DataPoints {
 		partition, ok := dp.Attributes.Value("partition")
 		require.True(t, ok, "offset lag datapoint must have partition")
-		podName := "<none>"
-		if value, exists := dp.Attributes.Value("pod.name"); exists {
-			podName = value.AsString()
-		}
 		samples = append(samples, offsetLagSample{
-			PodName:   podName,
 			Partition: partition.AsInt64(),
 			Lag:       dp.Value,
 		})
@@ -392,9 +386,11 @@ func readOffsetLagSamples(t *testing.T, telemetry *componenttest.Telemetry) []of
 
 func requireOffsetLagSamples(t *testing.T, telemetry *componenttest.Telemetry, stage string, expected ...offsetLagSample) {
 	t.Helper()
-	actual := readOffsetLagSamples(t, telemetry)
-	require.Len(t, actual, len(expected), "unexpected offset lag samples %s: %+v", stage, actual)
-	require.ElementsMatch(t, expected, actual, "unexpected offset lag samples %s", stage)
+	require.EventuallyWithT(t, func(ct *assert.CollectT) {
+		actual := readOffsetLagSamples(t, telemetry)
+		assert.Len(ct, actual, len(expected), "unexpected offset lag samples %s: %+v", stage, actual)
+		assert.ElementsMatch(ct, expected, actual, "unexpected offset lag samples %s", stage)
+	}, 5*time.Second, 10*time.Millisecond)
 }
 
 func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(*Config)) *partitionProcessingHarness {
@@ -1159,103 +1155,120 @@ func TestOffsetLagMetricSuppressedOnForcedRebalance(t *testing.T) {
 	}
 }
 
-// TestOffsetLagMetricSuppressedDuringPartitionLossRevoke verifies lost and revoked cleanup suppresses lag before blocked workers stop.
-func TestOffsetLagMetricSuppressedDuringPartitionLossRevoke(t *testing.T) {
+// TestOffsetLagMetricSuppressedDuringPartitionInactivity verifies inactive partitions stop reporting offset lag.
+func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 	const (
 		topic               = "test"
 		reassignedPartition = int32(0)
 		stablePartition     = int32(1)
 	)
 	cases := []struct {
-		name        string
-		independent bool
-		fatal       bool
+		name          string
+		independent   bool
+		fatal         bool
+		terminalPause bool
 	}{
 		{name: "partition lost", fatal: true},
 		{name: "partition revoked"},
+		{name: "terminal pause", terminalPause: true},
 		{name: "independent partition lost", independent: true, fatal: true},
 		{name: "independent partition revoked", independent: true},
+		{name: "independent terminal pause", independent: true, terminalPause: true},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// create new cluster and consumer
 			kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(2, topic))
 			cfg.PartitionProcessing = PartitionProcessing{
 				Independent:        tc.independent,
 				MaxBufferedBatches: 1,
 			}
+			cfg.MessageMarking = MessageMarking{
+				After:            true,
+				OnPermanentError: false,
+			}
 			settings, tel, _ := mustNewSettings(t)
 
+			// mock consumer func
 			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-				return func(context.Context, *kgo.Record, attribute.Set) error {
+				return func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+					if record.Partition == reassignedPartition && record.Offset == 2 {
+						// trigger a terminal partition pause
+						return consumererror.NewPermanent(errors.New("permanent processing error"))
+					}
 					return nil
 				}, nil
 			}
 			c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
 			require.NoError(t, err)
-			t.Cleanup(func() {
-				require.NoError(t, c.Shutdown(context.Background())) //nolint:usetesting
-			})
+			t.Cleanup(c.telemetryBuilder.Shutdown)
 			c.client = kafkaClient
 			c.consumeMessage, err = consumeFn(nil, nil, c.telemetryBuilder)
 			require.NoError(t, err)
 
-			// mock consumer processor func
-			process := func(partition int32, lag int64) {
-				tp := topicPartition{topic: topic, partition: partition}
-				c.processPartitionBatch(t.Context(), c.assignments[tp], kgo.FetchTopicPartition{
+			process := func(pc *pc, partition int32, highWatermark int64, offsets ...int64) partitionBatchResult {
+				records := make([]*kgo.Record, 0, len(offsets))
+				for _, offset := range offsets {
+					records = append(records, &kgo.Record{
+						Topic:     topic,
+						Partition: partition,
+						Offset:    offset,
+					})
+				}
+				return c.processPartitionBatch(t.Context(), pc, kgo.FetchTopicPartition{
 					Topic: topic,
 					FetchPartition: kgo.FetchPartition{
 						Partition:     partition,
-						HighWatermark: lag + 1,
-						Records: []*kgo.Record{{
-							Topic:     topic,
-							Partition: partition,
-							Offset:    0,
-						}},
+						HighWatermark: highWatermark,
+						Records:       records,
 					},
 				})
 			}
 
-			podAttributes := func(partition int32, podName string) attribute.Set {
-				return attribute.NewSet(
-					attribute.String("topic", topic),
-					attribute.Int64("partition", int64(partition)),
-					attribute.String("pod.name", podName),
-				)
-			}
-
-			// Keep one partition assigned so the gauge remains collectable while partition 0 changes ownership.
+			// Keep one active partition reporting throughout every transition.
 			c.assigned(t.Context(), kafkaClient, map[string][]int32{topic: {stablePartition}})
 			stablePC := c.assignments[topicPartition{topic: topic, partition: stablePartition}]
-			stablePC.attrs = podAttributes(stablePartition, "pod-stable")
-			process(stablePartition, 7)
-			stable := offsetLagSample{PodName: "pod-stable", Partition: int64(stablePartition), Lag: 7}
+			process(stablePC, stablePartition, 8, 0)
+			stable := offsetLagSample{Partition: int64(stablePartition), Lag: 7}
 
-			// Reassign partition 0 three times to create a fresh partition consumer for each ownership cycle.
+			if tc.terminalPause {
+				// Report lag before a partial batch terminally pauses partition 0.
+				c.assigned(t.Context(), kafkaClient, map[string][]int32{topic: {reassignedPartition}})
+				pausedPC := c.assignments[topicPartition{topic: topic, partition: reassignedPartition}]
+				process(pausedPC, reassignedPartition, 6, 0)
+				requireOffsetLagSamples(t, tel, "before terminal pause",
+					offsetLagSample{Partition: int64(reassignedPartition), Lag: 5},
+					stable,
+				)
+
+				// Process additional messages to trigger pause
+				result := process(pausedPC, reassignedPartition, 9, 1, 2)
+				require.True(t, result.terminal)
+				require.Contains(t, kafkaClient.PauseFetchPartitions(nil)[topic], reassignedPartition)
+				requireOffsetLagSamples(t, tel, "after terminal pause",
+					stable, // only the stable partition should be reported
+				)
+				return
+			}
+
+			// Replace partition 0 three times while the stable partition keeps reporting.
 			var previous *pc
-			for i, podName := range []string{"pod-a", "pod-b", "pod-c"} {
+			for i := range 3 {
 				c.assigned(t.Context(), kafkaClient, map[string][]int32{topic: {reassignedPartition}})
 				current := c.assignments[topicPartition{topic: topic, partition: reassignedPartition}]
 				if previous != nil {
 					require.NotSame(t, previous, current)
 				}
 
-				// Give each replacement a distinct pod name to prove stale pod series are not retained.
-				current.attrs = podAttributes(reassignedPartition, podName)
 				lag := int64(i + 5)
-				process(reassignedPartition, lag)
-				requireOffsetLagSamples(
-					t,
-					tel,
-					"before partition loss/revoke",
+				process(current, reassignedPartition, lag+1, 0)
+				requireOffsetLagSamples(t, tel, "before partition loss/revoke",
 					// validate reassigned + stable partition
-					offsetLagSample{PodName: podName, Partition: int64(reassignedPartition), Lag: lag},
+					offsetLagSample{Partition: int64(reassignedPartition), Lag: lag},
 					stable,
 				)
 
-				// Hold worker shutdown so lag can be collected while revocation is in progress.
+				// Hold worker shutdown so lag can be checked during loss or revocation.
 				current.wg.Add(1)
 				lostDone := make(chan struct{})
 				go func() {
@@ -1275,7 +1288,6 @@ func TestOffsetLagMetricSuppressedDuringPartitionLossRevoke(t *testing.T) {
 					"previous partition assignment was not marked lost during rebalance",
 				)
 
-				// Revocation must hide partition 0 lag before its worker finishes.
 				requireOffsetLagSamples(t, tel, "during partition loss/revoke", stable)
 				releaseWorker()
 				waitSignal(t, lostDone, "partition revocation did not finish")

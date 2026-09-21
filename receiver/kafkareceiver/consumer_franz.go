@@ -135,8 +135,8 @@ func (c *franzConsumer) observeOffsetLag(_ context.Context, observer metric.Int6
 	}
 	for _, pc := range *assignmentsSnapshot {
 		// Avoid reporting when the assignment has not yet a processed batch
-		// and if a partition assignment has been lost/revoked
-		if pc.hasOffsetLag.Load() && !pc.partitionLost.Load() {
+		// or if a partition has been terminally paused
+		if pc.offsetLagReportable.Load() {
 			observer.Observe(pc.offsetLag.Load(), metric.WithAttributeSet(pc.attrs))
 		}
 	}
