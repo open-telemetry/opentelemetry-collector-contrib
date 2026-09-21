@@ -80,9 +80,16 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 	// the root's xmlns declaration as an attribute. Re-encoding the tokens verbatim
 	// would therefore write xmlns on the root twice (once from Name.Space, once from
 	// the attribute) and repeat it on every descendant, producing XML that is not
-	// well-formed. We strip the decoder-surfaced xmlns attributes and keep Name.Space
-	// only on the root element, so the encoder emits a single default-namespace
-	// declaration that descendants inherit — matching the plan SQL Server returns.
+	// well-formed.
+	//
+	// The duplicate can only occur on the root, because that is the only element
+	// whose Name.Space we keep: the encoder re-derives the root's declaration from
+	// it, so the decoder-surfaced declaration attributes are stripped there. Below
+	// the root, Name.Space is cleared and declaration attributes are passed through
+	// untouched, so a nested scope (a descendant with its own xmlns, or an xmlns=""
+	// reset) keeps the one declaration that established it. The result is a single
+	// default-namespace declaration on the root that descendants inherit, and any
+	// nested scopes preserved as written, matching the plan SQL Server returns.
 	depth := 0
 
 	for {
@@ -112,7 +119,9 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 					}
 				}
 			}
-			elem.Attr = stripXMLNSAttrs(elem.Attr)
+			if depth == 0 {
+				elem.Attr = stripXMLNSAttrs(elem.Attr)
+			}
 			if depth > 0 {
 				elem.Name.Space = ""
 			}
@@ -153,9 +162,9 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 }
 
 // stripXMLNSAttrs removes namespace-declaration attributes (xmlns and xmlns:*)
-// that the decoder surfaces on a StartElement. The encoder re-derives the
-// declaration from the element's Name.Space, so retaining these attributes would
-// emit the same xmlns twice on the element.
+// that the decoder surfaces on a StartElement. It is applied to the root only:
+// the encoder re-derives the root's declaration from Name.Space, so retaining
+// these attributes there would emit the same xmlns twice on the element.
 func stripXMLNSAttrs(attrs []xml.Attr) []xml.Attr {
 	out := attrs[:0]
 	for _, a := range attrs {

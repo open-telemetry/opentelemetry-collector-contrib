@@ -15,11 +15,7 @@ issues: [50111]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Obfuscating the query plan decoded and re-encoded the XML token stream. The decoder resolves the
-  default namespace onto every element and also surfaces the root's `xmlns` as an attribute, so the
-  re-encoded plan declared `xmlns` twice on `ShowPlanXML` (invalid) and repeated it on every
-  descendant. The `sqlserver.query_plan` attribute is now well-formed XML.
+subtext: The emitted `sqlserver.query_plan` value changes shape and is roughly half its previous size; anything that hashes, diffs, or size-budgets the plan string will see different values.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
