@@ -17,6 +17,8 @@ type deleteMatchingKeysArguments[K any] struct {
 	Pattern ottl.StringGetter[K]
 }
 
+// NewDeleteMatchingKeysFactory returns a factory for the delete_matching_keys OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#delete_matching_keys
 func NewDeleteMatchingKeysFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("delete_matching_keys", &deleteMatchingKeysArguments[K]{}, createDeleteMatchingKeysFunction[K])
 }

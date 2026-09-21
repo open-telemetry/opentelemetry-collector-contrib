@@ -19,6 +19,8 @@ type deleteIndexArguments[K any] struct {
 	EndIndex   ottl.Optional[ottl.IntGetter[K]]
 }
 
+// NewDeleteIndexFactory returns a factory for the delete_index OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#delete_index
 func NewDeleteIndexFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("delete_index", &deleteIndexArguments[K]{}, createDeleteIndexFunction[K])
 }

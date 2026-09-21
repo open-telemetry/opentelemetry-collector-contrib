@@ -114,12 +114,11 @@ func TestLoadConfig(t *testing.T) {
 		cfg.Endpoint = defaultEndpoint
 		cfg.QueueSettings = configoptional.Some(func() exporterhelper.QueueBatchConfig {
 			queue := exporterhelper.NewDefaultQueueConfig()
-			queue.Batch = configoptional.Some(exporterhelper.BatchConfig{
-				FlushTimeout: 5 * time.Second,
-				Sizer:        exporterhelper.RequestSizerTypeItems,
-				MinSize:      5000,
-				MaxSize:      10000,
-			})
+			batch := queue.Batch.GetOrInsertDefault()
+			batch.FlushTimeout = 5 * time.Second
+			batch.Sizer = exporterhelper.RequestSizerTypeItems
+			batch.MinSize = 5000
+			batch.MaxSize = 10000
 			return queue
 		}())
 	})
