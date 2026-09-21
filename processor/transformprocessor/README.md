@@ -1100,10 +1100,6 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 
 ## Feature Gate
 
-### `processor.transform.defaultErrorModeIgnore`
-
-The `processor.transform.defaultErrorModeIgnore` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) changes the default top-level `error_mode` of the transform processor from `propagate` to `ignore`. This gate is currently in `beta` (enabled by default), meaning the default `error_mode` is `ignore`. To revert to the previous default of `propagate`, disable the gate: `--feature-gates=-processor.transform.defaultErrorModeIgnore`.
-
 ### `transform.flatten.logs`
 
 The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the `flatten_data` configuration option (default `false`). With `flatten_data: true`, the processor provides each log record with a distinct copy of its resource and scope. Then, after applying all transformations, the log records are regrouped by resource and scope.
