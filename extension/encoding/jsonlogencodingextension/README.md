@@ -13,10 +13,16 @@
 
 ## Configuration
 
-| Name       | Description                                                                           | Default |
-|------------|---------------------------------------------------------------------------------------|---------|
-| mode       | What mode of the JSON encoding extension you want                                     | body    |
-| array_mode | Set whether JSON payloads is extracted from an array(legacy mode). Accepts a boolean. | true    |
+| Name       | Description                                                                                                        | Default |
+|------------|--------------------------------------------------------------------------------------------------------------------|---------|
+| mode       | What mode of the JSON encoding extension you want                                                                  | body    |
+| array_mode | Set whether JSON payloads is extracted from an array(legacy mode). Accepts a boolean.                              | true    |
+| parse_ints | Preserve integer literals within the `int64` range. See [parse_ints](#parse_ints) for limits and overhead.           | false   |
+
+### parse_ints
+
+Decimal, exponent, and out-of-range integer literals still use `float64` and
+may lose precision. Enabling this option adds processing overhead.
 
 ### Mode
 
@@ -67,4 +73,3 @@ Configuration accepts a boolean.
   New line delimited JSON payload
   > {"key": "value"}\
   > {"key": "value"}
-  
