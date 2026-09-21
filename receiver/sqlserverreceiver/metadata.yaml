@@ -21,7 +21,7 @@ status:
 
 resource_attributes:
   db.system.version:
-    description: The version of the SQL Server instance (e.g. "15.0.4261.1").
+    description: The database version of the instance. Examples include "15.0.4261.1".
     enabled: false
     type: string
   host.name:

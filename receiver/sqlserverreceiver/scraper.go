@@ -160,7 +160,7 @@ var detectSQLServerVersion = func(ctx context.Context, db *sql.DB) (*string, err
 	return &version.String, nil
 }
 
-func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+func (s *sqlServerScraperHelper) ensureDBVersion(ctx context.Context) {
 	if s.versionFunc != nil {
 		v, resolved := s.versionFunc(ctx, s.logger)
 		s.dbVersion = v
@@ -168,6 +168,10 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 			s.versionFunc = nil
 		}
 	}
+}
+
+func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	s.ensureDBVersion(ctx)
 
 	var err error
 
@@ -202,13 +206,7 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
-	if s.versionFunc != nil {
-		v, resolved := s.versionFunc(ctx, s.logger)
-		s.dbVersion = v
-		if resolved {
-			s.versionFunc = nil
-		}
-	}
+	s.ensureDBVersion(ctx)
 
 	var err error
 	var resources pcommon.Resource
