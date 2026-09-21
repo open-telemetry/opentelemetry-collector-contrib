@@ -563,9 +563,69 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 	return errors.Join(errs...)
 }
 
-func isPerformanceCounterRate(counterType string) bool {
+// Some SQL Server rate counter types are also used by counters that this receiver
+// exports as cumulative sums, so counter type alone cannot determine whether to calculate a rate.
+func isPerformanceCounterRate(counterType, counterName string) bool {
 	switch counterType {
 	case perfCounterCounterType, perfCounterBulkCountType:
+	default:
+		return false
+	}
+
+	switch counterName {
+	case "Auto-Param Attempts/sec",
+		"Backup/Restore Throughput/sec",
+		"Batch Requests/sec",
+		"Bytes Received from Replica/sec",
+		"Bytes Sent to Replica/sec",
+		"Connection Reset/sec",
+		"Cursor Requests/sec",
+		"Disk Read IO Throttled/sec",
+		"Disk Read IO/sec",
+		"Disk Write IO Throttled/sec",
+		"Disk Write IO/sec",
+		"Errors/sec",
+		"Extent Deallocations/sec",
+		"Extents Allocated/sec",
+		"Failed Auto-Params/sec",
+		"Forced Parameterizations/sec",
+		"Free list stalls/sec",
+		"FreeSpace Scans/sec",
+		"Full Scans/sec",
+		"Guided plan executions/sec",
+		"Index Searches/sec",
+		"Latch Waits/sec",
+		"Lock Requests/sec",
+		"Lock Timeouts (timeout > 0)/sec",
+		"Lock Timeouts/sec",
+		"Lock Waits/sec",
+		"Logins/sec",
+		"Logouts/sec",
+		"Mirrored Write Transactions/sec",
+		"Misguided plan executions/sec",
+		"Mixed page allocations/sec",
+		"Number of Deadlocks/sec",
+		"Page Compression Attempts/sec",
+		"Page Deallocations/sec",
+		"Page lookups/sec",
+		"Pages Allocated/sec",
+		"Pages Compressed/sec",
+		"Probe Scans/sec",
+		"Range Scans/sec",
+		"Readahead pages/sec",
+		"SQL Attention rate",
+		"SQL Compilations/sec",
+		"SQL Re-Compilations/sec",
+		"Safe Auto-Params/sec",
+		"Scan Point Revalidations/sec",
+		"Skipped Ghosted Records/sec",
+		"Stored Procedures Invoked/sec",
+		"SuperLatch Demotions/sec",
+		"SuperLatch Promotions/sec",
+		"Table Lock Escalations/sec",
+		"Tasks Aborted/sec",
+		"Tasks Started/sec",
+		"Unsafe Auto-Params/sec":
 		return true
 	default:
 		return false
@@ -750,7 +810,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 
-		if isPerformanceCounterRate(row["counter_type"]) {
+		if isPerformanceCounterRate(row["counter_type"], row[counterKey]) {
 			rate, emit, err := s.calculatePerformanceCounterRate(row, scrapeTime)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("failed to calculate performance counter rate for row %d: %w", i, err))
