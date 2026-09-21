@@ -1,5 +1,5 @@
 name: Setup Go & repo tooling
-description: Common setup for Go-based workflows (disk cleanup, setup-go cache, optional gomoddownload).
+description: Common setup for Go-based workflows (disk cleanup, Go module/build caches, optional gomoddownload).
 
 inputs:
   go-version:
@@ -24,19 +24,49 @@ runs:
 
     - name: Setup Go
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
-      id: go-setup
       with:
         go-version: ${{ inputs.go-version }}
-        # Narrow the cache key to high-stability files (tooling and testbed) so
-        # per-component Renovate bumps don't invalidate the shared Go module
-        # cache. `go test`/`go build` lazy-fetches any module versions not
-        # present in the restored cache.
-        cache-dependency-path: |
-          internal/tools/go.sum
-          testbed/go.sum
+        # Caching is handled below instead of via setup-go's built-in cache
+        # (which bundles GOMODCACHE and GOCACHE into one blob keyed by
+        # OS+arch). GOMODCACHE is the same content regardless of runner, so
+        # splitting it out lets every OS/arch combination share one cache
+        # instead of each paying for its own full copy.
+        cache: false
+
+    - name: Resolve Go cache directories
+      id: go-cache-paths
+      shell: bash
+      run: |
+        echo "gomodcache=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+        echo "gocache=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Go module cache (shared across OS/arch)
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      id: gomodcache
+      with:
+        path: ${{ steps.go-cache-paths.outputs.gomodcache }}
+        # Narrow the key to high-stability files (tooling and testbed) so
+        # per-component Renovate bumps don't invalidate the shared cache.
+        # `go test`/`go build` lazy-fetches any module versions not present
+        # in the restored cache. No OS/arch in the key: module downloads are
+        # identical everywhere, so every runner reuses one cache.
+        key: gomodcache-${{ hashFiles('internal/tools/go.sum', 'testbed/go.sum') }}
+        restore-keys: |
+          gomodcache-
+
+    - name: Restore Go build cache (per OS/arch)
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      id: gocache
+      with:
+        path: ${{ steps.go-cache-paths.outputs.gocache }}
+        # GOCACHE holds compiled objects, which are genuinely OS/arch
+        # specific, so this one stays scoped per runner.
+        key: gocache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('internal/tools/go.sum', 'testbed/go.sum') }}
+        restore-keys: |
+          gocache-${{ runner.os }}-${{ runner.arch }}-
 
     - name: Install dependencies (gomoddownload)
-      # Only download if setup-go didn't restore a cache.
-      if: inputs.gomoddownload == 'true' && steps.go-setup.outputs.cache-hit != 'true'
+      # Only download if the module cache didn't restore an exact match.
+      if: inputs.gomoddownload == 'true' && steps.gomodcache.outputs.cache-hit != 'true'
       shell: bash
       run: make -j8 gomoddownload

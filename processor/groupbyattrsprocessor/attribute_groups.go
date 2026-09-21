@@ -8,8 +8,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 type tracesGroup struct {
@@ -24,7 +23,7 @@ func newTracesGroup() *tracesGroup {
 // findOrCreateResource searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
 func (tg *tracesGroup) findOrCreateResourceSpans(originResource pcommon.Resource, requiredAttributes pcommon.Map) ptrace.ResourceSpans {
 	referenceResource := buildReferenceResource(originResource, requiredAttributes)
-	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
+	referenceResourceHash := xhash.MapHash(referenceResource.Attributes())
 
 	rss := tg.traces.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
@@ -51,7 +50,7 @@ func newMetricsGroup() *metricsGroup {
 // findOrCreateResourceMetrics searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
 func (mg *metricsGroup) findOrCreateResourceMetrics(originResource pcommon.Resource, requiredAttributes pcommon.Map) pmetric.ResourceMetrics {
 	referenceResource := buildReferenceResource(originResource, requiredAttributes)
-	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
+	referenceResourceHash := xhash.MapHash(referenceResource.Attributes())
 
 	rms := mg.metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -79,7 +78,7 @@ func newLogsGroup() *logsGroup {
 // findOrCreateResourceLogs searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
 func (lg *logsGroup) findOrCreateResourceLogs(originResource pcommon.Resource, requiredAttributes pcommon.Map) plog.ResourceLogs {
 	referenceResource := buildReferenceResource(originResource, requiredAttributes)
-	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
+	referenceResourceHash := xhash.MapHash(referenceResource.Attributes())
 
 	rls := lg.logs.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {

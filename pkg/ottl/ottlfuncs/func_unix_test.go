@@ -34,8 +34,7 @@ func Test_Unix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Unix(tt.seconds, tt.nanoseconds)
-			require.NoError(t, err)
+			exprFunc := unix(tt.seconds, tt.nanoseconds)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := time.Unix(tt.expected, 0)
@@ -54,14 +53,14 @@ func Test_UnixFactory(t *testing.T) {
 		factory := NewUnixFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &UnixArguments[any]{}, args)
+		assert.IsType(t, &unixArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Seconds", "Nanoseconds"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewUnixFactory[any]()
 		args := factory.CreateDefaultArguments()
-		unixArgs, ok := args.(*UnixArguments[any])
+		unixArgs, ok := args.(*unixArguments[any])
 		require.True(t, ok)
 		unixArgs.Seconds = &ottl.StandardIntGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -76,6 +75,20 @@ func Test_UnixFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createUnixFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "UnixFactory args must be of type *UnixArguments[K]")
+		assert.ErrorContains(t, err, "UnixFactory args must be of type *unixArguments[K]")
 	})
+}
+
+func BenchmarkUnix(b *testing.B) {
+	exprFunc := unix[any](
+		&ottl.StandardIntGetter[any]{Getter: func(context.Context, any) (any, error) { return int64(1672527600), nil }},
+		ottl.Optional[ottl.IntGetter[any]]{},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
