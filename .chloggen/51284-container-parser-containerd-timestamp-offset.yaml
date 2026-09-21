@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/stanza
+note: "Fix the `container` parser rejecting containerd logs whose timestamps use a UTC offset instead of `Z` when `format: containerd` is set."
+issues: [51284]
+subtext:
+change_logs: [user]
