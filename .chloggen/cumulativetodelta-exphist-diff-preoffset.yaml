@@ -4,7 +4,7 @@ component: processor/cumulative_to_delta
 
 note: Fix ExponentialBuckets.Diff missing reset when old buckets precede current histogram offset
 
-issues: []
+issues: [51303]
 
 subtext:
 
