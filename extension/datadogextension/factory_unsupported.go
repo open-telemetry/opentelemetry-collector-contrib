@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build aix
+//go:build aix || solaris
 
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
@@ -27,5 +27,5 @@ func NewFactory() extension.Factory {
 }
 
 func createAix(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
-	return nil, errors.New("datadogextension is not supported on aix")
+	return nil, errors.New("datadogextension is not supported on aix or solaris")
 }
