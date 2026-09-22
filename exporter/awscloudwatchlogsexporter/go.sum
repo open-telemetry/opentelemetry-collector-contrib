@@ -16,6 +16,8 @@ github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.3 h1:fuSCw4Z2qfRCztMPO3GXJNSiEp6W
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.3/go.mod h1:6SxcHheD1pPR5+kWm1wGvjlL/YqUsh267sAfEmN4K7A=
 github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.87.0 h1:qn5nw6rYGLIBnxbOexypxG2eOaMzV389mG4WdUXp0/k=
 github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.87.0/go.mod h1:wsz6uFaBRCfqWjNLeBH0jutf0ek8CQGVCO/QSTWZl54=
+github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.0 h1:KyeagiHCnUF7s91ulQNtzPYp1EkrfSITu1UVEksNERs=
+github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.0/go.mod h1:wsz6uFaBRCfqWjNLeBH0jutf0ek8CQGVCO/QSTWZl54=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 h1:bAdDl/HkGCcGPoe25ToSHEw23VIxt6CT5fLcg111BKg=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19/go.mod h1:KaUzbLxv4CeSxh6ZCl9B4m7CuFenS8kUEaDs+f/DQr4=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.3 h1:bON1rJf67TSTDCKg816AAIE4xSTtoo9tl0XRkO72R+I=
