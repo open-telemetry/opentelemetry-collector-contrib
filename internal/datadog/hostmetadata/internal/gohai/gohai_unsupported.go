@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build aix
+//go:build aix || solaris
 
 package gohai // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/gohai"
 
@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// NewPayload returns an empty gohai payload since aix is not supported.
+// NewPayload returns an empty gohai payload since aix and solaris are not supported.
 func NewPayload(logger *zap.Logger) gohai.Payload {
 	payload := gohai.NewEmpty()
 	payload.Gohai.Gohai = newGohai(logger)
@@ -18,6 +18,6 @@ func NewPayload(logger *zap.Logger) gohai.Payload {
 }
 
 func newGohai(logger *zap.Logger) *gohai.Gohai {
-	logger.Info("Using noop gohai implementation for windows/arm64/aix since it is not supported")
+	logger.Info("Using noop gohai implementation for windows/arm64/aix/solaris since it is not supported")
 	return new(gohai.Gohai)
 }

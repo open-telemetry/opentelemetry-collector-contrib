@@ -12,4 +12,4 @@ Number of MODIFIED watch events filtered out by dedup_interval. Always 0 when de
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {events} | Sum | Int | true | Development |
+| {event} | Sum | Int | true | Development |

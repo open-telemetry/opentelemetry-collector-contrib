@@ -40,7 +40,6 @@ func TestValidate(t *testing.T) {
 	}
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	httpClientConfig.ForceAttemptHTTP2 = false
 	httpClientConfig.ReadBufferSize = 100
 	httpClientConfig.WriteBufferSize = 200
