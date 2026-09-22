@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add `mysql.events_statements_summary_by_digest.sum_rows_examined` and `sum_rows_sent` deltas to `db.server.top_query`, and extend `db.namespace` onto that event.
+
+issues: [51312]
+
+subtext:
+
+change_logs: [user]
