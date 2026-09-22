@@ -23,6 +23,7 @@ attributes:
       - azure
       - azureappservice
       - azurecontainerapps
+      - azurefunctions
       - consul
       - digitalocean
       - docker

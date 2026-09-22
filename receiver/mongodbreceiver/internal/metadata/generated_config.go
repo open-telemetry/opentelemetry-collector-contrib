@@ -1234,6 +1234,66 @@ func (ms *MongodbOperationTimeMetricConfig) Validate() error {
 	return nil
 }
 
+// MongodbOplogLimitMetricConfig provides config for the mongodb.oplog.limit metric.
+type MongodbOplogLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbOplogLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbOplogUsageMetricConfig provides config for the mongodb.oplog.usage metric.
+type MongodbOplogUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbOplogUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbOplogWindowMetricConfig provides config for the mongodb.oplog.window metric.
+type MongodbOplogWindowMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbOplogWindowMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MongodbPageFaultsMetricConfig provides config for the mongodb.page_faults metric.
 type MongodbPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1391,6 +1451,199 @@ func (ms *MongodbReplUpdatesPerSecMetricConfig) Unmarshal(parser *confmap.Conf) 
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbReplicaStatusMetricAttributeKey specifies the key of an attribute for the mongodb.replica.status metric.
+type MongodbReplicaStatusMetricAttributeKey string
+
+const (
+	MongodbReplicaStatusMetricAttributeKeyMongodbReplicaState MongodbReplicaStatusMetricAttributeKey = "mongodb.replica.state"
+)
+
+// MongodbReplicaStatusMetricConfig provides config for the mongodb.replica.status metric.
+type MongodbReplicaStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbReplicaStatusMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbReplicaStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbReplicaStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbReplicaStatusMetricAttributeKeyMongodbReplicaState:
+		default:
+			return fmt.Errorf("metric mongodb.replica.status doesn't have an attribute %v, valid attributes: [mongodb.replica.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbReplicaSetHeadroomMetricAttributeKey specifies the key of an attribute for the mongodb.replica_set.headroom metric.
+type MongodbReplicaSetHeadroomMetricAttributeKey string
+
+const (
+	MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaName MongodbReplicaSetHeadroomMetricAttributeKey = "mongodb.replica.name"
+)
+
+// MongodbReplicaSetHeadroomMetricConfig provides config for the mongodb.replica_set.headroom metric.
+type MongodbReplicaSetHeadroomMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbReplicaSetHeadroomMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbReplicaSetHeadroomMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbReplicaSetHeadroomMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaName:
+		default:
+			return fmt.Errorf("metric mongodb.replica_set.headroom doesn't have an attribute %v, valid attributes: [mongodb.replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbReplicaSetLagMetricAttributeKey specifies the key of an attribute for the mongodb.replica_set.lag metric.
+type MongodbReplicaSetLagMetricAttributeKey string
+
+const (
+	MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaName       MongodbReplicaSetLagMetricAttributeKey = "mongodb.replica.name"
+	MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType MongodbReplicaSetLagMetricAttributeKey = "mongodb.replica_set.lag.type"
+)
+
+// MongodbReplicaSetLagMetricConfig provides config for the mongodb.replica_set.lag metric.
+type MongodbReplicaSetLagMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbReplicaSetLagMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbReplicaSetLagMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbReplicaSetLagMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaName, MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType:
+		default:
+			return fmt.Errorf("metric mongodb.replica_set.lag doesn't have an attribute %v, valid attributes: [mongodb.replica.name, mongodb.replica_set.lag.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbReplicaSetMemberCountMetricAttributeKey specifies the key of an attribute for the mongodb.replica_set.member.count metric.
+type MongodbReplicaSetMemberCountMetricAttributeKey string
+
+const (
+	MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaState MongodbReplicaSetMemberCountMetricAttributeKey = "mongodb.replica.state"
+)
+
+// MongodbReplicaSetMemberCountMetricConfig provides config for the mongodb.replica_set.member.count metric.
+type MongodbReplicaSetMemberCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbReplicaSetMemberCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbReplicaSetMemberCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbReplicaSetMemberCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaState:
+		default:
+			return fmt.Errorf("metric mongodb.replica_set.member.count doesn't have an attribute %v, valid attributes: [mongodb.replica.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1714,6 +1967,9 @@ type MetricsConfig struct {
 	MongodbOperationLatencyTime               MongodbOperationLatencyTimeMetricConfig               `mapstructure:"mongodb.operation.latency.time"`
 	MongodbOperationReplCount                 MongodbOperationReplCountMetricConfig                 `mapstructure:"mongodb.operation.repl.count"`
 	MongodbOperationTime                      MongodbOperationTimeMetricConfig                      `mapstructure:"mongodb.operation.time"`
+	MongodbOplogLimit                         MongodbOplogLimitMetricConfig                         `mapstructure:"mongodb.oplog.limit"`
+	MongodbOplogUsage                         MongodbOplogUsageMetricConfig                         `mapstructure:"mongodb.oplog.usage"`
+	MongodbOplogWindow                        MongodbOplogWindowMetricConfig                        `mapstructure:"mongodb.oplog.window"`
 	MongodbPageFaults                         MongodbPageFaultsMetricConfig                         `mapstructure:"mongodb.page_faults"`
 	MongodbQueriesRate                        MongodbQueriesRateMetricConfig                        `mapstructure:"mongodb.queries.rate"`
 	MongodbReplCommandsPerSec                 MongodbReplCommandsPerSecMetricConfig                 `mapstructure:"mongodb.repl_commands_per_sec"`
@@ -1722,6 +1978,10 @@ type MetricsConfig struct {
 	MongodbReplInsertsPerSec                  MongodbReplInsertsPerSecMetricConfig                  `mapstructure:"mongodb.repl_inserts_per_sec"`
 	MongodbReplQueriesPerSec                  MongodbReplQueriesPerSecMetricConfig                  `mapstructure:"mongodb.repl_queries_per_sec"`
 	MongodbReplUpdatesPerSec                  MongodbReplUpdatesPerSecMetricConfig                  `mapstructure:"mongodb.repl_updates_per_sec"`
+	MongodbReplicaStatus                      MongodbReplicaStatusMetricConfig                      `mapstructure:"mongodb.replica.status"`
+	MongodbReplicaSetHeadroom                 MongodbReplicaSetHeadroomMetricConfig                 `mapstructure:"mongodb.replica_set.headroom"`
+	MongodbReplicaSetLag                      MongodbReplicaSetLagMetricConfig                      `mapstructure:"mongodb.replica_set.lag"`
+	MongodbReplicaSetMemberCount              MongodbReplicaSetMemberCountMetricConfig              `mapstructure:"mongodb.replica_set.member.count"`
 	MongodbSessionCount                       MongodbSessionCountMetricConfig                       `mapstructure:"mongodb.session.count"`
 	MongodbStorageSize                        MongodbStorageSizeMetricConfig                        `mapstructure:"mongodb.storage.size"`
 	MongodbUpdatesRate                        MongodbUpdatesRateMetricConfig                        `mapstructure:"mongodb.updates.rate"`
@@ -1876,6 +2136,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MongodbOperationTimeMetricAttributeKey{MongodbOperationTimeMetricAttributeKeyOperation},
 		},
+		MongodbOplogLimit: MongodbOplogLimitMetricConfig{
+			Enabled: false,
+		},
+		MongodbOplogUsage: MongodbOplogUsageMetricConfig{
+			Enabled: false,
+		},
+		MongodbOplogWindow: MongodbOplogWindowMetricConfig{
+			Enabled: false,
+		},
 		MongodbPageFaults: MongodbPageFaultsMetricConfig{
 			Enabled: false,
 		},
@@ -1899,6 +2168,26 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbReplUpdatesPerSec: MongodbReplUpdatesPerSecMetricConfig{
 			Enabled: false,
+		},
+		MongodbReplicaStatus: MongodbReplicaStatusMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbReplicaStatusMetricAttributeKey{MongodbReplicaStatusMetricAttributeKeyMongodbReplicaState},
+		},
+		MongodbReplicaSetHeadroom: MongodbReplicaSetHeadroomMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbReplicaSetHeadroomMetricAttributeKey{MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaName},
+		},
+		MongodbReplicaSetLag: MongodbReplicaSetLagMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbReplicaSetLagMetricAttributeKey{MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaName, MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType},
+		},
+		MongodbReplicaSetMemberCount: MongodbReplicaSetMemberCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbReplicaSetMemberCountMetricAttributeKey{MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaState},
 		},
 		MongodbSessionCount: MongodbSessionCountMetricConfig{
 			Enabled: true,

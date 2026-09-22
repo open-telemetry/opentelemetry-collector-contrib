@@ -172,6 +172,49 @@ values. Use at most one of `double_value:` or `double_value/precision<n>:` per
 datapoint. The operator applies only to `double_value`, since integer values
 have no float precision to ignore.
 
+### Collection include matcher
+
+`resources`, `scopes`, `metrics`, and `datapoints` are matched exactly by
+default: an actual item with no expected counterpart fails the assertion. Add
+the `/include` suffix to assert that the listed items are present while
+tolerating additional ones:
+
+```yaml
+version: 1
+signal: metrics
+resources/include:
+  - attributes/include:
+      k8s.node.name: node-1
+    scopes/include:
+      - name: github.com/example/receiver
+        version/exists: true
+        metrics/include:
+          - name: container.cpu.usage
+            type: sum
+```
+
+This is the assertion-file equivalent of asserting that a payload contains the
+metrics a test cares about, without pinning the rest of the inventory. Each
+collection chooses its own mode, so an exact collection can be nested inside an
+`/include` one — the example above still pins nothing about the other metrics,
+but replacing `metrics/include` with `metrics` would require the listed
+metrics to be the only ones present.
+
+The items that `/include` does list are validated in full: metric type, unit,
+temporality, monotonicity, and datapoint values are compared exactly as they
+are in an exact collection.
+
+Within an item matched by `/include`, an omitted nested collection asserts
+nothing about it. In the example above the metric does not list `datapoints:`,
+so `container.cpu.usage` only has to be present with the expected identity —
+its datapoints are not constrained, which is what makes the operator useful for
+multi-series metrics. Listing `datapoints:` (or `datapoints/include:`)
+restores the constraint.
+
+Use at most one of `<collection>:` and `<collection>/include:` per element;
+specifying both is a schema error. `WriteAssertionFile` always emits the
+default exact form.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -197,11 +240,16 @@ common case readable. The shorthand relies on the invariant that a `Metric`
 must contain at least one datapoint; see
 [#48106](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48106).
 
+The shorthand applies to metrics in an exact collection only. A metric matched
+by `metrics/include` that omits `datapoints:` asserts nothing about its
+datapoints rather than pinning it to a single attribute-less one.
+
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond attribute `/exists`/`/regex`, `attributes/include`, and scope
-`version` `/exists`/`/regex` (`/exclude`, `/all`, `/count`, `/approx`,
+extensions beyond attribute `/exists`/`/regex`, `attributes/include`, scope
+`version` `/exists`/`/regex`, and collection `/include` (`/exclude`, `/all`,
+`/count`, `/approx`,
 `/gt|gte|lt|lte`) and opt-in fields
 (`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
 histogram fields) are tracked as follow-ups under that issue.
