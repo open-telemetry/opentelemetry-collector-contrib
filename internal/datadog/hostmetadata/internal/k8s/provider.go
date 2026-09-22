@@ -32,10 +32,11 @@ func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	clusterName, err := p.clusterNameProvider.ClusterName(ctx)
 	if err != nil {
 		p.logger.Debug("failed to get valid cluster name", zap.Error(err))
-		return source.Source{Kind: source.HostnameKind, Identifier: nodeName}, nil
+		return source.Source{Kind: source.HostnameKind, Identifier: nodeName, SourceIdentifier: source.SourceIdentifier{Primary: nodeName}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 	}
 
-	return source.Source{Kind: source.HostnameKind, Identifier: fmt.Sprintf("%s-%s", nodeName, clusterName)}, nil
+	combined := fmt.Sprintf("%s-%s", nodeName, clusterName)
+	return source.Source{Kind: source.HostnameKind, Identifier: combined, SourceIdentifier: source.SourceIdentifier{Primary: combined}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 }
 
 // NewProvider creates a new Kubernetes hostname provider.

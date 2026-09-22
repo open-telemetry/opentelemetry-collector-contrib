@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogexporter
 
@@ -110,7 +110,7 @@ func TestSignalCompressionMetrics(t *testing.T) {
 		traceconfig.New(),
 		&once,
 		attrsTranslator,
-		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}},
+		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		reporter,
 		nil,
 		attributes.NewGatewayUsage(),
