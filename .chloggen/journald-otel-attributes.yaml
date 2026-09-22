@@ -6,6 +6,7 @@ note: Add "convert_to_semantic_conventions" config option to map well-known jour
 
 issues: [7298]
 
-subtext:
+subtext: |
+  See the [Semantic Conventions Mapping](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/journaldreceiver/README.md#semantic-conventions-mapping) section of the receiver README for details on what `convert_to_semantic_conventions` does.
 
 change_logs: [user]
