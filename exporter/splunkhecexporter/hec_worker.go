@@ -19,8 +19,8 @@ import (
 )
 
 // errPayloadTooLarge marks a batch the server rejected as too large (HTTP 413).
-// It is wrapped in a permanent error so signals that cannot split treat it as a
-// drop, while the logs path detects it (errors.Is) and splits the batch.
+// Wrapped permanent so non-splitting signals drop it; the logs path detects it
+// (errors.Is) and splits instead.
 var errPayloadTooLarge = errors.New("splunk hec payload too large")
 
 type hecWorker interface {

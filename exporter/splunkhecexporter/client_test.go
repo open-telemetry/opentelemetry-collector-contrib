@@ -1719,10 +1719,9 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	assert.NotContains(t, err.Error(), responseBody)
 }
 
-// logRecordNames returns the DefaultNameLabel attribute of every log record in
-// ld, in resource/scope/record iteration order. createLogData stamps each record
-// with a unique "<resource>_<scope>_<record>" name, so the sequence identifies
-// both which records are present and their order.
+// logRecordNames returns each record's DefaultNameLabel in iteration order.
+// createLogData stamps a unique "<resource>_<scope>_<record>" name, so the
+// sequence identifies which records are present and their order.
 func logRecordNames(ld plog.Logs) []string {
 	var names []string
 	rls := ld.ResourceLogs()
@@ -1743,8 +1742,7 @@ func Test_splitLogs(t *testing.T) {
 	logs := createLogData(2, 2, 3) // 2 resources x 2 scopes x 3 records = 12 records
 	require.Equal(t, 12, logs.LogRecordCount())
 
-	// Splitting at 5 lands inside the second scope, so the head crosses a scope
-	// (ScopeLogs) boundary: all of the first scope's records plus part of the second.
+	// Split at 5 lands mid-second-scope, so head crosses a scope boundary.
 	head, tail := splitLogs(logs, 5)
 	assert.Equal(t, 5, head.LogRecordCount())
 	assert.Equal(t, 7, tail.LogRecordCount())
@@ -1753,9 +1751,7 @@ func Test_splitLogs(t *testing.T) {
 	assert.Equal(t, []string{"0_1_2", "1_0_0", "1_0_1", "1_0_2", "1_1_0", "1_1_1", "1_1_2"}, logRecordNames(tail),
 		"tail must be the remaining records in order")
 
-	// Boundaries: n == 0 gives an empty head and the whole set as tail; n == total
-	// and n > total give the whole set as head and an empty tail (a "first n" caller
-	// must not get an inverted result).
+	// Boundaries: n==0 -> empty head, whole tail; n>=total -> whole head, empty tail.
 	for _, tc := range []struct{ n, wantHead, wantTail int }{
 		{0, 0, 12},
 		{12, 12, 0},
@@ -1774,7 +1770,7 @@ func Test_pushLogData_SplitsOversizedBatchOn413(t *testing.T) {
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	logs := createLogData(1, 1, 2) // two records in a single batch
 
-	// The full batch is rejected as too large (413); each half (one record) is accepted.
+	// Full batch -> 413; each single-record half -> 200.
 	httpClient, _ := newTestClientWithPresetResponses([]int{413, 200, 200}, []string{"", "", ""}, func(_ []byte) {})
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
@@ -1782,9 +1778,8 @@ func Test_pushLogData_SplitsOversizedBatchOn413(t *testing.T) {
 	require.NoError(t, err, "oversized batch should be split and resent successfully")
 }
 
-// When one half of a 413-split batch is dropped permanently (a single record that
-// is still too large) and the other half fails retryably, the retryable half's
-// records must be preserved for retry rather than dropped with the permanent half.
+// One half dropped permanently, the other retryable: the retryable half's records
+// must survive for retry rather than be dropped with the permanent half.
 func Test_pushLogData_SplitOn413_RetriesRetryableHalfWhenOtherHalfPermanent(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.DisableCompression = true
@@ -1792,7 +1787,7 @@ func Test_pushLogData_SplitOn413_RetriesRetryableHalfWhenOtherHalfPermanent(t *t
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	logs := createLogData(1, 1, 2) // two records; split into two single-record halves
 
-	// Full batch -> 413; head (1 record) -> 413 (dropped permanently); tail (1 record) -> 500 (retryable).
+	// Full batch -> 413; head -> 413 (permanent drop); tail -> 500 (retryable).
 	httpClient, _ := newTestClientWithPresetResponses([]int{413, 413, 500}, []string{"", "", ""}, func(_ []byte) {})
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
@@ -1805,8 +1800,7 @@ func Test_pushLogData_SplitOn413_RetriesRetryableHalfWhenOtherHalfPermanent(t *t
 	assert.Equal(t, 1, logsErr.Data().LogRecordCount(), "the retryable half's record must be preserved for retry")
 }
 
-// When both halves of a 413-split batch fail retryably, every record across both
-// halves must be preserved for retry, not just the first half's.
+// Both halves retryable: records from both must survive, not just the first half's.
 func Test_pushLogData_SplitOn413_RetriesAllRecordsWhenBothHalvesRetryable(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.DisableCompression = true
