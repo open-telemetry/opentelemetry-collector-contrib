@@ -6,10 +6,10 @@ github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.3 h1:Hp/VgjP0BysR3OgLlR
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.3/go.mod h1:nwGV5qw7F1IZPgxCvA/ph8N2TAuz+BkRG/bXn808qMA=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.3 h1:MUaM4f+kj1ZIBPZfUS8cxP1GKXXZtHJjAthy93AN7SM=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.3/go.mod h1:6YmVmEVRI5ZZzRjCSsb9SryKH0hAlMRdgA7kG9aDvBU=
-github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.87.0 h1:qn5nw6rYGLIBnxbOexypxG2eOaMzV389mG4WdUXp0/k=
-github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.87.0/go.mod h1:wsz6uFaBRCfqWjNLeBH0jutf0ek8CQGVCO/QSTWZl54=
-github.com/aws/smithy-go v1.28.1 h1:R/nXH00c8qcfCzQVELtRw+eLQWtzv+VAIEFJ1/xxXlQ=
-github.com/aws/smithy-go v1.28.1/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
+github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.0 h1:KyeagiHCnUF7s91ulQNtzPYp1EkrfSITu1UVEksNERs=
+github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.0/go.mod h1:wsz6uFaBRCfqWjNLeBH0jutf0ek8CQGVCO/QSTWZl54=
+github.com/aws/smithy-go v1.28.2 h1:myhcykQcatTul2B/zITjDk203G7t0awUAs1hVry5Bvg=
+github.com/aws/smithy-go v1.28.2/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
