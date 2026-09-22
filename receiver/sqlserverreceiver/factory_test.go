@@ -453,7 +453,7 @@ func TestDBProviderDetectVersionRetriesOnFailure(t *testing.T) {
 }
 
 func TestDBProviderDetectVersionNullLatches(t *testing.T) {
-	// When SERVERPROPERTY returns NULL, detectVersion must latch versionReady so
+	// When SERVERPROPERTY returns NULL, detectVersion must latch dbVersion so
 	// subsequent intervals do not retry.
 	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
 	require.NoError(t, err)
