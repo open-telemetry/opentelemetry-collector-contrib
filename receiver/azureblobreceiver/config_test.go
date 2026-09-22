@@ -41,7 +41,8 @@ func TestLoadConfig(t *testing.T) {
 			Traces:           TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 			Cloud:            defaultCloud,
 		},
-		receiver)
+		receiver,
+	)
 
 	receiver = cfg.Receivers[component.NewIDWithName(metadata.Type, "2")].(*Config)
 	assert.NoError(t, componenttest.CheckConfigStruct(receiver))
@@ -59,7 +60,8 @@ func TestLoadConfig(t *testing.T) {
 			Traces:            TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 			Cloud:             defaultCloud,
 		},
-		receiver)
+		receiver,
+	)
 }
 
 func TestMissingConnectionString(t *testing.T) {

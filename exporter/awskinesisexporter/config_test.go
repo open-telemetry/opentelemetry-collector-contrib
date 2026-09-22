@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfigCheck(t *testing.T) {
-	cfg := (NewFactory()).CreateDefaultConfig()
+	cfg := NewFactory().CreateDefaultConfig()
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 

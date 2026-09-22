@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -399,7 +400,7 @@ func Test_SliceToMap(t *testing.T) {
 				valuePathOptional = ottl.NewTestingOptional(tt.valuePath)
 			}
 
-			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
+			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &sliceToMapArguments[any]{
 				Target: ottl.StandardPSliceGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						val := tt.value()
@@ -429,5 +430,68 @@ func Test_SliceToMap(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tt.want(), result.(pcommon.Map))
 		})
+	}
+}
+
+func Test_SliceToMapFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSliceToMapFactory[any]()
+		assert.Equal(t, "SliceToMap", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSliceToMapFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &sliceToMapArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "KeyPath", "ValuePath"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSliceToMapFactory[any]()
+		args := factory.CreateDefaultArguments()
+		sliceToMapArgs, ok := args.(*sliceToMapArguments[any])
+		require.True(t, ok)
+		sliceToMapArgs.Target = &ottl.StandardPSliceGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewSlice(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := sliceToMapFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SliceToMapFactory args must be of type *sliceToMapArguments[K")
+	})
+}
+
+func BenchmarkSliceToMap(b *testing.B) {
+	sl := pcommon.NewSlice()
+	thing1 := sl.AppendEmpty().SetEmptyMap()
+	thing1.PutStr("name", "foo")
+	thing1.PutInt("value", 2)
+	thing2 := sl.AppendEmpty().SetEmptyMap()
+	thing2.PutStr("name", "bar")
+	thing2.PutInt("value", 5)
+
+	exprFunc := getSliceToMapFunc[any](
+		ottl.StandardPSliceGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return sl, nil
+			},
+		},
+		ottl.NewTestingOptional[[]string]([]string{"name"}),
+		ottl.NewTestingOptional[[]string]([]string{"value"}),
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

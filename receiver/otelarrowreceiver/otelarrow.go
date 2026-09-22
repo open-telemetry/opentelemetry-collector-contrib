@@ -54,11 +54,11 @@ type otelArrowReceiver struct {
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceiver, error) {
-	if cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
+	if cfg.Protocols.Arrow.DeprecatedAdmissionLimitMiB != 0 {
 		set.Logger.Warn("arrow.admission_limit_mib is deprecated, using admission.request_limit_mib instead.")
 	}
 
-	if cfg.Arrow.DeprecatedWaiterLimit != 0 {
+	if cfg.Protocols.Arrow.DeprecatedWaiterLimit != 0 {
 		set.Logger.Warn("arrow.waiter_limit is deprecated, using admission.waiter_limit instead.")
 	}
 
@@ -81,7 +81,7 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 		netReporter:  netReporter,
 		boundedQueue: bq,
 	}
-	err = zstd.SetDecoderConfig(cfg.Arrow.Zstd)
+	err = zstd.SetDecoderConfig(cfg.Protocols.Arrow.Zstd)
 	if err != nil {
 		return nil, err
 	}
@@ -120,24 +120,24 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 	if r.netReporter != nil {
 		serverOpts = append(serverOpts, configgrpc.WithGrpcServerOption(grpc.StatsHandler(r.netReporter.Handler())))
 	}
-	r.serverGRPC, err = r.cfg.GRPC.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, serverOpts...)
+	r.serverGRPC, err = r.cfg.Protocols.GRPC.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, serverOpts...)
 	if err != nil {
 		return err
 	}
 
 	var authServer extensionauth.Server
-	if r.cfg.GRPC.Auth.HasValue() {
-		authServer, err = r.cfg.GRPC.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
+	if r.cfg.Protocols.GRPC.Auth.HasValue() {
+		authServer, err = r.cfg.Protocols.GRPC.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return err
 		}
 	}
 
-	r.arrowReceiver, err = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
+	r.arrowReceiver, err = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.Protocols.GRPC, authServer, func() arrowRecord.ConsumerAPI {
 		var opts []arrowRecord.Option
-		if r.cfg.Arrow.MemoryLimitMiB != 0 {
+		if r.cfg.Protocols.Arrow.MemoryLimitMiB != 0 {
 			// in which case the default is selected in the arrowRecord package.
-			opts = append(opts, arrowRecord.WithMemoryLimit(r.cfg.Arrow.MemoryLimitMiB<<20))
+			opts = append(opts, arrowRecord.WithMemoryLimit(r.cfg.Protocols.Arrow.MemoryLimitMiB<<20))
 		}
 		if r.settings.MeterProvider != nil {
 			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.MeterProvider))
@@ -166,7 +166,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 		arrowpb.RegisterArrowLogsServiceServer(r.serverGRPC, r.arrowReceiver)
 	}
 
-	err = r.startGRPCServer(r.cfg.GRPC, host)
+	err = r.startGRPCServer(r.cfg.Protocols.GRPC, host)
 	if err != nil {
 		return err
 	}

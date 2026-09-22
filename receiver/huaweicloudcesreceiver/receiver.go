@@ -218,7 +218,7 @@ func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions [
 		}
 		metrics[metricDefinition.Namespace] = append(metrics[metricDefinition.Namespace], &internal.MetricData{
 			MetricName: metricDefinition.MetricName,
-			Dimensions: metricDefinition.Dimensions,
+			Dimensions: internal.ToDimensions(metricDefinition.Dimensions),
 			Namespace:  metricDefinition.Namespace,
 			Unit:       metricDefinition.Unit,
 			Datapoints: datapoints,
@@ -228,6 +228,7 @@ func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions [
 }
 
 func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to time.Time, infoList model.MetricInfoList) (*model.ShowMetricDataResponse, error) {
+	dimensions := internal.ToDimensions(infoList.Dimensions)
 	return internal.MakeAPICallWithRetry(
 		ctx,
 		rcvr.shutdownChan,
@@ -236,10 +237,10 @@ func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to t
 			return rcvr.client.ShowMetricData(&model.ShowMetricDataRequest{
 				Namespace:  infoList.Namespace,
 				MetricName: infoList.MetricName,
-				Dim0:       infoList.Dimensions[0].Name + "," + infoList.Dimensions[0].Value,
-				Dim1:       internal.GetDimension(infoList.Dimensions, 1),
-				Dim2:       internal.GetDimension(infoList.Dimensions, 2),
-				Dim3:       internal.GetDimension(infoList.Dimensions, 3),
+				Dim0:       dimensions[0].Name + "," + dimensions[0].Value,
+				Dim1:       internal.GetDimension(dimensions, 1),
+				Dim2:       internal.GetDimension(dimensions, 2),
+				Dim3:       internal.GetDimension(dimensions, 3),
 				Period:     validPeriods[rcvr.config.Period],
 				Filter:     validFilters[rcvr.config.Filter],
 				From:       from.UnixMilli(),

@@ -21,7 +21,7 @@ import (
 func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers", "cpu"}
-	mockScraper := func(_ context.Context, _ Config, _ receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(_ context.Context, _ Config, _ receiver.Settings, _ *franzAdminProvider) (scraper.Metrics, error) {
 		return scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
 			return pmetric.Metrics{}, nil
 		})
@@ -46,11 +46,12 @@ func TestNewReceiver_refresh_frequency(t *testing.T) {
 func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(_ context.Context, _ Config, _ receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(_ context.Context, _ Config, _ receiver.Settings, _ *franzAdminProvider) (scraper.Metrics, error) {
 		return scraper.NewMetrics(
 			func(context.Context) (pmetric.Metrics, error) {
 				return pmetric.Metrics{}, nil
-			})
+			},
+		)
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(t.Context(), *c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
@@ -61,7 +62,7 @@ func TestNewReceiver(t *testing.T) {
 func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(context.Context, Config, receiver.Settings, *franzAdminProvider) (scraper.Metrics, error) {
 		return nil, errors.New("fail")
 	}
 	allScrapers["brokers"] = mockScraper

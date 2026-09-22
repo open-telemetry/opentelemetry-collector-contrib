@@ -175,9 +175,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlDatabaseCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 1, "relation-val", "mode-val", "lock_type-val")
+			mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 1, "relation-val", "mode-val", "lock_type-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 3, "relation-val-2", "mode-val-2", "lock_type-val-2")
+				mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 3, "relation-val-2", "mode-val-2", "lock_type-val-2", "db.namespace-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -441,7 +441,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.backends"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of backends.", mi.Description())
+						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -458,7 +458,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.backends"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of backends.", mi.Description())
+						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -857,7 +857,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.database.locks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of database locks.", mi.Description())
+						assert.Equal(t, "The number of database locks, including those held by the receiver's own connections.", mi.Description())
 						assert.Equal(t, "{lock}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -873,12 +873,15 @@ func TestMetricsBuilder(t *testing.T) {
 						lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
 						assert.True(t, ok)
 						assert.Equal(t, "lock_type-val", lockTypeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.database.locks"], "Found a duplicate in the metrics slice: postgresql.database.locks")
 						validatedMetrics["postgresql.database.locks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of database locks.", mi.Description())
+						assert.Equal(t, "The number of database locks, including those held by the receiver's own connections.", mi.Description())
 						assert.Equal(t, "{lock}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -899,6 +902,8 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("mode")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("lock_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
 				case "postgresql.db_size":
@@ -1526,7 +1531,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.table.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Disk space used by a table.", mi.Description())
+						assert.Equal(t, "Total disk space used by a table, including its indexes and TOAST data.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1546,7 +1551,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.table.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Disk space used by a table.", mi.Description())
+						assert.Equal(t, "Total disk space used by a table, including its indexes and TOAST data.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

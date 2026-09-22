@@ -64,6 +64,10 @@ func createDefaultConfig() component.Config {
 			PreserveOnlyWithCorrelation:    false,
 			MinOutlierThresholdPercent:     0.1,
 		},
+		EnableExemplarSampling: false,
+		ExemplarSampling: ExemplarSamplingConfig{
+			PrecisionMultiplier: 1.0,
+		},
 	}
 }
 
@@ -107,5 +111,6 @@ func createTracesProcessor(
 		nextConsumer,
 		p.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(p.shutdown))
+		processorhelper.WithShutdown(p.shutdown),
+	)
 }

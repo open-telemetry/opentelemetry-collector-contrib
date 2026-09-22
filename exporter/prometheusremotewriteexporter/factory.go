@@ -79,18 +79,17 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	if err != nil {
 		return nil, err
 	}
-	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
+	settings := prwCfg.ResourceConstantLabels
+	if settings.IsEmpty() && !metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled() && !prwCfg.ResourceToTelemetrySettings.IsEmpty() {
+		set.Logger.Warn("resource_to_telemetry_conversion is deprecated; use resource_constant_labels instead")
+		settings = prwCfg.ResourceToTelemetrySettings
+	}
+	return resourcetotelemetry.WrapMetricsExporter(settings, exporter), nil
 }
 
 func createDefaultConfig() component.Config {
 	retrySettings := configretry.NewDefaultBackOffConfig()
 	retrySettings.InitialInterval = 50 * time.Millisecond
-	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
-	// We almost read 0 bytes, so no need to tune ReadBufferSize.
-	clientConfig.ReadBufferSize = 0
-	clientConfig.WriteBufferSize = 512 * 1024
-	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
 
 	numConsumers := 5
 	if metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() {
@@ -108,7 +107,8 @@ func createDefaultConfig() component.Config {
 		// TODO: Set TranslationStrategy to UnderscoreEscapingWithSuffixes once AddMetricSuffixes is removed.
 		SendMetadata:        false,
 		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
-		ClientConfig:        clientConfig,
+		// TODO: Remove ClientConfig in favor of HTTP settings eventually.
+		ClientConfig: getDefaultHTTPClientConfig(),
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,
@@ -118,5 +118,16 @@ func createDefaultConfig() component.Config {
 		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
+		HTTP: getDefaultHTTPClientConfig(),
 	}
+}
+
+func getDefaultHTTPClientConfig() confighttp.ClientConfig {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	clientConfig.ReadBufferSize = 0
+	clientConfig.WriteBufferSize = 512 * 1024
+	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
+	return clientConfig
 }

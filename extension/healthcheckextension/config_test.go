@@ -28,11 +28,6 @@ func TestLoadConfigLegacy(t *testing.T) {
 	t.Parallel()
 
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:13",
@@ -143,25 +138,15 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 
 	assert.NoError(t, confmap.Validate(cfg))
 	legacyServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	legacyServerConfig.WriteTimeout = 0
-	legacyServerConfig.ReadHeaderTimeout = 0
-	legacyServerConfig.IdleTimeout = 0
-	legacyServerConfig.KeepAlivesEnabled = false
 	legacyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:13133",
 	}
 	httpServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	httpServerConfig.WriteTimeout = 0
-	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:13133",
 	}
-	httpServerConfig.KeepAlivesEnabled = true
 	assert.Equal(t, &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{

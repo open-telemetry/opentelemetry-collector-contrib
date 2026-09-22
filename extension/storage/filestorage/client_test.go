@@ -250,6 +250,32 @@ func TestCompactWithMaxSizeRetainsBboltLimit(t *testing.T) {
 	require.Equal(t, 1<<20, client.db.MaxSize)
 }
 
+func TestCompactClosesTemporaryDatabaseAfterPanic(t *testing.T) {
+	tempDir := t.TempDir()
+	dbFile := filepath.Join(tempDir, "my_db")
+	compactionDir := filepath.Join(tempDir, "compaction")
+	require.NoError(t, os.MkdirAll(compactionDir, 0o755))
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	var compactedDBPath string
+	client.compactFunc = func(dst, _ *bbolt.DB, _ int64) error {
+		compactedDBPath = dst.Path()
+		panic("simulated compaction panic")
+	}
+
+	require.Panics(t, func() {
+		_ = client.Compact(compactionDir, time.Second, 65536)
+	})
+	require.NotEmpty(t, compactedDBPath)
+	_, statErr := os.Stat(compactedDBPath)
+	require.True(t, os.IsNotExist(statErr), "temporary database file should be cleaned up after panic")
+}
+
 func TestMaxSizeLimit(t *testing.T) {
 	dbFile := filepath.Join(t.TempDir(), "my_db")
 

@@ -59,11 +59,61 @@ func Test_Milliseconds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Milliseconds(tt.duration)
-			require.NoError(t, err)
+			exprFunc := milliseconds(tt.duration)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
+	}
+}
+
+func Test_MillisecondsFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewMillisecondsFactory[any]()
+		assert.Equal(t, "Milliseconds", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewMillisecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &millisecondsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Duration"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewMillisecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+		millisecondsArgs, ok := args.(*millisecondsArguments[any])
+		require.True(t, ok)
+		millisecondsArgs.Duration = ottl.StandardDurationGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Duration(100), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createMillisecondsFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "MillisecondsFactory args must be of type *millisecondsArguments[K]")
+	})
+}
+
+func BenchmarkMilliseconds(b *testing.B) {
+	exprFunc := milliseconds[any](&ottl.StandardDurationGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.ParseDuration("1h40m3s30ms")
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

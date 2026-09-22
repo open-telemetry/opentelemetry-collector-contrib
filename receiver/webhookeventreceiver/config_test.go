@@ -30,66 +30,36 @@ func TestValidateConfig(t *testing.T) {
 	errs = multierr.Append(errs, errRequiredHeader)
 
 	missingEndpointServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	missingEndpointServerConfig.WriteTimeout = 0
-	missingEndpointServerConfig.ReadHeaderTimeout = 0
-	missingEndpointServerConfig.IdleTimeout = 0
-	missingEndpointServerConfig.KeepAlivesEnabled = false
 	missingEndpointServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
 	}
 
 	readTimeoutServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	readTimeoutServerConfig.WriteTimeout = 0
-	readTimeoutServerConfig.ReadHeaderTimeout = 0
-	readTimeoutServerConfig.IdleTimeout = 0
-	readTimeoutServerConfig.KeepAlivesEnabled = false
 	readTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
 	}
 
 	writeTimeoutServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	writeTimeoutServerConfig.WriteTimeout = 0
-	writeTimeoutServerConfig.ReadHeaderTimeout = 0
-	writeTimeoutServerConfig.IdleTimeout = 0
-	writeTimeoutServerConfig.KeepAlivesEnabled = false
 	writeTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
 	}
 
 	requiredHeaderKeyServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	requiredHeaderKeyServerConfig.WriteTimeout = 0
-	requiredHeaderKeyServerConfig.ReadHeaderTimeout = 0
-	requiredHeaderKeyServerConfig.IdleTimeout = 0
-	requiredHeaderKeyServerConfig.KeepAlivesEnabled = false
 	requiredHeaderKeyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
 	}
 
 	requiredHeaderValueServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	requiredHeaderValueServerConfig.WriteTimeout = 0
-	requiredHeaderValueServerConfig.ReadHeaderTimeout = 0
-	requiredHeaderValueServerConfig.IdleTimeout = 0
-	requiredHeaderValueServerConfig.KeepAlivesEnabled = false
 	requiredHeaderValueServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
 	}
 
 	multipleInvalidServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	multipleInvalidServerConfig.WriteTimeout = 0
-	multipleInvalidServerConfig.ReadHeaderTimeout = 0
-	multipleInvalidServerConfig.IdleTimeout = 0
-	multipleInvalidServerConfig.KeepAlivesEnabled = false
 	multipleInvalidServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
@@ -241,11 +211,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	t.Parallel()
 
 	zeroBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	zeroBodySizeServerConfig.WriteTimeout = 0
-	zeroBodySizeServerConfig.ReadHeaderTimeout = 0
-	zeroBodySizeServerConfig.IdleTimeout = 0
-	zeroBodySizeServerConfig.KeepAlivesEnabled = false
 	zeroBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -253,11 +218,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	zeroBodySizeServerConfig.MaxRequestBodySize = 0
 
 	smallBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	smallBodySizeServerConfig.WriteTimeout = 0
-	smallBodySizeServerConfig.ReadHeaderTimeout = 0
-	smallBodySizeServerConfig.IdleTimeout = 0
-	smallBodySizeServerConfig.KeepAlivesEnabled = false
 	smallBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -265,11 +225,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	smallBodySizeServerConfig.MaxRequestBodySize = 10
 
 	exact64KBBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	exact64KBBodySizeServerConfig.WriteTimeout = 0
-	exact64KBBodySizeServerConfig.ReadHeaderTimeout = 0
-	exact64KBBodySizeServerConfig.IdleTimeout = 0
-	exact64KBBodySizeServerConfig.KeepAlivesEnabled = false
 	exact64KBBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -277,11 +232,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	exact64KBBodySizeServerConfig.MaxRequestBodySize = int64(bufio.MaxScanTokenSize)
 
 	greaterBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	greaterBodySizeServerConfig.WriteTimeout = 0
-	greaterBodySizeServerConfig.ReadHeaderTimeout = 0
-	greaterBodySizeServerConfig.IdleTimeout = 0
-	greaterBodySizeServerConfig.KeepAlivesEnabled = false
 	greaterBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -289,11 +239,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	greaterBodySizeServerConfig.MaxRequestBodySize = 65538
 
 	wayGreaterBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	wayGreaterBodySizeServerConfig.WriteTimeout = 0
-	wayGreaterBodySizeServerConfig.ReadHeaderTimeout = 0
-	wayGreaterBodySizeServerConfig.IdleTimeout = 0
-	wayGreaterBodySizeServerConfig.KeepAlivesEnabled = false
 	wayGreaterBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -363,11 +308,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	expectServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	expectServerConfig.WriteTimeout = 0
-	expectServerConfig.ReadHeaderTimeout = 0
-	expectServerConfig.IdleTimeout = 0
-	expectServerConfig.KeepAlivesEnabled = false
 	expectServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",

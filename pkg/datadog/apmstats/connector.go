@@ -49,6 +49,9 @@ type traceToMetricConnector struct {
 	// peerTagKeys are peer tag keys to group APM stats
 	peerTagKeys []string
 
+	// primaryTagKeys are span-derived primary tag keys to group APM stats
+	primaryTagKeys []string
+
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
 	// We use the deprecated Translator type because it's the only one that provides
@@ -104,6 +107,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		tcfg:            tcfg,
 		ctagKeys:        cfg.(*datadogconfig.ConnectorComponentConfig).Traces.ResourceAttributesAsContainerTags,
 		peerTagKeys:     tcfg.ConfiguredPeerTags(),
+		primaryTagKeys:  tcfg.ConfiguredSpanDerivedPrimaryTagKeys(),
 		concentrator:    concentrator,
 		statsout:        statsout,
 		metricsConsumer: metricsConsumer,
@@ -147,6 +151,9 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 	}
 	if !metadata.DatadogEnableReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
+	}
+	if !metadata.DatadogEnableScopeConventionFeatureGate.IsEnabled() {
+		acfg.Features["disable_otel_scope_convention"] = struct{}{}
 	}
 	if !metadata.DatadogEnableOperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
@@ -194,7 +201,7 @@ func (*traceToMetricConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
-	inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
+	inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.primaryTagKeys, c.obfuscator)
 	for _, input := range inputs {
 		c.concentrator.Add(input)
 	}

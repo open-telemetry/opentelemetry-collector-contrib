@@ -16,8 +16,8 @@ type CriticalPathConfig struct {
 }
 
 type Config struct {
-	TransactionsConfig `mapstructure:"transactions"`
-	CriticalPathConfig `mapstructure:"critical_path"`
+	TransactionsConfig TransactionsConfig `mapstructure:"transactions"`
+	CriticalPathConfig CriticalPathConfig `mapstructure:"critical_path"`
 	// prevents unkeyed literal initialization
 	_ struct{}
 }

@@ -180,28 +180,69 @@ func Test_filter_error(t *testing.T) {
 	})
 }
 
-func Test_createFilterFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-		return true, nil
+func Test_FilterFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewFilterFactory[any]()
+		assert.Equal(t, "Filter", factory.Name())
 	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewFilterFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &filterArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "Predicate"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewFilterFactory[any]()
+		args := factory.CreateDefaultArguments()
+		filterArgs, ok := args.(*filterArguments[any])
+		require.True(t, ok)
+		filterArgs.Source = ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		filterArgs.Predicate = ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return true, nil
+		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createFilterFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "FilterFactory args must be of type *filterArguments[K]")
+	})
+}
+
+func BenchmarkFilter(b *testing.B) {
 	source := ottl.StandardGetSetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
+			m := pcommon.NewMap()
+			m.PutStr("keep.a", "yes")
+			m.PutStr("keep.b", "yes")
+			m.PutStr("drop.a", "no")
+			m.PutStr("drop.b", "no")
+			return m, nil
 		},
 	}
-
-	t.Run("valid args", func(t *testing.T) {
-		fn, err := createFilterFunction[any](fCtx, &FilterArguments[any]{
-			Source:    source,
-			Predicate: predicate,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, fn)
+	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		k := resolveBinding("k")
+		return strings.HasPrefix(k.(string), "keep"), nil
 	})
 
-	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createFilterFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "FilterFactory args must be of type *FilterArguments[K]")
-	})
+	exprFunc, err := filter(source, predicate)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

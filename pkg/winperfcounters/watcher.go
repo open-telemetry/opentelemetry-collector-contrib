@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
 )
 
-const totalInstanceName = "_Total"
+const defaultAggregationName = "_Total"
 
 var _ PerfCounterWatcher = (*perfCounter)(nil)
 
@@ -40,11 +40,33 @@ type (
 	RawCounterValue = win_perf_counters.RawCounterValue
 )
 
+// WithAggregationName sets the instance name treated as the aggregate of all
+// other instances. By default, the aggregate is omitted when it is returned
+// with other instances and its name is cleared when it is the only returned
+// instance. Watchers use "_Total" when name is empty.
+func WithAggregationName(name string) WatcherOption {
+	return func(pc *perfCounter) {
+		if name != "" {
+			pc.aggregationName = name
+		}
+	}
+}
+
+// WithIncludeAggregationInstance configures the watcher to retain the
+// aggregation instance and its name when it is returned by a query.
+func WithIncludeAggregationInstance() WatcherOption {
+	return func(pc *perfCounter) {
+		pc.includeAggregationInstance = true
+	}
+}
+
 type perfCounter struct {
-	path   string
-	query  win_perf_counters.PerformanceQuery
-	handle win_perf_counters.PDH_HCOUNTER
-	logger *zap.Logger
+	path                       string
+	query                      win_perf_counters.PerformanceQuery
+	handle                     win_perf_counters.PDH_HCOUNTER
+	aggregationName            string
+	logger                     *zap.Logger
+	includeAggregationInstance bool
 }
 
 type WatcherOption func(*perfCounter)
@@ -60,12 +82,9 @@ func NewWatcher(object, instance, counterName string, opts ...WatcherOption) (Pe
 
 // NewWatcherFromPath creates new PerfCounterWatcher by provided path.
 func NewWatcherFromPath(path string, opts ...WatcherOption) (PerfCounterWatcher, error) {
-	counter, err := newPerfCounter(path, true)
+	counter, err := newPerfCounter(path, true, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
-	}
-	for _, opt := range opts {
-		opt(counter)
 	}
 	return counter, nil
 }
@@ -79,16 +98,20 @@ func counterPath(object, instance, counterName string) string {
 }
 
 // newPerfCounter returns a new performance counter for the specified descriptor.
-func newPerfCounter(counterPath string, collectOnStartup bool) (*perfCounter, error) {
+func newPerfCounter(counterPath string, collectOnStartup bool, opts ...WatcherOption) (*perfCounter, error) {
 	query, handle, err := initQuery(counterPath, collectOnStartup)
 	if err != nil {
 		return nil, err
 	}
 
 	counter := &perfCounter{
-		path:   counterPath,
-		query:  query,
-		handle: *handle,
+		path:            counterPath,
+		query:           query,
+		handle:          *handle,
+		aggregationName: defaultAggregationName,
+	}
+	for _, option := range opts {
+		option(counter)
 	}
 
 	return counter, nil
@@ -166,7 +189,7 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 		return nil, fmt.Errorf("failed to format data for performance counter '%s': %w", pc.path, err)
 	}
 
-	vals = cleanupScrapedValues(vals)
+	vals = cleanupScrapedValues(vals, pc.aggregationName, pc.includeAggregationInstance)
 	return vals, nil
 }
 
@@ -191,7 +214,7 @@ func (pc *perfCounter) ScrapeRawValues() ([]RawCounterValue, error) {
 		return nil, fmt.Errorf("failed to get raw data for performance counter '%s': %w", pc.path, err)
 	}
 
-	vals = cleanupScrapedValues(vals)
+	vals = cleanupScrapedValues(vals, pc.aggregationName, pc.includeAggregationInstance)
 	return vals, nil
 }
 
@@ -265,26 +288,26 @@ func setInstanceName(ctr any, name string) {
 
 // cleanupScrapedValues handles instance name collisions and standardizes names.
 // It cleans up the list in-place to avoid unnecessary copies.
-func cleanupScrapedValues[C CounterValue | RawCounterValue](vals []C) []C {
+func cleanupScrapedValues[C CounterValue | RawCounterValue](vals []C, aggregationName string, includeAggregationInstance bool) []C {
 	if len(vals) == 0 {
 		return vals
 	}
 
-	// If there is only one "_Total" instance, clear the instance name.
-	if len(vals) == 1 && getInstanceName(vals[0]) == totalInstanceName {
+	// If there is only one aggregation instance, clear the instance name.
+	if !includeAggregationInstance && len(vals) == 1 && getInstanceName(vals[0]) == aggregationName {
 		setInstanceName(&vals[0], "")
 		return vals
 	}
 
 	occurrences := map[string]int{}
-	totalIndex := -1
+	aggregationIndex := -1
 
 	for i := range vals {
 		instanceName := getInstanceName(vals[i])
 
-		if instanceName == totalInstanceName {
-			// Remember if a "_Total" instance was present.
-			totalIndex = i
+		if !includeAggregationInstance && instanceName == aggregationName {
+			// Remember if the aggregation instance was present.
+			aggregationIndex = i
 		}
 
 		if n, ok := occurrences[instanceName]; ok {
@@ -296,9 +319,9 @@ func cleanupScrapedValues[C CounterValue | RawCounterValue](vals []C) []C {
 		}
 	}
 
-	// Remove the "_Total" instance, as it can be computed with a sum aggregation.
-	if totalIndex >= 0 {
-		return removeItemAt(vals, totalIndex)
+	// Remove the aggregation instance, as it can be computed with an aggregation.
+	if aggregationIndex >= 0 {
+		return removeItemAt(vals, aggregationIndex)
 	}
 
 	return vals
