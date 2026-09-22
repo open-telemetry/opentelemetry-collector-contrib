@@ -249,12 +249,20 @@ Details about the metrics produced by this receiver can be found in [documentati
 Details about the logs produced by this receiver can be found in [logs-documentation.md](./logs-documentation.md)
 
 ## Known issues
+
+### `x509: negative serial number` with SQL Server in Docker
+
 SQL Server docker users may run into an issue that the collector fails to parse certificate from server due to `x509: negative serial number`. That's because we adopted Go `1.23` starting from contrib `v0.121.0`:
 > Before Go 1.23, ParseCertificate accepted certificates with negative serial numbers.
 > This behavior can be restored by including "x509negativeserial=1" in the GODEBUG environment variable.
+
 references:
 1. https://pkg.go.dev/crypto/x509#ParseCertificate
 2. https://github.com/microsoft/mssql-docker/issues/895
+
+### TLS handshake failures on Windows Server 2012 R2 and older
+
+Direct connections to SQL Server hosted on Windows Server 2012 R2 or older may fail during the TLS handshake. See [`TLS Handshake failed: cannot read handshake packet: EOF`](#tls-handshake-failed-cannot-read-handshake-packet-eof) in Troubleshooting.
 
 ## Troubleshooting
 
@@ -263,3 +271,37 @@ references:
 In a rare case, the `service.instance.id` resource attribute is set to `unknown:1433`. This is because the receiver is unable to parse and compute the `service.instance.id` resource attribute.
 
 You can file an issue that includes your configuration to help us investigate the issue.
+
+### `TLS Handshake failed: cannot read handshake packet: EOF`
+
+This error has been reported for SQL Server on Windows Server 2012 R2 and older. It occurs even when `ForceEncryption` is set to `0`, because by default the driver still uses TLS to encrypt the login packet.
+
+The root cause is unconfirmed. Setting the minimum TLS version (`tlsmin`) and re-enabling RSA key exchange (`tlsrsakex`) through `GODEBUG` did not resolve it. See [#50774](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50774) for the investigation so far.
+
+Options, in order of preference:
+1. Upgrade the host to a newer Windows Server release.
+2. Review the certificate and the TLS cipher suite configuration on the SQL Server host.
+3. As a last resort, disable encryption for the connection by adding `encrypt=disable` to the `datasource`.
+
+> [!WARNING]
+> With the default setting only the login packet is encrypted, and `encrypt=disable` removes that too. SQL Server authentication credentials are then sent in cleartext each time the receiver opens a connection. Only use this on a trusted network.
+
+`encrypt=disable` can only be set through `datasource`, which can't be combined with `server`, `port`, `username` or `password`. If you use those options, move the connection details into the connection string instead, for example:
+
+```yaml
+receivers:
+  sqlserver:
+    datasource: "sqlserver://${env:SQL_USER}:${env:SQL_PASSWORD}@<host>:1433?encrypt=disable"
+```
+
+Special characters in the username or password must be URL-encoded in this form.
+
+### Scrapes appear to succeed but collect nothing on a failover cluster instance
+
+On a SQL Server failover cluster instance (FCI), the instance listens on the cluster IP address rather than on the loopback address. Pointing the receiver at `localhost` therefore fails before any TLS handshake starts, with an error like:
+
+```
+dial tcp 127.0.0.1:1433: connectex: No connection could be made because the target machine actively refused it.
+```
+
+This is easy to miss: after applying the TLS workaround above, the TLS errors stop, which looks like success while every scrape is actually failing. Point the receiver at the FCI's network name or cluster IP address instead.
