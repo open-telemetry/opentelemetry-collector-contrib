@@ -511,8 +511,7 @@ func Test_SplunkHecRawToLogData_SetsObservedTimestamp(t *testing.T) {
 	}
 }
 
-// clearObservedTimestamps zeroes the non-deterministic ObservedTimestamp so
-// deep-equality assertions against fixed expected logs remain stable.
+// clearObservedTimestamps zeroes the non-deterministic ObservedTimestamp so deep-equality against fixed expected logs holds.
 func clearObservedTimestamps(logs plog.Logs) {
 	rls := logs.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
