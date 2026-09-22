@@ -1020,10 +1020,10 @@ metrics:
     enabled: true
     description: Average wait time for all lock requests that had to wait.
     stability: development
-    unit: ms
+    unit: s
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait_time.total:
     enabled: false
     description: Total wait time in seconds for locks since the last server restart.
@@ -1157,7 +1157,7 @@ metrics:
     unit: "{writes}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.life_expectancy:
     enabled: true
     description: Time a page will stay in the buffer pool.
@@ -1182,7 +1182,7 @@ metrics:
     gauge:
       value_type: double
     attributes: [page.operations]
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.read_ahead.rate:
     enabled: false
     description: Rate of pages read from disk by the read-ahead manager.
@@ -1342,7 +1342,7 @@ metrics:
     unit: "{transactions}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.write.rate:
     enabled: true
     description: Number of transactions that wrote to the database and committed.
@@ -1384,7 +1384,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction_log.shrink.count:
     enabled: true
     description: Total number of transaction log shrinks for a database.

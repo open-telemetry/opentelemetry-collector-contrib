@@ -546,6 +546,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const misguidedPlanExecutionsPerSec = "Misguided plan executions/sec"
 	const numberOfDeadlocksPerSec = "Number of Deadlocks/sec"
 	const mirrorWritesTransactionPerSec = "Mirrored Write Transactions/sec"
+	const transactionsPerSec = "Transactions/sec"
+	const lazyWritesPerSec = "Lazy writes/sec"
+	const pageReadsPerSec = "Page reads/sec"
+	const pageWritesPerSec = "Page writes/sec"
+	const logGrowths = "Log Growths"
+	const lockWaitTimeAvgMS = "Average Wait Time (ms)"
 	const memoryGrantsPending = "Memory Grants Pending"
 	const mixedPageAllocationsPerSec = "Mixed page allocations/sec"
 	const pageCompressionAttemptsPerSec = "Page Compression Attempts/sec"
@@ -1004,6 +1010,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverLockWaitTimeTotalDataPoint(now, val.(float64)/1000.0)
 			}
+		case lockWaitTimeAvgMS:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeAvgMS)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLockWaitTimeAvgDataPoint(now, val.(float64)/1000.0)
+			}
 		case lockWaits:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
@@ -1131,6 +1145,30 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverPageLookupRateDataPoint(now, val.(float64))
+			}
+		case pageReadsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageReadsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsRead)
+			}
+		case pageWritesPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageWritesPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsWrite)
+			}
+		case lazyWritesPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lazyWritesPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageLazyWriteRateDataPoint(now, val.(float64))
 			}
 		case pagesAllocatedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1365,6 +1403,22 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverTransactionDelayDataPoint(now, val.(float64))
+			}
+		case transactionsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, transactionsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverTransactionRateDataPoint(now, val.(float64))
+			}
+		case logGrowths:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, logGrowths)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverTransactionLogGrowthCountDataPoint(now, int64(val.(float64)))
 			}
 		case unsafeAutoParamsPerSec:
 			val, err := retrieveFloat(row, valueKey)
