@@ -295,7 +295,7 @@ func TestConsumeCompressedLogsJSON(t *testing.T) {
 			logsSink := new(consumertest.LogsSink)
 			receiver.(logsDataConsumer).setNextLogsConsumer(logsSink)
 
-			err = receiver.(logsDataConsumer).consumeLogs(context.Background(), tc.data)
+			err = receiver.(logsDataConsumer).consumeLogs(tt.Context(), tc.data)
 			if tc.expectErr {
 				require.Error(tt, err)
 				return
@@ -315,7 +315,7 @@ func TestConsumeCompressedTracesJSON(t *testing.T) {
 	tracesSink := new(consumertest.TracesSink)
 	receiver.(tracesDataConsumer).setNextTracesConsumer(tracesSink)
 
-	require.NoError(t, receiver.(tracesDataConsumer).consumeTraces(context.Background(), gzipBytes(t, tracesJSON)))
+	require.NoError(t, receiver.(tracesDataConsumer).consumeTraces(t.Context(), gzipBytes(t, tracesJSON)))
 	require.Len(t, tracesSink.AllTraces(), 1)
 	assert.Equal(t, 2, tracesSink.AllTraces()[0].SpanCount())
 }
