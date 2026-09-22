@@ -40,11 +40,11 @@ feature_gates:
   - id: receiver.postgresql.useOTelSemconv
     stage: alpha
     description: >-
-      When enabled, uses a single resource per server with server.address, server.port,
-      and service.instance.id (UUID v5) resource attributes, aligning with OpenTelemetry
-      semantic conventions. When disabled, uses the legacy per-entity resource model with
-      postgresql.database.name, postgresql.table.name, postgresql.index.name, and
-      postgresql.schema.name resource attributes.
+      When enabled, uses a single resource per server with a service.instance.id (UUID v5)
+      resource attribute, aligning with OpenTelemetry semantic conventions. When disabled,
+      uses the legacy per-entity resource model with postgresql.database.name,
+      postgresql.table.name, postgresql.index.name, and postgresql.schema.name resource
+      attributes.
     from_version: "v0.156.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347
 
@@ -66,7 +66,10 @@ resource_attributes:
     enabled: true
     type: string
   server.address:
-    description: The address of the PostgreSQL server.
+    description: >-
+      The address of the PostgreSQL server. A loopback endpoint is reported as the name of the
+      machine running the collector, because the server is then co-located with it. With transport
+      `unix` the socket path is reported instead.
     enabled: true
     type: string
   server.port:
@@ -151,6 +154,9 @@ attributes:
     requirement_level: recommended
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
+    type: string
+  postgresql.backend.connection.start:
+    description: UTC timestamp (RFC3339) when this backend was started.
     type: string
   postgresql.blocking.lock.mode:
     description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
@@ -298,6 +304,7 @@ events:
       - user.name
       - postgresql.state
       - postgresql.pid
+      - postgresql.backend.connection.start
       - postgresql.application_name
       - network.peer.address
       - network.peer.port
@@ -588,7 +595,7 @@ metrics:
     unit: "{table}"
     attributes: [db.namespace]
   postgresql.table.size:
-    description: Disk space used by a table.
+    description: Total disk space used by a table, including its indexes and TOAST data.
     stability: development
     enabled: true
     unit: By

@@ -740,6 +740,66 @@ func (ms *MysqlInnodbOperationPendingMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlInnodbRedoLogCheckpointAgeMetricConfig provides config for the mysql.innodb.redo_log.checkpoint.age metric.
+type MysqlInnodbRedoLogCheckpointAgeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRedoLogCheckpointAgeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlInnodbRedoLogLsnCheckpointMetricConfig provides config for the mysql.innodb.redo_log.lsn.checkpoint metric.
+type MysqlInnodbRedoLogLsnCheckpointMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRedoLogLsnCheckpointMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlInnodbRedoLogLsnCurrentMetricConfig provides config for the mysql.innodb.redo_log.lsn.current metric.
+type MysqlInnodbRedoLogLsnCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRedoLogLsnCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlInnodbRowLockWaitCountMetricConfig provides config for the mysql.innodb.row_lock.wait.count metric.
 type MysqlInnodbRowLockWaitCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1488,6 +1548,26 @@ func (ms *MysqlQueryCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// MysqlQueryExecutionTimeMetricConfig provides config for the mysql.query.execution.time metric.
+type MysqlQueryExecutionTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlQueryExecutionTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlQuerySlowCountMetricConfig provides config for the mysql.query.slow.count metric.
 type MysqlQuerySlowCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1710,6 +1790,46 @@ func (ms *MysqlRowOperationsMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// MysqlServerHealthyMetricConfig provides config for the mysql.server.healthy metric.
+type MysqlServerHealthyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlServerHealthyMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlSessionActiveCountMetricConfig provides config for the mysql.session.active.count metric.
+type MysqlSessionActiveCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlSessionActiveCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -2534,6 +2654,9 @@ type MetricsConfig struct {
 	MysqlInnodbDataFileIo                   MysqlInnodbDataFileIoMetricConfig                   `mapstructure:"mysql.innodb.data_file.io"`
 	MysqlInnodbHistoryListLength            MysqlInnodbHistoryListLengthMetricConfig            `mapstructure:"mysql.innodb.history_list.length"`
 	MysqlInnodbOperationPending             MysqlInnodbOperationPendingMetricConfig             `mapstructure:"mysql.innodb.operation.pending"`
+	MysqlInnodbRedoLogCheckpointAge         MysqlInnodbRedoLogCheckpointAgeMetricConfig         `mapstructure:"mysql.innodb.redo_log.checkpoint.age"`
+	MysqlInnodbRedoLogLsnCheckpoint         MysqlInnodbRedoLogLsnCheckpointMetricConfig         `mapstructure:"mysql.innodb.redo_log.lsn.checkpoint"`
+	MysqlInnodbRedoLogLsnCurrent            MysqlInnodbRedoLogLsnCurrentMetricConfig            `mapstructure:"mysql.innodb.redo_log.lsn.current"`
 	MysqlInnodbRowLockWaitCount             MysqlInnodbRowLockWaitCountMetricConfig             `mapstructure:"mysql.innodb.row_lock.wait.count"`
 	MysqlInnodbRowLockWaitDurationAvg       MysqlInnodbRowLockWaitDurationAvgMetricConfig       `mapstructure:"mysql.innodb.row_lock.wait.duration.avg"`
 	MysqlInnodbRowLockWaitDurationMax       MysqlInnodbRowLockWaitDurationMaxMetricConfig       `mapstructure:"mysql.innodb.row_lock.wait.duration.max"`
@@ -2556,6 +2679,7 @@ type MetricsConfig struct {
 	MysqlPreparedStatements                 MysqlPreparedStatementsMetricConfig                 `mapstructure:"mysql.prepared_statements"`
 	MysqlQueryClientCount                   MysqlQueryClientCountMetricConfig                   `mapstructure:"mysql.query.client.count"`
 	MysqlQueryCount                         MysqlQueryCountMetricConfig                         `mapstructure:"mysql.query.count"`
+	MysqlQueryExecutionTime                 MysqlQueryExecutionTimeMetricConfig                 `mapstructure:"mysql.query.execution.time"`
 	MysqlQuerySlowCount                     MysqlQuerySlowCountMetricConfig                     `mapstructure:"mysql.query.slow.count"`
 	MysqlReplicaSQLDelay                    MysqlReplicaSQLDelayMetricConfig                    `mapstructure:"mysql.replica.sql_delay"`
 	MysqlReplicaTempTableOpen               MysqlReplicaTempTableOpenMetricConfig               `mapstructure:"mysql.replica.temp_table.open"`
@@ -2563,6 +2687,8 @@ type MetricsConfig struct {
 	MysqlReplicaTimeBehindSource            MysqlReplicaTimeBehindSourceMetricConfig            `mapstructure:"mysql.replica.time_behind_source"`
 	MysqlRowLocks                           MysqlRowLocksMetricConfig                           `mapstructure:"mysql.row_locks"`
 	MysqlRowOperations                      MysqlRowOperationsMetricConfig                      `mapstructure:"mysql.row_operations"`
+	MysqlServerHealthy                      MysqlServerHealthyMetricConfig                      `mapstructure:"mysql.server.healthy"`
+	MysqlSessionActiveCount                 MysqlSessionActiveCountMetricConfig                 `mapstructure:"mysql.session.active.count"`
 	MysqlSorts                              MysqlSortsMetricConfig                              `mapstructure:"mysql.sorts"`
 	MysqlStatementEventCount                MysqlStatementEventCountMetricConfig                `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime             MysqlStatementEventWaitTimeMetricConfig             `mapstructure:"mysql.statement_event.wait.time"`
@@ -2665,6 +2791,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlInnodbOperationPendingMetricAttributeKey{MysqlInnodbOperationPendingMetricAttributeKeyOperations},
 		},
+		MysqlInnodbRedoLogCheckpointAge: MysqlInnodbRedoLogCheckpointAgeMetricConfig{
+			Enabled: false,
+		},
+		MysqlInnodbRedoLogLsnCheckpoint: MysqlInnodbRedoLogLsnCheckpointMetricConfig{
+			Enabled: false,
+		},
+		MysqlInnodbRedoLogLsnCurrent: MysqlInnodbRedoLogLsnCurrentMetricConfig{
+			Enabled: false,
+		},
 		MysqlInnodbRowLockWaitCount: MysqlInnodbRowLockWaitCountMetricConfig{
 			Enabled: false,
 		},
@@ -2753,6 +2888,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlQueryCount: MysqlQueryCountMetricConfig{
 			Enabled: false,
 		},
+		MysqlQueryExecutionTime: MysqlQueryExecutionTimeMetricConfig{
+			Enabled: false,
+		},
 		MysqlQuerySlowCount: MysqlQuerySlowCountMetricConfig{
 			Enabled: false,
 		},
@@ -2779,6 +2917,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlRowOperationsMetricAttributeKey{MysqlRowOperationsMetricAttributeKeyRowOperations},
+		},
+		MysqlServerHealthy: MysqlServerHealthyMetricConfig{
+			Enabled: false,
+		},
+		MysqlSessionActiveCount: MysqlSessionActiveCountMetricConfig{
+			Enabled: false,
 		},
 		MysqlSorts: MysqlSortsMetricConfig{
 			Enabled:             true,
@@ -3008,6 +3152,76 @@ func (rac *MysqlInstanceEndpointResourceAttributeConfig) Unmarshal(parser *confm
 	return nil
 }
 
+// ServerAddressResourceAttributeConfig provides config for the server.address resource attribute.
+type ServerAddressResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerAddressResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServerPortResourceAttributeConfig provides config for the server.port resource attribute.
+type ServerPortResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *int64 `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerPortResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ServiceInstanceIDResourceAttributeConfig provides config for the service.instance.id resource attribute.
 type ServiceInstanceIDResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -3118,6 +3332,8 @@ type ResourceAttributesConfig struct {
 	DbSystemName          DbSystemNameResourceAttributeConfig          `mapstructure:"db.system.name"`
 	DbSystemVersion       DbSystemVersionResourceAttributeConfig       `mapstructure:"db.system.version"`
 	MysqlInstanceEndpoint MysqlInstanceEndpointResourceAttributeConfig `mapstructure:"mysql.instance.endpoint"`
+	ServerAddress         ServerAddressResourceAttributeConfig         `mapstructure:"server.address"`
+	ServerPort            ServerPortResourceAttributeConfig            `mapstructure:"server.port"`
 	ServiceInstanceID     ServiceInstanceIDResourceAttributeConfig     `mapstructure:"service.instance.id"`
 	ServiceName           ServiceNameResourceAttributeConfig           `mapstructure:"service.name"`
 	ServiceNamespace      ServiceNamespaceResourceAttributeConfig      `mapstructure:"service.namespace"`
@@ -3132,6 +3348,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		MysqlInstanceEndpoint: MysqlInstanceEndpointResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerAddress: ServerAddressResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerPort: ServerPortResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
@@ -3159,6 +3381,12 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	if rac.MysqlInstanceEndpoint.Enabled && rac.MysqlInstanceEndpoint.OverrideValue != nil {
 		res.Attributes().PutStr("mysql.instance.endpoint", *rac.MysqlInstanceEndpoint.OverrideValue)
 	}
+	if rac.ServerAddress.Enabled && rac.ServerAddress.OverrideValue != nil {
+		res.Attributes().PutStr("server.address", *rac.ServerAddress.OverrideValue)
+	}
+	if rac.ServerPort.Enabled && rac.ServerPort.OverrideValue != nil {
+		res.Attributes().PutInt("server.port", *rac.ServerPort.OverrideValue)
+	}
 	if rac.ServiceInstanceID.Enabled && rac.ServiceInstanceID.OverrideValue != nil {
 		res.Attributes().PutStr("service.instance.id", *rac.ServiceInstanceID.OverrideValue)
 	}
@@ -3181,11 +3409,6 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for mysql logs builder.

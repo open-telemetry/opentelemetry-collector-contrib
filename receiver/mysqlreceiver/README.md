@@ -46,6 +46,17 @@ Collecting query samples requires the `performance_schema` to be enabled:
 GRANT SELECT ON performance_schema.* TO <your-user>@'%';
 ```
 
+Collecting disabled-by-default InnoDB redo-log LSN and checkpoint-age metrics requires
+MySQL 8.0.11 or later. For MySQL 8.0.11 through 8.0.29, grant the receiver user
+`SELECT` on `performance_schema` and the `BACKUP_ADMIN` dynamic privilege:
+
+```sql
+GRANT SELECT ON performance_schema.* TO '<your-user>'@'%';
+GRANT BACKUP_ADMIN ON *.* TO '<your-user>'@'%';
+```
+
+MySQL 8.0.30 and later versions do not require `BACKUP_ADMIN` for these metrics.
+
 ## Configuration
 
 
@@ -123,6 +134,30 @@ receivers:
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+### Resource attributes
+
+The receiver reports the network location of the monitored instance as the `server.address` and
+`server.port` resource attributes.
+
+When `endpoint` is a loopback address (for example `localhost:3306` or `127.0.0.1:3306`),
+`server.address` reports the host name of the machine running the collector rather than the
+configured host. A loopback endpoint is only reachable when the instance is co-located with the
+collector, so the collector host's name is the instance's real network identity; reported verbatim,
+every monitored host would emit the same address. A non-loopback endpoint is reported as configured.
+With `transport: unix`, `server.address` is the socket path and `server.port` is not reported.
+
+Both attributes are enabled by default and can be turned off individually:
+
+```yaml
+receivers:
+  mysql:
+    resource_attributes:
+      server.address:
+        enabled: false
+      server.port:
+        enabled: false
+```
 
 ## Metrics
 

@@ -121,7 +121,7 @@ func GetScalarLiteralValues[
 // [V] is the expected type of the slice values.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func GetLiteralValues[K, V any, G typedGetter[K, V]](slice *SliceGetter[K, G]) ([]V, bool) {
+func GetLiteralValues[K, V any, G TypedGetter[K, V]](slice *SliceGetter[K, G]) ([]V, bool) {
 	var result []V
 	allLiterals := true
 	err := slice.Range(context.Background(), *new(K), func(value G) bool {
@@ -147,10 +147,10 @@ func GetLiteralValues[K, V any, G typedGetter[K, V]](slice *SliceGetter[K, G]) (
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func (s *SliceGetter[K, V]) Range(ctx context.Context, tCtx K, yield func(value V) bool) error {
-	if s.typedValues != nil {
-		return rangeTypedSlice(s.typedValues, yield)
+	if s.runtimeSlice != nil {
+		return s.rangeRuntimeSlice(ctx, tCtx, yield)
 	}
-	return s.rangeRuntimeSlice(ctx, tCtx, yield)
+	return rangeTypedSlice(s.typedValues, yield)
 }
 
 func (s *SliceGetter[K, V]) rangeRuntimeSlice(ctx context.Context, tCtx K, yield func(value V) bool) error {
@@ -206,10 +206,13 @@ func (s *SliceGetter[K, V]) Len() (int, bool) {
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func (s *SliceGetter[K, V]) Get(ctx context.Context, tCtx K) ([]V, error) {
-	if s.typedValues != nil {
-		return s.typedValues, nil
+	if s.runtimeSlice != nil {
+		return s.getRuntimeSliceValue(ctx, tCtx)
 	}
+	return s.typedValues, nil
+}
 
+func (s *SliceGetter[K, V]) getRuntimeSliceValue(ctx context.Context, tCtx K) ([]V, error) {
 	values, err := s.runtimeSlice.Get(ctx, tCtx)
 	if err != nil {
 		return nil, err

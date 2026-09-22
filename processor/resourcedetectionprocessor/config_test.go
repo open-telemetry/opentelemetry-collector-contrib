@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/functions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
@@ -69,6 +70,11 @@ func TestLoadConfig(t *testing.T) {
 	azureAppServiceResourceAttributes.ResourceAttributes.AzureAppServiceInstanceID.Enabled = false
 	azureAppServiceConfig.AzureAppServiceConfig = azureAppServiceResourceAttributes
 
+	azureFunctionsConfig := detectorCreateDefaultConfig()
+	azureFunctionsResourceAttributes := functions.CreateDefaultConfig()
+	azureFunctionsResourceAttributes.ResourceAttributes.FaasInstance.Enabled = false
+	azureFunctionsConfig.AzureFunctionsConfig = azureFunctionsResourceAttributes
+
 	resourceAttributesConfig := detectorCreateDefaultConfig()
 	ec2ResourceAttributesConfig := ec2.CreateDefaultConfig()
 	ec2ResourceAttributesConfig.ResourceAttributes.HostName.Enabled = false
@@ -109,6 +115,16 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Detectors:      []string{"env", "azureappservice"},
 				DetectorConfig: azureAppServiceConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "azurefunctions"),
+			expected: &Config{
+				Detectors:      []string{"env", "azurefunctions"},
+				DetectorConfig: azureFunctionsConfig,
 				ClientConfig:   cfg,
 				Override:       false,
 				Retry:          defaultRetryConfig(),
@@ -365,6 +381,7 @@ func TestGetConfigFromType_AllDetectors(t *testing.T) {
 		{"AKS", "aks"},
 		{"AzureAppService", "azureappservice"},
 		{"AzureContainerApps", "azurecontainerapps"},
+		{"AzureFunctions", "azurefunctions"},
 		{"Consul", "consul"},
 		{"DigitalOcean", "digitalocean"},
 		{"Docker", "docker"},

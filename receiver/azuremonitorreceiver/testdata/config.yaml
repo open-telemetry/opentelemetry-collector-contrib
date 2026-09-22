@@ -60,3 +60,12 @@ azure_monitor/append_tags_specific:
     - test
   credentials: default_credentials
   append_tags_as_attributes: ["service", "environment"]
+
+azure_monitor/resource_tags:
+  subscription_ids:
+    - test
+  credentials: default_credentials
+  resource_tags:
+    - name: environment
+      value: production
+    - name: team

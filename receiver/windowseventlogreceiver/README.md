@@ -208,6 +208,32 @@ receivers:
       </QueryList>
 ```
 
+#### Sensitive Data Redaction
+Redaction and transform processors can be used to redact sensitive data from Windows Event Logs.
+The examples below assume that the Windows Event Log body is structured JSON (raw: false). They can target nested fields such as "event_data.ProcessId".
+Messages in XML format can also be redacted, but field-level targeting is more limited and generally requires either XML-aware parsing or regex-based masking.
+
+Use below example of [redaction processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/redactionprocessor/README.md) to mask sensitive data.
+```yaml
+redaction/windows_sensitive_logs:
+ allow_all_keys: true
+ summary: silent
+ blocked_key_patterns:
+   - "guid"
+   - "culture"
+```
+
+[Transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) can be used for more complex searches like matching nested values only under specific keys.
+```yaml 
+transform/mask_windows_fields:
+  error_mode: ignore
+  log_statements:
+    - context: log
+  statements:
+    - set(body["event_data"]["ProcessId"], "****") where body["event_data"]["ProcessId"] != nil
+    - set(body["rendering_info"]["culture"], "****") where body["rendering_info"]["culture"] != nil
+```
+
 #### SID Resolution
 
 Windows Event Logs often contain Security Identifiers (SIDs) instead of readable user or group names. The SID resolution feature automatically resolves these SIDs to human-readable names using the Windows Local Security Authority (LSA) API.

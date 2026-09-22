@@ -14,7 +14,7 @@ telemetry:
       enabled: true
       stability: development
       description: Current number of active per-key latency baselines tracked by the processor.
-      unit: "{baselines}"
+      unit: "{baseline}"
       gauge:
         value_type: int
         async: true
@@ -22,7 +22,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of new baseline keys dropped because max_baselines was reached.
-      unit: "{keys}"
+      unit: "{key}"
       sum:
         value_type: int
         monotonic: true

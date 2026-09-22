@@ -31,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -108,6 +110,7 @@ func TestSemconvQueryConflictsPreserveDatabaseNamespace(t *testing.T) {
 		config:            cfg,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
 		serviceInstanceID: "example.com:5432",
+		serverEndpoint:    newServerEndpoint(cfg, zap.NewNop()),
 		useOTelSemconv:    true,
 	}
 	retrieval := &dbRetrieval{
@@ -211,7 +214,7 @@ func TestScraper(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -241,7 +244,7 @@ func TestScraperWithExecutionTime(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -281,7 +284,7 @@ func TestScraperVectorMetrics(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
@@ -385,7 +388,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = false
@@ -412,7 +415,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err = golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -466,7 +469,7 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -522,17 +525,11 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		require.NoError(t, err)
 		compareOpts := []pmetrictest.CompareMetricsOption{
 			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
+			pmetrictest.IgnoreResourceAttributeValue("server.address"),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
-		}
-		if useOTelSemconv {
-			compareOpts = append(
-				compareOpts,
-				pmetrictest.IgnoreResourceAttributeValue("server.address"),
-				pmetrictest.IgnoreResourceAttributeValue("server.port"),
-			)
 		}
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, compareOpts...))
 	}
@@ -589,7 +586,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -645,7 +642,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -674,7 +671,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -705,6 +702,7 @@ var querySampleColumns = []string{
 	querySampleColumnClientHostname,
 	querySampleColumnClientPort,
 	querySampleColumnQueryStart,
+	querySampleColumnBackendStart,
 	querySampleColumnWaitEventType,
 	querySampleColumnWaitEvent,
 	querySampleColumnQueryID,
@@ -784,6 +782,7 @@ func TestScrapeQuerySample(t *testing.T) {
 		querySampleColumnClientHostname:       "otel",
 		querySampleColumnClientPort:           "114514",
 		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnBackendStart:         "2025-02-10T09:15:00Z",
 		querySampleColumnQueryID:              "123131231231",
 		querySampleColumnPID:                  "1450",
 		querySampleColumnApplicationName:      "receiver",
@@ -800,7 +799,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreResourceAttributeValue("server.address"), plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 }
 
@@ -830,6 +829,7 @@ func TestScrapeQuerySampleSemconv(t *testing.T) {
 		querySampleColumnClientHostname:       "otel",
 		querySampleColumnClientPort:           "114514",
 		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnBackendStart:         "2025-02-10T09:15:00Z",
 		querySampleColumnQueryID:              "123131231231",
 		querySampleColumnPID:                  "1450",
 		querySampleColumnApplicationName:      "receiver",
@@ -1393,7 +1393,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
 	// golden.WriteLogs(t, expectedFile, actualLogs)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreResourceAttributeValue("server.address"), plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 
 	// Verify the cache has updated with latest counter
@@ -1407,6 +1407,46 @@ func TestScrapeTopQueries(t *testing.T) {
 	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
 	assert.Equal(t, float64(12), planTime)
+}
+
+// A database dropped while its stats linger in pg_stat_statements surfaces a row
+// with a NULL datname and therefore no db.namespace attribute. collectTopQuery
+// must skip such a row rather than panic on the string type assertion. See #45713.
+func TestScrapeTopQueriesSkipsNilDatabase(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
+
+	cols := []string{
+		"calls", "datname", "shared_blks_dirtied", "shared_blks_hit",
+		"shared_blks_read", "shared_blks_written", "temp_blks_read",
+		"temp_blks_written", "query", "queryid", "rolname", "rows",
+		"total_exec_time", "total_plan_time",
+	}
+	// queryid is present so the earlier queryid guard passes; datname is NULL, so
+	// the row scanner omits db.namespace and the nil guard under test must fire.
+	rows := sqlmock.NewRows(cols).AddRow(
+		"123", nil, "1", "1", "1", "1", "1", "1",
+		"select 1", "999", "master", "1", "1", "1",
+	)
+	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
+
+	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+	require.NoError(t, err)
+	assert.Equal(t, 0, actualLogs.LogRecordCount(), "row with nil db.namespace must be skipped, not emitted")
 }
 
 func TestIsExplainableQuery(t *testing.T) {
@@ -1536,6 +1576,7 @@ func TestExplainQuery(t *testing.T) {
 	testCases := []struct {
 		name              string
 		query             string
+		preparedQuery     string // SQL sent to PREPARE; empty means query is already valid
 		queryID           string
 		normalizedQueryID string
 		paramCount        int
@@ -1605,6 +1646,27 @@ func TestExplainQuery(t *testing.T) {
 			paramCount:        1,
 			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"orders"}}]`,
 		},
+		{
+			// pg_stat_statements emits EXTRACT($n FROM ...), which is not valid SQL.
+			// explainQuery must rewrite it before PREPARE; the mock fails if the
+			// unrepaired text is sent.
+			name:              "extract with parameter is repaired before PREPARE",
+			query:             "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
+			preparedQuery:     "SELECT * FROM orders WHERE pg_catalog.extract($1, order_date) = $2",
+			queryID:           "30001",
+			normalizedQueryID: "30001",
+			paramCount:        2,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"orders"}}]`,
+		},
+		{
+			name:              "typed interval literal is repaired before PREPARE",
+			query:             "SELECT now() - interval $1",
+			preparedQuery:     "SELECT now() - CAST($1 AS interval)",
+			queryID:           "30002",
+			normalizedQueryID: "30002",
+			paramCount:        1,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Result"}}]`,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1621,9 +1683,13 @@ func TestExplainQuery(t *testing.T) {
 				closeFn: func() error { return nil },
 			}
 
+			prepareBody := tc.query
+			if tc.preparedQuery != "" {
+				prepareBody = tc.preparedQuery
+			}
 			expectedPrepareSQL := fmt.Sprintf(
 				"/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_%s AS %s;",
-				tc.normalizedQueryID, tc.query,
+				tc.normalizedQueryID, prepareBody,
 			)
 			mock.ExpectQuery(expectedPrepareSQL).WillReturnRows(sqlmock.NewRows([]string{"result"}))
 
@@ -1657,6 +1723,85 @@ func TestExplainQuery(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.mockPlanResult, plan)
 			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestExplainQueryLogsRepair(t *testing.T) {
+	const repairMessage = "repaired normalized query before EXPLAIN"
+
+	testCases := []struct {
+		name          string
+		query         string
+		preparedQuery string
+		paramCount    int
+	}{
+		{
+			name:          "a repaired query logs the text before and after",
+			query:         "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
+			preparedQuery: "SELECT * FROM orders WHERE pg_catalog.extract($1, order_date) = $2",
+			paramCount:    2,
+		},
+		{
+			// The log is only useful when it means a rewrite happened, so a query that
+			// passes through untouched must not produce one.
+			name:       "an unrepaired query logs nothing",
+			query:      "SELECT * FROM orders WHERE order_date = $1",
+			paramCount: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			core, logs := observer.New(zapcore.DebugLevel)
+			client := &postgreSQLClient{
+				client:  db,
+				closeFn: func() error { return nil },
+			}
+
+			prepareBody := tc.query
+			if tc.preparedQuery != "" {
+				prepareBody = tc.preparedQuery
+			}
+			mock.ExpectQuery(fmt.Sprintf(
+				"/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_40001 AS %s;",
+				prepareBody,
+			)).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+
+			mock.ExpectQuery(
+				"/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_40001';",
+			).WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow(fmt.Sprintf("%d", tc.paramCount)))
+
+			nulls := make([]string, tc.paramCount)
+			for i := range nulls {
+				nulls[i] = "null"
+			}
+			mock.ExpectQuery(fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_40001(%s);", strings.Join(nulls, ", "))).
+				WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+
+			mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_40001").
+				WillReturnResult(sqlmock.NewResult(0, 0))
+
+			_, err = client.explainQuery(t.Context(), tc.query, "40001", zap.New(core))
+			require.NoError(t, err)
+			require.NoError(t, mock.ExpectationsWereMet())
+
+			entries := logs.FilterMessage(repairMessage).All()
+			if tc.preparedQuery == "" {
+				assert.Empty(t, entries)
+				return
+			}
+			require.Len(t, entries, 1)
+			assert.Equal(t, zapcore.DebugLevel, entries[0].Level)
+			assert.Equal(t, map[string]any{
+				"queryID":         "40001",
+				"normalizedQuery": tc.query,
+				"preparedQuery":   tc.preparedQuery,
+			}, entries[0].ContextMap())
 		})
 	}
 }
@@ -2619,6 +2764,9 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 }
 
 func TestSetupSemconvResourceBuilder(t *testing.T) {
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.AddrConfig.Endpoint = "127.0.0.1:5432"
 	serviceInstanceID := uuid.NewSHA1(otelNamespaceUUID, []byte("collector-host:5432")).String()
@@ -2627,6 +2775,7 @@ func TestSetupSemconvResourceBuilder(t *testing.T) {
 		config:            cfg,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
 		serviceInstanceID: serviceInstanceID,
+		serverEndpoint:    newServerEndpoint(cfg, zap.NewNop()),
 		useOTelSemconv:    true,
 	}
 
@@ -2636,7 +2785,7 @@ func TestSetupSemconvResourceBuilder(t *testing.T) {
 
 	serverHost, ok := res.Attributes().Get("server.address")
 	require.True(t, ok)
-	assert.Equal(t, "127.0.0.1", serverHost.Str())
+	assert.Equal(t, hostname, serverHost.Str())
 
 	serverPort, ok := res.Attributes().Get("server.port")
 	require.True(t, ok)
@@ -2645,7 +2794,7 @@ func TestSetupSemconvResourceBuilder(t *testing.T) {
 	instanceID, ok := res.Attributes().Get("service.instance.id")
 	require.True(t, ok)
 	assert.Equal(t, serviceInstanceID, instanceID.Str())
-	_, err := uuid.Parse(instanceID.Str())
+	_, err = uuid.Parse(instanceID.Str())
 	require.NoError(t, err)
 
 	rb2 := scraper.mb.NewResourceBuilder()
@@ -2659,6 +2808,9 @@ func TestSetupSemconvResourceBuilder(t *testing.T) {
 }
 
 func TestServerEndpointAttributes(t *testing.T) {
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
 	tests := []struct {
 		name            string
 		endpoint        string
@@ -2678,8 +2830,29 @@ func TestServerEndpointAttributes(t *testing.T) {
 			name:            "loopback IPv4",
 			endpoint:        "127.0.0.1:5433",
 			transport:       confignet.TransportTypeTCP,
-			expectedAddress: "127.0.0.1",
+			expectedAddress: hostname,
 			expectedPort:    5433,
+		},
+		{
+			name:            "loopback IPv6",
+			endpoint:        "[::1]:5432",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: hostname,
+			expectedPort:    5432,
+		},
+		{
+			name:            "localhost",
+			endpoint:        "localhost:5432",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: hostname,
+			expectedPort:    5432,
+		},
+		{
+			name:            "case-insensitive localhost",
+			endpoint:        "Localhost:5432",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: hostname,
+			expectedPort:    5432,
 		},
 		{
 			name:            "IPv6",
@@ -2696,6 +2869,13 @@ func TestServerEndpointAttributes(t *testing.T) {
 			expectedPort:    5435,
 		},
 		{
+			name:            "Unix socket keeps a loopback-looking path",
+			endpoint:        "localhost:5432",
+			transport:       confignet.TransportTypeUnix,
+			expectedAddress: "/localhost/.s.PGSQL.5432",
+			expectedPort:    5432,
+		},
+		{
 			name:      "invalid endpoint",
 			endpoint:  "localhost",
 			transport: confignet.TransportTypeTCP,
@@ -2707,7 +2887,7 @@ func TestServerEndpointAttributes(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.AddrConfig.Endpoint = tt.endpoint
 			cfg.AddrConfig.Transport = tt.transport
-			address, port, err := serverEndpointAttributes(cfg)
+			address, port, err := serverEndpointAttributes(cfg, zap.NewNop())
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -2719,6 +2899,35 @@ func TestServerEndpointAttributes(t *testing.T) {
 	}
 }
 
+// TestServerAddressAgreesWithServiceInstanceSeed guards against server.address and
+// service.instance.id resolving the same endpoint differently, which would leave a
+// single resource naming two different machines.
+func TestServerAddressAgreesWithServiceInstanceSeed(t *testing.T) {
+	endpoints := []string{
+		"localhost:5432",
+		"Localhost:5432",
+		"127.0.0.1:5432",
+		"[::1]:5432",
+		"db.example.com:5432",
+		"[2001:db8::1]:5432",
+	}
+
+	for _, endpoint := range endpoints {
+		t.Run(endpoint, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.AddrConfig.Endpoint = endpoint
+
+			address, _, err := serverEndpointAttributes(cfg, zap.NewNop())
+			require.NoError(t, err)
+
+			seedHost, _, err := net.SplitHostPort(resolveServiceInstanceSeed(cfg, zap.NewNop()))
+			require.NoError(t, err)
+
+			assert.Equal(t, seedHost, address)
+		})
+	}
+}
+
 func TestSetupLegacyResourceBuilder(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	scraper := &postgreSQLScraper{
@@ -2726,6 +2935,7 @@ func TestSetupLegacyResourceBuilder(t *testing.T) {
 		config:            cfg,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
 		serviceInstanceID: "localhost:5432",
+		serverEndpoint:    newServerEndpoint(cfg, zap.NewNop()),
 		useOTelSemconv:    false,
 	}
 
@@ -2753,8 +2963,62 @@ func TestSetupLegacyResourceBuilder(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "myindex", indexName.Str())
 
-	_, hasServerAddr := res.Attributes().Get("server.address")
-	assert.False(t, hasServerAddr)
-	_, hasServerPort := res.Attributes().Get("server.port")
-	assert.False(t, hasServerPort)
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
+	serverAddress, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, hostname, serverAddress.Str())
+
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, int64(5432), serverPort.Int())
+}
+
+// TestServerEndpointResolvedAtConstruction guards that the endpoint is resolved once when the
+// scraper is built rather than for every resource, which is what keeps server.address consistent
+// with the service.instance.id derived from the same endpoint at the same moment.
+func TestServerEndpointResolvedAtConstruction(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AddrConfig.Endpoint = "db.example.com:5432"
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	cfg.AddrConfig.Endpoint = "other.example.com:5433"
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setupLegacyResourceBuilder(rb, "mydb", "", "", "")
+	res := rb.Emit()
+
+	serverAddress, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, "db.example.com", serverAddress.Str())
+
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, int64(5432), serverPort.Int())
+}
+
+// TestServerEndpointUnresolvedOmitsAttributes checks that an endpoint that cannot be parsed leaves
+// both attributes unset for the lifetime of the scraper instead of reporting empty values.
+func TestServerEndpointUnresolvedOmitsAttributes(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AddrConfig.Endpoint = "localhost"
+	scraper := &postgreSQLScraper{
+		logger:            zap.NewNop(),
+		config:            cfg,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		serviceInstanceID: "unknown:5432",
+		serverEndpoint:    newServerEndpoint(cfg, zap.NewNop()),
+	}
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setupLegacyResourceBuilder(rb, "mydb", "", "", "")
+	res := rb.Emit()
+
+	_, ok := res.Attributes().Get("server.address")
+	assert.False(t, ok)
+
+	_, ok = res.Attributes().Get("server.port")
+	assert.False(t, ok)
 }
