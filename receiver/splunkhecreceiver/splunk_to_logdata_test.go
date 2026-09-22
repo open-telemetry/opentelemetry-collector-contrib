@@ -504,7 +504,7 @@ func Test_SplunkHecRawToLogData_SetsObservedTimestamp(t *testing.T) {
 	after := pcommon.NewTimestampFromTime(time.Now())
 	require.NoError(t, err)
 	require.Equal(t, 2, slLen)
-	for i := 0; i < slLen; i++ {
+	for i := range slLen {
 		lr := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i)
 		assert.GreaterOrEqual(t, lr.ObservedTimestamp(), before)
 		assert.LessOrEqual(t, lr.ObservedTimestamp(), after)
