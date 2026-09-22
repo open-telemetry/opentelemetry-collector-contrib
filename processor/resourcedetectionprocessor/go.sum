@@ -245,6 +245,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/linode/go-metadata v0.3.0 h1:tWShLi5MOUCG/ifA3jphK26A2y0veQoWwUEMJziRzUQ=
 github.com/linode/go-metadata v0.3.0/go.mod h1:uc58+eNK4Y44wvounLIsx92zaMax32pWz+bQHerKvcs=
+github.com/linode/go-metadata v0.3.1 h1:F34TL9aF2qNDEViTOxFf9cXOMrdhckczVg3T80h1XZY=
+github.com/linode/go-metadata v0.3.1/go.mod h1:4UM6kvph2AQ3PLqMNittnocbeY2R+fYiC47iwIW8LX4=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 h1:6E+4a0GO5zZEnZ81pIr0yLvtUWk2if982qA3F3QD6H4=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
 github.com/mattn/go-colorable v0.1.9/go.mod h1:u6P/XSegPjTcexA+o6vUJrdnUu04hMope9wVRipJSqc=
