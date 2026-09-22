@@ -32,7 +32,7 @@ func newEvictionTestConfig(tmpDir string) *Config {
 }
 
 // A writer evicted while an export is running must not lose that export's data.
-func TestGroupingFileExporterEvictedWriterDropsInFlightWrite(t *testing.T) {
+func TestGroupingFileExporterPreservesInFlightWrite(t *testing.T) {
 	tmpDir := t.TempDir()
 	conf := newEvictionTestConfig(tmpDir)
 
