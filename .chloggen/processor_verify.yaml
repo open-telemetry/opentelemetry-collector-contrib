@@ -4,10 +4,10 @@
 change_type: new_component
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/certificatelogverify
+component: processor/verify
 
 # A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `certificatelogverifyprocessor`, a new processor that verifies RFC 8785 (JCS) canonical integrity attributes (`audit.integrity.value`) on log records using HMAC and/or certificate public keys. Designed as the verification counterpart to `signingprocessor` for the OpenTelemetry Audit Logging signal.
+note: Add `verifyprocessor`, a new processor that verifies RFC 8785 (JCS) canonical integrity attributes (`audit.integrity.value`) on log records using HMAC and/or certificate public keys. Designed as the verification counterpart to `signingprocessor` for the OpenTelemetry Audit Logging signal.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: []

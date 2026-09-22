@@ -1,22 +1,22 @@
-# Certificate log verify processor — invalid configurations used in negative tests.
+# Verify processor — invalid configurations used in negative tests.
 
 # Missing key material (no key_source).
-certificatelogverify/missing_key_source:
+verify/missing_key_source:
   mode: sync
 
 # Invalid key_source.type.
-certificatelogverify/bad_key_source_type:
+verify/bad_key_source_type:
   key_source:
     type: unknown
 
 # File key_source without cert or HMAC material.
-certificatelogverify/file_missing_material:
+verify/file_missing_material:
   key_source:
     type: file
     file: {}
 
 # Invalid mode.
-certificatelogverify/bad_mode:
+verify/bad_mode:
   mode: deferred
   key_source:
     type: file
@@ -24,7 +24,7 @@ certificatelogverify/bad_mode:
       hmac_key_file: /etc/otelcol/hmac.key
 
 # Invalid failure_mode.
-certificatelogverify/bad_failure_mode:
+verify/bad_failure_mode:
   failure_mode: drop
   key_source:
     type: file
@@ -32,7 +32,7 @@ certificatelogverify/bad_failure_mode:
       hmac_key_file: /etc/otelcol/hmac.key
 
 # Hash chain enabled without storage.
-certificatelogverify/hash_chain_missing_storage:
+verify/hash_chain_missing_storage:
   key_source:
     type: file
     file:
@@ -41,7 +41,7 @@ certificatelogverify/hash_chain_missing_storage:
     enabled: true
 
 # Dead letter enabled without storage.
-certificatelogverify/dead_letter_missing_storage:
+verify/dead_letter_missing_storage:
   key_source:
     type: file
     file:
@@ -50,14 +50,14 @@ certificatelogverify/dead_letter_missing_storage:
     enabled: true
 
 # k8s_secret missing name.
-certificatelogverify/k8s_missing_name:
+verify/k8s_missing_name:
   key_source:
     type: k8s_secret
     k8s_secret:
       hmac_key: hmac.key
 
 # Invalid dead_letter.failure_modes entry.
-certificatelogverify/bad_dead_letter_mode:
+verify/bad_dead_letter_mode:
   key_source:
     type: file
     file:

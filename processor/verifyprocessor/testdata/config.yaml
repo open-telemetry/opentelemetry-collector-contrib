@@ -1,14 +1,14 @@
-# Certificate log verify processor — file-based HMAC key (minimal config).
+# Verify processor — file-based HMAC key (minimal config).
 # mode, failure_mode, and verification_profile use their defaults
 # (sync, strict, default).
-certificatelogverify:
+verify:
   key_source:
     type: file
     file:
       hmac_key_file: /etc/otelcol/hmac.key
 
 # Asymmetric certificate verification with mark failure mode.
-certificatelogverify/cert_mark:
+verify/cert_mark:
   mode: sync
   failure_mode: mark
   verification_profile: default
@@ -18,7 +18,7 @@ certificatelogverify/cert_mark:
       cert_file: /etc/otelcol/cert.pem
 
 # Combined HMAC + certificate verification.
-certificatelogverify/hmac_and_cert:
+verify/hmac_and_cert:
   key_source:
     type: file
     file:
@@ -26,7 +26,7 @@ certificatelogverify/hmac_and_cert:
       cert_file: /etc/otelcol/cert.pem
 
 # Environment-variable key material.
-certificatelogverify/env:
+verify/env:
   key_source:
     type: env
     env:
@@ -34,7 +34,7 @@ certificatelogverify/env:
       hmac_key_env_var: VERIFY_HMAC_KEY
 
 # Kubernetes Secret key material.
-certificatelogverify/k8s:
+verify/k8s:
   key_source:
     type: k8s_secret
     k8s_secret:
@@ -44,7 +44,7 @@ certificatelogverify/k8s:
       cert_key: tls.crt
 
 # OpenBao / Vault key material.
-certificatelogverify/bao:
+verify/bao:
   key_source:
     type: bao
     bao:
@@ -54,7 +54,7 @@ certificatelogverify/bao:
       hmac_key_field: hmac_key
 
 # Hash-chain continuity enabled (requires a storage extension).
-certificatelogverify/hash_chain:
+verify/hash_chain:
   key_source:
     type: file
     file:
@@ -64,7 +64,7 @@ certificatelogverify/hash_chain:
     storage: file_storage
 
 # Dead-letter queue for verification failures.
-certificatelogverify/dead_letter:
+verify/dead_letter:
   failure_mode: mark
   key_source:
     type: file
