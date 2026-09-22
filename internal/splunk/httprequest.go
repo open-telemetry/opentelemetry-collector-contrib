@@ -42,14 +42,13 @@ func HandleHTTPCode(resp *http.Response) error {
 		}
 		// Indicate to our caller to pause for the specified number of seconds.
 		err = exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
-	// 408 Request Timeout is transient; leave it as a plain (retryable) error.
+	// 408 is transient, so leave it retryable.
 	case resp.StatusCode == http.StatusRequestTimeout:
-	// All other client errors (4xx) are permanent: retrying an identical request
-	// cannot fix a malformed, unauthorized, oversized, or unsupported request.
+	// Other 4xx are permanent; retrying an identical request can't fix it.
 	case resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError:
 		err = consumererror.NewPermanent(err)
 	}
 
-	// Server errors (5xx) and anything else fall through as a plain (retryable) error.
+	// 5xx and anything else stay retryable.
 	return err
 }

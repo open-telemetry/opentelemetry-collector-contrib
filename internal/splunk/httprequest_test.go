@@ -51,7 +51,7 @@ func TestConsumeMetrics(t *testing.T) {
 			name:             "large_batch",
 			httpResponseCode: http.StatusAccepted,
 		},
-		// Client errors that retrying cannot fix must be permanent, not retried forever.
+		// 4xx that retrying can't fix: permanent.
 		{name: "not_found", httpResponseCode: http.StatusNotFound, wantPermanentErr: true},
 		{name: "method_not_allowed", httpResponseCode: http.StatusMethodNotAllowed, wantPermanentErr: true},
 		{name: "conflict", httpResponseCode: http.StatusConflict, wantPermanentErr: true},
