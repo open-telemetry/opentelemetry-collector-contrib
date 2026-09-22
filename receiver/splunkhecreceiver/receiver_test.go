@@ -583,8 +583,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	}
 }
 
-// deadlineRecorder is an http.ResponseWriter that records SetWriteDeadline
-// calls so tests can assert the receiver extends the write deadline on progress.
+// deadlineRecorder records SetWriteDeadline calls so tests can assert the deadline is extended.
 type deadlineRecorder struct {
 	*httptest.ResponseRecorder
 	deadlines []time.Time
@@ -639,7 +638,7 @@ func Test_handleRawReq_extendsWriteDeadlineOnProgress(t *testing.T) {
 func Test_handleReq_writeDeadlineDisabledWhenWriteTimeoutZero(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
-	config.ServerConfig.WriteTimeout = 0 // feature disabled
+	config.ServerConfig.WriteTimeout = 0
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	require.NoError(t, err)
 	rcv.logsConsumer = new(consumertest.LogsSink)
@@ -670,8 +669,7 @@ func Test_handleReq_logsWriteDeadlineError(t *testing.T) {
 	msgBytes, err := json.Marshal(splunkMsg)
 	require.NoError(t, err)
 
-	// A plain ResponseRecorder does not implement SetWriteDeadline, so the
-	// ResponseController.Unwrap chain fails and every SetWriteDeadline errors.
+	// A plain ResponseRecorder has no SetWriteDeadline, so the Unwrap chain fails and every call errors.
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
 	rcv.handleReq(rec, req)
@@ -681,9 +679,8 @@ func Test_handleReq_logsWriteDeadlineError(t *testing.T) {
 		"expected a debug log when SetWriteDeadline fails so a broken Unwrap chain is diagnosable")
 }
 
-// recordingConn records SetWriteDeadline calls so a test can prove the write
-// deadline is pushed down to the real connection through the confighttp/otelhttp
-// ResponseController.Unwrap chain.
+// recordingConn records SetWriteDeadline calls to prove the deadline reaches the real
+// connection through the confighttp/otelhttp Unwrap chain.
 type recordingConn struct {
 	net.Conn
 	writeDeadlines *atomic.Int64
@@ -715,8 +712,7 @@ func Test_writeDeadlineExtendedThroughRealServerChain(t *testing.T) {
 	require.NoError(t, err)
 	rcv.logsConsumer = new(consumertest.LogsSink)
 
-	// Build the same handler chain Start builds and wrap it with the real
-	// confighttp/otelhttp middleware via ToServer.
+	// Same handler chain Start builds, wrapped with the real confighttp/otelhttp middleware via ToServer.
 	mx := mux.NewRouter()
 	mx.NewRoute().Path(config.RawPath).HandlerFunc(rcv.handleRawReq)
 	mx.NewRoute().HandlerFunc(rcv.handleReq)
@@ -736,8 +732,7 @@ func Test_writeDeadlineExtendedThroughRealServerChain(t *testing.T) {
 	t.Cleanup(func() { _ = server.Close() })
 
 	// A large body forces many progress reads, so a working Unwrap chain drives
-	// SetWriteDeadline on the real connection far more than the server's own
-	// single WriteTimeout arming would.
+	// SetWriteDeadline on the real conn far more than the server's single arming would.
 	var body strings.Builder
 	for range 20000 {
 		body.WriteString("some raw log line to fill the body with progress\n")
