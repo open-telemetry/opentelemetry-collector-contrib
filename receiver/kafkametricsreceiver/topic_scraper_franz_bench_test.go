@@ -62,7 +62,7 @@ func Benchmark_TopicScraperFranz_Scrape(b *testing.B) {
 			cfg.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
 			cfg.MetricsBuilderConfig.Metrics.KafkaTopicReplicationFactor.Enabled = true
 
-			s, err := createTopicsScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+			s, err := createTopicsScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 			require.NoError(b, err)
 			require.NoError(b, s.Start(b.Context(), componenttest.NewNopHost()))
 			b.Cleanup(func() { require.NoError(b, s.Shutdown(b.Context())) })
