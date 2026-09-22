@@ -21,7 +21,6 @@ func TestParser(t *testing.T) {
 	s := newFakeAPIParser()
 	info, err := s.info()
 	require.NoError(t, err)
-	// 134 keys from INFO plus 12 keys from CLUSTER INFO.
 	require.Len(t, info, 146)
 	require.Equal(t, "1.24", info["allocator_frag_ratio"]) // spot check
 }

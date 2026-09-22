@@ -31,10 +31,11 @@ func TestRedisRunnable(t *testing.T) {
 	md, err := runner.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	// + 9 because there are three keyspace entries each of which has three metrics
-	// -22 because that many recorders are disabled by default: maxmemory, tracking_total_keys,
-	// used_memory_overhead, used_memory_startup, slave_repl_offset, all 13 redis.cluster.*
-	// recorders (populated from info.txt/cluster_info.txt but disabled by default), and
-	// pubsub_channels, pubsub_shardchannels, pubsub_clients, pubsub_patterns.
+	// -22 because that many recorders either have disabled metrics or keys absent from the test info fixture
+	// (includes cluster_enabled, maxmemory, tracking_total_keys, used_memory_overhead, used_memory_startup,
+	//  slave_repl_offset, all other cluster_*/links_buffer_limit_exceeded.count fields not in info.txt,
+	//  and pubsub_channels, pubsub_shardchannels, pubsub_clients, pubsub_patterns, which are all disabled
+	//  by default)
 	assert.Equal(t, len(rs.dataPointRecorders())+9-22, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
