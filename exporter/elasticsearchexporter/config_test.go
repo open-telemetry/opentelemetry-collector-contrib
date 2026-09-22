@@ -42,8 +42,6 @@ func TestConfig(t *testing.T) {
 	defaultRawCfg.(*Config).Mapping.Mode = "raw"
 	defaultRawCfg.(*Config).Retry.RetryOnDocumentStatus = defaultRawCfg.(*Config).Retry.RetryOnStatus
 
-	defaultMaxIdleConns := 100
-	defaultIdleConnTimeout := 90 * time.Second
 	defaultCompression := configcompression.TypeGzip
 
 	tests := []struct {
