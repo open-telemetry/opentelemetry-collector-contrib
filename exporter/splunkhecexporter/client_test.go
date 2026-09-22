@@ -1728,9 +1728,7 @@ func Test_pushLogData_WarnsWhenSplunkApproachingCapacity(t *testing.T) {
 
 	core, observed := observer.New(zap.WarnLevel)
 
-	// HTTP 200, but Splunk signals its queue is approaching capacity (code 24).
-	// The data was accepted, so this must not error (retrying would duplicate it),
-	// but it should be surfaced as a warning.
+	// 200 with code 24: accepted, so no error, but a warning.
 	httpClient, _ := newTestClient(200, `{"text":"HEC queue is approaching its capacity limit","code":24}`)
 	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.New(core)}
 
@@ -1741,10 +1739,8 @@ func Test_pushLogData_WarnsWhenSplunkApproachingCapacity(t *testing.T) {
 }
 
 func Test_pushLogData_DrainsLargeSuccessBodyForConnReuse(t *testing.T) {
-	// Splunk returns a 200 with a body larger than the 8KB the worker reads while
-	// looking for the approaching-capacity code. If the worker does not drain the
-	// remainder, the connection cannot return to the keep-alive pool and a second
-	// request opens a fresh connection.
+	// Body exceeds the 8KB the worker reads for the code; the undrained remainder would
+	// block connection reuse, forcing the second request onto a fresh connection.
 	largeBody := `{"text":"Success","code":0,"padding":"` + strings.Repeat("x", 16*1024) + `"}`
 
 	var mu sync.Mutex
@@ -1771,8 +1767,6 @@ func Test_pushLogData_DrainsLargeSuccessBodyForConnReuse(t *testing.T) {
 	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	splunkClient.hecWorker = &defaultHecWorker{serverURL, server.Client(), buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
-	// Two sequential sends over the same client. With the body fully drained the
-	// second send reuses the first connection.
 	require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
 	require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
 
