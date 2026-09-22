@@ -15,6 +15,7 @@ permissions: {}
 
 jobs:
   analysis:
+    cache-mode: none
     if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     permissions:
       contents: read # for actions/checkout
