@@ -29,9 +29,9 @@ func HandleHTTPCode(resp *http.Response) error {
 		http.StatusText(resp.StatusCode),
 	)
 
-	switch resp.StatusCode {
+	switch {
 	// Check for responses that may include "Retry-After" header.
-	case http.StatusTooManyRequests, http.StatusServiceUnavailable:
+	case resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable:
 		// Fallback to 0 if the Retry-After header is not present. This will trigger the
 		// default backoff policy by our caller (retry handler).
 		retryAfter := 0
@@ -42,10 +42,14 @@ func HandleHTTPCode(resp *http.Response) error {
 		}
 		// Indicate to our caller to pause for the specified number of seconds.
 		err = exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
-	// Check for permanent errors.
-	case http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden:
+	// 408 Request Timeout is transient; leave it as a plain (retryable) error.
+	case resp.StatusCode == http.StatusRequestTimeout:
+	// All other client errors (4xx) are permanent: retrying an identical request
+	// cannot fix a malformed, unauthorized, oversized, or unsupported request.
+	case resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError:
 		err = consumererror.NewPermanent(err)
 	}
 
+	// Server errors (5xx) and anything else fall through as a plain (retryable) error.
 	return err
 }
