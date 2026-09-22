@@ -81,10 +81,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 		}
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
-		var propagator propagation.TextMapPropagator
-		if p := otel.GetTextMapPropagator(); len(p.Fields()) > 0 {
-			propagator = p
-		}
+		propagator := traceContextPropagator()
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&logsHandler{
@@ -113,10 +110,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 		}
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
-		var propagator propagation.TextMapPropagator
-		if p := otel.GetTextMapPropagator(); len(p.Fields()) > 0 {
-			propagator = p
-		}
+		propagator := traceContextPropagator()
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&metricsHandler{
@@ -145,10 +139,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 		}
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
-		var propagator propagation.TextMapPropagator
-		if p := otel.GetTextMapPropagator(); len(p.Fields()) > 0 {
-			propagator = p
-		}
+		propagator := traceContextPropagator()
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&tracesHandler{
@@ -177,10 +168,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 		}
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
-		var propagator propagation.TextMapPropagator
-		if p := otel.GetTextMapPropagator(); len(p.Fields()) > 0 {
-			propagator = p
-		}
+		propagator := traceContextPropagator()
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&profilesHandler{
@@ -456,6 +444,14 @@ func newExponentialBackOff(config configretry.BackOffConfig) *backoff.Exponentia
 	backOff.MaxElapsedTime = config.MaxElapsedTime
 	backOff.Reset()
 	return backOff
+}
+
+func traceContextPropagator() propagation.TextMapPropagator {
+	propagator := otel.GetTextMapPropagator()
+	if len(propagator.Fields()) == 0 {
+		return nil
+	}
+	return propagator
 }
 
 // headerCarrier adapts a kgo.RecordHeader slice to propagation.TextMapCarrier.
