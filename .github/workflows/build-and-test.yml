@@ -68,6 +68,9 @@ jobs:
   ci-scope:
     runs-on: ubuntu-slim
     if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       matrix: ${{ steps.post.outputs.matrix }}
       direct_matrix: ${{ steps.post.outputs.direct_matrix }}
@@ -76,7 +79,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: 1
+      - name: Get changed files
+        id: changes
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          list-files: json
+          filters: |
+            all:
+              - '**'
       - name: Compute scope
         id: scope
         shell: bash
@@ -84,6 +95,7 @@ jobs:
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           BASE_REF: ${{ github.base_ref }}
           EVENT_NAME: ${{ github.event_name }}
+          CHANGED_FILES_JSON: ${{ steps.changes.outputs.all_files }}
           TARGET_CONCURRENCY: 10
           FORCE_ALL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
           # `^` anchors mean these match files at repo root, not in subdirectories,
