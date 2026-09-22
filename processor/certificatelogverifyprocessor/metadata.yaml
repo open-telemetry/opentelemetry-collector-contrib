@@ -7,7 +7,7 @@ status:
   distributions: []
   warnings: []
   codeowners:
-    active: [MJarmo]
+    active: [MJarmo, hilmarf, jmacd]
 
 tests:
   config:
