@@ -32,9 +32,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
-// Splunk HEC response bodies. The "code" field is a Splunk HEC status code; see
+// Splunk HEC response bodies; "code" is a Splunk HEC status code.
 // https://docs.splunk.com/Documentation/Splunk/latest/Data/TroubleshootHTTPEventCollector
-// for the full list of status and sub-code values.
 const (
 	ackResponse                       = `{"acks": %s}`
 	responseOK                        = `{"text": "Success", "code": 0}`
