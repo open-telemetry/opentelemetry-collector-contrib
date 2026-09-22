@@ -2040,7 +2040,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const reads = "reads"
 	const requestStatus = "request_status"
 	const rowCount = "row_count"
-	const sessionDurationMillisecond = "session_duration"
+	const sessionDurationSecond = "session_duration"
 	const sessionID = "session_id"
 	const sessionStartTime = "session_start_time"
 	const sessionStatus = "session_status"
@@ -2180,8 +2180,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
 		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
 		sessionStatusVal := row[sessionStatus]
-		sessionDurationSecondVal := s.retrieveValue(row, sessionDurationMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
-			return float64(i) / 1000.0
+		sessionDurationSecondVal := s.retrieveValue(row, sessionDurationSecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i)
 		})).(float64)
 		totalElapsedTimeSecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
