@@ -1162,8 +1162,8 @@ func TestScrapeQuerySamplesClientProgramName(t *testing.T) {
 		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
-		val, ok := record.Attributes().Get("mysql.session.client_name")
-		require.True(t, ok, "mysql.session.client_name must be present")
+		val, ok := record.Attributes().Get("mysql.client.name")
+		require.True(t, ok, "mysql.client.name must be present")
 		assert.Equal(t, "MySQL Connector/J", val.Str())
 	})
 
@@ -1177,8 +1177,8 @@ func TestScrapeQuerySamplesClientProgramName(t *testing.T) {
 		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
-		val, ok := record.Attributes().Get("mysql.session.client_name")
-		require.True(t, ok, "mysql.session.client_name must be present")
+		val, ok := record.Attributes().Get("mysql.client.name")
+		require.True(t, ok, "mysql.client.name must be present")
 		assert.Empty(t, val.Str())
 	})
 }

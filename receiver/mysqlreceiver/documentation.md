@@ -937,7 +937,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
-| mysql.session.client_name | The client driver's self-reported identity at connection time (performance_schema.session_connect_attrs, ATTR_NAME='_client_name'), e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side. | Any Str | - |
+| mysql.client.name | The client driver's self-reported identity at connection time (performance_schema.session_connect_attrs, ATTR_NAME='_client_name'), e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side. | Any Str | - |
 
 ### db.server.top_query
 

@@ -76,7 +76,7 @@ resourceLogs:
               - key: network.peer.port
                 value:
                   intValue: "1234"
-              - key: mysql.session.client_name
+              - key: mysql.client.name
                 value:
                   stringValue: ""
             body: {}
