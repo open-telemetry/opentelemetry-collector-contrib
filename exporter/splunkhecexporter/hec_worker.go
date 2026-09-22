@@ -18,9 +18,7 @@ import (
 )
 
 const (
-	// Splunk HEC response codes indicating the request was accepted (HTTP 200)
-	// but the server is approaching a capacity limit. See Splunk's HTTP Event
-	// Collector response codes:
+	// Splunk HEC codes returned on an accepted (HTTP 200) request whose server is approaching capacity.
 	// https://docs.splunk.com/Documentation/Splunk/latest/Data/TroubleshootHTTPEventCollector
 	splunkCodeApproachingQueueCapacity = 24
 	splunkCodeApproachingAckCapacity   = 25
@@ -77,11 +75,8 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 		return err
 	}
 
-	// On success Splunk may still signal, via the response body, that its queues
-	// are approaching capacity (codes 24/25). The data was accepted, so we do not
-	// retry (that would duplicate it); we surface the pressure as a warning.
-	// We only need the first few KB to find the code, but the whole body must be
-	// drained so the connection can return to the keep-alive pool.
+	// Data was accepted (200), so codes 24/25 warn rather than retry (a retry would duplicate it).
+	// Read enough to find the code, then drain the rest so the connection can be reused.
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 8192))
 	_, _ = io.Copy(io.Discard, resp.Body)
 	var splunkResp struct {
