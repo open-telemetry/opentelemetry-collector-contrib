@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build aix
+//go:build aix || solaris
 
 package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 import (
@@ -25,13 +25,13 @@ func NewFactory() receiver.Factory {
 }
 
 func createTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
-	return nil, errors.New("pulsarreceiver is not supported on AIX")
+	return nil, errors.New("pulsarreceiver is not supported on AIX or Solaris")
 }
 
 func createMetrics(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
-	return nil, errors.New("pulsarreceiver is not supported on AIX")
+	return nil, errors.New("pulsarreceiver is not supported on AIX or Solaris")
 }
 
 func createLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
-	return nil, errors.New("pulsarreceiver is not supported on AIX")
+	return nil, errors.New("pulsarreceiver is not supported on AIX or Solaris")
 }

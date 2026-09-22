@@ -588,7 +588,7 @@ func TestFranzClient_ProtocolVersion(t *testing.T) {
 	}
 	tests := map[string]testcase{
 		"without protocol version": {
-			expectedVersion: 4, // maximum
+			expectedVersion: 5, // maximum
 		},
 		"with protocol version": {
 			protocolVersion: "2.1.0",
