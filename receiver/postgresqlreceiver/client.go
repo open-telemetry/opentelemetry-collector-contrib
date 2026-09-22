@@ -1444,7 +1444,7 @@ func (c *postgreSQLClient) getVersion(ctx context.Context) (string, error) {
 	// db.system.version is consistent across packaging variants.
 	fields := strings.Fields(version)
 	if len(fields) == 0 {
-		return "", fmt.Errorf("empty server version")
+		return "", errors.New("empty server version")
 	}
 	return fields[0], nil
 }
