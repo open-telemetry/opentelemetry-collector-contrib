@@ -1,0 +1,4 @@
+change_type: enhancement
+component: processor/interval
+note: Add delta temporality metrics support.
+issues: [50845]

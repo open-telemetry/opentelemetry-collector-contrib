@@ -69,8 +69,7 @@ func Test_TruncateTime(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := TruncateTime(tt.time, tt.duration)
-			require.NoError(t, err)
+			exprFunc := truncateTime(tt.time, tt.duration)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected.UnixNano(), result.(time.Time).UnixNano())
@@ -117,9 +116,8 @@ func Test_TruncateTimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := TruncateTime[any](tt.time, tt.duration)
-			require.NoError(t, err)
-			_, err = exprFunc(t.Context(), nil)
+			exprFunc := truncateTime[any](tt.time, tt.duration)
+			_, err := exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -135,14 +133,14 @@ func Test_TruncateTimeFactory(t *testing.T) {
 		factory := NewTruncateTimeFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &TruncateTimeArguments[any]{}, args)
+		assert.IsType(t, &truncateTimeArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time", "Duration"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewTruncateTimeFactory[any]()
 		args := factory.CreateDefaultArguments()
-		truncateTimeArgs, ok := args.(*TruncateTimeArguments[any])
+		truncateTimeArgs, ok := args.(*truncateTimeArguments[any])
 		require.True(t, ok)
 		truncateTimeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -162,6 +160,24 @@ func Test_TruncateTimeFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createTruncateTimeFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "TimeFactory args must be of type *TruncateTimeArguments[K]")
+		assert.ErrorContains(t, err, "TimeFactory args must be of type *truncateTimeArguments[K]")
 	})
+}
+
+func BenchmarkTruncateTime(b *testing.B) {
+	exprFunc := truncateTime[any](
+		&ottl.StandardTimeGetter[any]{Getter: func(context.Context, any) (any, error) {
+			return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.UTC), nil
+		}},
+		&ottl.StandardDurationGetter[any]{Getter: func(context.Context, any) (any, error) {
+			return time.Second, nil
+		}},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

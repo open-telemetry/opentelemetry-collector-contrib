@@ -1724,7 +1724,7 @@ func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 
 	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
+			ConfigMap: map[string]*protobufs.AgentConfigObject{
 				"": {Body: []byte(cfgState.mergedConfig)},
 			},
 		},
