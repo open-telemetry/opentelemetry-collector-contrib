@@ -930,3 +930,33 @@ func Test_dbSpanName(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkSetSemconvSpanName(b *testing.B) {
+	setSemconvNameFunction, err := createSetSemconvSpanNameFunction(ottl.FunctionContext{}, &setSemconvSpanNameArguments{
+		SemconvVersion:            maxKnownSemConvVersion.String(),
+		OriginalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	template := ptrace.NewSpan()
+	template.SetName("GET /users/123")
+	template.SetKind(ptrace.SpanKindServer)
+	template.Attributes().PutStr("http.request.method", "GET")
+	template.Attributes().PutStr("http.route", "/users/:id")
+
+	resourceSpans := ptrace.NewResourceSpans()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	span := scopeSpans.Spans().AppendEmpty()
+	tCtx := ottlspan.NewTransformContext(resourceSpans, scopeSpans, span)
+	b.Cleanup(tCtx.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(span)
+		_, err = setSemconvNameFunction(b.Context(), tCtx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
