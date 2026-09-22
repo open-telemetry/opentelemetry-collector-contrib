@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: receiver/fluent_forward
-note: Delay Fluent Forward chunk acknowledgments until logs are successfully consumed downstream.
-issues: [46973]
-change_logs: [user]

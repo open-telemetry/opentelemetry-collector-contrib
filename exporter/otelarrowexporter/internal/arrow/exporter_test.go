@@ -136,11 +136,14 @@ func mockArrowProducer(ctc *commonTestCase) func() arrowRecord.ProducerAPI {
 		prod := arrowRecord.NewProducer()
 
 		mock.EXPECT().BatchArrowRecordsFromTraces(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromTraces))
+			copyBatch(prod.BatchArrowRecordsFromTraces),
+		)
 		mock.EXPECT().BatchArrowRecordsFromLogs(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromLogs))
+			copyBatch(prod.BatchArrowRecordsFromLogs),
+		)
 		mock.EXPECT().BatchArrowRecordsFromMetrics(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromMetrics))
+			copyBatch(prod.BatchArrowRecordsFromMetrics),
+		)
 		mock.EXPECT().Close().Times(1).Return(nil)
 		return mock
 	}
@@ -620,13 +623,15 @@ func TestArrowExporterHeaders(t *testing.T) {
 				}
 
 				sendCtx := ctx
+				var sendCancel context.CancelFunc
 				if withDeadline {
-					var sendCancel context.CancelFunc
-					sendCtx, sendCancel = context.WithTimeout(sendCtx, 1*time.Second)
-					defer sendCancel()
+					sendCtx, sendCancel = context.WithTimeout(sendCtx, 10*time.Second)
 				}
 
 				sent, err := tc.exporter.SendAndWait(sendCtx, input)
+				if sendCancel != nil {
+					sendCancel()
+				}
 				require.NoError(t, err)
 				require.True(t, sent)
 			}

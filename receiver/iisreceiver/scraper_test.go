@@ -65,7 +65,7 @@ func TestScrape(t *testing.T) {
 
 func TestAllMetricsDisabledScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	disableAllMetricEnabledFlags(&cfg.Metrics)
+	disableAllMetricEnabledFlags(&cfg.MetricsBuilderConfig.Metrics)
 
 	scraper := newIisReceiver(
 		receivertest.NewNopSettings(metadata.Type),

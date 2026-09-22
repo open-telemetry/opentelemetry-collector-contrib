@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,8 @@ var (
 )
 
 const (
+	adminDatabase               = "admin"
+	replSetGetStatusCommand     = "replSetGetStatus"
 	defaultServiceName          = "unknown_service:mongodb"
 	namespaceKey                = "ns"
 	commandKey                  = "command"
@@ -223,7 +226,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 	s.processCurrentOp(ctx, operations, now)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, serverAddress, serverPort)
+	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 }
 
@@ -535,12 +538,15 @@ func clientAddressAndPort(clientAddr string) (string, int64) {
 	return host, parsedPort
 }
 
-func setResourceAttributes(rb *metadata.ResourceBuilder, serverAddress string, serverPort int64) {
+func setResourceAttributes(rb *metadata.ResourceBuilder, serverAddress string, serverPort int64, mongoVersion *version.Version) {
 	rb.SetServerAddress(serverAddress)
 	rb.SetServerPort(serverPort)
 	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
+	if mongoVersion != nil && !mongoVersion.Equal(unknownVersion()) {
+		rb.SetDbSystemVersion(mongoVersion.String())
+	}
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
@@ -566,6 +572,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
+	s.collectReplicaSetMetrics(ctx, now, errs)
 
 	// Collect metrics for each database
 	for _, dbName := range dbNames {
@@ -583,7 +590,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 
 	// Emit single resource for the server
 	rb := s.mb.NewResourceBuilder()
-	setResourceAttributes(rb, serverAddress, serverPort)
+	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -612,6 +619,147 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 	s.recordOperationTime(now, topStats, errs)
 }
 
+// replicationUnavailableCodes are the server error codes returned when the deployment does not
+// expose replica set state: a standalone mongod, a mongos router, or a member whose replica set has
+// not been initiated. Unauthorized is deliberately absent: it means the configured user lacks a
+// privilege it can be granted, so it is reported rather than skipped.
+var replicationUnavailableCodes = []int{
+	26, // NamespaceNotFound
+	59, // CommandNotFound
+	76, // NoReplicationEnabled
+	94, // NotYetInitialized
+}
+
+func isReplicationUnavailable(err error) bool {
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return true
+	}
+	var srvErr mongo.ServerError
+	if !errors.As(err, &srvErr) {
+		return false
+	}
+	return slices.ContainsFunc(replicationUnavailableCodes, srvErr.HasErrorCode)
+}
+
+// reportReplicationError records err as a partial scrape failure, unless it only means the
+// deployment does not expose replica set state, in which case the metrics are skipped.
+func (s *mongodbScraper) reportReplicationError(err error, message string, failed int, errs *scrapererror.ScrapeErrors) {
+	if isReplicationUnavailable(err) {
+		s.logger.Debug(message, zap.Error(err))
+		return
+	}
+	errs.AddPartial(failed, fmt.Errorf("%s: %w", message, err))
+}
+
+// countEnabled returns how many of the given metric enabled flags are set, which is the number of
+// metrics a failed server read leaves unrecorded.
+func countEnabled(enabled ...bool) int {
+	count := 0
+	for _, e := range enabled {
+		if e {
+			count++
+		}
+	}
+	return count
+}
+
+func (s *mongodbScraper) collectReplicaSetMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+
+	if metrics.MongodbOplogUsage.Enabled || metrics.MongodbOplogLimit.Enabled {
+		s.collectOplogStats(ctx, now, errs)
+	}
+
+	var oplogWindow float64
+	var hasOplogWindow bool
+	if metrics.MongodbOplogWindow.Enabled || metrics.MongodbReplicaSetHeadroom.Enabled {
+		oplogWindow, hasOplogWindow = s.collectOplogWindow(ctx, now, errs)
+	}
+
+	if metrics.MongodbReplicaSetHeadroom.Enabled || metrics.MongodbReplicaSetLag.Enabled ||
+		metrics.MongodbReplicaSetMemberCount.Enabled || metrics.MongodbReplicaStatus.Enabled {
+		s.collectReplicaSetStatus(ctx, now, oplogWindow, hasOplogWindow, errs)
+	}
+}
+
+func (s *mongodbScraper) collectOplogStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+	oplogStats, err := s.client.OplogStats(ctx)
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch oplog stats metrics", countEnabled(metrics.MongodbOplogUsage.Enabled, metrics.MongodbOplogLimit.Enabled), errs)
+		return
+	}
+
+	if metrics.MongodbOplogUsage.Enabled {
+		s.recordOplogUsage(now, oplogStats, errs)
+	}
+
+	if metrics.MongodbOplogLimit.Enabled {
+		s.recordOplogLimit(now, oplogStats, errs)
+	}
+}
+
+// collectOplogWindow returns the time span the oplog covers, which mongodb.replica_set.headroom
+// is measured against. A failure here is counted against both metrics, since neither can be
+// recorded without it.
+func (s *mongodbScraper) collectOplogWindow(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) (float64, bool) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+	oldest, newest, err := s.client.OplogBounds(ctx)
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch oplog window and replica set headroom metrics",
+			countEnabled(metrics.MongodbOplogWindow.Enabled, metrics.MongodbReplicaSetHeadroom.Enabled), errs)
+		return 0, false
+	}
+
+	if metrics.MongodbOplogWindow.Enabled {
+		s.recordOplogWindow(now, oldest, newest)
+	}
+	return oplogWindowSeconds(oldest, newest), true
+}
+
+func (s *mongodbScraper) collectReplicaSetStatus(ctx context.Context, now pcommon.Timestamp, oplogWindow float64, hasOplogWindow bool, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+	// Headroom is left out when the oplog window is missing, as collectOplogWindow already counted it.
+	failed := countEnabled(metrics.MongodbReplicaSetMemberCount.Enabled, metrics.MongodbReplicaStatus.Enabled,
+		metrics.MongodbReplicaSetLag.Enabled, metrics.MongodbReplicaSetHeadroom.Enabled && hasOplogWindow)
+
+	status, err := s.client.RunCommand(ctx, adminDatabase, bson.M{replSetGetStatusCommand: 1})
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch replica set status metrics", failed, errs)
+		return
+	}
+
+	members, ok := status[replicaSetMembersKey].(bson.A)
+	if !ok {
+		errs.AddPartial(failed, fmt.Errorf("failed to fetch replica set members: expected %T, got %T", bson.A{}, status[replicaSetMembersKey]))
+		return
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetMemberCount.Enabled {
+		s.recordReplicaSetMemberCount(now, members)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaStatus.Enabled {
+		s.recordReplicaStatus(now, members, errs)
+	}
+
+	// Lag and headroom are only reported by the primary. A secondary sees the other members
+	// through heartbeats, so its view of their progress trails the primary's.
+	self, ok := replicaSetSelf(members)
+	if !ok || replicaSetMemberStates[getInt64Value(self, replicaSetMemberStateKey)] != metadata.AttributeMongodbReplicaStatePrimary {
+		return
+	}
+	lags := replicaSetLags(members)
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetLag.Enabled {
+		s.recordReplicaSetLag(now, lags)
+	}
+
+	if hasOplogWindow && s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetHeadroom.Enabled {
+		s.recordReplicaSetHeadroom(now, lags, oplogWindow)
+	}
+}
+
 func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	if databaseName == "local" {
 		return
@@ -632,83 +780,83 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 }
 
 func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	if s.config.Metrics.MongodbCollectionCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbCollectionCount.Enabled {
 		s.recordCollections(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbDataSize.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbDataSize.Enabled {
 		s.recordDataSize(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbExtentCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbExtentCount.Enabled {
 		s.recordExtentCount(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbIndexSize.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbIndexSize.Enabled {
 		s.recordIndexSize(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbIndexCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbIndexCount.Enabled {
 		s.recordIndexCount(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbObjectCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbObjectCount.Enabled {
 		s.recordObjectCount(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbStorageSize.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbStorageSize.Enabled {
 		s.recordStorageSize(now, doc, dbName, errs)
 	}
 }
 
 func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	if s.config.Metrics.MongodbConnectionCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbConnectionCount.Enabled {
 		s.recordConnections(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbDocumentOperationCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbDocumentOperationCount.Enabled {
 		s.recordDocumentOperations(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbMemoryUsage.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbMemoryUsage.Enabled {
 		s.recordMemoryUsage(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbLockAcquireCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbLockAcquireCount.Enabled {
 		s.recordLockAcquireCounts(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbLockAcquireWaitCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbLockAcquireWaitCount.Enabled {
 		s.recordLockAcquireWaitCounts(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbLockAcquireTime.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled {
 		s.recordLockTimeAcquiringMicros(now, doc, dbName, errs)
 	}
 
-	if s.config.Metrics.MongodbLockDeadlockCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbLockDeadlockCount.Enabled {
 		s.recordLockDeadlockCount(now, doc, dbName, errs)
 	}
 }
 
 func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {
-	if s.config.Metrics.MongodbCacheOperations.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbCacheOperations.Enabled {
 		s.recordCacheOperations(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbCursorCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbCursorCount.Enabled {
 		s.recordCursorCount(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbCursorTimeoutCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbCursorTimeoutCount.Enabled {
 		s.recordCursorTimeoutCount(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbGlobalLockTime.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbGlobalLockTime.Enabled {
 		s.recordGlobalLockTime(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbNetworkRequestCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbNetworkRequestCount.Enabled {
 		s.recordNetworkCount(now, document, errs)
 	}
 
@@ -716,39 +864,59 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 	s.recordOperationsRepl(now, document, errs)
 
-	if s.config.Metrics.MongodbSessionCount.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbSessionCount.Enabled {
 		s.recordSessionCount(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbOperationLatencyTime.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbOperationLatencyTime.Enabled {
 		s.recordLatencyTime(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbUptime.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled {
 		s.recordUptime(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbHealth.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbHealth.Enabled {
 		s.recordHealth(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbActiveWrites.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbActiveWrites.Enabled {
 		s.recordActiveWrites(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbActiveReads.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbActiveReads.Enabled {
 		s.recordActiveReads(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbFlushesRate.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbFlushesRate.Enabled {
 		s.recordFlushesPerSecond(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbWtcacheBytesRead.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtcacheBytesRead.Enabled {
 		s.recordWTCacheBytes(now, document, errs)
 	}
 
-	if s.config.Metrics.MongodbPageFaults.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogWrite.Enabled {
+		s.recordWTLogWrite(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled {
+		s.recordWTLogOperations(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogSyncTime.Enabled {
+		s.recordWTLogSyncTime(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled {
+		s.recordWTFsyncCount(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.Enabled {
+		s.recordWTConcurrentTransactionsOut(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbPageFaults.Enabled {
 		s.recordPageFaults(now, document, errs)
 	}
 }
@@ -778,13 +946,13 @@ func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
 }
 
 func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {
-	result, err := s.client.RunCommand(ctx, "admin", bson.M{"replSetGetStatus": 1})
+	result, err := s.client.RunCommand(ctx, adminDatabase, bson.M{replSetGetStatusCommand: 1})
 	if err != nil {
 		s.logger.Error("Failed to get replica set status", zap.Error(err))
 		return nil, fmt.Errorf("failed to get replica set status: %w", err)
 	}
 
-	members, ok := result["members"].(bson.A)
+	members, ok := result[replicaSetMembersKey].(bson.A)
 	if !ok {
 		return nil, fmt.Errorf("invalid members format: expected type primitive.A but got %T, value: %v", result["members"], result["members"])
 	}

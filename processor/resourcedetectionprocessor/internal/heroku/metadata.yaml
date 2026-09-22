@@ -1,13 +1,18 @@
 type: resourcedetectionprocessor/heroku
+sem_conv_version: 1.40.0
 
 parent: resourcedetection
 
 resource_attributes:
   cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
     description: The cloud.provider
     enabled: true
     type: string
   heroku.app.id:
+    semantic_convention:
+      ref: heroku.md#heroku-app-id
     description: The heroku.app.id
     enabled: true
     type: string
@@ -16,22 +21,32 @@ resource_attributes:
     enabled: true
     type: string
   heroku.release.commit:
+    semantic_convention:
+      ref: heroku.md#heroku-release-commit
     description: The heroku.release.commit
     enabled: true
     type: string
   heroku.release.creation_timestamp:
+    semantic_convention:
+      ref: heroku.md#heroku-release-creation-timestamp
     description: The heroku.release.creation_timestamp
     enabled: true
     type: string
   service.instance.id:
+    semantic_convention:
+      ref: service.md#service-instance-id
     description: The service.instance.id
     type: string
     enabled: true
   service.name:
+    semantic_convention:
+      ref: service.md#service-name
     description: Heroku app name recorded as service.name.
     enabled: true
     type: string
   service.version:
+    semantic_convention:
+      ref: service.md#service-version
     description: Heroku release version set as service.version.
     enabled: true
     type: string

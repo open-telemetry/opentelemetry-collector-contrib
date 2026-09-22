@@ -60,7 +60,8 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 						scraperinttest.RunScript(script),
 					},
 				}},
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
@@ -73,7 +74,8 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 					},
 				}
 				rCfg.ClientConfig.Insecure = true
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", expectedFile)),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),

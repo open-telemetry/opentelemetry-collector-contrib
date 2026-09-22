@@ -20,6 +20,14 @@ Total CPU seconds broken down by different states.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Double | Cumulative | true | Development |
 
+#### Migration
+
+- Target Metric: `process.cpu.time@v1`
+- Disable Old Gate: `scraper.process.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.process.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
@@ -34,6 +42,14 @@ Disk bytes transferred.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+#### Migration
+
+- Target Metric: `process.disk.io@v1`
+- Disable Old Gate: `scraper.process.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.process.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
@@ -46,15 +62,15 @@ The amount of physical memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | Development |
+| By | Sum | Int | Cumulative | false | Beta |
 
 ### process.memory.virtual
 
-Virtual memory size.
+The amount of committed virtual memory.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | Development |
+| By | Sum | Int | Cumulative | false | Beta |
 
 ## Optional Metrics
 
@@ -76,11 +92,53 @@ This metric is only available on Linux.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {count} | Sum | Int | Cumulative | true | Development |
 
+#### Migration
+
+- Target Metric: `process.context_switches@v1`
+- Disable Old Gate: `scraper.process.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.process.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | type | Type of context switched. | Str: ``involuntary``, ``voluntary`` | Recommended | - |
+
+### process.context_switches@v1
+
+Number of times the process has been context switched.
+
+This metric is only available on Linux.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {context_switch} | Sum | Int | Cumulative | true | Beta |
+
+Emitted Name: `process.context_switches`
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| process.context_switch.type | Specifies whether the context switches for this data point were voluntary or involuntary. | Str: ``involuntary``, ``voluntary`` | Required | - |
+
+### process.cpu.time@v1
+
+Total CPU seconds broken down by different CPU modes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Beta |
+
+Emitted Name: `process.cpu.time`
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu.mode | The CPU mode for this data point. | Str: ``system``, ``user``, ``iowait`` | Required | - |
 
 ### process.cpu.utilization
 
@@ -90,11 +148,51 @@ Percentage of total CPU time used by the process since last scrape, expressed as
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+#### Migration
+
+- Target Metric: `process.cpu.utilization@v1`
+- Disable Old Gate: `scraper.process.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.process.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` | Recommended | - |
+
+### process.cpu.utilization@v1
+
+Difference in process.cpu.time since the last measurement, divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Beta |
+
+Emitted Name: `process.cpu.utilization`
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu.mode | The CPU mode for this data point. | Str: ``system``, ``user``, ``iowait`` | Required | - |
+
+### process.disk.io@v1
+
+Disk bytes transferred.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Beta |
+
+Emitted Name: `process.disk.io`
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | The disk IO operation direction. | Str: ``read``, ``write`` | Required | - |
 
 ### process.disk.operations
 
@@ -120,6 +218,14 @@ This metric is only available on Windows.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {count} | Sum | Int | Cumulative | false | Development |
 
+#### Migration
+
+- Target Metric: `process.windows.handle.count@v1`
+- Disable Old Gate: `scraper.process.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.process.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### process.memory.utilization
 
 Percentage of total physical memory that is used by the process.
@@ -138,6 +244,14 @@ On Windows this metric captures the number of open handles currently held by the
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {count} | Sum | Int | Cumulative | false | Development |
 
+#### Migration
+
+- Target Metric: `process.unix.file_descriptor.count@v1`
+- Disable Old Gate: `scraper.process.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.process.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### process.paging.faults
 
 Number of page faults the process has made.
@@ -148,11 +262,37 @@ This metric is only available on Linux.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {faults} | Sum | Int | Cumulative | true | Development |
 
+#### Migration
+
+- Target Metric: `process.paging.faults@v1`
+- Disable Old Gate: `scraper.process.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.process.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | type | Type of memory paging fault. | Str: ``major``, ``minor`` | Recommended | - |
+
+### process.paging.faults@v1
+
+Number of page faults the process has made.
+
+This metric is only available on Linux.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {fault} | Sum | Int | Cumulative | true | Beta |
+
+Emitted Name: `process.paging.faults`
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.paging.fault.type | Type of memory paging fault. | Str: ``major``, ``minor`` | Recommended | - |
 
 ### process.signals_pending
 
@@ -164,6 +304,16 @@ This metric is only available on Linux.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {signals} | Sum | Int | Cumulative | false | Development |
 
+### process.thread.count@v1
+
+Process threads count.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `process.thread.count`
+
 ### process.threads
 
 Process threads count.
@@ -172,13 +322,43 @@ Process threads count.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {threads} | Sum | Int | Cumulative | false | Development |
 
+#### Migration
+
+- Target Metric: `process.thread.count@v1`
+- Disable Old Gate: `scraper.process.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.process.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
+### process.unix.file_descriptor.count@v1
+
+Number of unix file descriptors in use by the process.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {file_descriptor} | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `process.unix.file_descriptor.count`
+
 ### process.uptime
 
 The time the process has been running.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
+| s | Gauge | Double | Beta |
+
+### process.windows.handle.count@v1
+
+Number of handles held by the process.
+
+This metric is only available on Windows.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {handle} | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `process.windows.handle.count`
 
 ## Resource Attributes
 
@@ -189,6 +369,18 @@ The time the process has been running.
 | process.command_line | The full command used to launch the process as a single string representing the full command. On Windows, can be set to the result of GetCommandLineW. Do not set this if you have to assemble it just for monitoring; use process.command_args instead. | Any Str | true | - | - |
 | process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | Any Str | true | - | - |
 | process.executable.path | The full path to the process executable. On Linux based systems, can be set to the target of proc/[pid]/exe. On Windows, can be set to the result of GetProcessImageFileNameW. | Any Str | true | - | - |
+| process.linux.cgroup | The control group associated with the process. | Any Str | false | - | - |
 | process.owner | The username of the user that owns the process. | Any Str | true | - | - |
 | process.parent_pid | Parent Process identifier (PPID). | Any Int | true | - | - |
 | process.pid | Process identifier (PID). | Any Int | true | - | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `scraper.process.DontEmitV0SystemConventions` | alpha | When enabled, semconv legacy attributes are disabled. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/semantic-conventions/issues/3041) |
+| `scraper.process.EmitV1SystemConventions` | alpha | When enabled, semconv stable attributes are enabled. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/semantic-conventions/issues/3041) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

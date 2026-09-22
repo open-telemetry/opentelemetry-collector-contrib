@@ -59,7 +59,7 @@ func newIisReceiver(settings receiver.Settings, cfg *Config, consumer consumer.M
 		params:             settings.TelemetrySettings,
 		config:             cfg,
 		consumer:           consumer,
-		rb:                 metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		rb:                 metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		newWatcher:         winperfcounters.NewWatcher,
 		newWatcherFromPath: winperfcounters.NewWatcherFromPath,
@@ -71,9 +71,9 @@ func newIisReceiver(settings receiver.Settings, cfg *Config, consumer consumer.M
 func (rcvr *iisReceiver) start(_ context.Context, _ component.Host) error {
 	errs := &scrapererror.ScrapeErrors{}
 
-	totalPerfCounterRecorders := buildTotalPerfCounterRecordersFromConfig(rcvr.config.Metrics)
-	sitePerfCounterRecorders := buildSitePerfCounterRecordersFromConfig(rcvr.config.Metrics)
-	appPoolPerfCounterRecorders := buildAppPoolPerfCounterRecordersFromConfig(rcvr.config.Metrics)
+	totalPerfCounterRecorders := buildTotalPerfCounterRecordersFromConfig(rcvr.config.MetricsBuilderConfig.Metrics)
+	sitePerfCounterRecorders := buildSitePerfCounterRecordersFromConfig(rcvr.config.MetricsBuilderConfig.Metrics)
+	appPoolPerfCounterRecorders := buildAppPoolPerfCounterRecordersFromConfig(rcvr.config.MetricsBuilderConfig.Metrics)
 
 	rcvr.totalWatcherRecorders = rcvr.buildWatcherRecorders(totalPerfCounterRecorders, errs)
 	rcvr.siteWatcherRecorders = rcvr.buildWatcherRecorders(sitePerfCounterRecorders, errs)
@@ -228,7 +228,7 @@ var maxQueueItemAgeInstanceRegex = regexp.MustCompile(`\\HTTP Service Request Qu
 // This is done in order to capture the error when scraping each individual instance, because we want to ignore
 // negative denominator errors.
 func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror.ScrapeErrors) []instanceWatcher {
-	if !rcvr.config.Metrics.IisRequestQueueAgeMax.Enabled {
+	if !rcvr.config.MetricsBuilderConfig.Metrics.IisRequestQueueAgeMax.Enabled {
 		// if the metric is not enabled, we don't need to build any watchers
 		return nil
 	}

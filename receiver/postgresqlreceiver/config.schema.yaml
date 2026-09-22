@@ -44,25 +44,31 @@ $defs:
         x-customType: int64
 type: object
 properties:
+  connection_pool:
+    $ref: connection_pool
   databases:
     type: array
     items:
       type: string
+  db_auth:
+    description: DBAuth optionally sources the connection credential from a db_auth provider extension (e.g. AWS IAM) instead of a static password. When set, the provider supplies the password at connection-open time. Mutually exclusive with the top-level password field.
+    $ref: /config/configdbauth.id
   exclude_databases:
     type: array
     items:
       type: string
   password:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
+  query_sample_collection:
+    $ref: query_sample_collection
   tls:
     $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  top_query_collection:
+    $ref: top_query_collection
   username:
     type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   - $ref: go.opentelemetry.io/collector/config/confignet.addr_config
-  - $ref: connection_pool
   - $ref: ./internal/metadata.metrics_builder_config
   - $ref: ./internal/metadata.logs_builder_config
-  - $ref: query_sample_collection
-  - $ref: top_query_collection

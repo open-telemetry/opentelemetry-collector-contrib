@@ -125,7 +125,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		},
 		logDataPoints:          se.config.LogDataPoints,
 		logger:                 se.logger,
-		accessTokenPassthrough: se.config.AccessTokenPassthrough,
+		accessTokenPassthrough: se.config.AccessTokenPassthroughConfig.AccessTokenPassthrough,
 		converter:              se.converter,
 		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
@@ -174,7 +174,8 @@ func (se *signalfxExporter) startDimensionClient(ctx context.Context) error {
 			Timeout:                 se.config.DimensionClient.Timeout,
 			DropTags:                se.config.DimensionClient.DropTags,
 			StripK8sLabelPrefix:     se.config.DimensionClient.StripK8sLabelPrefix,
-		})
+		},
+	)
 	dimClient.Start()
 	se.dimClient = dimClient
 	return nil
@@ -220,7 +221,7 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 			zippers:   newGzipPool(),
 		},
 		logger:                 se.logger,
-		accessTokenPassthrough: se.config.AccessTokenPassthrough,
+		accessTokenPassthrough: se.config.AccessTokenPassthroughConfig.AccessTokenPassthrough,
 	}
 
 	// Initialize dimension client for entity event processing if entity events processing is enabled.

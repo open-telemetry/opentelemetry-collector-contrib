@@ -31,6 +31,7 @@ type metricFamily struct {
 	name        string
 	metadata    *scrape.MetricMetadata
 	groupOrders []*metricGroup
+	logger      *zap.Logger
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
@@ -76,6 +77,7 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 		groups:      make(map[uint64]*metricGroup),
 		name:        familyName,
 		metadata:    metadata,
+		logger:      logger,
 	}
 }
 
@@ -99,8 +101,15 @@ func (mg *metricGroup) sortPoints() {
 	})
 }
 
-func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice) {
+func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice, logger *zap.Logger) {
 	if !mg.hasCount {
+		return
+	}
+
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+	// NHCB conversion loses whether _count was absent. Reject the inconsistent
+	// form that identifies a sum-only classic histogram.
+	if mg.isNHCB && !pointIsStale && mg.count == 0 && mg.sum != 0 {
 		return
 	}
 
@@ -108,30 +117,46 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	var bounds []float64
 	var bucketCounts []uint64
-	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 
 	if mg.isNHCB {
+		var validBuckets bool
 		switch {
 		case mg.hValue != nil:
-			if len(mg.hValue.CustomValues) == 0 {
-				return
-			}
 			bounds = make([]float64, len(mg.hValue.CustomValues))
 			copy(bounds, mg.hValue.CustomValues)
-			bucketCounts = convertNHCBBDeltBuckets(mg.hValue)
+			bucketCounts, validBuckets = convertNHCBBDeltBuckets(mg.hValue)
 		case mg.fhValue != nil:
-			if len(mg.fhValue.CustomValues) == 0 {
-				return
-			}
 			bounds = make([]float64, len(mg.fhValue.CustomValues))
 			copy(bounds, mg.fhValue.CustomValues)
-			bucketCounts = convertNHCBAbsoluteBuckets(mg.fhValue)
+			bucketCounts, validBuckets = convertNHCBAbsoluteBuckets(mg.fhValue)
+		default:
+			validBuckets = true
+		}
+		// A malformed classic histogram converted to NHCB carries negative
+		// bucket counts; drop it instead of emitting invalid OTLP data.
+		if !validBuckets && !pointIsStale {
+			logger.Debug("dropping NHCB datapoint with negative or NaN bucket counts", zap.Any("labels", mg.ls))
+			return
 		}
 	} else {
 		bucketCount := len(mg.complexValue) + 1
 		// if the final bucket is +Inf, we ignore it
 		if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
 			bucketCount--
+		}
+		if !pointIsStale {
+			var previousCount float64
+			for i := 0; i < bucketCount-1; i++ {
+				if math.IsNaN(mg.complexValue[i].value) || mg.complexValue[i].value < previousCount {
+					logger.Debug("dropping histogram datapoint with NaN or decreasing bucket counts", zap.Any("labels", mg.ls))
+					return
+				}
+				previousCount = mg.complexValue[i].value
+			}
+			if math.IsNaN(mg.count) || mg.count < previousCount {
+				logger.Debug("dropping histogram datapoint with count that is NaN or below the largest bucket count", zap.Any("labels", mg.ls))
+				return
+			}
 		}
 
 		// for OTLP the bounds won't include +inf
@@ -298,11 +323,14 @@ func convertAbsoluteBuckets(spans []histogram.Span, counts []float64, buckets pc
 }
 
 // convertNHCBBDeltBuckets converts NHCB delta buckets to otel bucket counts.
-func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
+// The returned bool is false if any bucket count is negative, which cannot be
+// represented in OTLP.
+func convertNHCBBDeltBuckets(histogram *histogram.Histogram) ([]uint64, bool) {
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 	if len(histogram.PositiveSpans) == 0 {
-		return bucketCounts
+		return bucketCounts, true
 	}
+	valid := true
 	bucketIdx := 0
 	bucketCount := int64(0)
 	deltaIdx := 0
@@ -313,6 +341,9 @@ func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
 		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveBuckets); i++ {
 			bucketCount += histogram.PositiveBuckets[deltaIdx]
 			deltaIdx++
+			if bucketCount < 0 {
+				valid = false
+			}
 
 			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
 				bucketCounts[bucketIdx] = uint64(bucketCount)
@@ -320,28 +351,34 @@ func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
 			bucketIdx++
 		}
 	}
-	return bucketCounts
+	return bucketCounts, valid
 }
 
 // convertNHCBAbsoluteBuckets converts NHCB absolute buckets to otel bucket counts.
-func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) []uint64 {
+// The returned bool is false if any bucket count is negative or NaN, which
+// cannot be represented in OTLP.
+func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) ([]uint64, bool) {
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 	if len(histogram.PositiveSpans) == 0 {
-		return bucketCounts
+		return bucketCounts, true
 	}
+	valid := true
 	bucketIdx := 0
 	for _, span := range histogram.PositiveSpans {
 		bucketIdx += int(span.Offset)
 
 		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveBuckets)); i++ {
 			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				if math.IsNaN(histogram.PositiveBuckets[i]) || histogram.PositiveBuckets[i] < 0 {
+					valid = false
+				}
 				// This intentionally truncates the float value to an integer (e.g. 5.7 becomes 5).
 				bucketCounts[bucketIdx] = uint64(histogram.PositiveBuckets[i])
 			}
 			bucketIdx++
 		}
 	}
-	return bucketCounts
+	return bucketCounts, valid
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
@@ -593,7 +630,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toDistributionPoint(hdpL)
+			mg.toDistributionPoint(hdpL, mf.logger)
 		}
 		pointCount = hdpL.Len()
 
@@ -649,6 +686,10 @@ func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
 	convertExemplar(e, es.AppendEmpty())
 }
 
+// convertExemplar converts a Prometheus exemplar's labels to an OTel exemplar.
+// A trace_id/span_id label converts only when it's exactly OTel width and
+// non-zero; anything else becomes a filtered attribute instead of being zero
+// padded or truncated. An empty value is dropped, same as an absent label.
 func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.SetTimestamp(timestampFromMs(pe.Ts))
 	e.SetDoubleValue(pe.Value)
@@ -656,41 +697,39 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	pe.Labels.Range(func(lb labels.Label) {
 		switch strings.ToLower(lb.Name) {
 		case prometheus.ExemplarTraceIDKey:
+			if lb.Value == "" {
+				return
+			}
 			var tid [16]byte
-			err := decodeAndCopyToLowerBytes(tid[:], []byte(lb.Value))
-			if err == nil {
-				e.SetTraceID(tid)
-			} else {
-				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			if len(lb.Value) == hex.EncodedLen(len(tid)) {
+				if b, err := hex.DecodeString(lb.Value); err == nil {
+					copy(tid[:], b)
+					// all-zero looks unset already, so keep the original value instead of setting it
+					if traceID := pcommon.TraceID(tid); !traceID.IsEmpty() {
+						e.SetTraceID(traceID)
+						return
+					}
+				}
 			}
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		case prometheus.ExemplarSpanIDKey:
-			var sid [8]byte
-			err := decodeAndCopyToLowerBytes(sid[:], []byte(lb.Value))
-			if err == nil {
-				e.SetSpanID(sid)
-			} else {
-				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			if lb.Value == "" {
+				return
 			}
+			var sid [8]byte
+			if len(lb.Value) == hex.EncodedLen(len(sid)) {
+				if b, err := hex.DecodeString(lb.Value); err == nil {
+					copy(sid[:], b)
+					// all-zero looks unset already, so keep the original value instead of setting it
+					if spanID := pcommon.SpanID(sid); !spanID.IsEmpty() {
+						e.SetSpanID(spanID)
+						return
+					}
+				}
+			}
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		default:
 			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		}
 	})
-}
-
-/*
-	decodeAndCopyToLowerBytes copies src to dst on lower bytes instead of higher
-
-1. If len(src) > len(dst) -> copy first len(dst) bytes as it is. Example -> src = []byte{0xab,0xcd,0xef,0xgh,0xij}, dst = [2]byte, result dst = [2]byte{0xab, 0xcd}
-2. If len(src) = len(dst) -> copy src to dst as it is
-3. If len(src) < len(dst) -> prepend required 0s and then add src to dst. Example -> src = []byte{0xab, 0xcd}, dst = [8]byte, result dst = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xab, 0xcd}
-*/
-func decodeAndCopyToLowerBytes(dst, src []byte) error {
-	var err error
-	decodedLen := hex.DecodedLen(len(src))
-	if decodedLen >= len(dst) {
-		_, err = hex.Decode(dst, src[:hex.EncodedLen(len(dst))])
-	} else {
-		_, err = hex.Decode(dst[len(dst)-decodedLen:], src)
-	}
-	return err
 }

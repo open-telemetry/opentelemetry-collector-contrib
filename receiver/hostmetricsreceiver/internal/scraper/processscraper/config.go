@@ -13,7 +13,7 @@ import (
 // Config relating to Process Metric Scraper.
 type Config struct {
 	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Include specifies a filter on the process names that should be included from the generated metrics.
 	// Exclude specifies a filter on the process names that should be excluded from the generated metrics.
 	// If neither `include` or `exclude` are set, process metrics will be generated for all processes.
@@ -56,7 +56,7 @@ type Config struct {
 }
 
 type MatchConfig struct {
-	filterset.Config `mapstructure:",squash"`
+	Config filterset.Config `mapstructure:",squash"`
 
 	Names []string `mapstructure:"names"`
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
 )
@@ -23,8 +22,8 @@ func newMetricSeries(name string, ts uint64, value float64, tags []string) datad
 		Metric: name,
 		Points: []datadogV2.MetricPoint{
 			{
-				Timestamp: datadog.PtrInt64(timestamp),
-				Value:     datadog.PtrFloat64(value),
+				Timestamp: new(timestamp),
+				Value:     new(value),
 			},
 		},
 		Tags: tags,
@@ -61,24 +60,26 @@ func DefaultMetrics(exporterType, hostname string, timestamp uint64, tags []stri
 	for i := range metrics {
 		metrics[i].SetResources([]datadogV2.MetricResource{
 			{
-				Name: datadog.PtrString(hostname),
-				Type: datadog.PtrString("host"),
+				Name: new(hostname),
+				Type: new("host"),
 			},
 		})
 	}
 	return metrics
 }
 
-// FargateMetrics creates built-in metrics to report that a Fargate exporter is running.
-func FargateMetrics(timestamp uint64, tags []string) []datadogV2.MetricSeries {
+// WorkloadMetrics creates a built-in metric to report that a workload-specific
+// exporter (e.g. Fargate, Azure Container Apps) is running. The resulting metric
+// name is "otel.datadog_exporter.metrics.running.<metricSuffix>".
+func WorkloadMetrics(metricSuffix string, timestamp uint64, tags []string) []datadogV2.MetricSeries {
 	metrics := []datadogV2.MetricSeries{
-		NewGauge("otel.datadog_exporter.metrics.running.fargate", timestamp, 0, 1.0, tags),
+		NewGauge("otel.datadog_exporter.metrics.running."+metricSuffix, timestamp, 0, 1.0, tags),
 	}
 	for i := range metrics {
 		metrics[i].SetResources([]datadogV2.MetricResource{
 			{
-				Name: datadog.PtrString(""),
-				Type: datadog.PtrString("host"),
+				Name: new(""),
+				Type: new("host"),
 			},
 		})
 	}
@@ -90,8 +91,8 @@ func GatewayUsageGauge(timestamp uint64, hostname string, tags []string, gateway
 	series := NewGauge("datadog.otel.gateway", timestamp, 0, gatewayUsage.Gauge(), tags)
 	series.SetResources([]datadogV2.MetricResource{
 		{
-			Name: datadog.PtrString(hostname),
-			Type: datadog.PtrString("host"),
+			Name: new(hostname),
+			Type: new("host"),
 		},
 	})
 	return series

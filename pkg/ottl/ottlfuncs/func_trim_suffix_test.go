@@ -45,14 +45,15 @@ func Test_TrimSuffix(t *testing.T) {
 			factory := NewTrimSuffixFactory[any]()
 			exprFunc, err := factory.CreateFunction(
 				ottl.FunctionContext{},
-				&TrimSuffixArguments[any]{
+				&trimSuffixArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
 						Getter: func(context.Context, any) (any, error) {
 							return tt.target, nil
 						},
 					},
 					Suffix: tt.prefix,
-				})
+				},
+			)
 			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
@@ -91,4 +92,59 @@ func Test_TrimSuffix_Error_prefix(t *testing.T) {
 	exprFunc := trimSuffix[any](target, prefix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
+}
+
+func Test_TrimSuffixFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewTrimSuffixFactory[any]()
+		assert.Equal(t, "TrimSuffix", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewTrimSuffixFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &trimSuffixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Suffix"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewTrimSuffixFactory[any]()
+		args := factory.CreateDefaultArguments()
+		trimSuffixArgs, ok := args.(*trimSuffixArguments[any])
+		require.True(t, ok)
+		trimSuffixArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello-suffix", nil
+			},
+		}
+		trimSuffixArgs.Suffix = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "-suffix", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createTrimSuffixFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "TrimFactory args must be of type *trimSuffixArguments[K]")
+	})
+}
+
+func BenchmarkTrimSuffix(b *testing.B) {
+	exprFunc := trimSuffix[any](
+		&ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello world", nil }},
+		&ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " world", nil }},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

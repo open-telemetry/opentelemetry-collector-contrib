@@ -20,10 +20,10 @@ import (
 
 // Config defines configuration for STEF exporter.
 type Config struct {
-	exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	QueueConfig                  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	RetryConfig                  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
-	ClientConfig                 configgrpc.ClientConfig                                  `mapstructure:",squash"`
+	TimeoutConfig exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	QueueConfig   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	RetryConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ClientConfig  configgrpc.ClientConfig                                  `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)

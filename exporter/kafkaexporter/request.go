@@ -73,8 +73,7 @@ func newRequestPusher[T any](exp *kafkaExporter[T]) xexporterhelper.RequestConsu
 		if err == nil {
 			return nil
 		}
-		var msgTooLarge *kafkaclient.MessageTooLargeError
-		if errors.As(err, &msgTooLarge) {
+		if msgTooLarge, ok := errors.AsType[*kafkaclient.MessageTooLargeError](err); ok {
 			exp.logger.Error("kafka record exceeds max message size",
 				zap.Int("actual_message_bytes", msgTooLarge.RecordBytes),
 				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),

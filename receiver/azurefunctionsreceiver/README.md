@@ -3,7 +3,7 @@
 # Azure Functions Receiver
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: logs   |
+| Stability     | [development]: logs, metrics   |
 | Distributions | [] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fazurefunctions%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fazurefunctions) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fazurefunctions%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fazurefunctions) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azurefunctions)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azurefunctions&displayType=list) |
@@ -14,17 +14,17 @@
 
 ## Overview
 
-The Azure Functions receiver is an OpenTelemetry Collector receiver that integrates with Azure Functions as a custom handler. It receives logs from Azure Event Hubs via the Azure Functions runtime and converts them to OpenTelemetry format for further processing and export. The receiver is structured by trigger type (e.g. Event Hub); each trigger can expose multiple log bindings with different encodings.
+The Azure Functions receiver is an OpenTelemetry Collector receiver that integrates with Azure Functions as a custom handler. It receives **logs** and **metrics** from Azure Event Hubs via the Azure Functions runtime and converts them to OpenTelemetry format for further processing and export. The receiver is structured by trigger type (e.g. Event Hub); each trigger can expose multiple log and/or metrics bindings, each with its own encoding.
 
 ## How It Works
 
 The receiver is designed to operate as part of an Azure Functions custom handler:
 
-1. Azure Functions runtime consumes events from Azure Event Hubs (e.g. separate hubs for logs and metrics).
-2. The runtime sends HTTP POST requests to the receiver's endpoints (e.g. `/logs`, `/raw_logs`) according to the configured bindings.
-3. The receiver decodes Azure Functions invoke requests containing Event Hub messages.
-4. Messages are converted to OpenTelemetry format using the encoding extension configured per binding.
-5. Data is forwarded to the configured pipeline consumers.
+1. Azure Functions runtime consumes events from Azure Event Hubs (e.g. separate hubs or bindings for logs and metrics).
+2. The runtime sends HTTP POST requests to the receiver (e.g. `POST /logs`, `POST /metrics`) for each binding name in your `function.json`.
+3. The receiver decodes Azure Functions invoke requests containing Event Hub message batches.
+4. Payloads are converted to OpenTelemetry logs or metrics using the encoding extension configured per binding.
+5. Data is sent to the **logs** and/or **metrics** pipeline that references this receiver (independent pipelines; a shared HTTP server is used when both are configured).
 
 ## Configuration
 
@@ -34,12 +34,16 @@ The following receiver configuration parameters are supported.
 |------|------|-------------|
 | `http` | confighttp.ServerConfig | **Required.** HTTP server settings (e.g. `endpoint: :9090`). Typically use `FUNCTIONS_CUSTOMHANDLER_PORT`. |
 | `auth` | component.ID | Optional. Component ID of the extension that provides Azure authentication (e.g. token credential). |
-| `triggers` | object | **Required.** Trigger configuration (e.g. Event Hub). At least one trigger with at least one log binding is required. |
-| `triggers.event_hub` | object | Event Hub trigger configuration. Defines log bindings and metadata behavior. |
-| `triggers.event_hub.logs` | list | List of log bindings. Each entry has `name` (binding name; maps to path `/<name>`) and `encoding` (component.ID). Binding names must be unique. |
+| `triggers` | object | **Required.** Trigger configuration (e.g. Event Hub). At least one trigger with at least one log or metrics binding is required. |
+| `triggers.event_hub` | object | Event Hub trigger configuration. Defines log and metrics bindings and metadata behavior. |
+| `triggers.event_hub.logs` | list | List of log bindings. Each entry has `name` (binding name; maps to path `/<name>`) and `encoding` (component.ID). Binding names must be unique within this list and must not overlap with `triggers.event_hub.metrics`. |
+| `triggers.event_hub.metrics` | list | List of metrics bindings. Same shape as `logs` (`name`, `encoding`). Binding names must be unique within this list and must not overlap with `triggers.event_hub.logs`. |
 | `triggers.event_hub.include_metadata` | bool | Optional. When true, add Azure Functions invoke metadata (e.g. Event Hub partition context) to resource attributes. Default: false. |
 
-The `triggers` section and at least one trigger with at least one log binding are required for the receiver to register endpoints. Required fields must be set for the receiver to start.
+The `triggers` section and at least one trigger with at least one log or metrics binding are required. Required fields must be set for the receiver to start.
+
+- Use a **logs** pipeline with `receivers: [azure_functions]` to activate log bindings (HTTP routes are registered for each `triggers.event_hub.logs` entry when the logs pipeline exists).
+- Use a **metrics** pipeline with the same receiver to activate metrics bindings (`triggers.event_hub.metrics`). The same `azure_functions` receiver name can appear in both pipelines.
 
 ### Example configuration
 
@@ -53,7 +57,7 @@ receivers:
     # Optional: Azure auth extension
     auth: azureauth
 
-    # Triggers: Event Hub with multiple log bindings, each with its own encoding
+    # Triggers: Event Hub with log and/or metrics bindings, each with its own encoding
     triggers:
       event_hub:
         logs:
@@ -61,6 +65,9 @@ receivers:
             encoding: azure_encoding
           - name: raw_logs
             encoding: azureresourcelogs_encoding
+        metrics:
+          - name: metrics
+            encoding: azure_encoding
         include_metadata: true
 
 extensions:
@@ -77,15 +84,18 @@ service:
     logs:
       receivers: [azure_functions]
       exporters: [otlp]
+    metrics:
+      receivers: [azure_functions]
+      exporters: [otlp]
 ```
 
 ## Supported Signal Decoders
 
-- **Logs** (Primary support) — Logs are decoded using an encoding extension per binding (e.g. `azure_encoding`) that converts the binding payload to OpenTelemetry logs.
-- **Metrics** (Future consideration)
+- **Logs** — Per binding, an encoding extension (e.g. `azure_encoding`) that implements `plog.Unmarshaler` decodes the binding payload to OpenTelemetry logs.
+- **Metrics** — Per binding, an encoding extension that implements `pmetric.Unmarshaler` decodes the payload to OpenTelemetry metrics.
 
 ## Requirements
 
 - Deployed as an Azure Functions custom handler.
 - Azure Functions host configuration (`host.json`) with custom handler settings.
-- Event Hub trigger bindings configured in `function.json`; binding names should match the `triggers.event_hub.logs[].name` values (e.g. `logs`, `raw_logs`).
+- Event Hub trigger bindings configured in `function.json`; binding names should match the `triggers.event_hub.logs[].name` and `triggers.event_hub.metrics[].name` values (e.g. `logs`, `raw_logs`, `metrics`).

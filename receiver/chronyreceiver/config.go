@@ -17,8 +17,8 @@ import (
 )
 
 type Config struct {
-	ControllerConfig              scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	// Endpoint is the published address or unix socket
 	// that allows clients to connect to:
 	// The allowed format is:

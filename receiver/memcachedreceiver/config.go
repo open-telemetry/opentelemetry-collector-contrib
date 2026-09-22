@@ -20,5 +20,5 @@ type Config struct {
 	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }

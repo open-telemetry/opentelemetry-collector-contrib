@@ -50,7 +50,7 @@ func TestDetect(t *testing.T) {
 	md.On("ClusterUID").Return("a7b3c1d2-e4f5-6789-abcd-ef0123456789", nil)
 	cfg := CreateDefaultConfig()
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
@@ -79,7 +79,7 @@ func TestDetectClusterUIDSkipsOnForbidden(t *testing.T) {
 	forbiddenErr := k8serrors.NewForbidden(schema.GroupResource{Resource: "namespaces"}, "kube-system", errors.New("forbidden"))
 	md.On("ClusterUID").Return("", forbiddenErr)
 	cfg := CreateDefaultConfig()
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
@@ -104,7 +104,7 @@ func TestDetectClusterUIDErrorsOnTransientFailure(t *testing.T) {
 	md.On("NodeName").Return("mainNode", nil)
 	md.On("ClusterUID").Return("", errors.New("connection refused"))
 	cfg := CreateDefaultConfig()
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
@@ -125,7 +125,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	cfg.ResourceAttributes.K8sNodeName.Enabled = false
 	cfg.ResourceAttributes.K8sClusterUID.Enabled = false
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")

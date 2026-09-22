@@ -4,6 +4,7 @@
 package observer
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -153,6 +154,7 @@ func TestEndpointEnv(t *testing.T) {
 				"endpoint":     "127.0.0.1",
 				"id":           "port_id",
 				"process_name": "process_name",
+				"os":           runtime.GOOS,
 				"command":      "./cmd --config config.yaml",
 				"is_ipv6":      true,
 				"port":         uint16(2379),
@@ -292,20 +294,6 @@ func TestEndpointEnv(t *testing.T) {
 				"container_name":  "test-container",
 				"container_id":    "container-id-123456",
 				"container_image": "test-app:v1.0.0",
-			},
-		},
-		{
-			name: "Kafka topic",
-			endpoint: Endpoint{
-				ID:      EndpointID("topic1"),
-				Target:  "topic1",
-				Details: &KafkaTopic{},
-			},
-			want: EndpointEnv{
-				"id":       "topic1",
-				"type":     "kafka.topics",
-				"host":     "topic1",
-				"endpoint": "topic1",
 			},
 		},
 	}

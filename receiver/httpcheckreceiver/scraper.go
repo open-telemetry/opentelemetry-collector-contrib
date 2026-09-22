@@ -389,7 +389,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			h.mb.RecordHttpcheckResponseDurationDataPoint(now, responseNs, endpoint)
 
 			// Check if TLS metric is enabled and this is an HTTPS endpoint
-			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
+			if h.cfg.MetricsBuilderConfig.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
 				// Extract TLS info directly from the HTTP response
 				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
 				if issuer != "" || commonName != "" || len(sans) > 0 {

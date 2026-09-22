@@ -26,7 +26,7 @@ type Config struct {
 	SSHPassphrase configopaque.String `mapstructure:"ssh_passphrase"`
 
 	// MetricsBuilderConfig config. Enable or disable stats by name.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {
