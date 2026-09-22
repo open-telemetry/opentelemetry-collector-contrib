@@ -334,7 +334,7 @@ type metricSystemdServiceRestarts struct {
 func (m *metricSystemdServiceRestarts) init() {
 	m.data.SetName("systemd.service.restarts")
 	m.data.SetDescription("Number of automatic restarts for the service.")
-	m.data.SetUnit("{restarts}")
+	m.data.SetUnit("{restart}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
