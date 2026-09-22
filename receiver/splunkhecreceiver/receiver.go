@@ -625,11 +625,8 @@ func (r *splunkReceiver) failRequest(
 	}
 }
 
-// failConsumerError responds to a pipeline (consumer) error, distinguishing a
-// transient backpressure condition from a permanent failure. A non-permanent
-// error means the pipeline is temporarily unable to accept data, so it returns
-// 503 "Server is busy" (Splunk code 9) to signal the client to retry with
-// backoff. A permanent error is reported as a 500 internal error.
+// failConsumerError maps a permanent consumer error to 500, and a transient one
+// to 503 "Server is busy" (Splunk code 9) so the client retries with backoff.
 func (r *splunkReceiver) failConsumerError(resp http.ResponseWriter, err error) {
 	if consumererror.IsPermanent(err) {
 		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
