@@ -13,6 +13,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"regexp"
@@ -38,6 +39,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -1716,6 +1718,67 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	require.EqualError(t, err, "HTTP \"/v1/endpoint\" 500 \"Internal Server Error\"")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
+}
+
+func Test_pushLogData_WarnsWhenSplunkApproachingCapacity(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	logs := createLogData(1, 1, 1)
+
+	core, observed := observer.New(zap.WarnLevel)
+
+	// HTTP 200, but Splunk signals its queue is approaching capacity (code 24).
+	// The data was accepted, so this must not error (retrying would duplicate it),
+	// but it should be surfaced as a warning.
+	httpClient, _ := newTestClient(200, `{"text":"HEC queue is approaching its capacity limit","code":24}`)
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.New(core)}
+
+	err := splunkClient.pushLogData(t.Context(), logs)
+	require.NoError(t, err)
+	assert.Equal(t, 1, observed.FilterMessageSnippet("approaching capacity").Len(),
+		"expected a warning when Splunk reports approaching capacity")
+}
+
+func Test_pushLogData_DrainsLargeSuccessBodyForConnReuse(t *testing.T) {
+	// Splunk returns a 200 with a body larger than the 8KB the worker reads while
+	// looking for the approaching-capacity code. If the worker does not drain the
+	// remainder, the connection cannot return to the keep-alive pool and a second
+	// request opens a fresh connection.
+	largeBody := `{"text":"Success","code":0,"padding":"` + strings.Repeat("x", 16*1024) + `"}`
+
+	var mu sync.Mutex
+	conns := make(map[net.Conn]struct{})
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, largeBody)
+	}))
+	server.Config.ConnState = func(c net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			mu.Lock()
+			conns[c] = struct{}{}
+			mu.Unlock()
+		}
+	}
+	server.Start()
+	defer server.Close()
+
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	splunkClient.hecWorker = &defaultHecWorker{serverURL, server.Client(), buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	// Two sequential sends over the same client. With the body fully drained the
+	// second send reuses the first connection.
+	require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
+	require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Len(t, conns, 1, "expected the connection to be reused; the large success body was not fully drained")
 }
 
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
