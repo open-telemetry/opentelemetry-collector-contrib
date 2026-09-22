@@ -36,9 +36,12 @@ type Config struct {
 	// The default value is `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
-	TraceStatements   []common.ContextStatements `mapstructure:"trace_statements"`
-	MetricStatements  []common.ContextStatements `mapstructure:"metric_statements"`
-	LogStatements     []common.ContextStatements `mapstructure:"log_statements"`
+	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
+	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
+	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
+	// ProfileStatements configures the OTTL statements executed against profile data.
+	//
+	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
 
 	FlattenData bool `mapstructure:"flatten_data"`

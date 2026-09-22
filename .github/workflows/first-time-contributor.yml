@@ -9,6 +9,7 @@ permissions: read-all
 
 jobs:
   welcome_first_contributor:
+    cache-mode: none
     permissions:
       pull-requests: write # required by the workflow to post the welcome comment
     uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@03559ef555db0eae5d85c3c6347d1530243e7aa7 # v0.13.0

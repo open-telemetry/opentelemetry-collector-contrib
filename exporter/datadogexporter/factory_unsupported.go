@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build aix
+//go:build aix || solaris
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
@@ -28,13 +28,13 @@ func NewFactory() exporter.Factory {
 }
 
 func createMetrics(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
-	return nil, errors.New("datadogexporter is not supported on aix")
+	return nil, errors.New("datadogexporter is not supported on aix or solaris")
 }
 
 func createTraces(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
-	return nil, errors.New("datadogexporter is not supported on aix")
+	return nil, errors.New("datadogexporter is not supported on aix or solaris")
 }
 
 func createLogs(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
-	return nil, errors.New("datadogexporter is not supported on aix")
+	return nil, errors.New("datadogexporter is not supported on aix or solaris")
 }

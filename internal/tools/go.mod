@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 go 1.26.0
 
 tool (
+	actionlint.kjanat.dev/cmd/actionlint
 	github.com/client9/misspell/cmd/misspell
 	github.com/daixiang0/gci
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
@@ -10,7 +11,6 @@ tool (
 	github.com/itchyny/gojq/cmd/gojq
 	github.com/jcchavezs/porto/cmd/porto
 	github.com/jstemmer/go-junit-report/v2
-	github.com/rhysd/actionlint/cmd/actionlint
 	go.opentelemetry.io/build-tools/checkapi
 	go.opentelemetry.io/build-tools/checkfile
 	go.opentelemetry.io/build-tools/chloggen
@@ -32,6 +32,7 @@ require go.uber.org/goleak v1.3.0
 require (
 	4d63.com/gocheckcompilerdirectives v1.4.0 // indirect
 	4d63.com/gochecknoglobals v0.2.2 // indirect
+	actionlint.kjanat.dev v1.17.0 // indirect
 	charm.land/lipgloss/v2 v2.0.6 // indirect
 	codeberg.org/chavacava/garif v0.2.0 // indirect
 	codeberg.org/polyfloyd/go-errorlint v1.9.0 // indirect
@@ -201,9 +202,9 @@ require (
 	github.com/maratori/testpackage v1.1.2 // indirect
 	github.com/matoous/godox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.24 // indirect
-	github.com/mattn/go-shellwords v1.0.12 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
+	github.com/mattn/go-runewidth v0.0.28 // indirect
+	github.com/mattn/go-shellwords v1.0.14 // indirect
 	github.com/mgechev/revive v1.15.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -229,7 +230,6 @@ require (
 	github.com/quasilyte/regex/syntax v0.0.0-20210819130434-b3f0c404a727 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
 	github.com/raeperd/recvcheck v0.3.0 // indirect
-	github.com/rhysd/actionlint v1.7.12 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
@@ -328,8 +328,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-// actionlint v1.7.12 doesn't compile against go.yaml.in/yaml/v4 v4.0.0-rc.6, which other
-// tools pull in transitively. Pin to rc.3 until a compatible actionlint release exists.
-// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51106.
-replace go.yaml.in/yaml/v4 => go.yaml.in/yaml/v4 v4.0.0-rc.3
