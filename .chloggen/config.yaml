@@ -227,7 +227,6 @@ components:
     - processor/rolling_span_latency
     - processor/scalewaydetector
     - processor/schema
-    - processor/certificatelogverify
     - processor/signing
     - processor/span
     - processor/span_pruning
@@ -239,6 +238,7 @@ components:
     - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
+    - processor/verify
     - processor/vultrdetector
     - provider/aes
     - provider/googlesecretmanager

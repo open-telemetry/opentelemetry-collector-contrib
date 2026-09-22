@@ -693,10 +693,6 @@ component_management:
     name: processor_schema
     paths:
     - processor/schemaprocessor/**
-  - component_id: processor_certificatelogverify
-    name: processor_certificatelogverify
-    paths:
-      - processor/certificatelogverifyprocessor/**
   - component_id: processor_signing
     name: processor_signing
     paths:
@@ -729,6 +725,10 @@ component_management:
     name: processor_unroll
     paths:
     - processor/unrollprocessor/**
+  - component_id: processor_verify
+    name: processor_verify
+    paths:
+    - processor/verifyprocessor/**
   - component_id: receiver_activedirectoryds
     name: receiver_activedirectoryds
     paths:

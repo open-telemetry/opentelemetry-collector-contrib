@@ -243,13 +243,13 @@ processor/remotetapprocessor
 processor/resourceprocessor
 processor/rollingspanlatencyprocessor
 processor/schemaprocessor
-processor/certificatelogverifyprocessor
 processor/signingprocessor
 processor/spanprocessor
 processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/telemetrypolicyprocessor
 processor/unrollprocessor
+processor/verifyprocessor
 receiver/activedirectorydsreceiver
 receiver/activedirectoryinvreceiver
 receiver/aerospikereceiver

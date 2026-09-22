@@ -1,4 +1,4 @@
-type: certificatelogverify
+type: verify
 
 status:
   class: processor
