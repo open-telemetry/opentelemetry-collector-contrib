@@ -3,7 +3,7 @@
 
 //go:generate make mdatagen
 
-//go:build aix
+//go:build aix || solaris
 
 package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 import (
@@ -29,13 +29,13 @@ func NewFactory() exporter.Factory {
 }
 
 func createMetrics(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
-	return nil, errors.New("pulsarexporter is not supported on aix")
+	return nil, errors.New("pulsarexporter is not supported on aix or solaris")
 }
 
 func createTraces(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
-	return nil, errors.New("pulsarexporter is not supported on aix")
+	return nil, errors.New("pulsarexporter is not supported on aix or solaris")
 }
 
 func createLogs(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
-	return nil, errors.New("pulsarexporter is not supported on aix")
+	return nil, errors.New("pulsarexporter is not supported on aix or solaris")
 }

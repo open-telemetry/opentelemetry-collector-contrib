@@ -14,5 +14,6 @@ status:
   stability:
     alpha: [logs]
   distributions: [contrib]
+  unsupported_platforms: [solaris]
   codeowners:
     active: [evan-bradley, dlopes7]
