@@ -153,10 +153,10 @@ func (o *Observer) startCheckpointFlusher(ctx context.Context, namespace string)
 func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInterface, namespace string, stopperChan chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+	watchFunc := func(watchCtx context.Context, options metav1.ListOptions) (apiWatch.Interface, error) {
 		options.FieldSelector = o.config.FieldSelector
 		options.LabelSelector = o.config.LabelSelector
-		return resource.Watch(ctx, options)
+		return resource.Watch(watchCtx, options)
 	}
 
 	cancelCtx, cancel := context.WithCancel(ctx)
@@ -359,10 +359,8 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 // doWatch returns true when watching is done, false when watching should be restarted.
 // setLatestRV is called with each new resourceVersion to update the in-memory value
 // that the periodic checkpoint flush will persist.
-func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
-	// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50432
-	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc}) //nolint:staticcheck
+func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(ctx context.Context, options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
+	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFuncWithContext: watchFunc})
 	if err != nil {
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),
