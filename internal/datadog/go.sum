@@ -42,8 +42,8 @@ github.com/DataDog/datadog-agent/pkg/fips v0.82.0 h1:JrHLxlnUr69XExJnsLLpU2I4r2d
 github.com/DataDog/datadog-agent/pkg/fips v0.82.0/go.mod h1:1t48EvAXnUSEba5GWeq5uB8iOs3FDhlj08EVrWu8Is0=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0-devel.0.20260714134811-fee4bbf7ff73 h1:DcH0iCTkFUCsTHmB9ru2fKmnDLcxU8z3ifqIkaK8TS8=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0-devel.0.20260714134811-fee4bbf7ff73/go.mod h1:ss7uy5zwPGDzWRdpG8EEQOgp6cf1XaotvXaQGqC+1Ss=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.0-devel.0.20260714134811-fee4bbf7ff73 h1:bjCzif0GUn6bIHf1WGMNhtyrTRKLqv+aNdtlHjMHpJo=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.0-devel.0.20260714134811-fee4bbf7ff73/go.mod h1:BTx/kraMr2voSf1gis9PrnvuX6Qvg68oKBcB+y/GaLo=
+github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9 h1:7Y67wcAGNwLMbeSMLewuJtCeCwcqobINq+OW5kl9/fI=
+github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9/go.mod h1:STfiDM3cNuJJlNfLTXhm1kfZa888sF59g3wzikFBEmU=
 github.com/DataDog/datadog-agent/pkg/proto v0.82.0 h1:3IniGYr5au2P1/EFFl1WvqnE37NT5OJEe22alQ8o2Jw=
 github.com/DataDog/datadog-agent/pkg/proto v0.82.0/go.mod h1:o59ZSwSu/xgqEo7w0+Fpp2TGZzkWeTsQij7bnEh55dE=
 github.com/DataDog/datadog-agent/pkg/serializer v0.82.0 h1:VCkcXwoEDy3b4XX//sALC7HyBOFDXPe+gPGUpY/4EF8=
