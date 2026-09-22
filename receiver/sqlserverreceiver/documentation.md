@@ -52,7 +52,7 @@ This metric is available when running on Windows via PDH or when the receiver is
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
+| ms | Gauge | Double | Development |
 
 ### sqlserver.page.buffer_cache.hit_ratio
 

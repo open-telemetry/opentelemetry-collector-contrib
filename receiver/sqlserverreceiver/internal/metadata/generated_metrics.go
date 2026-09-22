@@ -4730,7 +4730,7 @@ type metricSqlserverLockWaitTimeAvg struct {
 func (m *metricSqlserverLockWaitTimeAvg) init() {
 	m.data.SetName("sqlserver.lock.wait_time.avg")
 	m.data.SetDescription("Average wait time for all lock requests that had to wait.")
-	m.data.SetUnit("s")
+	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
 }
 

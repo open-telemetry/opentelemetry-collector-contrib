@@ -1054,7 +1054,7 @@ metrics:
     enabled: true
     description: Average wait time for all lock requests that had to wait.
     stability: development
-    unit: s
+    unit: ms
     gauge:
       value_type: double
     extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.

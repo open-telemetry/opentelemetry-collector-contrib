@@ -1057,7 +1057,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeAvgMS)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockWaitTimeAvgDataPoint(now, val.(float64)/1000.0)
+				s.mb.RecordSqlserverLockWaitTimeAvgDataPoint(now, val.(float64))
 			}
 		case lockWaits:
 			val, err := retrieveFloat(row, valueKey)

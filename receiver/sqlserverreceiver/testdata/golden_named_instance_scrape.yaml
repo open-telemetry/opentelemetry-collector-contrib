@@ -60,7 +60,7 @@ resourceMetrics:
                   startTimeUnixNano: "1679438452573063800"
                   timeUnixNano: "1679438452575044500"
             name: sqlserver.lock.wait_time.avg
-            unit: s
+            unit: ms
           - description: Pages found in the buffer pool without having to read from disk.
             gauge:
               dataPoints:

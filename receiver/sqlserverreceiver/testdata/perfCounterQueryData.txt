@@ -3528,5 +3528,15 @@
     "object": "SQLServer:Locks",
     "sql_instance": "d26d40521426",
     "value": "271"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Average Wait Time (ms)",
+    "counter_type": "1073874176",
+    "instance": "Total",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Locks",
+    "sql_instance": "d26d40521426",
+    "value": "456"
   }
 ]

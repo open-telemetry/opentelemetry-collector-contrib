@@ -282,7 +282,6 @@ SELECT DISTINCT
 				,'Lock Requests/sec'
 				,'Lock Wait Time (ms)'
 				,'Average Wait Time (ms)'
-				,'Average Wait Time Base'
 			)
 		)
 )
