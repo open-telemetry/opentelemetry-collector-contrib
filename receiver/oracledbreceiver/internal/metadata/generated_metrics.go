@@ -4,15 +4,14 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -12139,17 +12138,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:                      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                      make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.DbSystemEdition.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["db.system.edition"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemEdition.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.DbSystemEdition.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["db.system.edition"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemEdition.MetricsExclude)
-	}
 	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.OracleDbEdition.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["oracle.db.edition"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbEdition.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OracleDbEdition.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["oracle.db.edition"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbEdition.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.OracleDbHostingType.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbHostingType.MetricsInclude)

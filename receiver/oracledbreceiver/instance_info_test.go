@@ -141,7 +141,7 @@ func TestDetectInstanceInfo_VersionQueryFails(t *testing.T) {
 	assert.False(t, info.isCDB)
 	assert.False(t, info.connectedToPDB)
 	assert.Empty(t, info.pdbName)
-	assert.Equal(t, 1, logs.FilterMessage("failed to detect Oracle version. oracle.db.version and db.system.edition will not be set").Len())
+	assert.Equal(t, 1, logs.FilterMessage("failed to detect Oracle version. oracle.db.version and oracle.db.edition will not be set").Len())
 }
 
 func TestDetectInstanceInfo_Pre12c(t *testing.T) {
@@ -626,7 +626,7 @@ func TestSetupResourceBuilder_UndeterminedHostNotEmitted(t *testing.T) {
 
 func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.ResourceAttributes.DbSystemEdition.Enabled = true
+	cfg.ResourceAttributes.OracleDbEdition.Enabled = true
 	scrpr := oracleScraper{
 		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 		metricsBuilderConfig: cfg,
@@ -661,7 +661,7 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, hostingTypeSelfManaged, hostingType.Str())
 
-	edition, ok := res.Attributes().Get("db.system.edition")
+	edition, ok := res.Attributes().Get("oracle.db.edition")
 	require.True(t, ok)
 	assert.Equal(t, "EE", edition.Str())
 
@@ -675,7 +675,7 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 
 func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.ResourceAttributes.DbSystemEdition.Enabled = true
+	cfg.ResourceAttributes.OracleDbEdition.Enabled = true
 	scrpr := oracleScraper{
 		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 		metricsBuilderConfig: cfg,
@@ -684,7 +684,7 @@ func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
 
 	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
 
-	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type", "db.system.edition"} {
+	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type", "oracle.db.edition"} {
 		_, exists := res.Attributes().Get(attr)
 		assert.False(t, exists, "attribute %q should not be emitted when empty", attr)
 	}

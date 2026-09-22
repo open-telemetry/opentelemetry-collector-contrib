@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -289,17 +288,17 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if lbc.ResourceAttributes.DbSystemEdition.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["db.system.edition"] = filter.CreateFilter(lbc.ResourceAttributes.DbSystemEdition.EventsInclude)
-	}
-	if lbc.ResourceAttributes.DbSystemEdition.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["db.system.edition"] = filter.CreateFilter(lbc.ResourceAttributes.DbSystemEdition.EventsExclude)
-	}
 	if lbc.ResourceAttributes.HostName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbEdition.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.edition"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbEdition.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbEdition.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.edition"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbEdition.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracleDbHostingType.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsInclude)

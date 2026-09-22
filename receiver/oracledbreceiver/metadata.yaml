@@ -16,13 +16,13 @@ status:
     active: [dmitryax, crobert-1, atoulme, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
 
 resource_attributes:
-  db.system.edition:
-    description: The edition of the Oracle Database instance (e.g. "EE", "SE2", "XE").
-    enabled: false
-    type: string
   host.name:
     description: The host name of Oracle Server
     enabled: true
+    type: string
+  oracle.db.edition:
+    description: The edition of the Oracle Database instance (e.g. "EE", "SE2", "XE").
+    enabled: false
     type: string
   oracle.db.hosting_type:
     description: The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci".

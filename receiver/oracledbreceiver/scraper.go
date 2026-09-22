@@ -2652,7 +2652,7 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
 	}
 	if s.instanceInfo.dbEdition != "" {
-		rb.SetDbSystemEdition(s.instanceInfo.dbEdition)
+		rb.SetOracleDbEdition(s.instanceInfo.dbEdition)
 	}
 	if s.instanceInfo.databaseRole != "" {
 		rb.SetOracleDbRole(s.instanceInfo.databaseRole)

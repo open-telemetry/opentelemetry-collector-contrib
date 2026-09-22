@@ -21,17 +21,17 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetDbSystemEdition sets provided value as "db.system.edition" attribute.
-func (rb *ResourceBuilder) SetDbSystemEdition(val string) {
-	if rb.config.DbSystemEdition.Enabled {
-		rb.res.Attributes().PutStr("db.system.edition", val)
-	}
-}
-
 // SetHostName sets provided value as "host.name" attribute.
 func (rb *ResourceBuilder) SetHostName(val string) {
 	if rb.config.HostName.Enabled {
 		rb.res.Attributes().PutStr("host.name", val)
+	}
+}
+
+// SetOracleDbEdition sets provided value as "oracle.db.edition" attribute.
+func (rb *ResourceBuilder) SetOracleDbEdition(val string) {
+	if rb.config.OracleDbEdition.Enabled {
+		rb.res.Attributes().PutStr("oracle.db.edition", val)
 	}
 }
 

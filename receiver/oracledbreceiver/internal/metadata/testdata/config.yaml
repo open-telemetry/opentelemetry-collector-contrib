@@ -373,9 +373,9 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
-    db.system.edition:
-      enabled: true
     host.name:
+      enabled: true
+    oracle.db.edition:
       enabled: true
     oracle.db.hosting_type:
       enabled: true
@@ -771,9 +771,9 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
-    db.system.edition:
-      enabled: true
     host.name:
+      enabled: true
+    oracle.db.edition:
       enabled: true
     oracle.db.hosting_type:
       enabled: true
@@ -1169,9 +1169,9 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
-    db.system.edition:
-      enabled: false
     host.name:
+      enabled: false
+    oracle.db.edition:
       enabled: false
     oracle.db.hosting_type:
       enabled: false
@@ -1195,12 +1195,12 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
-    db.system.edition:
-      enabled: true
-      override_value: "override-db.system.edition"
     host.name:
       enabled: true
       override_value: "override-host.name"
+    oracle.db.edition:
+      enabled: true
+      override_value: "override-oracle.db.edition"
     oracle.db.hosting_type:
       enabled: true
       override_value: "override-oracle.db.hosting_type"
@@ -1233,13 +1233,13 @@ override_set:
       override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
-    db.system.edition:
+    host.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
       events_include:
         - regexp: ".*"
-    host.name:
+    oracle.db.edition:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -1307,18 +1307,18 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
-    db.system.edition:
-      enabled: true
-      metrics_exclude:
-        - strict: "db.system.edition-val"
-      events_exclude:
-        - strict: "db.system.edition-val"
     host.name:
       enabled: true
       metrics_exclude:
         - strict: "host.name-val"
       events_exclude:
         - strict: "host.name-val"
+    oracle.db.edition:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracle.db.edition-val"
+      events_exclude:
+        - strict: "oracle.db.edition-val"
     oracle.db.hosting_type:
       enabled: true
       metrics_exclude:
