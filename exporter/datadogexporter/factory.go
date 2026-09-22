@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
@@ -366,7 +366,7 @@ func (f *factory) createMetricsExporter(
 				if err2 != nil {
 					return "", err2
 				}
-				return h.Identifier, nil
+				return h.SourceIdentifier.Primary, nil
 			},
 			ShutdownFunc: func(context.Context) error {
 				cancel()  // first cancel context

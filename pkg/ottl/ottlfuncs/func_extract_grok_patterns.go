@@ -22,6 +22,8 @@ type extractGrokPatternsArguments[K any] struct {
 	PatternDefinitions ottl.Optional[[]string]
 }
 
+// NewExtractGrokPatternsFactory returns a factory for the ExtractGrokPatterns OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#extractgrokpatterns
 func NewExtractGrokPatternsFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ExtractGrokPatterns", &extractGrokPatternsArguments[K]{}, createExtractGrokPatternsFunction[K])
 }

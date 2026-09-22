@@ -14,6 +14,8 @@ type millisecondsArguments[K any] struct {
 	Duration ottl.DurationGetter[K]
 }
 
+// NewMillisecondsFactory returns a factory for the Milliseconds OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#milliseconds
 func NewMillisecondsFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Milliseconds", &millisecondsArguments[K]{}, createMillisecondsFunction[K])
 }

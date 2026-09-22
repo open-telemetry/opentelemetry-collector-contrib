@@ -21,8 +21,13 @@ type findArguments[K any] struct {
 	Mapper    ottl.Optional[*ottl.LambdaExpression[K]]
 }
 
+// NewFindFactory returns a factory for the Find OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#find
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future. It
+// requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewFindFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Find", &findArguments[K]{}, createFindFunction[K])
+	return ottl.NewFactory("Find", &findArguments[K]{}, createFindFunction[K], ottl.WithExperimental[K]())
 }
 
 func createFindFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {

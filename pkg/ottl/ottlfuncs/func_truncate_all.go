@@ -21,6 +21,8 @@ type truncateAllArguments[K any] struct {
 	TruncationMarker ottl.Optional[string]
 }
 
+// NewTruncateAllFactory returns a factory for the truncate_all OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#truncate_all
 func NewTruncateAllFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("truncate_all", &truncateAllArguments[K]{}, createTruncateAllFunction[K])
 }

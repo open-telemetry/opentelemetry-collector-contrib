@@ -17,6 +17,8 @@ type base64EncodeArguments[K any] struct {
 	Variant ottl.Optional[ottl.StringGetter[K]]
 }
 
+// NewBase64EncodeFactory returns a factory for the Base64Encode OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#base64encode
 func NewBase64EncodeFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Base64Encode", &base64EncodeArguments[K]{}, createBase64EncodeFunction[K])
 }

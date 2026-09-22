@@ -14,6 +14,8 @@ type unixNanoArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewUnixNanoFactory returns a factory for the UnixNano OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#unixnano
 func NewUnixNanoFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("UnixNano", &unixNanoArguments[K]{}, createUnixNanoFunction[K])
 }
