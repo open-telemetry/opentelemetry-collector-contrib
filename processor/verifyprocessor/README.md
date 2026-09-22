@@ -25,11 +25,7 @@ and key material described by the resource attributes
 Failed records can optionally be marked or dropped, and verification failures
 can be written to a dead-letter storage extension.
 
-The processor is designed for use with the [OpenTelemetry Audit Logging
-signal](https://github.com/apeirora/opentelemetry-specification/tree/auditing/specification/audit)
-([`specification/audit/collector.md`](https://github.com/apeirora/opentelemetry-specification/blob/auditing/specification/audit/collector.md)
-Tier-2 Collector integrity verification) and is the verification counterpart to
-[`signingprocessor`](../signingprocessor).
+It is the verification counterpart to [`signingprocessor`](../signingprocessor).
 
 > **Note:** This first PR donates the component skeleton only (README, config,
 > factory, and passthrough processor). Concrete verification logic lands in a
@@ -58,8 +54,8 @@ processors:
     verification_profile: default
 
     # Key material source (required). Exactly one sub-block must be provided.
-    # Same providers as signingprocessor; only public cert and/or HMAC secret
-    # are needed (no private key).
+    # Same providers and field names as signingprocessor; only the public
+    # certificate and/or HMAC secret are needed (no private-key fields).
     key_source:
       # type selects the provider: file | env | k8s_secret | bao
       type: file
@@ -115,14 +111,16 @@ processors:
 
 ## Key source providers
 
-Same provider set as [`signingprocessor`](../signingprocessor). Each provider
-must supply a verification certificate and/or an HMAC secret (private keys are
-not used). Both may be set when the collector should verify either algorithm.
+Same provider set and field names as [`signingprocessor`](../signingprocessor),
+except private-key fields (`key_file`, `key_env_var`, `key_key`, `key_field`)
+are omitted because verification only needs the public certificate and/or HMAC
+secret. Each provider must supply a certificate and/or an HMAC secret. Both may
+be set when the collector should verify either algorithm.
 
 | Provider | Description |
 | --- | --- |
 | `file` | Reads a PEM certificate and/or a raw HMAC secret from local files. Supports plain PEM and base64-encoded PEM for certificates. |
-| `env` | Reads a certificate and/or an HMAC secret from environment variables. |
+| `env` | Reads a certificate PEM and/or an HMAC secret from environment variables named by `cert_env_var` / `hmac_key_env_var`. |
 | `k8s_secret` | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
 | `bao` | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine. |
 

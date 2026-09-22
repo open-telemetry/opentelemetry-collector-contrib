@@ -49,11 +49,11 @@ var (
 )
 
 type Config struct {
-	Mode                string          `mapstructure:"mode"`
-	FailureMode         string          `mapstructure:"failure_mode"`
-	VerificationProfile string          `mapstructure:"verification_profile"`
-	KeySource           KeySourceConfig `mapstructure:"key_source"`
-	HashChain           HashChainConfig `mapstructure:"hash_chain"`
+	Mode                string           `mapstructure:"mode"`
+	FailureMode         string           `mapstructure:"failure_mode"`
+	VerificationProfile string           `mapstructure:"verification_profile"`
+	KeySource           KeySourceConfig  `mapstructure:"key_source"`
+	HashChain           HashChainConfig  `mapstructure:"hash_chain"`
 	DeadLetter          DeadLetterConfig `mapstructure:"dead_letter"`
 }
 
@@ -65,6 +65,10 @@ type KeySourceConfig struct {
 	Bao       *BaoKeyConfig    `mapstructure:"bao"`
 }
 
+// K8sSecretConfig configures a Kubernetes Secret key source.
+// For asymmetric verification set CertKey.
+// For HMAC-SHA256 set HMACKey instead.
+// Both may be set when the collector should verify either algorithm.
 type K8sSecretConfig struct {
 	Name      string `mapstructure:"name"`
 	Namespace string `mapstructure:"namespace"`
@@ -72,16 +76,30 @@ type K8sSecretConfig struct {
 	HMACKey   string `mapstructure:"hmac_key"`
 }
 
+// EnvKeyConfig configures environment-variable key material.
+// For asymmetric verification set CertEnvVar.
+// For HMAC-SHA256 set HMACKeyEnvVar instead.
+// Both may be set when the collector should verify either algorithm.
 type EnvKeyConfig struct {
 	CertEnvVar    string `mapstructure:"cert_env_var"`
 	HMACKeyEnvVar string `mapstructure:"hmac_key_env_var"`
 }
 
+// FileKeyConfig configures file-based key material.
+// For asymmetric verification set CertFile.
+// For HMAC-SHA256 set HMACKeyFile instead.
+// Both may be set when the collector should verify either algorithm.
 type FileKeyConfig struct {
 	CertFile    string `mapstructure:"cert_file"`
 	HMACKeyFile string `mapstructure:"hmac_key_file"`
 }
 
+// BaoKeyConfig configures the OpenBao (Vault-compatible) key material source.
+// Address and Token are optional: if omitted, the client reads BAO_ADDR and
+// BAO_TOKEN (or any other supported BAO_* environment variables) automatically.
+// For asymmetric verification set CertField.
+// For HMAC-SHA256 set HMACKeyField instead.
+// Both may be set when the collector should verify either algorithm.
 type BaoKeyConfig struct {
 	Address      string `mapstructure:"address"`
 	Token        string `mapstructure:"token"`
