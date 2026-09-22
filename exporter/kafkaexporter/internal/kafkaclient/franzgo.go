@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -151,7 +152,7 @@ func NewFranzSyncProducer(client *kgo.Client,
 func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Record) error {
 	metadataHeaders := metadataToHeaders(ctx, p.metadataKeys)
 	var traceHeaders []kgo.RecordHeader
-	if len(p.propagatorFields) > 0 {
+	if len(p.propagatorFields) > 0 && trace.SpanContextFromContext(ctx).IsValid() {
 		traceHeaders = traceContextToHeaders(ctx, p.propagator)
 	}
 	var headers []kgo.RecordHeader
