@@ -170,20 +170,17 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	return c.pushLogsWithSplitOn413(ctx, ld, localHeaders)
 }
 
-// pushLogsWithSplitOn413 sends ld through the normal batching path. If the server
-// rejects a batch as too large (HTTP 413), it splits the unsent logs in half and
-// retries each half, recursively, down to a single record. A single record that
-// is still rejected is dropped as a permanent error, mirroring Splunk, which
-// disregards events larger than its configured maximum event size. The two halves'
-// outcomes are merged by combineSplitResults so that every still-retryable record
-// is preserved for retry and only genuinely-permanent drops are dropped.
+// pushLogsWithSplitOn413 sends ld via the batching path; on HTTP 413 it splits the
+// unsent logs in half and retries each half recursively, down to one record. A lone
+// record still rejected is dropped as permanent (Splunk drops events over its max
+// event size). combineSplitResults merges the two halves' outcomes.
 func (c *client) pushLogsWithSplitOn413(ctx context.Context, ld plog.Logs, headers map[string]string) error {
 	err := c.pushLogDataInBatches(ctx, ld, headers)
 	if err == nil || !errors.Is(err, errPayloadTooLarge) {
 		return err
 	}
 
-	// Recover the logs the server did not accept; fall back to the whole batch.
+	// Unsent logs, falling back to the whole batch if none were extracted.
 	unsent := ld
 	var logsErr consumererror.Logs
 	if errors.As(err, &logsErr) {
@@ -202,15 +199,12 @@ func (c *client) pushLogsWithSplitOn413(ctx context.Context, ld plog.Logs, heade
 	)
 }
 
-// combineSplitResults merges the outcomes of retrying the two halves of a batch
-// that Splunk rejected as too large (HTTP 413) into a single error that preserves
-// consumererror semantics. Joining the two errors with errors.Join would lose data:
-// a permanent half would make the whole result permanent (dropping the retryable
-// half), and the retry/queue sender extracts only the first consumererror.Logs it
-// finds (dropping any later half's records). Instead, every still-retryable record
-// from either half is returned in one consumererror.Logs so all of them are retried,
-// while records that failed permanently are excluded from the payload (and thus
-// dropped) without making the combined error permanent.
+// combineSplitResults merges the two halves' outcomes into one error, preserving
+// consumererror semantics. errors.Join would lose data: a permanent half would make
+// the whole result permanent (dropping the retryable half), and the queue sender
+// extracts only the first consumererror.Logs (dropping any later half's records).
+// So every retryable record goes into one consumererror.Logs, and permanent drops are
+// excluded from the payload without making the combined error permanent.
 func combineSplitResults(results ...error) error {
 	retryable := plog.NewLogs()
 	var permanentErrs []error
@@ -693,22 +687,19 @@ func iterStateAtRecord(ld plog.Logs, n int) iterState {
 			seen += recs
 		}
 	}
-	// n is at or beyond the last record: return a state that points past every
-	// record so headLogs yields the whole set and subLogs yields nothing.
+	// Past the end: headLogs then yields everything, subLogs nothing.
 	return iterState{resource: rls.Len(), done: true}
 }
 
-// splitLogs partitions ld into two: head with the first n log records and tail
-// with the remainder, preserving resource and scope structure. It is the inverse
-// of concatenation: head and tail together contain exactly the records of ld.
+// splitLogs partitions ld into head (first n records) and tail (the rest),
+// preserving resource and scope structure.
 func splitLogs(ld plog.Logs, n int) (head, tail plog.Logs) {
 	mid := iterStateAtRecord(ld, n)
 	return headLogs(ld, mid), subLogs(ld, mid)
 }
 
-// headLogs returns the log records that come before end, preserving resource and
-// scope structure. It is the complement of subLogs: headLogs(src, s) and
-// subLogs(src, s) together contain exactly the records of src.
+// headLogs returns the log records before end, preserving resource and scope
+// structure. It is the complement of subLogs.
 func headLogs(src plog.Logs, end iterState) plog.Logs {
 	dst := plog.NewLogs()
 	if end.empty() {
