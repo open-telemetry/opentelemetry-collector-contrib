@@ -22,7 +22,7 @@
         ) + 1),
     ib.event_info,
     '') AS statement_text,
-  {full_query_text}
+  COALESCE(o.TEXT, ib.event_info, '') AS full_query_text,
   r.blocking_session_id,
   CASE
     WHEN r.blocking_session_id > 0 AND r.wait_time > 0

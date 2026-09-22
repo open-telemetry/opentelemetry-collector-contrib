@@ -86,6 +86,14 @@ attributes:
     description: The database name.
     type: string
     requirement_level: recommended
+  db.query.comment_tags:
+    description: Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. Empty unless collect_full_query_text is also enabled for the collection emitting this event.
+    type: string
+    requirement_level: opt_in
+  db.query.full_text:
+    description: The obfuscated text of the full SQL batch or stored procedure the statement was extracted from. Unlike db.query.text, which covers only the statement, this spans the whole batch. Empty unless collect_full_query_text is enabled for the collection emitting this event.
+    type: string
+    requirement_level: opt_in
   db.query.text:
     description: The text of the database query being executed.
     type: string
@@ -532,6 +540,8 @@ events:
       - user.name
       - sqlserver.procedure_id
       - sqlserver.procedure_name
+      - db.query.full_text
+      - db.query.comment_tags
 
   db.server.top_procedure:
     enabled: false
@@ -576,6 +586,8 @@ events:
       - sqlserver.procedure_name
       - sqlserver.query.last_started
       - sqlserver.query.plan.creation_time
+      - db.query.full_text
+      - db.query.comment_tags
 
 metrics:
   sqlserver.access.scan.rate:
