@@ -298,6 +298,7 @@ events:
     enabled: false
     description: The execution plan for a query.
     attributes:
+      - db.system.name
       - postgresql.queryid
       - db.namespace
       - postgresql.rolname

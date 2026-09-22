@@ -584,6 +584,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			p.lb.RecordDbServerQueryPlanEvent(
 				context.Background(),
 				timestamp,
+				metadata.AttributeDbSystemNamePostgresql,
 				queryID,
 				database,
 				item.Value[dbAttributePrefix+"rolname"].(string),

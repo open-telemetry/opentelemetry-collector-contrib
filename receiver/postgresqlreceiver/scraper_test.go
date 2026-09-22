@@ -1507,8 +1507,9 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 		assert.False(t, hasPlan, "postgresql.query_plan must be removed from db.server.top_query once db.server.query_plan is enabled")
 
 		queryPlan := records.At(byEventName["db.server.query_plan"])
-		assert.Equal(t, 4, queryPlan.Attributes().Len())
+		assert.Equal(t, 5, queryPlan.Attributes().Len())
 		for attribute, want := range map[string]string{
+			"db.system.name":        "postgresql",
 			"postgresql.queryid":    "114514",
 			"db.namespace":          "postgres",
 			"postgresql.rolname":    "master",

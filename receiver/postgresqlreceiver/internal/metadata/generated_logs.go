@@ -18,7 +18,7 @@ type eventDbServerQueryPlan struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlQueryPlanAttributeValue string) {
+func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlQueryPlanAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -30,6 +30,7 @@ func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcom
 		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
 		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
 	dp.Attributes().PutStr("postgresql.queryid", postgresqlQueryidAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	dp.Attributes().PutStr("postgresql.rolname", postgresqlRolnameAttributeValue)
@@ -329,8 +330,8 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.
-func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlQueryPlanAttributeValue string) {
-	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, postgresqlQueryidAttributeValue, dbNamespaceAttributeValue, postgresqlRolnameAttributeValue, postgresqlQueryPlanAttributeValue)
+func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlQueryPlanAttributeValue string) {
+	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), postgresqlQueryidAttributeValue, dbNamespaceAttributeValue, postgresqlRolnameAttributeValue, postgresqlQueryPlanAttributeValue)
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
