@@ -65,15 +65,6 @@ telemetry:
         monotonic: true
         async: true
       stability: development
-    processor_adaptive_tail_sampling_sampler_interval_count:
-      enabled: true
-      description: Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter.
-      unit: "{intervals}"
-      sum:
-        value_type: int
-        monotonic: true
-        async: true
-      stability: development
     processor_adaptive_tail_sampling_sampler_keyspace_size:
       enabled: true
       description: Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule, sampler_type, and sampler_algorithm. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use.
@@ -86,15 +77,6 @@ telemetry:
       enabled: true
       description: Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm.
       unit: "{requests}"
-      sum:
-        value_type: int
-        monotonic: true
-        async: true
-      stability: development
-    processor_adaptive_tail_sampling_sampler_span_count:
-      enabled: true
-      description: Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm.
-      unit: "{spans}"
       sum:
         value_type: int
         monotonic: true

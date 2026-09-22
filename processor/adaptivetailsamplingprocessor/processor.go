@@ -200,15 +200,10 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 }
 
 // dynsampler-go GetMetrics suffixes. See dynsampler-go's dynsampler.go.
-// dynsamplerEventCountSuffix maps to our sampler_span_count metric: samplers
-// are always called with a span count (see dynsamplerWrapper.GetSampleRate),
-// so dynsampler-go's generic "event" is always a span in this processor.
 const (
-	dynsamplerRequestCountSuffix  = "request_count"
-	dynsamplerEventCountSuffix    = "event_count"
-	dynsamplerKeyspaceSizeSuffix  = "keyspace_size"
-	dynsamplerBurstCountSuffix    = "burst_count"
-	dynsamplerIntervalCountSuffix = "interval_count"
+	dynsamplerRequestCountSuffix = "request_count"
+	dynsamplerKeyspaceSizeSuffix = "keyspace_size"
+	dynsamplerBurstCountSuffix   = "burst_count"
 )
 
 // registerSamplerMetricsCallbacks wires each adaptive-sampler rule's
@@ -216,7 +211,7 @@ const (
 // Rules whose sampler does not implement sampler.MetricsProvider (e.g.
 // always_sample, probabilistic) are skipped, as are metrics a
 // given dynsampler-go implementation does not produce (e.g.
-// adaptive_throughput_windowed has no burst/interval count).
+// adaptive_throughput_windowed has no burst count).
 func registerSamplerMetricsCallbacks(tb *metadata.TelemetryBuilder, rules []*rule) error {
 	observe := func(o metric.Int64Observer, suffix string) {
 		for _, r := range rules {
@@ -246,10 +241,8 @@ func registerSamplerMetricsCallbacks(tb *metadata.TelemetryBuilder, rules []*rul
 		suffix   string
 	}{
 		{tb.RegisterProcessorAdaptiveTailSamplingSamplerRequestCountCallback, dynsamplerRequestCountSuffix},
-		{tb.RegisterProcessorAdaptiveTailSamplingSamplerSpanCountCallback, dynsamplerEventCountSuffix},
 		{tb.RegisterProcessorAdaptiveTailSamplingSamplerKeyspaceSizeCallback, dynsamplerKeyspaceSizeSuffix},
 		{tb.RegisterProcessorAdaptiveTailSamplingSamplerBurstCountCallback, dynsamplerBurstCountSuffix},
-		{tb.RegisterProcessorAdaptiveTailSamplingSamplerIntervalCountCallback, dynsamplerIntervalCountSuffix},
 	}
 	for _, reg := range registrations {
 		if err := reg.register(callback(reg.suffix)); err != nil {

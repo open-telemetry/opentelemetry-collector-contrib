@@ -24,19 +24,11 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
-	require.NoError(t, tb.RegisterProcessorAdaptiveTailSamplingSamplerIntervalCountCallback(func(_ context.Context, observer metric.Int64Observer) error {
-		observer.Observe(1)
-		return nil
-	}))
 	require.NoError(t, tb.RegisterProcessorAdaptiveTailSamplingSamplerKeyspaceSizeCallback(func(_ context.Context, observer metric.Int64Observer) error {
 		observer.Observe(1)
 		return nil
 	}))
 	require.NoError(t, tb.RegisterProcessorAdaptiveTailSamplingSamplerRequestCountCallback(func(_ context.Context, observer metric.Int64Observer) error {
-		observer.Observe(1)
-		return nil
-	}))
-	require.NoError(t, tb.RegisterProcessorAdaptiveTailSamplingSamplerSpanCountCallback(func(_ context.Context, observer metric.Int64Observer) error {
 		observer.Observe(1)
 		return nil
 	}))
@@ -68,16 +60,10 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorAdaptiveTailSamplingSamplerIntervalCount(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorAdaptiveTailSamplingSamplerSpanCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingTraceSpanCount(t, testTel,

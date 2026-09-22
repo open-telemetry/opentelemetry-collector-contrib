@@ -115,22 +115,6 @@ func AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t *testing.T, tt 
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorAdaptiveTailSamplingSamplerIntervalCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_interval_count",
-		Description: "Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]",
-		Unit:        "{intervals}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_sampler_interval_count")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
 func AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size",
@@ -157,22 +141,6 @@ func AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t *testing.T, t
 		},
 	}
 	got, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_sampler_request_count")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualProcessorAdaptiveTailSamplingSamplerSpanCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_span_count",
-		Description: "Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm. [Development]",
-		Unit:        "{spans}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_sampler_span_count")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

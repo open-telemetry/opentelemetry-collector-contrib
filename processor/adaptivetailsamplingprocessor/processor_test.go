@@ -604,13 +604,6 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 		},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
 	)
-	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerSpanCount(t, tt,
-		[]metricdata.DataPoint[int64]{
-			{Value: tracesPerRule * spansPerTrace, Attributes: emaAttrs},
-			{Value: tracesPerRule * spansPerTrace, Attributes: windowedAttrs},
-		},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
-	)
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{Value: tracesPerRule, Attributes: emaAttrs},
@@ -618,13 +611,9 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 		},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
 	)
-	// adaptive_throughput_windowed does not track burst/interval counts, so
-	// only the ema rule contributes a data point to these two metrics.
+	// adaptive_throughput_windowed does not track burst counts, so only the
+	// ema rule contributes a data point to this metric.
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t, tt,
-		[]metricdata.DataPoint[int64]{{Attributes: emaAttrs}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue(),
-	)
-	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerIntervalCount(t, tt,
 		[]metricdata.DataPoint[int64]{{Attributes: emaAttrs}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue(),
 	)
