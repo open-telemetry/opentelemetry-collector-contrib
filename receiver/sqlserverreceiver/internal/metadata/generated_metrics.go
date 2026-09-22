@@ -4,15 +4,14 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -4730,7 +4729,7 @@ type metricSqlserverLockWaitTimeAvg struct {
 func (m *metricSqlserverLockWaitTimeAvg) init() {
 	m.data.SetName("sqlserver.lock.wait_time.avg")
 	m.data.SetDescription("Average wait time for all lock requests that had to wait.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
 
