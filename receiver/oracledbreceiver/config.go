@@ -28,6 +28,9 @@ var (
 	errMaxQuerySampleCount = errors.New("`max_query_sample_count` must be between 1 and 10000")
 	errTopQueryCount       = errors.New("`top_query_count` must be between 1 and 200 and less than or equal to `max_query_sample_count`")
 
+	// db.server.query_plan is collected as part of top query collection, so on its own it reports nothing.
+	errQueryPlanWithoutTopQuery = errors.New("`db.server.query_plan` requires `db.server.top_query` to be enabled")
+
 	errMaxProcedureSampleCount = errors.New("`max_procedure_sample_count` must be between 1 and 10000")
 	// Ceiling is higher than top_query_count: a database has far fewer program units than cached statements.
 	errTopProcedureCount = errors.New("`top_procedure_count` must be between 1 and 1000 and less than or equal to `max_procedure_sample_count`")
@@ -130,6 +133,9 @@ func (c Config) Validate() error {
 	}
 	if c.TopQueryCollection.TopQueryCount < 1 || c.TopQueryCollection.TopQueryCount > 200 || c.TopQueryCollection.TopQueryCount > c.TopQueryCollection.MaxQuerySampleCount {
 		allErrs = multierr.Append(allErrs, errTopQueryCount)
+	}
+	if c.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled && !c.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
+		allErrs = multierr.Append(allErrs, errQueryPlanWithoutTopQuery)
 	}
 	// Only validated when enabled, so a deployment that never turns it on is not held to unused bounds.
 	if c.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
