@@ -400,7 +400,7 @@ Container cpu utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.container.cpu_limit_utilization
 
@@ -438,7 +438,7 @@ Container memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.container.memory_limit_utilization
 
@@ -518,7 +518,7 @@ Pod cpu utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.pod.cpu_limit_utilization
 
@@ -542,7 +542,7 @@ Pod memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.pod.memory_limit_utilization
 

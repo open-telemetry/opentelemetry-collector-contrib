@@ -7,7 +7,7 @@ components:
         - datadog
         - exceptions
         - failover
-        - grafanacloud
+        - grafana_cloud
         - otlp_json
         - round_robin
         - routing
@@ -144,10 +144,10 @@ components:
         - apache_spark
         - aws_cloudwatch
         - aws_lambda
+        - aws_s3
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
-        - awss3
         - awsxray
         - azure_blob
         - azure_event_hub

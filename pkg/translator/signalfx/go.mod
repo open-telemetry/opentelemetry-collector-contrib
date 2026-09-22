@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.160.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/pdata v1.66.1-0.20260910194618-5602640a11d3
+	go.opentelemetry.io/collector/pdata v1.67.1-0.20260917142259-65d9c38b188c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -20,9 +20,8 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.160.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.66.1-0.20260910194618-5602640a11d3 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.160.1-0.20260910194618-5602640a11d3 // indirect
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260917142259-65d9c38b188c // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
@@ -30,8 +29,6 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../../pkg/pdatautil
 
 retract (
 	v0.76.2
