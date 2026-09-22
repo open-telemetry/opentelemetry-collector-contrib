@@ -61,11 +61,11 @@ type Config struct {
 	ExcludeFields     []string      `mapstructure:"exclude_fields"`
 	IncludeFields     []string      `mapstructure:"include_fields"`
 	Conditions        []string      `mapstructure:"conditions"`
-	TimestampMode            TimestampMode `mapstructure:"timestamp_mode"`
-	MetadataKeys             []string      `mapstructure:"metadata_keys"`
+	TimestampMode     TimestampMode `mapstructure:"timestamp_mode"`
+	MetadataKeys      []string      `mapstructure:"metadata_keys"`
 	// MetadataCardinalityLimit limits the number of unique metadata combinations
 	// tracked simultaneously. 0 (default) means unbounded.
-	MetadataCardinalityLimit uint32        `mapstructure:"metadata_cardinality_limit"`
+	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
 }
 
 // createDefaultConfig returns the default config for the processor.
@@ -118,7 +118,7 @@ func (c Config) Validate() error {
 	}
 
 	switch c.TimestampMode {
-	case TimestampModeObserved, TimestampModePreserved, "":
+	case TimestampModeObserved, TimestampModePreserved:
 	default:
 		return errInvalidTimestampMode
 	}

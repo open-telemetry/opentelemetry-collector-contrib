@@ -16,14 +16,13 @@ import (
 
 // Attribute names added to each emitted log record.
 const (
-	firstObservedTSAttr     = "first_observed_timestamp"
-	lastObservedTSAttr      = "last_observed_timestamp"
-	firstEventTimestampAttr = "first_event_timestamp"
-	lastEventTimestampAttr  = "last_event_timestamp"
+	firstObservedTSAttr = "first_observed_timestamp"
+	lastObservedTSAttr  = "last_observed_timestamp"
+	firstEventTSAttr    = "first_event_timestamp"
+	lastEventTSAttr     = "last_event_timestamp"
 
-	// numAddedAttributes is the number of attributes added to each emitted log record,
-	// used to pre-allocate capacity. Must be updated if attributes are added or removed.
-	numAddedAttributes = 5 // log_count, first_observed_timestamp, last_observed_timestamp, first_event_timestamp, last_event_timestamp
+	numAddedAttributesObserved  = 5 // log_count, first_observed_timestamp, last_observed_timestamp, first_event_timestamp, last_event_timestamp
+	numAddedAttributesPreserved = 4 // log_count, first_observed_timestamp, last_observed_timestamp, last_event_timestamp
 )
 
 // timeNow can be reassigned for testing
@@ -70,28 +69,35 @@ func (l *logAggregator) Export(ctx context.Context) plog.Logs {
 				lr := sl.LogRecords().AppendEmpty()
 				logAggregator.logRecord.CopyTo(lr)
 
-				// Set observed timestamp to when the record was first seen
+				// Set ObservedTimestamp to when the first record in this window was observed by the processor.
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(logAggregator.firstObservedTimestamp))
 
-				// Capture the first event timestamp before any timestamp mode-based overwrite.
+				// Capture the original event timestamp from the first record.
 				firstEventTimestamp := lr.Timestamp()
 
-				// Observed mode sets the timestamp to when the aggregated log was emitted.
-				if l.timestampMode == TimestampModeObserved {
+				// In observed mode (the default), overwrite the event Timestamp with the batch export time
+				// and include first_event_timestamp. In preserved mode, the original event Timestamp is
+				// retained and first_event_timestamp is omitted as it is redundant.
+				numAttrs := numAddedAttributesPreserved
+				if l.timestampMode != TimestampModePreserved {
 					lr.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
+					numAttrs = numAddedAttributesObserved
 				}
 
-				// Add attributes for log count, first/last observed timestamps, and first/last event timestamps
-				lr.Attributes().EnsureCapacity(lr.Attributes().Len() + numAddedAttributes)
+				lr.Attributes().EnsureCapacity(lr.Attributes().Len() + numAttrs)
 				lr.Attributes().PutInt(l.logCountAttribute, logAggregator.count)
 				firstObservedTimestampStr := logAggregator.firstObservedTimestamp.In(l.timezone).Format(time.RFC3339)
 				lr.Attributes().PutStr(firstObservedTSAttr, firstObservedTimestampStr)
 				lastObservedTimestampStr := logAggregator.lastObservedTimestamp.In(l.timezone).Format(time.RFC3339)
 				lr.Attributes().PutStr(lastObservedTSAttr, lastObservedTimestampStr)
-				firstEventTimestampStr := firstEventTimestamp.AsTime().In(l.timezone).Format(time.RFC3339)
-				lr.Attributes().PutStr(firstEventTimestampAttr, firstEventTimestampStr)
+
+				if l.timestampMode != TimestampModePreserved {
+					firstEventTimestampStr := firstEventTimestamp.AsTime().In(l.timezone).Format(time.RFC3339)
+					lr.Attributes().PutStr(firstEventTSAttr, firstEventTimestampStr)
+				}
+
 				lastEventTimestampStr := logAggregator.lastEventTimestamp.AsTime().In(l.timezone).Format(time.RFC3339)
-				lr.Attributes().PutStr(lastEventTimestampAttr, lastEventTimestampStr)
+				lr.Attributes().PutStr(lastEventTSAttr, lastEventTimestampStr)
 			}
 		}
 	}

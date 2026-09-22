@@ -185,75 +185,59 @@ func Test_logAggregatorExport(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, expectedTimestampStr, actualLastObserved)
 
-	// first_event_timestamp and last_event_timestamp are always stored as RFC3339 strings
+	// In preserved mode, first_event_timestamp is omitted as redundant with lr.Timestamp()
 	expectedEventTS := originalTimestamp.AsTime().In(location).Format(time.RFC3339)
-	actualFirstEventTS, ok := actualRawAttrs[firstEventTimestampAttr]
-	require.True(t, ok)
-	require.Equal(t, expectedEventTS, actualFirstEventTS)
+	_, ok = actualRawAttrs[firstEventTSAttr]
+	require.False(t, ok)
 
-	actualLastEventTS, ok := actualRawAttrs[lastEventTimestampAttr]
+	actualLastEventTS, ok := actualRawAttrs[lastEventTSAttr]
 	require.True(t, ok)
 	require.Equal(t, expectedEventTS, actualLastEventTS)
 }
 
 func Test_logAggregatorExportTimestampModes(t *testing.T) {
 	oldTimeNow := timeNow
-	defer func() {
-		timeNow = oldTimeNow
-	}()
-
+	t.Cleanup(func() { timeNow = oldTimeNow })
 	location, err := time.LoadLocation("America/New_York")
 	require.NoError(t, err)
-
-	exportTimestamp := time.Now().UTC()
-	timeNow = func() time.Time {
-		return exportTimestamp
-	}
-
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	resource := pcommon.NewResource()
-	scope := pcommon.NewInstrumentationScope()
-
-	testCases := []struct {
-		desc           string
-		mode           TimestampMode
-		checkTimestamp func(t *testing.T, lr plog.LogRecord, originalTS pcommon.Timestamp)
-	}{
-		{
-			desc: "observed mode sets timestamp to emitted observed time",
-			mode: TimestampModeObserved,
-			checkTimestamp: func(t *testing.T, lr plog.LogRecord, originalTS pcommon.Timestamp) {
-				require.Equal(t, exportTimestamp.UnixMilli(), lr.Timestamp().AsTime().UnixMilli())
-				val, ok := lr.Attributes().Get(firstEventTimestampAttr)
-				require.True(t, ok)
-				require.Equal(t, originalTS.AsTime().In(location).Format(time.RFC3339), val.Str())
-			},
-		},
-		{
-			desc: "preserved mode keeps original timestamp",
-			mode: TimestampModePreserved,
-			checkTimestamp: func(t *testing.T, lr plog.LogRecord, originalTS pcommon.Timestamp) {
-				require.Equal(t, originalTS, lr.Timestamp())
-				val, ok := lr.Attributes().Get(firstEventTimestampAttr)
-				require.True(t, ok)
-				require.Equal(t, originalTS.AsTime().In(location).Format(time.RFC3339), val.Str())
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil, tc.mode)
-			original := generateTestLogRecord(t, "body")
-			originalTS := original.Timestamp()
-			aggregator.Add(resource, scope, original)
-
+	for _, mode := range []TimestampMode{TimestampModeObserved, TimestampModePreserved} {
+		t.Run(string(mode), func(t *testing.T) {
+			firstReceipt := time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)
+			now := firstReceipt
+			timeNow = func() time.Time { return now }
+			aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil, mode)
+			resource := pcommon.NewResource()
+			scope := pcommon.NewInstrumentationScope()
+			firstEvent := pcommon.NewTimestampFromTime(firstReceipt.Add(-time.Minute))
+			// Arrival order determines first/last, even when event timestamps go backwards.
+			lastEvent := pcommon.NewTimestampFromTime(firstReceipt.Add(-2 * time.Minute))
+			for i, timestamp := range []pcommon.Timestamp{firstEvent, lastEvent} {
+				now = firstReceipt.Add(time.Duration(i) * time.Second)
+				lr := plog.NewLogRecord()
+				lr.Body().SetStr("duplicate")
+				lr.SetTimestamp(timestamp)
+				aggregator.Add(resource, scope, lr)
+			}
+			now = firstReceipt.Add(10 * time.Second)
 			exported := aggregator.Export(t.Context())
 			require.Equal(t, 1, exported.LogRecordCount())
 			lr := exported.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-			tc.checkTimestamp(t, lr, originalTS)
+			require.Equal(t, pcommon.NewTimestampFromTime(firstReceipt), lr.ObservedTimestamp())
+			attrs := lr.Attributes().AsRaw()
+			require.Equal(t, int64(2), attrs[defaultLogCountAttribute])
+			require.Equal(t, firstReceipt.In(location).Format(time.RFC3339), attrs[firstObservedTSAttr])
+			require.Equal(t, firstReceipt.Add(time.Second).In(location).Format(time.RFC3339), attrs[lastObservedTSAttr])
+			require.Equal(t, lastEvent.AsTime().In(location).Format(time.RFC3339), attrs[lastEventTSAttr])
+			if mode == TimestampModePreserved {
+				require.Equal(t, firstEvent, lr.Timestamp())
+				require.NotContains(t, attrs, firstEventTSAttr)
+			} else {
+				require.Equal(t, pcommon.NewTimestampFromTime(now), lr.Timestamp())
+				require.Equal(t, firstEvent.AsTime().In(location).Format(time.RFC3339), attrs[firstEventTSAttr])
+			}
 		})
 	}
 }
