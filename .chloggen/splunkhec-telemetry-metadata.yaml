@@ -15,11 +15,7 @@ issues: [49009]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  The `otelcol_exporter_splunkhec_heartbeats_sent` and `otelcol_exporter_splunkhec_heartbeats_failed`
-  metrics are now defined in `metadata.yaml`. This is a no-op for users: the emitted metric names,
-  and the existing `telemetry.enabled`, `telemetry.override_metrics_names`, and
-  `telemetry.extra_attributes` options, are unchanged.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
