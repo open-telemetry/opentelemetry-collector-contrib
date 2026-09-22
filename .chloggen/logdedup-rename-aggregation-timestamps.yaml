@@ -1,0 +1,9 @@
+change_type: breaking
+component: processor/log_dedup
+note: Rename `first_observed_timestamp` and `last_observed_timestamp` attributes to `first_aggregation_timestamp` and `last_aggregation_timestamp`.
+issues: [43647]
+subtext: |
+  - `first_observed_timestamp` is renamed to `first_aggregation_timestamp`.
+  - `last_observed_timestamp` is renamed to `last_aggregation_timestamp`.
+  - `timestamp_mode` option `observed` is renamed to `aggregated`.
+change_logs: [user]

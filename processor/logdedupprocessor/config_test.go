@@ -103,9 +103,9 @@ func TestValidateConfig(t *testing.T) {
 			expectedErr: errInvalidTimestampMode,
 		},
 		{
-			desc: "valid timestamp_mode observed",
+			desc: "valid timestamp_mode aggregated",
 			configure: func(cfg *Config) {
-				cfg.TimestampMode = TimestampModeObserved
+				cfg.TimestampMode = TimestampModeAggregated
 			},
 			expectedErr: nil,
 		},

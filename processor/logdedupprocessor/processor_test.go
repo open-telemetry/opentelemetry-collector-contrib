@@ -156,7 +156,7 @@ func TestProcessorConsume(t *testing.T) {
 	allSinkLogs := logsSink.AllLogs()
 	require.Len(t, allSinkLogs, 1)
 
-	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp")))
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp")))
 
 	// Cleanup
 	err = p.Shutdown(t.Context())
@@ -232,8 +232,8 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	consumedLogs := allSinkLogs[0]
 	dedupedLogs := allSinkLogs[1]
 
-	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
-	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
 
 	// Cleanup
 	err = p.Shutdown(t.Context())
@@ -279,8 +279,8 @@ func TestProcessorConsumeCondition_PathContextSyntax(t *testing.T) {
 	consumedLogs := allSinkLogs[0]
 	dedupedLogs := allSinkLogs[1]
 
-	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
-	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
 
 	// Cleanup
 	err = p.Shutdown(t.Context())
@@ -326,8 +326,8 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	expectedDedupedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "multipleConditionsDedupedLogs.yaml"))
 	require.NoError(t, err)
 
-	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
-	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
 
 	// Cleanup
 	err = p.Shutdown(t.Context())
@@ -387,7 +387,7 @@ func TestProcessorIncludeFields(t *testing.T) {
 			allSinkLogs := logsSink.AllLogs()
 			require.Len(t, allSinkLogs, 1)
 
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp")))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp")))
 
 			// Cleanup
 			err = p.Shutdown(t.Context())
@@ -582,11 +582,11 @@ func TestMetadataKeysDuplicateValidation(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestProcessorTimestampModeObserved(t *testing.T) {
+func TestProcessorTimestampModeAggregated(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
 	cfg := createDefaultConfig().(*Config)
 	cfg.Interval = 1 * time.Second
-	cfg.TimestampMode = TimestampModeObserved
+	cfg.TimestampMode = TimestampModeAggregated
 
 	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
@@ -608,15 +608,15 @@ func TestProcessorTimestampModeObserved(t *testing.T) {
 	allSinkLogs := logsSink.AllLogs()
 	require.Len(t, allSinkLogs, 1)
 
-	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "timestampModeObservedLogs.yaml"))
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "timestampModeAggregatedLogs.yaml"))
 	require.NoError(t, err)
 
 	// Timestamp is ignored in the golden file comparison since it is non-deterministic (set to export time).
 	// It is validated separately below against the export window.
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0],
 		plogtest.IgnoreObservedTimestamp(),
-		plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"),
-		plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"),
+		plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"),
+		plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"),
 		plogtest.IgnoreTimestamp(),
 	))
 
@@ -659,8 +659,8 @@ func TestProcessorTimestampModePreserved(t *testing.T) {
 	// Timestamp is intentionally not ignored — preserved mode must keep the original.
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0],
 		plogtest.IgnoreObservedTimestamp(),
-		plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"),
-		plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"),
+		plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"),
+		plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"),
 	))
 
 	require.NoError(t, p.Shutdown(t.Context()))

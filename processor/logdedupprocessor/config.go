@@ -17,8 +17,8 @@ import (
 type TimestampMode string
 
 const (
-	// TimestampModeObserved sets the log record timestamp to when the aggregated log was emitted.
-	TimestampModeObserved TimestampMode = "observed"
+	// TimestampModeAggregated sets the log record timestamp to when the aggregated log was emitted.
+	TimestampModeAggregated TimestampMode = "aggregated"
 	// TimestampModePreserved preserves the log record timestamp from the first log received in the aggregation window.
 	TimestampModePreserved TimestampMode = "preserved"
 )
@@ -35,7 +35,7 @@ const (
 	defaultTimezone = "UTC"
 
 	// defaultTimestampMode is the default timestamp mode
-	defaultTimestampMode = TimestampModeObserved
+	defaultTimestampMode = TimestampModeAggregated
 
 	// bodyField is the name of the body field
 	bodyField = "body"
@@ -50,7 +50,7 @@ var (
 	errInvalidInterval          = errors.New("interval must be greater than 0")
 	errCannotExcludeBody        = errors.New("cannot exclude the entire body")
 	errCannotIncludeBody        = errors.New("cannot include the entire body")
-	errInvalidTimestampMode     = errors.New("timestamp_mode must be one of 'observed' or 'preserved'")
+	errInvalidTimestampMode     = errors.New("timestamp_mode must be one of 'aggregated' or 'preserved'")
 )
 
 // Config is the config of the processor.
@@ -118,7 +118,7 @@ func (c Config) Validate() error {
 	}
 
 	switch c.TimestampMode {
-	case TimestampModeObserved, TimestampModePreserved:
+	case TimestampModeAggregated, TimestampModePreserved:
 	default:
 		return errInvalidTimestampMode
 	}

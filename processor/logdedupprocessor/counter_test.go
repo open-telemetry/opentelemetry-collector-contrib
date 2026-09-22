@@ -75,8 +75,8 @@ func Test_logAggregatorAdd(t *testing.T) {
 	// Check fields on logCounter
 	require.Equal(t, logRecord, lc.logRecord)
 	require.Equal(t, int64(1), lc.count)
-	require.Equal(t, firstExpectedTimestamp, lc.firstObservedTimestamp)
-	require.Equal(t, firstExpectedTimestamp, lc.lastObservedTimestamp)
+	require.Equal(t, firstExpectedTimestamp, lc.firstAggregationTimestamp)
+	require.Equal(t, firstExpectedTimestamp, lc.lastAggregationTimestamp)
 
 	// Add a matching logRecord to update counter and last observedTimestamp
 	secondExpectedTimestamp := time.Now().Add(2 * time.Minute).UTC()
@@ -86,7 +86,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 
 	aggregator.Add(resource, scope, logRecord)
 	require.Equal(t, int64(2), lc.count)
-	require.Equal(t, secondExpectedTimestamp, lc.lastObservedTimestamp)
+	require.Equal(t, secondExpectedTimestamp, lc.lastAggregationTimestamp)
 }
 
 func Test_logAggregatorReset(t *testing.T) {
@@ -177,13 +177,13 @@ func Test_logAggregatorExport(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, int64(1), actualLogCount)
 
-	actualFirstObserved, ok := actualRawAttrs[firstObservedTSAttr]
+	actualFirstAggregation, ok := actualRawAttrs[firstAggregationTSAttr]
 	require.True(t, ok)
-	require.Equal(t, expectedTimestampStr, actualFirstObserved)
+	require.Equal(t, expectedTimestampStr, actualFirstAggregation)
 
-	actualLastObserved, ok := actualRawAttrs[lastObservedTSAttr]
+	actualLastAggregation, ok := actualRawAttrs[lastAggregationTSAttr]
 	require.True(t, ok)
-	require.Equal(t, expectedTimestampStr, actualLastObserved)
+	require.Equal(t, expectedTimestampStr, actualLastAggregation)
 
 	// In preserved mode, first_event_timestamp is omitted as redundant with lr.Timestamp()
 	expectedEventTS := originalTimestamp.AsTime().In(location).Format(time.RFC3339)
@@ -203,7 +203,7 @@ func Test_logAggregatorExportTimestampModes(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	for _, mode := range []TimestampMode{TimestampModeObserved, TimestampModePreserved} {
+	for _, mode := range []TimestampMode{TimestampModeAggregated, TimestampModePreserved} {
 		t.Run(string(mode), func(t *testing.T) {
 			firstReceipt := time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)
 			now := firstReceipt
@@ -228,8 +228,8 @@ func Test_logAggregatorExportTimestampModes(t *testing.T) {
 			require.Equal(t, pcommon.NewTimestampFromTime(firstReceipt), lr.ObservedTimestamp())
 			attrs := lr.Attributes().AsRaw()
 			require.Equal(t, int64(2), attrs[defaultLogCountAttribute])
-			require.Equal(t, firstReceipt.In(location).Format(time.RFC3339), attrs[firstObservedTSAttr])
-			require.Equal(t, firstReceipt.Add(time.Second).In(location).Format(time.RFC3339), attrs[lastObservedTSAttr])
+			require.Equal(t, firstReceipt.In(location).Format(time.RFC3339), attrs[firstAggregationTSAttr])
+			require.Equal(t, firstReceipt.Add(time.Second).In(location).Format(time.RFC3339), attrs[lastAggregationTSAttr])
 			require.Equal(t, lastEvent.AsTime().In(location).Format(time.RFC3339), attrs[lastEventTSAttr])
 			if mode == TimestampModePreserved {
 				require.Equal(t, firstEvent, lr.Timestamp())
@@ -270,8 +270,8 @@ func Test_newLogCounter(t *testing.T) {
 	lc := newLogCounter(logRecord)
 	require.Equal(t, logRecord, lc.logRecord)
 	require.Equal(t, int64(0), lc.count)
-	require.Equal(t, now, lc.firstObservedTimestamp)
-	require.Equal(t, now, lc.lastObservedTimestamp)
+	require.Equal(t, now, lc.firstAggregationTimestamp)
+	require.Equal(t, now, lc.lastAggregationTimestamp)
 }
 
 func Test_logCounterIncrement(t *testing.T) {
@@ -286,7 +286,7 @@ func Test_logCounterIncrement(t *testing.T) {
 	lc := newLogCounter(logRecord)
 	require.Equal(t, logRecord, lc.logRecord)
 	require.Equal(t, int64(0), lc.count)
-	require.Equal(t, first, lc.firstObservedTimestamp)
+	require.Equal(t, first, lc.firstAggregationTimestamp)
 
 	last := time.Now().UTC()
 	timeNow = func() time.Time { return last }
@@ -294,8 +294,8 @@ func Test_logCounterIncrement(t *testing.T) {
 	lc.lastEventTimestamp = eventTS
 	lc.Increment()
 	require.Equal(t, int64(1), lc.count)
-	require.Equal(t, first, lc.firstObservedTimestamp)
-	require.Equal(t, last, lc.lastObservedTimestamp)
+	require.Equal(t, first, lc.firstAggregationTimestamp)
+	require.Equal(t, last, lc.lastAggregationTimestamp)
 	require.Equal(t, eventTS, lc.lastEventTimestamp)
 }
 
