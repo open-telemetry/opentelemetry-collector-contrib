@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 var (
@@ -105,6 +107,9 @@ type FranzSyncProducer struct {
 	metadataKeys    []string
 	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
+
+	propagator       propagation.TextMapPropagator
+	propagatorFields []string
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
@@ -116,8 +121,13 @@ func NewFranzSyncProducer(client *kgo.Client,
 	maxMessageBytes int,
 	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
+	propagator := otel.GetTextMapPropagator()
+	fields := propagator.Fields()
 	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
 	for _, pair := range recordHeaders {
+		if slices.Contains(fields, pair.Name) {
+			continue
+		}
 		headers = append(headers, kgo.RecordHeader{
 			Key:   pair.Name,
 			Value: []byte(pair.Value),
@@ -125,11 +135,13 @@ func NewFranzSyncProducer(client *kgo.Client,
 	}
 
 	return &FranzSyncProducer{
-		client:          client,
-		clientCancel:    clientCancel,
-		metadataKeys:    metadataKeys,
-		recordHeaders:   headers,
-		maxMessageBytes: maxMessageBytes,
+		client:           client,
+		clientCancel:     clientCancel,
+		metadataKeys:     metadataKeys,
+		recordHeaders:    headers,
+		maxMessageBytes:  maxMessageBytes,
+		propagator:       propagator,
+		propagatorFields: fields,
 	}
 }
 
@@ -138,17 +150,15 @@ func NewFranzSyncProducer(client *kgo.Client,
 // to each record before producing.
 func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Record) error {
 	metadataHeaders := metadataToHeaders(ctx, p.metadataKeys)
-	propagator := otel.GetTextMapPropagator()
-	fields := propagator.Fields()
 	var traceHeaders []kgo.RecordHeader
-	if len(fields) > 0 {
-		traceHeaders = traceContextToHeaders(ctx, propagator)
+	if len(p.propagatorFields) > 0 {
+		traceHeaders = traceContextToHeaders(ctx, p.propagator)
 	}
 	var headers []kgo.RecordHeader
 	if n := len(p.recordHeaders) + len(metadataHeaders) + len(traceHeaders); n > 0 {
 		headers = make([]kgo.RecordHeader, 0, n)
-		headers = appendHeadersExcept(headers, p.recordHeaders, fields)
-		headers = appendHeadersExcept(headers, metadataHeaders, fields)
+		headers = append(headers, p.recordHeaders...)
+		headers = appendHeadersExcept(headers, metadataHeaders, p.propagatorFields)
 		headers = append(headers, traceHeaders...)
 	}
 	for _, r := range records {
