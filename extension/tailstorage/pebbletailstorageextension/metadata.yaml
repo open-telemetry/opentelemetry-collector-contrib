@@ -15,6 +15,7 @@ status:
   stability:
     alpha: [extension]
   distributions: [contrib]
+  unsupported_platforms: [aix, solaris]
   codeowners:
     active: [carsonip, jmacd, lahsivjar]
     emeritus: [axw]
