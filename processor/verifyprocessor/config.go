@@ -72,7 +72,7 @@ type KeySourceConfig struct {
 type K8sSecretConfig struct {
 	Name      string `mapstructure:"name"`
 	Namespace string `mapstructure:"namespace"`
-	CertKey   string `mapstructure:"cert_key"`
+	CertKey   string `mapstructure:"certificate"`
 	HMACKey   string `mapstructure:"hmac_key"`
 }
 
@@ -81,8 +81,8 @@ type K8sSecretConfig struct {
 // For HMAC-SHA256 set HMACKeyEnvVar instead.
 // Both may be set when the collector should verify either algorithm.
 type EnvKeyConfig struct {
-	CertEnvVar    string `mapstructure:"cert_env_var"`
-	HMACKeyEnvVar string `mapstructure:"hmac_key_env_var"`
+	CertEnvVar    string `mapstructure:"certificate"`
+	HMACKeyEnvVar string `mapstructure:"hmac_key"`
 }
 
 // FileKeyConfig configures file-based key material.
@@ -90,8 +90,8 @@ type EnvKeyConfig struct {
 // For HMAC-SHA256 set HMACKeyFile instead.
 // Both may be set when the collector should verify either algorithm.
 type FileKeyConfig struct {
-	CertFile    string `mapstructure:"cert_file"`
-	HMACKeyFile string `mapstructure:"hmac_key_file"`
+	CertFile    string `mapstructure:"certificate"`
+	HMACKeyFile string `mapstructure:"hmac_key"`
 }
 
 // BaoKeyConfig configures the OpenBao (Vault-compatible) key material source.
@@ -104,8 +104,8 @@ type BaoKeyConfig struct {
 	Address      string `mapstructure:"address"`
 	Token        string `mapstructure:"token"`
 	SecretPath   string `mapstructure:"secret_path"`
-	CertField    string `mapstructure:"cert_field"`
-	HMACKeyField string `mapstructure:"hmac_key_field"`
+	CertField    string `mapstructure:"certificate"`
+	HMACKeyField string `mapstructure:"hmac_key"`
 }
 
 type DeadLetterConfig struct {

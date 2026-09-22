@@ -29,7 +29,7 @@ func (*verifyProcessor) Shutdown(_ context.Context) error {
 }
 
 func (*verifyProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (p *verifyProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
