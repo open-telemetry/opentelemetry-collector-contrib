@@ -60,7 +60,7 @@ func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *C
 	}
 	rs := &redisScraper{
 		client:     client,
-		redisSvc:   newRedisSvc(client),
+		redisSvc:   newRedisSvc(client, settings.TelemetrySettings.Logger),
 		settings:   settings.TelemetrySettings,
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		configInfo: configInfo,
@@ -144,16 +144,15 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info, reco
 
 		case func(pcommon.Timestamp, int64, metadata.AttributeClusterState):
 			// cluster_state is a string ("ok"/"fail"), not a number, so unlike the other
-			// cases it can't go through strconv.ParseInt. The state is conveyed via the
-			// AttributeClusterState attribute, so the gauge value is always 1, mirroring how
-			// the redis.mode metric records its own enum-like attribute.
-			var state metadata.AttributeClusterState
-			if infoVal == "ok" {
-				state = metadata.AttributeClusterStateOk
+			// cases it can't go through strconv.ParseInt. The gauge value is always 1;
+			// health is conveyed entirely via the AttributeClusterState attribute, mirroring
+			// how the redis.mode metric records its own enum-like attribute.
+			if state, ok := metadata.MapAttributeClusterState[infoVal]; ok {
+				recordDataPoint(ts, 1, state)
 			} else {
-				state = metadata.AttributeClusterStateFail
+				rs.settings.Logger.Warn("failed to parse info val", zap.String("key", infoKey),
+					zap.String("val", infoVal))
 			}
-			recordDataPoint(ts, 1, state)
 		}
 	}
 }

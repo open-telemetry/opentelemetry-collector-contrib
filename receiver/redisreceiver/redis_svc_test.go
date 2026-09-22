@@ -8,10 +8,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func newFakeAPIParser() *redisSvc {
-	return newRedisSvc(fakeClient{})
+	return newRedisSvc(fakeClient{}, zap.NewNop())
 }
 
 func TestParser(t *testing.T) {

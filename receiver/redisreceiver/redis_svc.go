@@ -3,7 +3,11 @@
 
 package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
-import "strings"
+import (
+	"strings"
+
+	"go.uber.org/zap"
+)
 
 // Wraps a client, parses the Redis info command, returning a string-string map
 // containing all of the key value pairs returned by INFO. Takes a line delimiter
@@ -12,13 +16,15 @@ import "strings"
 type redisSvc struct {
 	client    client
 	delimiter string
+	logger    *zap.Logger
 }
 
 // Creates a new redisSvc. Pass in a client implementation.
-func newRedisSvc(client client) *redisSvc {
+func newRedisSvc(client client, logger *zap.Logger) *redisSvc {
 	return &redisSvc{
 		client:    client,
 		delimiter: client.delimiter(),
+		logger:    logger,
 	}
 }
 
@@ -36,6 +42,9 @@ func (p *redisSvc) info() (info, error) {
 		for k, v := range p.parseAttrs(clusterStr) {
 			attrs[k] = v
 		}
+	} else {
+		p.logger.Warn("failed to retrieve CLUSTER INFO; redis.cluster.* metrics will be unavailable for this scrape",
+			zap.Error(clusterErr))
 	}
 
 	return attrs, nil
