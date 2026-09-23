@@ -393,7 +393,7 @@ func BenchmarkScrapePayload(b *testing.B) {
 		runScrapePayloadBenchmark(b, p)
 	})
 	b.Run("Summary", func(b *testing.B) {
-		// 200 summaries * 5 series (3 quantiles + sum + count) = 1,000 series equivalent in Protobuf format
+		// 200 summaries * 7 series (5 quantiles + sum + count) = 1,400 series equivalent in Protobuf format
 		p := benchPayload{protoBytes: generateProtobufSummaryPayload(200)}
 		runScrapePayloadBenchmark(b, p)
 	})
@@ -739,10 +739,13 @@ func generateProtobufSummaryPayload(numSummaries int) []byte {
 	var buf bytes.Buffer
 	numFamilies := min(10, numSummaries)
 	perFamily := numSummaries / numFamilies
+	// 5 quantiles matching Prometheus's default go_gc_duration_seconds summary (0, 0.25, 0.5, 0.75, 1).
 	quantiles := []dto.Quantile{
+		{Quantile: 0.0, Value: 0.01},
+		{Quantile: 0.25, Value: 0.05},
 		{Quantile: 0.5, Value: 0.12},
-		{Quantile: 0.9, Value: 0.45},
-		{Quantile: 0.99, Value: 0.89},
+		{Quantile: 0.75, Value: 0.45},
+		{Quantile: 1.0, Value: 0.89},
 	}
 	for f := range numFamilies {
 		mfName := fmt.Sprintf("bench_summary_%d", f)

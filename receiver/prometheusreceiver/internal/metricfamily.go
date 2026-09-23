@@ -499,7 +499,9 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 			// boundaries (15 bounds + +Inf = 16 buckets) and Prometheus DefBuckets (11 bounds + +Inf = 12 buckets).
 			mg.complexValue = make([]dataPoint, 0, 16)
 		case pmetric.MetricTypeSummary:
-			mg.complexValue = make([]dataPoint, 0, 4)
+			// Pre-allocate to 5 to accommodate the 5 quantiles of Prometheus's default
+			// go_gc_duration_seconds summary (0, 0.25, 0.5, 0.75, 1).
+			mg.complexValue = make([]dataPoint, 0, 5)
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
