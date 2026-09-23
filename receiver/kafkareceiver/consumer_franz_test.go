@@ -994,8 +994,7 @@ func TestLostLeavesRestOfBatchToNextOwner(t *testing.T) {
 	cfg.ConsumerConfig.AutoCommit = configkafka.AutoCommitConfig{
 		Enable: true, Interval: time.Hour,
 	}
-	// Fetch every record at once, so the whole batch is in flight when the
-	// partition is revoked.
+	// Hold the fetch until every record is available.
 	cfg.ConsumerConfig.MinFetchSize = int32(len(data) * records)
 
 	var consumed atomic.Int64
@@ -1022,15 +1021,18 @@ func TestLostLeavesRestOfBatchToNextOwner(t *testing.T) {
 	for range records {
 		rs = append(rs, &kgo.Record{Topic: topic, Value: data})
 	}
+	// One ProduceSync, so every record lands in a single record batch. That is
+	// what keeps the fetch whole: a broker returns whole record batches, so it
+	// cannot hand out part of one. Producing in several calls splits the fetch.
 	require.NoError(t, kafkaClient.ProduceSync(t.Context(), rs...).FirstErr())
 
 	waitSignal(t, consuming, "first record was not consumed")
 
-	// The worker must hold the whole batch. If the fetch split it instead,
-	// lost() would discard the remainder from the mailbox and the revoke would
-	// have nothing left to stop.
-	require.Equal(t, int64(records), queuedRecords(logs),
-		"the whole batch must be in flight when the partition is revoked")
+	// The worker must hold the whole batch, as one batch. If the fetch split it
+	// instead, lost() would discard the remainder from the mailbox and the
+	// revoke would have nothing left to stop.
+	require.Equal(t, []int64{records}, queuedRecords(logs),
+		"the whole batch must be fetched at once and in flight when the partition is revoked")
 
 	// The callback franz-go calls on a revocation. It cancels the partition
 	// context, waits for the worker, and commits.
@@ -1046,17 +1048,19 @@ func TestLostLeavesRestOfBatchToNextOwner(t *testing.T) {
 		"committing past the in-flight record drops the rest of the batch")
 }
 
-// queuedRecords reports how many records the poll loop handed to the partition
-// worker, from the debug line dispatchPartitionBatches logs per batch.
-func queuedRecords(logs *observer.ObservedLogs) int64 {
-	var total int64
+// queuedRecords reports the record count of every batch the poll loop handed to
+// the partition worker, from the debug line dispatchPartitionBatches logs per
+// batch. The counts stay per batch instead of being summed, so a fetch that was
+// split tells apart from a single batch holding the same records.
+func queuedRecords(logs *observer.ObservedLogs) []int64 {
 	entries := logs.FilterMessage("queued fetched records").All()
+	counts := make([]int64, 0, len(entries))
 	for i := range entries {
 		if count, ok := entries[i].ContextMap()["count"].(int64); ok {
-			total += count
+			counts = append(counts, count)
 		}
 	}
-	return total
+	return counts
 }
 
 // TestResumePartitionsAfterRebalance verifies that partitions paused due to
