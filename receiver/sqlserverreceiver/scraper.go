@@ -546,6 +546,8 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Context) error {
 	const counterKey = "counter"
 	const valueKey = "value"
+	const objectKey = "object"
+	const instanceKey = "instance"
 	// Constants are the columns for metrics from query
 	const activeTempTables = "Active Temp Tables"
 	const autoParamAttemptsPerSec = "Auto-Param Attempts/sec"
@@ -673,6 +675,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		// Counters on the Databases object are reported once per database. Without the
+		// database name on the resource, every database's data point would share one
+		// identity and collapse into a single series. The Windows PDH path attributes
+		// these the same way.
+		if instance := row[instanceKey]; strings.HasSuffix(row[objectKey], ":Databases") && instance != "" && instance != "Total" {
+			rb.SetSqlserverDatabaseName(instance)
+		}
 
 		switch row[counterKey] {
 		case activeCursors:
