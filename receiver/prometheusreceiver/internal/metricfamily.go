@@ -26,12 +26,14 @@ import (
 type metricFamily struct {
 	mtype pmetric.MetricType
 	// isMonotonic only applies to sums
-	isMonotonic bool
-	groups      map[uint64]*metricGroup
-	name        string
-	metadata    *scrape.MetricMetadata
-	groupOrders []*metricGroup
-	logger      *zap.Logger
+	isMonotonic  bool
+	groups       map[uint64]*metricGroup
+	name         string
+	metadata     *scrape.MetricMetadata
+	groupOrders  []*metricGroup
+	logger       *zap.Logger
+	lastGroupKey uint64
+	lastGroup    *metricGroup
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
@@ -481,6 +483,9 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 }
 
 func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
+	if mf.lastGroup != nil && mf.lastGroupKey == groupKey {
+		return mf.lastGroup
+	}
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
@@ -493,6 +498,8 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
 		mf.groupOrders = append(mf.groupOrders, mg)
 	}
+	mf.lastGroupKey = groupKey
+	mf.lastGroup = mg
 	return mg
 }
 
@@ -678,7 +685,12 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 }
 
 func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
-	mg := mf.groups[seriesRef]
+	var mg *metricGroup
+	if mf.lastGroup != nil && mf.lastGroupKey == seriesRef {
+		mg = mf.lastGroup
+	} else {
+		mg = mf.groups[seriesRef]
+	}
 	if mg == nil {
 		return
 	}
