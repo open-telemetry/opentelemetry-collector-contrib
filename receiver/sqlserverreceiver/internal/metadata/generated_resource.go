@@ -77,6 +77,13 @@ func (rb *ResourceBuilder) SetSqlserverDatabaseName(val string) {
 	}
 }
 
+// SetSqlserverDbEdition sets provided value as "sqlserver.db.edition" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEdition(val string) {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", val)
+	}
+}
+
 // SetSqlserverInstanceName sets provided value as "sqlserver.instance.name" attribute.
 func (rb *ResourceBuilder) SetSqlserverInstanceName(val string) {
 	if rb.config.SqlserverInstanceName.Enabled {

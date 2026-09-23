@@ -38,6 +38,9 @@ const (
 	instanceNameKey = "sql_instance"
 
 	defaultServiceName = "unknown_service:microsoft.sql_server"
+
+	// editionQueryTimeout bounds the startup EngineEdition detection query.
+	editionQueryTimeout = 10 * time.Second
 )
 
 type sqlServerScraperHelper struct {
@@ -59,6 +62,8 @@ type sqlServerScraperHelper struct {
 	serviceInstanceID      string
 	serverAddress          string
 	serverPort             int64
+	dbEdition              string
+	editionFunc            func(context.Context, *zap.Logger) (string, bool)
 }
 
 var (
@@ -129,7 +134,65 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 	return nil
 }
 
+// engineEditionToString maps SERVERPROPERTY('EngineEdition') integers to readable strings
+// for the editions supported by this receiver (2, 3, 4, 5, 8).
+func engineEditionToString(edition int) string {
+	switch edition {
+	case 2:
+		return "Standard"
+	case 3:
+		return "Enterprise"
+	case 4:
+		return "Express"
+	case 5:
+		return "AzureSQLDatabase"
+	case 8:
+		return "ManagedInstance"
+	default:
+		return ""
+	}
+}
+
+// detectSQLServerEdition queries SERVERPROPERTY('EngineEdition') and maps the integer
+// to a readable string. Declared as a var so tests can stub it.
+// Returns (*string, nil) on success — non-nil pointer means resolved.
+// Returns (&"", nil) if NULL or unknown edition — permanent, latch it.
+// Returns (nil, err) on transient error — caller may retry.
+// Returns (nil, nil) if db is nil — silently skip.
+var detectSQLServerEdition = func(ctx context.Context, db *sql.DB) (*string, error) {
+	if db == nil {
+		return nil, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, editionQueryTimeout)
+	defer cancel()
+
+	var edition sql.NullInt64
+	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('EngineEdition') AS INT)")
+	if err := row.Scan(&edition); err != nil {
+		return nil, err
+	}
+	if !edition.Valid {
+		v := ""
+		return &v, nil
+	}
+	name := engineEditionToString(int(edition.Int64))
+	return &name, nil
+}
+
+func (s *sqlServerScraperHelper) ensureDBEdition(ctx context.Context) {
+	if s.editionFunc != nil {
+		v, resolved := s.editionFunc(ctx, s.logger)
+		s.dbEdition = v
+		if resolved {
+			s.editionFunc = nil
+		}
+	}
+}
+
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	s.ensureDBEdition(ctx)
+
 	var err error
 
 	switch s.sqlQuery {
@@ -163,6 +226,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
+	s.ensureDBEdition(ctx)
+
 	var err error
 	var resources pcommon.Resource
 	var isQuerySample bool
@@ -396,6 +461,9 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceNamespace("")
 	rb.SetServerAddress(s.serverAddress)
 	rb.SetServerPort(s.serverPort)
+	if s.dbEdition != "" {
+		rb.SetSqlserverDbEdition(s.dbEdition)
+	}
 
 	return rb
 }

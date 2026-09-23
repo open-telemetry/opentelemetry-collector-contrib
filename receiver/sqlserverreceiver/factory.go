@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -182,12 +183,14 @@ type dbProvider struct {
 	pool        ConnectionPool
 	numScrapers int
 
-	mu       sync.Mutex
-	db       *sql.DB
-	openErr  error
-	opened   bool
-	closed   bool
-	closeErr error
+	mu                 sync.Mutex
+	db                 *sql.DB
+	openErr            error
+	opened             bool
+	closed             bool
+	closeErr           error
+	dbEdition          *string
+	editionErrReported bool
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -239,6 +242,44 @@ func (p *dbProvider) close() error {
 		p.closeErr = p.db.Close()
 	}
 	return p.closeErr
+}
+
+// detectEdition lazily queries SERVERPROPERTY('EngineEdition') and caches the
+// result as a mapped string. Returns (edition, resolved): resolved=true means a
+// definitive answer was reached and the caller should nil out its editionFunc.
+// resolved=false means a transient error; the caller should retry next interval.
+func (p *dbProvider) detectEdition(ctx context.Context, logger *zap.Logger) (string, bool) {
+	p.mu.Lock()
+	if p.dbEdition != nil {
+		v := *p.dbEdition
+		p.mu.Unlock()
+		return v, true
+	}
+	db := p.db
+	errReported := p.editionErrReported
+	p.mu.Unlock()
+
+	v, err := detectSQLServerEdition(ctx, db)
+	if v != nil {
+		if *v == "" {
+			logger.Warn("failed to detect SQL Server edition: EngineEdition returned NULL or unknown value; sqlserver.db.edition will not be set")
+		}
+		p.mu.Lock()
+		p.dbEdition = v
+		p.mu.Unlock()
+		return *v, true
+	}
+	if err != nil {
+		if !errReported {
+			logger.Warn("failed to detect SQL Server edition; sqlserver.db.edition will not be set; will retry", zap.Error(err))
+			p.mu.Lock()
+			p.editionErrReported = true
+			p.mu.Unlock()
+		} else {
+			logger.Debug("failed to detect SQL Server edition; retrying next interval", zap.Error(err))
+		}
+	}
+	return "", false
 }
 
 // setConnectionPoolSettings applies the configured pool settings, falling back
@@ -308,6 +349,10 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			cfg,
 			cache)
 
+		if isDbEditionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.editionFunc = provider.detectEdition
+		}
+
 		scrapers = append(scrapers, sqlServerScraper)
 	}
 
@@ -363,6 +408,10 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			params,
 			cfg,
 			cache)
+
+		if isDbEditionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.editionFunc = provider.detectEdition
+		}
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}
@@ -560,4 +609,11 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverDiskOperations.Enabled ||
 		metrics.SqlserverDiskIo.Enabled
+}
+
+func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {
+	if resourceAttrs == nil {
+		return false
+	}
+	return resourceAttrs.SqlserverDbEdition.Enabled
 }
