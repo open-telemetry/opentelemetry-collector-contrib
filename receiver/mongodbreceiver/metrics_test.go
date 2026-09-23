@@ -57,6 +57,113 @@ func sumIntByAttr(t *testing.T, m pmetric.Metric, attrKey string) map[string]int
 }
 
 // newWTScraper builds a scraper with all five WiredTiger metrics enabled.
+// newAssertQueueScraper builds a scraper with the assert, global-lock queue and write-concern
+// metrics enabled.
+func newAssertQueueScraper(t *testing.T) *mongodbScraper {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbAssertCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbGlobalLockQueueCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbWriteConcernWaitTime.Enabled = true
+	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+}
+
+func TestRecordAsserts(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordAsserts(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.assert.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	// The fixture has no tripwire field, so no tripwire point is emitted and no error is raised.
+	// asserts.rollovers is 9 in the fixture and must not appear: it is not a kind of assertion.
+	require.Equal(t, map[string]int64{
+		"msg":     1,
+		"regular": 2,
+		"user":    3,
+		"warning": 4,
+	}, sumIntByAttr(t, m, "mongodb.assert.type"))
+}
+
+// TestRecordAssertsWithTripwire covers a newer server that does report asserts.tripwire.
+func TestRecordAssertsWithTripwire(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	doc := bson.M{"asserts": bson.M{
+		"msg": int64(1), "regular": int64(2), "user": int64(3), "warning": int64(4),
+		"tripwire": int64(5), "rollovers": int64(9),
+	}}
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordAsserts(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.assert.count")
+	require.Equal(t, map[string]int64{
+		"msg":      1,
+		"regular":  2,
+		"user":     3,
+		"warning":  4,
+		"tripwire": 5,
+	}, sumIntByAttr(t, m, "mongodb.assert.type"))
+}
+
+// TestRecordAssertsMissingSubdocument covers a server that reports no asserts at all: the four
+// long-standing counters are reported as failures, while the version-dependent tripwire is not.
+func TestRecordAssertsMissingSubdocument(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordAsserts(now, bson.M{}, errs)
+
+	var partial scrapererror.PartialScrapeError
+	require.ErrorAs(t, errs.Combine(), &partial)
+	require.Equal(t, 4, partial.Failed)
+	require.Equal(t, 0, s.mb.Emit().MetricCount())
+}
+
+func TestRecordGlobalLockQueue(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordGlobalLockQueue(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.global_lock.queue.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.False(t, m.Sum().IsMonotonic(), "queue depth rises and falls, so it is not monotonic")
+	byType := sumIntByAttr(t, m, "mongodb.global_lock.queue.type")
+	// The fixture reports readers 5, writers 7, total 12. Only the two parts are emitted.
+	require.Equal(t, map[string]int64{"read": 5, "write": 7}, byType)
+	require.Equal(t, int64(12), byType["read"]+byType["write"], "read + write must equal the server's total")
+}
+
+func TestRecordWriteConcernWaitTime(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordWriteConcernWaitTime(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.write_concern.wait.time")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// The fixture reports 2500 ms; the metric is emitted in seconds.
+	require.InDelta(t, 2.5, m.Sum().DataPoints().At(0).DoubleValue(), 1e-9)
+}
+
 func newWTScraper(t *testing.T) *mongodbScraper {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)

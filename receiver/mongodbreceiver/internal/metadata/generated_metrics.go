@@ -3,15 +3,14 @@
 package metadata
 
 import (
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"time"
 )
 
 const (
@@ -190,6 +189,70 @@ func (av AttributeMemoryType) String() string {
 var MapAttributeMemoryType = map[string]AttributeMemoryType{
 	"resident": AttributeMemoryTypeResident,
 	"virtual":  AttributeMemoryTypeVirtual,
+}
+
+// AttributeMongodbAssertType specifies the value mongodb.assert.type attribute.
+type AttributeMongodbAssertType int
+
+const (
+	_ AttributeMongodbAssertType = iota
+	AttributeMongodbAssertTypeMsg
+	AttributeMongodbAssertTypeRegular
+	AttributeMongodbAssertTypeUser
+	AttributeMongodbAssertTypeWarning
+	AttributeMongodbAssertTypeTripwire
+)
+
+// String returns the string representation of the AttributeMongodbAssertType.
+func (av AttributeMongodbAssertType) String() string {
+	switch av {
+	case AttributeMongodbAssertTypeMsg:
+		return "msg"
+	case AttributeMongodbAssertTypeRegular:
+		return "regular"
+	case AttributeMongodbAssertTypeUser:
+		return "user"
+	case AttributeMongodbAssertTypeWarning:
+		return "warning"
+	case AttributeMongodbAssertTypeTripwire:
+		return "tripwire"
+	}
+	return ""
+}
+
+// MapAttributeMongodbAssertType is a helper map of string to AttributeMongodbAssertType attribute value.
+var MapAttributeMongodbAssertType = map[string]AttributeMongodbAssertType{
+	"msg":      AttributeMongodbAssertTypeMsg,
+	"regular":  AttributeMongodbAssertTypeRegular,
+	"user":     AttributeMongodbAssertTypeUser,
+	"warning":  AttributeMongodbAssertTypeWarning,
+	"tripwire": AttributeMongodbAssertTypeTripwire,
+}
+
+// AttributeMongodbGlobalLockQueueType specifies the value mongodb.global_lock.queue.type attribute.
+type AttributeMongodbGlobalLockQueueType int
+
+const (
+	_ AttributeMongodbGlobalLockQueueType = iota
+	AttributeMongodbGlobalLockQueueTypeRead
+	AttributeMongodbGlobalLockQueueTypeWrite
+)
+
+// String returns the string representation of the AttributeMongodbGlobalLockQueueType.
+func (av AttributeMongodbGlobalLockQueueType) String() string {
+	switch av {
+	case AttributeMongodbGlobalLockQueueTypeRead:
+		return "read"
+	case AttributeMongodbGlobalLockQueueTypeWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeMongodbGlobalLockQueueType is a helper map of string to AttributeMongodbGlobalLockQueueType attribute value.
+var MapAttributeMongodbGlobalLockQueueType = map[string]AttributeMongodbGlobalLockQueueType{
+	"read":  AttributeMongodbGlobalLockQueueTypeRead,
+	"write": AttributeMongodbGlobalLockQueueTypeWrite,
 }
 
 // AttributeMongodbOperationState specifies the value mongodb.operation.state attribute.
@@ -463,6 +526,10 @@ var MetricsInfo = metricsInfo{
 	MongodbActiveWrites: metricInfo{
 		Name: "mongodb.active.writes",
 	},
+	MongodbAssertCount: metricInfo{
+		Name:       "mongodb.assert.count",
+		Attributes: []string{"mongodb.assert.type"},
+	},
 	MongodbCacheOperations: metricInfo{
 		Name:       "mongodb.cache.operations",
 		Attributes: []string{"type"},
@@ -507,6 +574,10 @@ var MetricsInfo = metricsInfo{
 	},
 	MongodbGetmoresRate: metricInfo{
 		Name: "mongodb.getmores.rate",
+	},
+	MongodbGlobalLockQueueCount: metricInfo{
+		Name:       "mongodb.global_lock.queue.count",
+		Attributes: []string{"mongodb.global_lock.queue.type"},
 	},
 	MongodbGlobalLockTime: metricInfo{
 		Name: "mongodb.global_lock.time",
@@ -649,6 +720,9 @@ var MetricsInfo = metricsInfo{
 	MongodbUptime: metricInfo{
 		Name: "mongodb.uptime",
 	},
+	MongodbWriteConcernWaitTime: metricInfo{
+		Name: "mongodb.write_concern.wait.time",
+	},
 	MongodbWtConcurrentTransactionTicketInUse: metricInfo{
 		Name:       "mongodb.wt.concurrent_transaction.ticket.in_use",
 		Attributes: []string{"mongodb.wt.concurrent_transaction.ticket.type"},
@@ -674,6 +748,7 @@ var MetricsInfo = metricsInfo{
 type metricsInfo struct {
 	MongodbActiveReads                        metricInfo
 	MongodbActiveWrites                       metricInfo
+	MongodbAssertCount                        metricInfo
 	MongodbCacheOperations                    metricInfo
 	MongodbCollectionCount                    metricInfo
 	MongodbCommandsRate                       metricInfo
@@ -687,6 +762,7 @@ type metricsInfo struct {
 	MongodbExtentCount                        metricInfo
 	MongodbFlushesRate                        metricInfo
 	MongodbGetmoresRate                       metricInfo
+	MongodbGlobalLockQueueCount               metricInfo
 	MongodbGlobalLockTime                     metricInfo
 	MongodbHealth                             metricInfo
 	MongodbIndexAccessCount                   metricInfo
@@ -728,6 +804,7 @@ type metricsInfo struct {
 	MongodbStorageSize                        metricInfo
 	MongodbUpdatesRate                        metricInfo
 	MongodbUptime                             metricInfo
+	MongodbWriteConcernWaitTime               metricInfo
 	MongodbWtConcurrentTransactionTicketInUse metricInfo
 	MongodbWtFsyncCount                       metricInfo
 	MongodbWtLogOperationCount                metricInfo
@@ -837,6 +914,99 @@ func (m *metricMongodbActiveWrites) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbActiveWrites(cfg MongodbActiveWritesMetricConfig) metricMongodbActiveWrites {
 	m := metricMongodbActiveWrites{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbAssertCount struct {
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        MongodbAssertCountMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                 // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills mongodb.assert.count metric with initial data.
+func (m *metricMongodbAssertCount) init() {
+	m.data.SetName("mongodb.assert.count")
+	m.data.SetDescription("The number of assertions raised since the server process started.")
+	m.data.SetUnit("{assert}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricMongodbAssertCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mongodbAssertTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbAssertCountMetricAttributeKeyMongodbAssertType) {
+		dp.Attributes().PutStr("mongodb.assert.type", mongodbAssertTypeAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbAssertCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbAssertCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbAssertCount(cfg MongodbAssertCountMetricConfig) metricMongodbAssertCount {
+	m := metricMongodbAssertCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1757,6 +1927,99 @@ func (m *metricMongodbGetmoresRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbGetmoresRate(cfg MongodbGetmoresRateMetricConfig) metricMongodbGetmoresRate {
 	m := metricMongodbGetmoresRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbGlobalLockQueueCount struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        MongodbGlobalLockQueueCountMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                          // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills mongodb.global_lock.queue.count metric with initial data.
+func (m *metricMongodbGlobalLockQueueCount) init() {
+	m.data.SetName("mongodb.global_lock.queue.count")
+	m.data.SetDescription("The number of operations queued waiting for the global lock.")
+	m.data.SetUnit("{operation}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricMongodbGlobalLockQueueCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mongodbGlobalLockQueueTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType) {
+		dp.Attributes().PutStr("mongodb.global_lock.queue.type", mongodbGlobalLockQueueTypeAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbGlobalLockQueueCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbGlobalLockQueueCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbGlobalLockQueueCount(cfg MongodbGlobalLockQueueCountMetricConfig) metricMongodbGlobalLockQueueCount {
+	m := metricMongodbGlobalLockQueueCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4640,6 +4903,58 @@ func newMetricMongodbUptime(cfg MongodbUptimeMetricConfig) metricMongodbUptime {
 	return m
 }
 
+type metricMongodbWriteConcernWaitTime struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   MongodbWriteConcernWaitTimeMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.write_concern.wait.time metric with initial data.
+func (m *metricMongodbWriteConcernWaitTime) init() {
+	m.data.SetName("mongodb.write_concern.wait.time")
+	m.data.SetDescription("The cumulative time spent waiting for write concern acknowledgement.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMongodbWriteConcernWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbWriteConcernWaitTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbWriteConcernWaitTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbWriteConcernWaitTime(cfg MongodbWriteConcernWaitTimeMetricConfig) metricMongodbWriteConcernWaitTime {
+	m := metricMongodbWriteConcernWaitTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbWtConcurrentTransactionTicketInUse struct {
 	data          pmetric.Metric                                        // data buffer for generated metric.
 	config        MongodbWtConcurrentTransactionTicketInUseMetricConfig // metric config provided by user.
@@ -5046,6 +5361,7 @@ type MetricsBuilder struct {
 	resourceAttributeExcludeFilter                  map[string]filter.Filter
 	metricMongodbActiveReads                        metricMongodbActiveReads
 	metricMongodbActiveWrites                       metricMongodbActiveWrites
+	metricMongodbAssertCount                        metricMongodbAssertCount
 	metricMongodbCacheOperations                    metricMongodbCacheOperations
 	metricMongodbCollectionCount                    metricMongodbCollectionCount
 	metricMongodbCommandsRate                       metricMongodbCommandsRate
@@ -5059,6 +5375,7 @@ type MetricsBuilder struct {
 	metricMongodbExtentCount                        metricMongodbExtentCount
 	metricMongodbFlushesRate                        metricMongodbFlushesRate
 	metricMongodbGetmoresRate                       metricMongodbGetmoresRate
+	metricMongodbGlobalLockQueueCount               metricMongodbGlobalLockQueueCount
 	metricMongodbGlobalLockTime                     metricMongodbGlobalLockTime
 	metricMongodbHealth                             metricMongodbHealth
 	metricMongodbIndexAccessCount                   metricMongodbIndexAccessCount
@@ -5100,6 +5417,7 @@ type MetricsBuilder struct {
 	metricMongodbStorageSize                        metricMongodbStorageSize
 	metricMongodbUpdatesRate                        metricMongodbUpdatesRate
 	metricMongodbUptime                             metricMongodbUptime
+	metricMongodbWriteConcernWaitTime               metricMongodbWriteConcernWaitTime
 	metricMongodbWtConcurrentTransactionTicketInUse metricMongodbWtConcurrentTransactionTicketInUse
 	metricMongodbWtFsyncCount                       metricMongodbWtFsyncCount
 	metricMongodbWtLogOperationCount                metricMongodbWtLogOperationCount
@@ -5133,6 +5451,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		buildInfo:                                       settings.BuildInfo,
 		metricMongodbActiveReads:                        newMetricMongodbActiveReads(mbc.Metrics.MongodbActiveReads),
 		metricMongodbActiveWrites:                       newMetricMongodbActiveWrites(mbc.Metrics.MongodbActiveWrites),
+		metricMongodbAssertCount:                        newMetricMongodbAssertCount(mbc.Metrics.MongodbAssertCount),
 		metricMongodbCacheOperations:                    newMetricMongodbCacheOperations(mbc.Metrics.MongodbCacheOperations),
 		metricMongodbCollectionCount:                    newMetricMongodbCollectionCount(mbc.Metrics.MongodbCollectionCount),
 		metricMongodbCommandsRate:                       newMetricMongodbCommandsRate(mbc.Metrics.MongodbCommandsRate),
@@ -5146,6 +5465,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMongodbExtentCount:                        newMetricMongodbExtentCount(mbc.Metrics.MongodbExtentCount),
 		metricMongodbFlushesRate:                        newMetricMongodbFlushesRate(mbc.Metrics.MongodbFlushesRate),
 		metricMongodbGetmoresRate:                       newMetricMongodbGetmoresRate(mbc.Metrics.MongodbGetmoresRate),
+		metricMongodbGlobalLockQueueCount:               newMetricMongodbGlobalLockQueueCount(mbc.Metrics.MongodbGlobalLockQueueCount),
 		metricMongodbGlobalLockTime:                     newMetricMongodbGlobalLockTime(mbc.Metrics.MongodbGlobalLockTime),
 		metricMongodbHealth:                             newMetricMongodbHealth(mbc.Metrics.MongodbHealth),
 		metricMongodbIndexAccessCount:                   newMetricMongodbIndexAccessCount(mbc.Metrics.MongodbIndexAccessCount),
@@ -5187,6 +5507,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMongodbStorageSize:                        newMetricMongodbStorageSize(mbc.Metrics.MongodbStorageSize),
 		metricMongodbUpdatesRate:                        newMetricMongodbUpdatesRate(mbc.Metrics.MongodbUpdatesRate),
 		metricMongodbUptime:                             newMetricMongodbUptime(mbc.Metrics.MongodbUptime),
+		metricMongodbWriteConcernWaitTime:               newMetricMongodbWriteConcernWaitTime(mbc.Metrics.MongodbWriteConcernWaitTime),
 		metricMongodbWtConcurrentTransactionTicketInUse: newMetricMongodbWtConcurrentTransactionTicketInUse(mbc.Metrics.MongodbWtConcurrentTransactionTicketInUse),
 		metricMongodbWtFsyncCount:                       newMetricMongodbWtFsyncCount(mbc.Metrics.MongodbWtFsyncCount),
 		metricMongodbWtLogOperationCount:                newMetricMongodbWtLogOperationCount(mbc.Metrics.MongodbWtLogOperationCount),
@@ -5303,6 +5624,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricMongodbActiveReads.emit(ils.Metrics())
 	mb.metricMongodbActiveWrites.emit(ils.Metrics())
+	mb.metricMongodbAssertCount.emit(ils.Metrics())
 	mb.metricMongodbCacheOperations.emit(ils.Metrics())
 	mb.metricMongodbCollectionCount.emit(ils.Metrics())
 	mb.metricMongodbCommandsRate.emit(ils.Metrics())
@@ -5316,6 +5638,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbExtentCount.emit(ils.Metrics())
 	mb.metricMongodbFlushesRate.emit(ils.Metrics())
 	mb.metricMongodbGetmoresRate.emit(ils.Metrics())
+	mb.metricMongodbGlobalLockQueueCount.emit(ils.Metrics())
 	mb.metricMongodbGlobalLockTime.emit(ils.Metrics())
 	mb.metricMongodbHealth.emit(ils.Metrics())
 	mb.metricMongodbIndexAccessCount.emit(ils.Metrics())
@@ -5357,6 +5680,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbStorageSize.emit(ils.Metrics())
 	mb.metricMongodbUpdatesRate.emit(ils.Metrics())
 	mb.metricMongodbUptime.emit(ils.Metrics())
+	mb.metricMongodbWriteConcernWaitTime.emit(ils.Metrics())
 	mb.metricMongodbWtConcurrentTransactionTicketInUse.emit(ils.Metrics())
 	mb.metricMongodbWtFsyncCount.emit(ils.Metrics())
 	mb.metricMongodbWtLogOperationCount.emit(ils.Metrics())
@@ -5402,6 +5726,11 @@ func (mb *MetricsBuilder) RecordMongodbActiveReadsDataPoint(ts pcommon.Timestamp
 // RecordMongodbActiveWritesDataPoint adds a data point to mongodb.active.writes metric.
 func (mb *MetricsBuilder) RecordMongodbActiveWritesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMongodbActiveWrites.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbAssertCountDataPoint adds a data point to mongodb.assert.count metric.
+func (mb *MetricsBuilder) RecordMongodbAssertCountDataPoint(ts pcommon.Timestamp, val int64, mongodbAssertTypeAttributeValue AttributeMongodbAssertType) {
+	mb.metricMongodbAssertCount.recordDataPoint(mb.startTime, ts, val, mongodbAssertTypeAttributeValue.String())
 }
 
 // RecordMongodbCacheOperationsDataPoint adds a data point to mongodb.cache.operations metric.
@@ -5467,6 +5796,11 @@ func (mb *MetricsBuilder) RecordMongodbFlushesRateDataPoint(ts pcommon.Timestamp
 // RecordMongodbGetmoresRateDataPoint adds a data point to mongodb.getmores.rate metric.
 func (mb *MetricsBuilder) RecordMongodbGetmoresRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricMongodbGetmoresRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbGlobalLockQueueCountDataPoint adds a data point to mongodb.global_lock.queue.count metric.
+func (mb *MetricsBuilder) RecordMongodbGlobalLockQueueCountDataPoint(ts pcommon.Timestamp, val int64, mongodbGlobalLockQueueTypeAttributeValue AttributeMongodbGlobalLockQueueType) {
+	mb.metricMongodbGlobalLockQueueCount.recordDataPoint(mb.startTime, ts, val, mongodbGlobalLockQueueTypeAttributeValue.String())
 }
 
 // RecordMongodbGlobalLockTimeDataPoint adds a data point to mongodb.global_lock.time metric.
@@ -5672,6 +6006,11 @@ func (mb *MetricsBuilder) RecordMongodbUpdatesRateDataPoint(ts pcommon.Timestamp
 // RecordMongodbUptimeDataPoint adds a data point to mongodb.uptime metric.
 func (mb *MetricsBuilder) RecordMongodbUptimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMongodbUptime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbWriteConcernWaitTimeDataPoint adds a data point to mongodb.write_concern.wait.time metric.
+func (mb *MetricsBuilder) RecordMongodbWriteConcernWaitTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbWriteConcernWaitTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbWtConcurrentTransactionTicketInUseDataPoint adds a data point to mongodb.wt.concurrent_transaction.ticket.in_use metric.
