@@ -2344,3 +2344,31 @@ func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "connection refused", errField)
 }
+
+func TestGetOrCreateMetricFamily_StandaloneSuffixMetricAfterHistogram(t *testing.T) {
+	tr := newTxn(t, true)
+	metaMap := map[string]scrape.MetricMetadata{
+		"foo": {MetricFamily: "foo", Type: model.MetricTypeHistogram},
+	}
+	tr.mc = testMetadataStore(metaMap)
+
+	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
+
+	// 1. Scrape foo_bucket as part of histogram foo (no standalone foo_bucket metadata yet)
+	mfBucketHist := tr.getOrCreateMetricFamily(rk, emptyScopeID, "foo_bucket")
+	require.NotNil(t, mfBucketHist)
+	require.Equal(t, "foo", mfBucketHist.name)
+	require.Equal(t, pmetric.MetricTypeHistogram, mfBucketHist.mtype)
+
+	// 2. Now foo_bucket has its own standalone gauge metadata
+	metaMap["foo_bucket"] = scrape.MetricMetadata{
+		MetricFamily: "foo_bucket",
+		Type:         model.MetricTypeGauge,
+	}
+
+	mfStandalone := tr.getOrCreateMetricFamily(rk, emptyScopeID, "foo_bucket")
+	require.NotNil(t, mfStandalone)
+	require.Equal(t, "foo_bucket", mfStandalone.name)
+	require.Equal(t, pmetric.MetricTypeGauge, mfStandalone.mtype)
+	require.NotEqual(t, mfBucketHist, mfStandalone)
+}
