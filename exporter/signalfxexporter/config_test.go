@@ -42,10 +42,9 @@ func TestLoadConfig(t *testing.T) {
 	defaultClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
 	defaultClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	defaultClientConfig.HTTP2PingTimeout = 10 * time.Second
-	// The default config sets these through Keepalive, which Unmarshal folds
-	// into the deprecated fields (Keepalive is left as None). Drop these once
-	// the deprecated fields are removed from confighttp.
-	defaultClientConfig.MaxIdleConns = 100                 //nolint:staticcheck // SA1019: deprecated field still carries the effective value
+	// The factory sets these through Keepalive, which Unmarshal folds into the
+	// deprecated fields (Keepalive is left as None). Drop these once the
+	// deprecated fields are removed from confighttp.
 	defaultClientConfig.MaxIdleConnsPerHost = 100          //nolint:staticcheck // SA1019: deprecated field still carries the effective value
 	defaultClientConfig.IdleConnTimeout = 30 * time.Second //nolint:staticcheck // SA1019: deprecated field still carries the effective value
 
