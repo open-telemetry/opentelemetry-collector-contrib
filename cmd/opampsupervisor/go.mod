@@ -339,3 +339,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/inte
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof => ../../pkg/translator/pprof
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile => ../../pkg/ottl/contexts/xprofile
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest => ../../pkg/semconvtest

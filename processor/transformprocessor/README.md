@@ -352,7 +352,6 @@ The `extract_count_metric` function creates a new Sum metric from a Histogram, E
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_count`.
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.count` instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
@@ -380,7 +379,6 @@ The `extract_percentile_metric` function creates a new Gauge metric from a Histo
 
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_p{percentile}` (e.g., `_p50`, `_p95`, `_p99`).
 
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.p{percentile}` (e.g., `.p50`, `.p95`, `.p99`) instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `unit`.
 
@@ -407,7 +405,6 @@ The `extract_sum_metric` function creates a new Sum metric from a Histogram, Exp
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_sum`.
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.sum` instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
@@ -431,7 +428,6 @@ The `convert_summary_count_val_to_sum` function creates a new Sum metric from a 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_count`.
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.count` instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<summary metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
@@ -470,7 +466,6 @@ The `convert_summary_sum_val_to_sum` function creates a new Sum metric from a Su
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_sum`.
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.sum` instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<summary metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
