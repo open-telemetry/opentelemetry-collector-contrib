@@ -2183,6 +2183,18 @@ func Test_e2e_ottl_features(t *testing.T) {
 				sl.AppendEmpty().SetStr("C")
 			},
 		},
+		{
+			statement: `set(attributes["test"], SliceGetter(nil))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(attributes["empty_value"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2929,6 +2941,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	logRecord.Attributes().PutInt("int_value", 0)
 	logRecord.Attributes().PutStr("int_value_str", "0")
 	logRecord.Attributes().PutStr("nil_string", "nil")
+	logRecord.Attributes().PutEmpty("empty_value")
 	logRecord.Attributes().PutStr("server.ip", "192.168.0.1")
 	arr := logRecord.Attributes().PutEmptySlice("array")
 	arr0 := arr.AppendEmpty()

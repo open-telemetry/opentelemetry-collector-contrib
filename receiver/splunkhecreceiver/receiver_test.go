@@ -719,6 +719,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	got := sink.AllLogs()
 	require.Len(t, got, 1)
+	clearObservedTimestamps(got[0])
 	assert.Equal(t, want, got[0])
 }
 
