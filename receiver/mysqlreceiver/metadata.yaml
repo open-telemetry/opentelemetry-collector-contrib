@@ -230,6 +230,12 @@ attributes:
   mysql.threads.thread_id:
     description: The unique identifier for the thread executing the statement.
     type: int
+  mysql.wait_event.name:
+    description: Detailed wait breakdown -- the performance_schema wait event name with its category segment stripped (e.g. 'table/sql/handler', 'mutex/innodb/checkpoint_state'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.type. Distinct from mysql.wait_type, which reports the raw, unprocessed event name and is unchanged.
+    type: string
+  mysql.wait_event.type:
+    description: Top-level wait classification derived from the second path segment of the performance_schema wait event name ('io', 'lock', 'synch'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.name.
+    type: string
   mysql.wait_type:
     description: The name of the instrument that produced the event.
     type: string
@@ -347,6 +353,8 @@ events:
       - mysql.query_plan
       - mysql.query_plan.hash
       - mysql.event_id
+      - mysql.wait_event.type
+      - mysql.wait_event.name
       - mysql.wait_type
       - mysql.session.status
       - mysql.session.id

@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add `mysql.wait_event.type` and `mysql.wait_event.name` attributes to `db.server.query_sample`, classifying the current wait as `io`, `lock`, `synch`, or `CPU`/`User sleep`/`other`.
+
+issues: [51310]
+
+subtext:
+
+change_logs: [user]
