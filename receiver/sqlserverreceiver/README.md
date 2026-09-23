@@ -67,7 +67,6 @@ information, please reference the following section.
 ```yaml
 sqlserver:
   collection_interval: 10s                     # interval for overall collection
-  instance_name: CustomInstance
   username: myusername
   password: mypassword
   server: sqlserver.address
