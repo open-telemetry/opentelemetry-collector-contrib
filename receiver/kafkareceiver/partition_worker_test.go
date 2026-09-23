@@ -111,16 +111,20 @@ func TestProcessPartitionBatchStopsWhenCancelled(t *testing.T) {
 			wantMarkedOffset: -1,
 		},
 		{
-			// Shutdown stops the loop too. Finishing the batch would mark
-			// records against a context that is already cancelled, and the
-			// next run would never see them again.
-			name:             "shutdown stops the batch",
+			// Shutdown reaches this loop as a cancelled context, not as a
+			// closed c.closing: triggerShutdown closes c.closing, closes the
+			// client, and franz-go then calls lost(), which cancels. So a
+			// pending shutdown must not change the outcome here. Reading
+			// c.closing to finish the batch instead would mark records against
+			// a context that is already cancelled, and the next run would never
+			// see them again.
+			name:             "pending shutdown does not resume the batch",
 			shutdown:         true,
 			wantConsumed:     1,
 			wantMarkedOffset: 1,
 		},
 		{
-			name:             "independent shutdown stops the batch",
+			name:             "independent pending shutdown does not resume the batch",
 			independent:      true,
 			shutdown:         true,
 			wantConsumed:     1,
