@@ -56,3 +56,11 @@ The full list of settings exposed for this receiver are documented in [config.go
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
+
+### Feature gates
+
+**BETA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
+
+This feature gate is enabled by default. It adds the `memory_usage_type` attribute to the
+`vcenter.resource_pool.memory.usage` metric. Disabling the gate retains the previous behavior:
+only guest memory usage is emitted, without the attribute.
