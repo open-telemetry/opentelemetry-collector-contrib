@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.26.0
 
 require (
-	cloud.google.com/go/compute/metadata v0.9.0
-	cloud.google.com/go/storage v1.67.1
+	cloud.google.com/go/compute/metadata v0.9.1
+	cloud.google.com/go/storage v1.68.0
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.20.0
 	github.com/lestrrat-go/strftime v1.2.0
@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260917142259-65d9c38b188c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/api v0.297.0
+	google.golang.org/api v0.298.0
 )
 
 require (

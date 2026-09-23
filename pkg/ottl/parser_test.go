@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func Test_parse(t *testing.T) {
@@ -2536,6 +2538,82 @@ func Test_String(t *testing.T) {
 		e, err := p.ParseValueExpression(expression)
 		require.NoError(t, err)
 		assert.Equal(t, expression, e.String())
+	})
+}
+
+func Test_Parser_experimentalFunctionWarning(t *testing.T) {
+	type mockSetArguments[K any] struct {
+		Target Setter[K]
+		Value  Getter[K]
+	}
+
+	noop := func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+		return func(context.Context, any) (any, error) {
+			return "value", nil
+		}, nil
+	}
+
+	stableSet := NewFactory("set", &mockSetArguments[any]{}, noop)
+	expEditor := NewFactory("expEditor", &struct{}{}, noop, WithExperimental[any]())
+	expConverter := NewFactory("ExpConverter", &struct{}{}, noop, WithExperimental[any]())
+
+	newParser := func(t *testing.T) (Parser[any], *observer.ObservedLogs) {
+		core, logs := observer.New(zap.WarnLevel)
+		set := componenttest.NewNopTelemetrySettings()
+		set.Logger = zap.New(core)
+		p, err := NewParser(
+			CreateFactoryMap[any](stableSet, expEditor, expConverter),
+			testParsePath[any],
+			set,
+			WithEnumParser[any](testParseEnum),
+		)
+		require.NoError(t, err)
+		return p, logs
+	}
+
+	assertWarning := func(t *testing.T, logs *observer.ObservedLogs, want []string) {
+		warns := logs.FilterLevelExact(zap.WarnLevel).All()
+		require.Len(t, warns, 1)
+		assert.Contains(t, warns[0].Message, "experimental functions")
+		funcs, ok := warns[0].ContextMap()["functions"].([]any)
+		require.True(t, ok, "warning must include a functions field")
+		got := make([]string, 0, len(funcs))
+		for _, f := range funcs {
+			got = append(got, f.(string))
+		}
+		assert.Equal(t, want, got)
+	}
+
+	t.Run("no warning without experimental functions", func(t *testing.T) {
+		p, logs := newParser(t)
+		_, err := p.ParseStatements([]string{`set(name, "bar")`})
+		require.NoError(t, err)
+		assert.Empty(t, logs.All())
+	})
+
+	t.Run("single deduped warning across statements", func(t *testing.T) {
+		p, logs := newParser(t)
+		_, err := p.ParseStatements([]string{
+			`expEditor()`,
+			`set(name, ExpConverter())`,
+			`expEditor()`,
+		})
+		require.NoError(t, err)
+		assertWarning(t, logs, []string{"ExpConverter", "expEditor"})
+	})
+
+	t.Run("warning for conditions", func(t *testing.T) {
+		p, logs := newParser(t)
+		_, err := p.ParseConditions([]string{`ExpConverter() == "value"`})
+		require.NoError(t, err)
+		assertWarning(t, logs, []string{"ExpConverter"})
+	})
+
+	t.Run("warning for value expressions", func(t *testing.T) {
+		p, logs := newParser(t)
+		_, err := p.ParseValueExpressions([]string{`ExpConverter()`})
+		require.NoError(t, err)
+		assertWarning(t, logs, []string{"ExpConverter"})
 	})
 }
 
