@@ -7,6 +7,8 @@ import (
 	"errors"
 	"slices"
 	"strings"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 var (
@@ -55,6 +57,11 @@ type ErrorCondition struct {
 	// An error matching any substring triggers failover.
 	Contains []string `mapstructure:"contains"`
 
+	// Permanent controls whether permanent consumer errors trigger failover.
+	// When set to false, permanent errors never trigger failover. When unset or
+	// true, permanent errors are matched against Contains like any other error.
+	Permanent *bool `mapstructure:"permanent"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -68,10 +75,14 @@ func (c *ErrorCondition) Validate() error {
 }
 
 // ShouldFailover reports whether err should trigger failover.
-// A nil error never triggers failover, otherwise failover happens only
+// A nil error never triggers failover. Permanent errors never trigger
+// failover when Permanent is set to false. Otherwise failover happens only
 // when the error message contains the configured substring.
 func (c *ErrorCondition) ShouldFailover(err error) bool {
 	if err == nil {
+		return false
+	}
+	if c.Permanent != nil && !*c.Permanent && consumererror.IsPermanent(err) {
 		return false
 	}
 	message := strings.ToLower(err.Error())

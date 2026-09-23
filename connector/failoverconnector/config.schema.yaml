@@ -15,6 +15,10 @@ $defs:
         type: array
         items:
           type: string
+      permanent:
+        description: Permanent controls whether permanent consumer errors trigger failover. When set to false, permanent errors never trigger failover. When unset or true, permanent errors are matched against Contains like any other error.
+        x-pointer: true
+        type: boolean
 type: object
 properties:
   condition:
