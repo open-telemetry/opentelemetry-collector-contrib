@@ -29,6 +29,8 @@ func HandleHTTPCode(resp *http.Response) error {
 		http.StatusText(resp.StatusCode),
 	)
 
+	// Classification follows Splunk's documented HEC response behavior:
+	// https://docs.splunk.com/Documentation/Splunk/latest/Data/TroubleshootHTTPEventCollector
 	switch {
 	// Check for responses that may include "Retry-After" header.
 	case resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable:
@@ -42,8 +44,8 @@ func HandleHTTPCode(resp *http.Response) error {
 		}
 		// Indicate to our caller to pause for the specified number of seconds.
 		err = exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
-	// 408 is transient, so leave it retryable.
-	case resp.StatusCode == http.StatusRequestTimeout:
+	// 408 and 409 are transient, so leave them retryable.
+	case resp.StatusCode == http.StatusRequestTimeout || resp.StatusCode == http.StatusConflict:
 	// Other 4xx are permanent; retrying an identical request can't fix it.
 	case resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError:
 		err = consumererror.NewPermanent(err)
