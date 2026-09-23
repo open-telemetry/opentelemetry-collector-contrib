@@ -847,8 +847,8 @@ func TestTimeParserDropField(t *testing.T) {
 
 	parseFrom := entry.NewBodyField("timestamp_field")
 	tp := &TimeParser{
-		LayoutType: EpochKey,
-		Layout:     "s",
+		LayoutType:      EpochKey,
+		Layout:          "s",
 		ParseFrom:       &parseFrom,
 		DropFieldConfig: DropFieldConfig{DropField: true},
 	}

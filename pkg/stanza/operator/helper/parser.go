@@ -97,9 +97,9 @@ func (c ParserConfig) Build(set component.TelemetrySettings) (ParserOperator, er
 type ParserOperator struct {
 	TransformerOperator
 	DropFieldConfig
-	ParseFrom entry.Field
-	ParseTo   entry.Field
-	BodyField *entry.Field
+	ParseFrom       entry.Field
+	ParseTo         entry.Field
+	BodyField       *entry.Field
 	TimeParser      *TimeParser
 	SeverityParser  *SeverityParser
 	TraceParser     *TraceParser
