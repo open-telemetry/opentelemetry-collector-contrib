@@ -22,14 +22,15 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                   metric.Meter
-	mu                      sync.Mutex
-	registrations           []metric.Registration
-	FluentClosedConnections metric.Int64UpDownCounter
-	FluentEventsParsed      metric.Int64UpDownCounter
-	FluentOpenedConnections metric.Int64UpDownCounter
-	FluentParseFailures     metric.Int64UpDownCounter
-	FluentRecordsGenerated  metric.Int64UpDownCounter
+	meter                    metric.Meter
+	mu                       sync.Mutex
+	registrations            []metric.Registration
+	FluentClosedConnections  metric.Int64UpDownCounter
+	FluentEventsParsed       metric.Int64UpDownCounter
+	FluentOpenedConnections  metric.Int64UpDownCounter
+	FluentParseFailures      metric.Int64UpDownCounter
+	FluentRecordsGenerated   metric.Int64UpDownCounter
+	FluentRefusedConnections metric.Int64UpDownCounter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -88,6 +89,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.FluentRecordsGenerated, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fluent_records_generated",
 		metric.WithDescription("Number of log records generated from Fluent forward input [Development]"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.FluentRefusedConnections, err = builder.meter.Int64UpDownCounter(
+		"otelcol_fluent_refused_connections",
+		metric.WithDescription("Number of connections refused because max_connections was reached [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

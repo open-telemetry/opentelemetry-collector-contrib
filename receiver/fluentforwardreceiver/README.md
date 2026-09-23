@@ -42,11 +42,22 @@ receivers:
     endpoint: 0.0.0.0:8006
 ```
 
+The following settings are optional:
+
+- `max_connections` (default = `100`): maximum simultaneously open connections.
+  Connections over the limit wait in the accept backlog until a slot frees. `0`
+  means no limit.
+- `refuse_over_limit` (default = `false`): close connections over
+  `max_connections` on accept instead of queueing them. Use this for long-lived
+  clients behind a load balancer, which would otherwise wait on a slot that may
+  never free; a refused client reconnects, possibly to another instance.
+  Refusals are counted by `otelcol_fluent_refused_connections`.
+
 ## Data Conversion
 
 The receiver converts Fluentd events to OpenTelemetry logs. Each Fluentd event
 is converted to a single OpenTelemetry log record and packets are stored as LogRecordSlice.
-The FluentD `tag` is stored as an attribute with key `fluent.tag`.
+The FluentD `tag` is stored as an attribute with key `fluentd.tag`.
 The FluentD event timestamp is used as the log record timestamp.
 The record `message` or `log` field is stored as the body of the log record. If both are present,
 it just takes the field that comes last in the message stream.
