@@ -14,6 +14,7 @@ require (
 	github.com/relvacode/iso8601 v1.8.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.0
+	go.opentelemetry.io/collector/component/componentstatus v0.162.0
 	go.opentelemetry.io/collector/component/componenttest v0.162.0
 	go.opentelemetry.io/collector/confmap v1.68.0
 	go.opentelemetry.io/collector/consumer v1.68.0
