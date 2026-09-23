@@ -664,6 +664,29 @@ func TestSliceGetter_nilRuntimeSlice(t *testing.T) {
 	})
 }
 
+func TestSliceGetter_nilLiteralSlice(t *testing.T) {
+	ctx := t.Context()
+	var sg SliceGetter[any, string]
+	src := newTestRuntimeSliceSource[any, string](newLiteral[any, any](nil))
+	require.NoError(t, sg.setReflectValue(reflect.ValueOf(*src)))
+
+	t.Run("Get", func(t *testing.T) {
+		vals, err := sg.Get(ctx, nil)
+		require.NoError(t, err)
+		require.Nil(t, vals)
+	})
+
+	t.Run("Range", func(t *testing.T) {
+		calls := 0
+		err := sg.Range(ctx, nil, func(_ string) bool {
+			calls++
+			return true
+		})
+		require.NoError(t, err)
+		require.Zero(t, calls)
+	})
+}
+
 func Test_sliceElementCoercer_sliceLen(t *testing.T) {
 	coercer := newTestSliceElementCoercer[any, string]()
 
