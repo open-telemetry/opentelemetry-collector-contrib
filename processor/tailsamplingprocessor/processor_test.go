@@ -294,32 +294,35 @@ func TestSplitResourceSpansByTrace(t *testing.T) {
 
 	batches := splitResourceSpansByTrace(rss)
 	require.Len(t, batches, 2)
-	require.Equal(t, traceA, batches[0].id)
-	require.Equal(t, traceB, batches[1].id)
-	require.EqualValues(t, 3, batches[0].spanCount)
-	require.EqualValues(t, 1, batches[1].spanCount)
-	require.True(t, batches[0].hasRoot)
-	require.False(t, batches[1].hasRoot)
+	byID := make(map[pcommon.TraceID]traceBatch, len(batches))
+	for _, batch := range batches {
+		byID[batch.id] = batch
+	}
+	a, b := byID[traceA], byID[traceB]
+	require.EqualValues(t, 3, a.spanCount)
+	require.EqualValues(t, 1, b.spanCount)
+	require.True(t, a.hasRoot)
+	require.False(t, b.hasRoot)
 
 	// We copy the resource, but not SchemaUrl (the old rebuild path didn't either).
-	require.Equal(t, "frontend", batches[0].rss.Resource().Attributes().AsRaw()["service.name"])
-	require.Empty(t, batches[0].rss.SchemaUrl())
-	require.Empty(t, batches[1].rss.SchemaUrl())
+	require.Equal(t, "frontend", a.rss.Resource().Attributes().AsRaw()["service.name"])
+	require.Empty(t, a.rss.SchemaUrl())
+	require.Empty(t, b.rss.SchemaUrl())
 
 	// Trace A keeps both scopes in first-seen order, no empty scopes.
-	require.Equal(t, 2, batches[0].rss.ScopeSpans().Len())
-	require.Equal(t, "lib-a", batches[0].rss.ScopeSpans().At(0).Scope().Name())
-	require.Equal(t, "lib-b", batches[0].rss.ScopeSpans().At(1).Scope().Name())
-	require.Equal(t, 2, batches[0].rss.ScopeSpans().At(0).Spans().Len())
-	require.Equal(t, uInt64ToSpanID(1), batches[0].rss.ScopeSpans().At(0).Spans().At(0).SpanID())
-	require.Equal(t, uInt64ToSpanID(4), batches[0].rss.ScopeSpans().At(0).Spans().At(1).SpanID())
-	require.Equal(t, uInt64ToSpanID(3), batches[0].rss.ScopeSpans().At(1).Spans().At(0).SpanID())
-	require.Empty(t, batches[0].rss.ScopeSpans().At(0).SchemaUrl())
+	require.Equal(t, 2, a.rss.ScopeSpans().Len())
+	require.Equal(t, "lib-a", a.rss.ScopeSpans().At(0).Scope().Name())
+	require.Equal(t, "lib-b", a.rss.ScopeSpans().At(1).Scope().Name())
+	require.Equal(t, 2, a.rss.ScopeSpans().At(0).Spans().Len())
+	require.Equal(t, uInt64ToSpanID(1), a.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
+	require.Equal(t, uInt64ToSpanID(4), a.rss.ScopeSpans().At(0).Spans().At(1).SpanID())
+	require.Equal(t, uInt64ToSpanID(3), a.rss.ScopeSpans().At(1).Spans().At(0).SpanID())
+	require.Empty(t, a.rss.ScopeSpans().At(0).SchemaUrl())
 
 	// Trace B only appeared in scope A.
-	require.Equal(t, 1, batches[1].rss.ScopeSpans().Len())
-	require.Equal(t, "lib-a", batches[1].rss.ScopeSpans().At(0).Scope().Name())
-	require.Equal(t, uInt64ToSpanID(2), batches[1].rss.ScopeSpans().At(0).Spans().At(0).SpanID())
+	require.Equal(t, 1, b.rss.ScopeSpans().Len())
+	require.Equal(t, "lib-a", b.rss.ScopeSpans().At(0).Scope().Name())
+	require.Equal(t, uInt64ToSpanID(2), b.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
 }
 
 func TestSequentialTraceArrival(t *testing.T) {

@@ -1026,15 +1026,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
 	srcScopes := rss.ScopeSpans()
 	type builder struct {
-		id        pcommon.TraceID
 		rs        ptrace.ResourceSpans
 		destScope ptrace.ScopeSpans
 		lastScope int // Last opened source scope for a dest (-1 until the first span)
 		count     int64
 		hasRoot   bool
 	}
-	builders := make([]builder, 0, 4)
-	index := make(map[pcommon.TraceID]int)
+	builders := make(map[pcommon.TraceID]*builder)
 
 	for j := 0; j < srcScopes.Len(); j++ {
 		srcScope := srcScopes.At(j)
@@ -1042,15 +1040,13 @@ func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
 		for k := 0; k < spans.Len(); k++ {
 			span := spans.At(k)
 			id := span.TraceID()
-			i, ok := index[id]
+			b, ok := builders[id]
 			if !ok {
 				rs := ptrace.NewResourceSpans()
 				rss.Resource().CopyTo(rs.Resource())
-				i = len(builders)
-				builders = append(builders, builder{id: id, rs: rs, lastScope: -1})
-				index[id] = i
+				b = &builder{rs: rs, lastScope: -1}
+				builders[id] = b
 			}
-			b := &builders[i]
 			if b.lastScope != j {
 				dest := b.rs.ScopeSpans().AppendEmpty()
 				srcScope.Scope().CopyTo(dest.Scope())
@@ -1066,15 +1062,14 @@ func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
 		}
 	}
 
-	batches := make([]traceBatch, len(builders))
-	for i := range builders {
-		b := &builders[i]
-		batches[i] = traceBatch{
-			id:        b.id,
+	batches := make([]traceBatch, 0, len(builders))
+	for id, b := range builders {
+		batches = append(batches, traceBatch{
+			id:        id,
 			hasRoot:   b.hasRoot,
 			rss:       b.rs,
 			spanCount: b.count,
-		}
+		})
 	}
 	return batches
 }
