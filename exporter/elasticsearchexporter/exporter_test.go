@@ -3135,8 +3135,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		}
 	})
 	t.Run("profiles", func(t *testing.T) {
-		// Profiles are only supported by otel mode, so just verify that
-		// the metadata is picked up and invalid modes are rejected.
+		// Just verify that the metadata is picked up and invalid modes are rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes, func(cfg *Config) {
 			// Set wait_for_result to be true so that errors are reported directly via Consume*
 			cfg.QueueBatchConfig.Get().WaitForResult = true
@@ -3250,12 +3249,11 @@ func TestExporterBatcher(t *testing.T) {
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
 		cfg.QueueBatchConfig.GetOrInsertDefault()
 		cfg.QueueBatchConfig.Get().WaitForResult = true
-		cfg.QueueBatchConfig.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      8192,
-			MaxSize:      10000,
-		})
+		batch := cfg.QueueBatchConfig.Get().Batch.GetOrInsertDefault()
+		batch.FlushTimeout = 200 * time.Millisecond
+		batch.Sizer = exporterhelper.RequestSizerTypeItems
+		batch.MinSize = 8192
+		batch.MaxSize = 10000
 		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
@@ -3411,7 +3409,9 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 
 	t.Run("profiles", func(t *testing.T) {
 		testHost, rec := setupTestHost(t)
-		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn)
+		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn, func(cfg *Config) {
+			cfg.Mapping.AllowedModes = []string{"ecs"}
+		})
 		require.NoError(t, exporter.Start(t.Context(), testHost))
 		defer func() {
 			require.NoError(t, exporter.Shutdown(t.Context()))

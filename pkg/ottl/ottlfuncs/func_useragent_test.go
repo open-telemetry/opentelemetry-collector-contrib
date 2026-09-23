@@ -169,14 +169,14 @@ func Test_UserAgentFactory(t *testing.T) {
 		factory := NewUserAgentFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &UserAgentArguments[any]{}, args)
+		assert.IsType(t, &userAgentArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"UserAgent"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewUserAgentFactory[any]()
 		args := factory.CreateDefaultArguments()
-		userAgentArgs, ok := args.(*UserAgentArguments[any])
+		userAgentArgs, ok := args.(*userAgentArguments[any])
 		require.True(t, ok)
 		userAgentArgs.UserAgent = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -191,6 +191,22 @@ func Test_UserAgentFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createUserAgentFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "URLFactory args must be of type *URLArguments[K]")
+		assert.ErrorContains(t, err, "URLFactory args must be of type *uRLArguments[K]")
 	})
+}
+
+func BenchmarkUserAgent(b *testing.B) {
+	source := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36", nil
+		},
+	}
+	exprFunc := userAgent[any](source) //revive:disable-line:var-naming
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
