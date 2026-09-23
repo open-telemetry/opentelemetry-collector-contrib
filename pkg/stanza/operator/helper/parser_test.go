@@ -751,28 +751,6 @@ func TestParserFields(t *testing.T) {
 				return e
 			},
 		},
-		{
-			"ParseFromBodyRootWithDrop",
-			func(cfg *ParserConfig) {
-				cfg.ParseFrom = entry.NewBodyField()
-				cfg.DropField = true
-			},
-			func() *entry.Entry {
-				e := entry.New()
-				e.ObservedTimestamp = now
-				e.Body = keyValue
-				return e
-			},
-			func() *entry.Entry {
-				e := entry.New()
-				e.ObservedTimestamp = now
-				e.Body = nil
-				e.Attributes = map[string]any{
-					"key": "value",
-				}
-				return e
-			},
-		},
 	}
 
 	parse := func(i any) (any, error) {

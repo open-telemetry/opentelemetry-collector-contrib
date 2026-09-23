@@ -151,6 +151,10 @@ func (c *SeverityConfig) Build(_ component.TelemetrySettings) (SeverityParser, e
 		return SeverityParser{}, errors.New("missing required field 'parse_from'")
 	}
 
+	if err := c.DropFieldConfig.Validate(*c.ParseFrom); err != nil {
+		return SeverityParser{}, err
+	}
+
 	p := SeverityParser{
 		DropFieldConfig: c.DropFieldConfig,
 		ParseFrom:       *c.ParseFrom,

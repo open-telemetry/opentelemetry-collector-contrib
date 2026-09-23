@@ -77,6 +77,10 @@ func (t *TimeParser) Validate() error {
 		return errors.New("missing required parameter 'parse_from'")
 	}
 
+	if err := t.DropFieldConfig.Validate(*t.ParseFrom); err != nil {
+		return err
+	}
+
 	if t.Layout == "" && t.LayoutType != "native" {
 		return errors.New("missing required configuration parameter `layout`")
 	}

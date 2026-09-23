@@ -247,21 +247,6 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			"drop_field",
-			func(p *Config) {
-				p.DropField = true
-			},
-			&entry.Entry{
-				Body: `{"superkey":"superval"}`,
-			},
-			&entry.Entry{
-				Attributes: map[string]any{
-					"superkey": "superval",
-				},
-				Body: nil,
-			},
-		},
-		{
 			"drop_field_from_subfield",
 			func(p *Config) {
 				p.ParseFrom = entry.NewBodyField("raw_json")
