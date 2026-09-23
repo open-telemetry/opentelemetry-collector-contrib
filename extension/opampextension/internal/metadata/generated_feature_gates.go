@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ExtensionOpampHeartbeatIntervalNegotiationFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"extension.opamp.HeartbeatIntervalNegotiation",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the OpAMP extension defaults `reports_heartbeat` to true."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51427"),
+	featuregate.WithRegisterFromVersion("v0.162.0"),
+)
+
 var ExtensionOpampextensionRemoteRestartsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.opampextension.RemoteRestarts",
 	featuregate.StageAlpha,
