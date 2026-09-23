@@ -53,6 +53,23 @@ var lockModeMap = map[string]metadata.AttributeLockMode{
 	"w": metadata.AttributeLockModeIntentExclusive,
 }
 
+// assertTypeMap omits asserts.rollovers on purpose: it counts how many times the assert counters
+// wrapped rather than a kind of assertion, so recording it would break sums across the attribute.
+var assertTypeMap = map[string]metadata.AttributeMongodbAssertType{
+	"msg":      metadata.AttributeMongodbAssertTypeMsg,
+	"regular":  metadata.AttributeMongodbAssertTypeRegular,
+	"user":     metadata.AttributeMongodbAssertTypeUser,
+	"warning":  metadata.AttributeMongodbAssertTypeWarning,
+	"tripwire": metadata.AttributeMongodbAssertTypeTripwire,
+}
+
+// globalLockQueueMap omits currentQueue.total: it is readers + writers, and emitting it alongside
+// them would double count any sum across the attribute.
+var globalLockQueueMap = map[string]metadata.AttributeMongodbGlobalLockQueueType{
+	"readers": metadata.AttributeMongodbGlobalLockQueueTypeRead,
+	"writers": metadata.AttributeMongodbGlobalLockQueueTypeWrite,
+}
+
 const (
 	collectMetricError          = "failed to collect metric %s: %w"
 	collectMetricWithAttributes = "failed to collect metric %s with attribute(s) %s: %w"
@@ -580,6 +597,50 @@ func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M,
 	}
 	heldTimeMilliseconds := val / 1000
 	s.mb.RecordMongodbGlobalLockTimeDataPoint(now, heldTimeMilliseconds)
+}
+
+// recordAsserts records the server's assertion counters.
+func (s *mongodbScraper) recordAsserts(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.assert.count"
+	for fieldKey, attr := range assertTypeMap {
+		val, err := collectMetric(doc, []string{"asserts", fieldKey})
+		if err != nil {
+			// Tripwire assertions are only reported by newer servers; their absence is not an error.
+			if fieldKey == "tripwire" && errors.Is(err, errKeyNotFound) {
+				continue
+			}
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, attr.String(), err))
+			continue
+		}
+		s.mb.RecordMongodbAssertCountDataPoint(now, val, attr)
+	}
+}
+
+// recordGlobalLockQueue records how many operations are waiting for the global lock, split by the
+// kind of operation waiting.
+func (s *mongodbScraper) recordGlobalLockQueue(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.global_lock.queue.count"
+	for fieldKey, attr := range globalLockQueueMap {
+		val, err := collectMetric(doc, []string{"globalLock", "currentQueue", fieldKey})
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, attr.String(), err))
+			continue
+		}
+		s.mb.RecordMongodbGlobalLockQueueCountDataPoint(now, val, attr)
+	}
+}
+
+// recordWriteConcernWaitTime records the cumulative time spent waiting for write concern
+// acknowledgement. The source counter is in milliseconds; the metric is emitted in seconds.
+func (s *mongodbScraper) recordWriteConcernWaitTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"metrics", "getLastError", "wtime", "totalMillis"}
+	metricName := "mongodb.write_concern.wait.time"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbWriteConcernWaitTimeDataPoint(now, float64(val)/1000.0)
 }
 
 func (s *mongodbScraper) recordCursorCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
