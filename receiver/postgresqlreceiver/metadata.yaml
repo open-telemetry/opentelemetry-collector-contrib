@@ -156,6 +156,7 @@ attributes:
   postgresql.backend_type:
     description: The type of backend process, e.g. client backend, autovacuum worker, or checkpointer. Reports "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role.
     type: string
+    requirement_level: opt_in
   postgresql.blocking.lock.mode:
     description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
     type: string
@@ -238,6 +239,7 @@ attributes:
   postgresql.state:
     description: Current overall state of this backend, as reported by pg_stat_activity.state. On the postgresql.backends metric, reports "unknown" when the state is not available, e.g. for non-client backends or when the monitoring user lacks the pg_monitor role.
     type: string
+    requirement_level: opt_in
   postgresql.temp_blks_read:
     description: Total number of temp blocks read by the statement, reported in delta value.
     type: int
@@ -256,6 +258,7 @@ attributes:
   postgresql.wait_event_type:
     description: The type of event for which the backend is waiting, if any; otherwise NULL. On the postgresql.backends metric, reports "none" instead when the backend is not waiting.
     type: string
+    requirement_level: opt_in
   relation:
     description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
     type: string

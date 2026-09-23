@@ -79,8 +79,7 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupInserted.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupReturned.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupUpdated.EnabledAttributes)
-	// postgresql.backend_type, postgresql.state and postgresql.wait_event_type are not semconv attributes, so they survive in legacy mode.
-	assert.Equal(t, []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType}, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlBackends.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlBlocksReadMetricAttributeKey{metadata.PostgresqlBlocksReadMetricAttributeKeySource}, legacyConfig.Metrics.PostgresqlBlocksRead.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlDatabaseLocksMetricAttributeKey{metadata.PostgresqlDatabaseLocksMetricAttributeKeyRelation, metadata.PostgresqlDatabaseLocksMetricAttributeKeyMode, metadata.PostgresqlDatabaseLocksMetricAttributeKeyLockType}, legacyConfig.Metrics.PostgresqlDatabaseLocks.EnabledAttributes)
 	assert.Equal(t, []metadata.PostgresqlFunctionCallsMetricAttributeKey{metadata.PostgresqlFunctionCallsMetricAttributeKeyFunction}, legacyConfig.Metrics.PostgresqlFunctionCalls.EnabledAttributes)
@@ -90,7 +89,7 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Equal(t, cfg.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlWalDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalDelay.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlWalLag.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalLag.EnabledAttributes)
-	assert.NotEmpty(t, cfg.Metrics.PostgresqlBackends.EnabledAttributes)
+	assert.Equal(t, []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace}, cfg.Metrics.PostgresqlBackends.EnabledAttributes)
 	assert.Contains(t, cfg.Metrics.PostgresqlQueryConflicts.EnabledAttributes, metadata.PostgresqlQueryConflictsMetricAttributeKeyDbNamespace)
 	assert.Equal(t, metadata.NewDefaultMetricsBuilderConfig(), cfg)
 
@@ -122,6 +121,12 @@ func findMetric(t *testing.T, metrics pmetric.Metrics, name string) pmetric.Metr
 
 func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlBackends.EnabledAttributes = []metadata.PostgresqlBackendsMetricAttributeKey{
+		metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
+		metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
+		metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
+		metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+	}
 	scraper := &postgreSQLScraper{
 		config:            cfg,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
@@ -179,6 +184,39 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 		{namespace: "orders", backendType: "checkpointer", state: "unknown", waitEventType: "none"}:     1,
 		{namespace: "orders", backendType: "unknown", state: "unknown", waitEventType: "none"}:          4,
 	}, actual)
+}
+
+func TestRecordDatabaseBackendsDefaultsToTotalPerDatabase(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	scraper := &postgreSQLScraper{
+		config:            cfg,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		serviceInstanceID: "example.com:5432",
+		useOTelSemconv:    true,
+	}
+	retrieval := &dbRetrieval{
+		backendStateMap: map[databaseName][]backendStateCount{
+			"orders": {
+				{backendType: "client backend", state: "active", waitEventType: "none", count: 3},
+				{backendType: "client backend", state: "idle", waitEventType: "Client", count: 7},
+				{backendType: "autovacuum worker", state: "active", waitEventType: "none", count: 1},
+			},
+		},
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Unix(0, 1))
+	scraper.recordDatabase(now, "orders", retrieval, 0)
+	rb := scraper.setupSemconvResourceBuilder(scraper.mb.NewResourceBuilder())
+	backends := findMetric(t, scraper.mb.Emit(metadata.WithResource(rb.Emit())), "postgresql.backends")
+
+	dataPoints := backends.Sum().DataPoints()
+	require.Equal(t, 1, dataPoints.Len())
+	dp := dataPoints.At(0)
+	assert.Equal(t, int64(11), dp.IntValue())
+	assert.Equal(t, 1, dp.Attributes().Len())
+	namespace, ok := dp.Attributes().Get("db.namespace")
+	require.True(t, ok)
+	assert.Equal(t, "orders", namespace.Str())
 }
 
 func TestSemconvQueryConflictsPreserveDatabaseNamespace(t *testing.T) {

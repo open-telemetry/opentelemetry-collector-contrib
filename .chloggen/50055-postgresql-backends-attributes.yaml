@@ -18,8 +18,8 @@ issues: [50055]
 subtext: |
   The metric gains the `postgresql.backend_type`, `postgresql.state` and `postgresql.wait_event_type`
   data point attributes, sourced from the same `pg_stat_activity` query that already feeds it.
-  All three are enabled by default; use the metric's `attributes` setting to drop any of them and
-  aggregate the corresponding data points back together.
+  All three are opt-in and disabled by default, so the metric reports a single series per database
+  unless the user enables them via the metric's `attributes` setting.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

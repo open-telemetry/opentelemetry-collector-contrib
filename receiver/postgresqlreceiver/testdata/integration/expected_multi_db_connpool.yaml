@@ -333,15 +333,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1706802402706723341"
                   timeUnixNano: "1706802461712893428"
             unit: "1"
@@ -958,15 +949,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1706802402706723341"
                   timeUnixNano: "1706802461712893428"
             unit: "1"

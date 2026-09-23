@@ -453,15 +453,6 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlBackendTypeAttrVal, ok := dp.Attributes().Get("postgresql.backend_type")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.backend_type-val", postgresqlBackendTypeAttrVal.Str())
-						postgresqlStateAttrVal, ok := dp.Attributes().Get("postgresql.state")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.state-val", postgresqlStateAttrVal.Str())
-						postgresqlWaitEventTypeAttrVal, ok := dp.Attributes().Get("postgresql.wait_event_type")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.wait_event_type-val", postgresqlWaitEventTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.backends"], "Found a duplicate in the metrics slice: postgresql.backends")
 						validatedMetrics["postgresql.backends"] = true

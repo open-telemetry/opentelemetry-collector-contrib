@@ -24,11 +24,11 @@ See PostgreSQL documentation for [supported versions](https://www.postgresql.org
 
 The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
-Telemetry derived from `pg_stat_activity` — the `postgresql.backends` metric and the
-`db.server.query_sample` event — additionally requires the monitoring user to be granted `pg_monitor`
-(or `pg_read_all_stats`). Without it, PostgreSQL hides the `backend_type`, `state` and
-`wait_event_type` columns of every backend except the collector's own connection, so
-`postgresql.backends` reports almost all backends as `unknown`.
+The `db.server.query_sample` event requires the monitoring user to be granted `pg_monitor` (or
+`pg_read_all_stats`). The optional `postgresql.backend_type`, `postgresql.state`, and
+`postgresql.wait_event_type` attributes on the `postgresql.backends` metric need the same grant to
+report values for other sessions. Without it, PostgreSQL hides those values for every backend except
+the collector's own connection; the default `postgresql.backends` total per database is unaffected.
 
 ```sql
 GRANT pg_monitor TO otelu;
@@ -323,16 +323,19 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 > The optional `postgresql.query.execution.time` metric requires the `pg_stat_statements` extension to be
 > installed and enabled.
 
-The data point attributes recorded on a metric can be restricted with the `attributes` setting of that
-metric. For example, `postgresql.backends` reports one series per combination of backend type, state and
-wait event type within each database; to keep only the state breakdown and reduce cardinality:
+The `postgresql.backends` metric is broken down by backend type, connection state and wait event
+type, sourced from the same `pg_stat_activity` query that already feeds it. These three data point
+attributes — `postgresql.backend_type`, `postgresql.state` and `postgresql.wait_event_type` — are
+opt-in and disabled by default, so the metric reports a single series per database by default. To
+enable the breakdown, enable the attributes you want on the metric:
 
 ```yaml
 receivers:
   postgresql:
     metrics:
       postgresql.backends:
-        attributes: [db.namespace, postgresql.state]
+        attributes: [db.namespace, postgresql.backend_type, postgresql.state, postgresql.wait_event_type]
 ```
 
-Data points that only differ in the dropped attributes are aggregated into one (summed by default).
+Data points that share the same enabled attributes are aggregated into one (summed by default). To
+reduce cardinality, enable only a subset of the attributes.

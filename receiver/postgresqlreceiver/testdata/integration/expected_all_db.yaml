@@ -582,15 +582,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
                   attributes:
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
