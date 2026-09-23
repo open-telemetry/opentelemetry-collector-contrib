@@ -60,12 +60,12 @@ func BenchmarkPartitionLogsByBlobName(b *testing.B) {
 			if !bc.templateEnabled {
 				wantGroups = 1
 			}
-			if got := len(e.partitionLogsByBlobName(logs)); got != wantGroups {
+			if got := len(partitionByBlobName(e, logsOps, logs)); got != wantGroups {
 				b.Fatalf("expected %d groups, got %d", wantGroups, got)
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				e.partitionLogsByBlobName(logs)
+				partitionByBlobName(e, logsOps, logs)
 			}
 		})
 	}

@@ -65,6 +65,37 @@ func TestPartitionUploadsGroupsSequentially(t *testing.T) {
 	})
 }
 
+// TestPartitionGroupsShareExportTimestamp verifies that every blob written by
+// one export request resolves time-based name segments from the same instant,
+// even when an earlier upload crosses a time boundary.
+func TestPartitionGroupsShareExportTimestamp(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}/15`, true)
+		cfg.BlobNameFormat.TimeParserEnabled = true
+		// Parse only the hour, not the resource-specific prefix.
+		cfg.BlobNameFormat.TimeParserRanges = []string{"2-4"}
+		exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+
+		var names []string
+		client := &mockAzBlobClient{url: "http://mock"}
+		client.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).
+			Run(func(args mock.Arguments) {
+				names = append(names, args.String(2))
+				// Each upload advances the bubble's fake clock past the next hour.
+				time.Sleep(time.Hour)
+			}).Return(nil)
+		exporter.client = client
+
+		start := time.Now()
+		require.NoError(t, exporter.ConsumeLogs(t.Context(), generateLogsWithActivities("a", "b")))
+		require.GreaterOrEqual(t, time.Since(start), 2*time.Hour)
+
+		hour := start.Format("15")
+		assert.Equal(t, []string{"a/" + hour, "b/" + hour}, names)
+	})
+}
+
 func TestPartitionCancellationPreservesUnsentLogs(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
