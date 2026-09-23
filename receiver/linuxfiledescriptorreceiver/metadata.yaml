@@ -1,0 +1,10 @@
+type: linuxfiledescriptor
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+tests:
+  config:
+    receivers:
+      linuxfiledescriptor:
