@@ -16,6 +16,7 @@ import (
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/types"
+	vsantypes "github.com/vmware/govmomi/vsan/types"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -397,4 +398,47 @@ func TestSessionReestablish(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, connected)
 	})
+}
+
+func TestConvertVSANResultToMetricResults(t *testing.T) {
+	client := vcenterClient{logger: zap.NewNop()}
+
+	tests := []struct {
+		name         string
+		result       vsantypes.VsanPerfEntityMetricCSV
+		expectedUUID string
+	}{
+		{
+			name: "empty SampleInfo is skipped without error",
+			result: vsantypes.VsanPerfEntityMetricCSV{
+				EntityRefId: "cluster-domclient:52e0c79c-1111-2222-3333-444455556666",
+				SampleInfo:  "",
+				Value: []vsantypes.VsanPerfMetricSeriesCSV{
+					{
+						MetricId: vsantypes.VsanPerfMetricId{Label: "iopsRead"},
+						Values:   "",
+					},
+				},
+			},
+			expectedUUID: "52e0c79c-1111-2222-3333-444455556666",
+		},
+		{
+			name: "whitespace-only SampleInfo is skipped without error",
+			result: vsantypes.VsanPerfEntityMetricCSV{
+				EntityRefId: "host-domclient:aaaabbbb-cccc-dddd-eeee-ffff00001111",
+				SampleInfo:  "  ",
+			},
+			expectedUUID: "aaaabbbb-cccc-dddd-eeee-ffff00001111",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metricResults, err := client.convertVSANResultToMetricResults(tt.result)
+			require.NoError(t, err)
+			require.NotNil(t, metricResults)
+			require.Equal(t, tt.expectedUUID, metricResults.UUID)
+			require.Empty(t, metricResults.MetricDetails)
+		})
+	}
 }

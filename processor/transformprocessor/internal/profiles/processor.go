@@ -5,15 +5,15 @@ package profiles // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -23,9 +23,9 @@ type parsedContextStatements struct {
 }
 
 type Processor struct {
-	contexts     []parsedContextStatements
-	logger       *zap.Logger
-	sharedCaches map[common.ContextID]*pcommon.Map
+	contexts            []parsedContextStatements
+	logger              *zap.Logger
+	sharedCacheContexts []common.ContextID
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, profileFunctions map[string]ottl.Factory[*ottlprofile.TransformContext]) (*Processor, error) {
@@ -51,32 +51,32 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, errors
 	}
 
-	var sharedCaches map[common.ContextID]*pcommon.Map
+	var sharedCacheContexts []common.ContextID
 	for _, c := range contexts {
-		if c.sharedCache {
-			if sharedCaches == nil {
-				sharedCaches = map[common.ContextID]*pcommon.Map{}
-			}
-			m := pcommon.NewMap()
-			sharedCaches[c.Context()] = &m
+		if !c.sharedCache || slices.Contains(sharedCacheContexts, c.Context()) {
+			continue
 		}
+		sharedCacheContexts = append(sharedCacheContexts, c.Context())
 	}
 
 	return &Processor{
-		contexts:     contexts,
-		logger:       settings.Logger,
-		sharedCaches: sharedCaches,
+		contexts:            contexts,
+		logger:              settings.Logger,
+		sharedCacheContexts: sharedCacheContexts,
 	}, nil
 }
 
 func (p *Processor) ProcessProfiles(ctx context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
+	sharedCaches := common.NewSharedCaches(p.sharedCacheContexts)
+
 	for _, c := range p.contexts {
-		cache := common.LoadContextCache(p.sharedCaches, c.Context(), c.sharedCache)
+		cache := common.LoadContextCache(sharedCaches, c.Context(), c.sharedCache)
 		err := c.ConsumeProfiles(ctx, ld, cache)
 		if err != nil {
 			p.logger.Error("failed processing profiles", zap.Error(err))
 			return ld, err
 		}
 	}
+
 	return ld, nil
 }

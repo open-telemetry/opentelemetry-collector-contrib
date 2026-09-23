@@ -32,8 +32,7 @@ func Test_Day(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Day(tt.time)
-			require.NoError(t, err)
+			exprFunc := day(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -47,8 +46,7 @@ func Test_Day_Error(t *testing.T) {
 			return "not a time", nil
 		},
 	}
-	exprFunc, err := Day(getter)
-	require.NoError(t, err)
+	exprFunc := day(getter)
 	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
@@ -64,14 +62,14 @@ func Test_DayFactory(t *testing.T) {
 		factory := NewDayFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &DayArguments[any]{}, args)
+		assert.IsType(t, &dayArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewDayFactory[any]()
 		args := factory.CreateDefaultArguments()
-		dayArgs, ok := args.(*DayArguments[any])
+		dayArgs, ok := args.(*dayArguments[any])
 		require.True(t, ok)
 		dayArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,6 +84,22 @@ func Test_DayFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createDayFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "DayFactory args must be of type *DayArguments[K]")
+		assert.ErrorContains(t, err, "DayFactory args must be of type *dayArguments[K]")
 	})
+}
+
+func BenchmarkDay(b *testing.B) {
+	exprFunc := day[any](&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC), nil
+		},
+	})
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
