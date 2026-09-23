@@ -32,21 +32,9 @@ func createIsInCIDRFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 
 func isInCIDR[K any](target ottl.StringGetter[K], networks *ottl.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	var literalNetworks []*net.IPNet
-	// Len reports size only when the parser supplies a static list of network getters
-	if length, ok := networks.Len(); ok {
-		networkGetters, err := networks.Get(context.Background(), *new(K))
-		if err != nil {
-			return nil, err
-		}
-
-		literalNetworks = make([]*net.IPNet, 0, length)
-		// Parse literal networks once, use the runtime path when the list contains a dynamic getter
-		for _, network := range networkGetters {
-			literal, isLiteral := ottl.GetLiteralValue[K, string](network)
-			if !isLiteral {
-				literalNetworks = nil
-				break
-			}
+	if literalValues, allLiteral := ottl.GetLiteralValues[K, string](networks); allLiteral && literalValues != nil {
+		literalNetworks = make([]*net.IPNet, 0, len(literalValues))
+		for _, literal := range literalValues {
 			_, subnet, err := net.ParseCIDR(literal)
 			if err != nil {
 				return nil, err
