@@ -1169,7 +1169,7 @@ make benchmark-transform
 
 ## Self-observability
 
-The Transform Processor does not emit any component-specific self-observability signals. It relies on
+The Transform Processor does not emit any component-specific metrics or spans. It relies on
 the standard telemetry that the Collector produces for every processor, which is described in the
 Collector's [internal telemetry](https://opentelemetry.io/docs/collector/internal-telemetry/)
 documentation.
