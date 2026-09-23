@@ -4,6 +4,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -213,6 +214,44 @@ func Test_isInCIDR(t *testing.T) {
 	}
 }
 
+func Test_isInCIDR_getter_errors(t *testing.T) {
+	t.Run("target getter error", func(t *testing.T) {
+		targetErr := errors.New("target getter failed")
+		target := ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return nil, targetErr },
+		}
+		networks := []ottl.StringGetter[any]{
+			ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+			},
+		}
+
+		exprFunc, err := isInCIDR[any](target, networks)
+		require.NoError(t, err)
+
+		_, err = exprFunc(t.Context(), nil)
+		require.ErrorIs(t, err, targetErr)
+	})
+
+	t.Run("network getter error", func(t *testing.T) {
+		networkErr := errors.New("network getter failed")
+		target := ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return "192.0.2.1", nil },
+		}
+		networks := []ottl.StringGetter[any]{
+			ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) { return nil, networkErr },
+			},
+		}
+
+		exprFunc, err := isInCIDR[any](target, networks)
+		require.NoError(t, err)
+
+		_, err = exprFunc(t.Context(), nil)
+		require.ErrorIs(t, err, networkErr)
+	})
+}
+
 func Test_isInCIDR_Error(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -305,6 +344,23 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 			Getter: func(context.Context, any) (any, error) { return "192.0.0.1", nil },
 		}, []ottl.StringGetter[any]{invalidLiteral})
 		assert.ErrorContains(t, err, "invalid CIDR address")
+	})
+
+	t.Run("invalid literal before dynamic getter", func(t *testing.T) {
+		invalidLiteral, err := ottl.NewTestingLiteralGetter(true, ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return "192.0.2/24", nil },
+		})
+		require.NoError(t, err)
+		target := ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return "192.0.2.1", nil },
+		}
+		dynamic := ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+		}
+		networks := []ottl.StringGetter[any]{invalidLiteral, dynamic}
+
+		_, err = isInCIDR[any](target, networks)
+		assert.ErrorContains(t, err, "invalid CIDR address: 192.0.2/24")
 	})
 }
 
