@@ -54,48 +54,37 @@ processors:
     verification_profile: default
 
     # Key material source (required). Exactly one sub-block must be provided.
-    # Same providers and field names as signingprocessor; only the public
-    # certificate and/or HMAC secret are needed (no private-key fields).
+    # Same providers as signingprocessor. Each provider uses shared YAML keys
+    # certificate and/or hmac_key (no private-key fields). The meaning of each
+    # value depends on the provider (path, env-var name, secret key, or field).
     key_source:
       # type selects the provider: file | env | k8s_secret | bao
       type: file
 
-      # --- file provider ---
+      # --- file provider — paths to local files ---
       file:
-        cert_file: /etc/otelcol/cert.pem
-        # hmac_key_file: /etc/otelcol/hmac.key
+        certificate: /etc/otelcol/cert.pem
+        # hmac_key: /etc/otelcol/hmac.key
 
-      # --- env provider — asymmetric ---
+      # --- env provider — names of environment variables ---
       # env:
-      #   cert_env_var: VERIFY_CERT_PEM   # PEM or base64-encoded PEM
+      #   certificate: VERIFY_CERT_PEM   # env var holding PEM or base64-encoded PEM
+      #   hmac_key:    VERIFY_HMAC_KEY   # env var holding the HMAC secret
 
-      # --- env provider — HMAC-SHA256 ---
-      # env:
-      #   hmac_key_env_var: VERIFY_HMAC_KEY
-
-      # --- Kubernetes Secret provider — asymmetric ---
+      # --- Kubernetes Secret provider — keys within the Secret ---
       # k8s_secret:
-      #   name:      verify-secret
-      #   namespace: default              # optional, defaults to "default"
-      #   cert_key:  tls.crt
+      #   name:        verify-secret
+      #   namespace:   default              # optional, defaults to "default"
+      #   certificate: tls.crt
+      #   # hmac_key:  hmac.key
 
-      # --- Kubernetes Secret provider — HMAC-SHA256 ---
-      # k8s_secret:
-      #   name:      verify-secret
-      #   namespace: default
-      #   hmac_key:  hmac.key
-
-      # --- OpenBao / Vault provider — asymmetric ---
+      # --- OpenBao / Vault provider — fields within the secret ---
       # bao:
       #   address:     https://bao.example.com   # optional, falls back to BAO_ADDR
       #   token:       s.xxxx                    # optional, falls back to BAO_TOKEN
       #   secret_path: secret/data/verify
-      #   cert_field:  certificate
-
-      # --- OpenBao / Vault provider — HMAC-SHA256 ---
-      # bao:
-      #   secret_path:    secret/data/verify
-      #   hmac_key_field: hmac_key
+      #   certificate: certificate
+      #   # hmac_key:  hmac_key
 
     # Optional hash-chain continuity checks.
     hash_chain:
@@ -111,18 +100,17 @@ processors:
 
 ## Key source providers
 
-Same provider set and field names as [`signingprocessor`](../signingprocessor),
-except private-key fields (`key_file`, `key_env_var`, `key_key`, `key_field`)
-are omitted because verification only needs the public certificate and/or HMAC
-secret. Each provider must supply a certificate and/or an HMAC secret. Both may
-be set when the collector should verify either algorithm.
+Same provider set as [`signingprocessor`](../signingprocessor), but every
+provider uses the shared YAML keys `certificate` and/or `hmac_key` (private-key
+fields are omitted). Each provider must supply a certificate and/or an HMAC
+secret. Both may be set when the collector should verify either algorithm.
 
-| Provider | Description |
-| --- | --- |
-| `file` | Reads a PEM certificate and/or a raw HMAC secret from local files. Supports plain PEM and base64-encoded PEM for certificates. |
-| `env` | Reads a certificate PEM and/or an HMAC secret from environment variables named by `cert_env_var` / `hmac_key_env_var`. |
-| `k8s_secret` | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
-| `bao` | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine. |
+| Provider | `certificate` / `hmac_key` mean | Description |
+| --- | --- | --- |
+| `file` | Local file paths | Reads a PEM certificate and/or a raw HMAC secret from disk. Supports plain PEM and base64-encoded PEM for certificates. |
+| `env` | Environment variable names | Reads material from the named env vars (PEM / base64 PEM or raw HMAC secret). |
+| `k8s_secret` | Keys inside the Secret | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
+| `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine. |
 
 ## Integrity attributes (from `signingprocessor`)
 
@@ -201,7 +189,7 @@ processors:
     key_source:
       type: file
       file:
-        cert_file: /etc/otelcol/cert.pem
+        certificate: /etc/otelcol/cert.pem
 
 exporters:
   otlp:

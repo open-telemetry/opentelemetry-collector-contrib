@@ -5,7 +5,7 @@ verify:
   key_source:
     type: file
     file:
-      hmac_key_file: /etc/otelcol/hmac.key
+      hmac_key: /etc/otelcol/hmac.key
 
 # Asymmetric certificate verification with mark failure mode.
 verify/cert_mark:
@@ -15,25 +15,25 @@ verify/cert_mark:
   key_source:
     type: file
     file:
-      cert_file: /etc/otelcol/cert.pem
+      certificate: /etc/otelcol/cert.pem
 
 # Combined HMAC + certificate verification.
 verify/hmac_and_cert:
   key_source:
     type: file
     file:
-      hmac_key_file: /etc/otelcol/hmac.key
-      cert_file: /etc/otelcol/cert.pem
+      hmac_key: /etc/otelcol/hmac.key
+      certificate: /etc/otelcol/cert.pem
 
-# Environment-variable key material.
+# Environment-variable key material (values are env-var names).
 verify/env:
   key_source:
     type: env
     env:
-      cert_env_var: VERIFY_CERT_PEM
-      hmac_key_env_var: VERIFY_HMAC_KEY
+      certificate: VERIFY_CERT_PEM
+      hmac_key: VERIFY_HMAC_KEY
 
-# Kubernetes Secret key material.
+# Kubernetes Secret key material (values are keys within the Secret).
 verify/k8s:
   key_source:
     type: k8s_secret
@@ -41,24 +41,24 @@ verify/k8s:
       name: verify-secret
       namespace: default
       hmac_key: hmac.key
-      cert_key: tls.crt
+      certificate: tls.crt
 
-# OpenBao / Vault key material.
+# OpenBao / Vault key material (values are fields within the secret).
 verify/bao:
   key_source:
     type: bao
     bao:
       address: https://bao.example.com
       secret_path: secret/data/verify
-      cert_field: certificate
-      hmac_key_field: hmac_key
+      certificate: certificate
+      hmac_key: hmac_key
 
 # Hash-chain continuity enabled (requires a storage extension).
 verify/hash_chain:
   key_source:
     type: file
     file:
-      hmac_key_file: /etc/otelcol/hmac.key
+      hmac_key: /etc/otelcol/hmac.key
   hash_chain:
     enabled: true
     storage: file_storage
@@ -69,7 +69,7 @@ verify/dead_letter:
   key_source:
     type: file
     file:
-      hmac_key_file: /etc/otelcol/hmac.key
+      hmac_key: /etc/otelcol/hmac.key
   dead_letter:
     enabled: true
     storage: file_storage

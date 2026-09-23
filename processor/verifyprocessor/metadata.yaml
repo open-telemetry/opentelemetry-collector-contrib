@@ -16,4 +16,4 @@ tests:
     key_source:
       type: file
       file:
-        hmac_key_file: testdata/dev_hmac_key.txt
+        hmac_key: testdata/dev_hmac_key.txt
