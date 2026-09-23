@@ -10,8 +10,7 @@ component: exporter/splunk_hec
 note: Split and resend a batch that Splunk rejects as too large (HTTP 413) instead of dropping it
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-# TODO(upstream): replace 0 with the tracking issue/PR number when opening the upstream PR (Linear PIPE-1392)
-issues: [0]
+issues: [51393]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
