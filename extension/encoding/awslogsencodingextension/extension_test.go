@@ -94,7 +94,7 @@ func TestValidateFeatureGates(t *testing.T) {
 	require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), false))
 	t.Cleanup(func() {
 		require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
-		require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), false))
+		require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), true))
 	})
 
 	e, err := newExtension(&Config{Format: constants.FormatCloudTrailLog}, extensiontest.NewNopSettings(extensiontest.NopType))

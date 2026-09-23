@@ -55,7 +55,12 @@ type Config struct {
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	// "ExcludeServiceAttributes" - If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes,
 	// which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
+	//
+	// Deprecated: Use ResourceConstantLabels instead.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+
+	// ResourceConstantLabels controls which resource attributes are added as constant labels on Prometheus metrics.
+	ResourceConstantLabels resourcetotelemetry.Settings `mapstructure:"resource_constant_labels"`
 
 	// WAL enables persisting metrics to a write-ahead-log before sending to the remote storage.
 	WAL configoptional.Optional[WALConfig] `mapstructure:"wal"`
@@ -201,6 +206,24 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	//nolint:staticcheck // check deprecated fields
+	if cfg.ResourceConstantLabels.Enabled || cfg.ResourceConstantLabels.ExcludeServiceAttributes {
+		return errors.New("enabled and exclude_service_attributes are not supported under resource_constant_labels; use included and excluded instead")
+	}
+	if metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
+		if !cfg.ResourceToTelemetrySettings.IsEmpty() {
+			return errors.New("resource_to_telemetry_conversion is disabled by the exporter.prometheusremotewrite.DisableResourceToTelemetryConversion feature gate; use resource_constant_labels instead")
+		}
+	} else if !cfg.ResourceToTelemetrySettings.IsEmpty() && !cfg.ResourceConstantLabels.IsEmpty() {
+		return errors.New("cannot configure both resource_to_telemetry_conversion and resource_constant_labels; resource_to_telemetry_conversion is deprecated")
+	}
+	if err := cfg.ResourceToTelemetrySettings.Validate(); err != nil {
+		return err
+	}
+	if err := cfg.ResourceConstantLabels.Validate(); err != nil {
+		return err
+	}
+
 	if cfg.MaxBatchRequestParallelism != nil && *cfg.MaxBatchRequestParallelism < 1 {
 		return errors.New("max_batch_request_parallelism can't be set to below 1")
 	}

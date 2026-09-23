@@ -31,10 +31,10 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 			{
 				Namespace:  "SYS.ECS",
 				MetricName: "cpu_util",
-				Dimensions: []model.MetricsDimension{
+				Dimensions: []model.MetricsDimensionResp{
 					{
-						Name:  "instance_id",
-						Value: "faea5b75-e390-4e2b-8733-9226a9026070",
+						Name:  new("instance_id"),
+						Value: new("faea5b75-e390-4e2b-8733-9226a9026070"),
 					},
 				},
 				Unit: "%",
@@ -42,10 +42,10 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 			{
 				Namespace:  "SYS.ECS",
 				MetricName: "mem_util",
-				Dimensions: []model.MetricsDimension{
+				Dimensions: []model.MetricsDimensionResp{
 					{
-						Name:  "instance_id",
-						Value: "abcea5b75-e390-4e2b-8733-9226a9026070",
+						Name:  new("instance_id"),
+						Value: new("abcea5b75-e390-4e2b-8733-9226a9026070"),
 					},
 				},
 				Unit: "%",
@@ -53,10 +53,10 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 			{
 				Namespace:  "SYS.VPC",
 				MetricName: "upstream_bandwidth_usage",
-				Dimensions: []model.MetricsDimension{
+				Dimensions: []model.MetricsDimensionResp{
 					{
-						Name:  "publicip_id",
-						Value: "faea5b75-e390-4e2b-8733-9226a9026070",
+						Name:  new("publicip_id"),
+						Value: new("faea5b75-e390-4e2b-8733-9226a9026070"),
 					},
 				},
 				Unit: "%",
