@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -2029,4 +2030,108 @@ func TestProcedureLookbackSeconds(t *testing.T) {
 		assert.GreaterOrEqual(t, got, 75, "expected roughly 65s elapsed plus a 10s buffer")
 		assert.LessOrEqual(t, got, 80, "expected roughly 65s elapsed plus a 10s buffer, with some slack for test timing")
 	})
+}
+
+// lockWaitAvgClient returns the Average Wait Time numerator and its base counter,
+// advancing both on every call so the delta ratio can be exercised.
+type lockWaitAvgClient struct {
+	calls *int
+}
+
+func (c lockWaitAvgClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
+	*c.calls++
+	// numerator 1000 -> 2200 (delta 1200), base 10 -> 12 (delta 2): average 600.
+	num, base := 1000, 10
+	if *c.calls > 1 {
+		num, base = 2200, 12
+	}
+	row := func(counter string, v int) sqlquery.StringMap {
+		return sqlquery.StringMap{
+			"measurement":   "sqlserver_performance",
+			"sql_instance":  "instance",
+			"computer_name": "computer",
+			"object":        "SQLServer:Locks",
+			"counter":       counter,
+			"instance":      "Total",
+			"value":         strconv.Itoa(v),
+			"counter_type":  "1073874176",
+		}
+	}
+	return []sqlquery.StringMap{
+		row("Average Wait Time (ms)", num),
+		row("Average Wait Time Base", base),
+	}, nil
+}
+
+func TestLockWaitTimeAvgDeltaRatio(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitTimeAvg.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	t.Cleanup(func() { assert.NoError(t, provider.close()) })
+
+	var perf *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerPerformanceCounterQuery(cfg.InstanceName) {
+			perf = s
+			break
+		}
+	}
+	require.NotNil(t, perf)
+	require.NoError(t, perf.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, perf.Shutdown(t.Context())) }()
+
+	calls := 0
+	perf.client = lockWaitAvgClient{calls: &calls}
+
+	// The first scrape only seeds the cache: a delta needs two samples.
+	first, err := perf.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	assert.Zero(t, countMetric(first, "sqlserver.lock.wait_time.avg"),
+		"no average can be derived from a single sample")
+
+	// The second scrape has a previous sample, so the average is emitted.
+	second, err := perf.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, countMetric(second, "sqlserver.lock.wait_time.avg"))
+	assert.InDelta(t, 600.0, firstDoubleValue(t, second, "sqlserver.lock.wait_time.avg"), 0.001,
+		"expected delta numerator 1200 / delta base 2")
+}
+
+func countMetric(md pmetric.Metrics, name string) int {
+	n := 0
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		sms := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				if ms.At(k).Name() == name {
+					n += ms.At(k).Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	return n
+}
+
+func firstDoubleValue(t *testing.T, md pmetric.Metrics, name string) float64 {
+	t.Helper()
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		sms := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				if ms.At(k).Name() == name && ms.At(k).Gauge().DataPoints().Len() > 0 {
+					return ms.At(k).Gauge().DataPoints().At(0).DoubleValue()
+				}
+			}
+		}
+	}
+	t.Fatalf("metric %s not found", name)
+	return 0
 }
