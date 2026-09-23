@@ -66,8 +66,7 @@ type KeySourceConfig struct {
 }
 
 // K8sSecretConfig configures a Kubernetes Secret key source.
-// For asymmetric verification set CertKey.
-// For HMAC-SHA256 set HMACKey instead.
+// certificate and hmac_key are keys within the Secret data.
 // Both may be set when the collector should verify either algorithm.
 type K8sSecretConfig struct {
 	Name      string `mapstructure:"name"`
@@ -77,8 +76,8 @@ type K8sSecretConfig struct {
 }
 
 // EnvKeyConfig configures environment-variable key material.
-// For asymmetric verification set CertEnvVar.
-// For HMAC-SHA256 set HMACKeyEnvVar instead.
+// certificate and hmac_key are the names of environment variables that hold
+// the PEM certificate and/or HMAC secret.
 // Both may be set when the collector should verify either algorithm.
 type EnvKeyConfig struct {
 	CertEnvVar    string `mapstructure:"certificate"`
@@ -86,8 +85,7 @@ type EnvKeyConfig struct {
 }
 
 // FileKeyConfig configures file-based key material.
-// For asymmetric verification set CertFile.
-// For HMAC-SHA256 set HMACKeyFile instead.
+// certificate and hmac_key are local file paths.
 // Both may be set when the collector should verify either algorithm.
 type FileKeyConfig struct {
 	CertFile    string `mapstructure:"certificate"`
@@ -97,8 +95,7 @@ type FileKeyConfig struct {
 // BaoKeyConfig configures the OpenBao (Vault-compatible) key material source.
 // Address and Token are optional: if omitted, the client reads BAO_ADDR and
 // BAO_TOKEN (or any other supported BAO_* environment variables) automatically.
-// For asymmetric verification set CertField.
-// For HMAC-SHA256 set HMACKeyField instead.
+// certificate and hmac_key are field names within the secret at SecretPath.
 // Both may be set when the collector should verify either algorithm.
 type BaoKeyConfig struct {
 	Address      string `mapstructure:"address"`
