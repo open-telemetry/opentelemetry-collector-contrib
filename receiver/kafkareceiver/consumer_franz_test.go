@@ -1063,6 +1063,63 @@ func queuedRecords(logs *observer.ObservedLogs) []int64 {
 	return counts
 }
 
+// TestShouldMarkOnError proves a cancelled partition consumer marks nothing,
+// whatever on_error and on_permanent_error allow. The record stays unmarked and
+// is redelivered, and the next try marks it because the context is live again.
+func TestShouldMarkOnError(t *testing.T) {
+	permanent := consumererror.NewPermanent(errors.New("refused"))
+	transient := errors.New("refused")
+
+	cases := []struct {
+		name      string
+		marking   MessageMarking
+		err       error
+		cancelled bool
+		want      bool
+	}{
+		{
+			name:    "permanent error marks while the partition is live",
+			marking: MessageMarking{OnPermanentError: true},
+			err:     permanent,
+			want:    true,
+		},
+		{
+			// The cancellation is checked first, so on_permanent_error does not
+			// apply. A permanent error can hide a cancelled one, so this stays
+			// unmarked and comes back instead.
+			name:      "permanent error does not mark once cancelled",
+			marking:   MessageMarking{OnPermanentError: true},
+			err:       permanent,
+			cancelled: true,
+		},
+		{
+			name:    "transient error marks while the partition is live",
+			marking: MessageMarking{OnError: true},
+			err:     transient,
+			want:    true,
+		},
+		{
+			name:      "transient error does not mark once cancelled",
+			marking:   MessageMarking{OnError: true},
+			err:       transient,
+			cancelled: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancelCause(t.Context())
+			t.Cleanup(func() { cancel(nil) })
+			if tc.cancelled {
+				cancel(errors.New("stopping processing"))
+			}
+			consumer := franzConsumer{config: &Config{MessageMarking: tc.marking}}
+
+			require.Equal(t, tc.want, consumer.shouldMarkOnError(&pc{ctx: ctx}, tc.err))
+		})
+	}
+}
+
 // TestResumePartitionsAfterRebalance verifies that partitions paused due to
 // processing errors are resumed when they are reassigned after a rebalance.
 func TestResumePartitionsAfterRebalance(t *testing.T) {
