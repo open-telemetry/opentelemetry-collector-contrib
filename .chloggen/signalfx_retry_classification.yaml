@@ -10,7 +10,6 @@ component: exporter/signalfx
 note: Treat non-retryable 4xx responses as permanent errors instead of retrying them indefinitely
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-# TODO(upstream): replace 0 with the tracking issue/PR number when opening the upstream PR (Linear PIPE-1402)
 issues: [51389]
 
 # (Optional) One or more lines of additional information to render under the primary note.
@@ -19,11 +18,11 @@ issues: [51389]
 subtext: |
   The SignalFx exporter shares the `HandleHTTPCode` helper with the Splunk HEC
   exporter. Previously only 400, 401, and 403 were classified as permanent; every
-  other 4xx (404, 405, 409, 410, 413, 414, 415, 422, ...) fell through and was
+  other 4xx (404, 405, 410, 413, 414, 415, 422, ...) fell through and was
   retried forever even though retrying an identical request cannot succeed. Those
-  4xx responses are now permanent, except 408 Request Timeout (transient) and 429
-  Too Many Requests (throttle). 5xx responses remain retryable, and 503 continues
-  to honor Retry-After.
+  4xx responses are now permanent, except 408 Request Timeout and 409 Conflict
+  (transient) and 429 Too Many Requests (throttle). 5xx responses remain
+  retryable, and 503 continues to honor Retry-After.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
