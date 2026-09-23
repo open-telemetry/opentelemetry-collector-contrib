@@ -16,8 +16,9 @@ var ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate = f
 
 var ReceiverPrometheusreceiverIgnoreScopeInfoMetricFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.IgnoreScopeInfoMetric",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
+	featuregate.WithRegisterToVersion("v0.164.0"),
 )
