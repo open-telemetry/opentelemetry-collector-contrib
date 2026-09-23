@@ -8,7 +8,6 @@ package hardwarescraper
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,10 +31,6 @@ func scrapeCount(t *testing.T, s *hardwareTemperatureScraper, cfg metadata.Metri
 // Sensors must be enumerated per scrape, not cached at start, so that hwmon
 // devices appearing or disappearing at runtime are reflected.
 func TestRescan_SensorAppearsAndDisappearsBetweenScrapes(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	base := t.TempDir()
 	writeSensor(t, base, "hwmon0", "coretemp", "temp1", "47000", "Package id 0", "", "")
 
@@ -62,10 +57,6 @@ func TestRescan_SensorAppearsAndDisappearsBetweenScrapes(t *testing.T) {
 // A hwmon path that does not exist at start must not prevent sensors from being
 // reported once it appears.
 func TestRescan_HwmonPathAppearsAfterStart(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	root := t.TempDir()
 	hwmonPath := filepath.Join(root, "hwmon-not-yet-there")
 

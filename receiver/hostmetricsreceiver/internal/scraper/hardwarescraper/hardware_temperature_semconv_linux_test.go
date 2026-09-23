@@ -8,7 +8,6 @@ package hardwarescraper
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -102,10 +101,6 @@ func collect(t *testing.T, m pmetric.Metrics, name string) (unit string, pts []s
 // The core test: metric names, unit and ATTRIBUTE KEYS follow the OTel hardware
 // semantic conventions (hw. prefix).
 func TestSemconv_TemperatureNamesUnitsAndAttributeKeys(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	unit, pts := collect(t, scrapeFixture(t, realHardwareFixture(t), false), "hw.temperature")
 	require.NotEmpty(t, pts, "hw.temperature must be emitted")
 	assert.Equal(t, "Cel", unit, "the unit must be UCUM Cel")
@@ -130,10 +125,6 @@ func TestSemconv_TemperatureNamesUnitsAndAttributeKeys(t *testing.T) {
 // Millidegree to degree conversion, and the values of hw.name and
 // hw.sensor_location on a realistic sensor layout.
 func TestSemconv_AttributeValuesOnRealHardware(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	_, pts := collect(t, scrapeFixture(t, realHardwareFixture(t), false), "hw.temperature")
 	require.Len(t, pts, 4, "four sensors: acpitz, spd5118 and coretemp twice")
 
@@ -185,10 +176,6 @@ func keys[V any](m map[string]V) []string {
 
 // hw.id is unique within the host, including chips that share a name.
 func TestSemconv_HwIDUniqueAcrossChipsWithSameName(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	base := t.TempDir()
 	// Two distinct devices with the SAME name, the typical case being several NVMe drives.
 	writeSensor(t, base, "hwmon0", "nvme", "temp1", "40000", "", "", "")
@@ -207,10 +194,6 @@ func TestSemconv_HwIDUniqueAcrossChipsWithSameName(t *testing.T) {
 // Thresholds: crit maps to high.critical, max maps to high.degraded, and a
 // sensor without thresholds emits no limit metric at all.
 func TestSemconv_TemperatureLimits(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	unit, pts := collect(t, scrapeFixture(t, realHardwareFixture(t), true), "hw.temperature.limit")
 	require.NotEmpty(t, pts)
 	assert.Equal(t, "Cel", unit)
@@ -239,10 +222,6 @@ func TestSemconv_TemperatureLimits(t *testing.T) {
 
 // A missing hwmon directory must not turn into an error.
 func TestSemconv_NoHwmonNoError(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	_, pts := collect(t, scrapeFixture(t, filepath.Join(t.TempDir(), "nonexistent"), false), "hw.temperature")
 	assert.Empty(t, pts, "no sensors means no metrics, but it must not fail either")
 }

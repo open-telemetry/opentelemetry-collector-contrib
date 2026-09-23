@@ -37,8 +37,16 @@ func TestScrape(t *testing.T) {
 
 	rootPath := createTestRootPathWithHwmon(t)
 	rootPathCtx := context.WithValue(t.Context(), common.EnvKey, gopsutilenv.SetGoPsutilEnvVars(rootPath))
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.HwmonPath = createTestHwmonData(t)
 
 	testCases := []testCase{
+		{
+			name:                "Default without sensor filter",
+			config:              defaultConfig,
+			ctx:                 t.Context(),
+			expectedMetricCount: 1,
+		},
 		{
 			name: "Standard",
 			config: &Config{
@@ -200,9 +208,11 @@ func createTestHwmonData(t *testing.T) string {
 func createTestRootPathWithHwmon(t *testing.T) string {
 	rootPath := t.TempDir()
 	hwmonPath := filepath.Join(rootPath, "sys", "class", "hwmon")
+	deviceHwmonPath := filepath.Join(rootPath, "sys", "devices", "platform", "test", "hwmon")
 
 	err := os.MkdirAll(hwmonPath, 0o755)
 	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(deviceHwmonPath, 0o755))
 
 	basePath := createTestHwmonData(t)
 	entries, err := os.ReadDir(basePath)
@@ -210,7 +220,7 @@ func createTestRootPathWithHwmon(t *testing.T) string {
 
 	for _, entry := range entries {
 		srcPath := filepath.Join(basePath, entry.Name())
-		dstPath := filepath.Join(hwmonPath, entry.Name())
+		dstPath := filepath.Join(deviceHwmonPath, entry.Name())
 
 		data, readErr := os.ReadFile(filepath.Join(srcPath, "name"))
 		require.NoError(t, readErr)
@@ -227,6 +237,9 @@ func createTestRootPathWithHwmon(t *testing.T) string {
 			err = os.WriteFile(filepath.Join(dstPath, fileName), fileData, 0o600)
 			require.NoError(t, err)
 		}
+
+		linkTarget := filepath.Join("..", "..", "devices", "platform", "test", "hwmon", entry.Name())
+		require.NoError(t, os.Symlink(linkTarget, filepath.Join(hwmonPath, entry.Name())))
 	}
 
 	return rootPath

@@ -31,10 +31,7 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		HwmonPath:            defaultHwmonPath,
 		Temperature: &TemperatureConfig{
-			Include: MatchConfig{
-				Config:  filterset.Config{MatchType: filterset.Regexp},
-				Sensors: []string{".*"},
-			},
+			Include: MatchConfig{Config: filterset.Config{MatchType: filterset.Regexp}},
 		},
 	}
 }

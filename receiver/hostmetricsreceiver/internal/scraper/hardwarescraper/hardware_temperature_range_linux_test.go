@@ -6,7 +6,6 @@
 package hardwarescraper
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,10 +16,6 @@ import (
 // temperatures are plausible. Industrial and cryogenic sensors legitimately
 // report values outside any hard-coded range.
 func TestRange_ReadingsOutsideAnyPlausibleRangeAreEmitted(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	base := t.TempDir()
 	writeSensor(t, base, "hwmon0", "cryochip", "temp1", "-60000", "Cold", "", "")
 	writeSensor(t, base, "hwmon1", "furnacechip", "temp1", "250000", "Hot", "", "")
@@ -38,10 +33,6 @@ func TestRange_ReadingsOutsideAnyPlausibleRangeAreEmitted(t *testing.T) {
 
 // Thresholds get the same treatment as readings.
 func TestRange_ThresholdsOutsideAnyPlausibleRangeAreEmitted(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	base := t.TempDir()
 	writeSensor(t, base, "hwmon0", "furnacechip", "temp1", "150000", "Hot", "260000", "240000")
 
@@ -60,10 +51,6 @@ func TestRange_ThresholdsOutsideAnyPlausibleRangeAreEmitted(t *testing.T) {
 // those read as a successful 0. There is no runtime signal separating them from
 // a genuine 0 C measurement, so they are published as 0 C.
 func TestRange_UnpopulatedSensorIsPublishedAsZero(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	base := t.TempDir()
 	writeSensor(t, base, "hwmon0", "thinkpad", "temp1", "66000", "CPU", "", "")
 	// Same layout as an unpopulated sensor on a real thinkpad: readable, zero,

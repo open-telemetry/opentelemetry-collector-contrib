@@ -8,7 +8,6 @@ package hardwarescraper
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,10 +20,6 @@ import (
 )
 
 func TestHardwareTemperatureScraperStart_Linux(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	type testCase struct {
 		name        string
 		hwmonPath   string
@@ -106,10 +101,6 @@ func TestHardwareTemperatureScraperStart_Linux(t *testing.T) {
 }
 
 func TestHardwareTemperatureScraperScrape_Linux(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	type testCase struct {
 		name                string
 		config              *TemperatureConfig
@@ -225,10 +216,6 @@ func TestHardwareTemperatureScraperScrape_Linux(t *testing.T) {
 }
 
 func TestReadTemperatureCelsius(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "temp_input")
 
@@ -253,10 +240,6 @@ func TestReadTemperatureCelsius(t *testing.T) {
 }
 
 func TestDeviceKey(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Test is for Linux platform")
-	}
-
 	t.Run("resolves device symlink to a stable key", func(t *testing.T) {
 		tempDir := t.TempDir()
 		hwmonDir := filepath.Join(tempDir, "hwmon0")
