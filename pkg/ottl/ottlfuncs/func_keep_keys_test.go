@@ -122,6 +122,11 @@ func Test_keepKeys_parser_slice_arguments(t *testing.T) {
 			wantErrPart: "keys cannot be nil",
 		},
 		{
+			name:        "literal nil",
+			statement:   `keep_keys(attributes, nil)`,
+			wantErrPart: "keys cannot be nil",
+		},
+		{
 			name:      "scalar cache value",
 			statement: `keep_keys(attributes, cache["x"])`,
 			setupCache: func(cache pcommon.Map) {
