@@ -492,7 +492,7 @@ The number of queries that performed a collection scan.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {scan} | Sum | Int | Cumulative | true | Development |
+| {query} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -506,7 +506,7 @@ The number of index keys and documents scanned by the query executor.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {scan} | Sum | Int | Cumulative | true | Development |
+| {item} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 

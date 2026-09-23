@@ -3579,7 +3579,7 @@ type metricMongodbQueryExecutorCollectionScanCount struct {
 func (m *metricMongodbQueryExecutorCollectionScanCount) init() {
 	m.data.SetName("mongodb.query_executor.collection_scan.count")
 	m.data.SetDescription("The number of queries that performed a collection scan.")
-	m.data.SetUnit("{scan}")
+	m.data.SetUnit("{query}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3670,7 +3670,7 @@ type metricMongodbQueryExecutorScannedCount struct {
 func (m *metricMongodbQueryExecutorScannedCount) init() {
 	m.data.SetName("mongodb.query_executor.scanned.count")
 	m.data.SetDescription("The number of index keys and documents scanned by the query executor.")
-	m.data.SetUnit("{scan}")
+	m.data.SetUnit("{item}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

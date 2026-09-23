@@ -736,7 +736,7 @@ metrics:
   mongodb.query_executor.collection_scan.count:
     description: The number of queries that performed a collection scan.
     stability: development
-    unit: "{scan}"
+    unit: "{query}"
     enabled: false
     sum:
       value_type: int
@@ -746,7 +746,7 @@ metrics:
   mongodb.query_executor.scanned.count:
     description: The number of index keys and documents scanned by the query executor.
     stability: development
-    unit: "{scan}"
+    unit: "{item}"
     enabled: false
     sum:
       value_type: int
