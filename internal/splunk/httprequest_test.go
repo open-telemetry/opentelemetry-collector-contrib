@@ -54,7 +54,6 @@ func TestConsumeMetrics(t *testing.T) {
 		// 4xx that retrying can't fix: permanent.
 		{name: "not_found", httpResponseCode: http.StatusNotFound, wantPermanentErr: true},
 		{name: "method_not_allowed", httpResponseCode: http.StatusMethodNotAllowed, wantPermanentErr: true},
-		{name: "conflict", httpResponseCode: http.StatusConflict, wantPermanentErr: true},
 		{name: "gone", httpResponseCode: http.StatusGone, wantPermanentErr: true},
 		{name: "request_entity_too_large", httpResponseCode: http.StatusRequestEntityTooLarge, wantPermanentErr: true},
 		{name: "request_uri_too_long", httpResponseCode: http.StatusRequestURITooLong, wantPermanentErr: true},
@@ -62,6 +61,7 @@ func TestConsumeMetrics(t *testing.T) {
 		{name: "unprocessable_entity", httpResponseCode: http.StatusUnprocessableEntity, wantPermanentErr: true},
 		// Transient failures must stay retryable.
 		{name: "request_timeout", httpResponseCode: http.StatusRequestTimeout, wantRetryableErr: true},
+		{name: "conflict", httpResponseCode: http.StatusConflict, wantRetryableErr: true},
 		{name: "internal_server_error", httpResponseCode: http.StatusInternalServerError, wantRetryableErr: true},
 		{name: "bad_gateway", httpResponseCode: http.StatusBadGateway, wantRetryableErr: true},
 		{name: "gateway_timeout", httpResponseCode: http.StatusGatewayTimeout, wantRetryableErr: true},
