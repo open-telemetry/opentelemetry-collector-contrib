@@ -387,7 +387,7 @@ func BenchmarkScrapePayload(b *testing.B) {
 		runScrapePayloadBenchmark(b, p)
 	})
 	b.Run("ClassicHistogram_Text", func(b *testing.B) {
-		// 100 multi-line classic histograms * 10 lines (8 buckets + sum + count) = 1,000 series lines
+		// 100 multi-line classic histograms * 18 lines (16 buckets + sum + count) = 1,800 series lines
 		// in Prometheus text format (text/plain; version=0.0.4).
 		p := benchPayload{textBytes: generatePromTextClassicHistogramPayload(100)}
 		runScrapePayloadBenchmark(b, p)
@@ -716,7 +716,8 @@ func generatePromTextClassicHistogramPayload(numHistograms int) []byte {
 	var buf bytes.Buffer
 	numFamilies := min(10, numHistograms)
 	perFamily := numHistograms / numFamilies
-	bounds := []string{"0.005", "0.01", "0.025", "0.05", "0.1", "0.25", "0.5", "+Inf"}
+	// Default OpenTelemetry ExplicitBucketHistogram boundaries (15 bounds) + +Inf = 16 buckets.
+	bounds := []string{"0", "5", "10", "25", "50", "75", "100", "250", "500", "750", "1000", "2500", "5000", "7500", "10000", "+Inf"}
 	for f := range numFamilies {
 		mf := fmt.Sprintf("bench_classic_hist_%d", f)
 		fmt.Fprintf(&buf, "# TYPE %s histogram\n", mf)
@@ -728,7 +729,7 @@ func generatePromTextClassicHistogramPayload(numHistograms int) []byte {
 				fmt.Fprintf(&buf, "%s_bucket{%s,le=\"%s\"} %d 1700000000000\n", mf, baseLabels, le, cumCount)
 			}
 			fmt.Fprintf(&buf, "%s_sum{%s} 45.67 1700000000000\n", mf, baseLabels)
-			fmt.Fprintf(&buf, "%s_count{%s} 80 1700000000000\n", mf, baseLabels)
+			fmt.Fprintf(&buf, "%s_count{%s} %d 1700000000000\n", mf, baseLabels, len(bounds)*10)
 		}
 	}
 	return buf.Bytes()
