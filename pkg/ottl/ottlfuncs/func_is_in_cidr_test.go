@@ -8,9 +8,146 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
+
+func Test_isInCIDR_parser_slice_arguments(t *testing.T) {
+	parser, err := ottllog.NewParser(
+		map[string]ottl.Factory[*ottllog.TransformContext]{
+			"IsInCIDR": NewIsInCIDRFactory[*ottllog.TransformContext](),
+			"Split":    NewSplitFactory[*ottllog.TransformContext](),
+			"set":      NewSetFactory[*ottllog.TransformContext](),
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name            string
+		statement       string
+		target          string
+		setupAttributes func(pcommon.Map)
+		setupCache      func(pcommon.Map)
+		want            bool
+		wantErrPart     string
+	}{
+		{
+			name:      "cache slice matches",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
+			target:    "192.0.2.1",
+			setupCache: func(cache pcommon.Map) {
+				networks := cache.PutEmptySlice("networks")
+				networks.AppendEmpty().SetStr("198.51.100.0/24")
+				networks.AppendEmpty().SetStr("192.0.2.0/24")
+			},
+			want: true,
+		},
+		{
+			name:      "Split result matches",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], Split(attributes["allowed_networks"], ",")))`,
+			target:    "192.0.2.1",
+			setupAttributes: func(attributes pcommon.Map) {
+				attributes.PutStr("allowed_networks", "198.51.100.0/24,192.0.2.0/24")
+			},
+			want: true,
+		},
+		{
+			name:        "unset cache entry",
+			statement:   `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
+			target:      "192.0.2.1",
+			wantErrPart: "networks cannot be nil",
+		},
+		{
+			name:        "literal nil",
+			statement:   `set(attributes["result"], IsInCIDR(attributes["client.address"], nil))`,
+			target:      "192.0.2.1",
+			wantErrPart: "networks cannot be nil",
+		},
+		{
+			name:      "scalar cache value",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
+			target:    "192.0.2.1",
+			setupCache: func(cache pcommon.Map) {
+				cache.PutStr("networks", "192.0.2.0/24")
+			},
+			wantErrPart: "expected a slice",
+		},
+		{
+			name:      "non-string after matching network",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
+			target:    "192.0.2.1",
+			setupCache: func(cache pcommon.Map) {
+				networks := cache.PutEmptySlice("networks")
+				networks.AppendEmpty().SetStr("192.0.2.0/24")
+				networks.AppendEmpty().SetInt(1)
+			},
+			wantErrPart: "expected string",
+		},
+		{
+			name:      "empty cache slice",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
+			target:    "192.0.2.1",
+			setupCache: func(cache pcommon.Map) {
+				cache.PutEmptySlice("networks")
+			},
+			want: false,
+		},
+		{
+			name:      "inline literal list",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], ["198.51.100.0/24", "192.0.2.0/24"]))`,
+			target:    "192.0.2.1",
+			want:      true,
+		},
+		{
+			name:      "invalid target short-circuits invalid network source",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
+			target:    "not an IP address",
+			setupCache: func(cache pcommon.Map) {
+				cache.PutStr("networks", "not a slice")
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement, err := parser.ParseStatement(tt.statement)
+			require.NoError(t, err)
+
+			cache := pcommon.NewMap()
+			if tt.setupCache != nil {
+				tt.setupCache(cache)
+			}
+
+			resourceLogs := plog.NewResourceLogs()
+			scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+			logRecord := scopeLogs.LogRecords().AppendEmpty()
+			attributes := logRecord.Attributes()
+			attributes.PutStr("client.address", tt.target)
+			if tt.setupAttributes != nil {
+				tt.setupAttributes(attributes)
+			}
+
+			tCtx := ottllog.NewTransformContext(resourceLogs, scopeLogs, logRecord, ottllog.WithCache(&cache))
+			t.Cleanup(tCtx.Close)
+			_, _, err = statement.Execute(t.Context(), tCtx)
+
+			if tt.wantErrPart != "" {
+				require.ErrorContains(t, err, tt.wantErrPart)
+				return
+			}
+			require.NoError(t, err)
+			result, ok := attributes.Get("result")
+			require.True(t, ok)
+			assert.Equal(t, tt.want, result.Bool())
+		})
+	}
+}
 
 func Test_isInCIDR(t *testing.T) {
 	tests := []struct {
