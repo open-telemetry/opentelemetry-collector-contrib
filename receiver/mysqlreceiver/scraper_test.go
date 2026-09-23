@@ -2592,3 +2592,31 @@ func TestQueryGuardsCoverEveryMetric(t *testing.T) {
 	assert.Equal(t, totalFields, len(fieldToGuard)+len(notQueryGated),
 		"every metadata.MetricsConfig field must be covered by exactly one of fieldToGuard or notQueryGated")
 }
+
+func TestSanitizeWaitTime(t *testing.T) {
+	scraper := &mySQLScraper{logger: zap.NewNop()}
+
+	t.Run("plausible wait time passes through unchanged", func(t *testing.T) {
+		assert.InDelta(t, 2.5, scraper.sanitizeWaitTime(2.5), 0.0001)
+	})
+
+	t.Run("plausible long lock wait passes through unchanged", func(t *testing.T) {
+		assert.InDelta(t, 3600.0, scraper.sanitizeWaitTime(3600.0), 0.0001)
+	})
+
+	t.Run("exactly at the ceiling passes through unchanged", func(t *testing.T) {
+		assert.InDelta(t, maxPlausibleWaitSeconds, scraper.sanitizeWaitTime(maxPlausibleWaitSeconds), 0.0001)
+	})
+
+	t.Run("just past the ceiling is discarded", func(t *testing.T) {
+		assert.Equal(t, 0.0, scraper.sanitizeWaitTime(maxPlausibleWaitSeconds+0.001))
+	})
+
+	t.Run("the reported Aurora overflow value is discarded", func(t *testing.T) {
+		assert.Equal(t, 0.0, scraper.sanitizeWaitTime(18446744.073709551616))
+	})
+
+	t.Run("zero passes through unchanged", func(t *testing.T) {
+		assert.Equal(t, 0.0, scraper.sanitizeWaitTime(0))
+	})
+}

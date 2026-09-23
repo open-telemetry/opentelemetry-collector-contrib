@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/mysql
+
+note: Clamp implausible `mysql.events_waits_current.timer_wait` readings to zero instead of emitting an unbounded estimate, fixing an overflow observed on Aurora MySQL `redo_log_flush` waits.
+
+issues: [51310]
+
+subtext:
+
+change_logs: [user]
