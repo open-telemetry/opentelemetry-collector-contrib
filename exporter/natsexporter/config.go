@@ -54,9 +54,6 @@ type SignalConfig struct {
 // payload is published with JetStream and the publish blocks until the server
 // acknowledges persistence.
 //
-// A stream whose subjects capture the configured signal subjects must already
-// exist on the server; this exporter does not create or manage streams.
-//
 // See: https://docs.nats.io/nats-concepts/jetstream
 type JetStreamConfig struct {
 	// Domain optionally selects a JetStream domain, e.g. when publishing through

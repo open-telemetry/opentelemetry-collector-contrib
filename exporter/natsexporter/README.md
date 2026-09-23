@@ -45,9 +45,19 @@ Each of `logs`, `metrics`, and `traces` accepts:
 ### JetStream
 
 When the `jetstream` block is present, every payload is published with JetStream
-and the publish blocks until the server acknowledges persistence. A stream whose
-subjects capture the configured signal subjects must already exist; this
-exporter does not create or manage streams.
+and the publish blocks until the server acknowledges persistence.
+
+By default the exporter ensures a stream exists for the configured subjects,
+creating one with lightweight defaults if it is absent: a single stream, `limits`
+retention bounded by both `max_age` and `max_bytes`, file storage, and a single
+replica. These defaults are sized for a small or edge deployment and are safe to
+run on a single-node server; scale them up (notably to three replicas) for a
+clustered hub. Set `stream.manage: false` to require a pre-existing stream
+instead — appropriate when the exporter holds publish-only credentials or streams
+are provisioned externally.
+
+Sharding a high-volume signal across multiple streams is a planned scale-up
+option and is not yet configurable.
 
 | Field             | Default | Description |
 | ----------------- | ------- | ----------- |
