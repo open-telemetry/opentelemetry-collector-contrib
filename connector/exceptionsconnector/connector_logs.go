@@ -60,9 +60,10 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
 		for j := 0; j < ilsSlice.Len(); j++ {
-			sl := c.newScopeLogs(ld)
+			sl := c.newScopeLogs(ld, rspans.Resource(), rspans.SchemaUrl())
 			ils := ilsSlice.At(j)
 			ils.Scope().CopyTo(sl.Scope())
+			sl.SetSchemaUrl(ils.SchemaUrl())
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
@@ -78,6 +79,43 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 	return c.exportLogs(ctx, ld)
 }
 
+// ConsumeLogs implements the consumer.Logs interface for the logs-to-logs edge: forwards only
+// records with event.name == "exception" unchanged, dropping everything else.
+func (c *logsConnector) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
+	ld := plog.NewLogs()
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		rlogs := logs.ResourceLogs().At(i)
+		var outRL plog.ResourceLogs
+		haveRL := false
+		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
+			slIn := rlogs.ScopeLogs().At(j)
+			records := slIn.LogRecords()
+			var outSL plog.ScopeLogs
+			haveSL := false
+			for k := 0; k < records.Len(); k++ {
+				lr := records.At(k)
+				if lr.EventName() != eventNameExc {
+					continue
+				}
+				if !haveRL {
+					outRL = ld.ResourceLogs().AppendEmpty()
+					rlogs.Resource().CopyTo(outRL.Resource())
+					outRL.SetSchemaUrl(rlogs.SchemaUrl())
+					haveRL = true
+				}
+				if !haveSL {
+					outSL = outRL.ScopeLogs().AppendEmpty()
+					slIn.Scope().CopyTo(outSL.Scope())
+					outSL.SetSchemaUrl(slIn.SchemaUrl())
+					haveSL = true
+				}
+				lr.CopyTo(outSL.LogRecords().AppendEmpty())
+			}
+		}
+	}
+	return c.exportLogs(ctx, ld)
+}
+
 func (c *logsConnector) exportLogs(ctx context.Context, ld plog.Logs) error {
 	if err := c.logsConsumer.ConsumeLogs(ctx, ld); err != nil {
 		c.logger.Error("failed to convert exceptions to logs", zap.Error(err))
@@ -86,8 +124,12 @@ func (c *logsConnector) exportLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (*logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
+// newScopeLogs starts a new ResourceLogs/ScopeLogs pair, copying the full source resource so
+// converted LogEvents carry the same resource context as natively-emitted ones.
+func (*logsConnector) newScopeLogs(ld plog.Logs, resource pcommon.Resource, resourceSchemaURL string) plog.ScopeLogs {
 	rl := ld.ResourceLogs().AppendEmpty()
+	resource.CopyTo(rl.Resource())
+	rl.SetSchemaUrl(resourceSchemaURL)
 	sl := rl.ScopeLogs().AppendEmpty()
 	return sl
 }
@@ -98,8 +140,12 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 	logRecord.SetTimestamp(event.Timestamp())
 	logRecord.SetSeverityNumber(plog.SeverityNumberError)
 	logRecord.SetSeverityText("ERROR")
+	logRecord.SetEventName(eventNameExc)
 	logRecord.SetSpanID(span.SpanID())
 	logRecord.SetTraceID(span.TraceID())
+	// Only the low byte (the W3C trace-flags byte, e.g. the sampled bit) is valid on
+	// LogRecordFlags; the rest is reserved and must stay 0.
+	logRecord.SetFlags(plog.LogRecordFlags(span.Flags() & 0xFF))
 	eventAttrs := event.Attributes()
 	spanAttrs := span.Attributes()
 
@@ -119,8 +165,12 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 		}
 	}
 
-	// Add stacktrace to the log record.
-	attrVal, _ := pdatautil.GetAttributeValue(exceptionStacktraceKey, eventAttrs)
-	logRecord.Attributes().PutStr(exceptionStacktraceKey, attrVal)
+	// Set unconditionally (not via the configurable dimensions above): the exception semantic
+	// conventions require at least one of type/message, and recommend stacktrace.
+	for _, key := range []string{exceptionTypeKey, exceptionMessageKey, exceptionStacktraceKey} {
+		if v, ok := pdatautil.GetAttributeValue(key, eventAttrs); ok {
+			logRecord.Attributes().PutStr(key, v)
+		}
+	}
 	return logRecord
 }

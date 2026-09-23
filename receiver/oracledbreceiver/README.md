@@ -170,10 +170,10 @@ upgrading without adding new grants continue to work unchanged.
 
 ### Events collection
 
-The following grants are required for event collection. All four event types
+The following grants are required for event collection. All five event types
 (`db.server.query_sample`, `db.server.top_query`, `db.server.session.wait_sample`,
-`db.server.top_procedure`) are disabled by default and must be explicitly enabled
-in configuration.
+`db.server.top_procedure`, `db.server.query_plan`) are disabled by default and must be explicitly
+enabled in configuration.
 
 #### All events (shared requirements)
 
@@ -216,6 +216,25 @@ GRANT SELECT ON DBA_PROCEDURES TO <username>;            -- Stored procedure met
 ```sql
 ALTER SYSTEM SET statistics_level = ALL;
 ```
+
+#### `db.server.query_plan`
+
+By default, `db.server.top_query` carries the query's execution plan in its `oracledb.query_plan`
+attribute. A plan is a JSON payload holding one entry per plan step, so it can dominate the record it
+travels on. Enabling `db.server.query_plan` isolates the plan on a record of its own, where it can be
+filtered, routed or dropped independently of the query statistics, and where an oversized plan does
+not take those statistics with it when a batcher splits by size.
+
+`db.server.top_query` is then emitted **without** its `oracledb.query_plan` attribute, and the plan
+itself is reported on `db.server.query_plan`, joined back to its cursor via `oracledb.sql_id` +
+`oracledb.child_number` + `oracledb.child_address`, with `oracledb.plan_hash_value` identifying the
+plan and `db.namespace` the database it came from. A cursor with no rows in
+`V$SQL_PLAN_STATISTICS_ALL` produces no `db.server.query_plan` record. Leaving
+`db.server.query_plan` disabled preserves the previous behavior exactly.
+
+`db.server.query_plan` is sourced from the same collection as `db.server.top_query` and only splits
+the plan out of it, so it needs no grants of its own, and enabling it without `db.server.top_query`
+is a configuration error.
 
 #### `db.server.session.wait_sample`
 
@@ -312,6 +331,56 @@ GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
+### AWS RDS Oracle grants
+
+Run the following as the master/admin user using `rdsadmin.rdsadmin_util.grant_sys_object` to grant permissions on the required views.
+The following grants cover all metrics and events collected by this receiver:
+
+```sql
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SYSMETRIC',      '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CON_SYSMETRIC',  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CONTAINERS',     '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SESSION',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SESSION_EVENT',  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SYSSTAT',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CON_SYSSTAT',    '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$OSSTAT',         '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SGAINFO',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL',            '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL_PLAN',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL_PLAN_STATISTICS_ALL', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PARAMETER',      '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$ROWCACHE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$RESOURCE_LIMIT', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$LOCK',           '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PROCESS',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$TRANSACTION',    '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$DATABASE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$INSTANCE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$DATAFILE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PDBS',           '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_DATA_FILES',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_FREE_SPACE',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_RECYCLEBIN',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_TABLESPACES',              '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_TABLESPACE_USAGE_METRICS', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_PROCEDURES',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_OBJECTS',                  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_TABLESPACE_USAGE_METRICS', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_TABLESPACES',              '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_SERVICES',                 '<username>', 'SELECT', false);
+GRANT CREATE SESSION TO <username>;
+```
+
+### Direct-PDB connections
+
+When the receiver connects directly to a PDB (including all AWS RDS Oracle deployments),
+`oracledb.transactions.limit` and `oracledb.dml_locks.limit` are derived from
+`v$parameter` instead of `v$resource_limit`, which is unavailable in PDB context.
+When Oracle auto-tunes these parameters, `v$parameter` reports the computed value
+(for example, `354` or `1416`) rather than `-1` (unlimited) as a root or standalone
+connection would. A direct-PDB deployment and a CDB-root deployment of the same instance can therefore report different values for these metrics.
+
 ## Enabling metrics.
 
 See [documentation](./documentation.md).
@@ -350,6 +419,8 @@ receivers:
       db.server.session.wait_sample:
         enabled: true
       db.server.top_procedure:
+        enabled: true
+      db.server.query_plan:                      # reports the execution plan on its own event, off db.server.top_query
         enabled: true
     top_query_collection:                        # this collection exports the most expensive queries as logs
       max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N

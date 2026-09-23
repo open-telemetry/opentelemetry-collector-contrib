@@ -64,11 +64,6 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 		logsConsumer consumer.Logs
 	}
 	happyPathServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	happyPathServerConfig.WriteTimeout = defaultServerTimeout
-	happyPathServerConfig.ReadHeaderTimeout = defaultServerTimeout
-	happyPathServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	happyPathServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	happyPathServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:1234",
@@ -724,6 +719,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	got := sink.AllLogs()
 	require.Len(t, got, 1)
+	clearObservedTimestamps(got[0])
 	assert.Equal(t, want, got[0])
 }
 

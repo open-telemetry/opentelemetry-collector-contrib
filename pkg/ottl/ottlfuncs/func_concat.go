@@ -11,20 +11,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ConcatArguments[K any] struct {
+type concatArguments[K any] struct {
 	Vals      ottl.SliceGetter[K, ottl.StringLikeGetter[K]]
 	Delimiter ottl.StringGetter[K]
 }
 
+// NewConcatFactory returns a factory for the Concat OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#concat
 func NewConcatFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Concat", &ConcatArguments[K]{}, createConcatFunction[K])
+	return ottl.NewFactory("Concat", &concatArguments[K]{}, createConcatFunction[K])
 }
 
 func createConcatFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ConcatArguments[K])
+	args, ok := oArgs.(*concatArguments[K])
 
 	if !ok {
-		return nil, errors.New("ConcatFactory args must be of type *ConcatArguments[K]")
+		return nil, errors.New("ConcatFactory args must be of type *concatArguments[K]")
 	}
 
 	return concat(&args.Vals, args.Delimiter), nil

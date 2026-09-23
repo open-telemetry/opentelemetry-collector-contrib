@@ -29,7 +29,7 @@ func TestPublisherOpenInvalidUTF8(t *testing.T) {
 func TestPublisherOpenSyscallFailure(t *testing.T) {
 	publisher := NewPublisher()
 	provider := "provider"
-	defer mockWithDeferredRestore(&openPublisherMetadataProc, SimpleMockProc(0, 0, ErrorNotSupported))()
+	t.Cleanup(mockWithDeferredRestore(&evtOpenPublisherMetadata, func(uintptr, *uint16, *uint16, uint32, uint32) (uintptr, error) { return 0, ErrorNotSupported }))
 	err := publisher.Open(provider, nil)
 	require.ErrorContains(t, err, "failed to open the metadata for the \"provider\" provider: The request is not supported.")
 	require.False(t, publisher.Valid())
@@ -38,7 +38,7 @@ func TestPublisherOpenSyscallFailure(t *testing.T) {
 func TestPublisherOpenSuccess(t *testing.T) {
 	publisher := NewPublisher()
 	provider := "provider"
-	defer mockWithDeferredRestore(&openPublisherMetadataProc, SimpleMockProc(5, 0, ErrorSuccess))()
+	t.Cleanup(mockWithDeferredRestore(&evtOpenPublisherMetadata, func(uintptr, *uint16, *uint16, uint32, uint32) (uintptr, error) { return 5, nil }))
 	err := publisher.Open(provider, nil)
 	require.NoError(t, err)
 	require.Equal(t, uintptr(5), publisher.handle)
@@ -54,7 +54,7 @@ func TestPublisherCloseWhenAlreadyClosed(t *testing.T) {
 
 func TestPublisherCloseSyscallFailure(t *testing.T) {
 	publisher := Publisher{handle: 5}
-	defer mockWithDeferredRestore(&closeProc, SimpleMockProc(0, 0, ErrorNotSupported))()
+	t.Cleanup(mockWithDeferredRestore(&evtClose, func(uintptr) error { return ErrorNotSupported }))
 	err := publisher.Close()
 	require.ErrorContains(t, err, "failed to close publisher")
 	require.True(t, publisher.Valid())
@@ -62,19 +62,18 @@ func TestPublisherCloseSyscallFailure(t *testing.T) {
 
 func TestPublisherCloseSuccess(t *testing.T) {
 	publisher := Publisher{handle: 5}
-	originalCloseProc := closeProc
-	closeProc = SimpleMockProc(1, 0, ErrorSuccess)
-	defer func() { closeProc = originalCloseProc }()
+	t.Cleanup(mockWithDeferredRestore(&evtClose, func(uintptr) error { return nil }))
 	err := publisher.Close()
 	require.NoError(t, err)
 	require.Equal(t, uintptr(0), publisher.handle)
 	require.False(t, publisher.Valid())
 }
 
-func mockWithDeferredRestore(call *SyscallProc, mockCall SyscallProc) func() {
-	original := *call
-	*call = mockCall
+// mockWithDeferredRestore swaps *target for mock and returns a func that puts the original back.
+func mockWithDeferredRestore[T any](target *T, mock T) func() {
+	original := *target
+	*target = mock
 	return func() {
-		*call = original
+		*target = original
 	}
 }
