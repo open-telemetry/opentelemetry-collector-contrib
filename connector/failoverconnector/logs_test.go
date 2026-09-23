@@ -61,7 +61,7 @@ type logsCountingConsumer struct {
 	calls int
 }
 
-func (c *logsCountingConsumer) Capabilities() consumer.Capabilities {
+func (_ *logsCountingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
