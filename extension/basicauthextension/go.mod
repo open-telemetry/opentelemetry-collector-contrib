@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider v0.161.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tg123/go-htpasswd v1.2.5
 	go.opentelemetry.io/collector/client v1.67.1-0.20260917142259-65d9c38b188c
@@ -14,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.67.1-0.20260917142259-65d9c38b188c
 	go.opentelemetry.io/collector/extension v1.67.1-0.20260917142259-65d9c38b188c
 	go.opentelemetry.io/collector/extension/extensionauth v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.161.1-0.20260917142259-65d9c38b188c
 	go.opentelemetry.io/collector/extension/extensiontest v0.161.1-0.20260917142259-65d9c38b188c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
@@ -63,3 +65,5 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth => ../internal/basicauth
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile => ../internal/credentialsfile
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider => ../internal/secretprovider
