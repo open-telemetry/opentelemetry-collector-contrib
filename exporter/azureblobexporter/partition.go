@@ -7,9 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
-	"text/template"
-	"text/template/parse"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -198,89 +195,4 @@ func uploadGroups[T any](
 		ops.moveResources(f, combined)
 	}
 	return ops.partialError(errors.Join(errs...), combined)
-}
-
-// belowResourceFuncs are template functions that read scope- or record-level data.
-var belowResourceFuncs = map[string]bool{
-	"getScopeLogAttr":    true,
-	"getScopeMetricAttr": true,
-	"getScopeSpanAttr":   true,
-	"getLogRecord":       true,
-	"getMetric":          true,
-	"getSpan":            true,
-}
-
-// belowResourceFields are pdata accessors that reach scope- or record-level data.
-var belowResourceFields = map[string]bool{
-	"ScopeLogs":    true,
-	"ScopeMetrics": true,
-	"ScopeSpans":   true,
-}
-
-// warnIfTemplateReadsBelowResource logs a warning when the blob name template
-// for the exporter's signal reads scope- or record-level data. Payloads are
-// partitioned per resource entry, so such values are only read from the first
-// scope and record of each resource entry.
-func (e *azureBlobExporter) warnIfTemplateReadsBelowResource() {
-	var tmpl *template.Template
-	var format string
-	switch e.signal {
-	case pipeline.SignalMetrics:
-		tmpl, format = e.blobNameTemplate.metrics, e.config.BlobNameFormat.MetricsFormat
-	case pipeline.SignalLogs:
-		tmpl, format = e.blobNameTemplate.logs, e.config.BlobNameFormat.LogsFormat
-	case pipeline.SignalTraces:
-		tmpl, format = e.blobNameTemplate.traces, e.config.BlobNameFormat.TracesFormat
-	default:
-		return
-	}
-	for _, t := range tmpl.Templates() {
-		if t.Tree != nil && readsBelowResource(t.Root) {
-			e.logger.Warn("Blob name template reads scope- or record-level data, but blob names are resolved once per resource entry; "+
-				"every record in a resource entry is written to the blob rendered from its first scope and record",
-				zap.String("signal", e.signal.String()),
-				zap.String("template", format))
-			return
-		}
-	}
-}
-
-func readsBelowResource(node parse.Node) bool {
-	switch n := node.(type) {
-	case *parse.ListNode:
-		if n == nil {
-			return false
-		}
-		return slices.ContainsFunc(n.Nodes, readsBelowResource)
-	case *parse.ActionNode:
-		return readsBelowResource(n.Pipe)
-	case *parse.PipeNode:
-		if n == nil {
-			return false
-		}
-		return slices.ContainsFunc(n.Cmds, func(c *parse.CommandNode) bool { return readsBelowResource(c) })
-	case *parse.CommandNode:
-		return slices.ContainsFunc(n.Args, readsBelowResource)
-	case *parse.IfNode:
-		return readsBelowResource(n.Pipe) || readsBelowResource(n.List) || readsBelowResource(n.ElseList)
-	case *parse.RangeNode:
-		return readsBelowResource(n.Pipe) || readsBelowResource(n.List) || readsBelowResource(n.ElseList)
-	case *parse.WithNode:
-		return readsBelowResource(n.Pipe) || readsBelowResource(n.List) || readsBelowResource(n.ElseList)
-	case *parse.TemplateNode:
-		return readsBelowResource(n.Pipe)
-	case *parse.ChainNode:
-		return slices.ContainsFunc(n.Field, isBelowResourceField) || readsBelowResource(n.Node)
-	case *parse.IdentifierNode:
-		return belowResourceFuncs[n.Ident]
-	case *parse.FieldNode:
-		return slices.ContainsFunc(n.Ident, isBelowResourceField)
-	case *parse.VariableNode:
-		return slices.ContainsFunc(n.Ident, isBelowResourceField)
-	}
-	return false
-}
-
-func isBelowResourceField(name string) bool {
-	return belowResourceFields[name]
 }
