@@ -56,10 +56,21 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	sovereignConfig := factory.CreateDefaultConfig().(*Config)
-	sovereignConfig.ProjectID = "my-sovereign-project"
-	sovereignConfig.Topic = "projects/my-sovereign-project/topics/otlp-topic"
+	sovereignConfig.ProjectID = "universe-prefix:my-sovereign-project"
+	sovereignConfig.Topic = "projects/universe-prefix:my-sovereign-project/topics/otlp-topic"
 	sovereignConfig.UniverseDomain = "apis.example.com"
 	assert.Equal(t, sovereignConfig, cfg)
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "vanilla").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	vanillaConfig := factory.CreateDefaultConfig().(*Config)
+	vanillaConfig.ProjectID = "my-vanilla-project"
+	vanillaConfig.Topic = "projects/my-vanilla-project/topics/otlp-topic"
+	vanillaConfig.UniverseDomain = "googleapis.com"
+	assert.Equal(t, vanillaConfig, cfg)
 }
 
 func TestTopicConfigValidation(t *testing.T) {
@@ -75,10 +86,11 @@ func TestTopicConfigValidation(t *testing.T) {
 	c.Topic = "projects/my-project/topics/my-topic"
 	assert.NoError(t, c.Validate())
 
-	// Domain-scoped projects
-	c.Topic = "projects/example.com:my-project/topics/my-topic"
-	assert.NoError(t, c.Validate())
+	// Scoped project
 	c.Topic = "projects/my-project:sub-project/topics/my-topic"
+	assert.NoError(t, c.Validate())
+	// Legacy Domain-scoped project
+	c.Topic = "projects/example.com:my-project/topics/my-topic"
 	assert.NoError(t, c.Validate())
 
 	// Invalid domain-scoped projects
