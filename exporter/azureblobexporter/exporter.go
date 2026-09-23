@@ -333,11 +333,7 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 }
 
 func (e *azureBlobExporter) generateBlobNameWithCompression(signal pipeline.Signal, telemetryData any) (string, error) {
-	return e.generateBlobNameWithCompressionAt(e.currentTime(), signal, telemetryData)
-}
-
-func (e *azureBlobExporter) generateBlobNameWithCompressionAt(now time.Time, signal pipeline.Signal, telemetryData any) (string, error) {
-	blobName, err := e.generateBlobName(now, signal, telemetryData)
+	blobName, err := e.generateBlobName(signal, telemetryData)
 	if err != nil {
 		return "", err
 	}
@@ -356,7 +352,7 @@ func (e *azureBlobExporter) appendCompressionExtension(blobName string) string {
 	return blobName
 }
 
-func (e *azureBlobExporter) generateBlobName(now time.Time, signal pipeline.Signal, telemetryData any) (string, error) {
+func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryData any) (string, error) {
 	var format string
 	switch signal {
 	case pipeline.SignalMetrics:
@@ -380,18 +376,15 @@ func (e *azureBlobExporter) generateBlobName(now time.Time, signal pipeline.Sign
 		}
 	}
 
-	return e.formatBlobName(now, format), nil
+	return e.formatBlobName(format), nil
 }
 
-func (e *azureBlobExporter) currentTime() time.Time {
+func (e *azureBlobExporter) formatBlobName(format string) string {
 	now := time.Now()
 	if e.timeLocation != nil {
 		now = now.In(e.timeLocation)
 	}
-	return now
-}
 
-func (e *azureBlobExporter) formatBlobName(now time.Time, format string) string {
 	if !e.config.BlobNameFormat.SerialNumEnabled {
 		// No serial number enabled, return the formatted blob name
 		return e.parseTimeInBlobName(now, format)

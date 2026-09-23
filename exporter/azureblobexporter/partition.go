@@ -142,9 +142,6 @@ func partitionByBlobName[T any](e *azureBlobExporter, ops signalOps[T], data T) 
 // behavior. Groups are uploaded sequentially; exporterhelper controls
 // concurrency between export requests. If some groups fail, the error carries
 // only failed and unstarted data for exporterhelper to retry.
-//
-// The current time is captured once so that every blob written by the same
-// export request resolves time-based name segments identically.
 func uploadGroups[T any](
 	ctx context.Context,
 	e *azureBlobExporter,
@@ -152,7 +149,6 @@ func uploadGroups[T any](
 	groups []blobGroup[T],
 	marshal func(T) ([]byte, error),
 ) error {
-	now := e.currentTime()
 	upload := func(group blobGroup[T]) error {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -163,12 +159,12 @@ func uploadGroups[T any](
 		}
 		var blobName string
 		if group.nameFormat == nil {
-			blobName, err = e.generateBlobNameWithCompressionAt(now, ops.signal, group.data)
+			blobName, err = e.generateBlobNameWithCompression(ops.signal, group.data)
 			if err != nil {
 				return fmt.Errorf("failed to generate blobname: %w", err)
 			}
 		} else {
-			blobName = e.appendCompressionExtension(e.formatBlobName(now, *group.nameFormat))
+			blobName = e.appendCompressionExtension(e.formatBlobName(*group.nameFormat))
 		}
 		return e.consumeData(ctx, blobName, data, ops.signal)
 	}
