@@ -1,0 +1,21 @@
+change_type: breaking
+
+component: receiver/sqlserver
+
+note: Performance counters read from the SQL Server `Databases` object on a direct database connection now carry the `sqlserver.database.name` resource attribute, which changes the series identity of `sqlserver.database.backup_or_restore.rate`.
+
+issues: [51384]
+
+subtext: |
+  These counters are reported once per database. Previously every database produced a data point with an
+  identical resource and no distinguishing attribute, so the values collapsed into a single series and only
+  one database's value survived. Attributing them with `sqlserver.database.name` matches what the Windows
+  PDH path already does.
+
+  `sqlserver.database.backup_or_restore.rate` already existed on the direct-connection path, so consumers
+  will see it split from one series into one series per database. Dashboards or alerts that relied on the
+  previous single collapsed series need to aggregate across `sqlserver.database.name`.
+
+  Rows for the `_Total` instance keep the server-wide aggregate and carry no database name.
+
+change_logs: [user]
