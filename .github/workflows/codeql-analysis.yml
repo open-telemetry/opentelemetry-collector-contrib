@@ -10,7 +10,7 @@ permissions: read-all
 
 jobs:
   CodeQL-Build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
