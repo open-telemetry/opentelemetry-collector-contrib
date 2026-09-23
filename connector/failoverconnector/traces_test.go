@@ -30,7 +30,7 @@ type tracesCountingConsumer struct {
 	calls int
 }
 
-func (c *tracesCountingConsumer) Capabilities() consumer.Capabilities {
+func (_ *tracesCountingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
