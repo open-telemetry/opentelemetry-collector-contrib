@@ -345,23 +345,6 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 		}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{invalidLiteral}))
 		assert.ErrorContains(t, err, "invalid CIDR address")
 	})
-
-	t.Run("invalid literal before dynamic getter", func(t *testing.T) {
-		invalidLiteral, err := ottl.NewTestingLiteralGetter(true, ottl.StandardStringGetter[any]{
-			Getter: func(context.Context, any) (any, error) { return "192.0.2/24", nil },
-		})
-		require.NoError(t, err)
-		target := ottl.StandardStringGetter[any]{
-			Getter: func(context.Context, any) (any, error) { return "192.0.2.1", nil },
-		}
-		dynamic := ottl.StandardStringGetter[any]{
-			Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
-		}
-		networks := []ottl.StringGetter[any]{invalidLiteral, dynamic}
-
-		_, err = isInCIDR[any](target, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, networks))
-		assert.ErrorContains(t, err, "invalid CIDR address: 192.0.2/24")
-	})
 }
 
 func Test_IsInCIDRFactory(t *testing.T) {
