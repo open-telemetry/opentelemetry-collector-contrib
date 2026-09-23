@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
@@ -207,8 +207,9 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 	}
 	hostProvider := &mockSourceProvider{
 		source: source.Source{
-			Kind:       source.HostnameKind,
-			Identifier: "test-host",
+			Kind:             source.HostnameKind,
+			Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+			SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 		},
 	}
 	uuidProvider := &mockUUIDProvider{

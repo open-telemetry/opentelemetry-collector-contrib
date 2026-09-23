@@ -19,7 +19,7 @@ components:
     - connector/datadog
     - connector/exceptions
     - connector/failover
-    - connector/grafanacloud
+    - connector/grafana_cloud
     - connector/metrics_as_logs
     - connector/otlp_json
     - connector/round_robin
@@ -166,7 +166,6 @@ components:
     - pkg/ottl
     - pkg/ottl/contexts/xprofile
     - pkg/pdatatest
-    - pkg/pdatautil
     - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling
@@ -251,10 +250,10 @@ components:
     - receiver/apache_spark
     - receiver/aws_cloudwatch
     - receiver/aws_lambda
+    - receiver/aws_s3
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
-    - receiver/awss3
     - receiver/awsxray
     - receiver/azure_blob
     - receiver/azure_event_hub

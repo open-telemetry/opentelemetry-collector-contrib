@@ -501,10 +501,6 @@ component_management:
     name: pkg_ottl_contexts_xprofile
     paths:
     - pkg/ottl/contexts/xprofile/**
-  - component_id: pkg_pdatautil
-    name: pkg_pdatautil
-    paths:
-    - pkg/pdatautil/**
   - component_id: pkg_resourcetotelemetry
     name: pkg_resourcetotelemetry
     paths:

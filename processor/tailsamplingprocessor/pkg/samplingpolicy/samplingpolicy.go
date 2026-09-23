@@ -51,6 +51,10 @@ const (
 	//
 	// Deprecated: Drop policies should be used instead of invert decisions.
 	InvertNotSampled
+
+	// NumDecisions is not a sampling decision. It must remain the last iota
+	// so arrays indexed by Decision stay correctly sized when values are added.
+	NumDecisions
 )
 
 // String returns a string representation of the Decision.

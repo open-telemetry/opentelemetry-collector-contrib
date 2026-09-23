@@ -14,6 +14,8 @@ type isDoubleArguments[K any] struct {
 	Target ottl.FloatGetter[K]
 }
 
+// NewIsDoubleFactory returns a factory for the IsDouble OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#isdouble
 func NewIsDoubleFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("IsDouble", &isDoubleArguments[K]{}, createIsDoubleFunction[K])
 }

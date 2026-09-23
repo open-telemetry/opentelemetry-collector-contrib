@@ -52,6 +52,9 @@ and allows you to configure a list of statements for the processor to execute. T
 - OTTL statements. This option will meet most user's needs. See [Basic Config](#basic-config) for more details.
 - Objects, which allows users to apply configuration options to a specific list of statements. See [Advanced Config](#advanced-config) for more details.
 
+> [!NOTE]
+> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is experimental and subject to change or removal in the future.
+
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
 | Signal             | Path Prefix Values                                          |
@@ -263,6 +266,7 @@ In addition to the common OTTL functions, the processor defines its own function
 
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
+- [extract_avg_metric](#extract_avg_metric)
 - [extract_count_metric](#extract_count_metric)
 - [extract_percentile_metric](#extract_percentile_metric)
 - [extract_sum_metric](#extract_sum_metric)
@@ -316,6 +320,27 @@ Examples:
 
 - `convert_gauge_to_sum("delta", true)`
 
+### extract_avg_metric
+
+> [!NOTE]  
+> This function supports Histograms, ExponentialHistograms and Summaries.
+
+`extract_avg_metric(Optional[suffix])`
+
+The `extract_avg_metric` function creates a new Gauge metric from a Histogram, ExponentialHistogram or Summary by dividing the sum value by the count value for each data point. Data points where the sum value is missing or the count value is `0` are skipped, to avoid division by zero. A metric will only be created if there is at least one data point.
+
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_avg`.
+
+The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `unit`.
+
+The new metric that is created will be passed to all subsequent statements in the metrics statements list.
+
+Examples:
+
+- `extract_avg_metric()`
+
+- `extract_avg_metric(".avg")`
+
 ### extract_count_metric
 
 > [!NOTE]  
@@ -327,7 +352,6 @@ The `extract_count_metric` function creates a new Sum metric from a Histogram, E
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_count`.
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.count` instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
@@ -355,7 +379,6 @@ The `extract_percentile_metric` function creates a new Gauge metric from a Histo
 
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_p{percentile}` (e.g., `_p50`, `_p95`, `_p99`).
 
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.p{percentile}` (e.g., `.p50`, `.p95`, `.p99`) instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `unit`.
 
@@ -382,7 +405,6 @@ The `extract_sum_metric` function creates a new Sum metric from a Histogram, Exp
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_sum`.
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.sum` instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
@@ -406,7 +428,6 @@ The `convert_summary_count_val_to_sum` function creates a new Sum metric from a 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_count`.
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.count` instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<summary metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
@@ -445,7 +466,6 @@ The `convert_summary_sum_val_to_sum` function creates a new Sum metric from a Su
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_sum`.
-For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.sum` instead. This default is expected to change in a future release.
 
 The name for the new metric will be `<summary metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
@@ -1075,10 +1095,6 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 
 ## Feature Gate
 
-### `processor.transform.defaultErrorModeIgnore`
-
-The `processor.transform.defaultErrorModeIgnore` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) changes the default top-level `error_mode` of the transform processor from `propagate` to `ignore`. This gate is currently in `beta` (enabled by default), meaning the default `error_mode` is `ignore`. To revert to the previous default of `propagate`, disable the gate: `--feature-gates=-processor.transform.defaultErrorModeIgnore`.
-
 ### `transform.flatten.logs`
 
 The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the `flatten_data` configuration option (default `false`). With `flatten_data: true`, the processor provides each log record with a distinct copy of its resource and scope. Then, after applying all transformations, the log records are regrouped by resource and scope.
@@ -1117,3 +1133,10 @@ statements against each signal at 10,000 items/second:
 - Logs: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-ram-mib)
 
 Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/testbed/tests/transform_processor_test.go) for more information about the setup.
+
+Each function that is unique to the transform processor also has a Go benchmark covering its
+execution. Run them with:
+
+```sh
+make benchmark-transform
+```
