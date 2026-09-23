@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -25,6 +26,20 @@ import (
 )
 
 var errLogsConsumer = errors.New("Error from ConsumeLogs")
+
+type logsCountingConsumer struct {
+	err   error
+	calls int
+}
+
+func (c *logsCountingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (c *logsCountingConsumer) ConsumeLogs(context.Context, plog.Logs) error {
+	c.calls++
+	return c.err
+}
 
 func TestLogsRegisterConsumers(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
@@ -133,6 +148,110 @@ func TestLogsWithFailoverError(t *testing.T) {
 	ld := sampleLog()
 
 	assert.EqualError(t, conn.ConsumeLogs(t.Context(), ld), "All provided pipelines return errors")
+}
+
+func TestLogsPermanentErrorFailover(t *testing.T) {
+	logsFirst := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/first")
+	logsSecond := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/second")
+
+	testcases := []struct {
+		name                    string
+		cfg                     *Config
+		err                     error
+		wantErr                 bool
+		wantPermanentErr        bool
+		wantCurrentPipeline     int
+		wantSecondConsumerCalls int
+		wantPermanentCondition  *bool
+	}{
+		{
+			name: "default config fails over on permanent errors",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
+				cfg.PipelinePriority = [][]pipeline.ID{{logsFirst}, {logsSecond}}
+				cfg.RetryInterval = 50 * time.Millisecond
+				return cfg
+			}(),
+			err:                     consumererror.NewPermanent(errLogsConsumer),
+			wantCurrentPipeline:     1,
+			wantSecondConsumerCalls: 1,
+		},
+		{
+			name: "permanent condition false returns permanent error",
+			cfg: &Config{
+				PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}},
+				RetryInterval:    50 * time.Millisecond,
+				Condition: configoptional.Some(ConditionsConfig{
+					ErrorCond: &ErrorCondition{
+						Permanent: new(bool),
+					},
+				}),
+			},
+			err:                     consumererror.NewPermanent(errLogsConsumer),
+			wantErr:                 true,
+			wantPermanentErr:        true,
+			wantCurrentPipeline:     0,
+			wantSecondConsumerCalls: 0,
+			wantPermanentCondition:  new(bool),
+		},
+		{
+			name: "permanent condition false still fails over on retryable errors",
+			cfg: &Config{
+				PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}},
+				RetryInterval:    50 * time.Millisecond,
+				Condition: configoptional.Some(ConditionsConfig{
+					ErrorCond: &ErrorCondition{
+						Permanent: new(bool),
+					},
+				}),
+			},
+			err:                     errLogsConsumer,
+			wantCurrentPipeline:     1,
+			wantSecondConsumerCalls: 1,
+			wantPermanentCondition:  new(bool),
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			first := &logsCountingConsumer{err: tc.err}
+			second := &logsCountingConsumer{}
+			router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+				logsFirst:  first,
+				logsSecond: second,
+			})
+
+			conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, router.(consumer.Logs))
+			require.NoError(t, err)
+
+			failoverConnector := conn.(*logsFailover)
+			defer func() {
+				assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+			}()
+
+			err = conn.ConsumeLogs(t.Context(), sampleLog())
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, errLogsConsumer)
+				assert.Equal(t, tc.wantPermanentErr, consumererror.IsPermanent(err))
+			} else {
+				require.NoError(t, err)
+			}
+			if tc.wantPermanentCondition == nil {
+				require.False(t, tc.cfg.Condition.HasValue())
+			} else {
+				require.True(t, tc.cfg.Condition.HasValue())
+				require.NotNil(t, tc.cfg.Condition.Get().ErrorCond)
+				require.NotNil(t, tc.cfg.Condition.Get().ErrorCond.Permanent)
+				assert.Equal(t, *tc.wantPermanentCondition, *tc.cfg.Condition.Get().ErrorCond.Permanent)
+			}
+			assert.Equal(t, tc.wantCurrentPipeline, failoverConnector.failover.TestGetCurrentConsumerIndex())
+			assert.Equal(t, 1, first.calls)
+			assert.Equal(t, tc.wantSecondConsumerCalls, second.calls)
+		})
+	}
 }
 
 func TestLogsWithQueue(t *testing.T) {

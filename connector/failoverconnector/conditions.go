@@ -5,6 +5,8 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 var (
@@ -50,13 +52,23 @@ type Condition interface {
 type ErrorCondition struct {
 	Contains string `mapstructure:"contains"`
 
+	// Permanent controls whether permanent consumer errors trigger failover.
+	// When unset, permanent errors trigger failover.
+	Permanent *bool `mapstructure:"permanent"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 // TODO: "contains" condition is not honored yet and all error trigger failover
-func (*ErrorCondition) ShouldFailover(err error) bool {
-	return err != nil
+func (c *ErrorCondition) ShouldFailover(err error) bool {
+	if err == nil {
+		return false
+	}
+	if c.Permanent != nil && consumererror.IsPermanent(err) {
+		return *c.Permanent
+	}
+	return true
 }
 
 func buildCondition(c *ConditionsConfig) Condition {

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -23,6 +24,20 @@ import (
 )
 
 var errTracesConsumer = errors.New("Error from ConsumeTraces")
+
+type tracesCountingConsumer struct {
+	err   error
+	calls int
+}
+
+func (c *tracesCountingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (c *tracesCountingConsumer) ConsumeTraces(context.Context, ptrace.Traces) error {
+	c.calls++
+	return c.err
+}
 
 func TestTracesRegisterConsumers(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.TracesSink
@@ -134,6 +149,110 @@ func TestTracesWithFailoverError(t *testing.T) {
 	tr := sampleTrace()
 
 	assert.EqualError(t, failoverConnector.ConsumeTraces(t.Context(), tr), "All provided pipelines return errors")
+}
+
+func TestTracesPermanentErrorFailover(t *testing.T) {
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+
+	testcases := []struct {
+		name                    string
+		cfg                     *Config
+		err                     error
+		wantErr                 bool
+		wantPermanentErr        bool
+		wantCurrentPipeline     int
+		wantSecondConsumerCalls int
+		wantPermanentCondition  *bool
+	}{
+		{
+			name: "default config fails over on permanent errors",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
+				cfg.PipelinePriority = [][]pipeline.ID{{tracesFirst}, {tracesSecond}}
+				cfg.RetryInterval = 50 * time.Millisecond
+				return cfg
+			}(),
+			err:                     consumererror.NewPermanent(errTracesConsumer),
+			wantCurrentPipeline:     1,
+			wantSecondConsumerCalls: 1,
+		},
+		{
+			name: "permanent condition false returns permanent error",
+			cfg: &Config{
+				PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}},
+				RetryInterval:    50 * time.Millisecond,
+				Condition: configoptional.Some(ConditionsConfig{
+					ErrorCond: &ErrorCondition{
+						Permanent: new(bool),
+					},
+				}),
+			},
+			err:                     consumererror.NewPermanent(errTracesConsumer),
+			wantErr:                 true,
+			wantPermanentErr:        true,
+			wantCurrentPipeline:     0,
+			wantSecondConsumerCalls: 0,
+			wantPermanentCondition:  new(bool),
+		},
+		{
+			name: "permanent condition false still fails over on retryable errors",
+			cfg: &Config{
+				PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}},
+				RetryInterval:    50 * time.Millisecond,
+				Condition: configoptional.Some(ConditionsConfig{
+					ErrorCond: &ErrorCondition{
+						Permanent: new(bool),
+					},
+				}),
+			},
+			err:                     errTracesConsumer,
+			wantCurrentPipeline:     1,
+			wantSecondConsumerCalls: 1,
+			wantPermanentCondition:  new(bool),
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			first := &tracesCountingConsumer{err: tc.err}
+			second := &tracesCountingConsumer{}
+			router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+				tracesFirst:  first,
+				tracesSecond: second,
+			})
+
+			conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, router.(consumer.Traces))
+			require.NoError(t, err)
+
+			failoverConnector := conn.(*tracesFailover)
+			defer func() {
+				assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+			}()
+
+			err = conn.ConsumeTraces(t.Context(), sampleTrace())
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, errTracesConsumer)
+				assert.Equal(t, tc.wantPermanentErr, consumererror.IsPermanent(err))
+			} else {
+				require.NoError(t, err)
+			}
+			if tc.wantPermanentCondition == nil {
+				require.False(t, tc.cfg.Condition.HasValue())
+			} else {
+				require.True(t, tc.cfg.Condition.HasValue())
+				require.NotNil(t, tc.cfg.Condition.Get().ErrorCond)
+				require.NotNil(t, tc.cfg.Condition.Get().ErrorCond.Permanent)
+				assert.Equal(t, *tc.wantPermanentCondition, *tc.cfg.Condition.Get().ErrorCond.Permanent)
+			}
+			assert.Equal(t, tc.wantCurrentPipeline, failoverConnector.failover.TestGetCurrentConsumerIndex())
+			assert.Equal(t, 1, first.calls)
+			assert.Equal(t, tc.wantSecondConsumerCalls, second.calls)
+		})
+	}
 }
 
 func TestTracesWithQueue(t *testing.T) {

@@ -12,6 +12,10 @@ $defs:
     properties:
       contains:
         type: string
+      permanent:
+        description: Permanent controls whether permanent consumer errors trigger failover. When unset, permanent errors trigger failover.
+        x-pointer: true
+        type: boolean
 type: object
 properties:
   condition:

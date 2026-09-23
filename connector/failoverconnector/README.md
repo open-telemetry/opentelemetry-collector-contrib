@@ -38,6 +38,7 @@ The following settings are available:
 - `condition`: Conditional statements that decide when the connector should failover. Currently supports below types
     - `error`: 
        - `contains`: "network failure" 
+       - `permanent`: whether errors classified by `consumererror.IsPermanent` trigger failover. Default value is `true` for backward compatibility. When set to `false`, permanent errors are returned immediately and the current priority level remains healthy.
 
   TBD: `contains` is not honored yet and all errors trigger failover. 
 

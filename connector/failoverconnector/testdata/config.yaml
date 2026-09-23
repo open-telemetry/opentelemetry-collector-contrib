@@ -35,6 +35,7 @@ failover/condition:
   condition:
     error:
       contains: "network failure"
+      permanent: false
 
 failover/emptycondition:
   priority_levels:
