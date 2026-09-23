@@ -35,6 +35,12 @@ jobs:
         uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           languages: go
+          # CodeQL's auto-detected RAM budget claims almost the entire
+          # runner on Linux (unlike macOS, where it left plenty of
+          # headroom), starving the otelcontribcol build/link step of
+          # memory and getting it OOM-killed. Cap it so the build has
+          # room to run alongside CodeQL's own tracing overhead.
+          ram: "8192"
 
       - name: Build Artifact
         run: |
