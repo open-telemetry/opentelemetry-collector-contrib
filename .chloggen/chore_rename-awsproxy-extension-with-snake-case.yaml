@@ -1,0 +1,4 @@
+change_type: deprecation
+component: extension/aws_proxy
+note: Rename awsproxy extension to use lower_snake_case name `aws_proxy`.
+issues: [45339]
