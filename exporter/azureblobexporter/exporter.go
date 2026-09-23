@@ -317,6 +317,8 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		if err != nil {
 			return fmt.Errorf("failed to parse traces blob name template: %w", err)
 		}
+
+		e.warnIfTemplateReadsBelowResource()
 	}
 
 	if tz := strings.TrimSpace(e.config.BlobNameFormat.Timezone); tz != "" {
