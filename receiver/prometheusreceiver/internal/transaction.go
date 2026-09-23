@@ -62,7 +62,13 @@ type transaction struct {
 	buildInfo             component.BuildInfo
 	obsrecv               *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
-	bufBytes []byte
+	bufBytes       []byte
+	lastMFRKey     resourceKey
+	lastMFScope    scopeID
+	lastMetricName string
+	lastIsExpHist  bool
+	lastIsNHCB     bool
+	lastMF         *metricFamily
 }
 
 var emptyScopeID scopeID
@@ -214,6 +220,15 @@ func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key res
 // getOrCreateMetricFamily returns the metric family for the given metric name and scope,
 // and true if an existing family was found.
 func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn string) *metricFamily {
+	if t.lastMF != nil && t.lastMetricName == mn && t.lastMFScope == scope && t.lastMFRKey == key && t.lastIsExpHist == t.addingNativeHistogram && t.lastIsNHCB == t.addingNHCB {
+		if t.lastMF.name == mn {
+			return t.lastMF
+		}
+		if _, hasMeta := t.mc.GetMetadata(mn); !hasMeta {
+			return t.lastMF
+		}
+	}
+
 	if _, ok := t.families[key]; !ok {
 		t.families[key] = make(map[scopeID]map[metricFamilyKey]*metricFamily)
 	}
@@ -224,10 +239,15 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 	mfKey := metricFamilyKey{isExponentialHistogram: t.addingNativeHistogram, name: mn}
 
 	curMf, ok := t.families[key][scope][mfKey]
+	if ok && curMf.name != mn {
+		if _, hasMeta := t.mc.GetMetadata(mn); hasMeta {
+			ok = false
+		}
+	}
 
 	if !ok {
 		fn := mn
-		if _, ok := t.mc.GetMetadata(mn); !ok {
+		if _, hasMeta := t.mc.GetMetadata(mn); !hasMeta {
 			fn = normalizeMetricName(mn)
 			// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
 			if isCounterCreatedLine(mn, fn, t.mc) {
@@ -237,13 +257,29 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		}
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
 		mf, ok := t.families[key][scope][fnKey]
-		if !ok || !mf.includesMetric(mn) {
+		if !ok || mf.name != fn || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
 			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
-			return curMf
+			if mfKey.name != curMf.name {
+				if existing, exists := t.families[key][scope][mfKey]; !exists || existing.name != mfKey.name {
+					t.families[key][scope][mfKey] = curMf
+				}
+			}
+		} else {
+			curMf = mf
+			if mfKey.name != curMf.name {
+				if existing, exists := t.families[key][scope][mfKey]; !exists || existing.name != mfKey.name {
+					t.families[key][scope][mfKey] = curMf
+				}
+			}
 		}
-		curMf = mf
 	}
+	t.lastMFRKey = key
+	t.lastMFScope = scope
+	t.lastMetricName = mn
+	t.lastIsExpHist = t.addingNativeHistogram
+	t.lastIsNHCB = t.addingNHCB
+	t.lastMF = curMf
 	return curMf
 }
 
@@ -458,7 +494,10 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 				}
 			}
 			metrics := ils.Metrics()
-			for _, mf := range mfs {
+			for mfKey, mf := range mfs {
+				if mfKey.name != mf.name {
+					continue
+				}
 				mf.appendMetric(metrics, t.trimSuffixes)
 			}
 		}
