@@ -22,15 +22,6 @@ resourceMetrics:
                     - key: db.namespace
                       value:
                         stringValue: open
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "3"
@@ -38,15 +29,6 @@ resourceMetrics:
                     - key: db.namespace
                       value:
                         stringValue: otel
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "5"
@@ -54,15 +36,6 @@ resourceMetrics:
                     - key: db.namespace
                       value:
                         stringValue: telemetry
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"

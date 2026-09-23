@@ -13,15 +13,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
                   attributes:
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: "1"
@@ -570,15 +561,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: "1"
@@ -1195,15 +1177,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: postgresql.backend_type
-                      value:
-                        stringValue: client backend
-                    - key: postgresql.state
-                      value:
-                        stringValue: active
-                    - key: postgresql.wait_event_type
-                      value:
-                        stringValue: none
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: "1"

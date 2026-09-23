@@ -2012,7 +2012,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlBackends: PostgresqlBackendsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType, PostgresqlBackendsMetricAttributeKeyPostgresqlState, PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType},
+			EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace},
 		},
 		PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 			Enabled: true,
