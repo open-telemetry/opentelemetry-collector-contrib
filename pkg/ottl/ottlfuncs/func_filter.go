@@ -26,7 +26,7 @@ type filterArguments[K any] struct {
 // Experimental: *NOTE* this API is subject to change or removal in the future. It
 // requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewFilterFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Filter", &filterArguments[K]{}, createFilterFunction[K])
+	return ottl.NewFactory("Filter", &filterArguments[K]{}, createFilterFunction[K], ottl.WithExperimental[K]())
 }
 
 func createFilterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {

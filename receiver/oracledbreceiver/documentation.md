@@ -1702,6 +1702,21 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+The execution plan for a query.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| oracledb.sql_id | The SQL ID of the query. | Any Str | - |
+| oracledb.child_number | The child number of the query. | Any Str | - |
+| oracledb.child_address | Address of the child cursor. | Any Str | - |
+| oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
+| oracledb.query_plan | The query execution plan used by the Oracle database. | Any Str | - |
+
 ### db.server.query_sample
 
 sample query
@@ -1811,7 +1826,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | db.namespace | The database name. | Any Str | - |
 | oracle.db.service | The Oracle service name associated with the database connection. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
-| oracledb.query_plan | The query execution plan used by the SQL Server. | Any Str | - |
+| oracledb.query_plan | The query execution plan used by the Oracle database. | Any Str | - |
 | oracledb.sql_id | The SQL ID of the query. | Any Str | - |
 | oracledb.child_number | The child number of the query. | Any Str | - |
 | oracledb.child_address | Address of the child cursor. | Any Str | - |
