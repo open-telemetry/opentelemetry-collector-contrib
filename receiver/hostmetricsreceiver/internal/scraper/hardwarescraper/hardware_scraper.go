@@ -18,24 +18,18 @@ import (
 
 var ErrHwmonUnavailable = errors.New("hwmon not available")
 
-// temperatureScraper interface for temperature sensor scraping
-type temperatureScraper interface {
-	start(context.Context) error
-	scrape(context.Context, *metadata.MetricsBuilder) error
-}
-
 type hardwareScraper struct {
 	logger             *zap.Logger
 	mb                 *metadata.MetricsBuilder
 	config             *Config
-	temperatureScraper temperatureScraper
+	temperatureScraper *hardwareTemperatureScraper
 }
 
 // newHardwareScraper creates a new hardware metrics scraper
 func newHardwareScraper(_ context.Context, settings scraper.Settings, cfg *Config) *hardwareScraper {
 	mb := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
 
-	var tempScraper temperatureScraper
+	var tempScraper *hardwareTemperatureScraper
 	if cfg.Temperature != nil {
 		tempScraper = &hardwareTemperatureScraper{
 			logger:               settings.Logger,
@@ -69,8 +63,8 @@ func (s *hardwareScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if s.temperatureScraper != nil {
 		if err := s.temperatureScraper.scrape(ctx, s.mb); err != nil {
 			s.logger.Debug("Temperature scraper returned error", zap.Error(err))
-			// The sub-scraper already counts every metric it failed to collect, so
-			// carry that count through instead of overwriting it with metricsLen.
+			// Preserve the sub-scraper's failure count instead of replacing it with
+			// a constant in the wrapper.
 			var partialErr scrapererror.PartialScrapeError
 			if errors.As(err, &partialErr) {
 				errs.AddPartial(partialErr.Failed, err)
@@ -79,10 +73,6 @@ func (s *hardwareScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			}
 		}
 	}
-
-	// Future scrapers can be added here:
-	// if s.fanScraper != nil { ... }
-	// if s.voltageScraper != nil { ... }
 
 	return s.mb.Emit(), errs.Combine()
 }

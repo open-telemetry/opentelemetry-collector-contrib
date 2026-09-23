@@ -25,8 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
-// hardwareTemperatureMetricsLen is how many metrics a single sensor can produce,
-// and therefore how many are lost when reading one sensor fails.
 const hardwareTemperatureMetricsLen = 2
 
 type hardwareTemperatureScraper struct {
@@ -80,7 +78,7 @@ func (s *hardwareTemperatureScraper) scrape(_ context.Context, mb *metadata.Metr
 		for _, sensor := range sensors {
 			tempCelsius, err := s.readTemperatureCelsius(sensor.tempFile)
 			if err != nil {
-				errors.AddPartial(hardwareTemperatureMetricsLen, fmt.Errorf("failed to read temperature for %s: %w", sensor.location, err))
+				errors.AddPartial(1, fmt.Errorf("failed to read temperature for %s: %w", sensor.location, err))
 				continue
 			}
 			mb.RecordHwTemperatureDataPoint(now, tempCelsius, sensor.id, sensor.name, sensor.parent, sensor.location)
@@ -117,6 +115,8 @@ type sensorInfo struct {
 	sensorNum string
 	tempFile  string
 }
+
+var sensorNumberRegexp = regexp.MustCompile(`temp(\d+)_input`)
 
 func (s *hardwareTemperatureScraper) scanTemperatureSensors() ([]sensorInfo, error) {
 	var sensors []sensorInfo
@@ -254,8 +254,7 @@ func (s *hardwareTemperatureScraper) shouldIncludeSensor(sensorName string) bool
 }
 
 func extractSensorNumber(filename string) string {
-	re := regexp.MustCompile(`temp(\d+)_input`)
-	matches := re.FindStringSubmatch(filename)
+	matches := sensorNumberRegexp.FindStringSubmatch(filename)
 	if len(matches) >= 2 {
 		return matches[1]
 	}

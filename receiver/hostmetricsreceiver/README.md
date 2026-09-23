@@ -158,7 +158,7 @@ hardware:
 
 The following settings are optional:
 - `hwmon_path` (default: "/sys/class/hwmon"): path to hwmon directory for reading hardware sensors (Linux only)
-- `temperature.include.sensors` (default: [".*"]): sensor to include
+- `temperature.include.sensors` (unset by default): when unset, all sensors are included
 
 The hardwarescraper currently supports the following sub-scrapers:
 - **Temperature** (Linux only): Collects temperature readings from hardware sensors
@@ -166,6 +166,8 @@ The hardwarescraper currently supports the following sub-scrapers:
   - `hw.temperature.limit`: Temperature thresholds (max, critical, min, low_critical)
 
 **Note**: Hardware scraping is currently only supported on Linux systems that expose hardware sensors through the sysfs hwmon interface. Only temperature monitoring is implemented at this time.
+
+When collecting host hardware metrics from a container, mount the host's `/sys` tree under `root_path` (for example, `/hostfs/sys`). Entries in `/sys/class/hwmon` can be relative symlinks into `/sys/devices`; mounting only `/sys/class/hwmon` leaves their targets unavailable and may result in no sensor metrics. A non-default `hwmon_path` overrides the path derived from `root_path`.
 
 Known limitations, both of which come from the hwmon interface itself:
 
@@ -261,4 +263,3 @@ When a Collector is not linked to glibc, it can only resolve usernames and group
 
 This manifests most often as a failure to set the `process.owner` resource attribute in the `process` scraper. One concrete example is if a process is run as a systemd service using the `DynamicUser` feature. A Collector not linked to glibc will be incapable of resolving the username for the owner of that process because the `DynamicUser` feature leverages NSS (Name Service Switch) to resolve the username dynamically at user lookup time; a Go binary that uses the pure-Go `netgo` implementation is not NSS-aware and subsequently fails the user lookup.  
 See more in the [demo repo](https://github.com/braydonk/poc-systemd-dynamic-user-netgo) created by `host_metrics` codeowner [@braydonk](https://github.com/braydonk).
-

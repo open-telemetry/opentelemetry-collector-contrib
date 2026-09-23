@@ -29,6 +29,11 @@ const (
 	AttributeHwLimitTypeHighDegraded
 	AttributeHwLimitTypeLowCritical
 	AttributeHwLimitTypeLowDegraded
+	AttributeHwLimitTypeCritical
+	AttributeHwLimitTypeDegraded
+	AttributeHwLimitTypeMax
+	AttributeHwLimitTypeThrottled
+	AttributeHwLimitTypeTurbo
 )
 
 // String returns the string representation of the AttributeHwLimitType.
@@ -42,6 +47,16 @@ func (av AttributeHwLimitType) String() string {
 		return "low.critical"
 	case AttributeHwLimitTypeLowDegraded:
 		return "low.degraded"
+	case AttributeHwLimitTypeCritical:
+		return "critical"
+	case AttributeHwLimitTypeDegraded:
+		return "degraded"
+	case AttributeHwLimitTypeMax:
+		return "max"
+	case AttributeHwLimitTypeThrottled:
+		return "throttled"
+	case AttributeHwLimitTypeTurbo:
+		return "turbo"
 	}
 	return ""
 }
@@ -52,6 +67,11 @@ var MapAttributeHwLimitType = map[string]AttributeHwLimitType{
 	"high.degraded": AttributeHwLimitTypeHighDegraded,
 	"low.critical":  AttributeHwLimitTypeLowCritical,
 	"low.degraded":  AttributeHwLimitTypeLowDegraded,
+	"critical":      AttributeHwLimitTypeCritical,
+	"degraded":      AttributeHwLimitTypeDegraded,
+	"max":           AttributeHwLimitTypeMax,
+	"throttled":     AttributeHwLimitTypeThrottled,
+	"turbo":         AttributeHwLimitTypeTurbo,
 }
 
 var MetricsInfo = metricsInfo{
