@@ -205,7 +205,7 @@ func Test_isInCIDR(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) { return tt.target, nil },
-			}, tt.networks)
+			}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, tt.networks))
 			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
@@ -226,7 +226,7 @@ func Test_isInCIDR_getter_errors(t *testing.T) {
 			},
 		}
 
-		exprFunc, err := isInCIDR[any](target, networks)
+		exprFunc, err := isInCIDR[any](target, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, networks))
 		require.NoError(t, err)
 
 		_, err = exprFunc(t.Context(), nil)
@@ -244,7 +244,7 @@ func Test_isInCIDR_getter_errors(t *testing.T) {
 			},
 		}
 
-		exprFunc, err := isInCIDR[any](target, networks)
+		exprFunc, err := isInCIDR[any](target, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, networks))
 		require.NoError(t, err)
 
 		_, err = exprFunc(t.Context(), nil)
@@ -296,7 +296,7 @@ func Test_isInCIDR_Error(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) { return tt.target, nil },
-			}, tt.networks)
+			}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, tt.networks))
 			require.NoError(t, err)
 			_, err = exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
@@ -317,7 +317,7 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 	t.Run("single literal network", func(t *testing.T) {
 		exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "10.1.2.3", nil },
-		}, []ottl.StringGetter[any]{literalOne})
+		}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{literalOne}))
 		require.NoError(t, err)
 		result, err := exprFunc(nil, nil)
 		require.NoError(t, err)
@@ -327,7 +327,7 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 	t.Run("multiple literals networks", func(t *testing.T) {
 		exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "192.168.0.1", nil },
-		}, []ottl.StringGetter[any]{literalOne, literalTwo})
+		}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{literalOne, literalTwo}))
 		require.NoError(t, err)
 		result, err := exprFunc(nil, nil)
 		require.NoError(t, err)
@@ -342,7 +342,7 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 
 		_, err = isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "192.0.0.1", nil },
-		}, []ottl.StringGetter[any]{invalidLiteral})
+		}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{invalidLiteral}))
 		assert.ErrorContains(t, err, "invalid CIDR address")
 	})
 
@@ -359,7 +359,7 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 		}
 		networks := []ottl.StringGetter[any]{invalidLiteral, dynamic}
 
-		_, err = isInCIDR[any](target, networks)
+		_, err = isInCIDR[any](target, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, networks))
 		assert.ErrorContains(t, err, "invalid CIDR address: 192.0.2/24")
 	})
 }
@@ -388,13 +388,13 @@ func Test_IsInCIDRFactory(t *testing.T) {
 				return "192.168.1.1", nil
 			},
 		}
-		isInCIDRArgs.Networks = []ottl.StringGetter[any]{
+		isInCIDRArgs.Networks = *ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 			&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return "192.168.1.0/24", nil
 				},
 			},
-		}
+		})
 
 		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
@@ -410,11 +410,11 @@ func Test_IsInCIDRFactory(t *testing.T) {
 func BenchmarkIsInCIDR(b *testing.B) {
 	exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) { return "192.0.2.1", nil },
-	}, []ottl.StringGetter[any]{
+	}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 		ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
 		},
-	})
+	}))
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
