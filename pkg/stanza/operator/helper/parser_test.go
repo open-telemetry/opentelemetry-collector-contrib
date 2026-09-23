@@ -52,6 +52,17 @@ func TestParserConfigBodyCollision(t *testing.T) {
 	require.ErrorContains(t, err, "`parse_to: body` not allowed when `body` is configured")
 }
 
+func TestParserConfigDropFieldCollision(t *testing.T) {
+	cfg := NewParserConfig("test-id", "test-type")
+	cfg.ParseFrom = entry.NewBodyField("message")
+	cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("message")}
+	cfg.DropField = true
+
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
+	require.ErrorContains(t, err, "`parse_to` and `parse_from` cannot be the same when `drop_field: true`")
+}
+
 func TestParserConfigBuildValid(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
 
