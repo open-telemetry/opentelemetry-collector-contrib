@@ -495,7 +495,9 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 		}
 		switch mf.mtype {
 		case pmetric.MetricTypeHistogram:
-			mg.complexValue = make([]dataPoint, 0, 8)
+			// Pre-allocate to 16 to accommodate the default OpenTelemetry ExplicitBucketHistogram
+			// boundaries (15 bounds + +Inf = 16 buckets) and Prometheus DefBuckets (11 bounds + +Inf = 12 buckets).
+			mg.complexValue = make([]dataPoint, 0, 16)
 		case pmetric.MetricTypeSummary:
 			mg.complexValue = make([]dataPoint, 0, 4)
 		}

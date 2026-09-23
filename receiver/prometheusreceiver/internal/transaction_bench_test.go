@@ -381,7 +381,7 @@ func BenchmarkScrapePayload(b *testing.B) {
 		runScrapePayloadBenchmark(b, p)
 	})
 	b.Run("ClassicHistogram_Proto", func(b *testing.B) {
-		// 100 classic histograms * 10 series (8 buckets + sum + count) = 1,000 series equivalent,
+		// 100 classic histograms * 18 series (16 buckets + sum + count) = 1,800 series equivalent,
 		// already grouped in Protobuf wire format (representative of Protobuf and OpenMetrics 2.0).
 		p := benchPayload{protoBytes: generateProtobufClassicHistogramPayload(100)}
 		runScrapePayloadBenchmark(b, p)
@@ -676,7 +676,8 @@ func generateProtobufClassicHistogramPayload(numHistograms int) []byte {
 	var buf bytes.Buffer
 	numFamilies := min(10, numHistograms)
 	perFamily := numHistograms / numFamilies
-	bounds := []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, math.Inf(1)}
+	// Default OpenTelemetry ExplicitBucketHistogram boundaries (15 bounds) + +Inf = 16 buckets.
+	bounds := []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, math.Inf(1)}
 	tsProto := &types.Timestamp{Seconds: 1700000000, Nanos: 0}
 	for f := range numFamilies {
 		mfName := fmt.Sprintf("bench_classic_hist_%d", f)
@@ -700,7 +701,7 @@ func generateProtobufClassicHistogramPayload(numHistograms int) []byte {
 				Label:       commonProtoLabels(f, i),
 				TimestampMs: 1700000000000,
 				Histogram: &dto.Histogram{
-					SampleCount: 80,
+					SampleCount: uint64(len(bounds) * 10),
 					SampleSum:   45.67,
 					Bucket:      buckets,
 				},
