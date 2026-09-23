@@ -17,8 +17,9 @@ issues: [48197]
 # Use pipe (|) for multiline entries.
 subtext: |
   This allows project IDs such as `scope:my-cool-project` for inside of a topic
-  such as `projects/scope:my-cool-project/topics/my-cool-topic`. Support for legacy
-  domain scoped projects in the form `google.com:my-cool-project` are also supported
+  such as `projects/scope:my-cool-project/topics/my-cool-topic`.
+  This is used most often Google Cloud Dedicated deployments. Additionally, support for legacy
+  domain scoped projects in the form `google.com:my-cool-project` are also now supported
   for users with very old projects.
 
 # If your change doesn't affect end users or the exported elements of any package,
