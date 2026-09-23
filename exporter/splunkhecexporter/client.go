@@ -182,8 +182,7 @@ func (c *client) pushLogsWithSplitOn413(ctx context.Context, ld plog.Logs, heade
 
 	// Unsent logs, falling back to the whole batch if none were extracted.
 	unsent := ld
-	var logsErr consumererror.Logs
-	if errors.As(err, &logsErr) {
+	if logsErr, ok := errors.AsType[consumererror.Logs](err); ok {
 		unsent = logsErr.Data()
 	}
 
