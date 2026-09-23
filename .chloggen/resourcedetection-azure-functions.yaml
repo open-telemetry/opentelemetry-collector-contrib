@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+
+component: processor/resource_detection
+
+note: Add Azure Functions resource detector
+
+issues: [50633]
+
+subtext:
+
+change_logs: [user]

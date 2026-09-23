@@ -74,7 +74,7 @@ func (p *chainProvider) SourceWithAliases(ctx context.Context) (source.Source, [
 			src, err := provider.Source(childCtx)
 			if isAliased && err == nil && src.Kind == source.HostnameKind {
 				aliasesMu.Lock()
-				aliases = append(aliases, src.Identifier)
+				aliases = append(aliases, src.SourceIdentifier.Primary)
 				aliasesMu.Unlock()
 			}
 			replies[i] <- reply{src: src, err: err}
@@ -96,7 +96,7 @@ func (p *chainProvider) SourceWithAliases(ctx context.Context) (source.Source, [
 			aliasesWg.Wait()
 			if reply.src.Kind == source.HostnameKind {
 				aliases = slices.DeleteFunc(aliases, func(s string) bool {
-					return s == reply.src.Identifier
+					return s == reply.src.SourceIdentifier.Primary
 				})
 			}
 
@@ -141,7 +141,7 @@ func (p *configProvider) Source(context.Context) (source.Source, error) {
 	if p.hostname == "" {
 		return source.Source{}, errors.New("empty configuration hostname")
 	}
-	return source.Source{Kind: source.HostnameKind, Identifier: p.hostname}, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: p.hostname, SourceIdentifier: source.SourceIdentifier{Primary: p.hostname}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 }
 
 // Config returns fixed hostname.

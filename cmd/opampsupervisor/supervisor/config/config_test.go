@@ -42,22 +42,12 @@ func TestValidate(t *testing.T) {
 	// HealthCheck with a valid transport so confmap.Validate doesn't trip on
 	// the empty default before reaching the field under test.
 	defaultHealthCheckServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultHealthCheckServerConfig.WriteTimeout = 0
-	defaultHealthCheckServerConfig.ReadHeaderTimeout = 0
-	defaultHealthCheckServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	defaultHealthCheckServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultHealthCheckServerConfig.NetAddr = confignet.AddrConfig{Transport: confignet.TransportTypeTCP}
 	defaultHealthCheck := HealthCheck{
 		ServerConfig: defaultHealthCheckServerConfig,
 	}
 
 	invalidPortServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	invalidPortServerConfig.WriteTimeout = 0
-	invalidPortServerConfig.ReadHeaderTimeout = 0
-	invalidPortServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	invalidPortServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	invalidPortServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:-1",
@@ -762,11 +752,6 @@ func TestSupervisor_TopLevelValidate(t *testing.T) {
 	// HealthCheck endpoint with an invalid port produces a Validate() error
 	// from the HealthCheck substruct via reflection.
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{Endpoint: "localhost:99999"}
 	cfg.HealthCheck = HealthCheck{
 		ServerConfig: serverConfig,

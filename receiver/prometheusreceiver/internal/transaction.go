@@ -22,11 +22,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
@@ -58,7 +58,6 @@ type transaction struct {
 	externalLabels        labels.Labels
 	nodeResources         map[resourceKey]pcommon.Resource
 	scopeAttributes       map[resourceKey]map[scopeID]pcommon.Map
-	ignoreScopeInfoMetric bool
 	logger                *zap.Logger
 	buildInfo             component.BuildInfo
 	obsrecv               *receiverhelper.ObsReport
@@ -85,20 +84,19 @@ func newTransaction(
 	useMetadata bool,
 ) *transaction {
 	return &transaction{
-		ctx:                   ctx,
-		families:              make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
-		isNew:                 true,
-		trimSuffixes:          trimSuffixes,
-		useMetadata:           useMetadata,
-		sink:                  sink,
-		externalLabels:        externalLabels,
-		logger:                settings.Logger,
-		buildInfo:             settings.BuildInfo,
-		obsrecv:               obsrecv,
-		bufBytes:              make([]byte, 0, 1024),
-		scopeAttributes:       make(map[resourceKey]map[scopeID]pcommon.Map),
-		ignoreScopeInfoMetric: mdata.ReceiverPrometheusreceiverIgnoreScopeInfoMetricFeatureGate.IsEnabled(),
-		nodeResources:         map[resourceKey]pcommon.Resource{},
+		ctx:             ctx,
+		families:        make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
+		isNew:           true,
+		trimSuffixes:    trimSuffixes,
+		useMetadata:     useMetadata,
+		sink:            sink,
+		externalLabels:  externalLabels,
+		logger:          settings.Logger,
+		buildInfo:       settings.BuildInfo,
+		obsrecv:         obsrecv,
+		bufBytes:        make([]byte, 0, 1024),
+		scopeAttributes: make(map[resourceKey]map[scopeID]pcommon.Map),
+		nodeResources:   map[resourceKey]pcommon.Resource{},
 	}
 }
 
@@ -149,12 +147,6 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 	// For the `target_info` metric we need to convert it to resource attributes.
 	if metricName == prometheus.TargetInfoMetricName {
 		t.AddTargetInfo(rKey, ls)
-		return 0, nil
-	}
-
-	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	if metricName == prometheus.ScopeInfoMetricName && !t.ignoreScopeInfoMetric {
-		t.addScopeInfo(rKey, ls)
 		return 0, nil
 	}
 
@@ -510,7 +502,7 @@ func getScopeID(ls labels.Labels) (scopeID, pcommon.Map) {
 		attrKey := strings.TrimPrefix(lbl.Name, prometheus.ScopeLabelPrefix)
 		attrs.PutStr(attrKey, lbl.Value)
 	})
-	scope.attrsHash = pdatautil.MapHash(attrs)
+	scope.attrsHash = xhash.MapHash(attrs)
 	return scope, attrs
 }
 
@@ -630,35 +622,6 @@ func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
 			attrs.PutStr(lbl.Name, lbl.Value)
 		})
 	}
-}
-
-func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
-	t.addingNativeHistogram = false
-	t.addingNHCB = false
-	attrs := pcommon.NewMap()
-	scope := scopeID{}
-	ls.Range(func(lbl labels.Label) {
-		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
-			return
-		}
-		if lbl.Name == prometheus.ScopeNameLabelKey {
-			scope.name = lbl.Value
-			return
-		}
-		if lbl.Name == prometheus.ScopeVersionLabelKey {
-			scope.version = lbl.Value
-			return
-		}
-		if lbl.Name == prometheus.ScopeSchemaURLLabelKey {
-			scope.schemaURL = lbl.Value
-			return
-		}
-		attrs.PutStr(lbl.Name, lbl.Value)
-	})
-	if _, ok := t.scopeAttributes[key]; !ok {
-		t.scopeAttributes[key] = make(map[scopeID]pcommon.Map)
-	}
-	t.scopeAttributes[key][scope] = attrs
 }
 
 func getSeriesRefWithoutScopeLabels(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
