@@ -10,7 +10,6 @@ component: receiver/splunk_hec
 note: Extend the response write deadline while a request body is actively being read
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-# TODO(upstream): replace 0 with the tracking issue/PR number when opening the upstream PR (Linear BPOP-5350)
 issues: [51391]
 
 # (Optional) One or more lines of additional information to render under the primary note.
