@@ -31,6 +31,7 @@ func HandleHTTPCode(resp *http.Response) error {
 
 	// Classification follows Splunk's documented HEC response behavior:
 	// https://docs.splunk.com/Documentation/Splunk/latest/Data/TroubleshootHTTPEventCollector
+	// Where Splunk documents no behavior, standard HTTP semantics apply.
 	switch {
 	// Check for responses that may include "Retry-After" header.
 	case resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable:
