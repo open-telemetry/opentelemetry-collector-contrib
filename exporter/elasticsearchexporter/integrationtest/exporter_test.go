@@ -29,6 +29,23 @@ func TestExporter(t *testing.T) {
 			// based on the OTEL config used for testing.
 			restartCollector bool
 			mockESErr        error
+
+			// persistentQueue backs the exporter's sending queue with the
+			// file_storage extension, so every request round-trips through
+			// the persistent queue's on-disk serialization before delivery.
+			persistentQueue bool
+
+			// allowMissingDocs tolerates lost documents: the run only requires
+			// delivery to resume and the received count to stabilize. Used for
+			// scenarios hitting
+			// https://github.com/open-telemetry/opentelemetry-collector/issues/15677.
+			allowMissingDocs bool
+
+			// logsOnly limits a scenario to the logs event type. The queueing
+			// behavior it exercises is signal-agnostic, and CI runs this
+			// package's tests three times (-count=3) within one timeout, so
+			// repeating such scenarios per signal would blow the budget.
+			logsOnly bool
 		}{
 			{name: "basic"},
 			{name: "es_intermittent_http_error", mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
@@ -41,20 +58,51 @@ func TestExporter(t *testing.T) {
 			{name: "batcher_disabled_es_intermittent_http_error", enableBatching: false, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
 			{name: "batcher_disabled_es_intermittent_doc_error", enableBatching: false, mockESErr: errElasticsearch{httpStatus: http.StatusOK, httpDocStatus: http.StatusTooManyRequests}},
 
-			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
-			{name: "collector_restarts", restartCollector: true},
-			{name: "collector_restart_with_es_intermittent_failure", mockESErr: true, restartCollector: true},
-			*/
+			{name: "persistent_queue", persistentQueue: true, logsOnly: true},
+			{name: "persistent_queue_es_intermittent_http_error", persistentQueue: true, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}, logsOnly: true},
+			{name: "persistent_queue_collector_restart", persistentQueue: true, restartCollector: true, logsOnly: true},
+			// Restarting DURING an active ES outage loses the documents that
+			// are queued or in flight at shutdown, because the shutdown-time
+			// queue drain completes them with an error and removes them from
+			// the persistent queue instead of keeping them for redelivery; see
+			// https://github.com/open-telemetry/opentelemetry-collector/issues/15677.
+			{name: "persistent_queue_collector_restart_with_es_intermittent_failure", persistentQueue: true, restartCollector: true, allowMissingDocs: true, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}, logsOnly: true},
+			{name: "collector_restarts", restartCollector: true, logsOnly: true},
+			// The in-memory equivalent (collector_restart_with_es_intermittent_failure)
+			// stays disabled: an in-memory queue inherently loses its contents
+			// across a restart, so there is no delivery bound to assert.
 		} {
+			if tc.logsOnly && eventType != "logs" {
+				continue
+			}
 			t.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(t *testing.T) {
-				runner(t, eventType, tc.restartCollector, tc.mockESErr, withBatching(tc.enableBatching))
+				runner(t, eventType, tc.restartCollector, tc.persistentQueue, tc.allowMissingDocs, tc.mockESErr, withBatching(tc.enableBatching))
 			})
 		}
 	}
 }
 
-func runner(t *testing.T, eventType string, restartCollector bool, mockESErr error, opts ...dataReceiverOption) {
+func runner(t *testing.T, eventType string, restartCollector, persistentQueue, allowMissingDocs bool, mockESErr error, opts ...dataReceiverOption) {
 	t.Helper()
+
+	// A persistent sending queue stores every request through the file_storage
+	// extension, exercising the exporter's on-disk queue serialization in a
+	// full collector pipeline. Restart-survival is not asserted here; the
+	// restart scenarios above are disabled pending
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792.
+	if allowMissingDocs {
+		// Keep ES-level retries short so the shutdown-time queue drain fails
+		// fast instead of blocking collector shutdown behind the HTTP client's
+		// long retry loop.
+		opts = append(opts, withMaxRetries(2))
+	}
+	var extensions map[string]string
+	if persistentQueue {
+		extensions = map[string]string{
+			"file_storage": fmt.Sprintf("file_storage:\n    directory: '%s'", t.TempDir()),
+		}
+		opts = append(opts, withQueueStorage("file_storage"))
+	}
 
 	var (
 		sender testbed.DataSender
@@ -89,7 +137,7 @@ func runner(t *testing.T, eventType string, restartCollector bool, mockESErr err
 	// Stop the listener so that collector can start correctly.
 	require.NoError(t, testListner.Close())
 
-	cfg := createConfigYaml(t, sender, receiver, nil, nil, eventType, getDebugFlag(t))
+	cfg := createConfigYaml(t, sender, receiver, nil, extensions, eventType, getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
 	collector := newRecreatableOtelCol(t)
 	cleanup, err := collector.PrepareConfig(t, cfg)
@@ -139,6 +187,31 @@ func runner(t *testing.T, eventType string, restartCollector bool, mockESErr err
 		tc.Sleep(2 * time.Second)
 	}
 	tc.StopLoad()
+
+	if allowMissingDocs {
+		// Documents lost to the shutdown-drain behavior described in the
+		// scenario table cannot arrive, so only require delivery to resume
+		// and the received count to stabilize.
+		// TODO: require full delivery once
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/15677
+		// is fixed.
+		var lastReceived uint64
+		lastChange := time.Now()
+		tc.WaitForN(
+			func() bool {
+				if received := tc.MockBackend.DataItemsReceived(); received != lastReceived {
+					lastReceived = received
+					lastChange = time.Now()
+				}
+				return lastReceived > 0 && time.Since(lastChange) > 3*time.Second
+			},
+			30*time.Second,
+			"backend should keep receiving items and stabilize",
+		)
+		require.Positive(t, lastReceived)
+		require.LessOrEqual(t, lastReceived, tc.LoadGenerator.DataItemsSent())
+		return
+	}
 
 	tc.WaitFor(
 		func() bool {

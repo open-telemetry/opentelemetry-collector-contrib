@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -203,7 +202,7 @@ func TestEventhubHandler_newAzeventhubsMessageHandler(t *testing.T) {
 	err = ehHandler.newMessageHandler(t.Context(), &azureEvent{
 		AzEventData: &azeventhubs.ReceivedEventData{
 			EventData: azeventhubs.EventData{
-				MessageID:  to.Ptr("11234"),
+				MessageID:  new("11234"),
 				Body:       []byte("hello"),
 				Properties: map[string]any{"foo": "bar"},
 			},

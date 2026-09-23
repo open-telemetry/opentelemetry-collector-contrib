@@ -1,5 +1,4 @@
 cmd/codecovgen
-pkg/pdatautil
 pkg/golden
 pkg/pdatatest
 cmd/golden
@@ -8,8 +7,10 @@ extension/internal/credentialsfile
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/oauth2clientauthextension
+internal/common
 internal/coreinternal
 pkg/ottl
+pkg/ottl/contexts/xprofile
 connector/routingconnector
 internal/pdatautil
 pkg/sampling
@@ -23,7 +24,6 @@ receiver/otelarrowreceiver
 internal/otelarrow
 exporter/otelarrowexporter
 receiver/otelarrowreceiver
-internal/common
 pkg/resourcetotelemetry
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
@@ -134,7 +134,6 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
-exporter/mezmoexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
@@ -164,6 +163,7 @@ pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
+extension/filetelemetrypolicyextension
 extension/googleclientauthextension
 extension/headerssetterextension
 pkg/status
@@ -187,6 +187,7 @@ extension/opampcustommessages
 extension/opampextension
 extension/pprofextension
 extension/remotetapextension
+extension/sdnotifyextension
 extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
@@ -199,9 +200,11 @@ internal/aws/k8s
 internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
+pkg/semconvtest
 processor/k8sattributesprocessor
 processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
+pkg/expohisto
 processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
@@ -211,10 +214,10 @@ internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
-pkg/expohisto
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
+processor/adaptivetailsamplingprocessor
 processor/attributesprocessor
 processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
@@ -222,7 +225,6 @@ processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/drainprocessor
-processor/dynamicsamplingprocessor
 processor/filterprocessor
 processor/genainormalizerprocessor
 processor/geoipprocessor
@@ -239,10 +241,13 @@ processor/metricstransformprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
+processor/rollingspanlatencyprocessor
 processor/schemaprocessor
+processor/signingprocessor
 processor/spanprocessor
 processor/spanpruningprocessor
 processor/sumologicprocessor
+processor/telemetrypolicyprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
 receiver/activedirectoryinvreceiver
@@ -321,7 +326,6 @@ receiver/redfishreceiver
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver
 receiver/snmpreceiver

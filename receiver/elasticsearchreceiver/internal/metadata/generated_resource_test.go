@@ -14,6 +14,7 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetElasticsearchClusterName("elasticsearch.cluster.name-val")
+			rb.SetElasticsearchClusterUUID("elasticsearch.cluster.uuid-val")
 			rb.SetElasticsearchIndexName("elasticsearch.index.name-val")
 			rb.SetElasticsearchNodeName("elasticsearch.node.name-val")
 			rb.SetElasticsearchNodeVersion("elasticsearch.node.version-val")
@@ -25,7 +26,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 4, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -36,6 +37,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "elasticsearch.cluster.name-val", elasticsearchClusterNameAttrVal.Str())
+			}
+			elasticsearchClusterUUIDAttrVal, ok := res.Attributes().Get("elasticsearch.cluster.uuid")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "elasticsearch.cluster.uuid-val", elasticsearchClusterUUIDAttrVal.Str())
 			}
 			elasticsearchIndexNameAttrVal, ok := res.Attributes().Get("elasticsearch.index.name")
 			assert.True(t, ok)

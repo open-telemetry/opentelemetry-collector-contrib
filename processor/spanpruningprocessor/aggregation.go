@@ -16,13 +16,16 @@ import (
 // aggregationGroup captures the spans to aggregate along with execution
 // metadata (tree depth, preassigned summary ID, and attribute loss info).
 type aggregationGroup struct {
-	nodes             []*spanNode            // nodes to aggregate (replaces []spanInfo for efficiency)
-	depth             int                    // tree depth (0 = leaf, 1 = parent of leaf, etc.)
-	summarySpanID     pcommon.SpanID         // SpanID of the summary span (assigned before creation)
-	lossInfo          attributeLossSummary   // attribute loss info (diverse + missing)
-	templateNode      *spanNode              // node to use as summary template (longest duration)
-	outlierAnalysis   *outlierAnalysisResult // outlier analysis results
-	preservedOutliers []*spanNode            // outliers to keep as individual spans
+	nodes                  []*spanNode            // nodes to aggregate (replaces []spanInfo for efficiency)
+	depth                  int                    // tree depth (0 = leaf, 1 = parent of leaf, etc.)
+	summarySpanID          pcommon.SpanID         // SpanID of the summary span (assigned before creation)
+	lossInfo               attributeLossSummary   // attribute loss info (diverse + missing)
+	templateNode           *spanNode              // node to use as summary template (longest duration)
+	outlierAnalysis        *outlierAnalysisResult // outlier analysis results
+	preservedOutliers      []*spanNode            // outliers to keep as individual spans
+	exemplars              []*spanNode            // randomly sampled exemplars to keep as siblings of the summary
+	exemplarPopulationSize int                    // full group size (N), denominator for exemplar threshold composition
+	exemplarSampleSize     int                    // trees drawn from the group (D), numerator for exemplar threshold composition
 }
 
 // aggregationPlan orders aggregation groups for top-down execution and
@@ -109,6 +112,17 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 			outlier.span.SetParentSpanID(summaryParentID)
 			outlier.span.Attributes().PutBool(prefix+"is_preserved_outlier", true)
 			outlier.span.Attributes().PutStr(prefix+"summary_span_id", group.summarySpanID.String())
+		}
+
+		// Mark randomly sampled exemplars with reference to summary span and
+		// update their CPS sampling threshold to reflect the additional
+		// sampling step (K kept of N).
+		for _, exemplar := range group.exemplars {
+			// Exemplars become siblings of the summary span.
+			exemplar.span.SetParentSpanID(summaryParentID)
+			updateExemplarThreshold(exemplar.span, group.exemplarSampleSize, group.exemplarPopulationSize)
+			exemplar.span.Attributes().PutBool(prefix+"is_exemplar", true)
+			exemplar.span.Attributes().PutStr(prefix+"summary_span_id", group.summarySpanID.String())
 		}
 
 		// Record replacement span ID on each node so child groups can find it
@@ -200,6 +214,16 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 			for _, outlier := range group.preservedOutliers {
 				outlierIDs.AppendEmpty().SetStr(outlier.span.SpanID().String())
 			}
+		}
+	}
+
+	// Track sampled exemplars.
+	if len(group.exemplars) > 0 {
+		newSpan.Attributes().PutInt(prefix+"exemplar_count", int64(len(group.exemplars)))
+
+		exemplarIDs := newSpan.Attributes().PutEmptySlice(prefix + "exemplar_span_ids")
+		for _, exemplar := range group.exemplars {
+			exemplarIDs.AppendEmpty().SetStr(exemplar.span.SpanID().String())
 		}
 	}
 

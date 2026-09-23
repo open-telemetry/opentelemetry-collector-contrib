@@ -42,10 +42,6 @@ func TestGetHostname(t *testing.T) {
 	assert.Equal(t, customHost, hostInfo.GetHostname(logger))
 }
 
-func strp(s string) *string {
-	return &s
-}
-
 func TestClusterNameFromEC2Tags(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -56,9 +52,9 @@ func TestClusterNameFromEC2Tags(t *testing.T) {
 		{
 			name: "missing cluster name tag",
 			ec2Tags: &ec2.DescribeTagsOutput{
-				NextToken: strp("NextToken"),
+				NextToken: new("NextToken"),
 				Tags: []types.TagDescription{
-					{Key: strp("some key"), Value: strp("some value")},
+					{Key: new("some key"), Value: new("some value")},
 				},
 			},
 			err: "no tag found with prefix \"kubernetes.io/cluster/\"",
@@ -66,10 +62,10 @@ func TestClusterNameFromEC2Tags(t *testing.T) {
 		{
 			name: "cluster name tag only has the prefix",
 			ec2Tags: &ec2.DescribeTagsOutput{
-				NextToken: strp("NextToken"),
+				NextToken: new("NextToken"),
 				Tags: []types.TagDescription{
-					{Key: strp("some key"), Value: strp("some value")},
-					{Key: strp("kubernetes.io/cluster/"), Value: strp("some value")},
+					{Key: new("some key"), Value: new("some value")},
+					{Key: new("kubernetes.io/cluster/"), Value: new("some value")},
 				},
 			},
 			err: "missing cluster name in \"kubernetes.io/cluster/\" tag",
@@ -77,10 +73,10 @@ func TestClusterNameFromEC2Tags(t *testing.T) {
 		{
 			name: "cluster name is available",
 			ec2Tags: &ec2.DescribeTagsOutput{
-				NextToken: strp("NextToken"),
+				NextToken: new("NextToken"),
 				Tags: []types.TagDescription{
-					{Key: strp("some key"), Value: strp("some value")},
-					{Key: strp("kubernetes.io/cluster/myclustername"), Value: strp("some value")},
+					{Key: new("some key"), Value: new("some value")},
+					{Key: new("kubernetes.io/cluster/myclustername"), Value: new("some value")},
 				},
 			},
 			clusterName: "myclustername",

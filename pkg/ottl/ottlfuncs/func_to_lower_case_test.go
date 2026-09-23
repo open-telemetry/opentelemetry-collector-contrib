@@ -99,3 +99,52 @@ func Test_toLowerCaseRuntimeError(t *testing.T) {
 		})
 	}
 }
+
+func Test_ToLowerCaseFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewToLowerCaseFactory[any]()
+		assert.Equal(t, "ToLowerCase", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewToLowerCaseFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &toLowerCaseArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewToLowerCaseFactory[any]()
+		args := factory.CreateDefaultArguments()
+		createToLowerCaseArgs, ok := args.(*toLowerCaseArguments[any])
+		require.True(t, ok)
+		createToLowerCaseArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello world", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createToLowerCaseFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ToLowerCaseFactory args must be of type *toLowerCaseArguments[K]")
+	})
+}
+
+func BenchmarkToLowerCase(b *testing.B) {
+	exprFunc := toLowerCase[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "complex_SET-of.WORDS1234", nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

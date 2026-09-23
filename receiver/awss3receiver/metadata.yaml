@@ -1,5 +1,6 @@
 display_name: AWS S3 Receiver
-type: awss3
+type: aws_s3
+deprecated_type: awss3
 
 status:
   class: receiver

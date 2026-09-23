@@ -280,11 +280,13 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 		`Flag may be repeated to set multiple headers (e.g --otlp-header key1=\"value1\" --otlp-header key2=\"value2\")`)
 
 	// custom resource attributes
-	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
+	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes, describing the entity that produces the telemetry. They are set once on the OTLP resource and are shared by every span, metric data point and log record emitted by this run, e.g. --otlp-attributes service.name=\"my-service\" overrides --service. "+
+		"The value is expected in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
 		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --otlp-attributes key3=true --otlp-attributes key4=123 --otlp-attributes key5=[1,2,3])`)
 
-	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
+	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom attributes describing an individual telemetry item. They are set on every generated span, metric data point and log record rather than on the resource, e.g. --telemetry-attributes http.response.status_code=200. "+
+		"The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
 		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123 --telemetry-attributes key5=[1,2,3])`)
 

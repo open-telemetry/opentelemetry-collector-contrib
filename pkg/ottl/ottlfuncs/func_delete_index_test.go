@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -321,5 +322,71 @@ func TestDeleteIndex_Errors(t *testing.T) {
 			_, err := exprFunc(t.Context(), res)
 			assert.ErrorContains(t, err, etc.expectedErr)
 		})
+	}
+}
+
+func Test_DeleteIndexFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewDeleteIndexFactory[any]()
+		assert.Equal(t, "delete_index", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewDeleteIndexFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &deleteIndexArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "StartIndex", "EndIndex"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewDeleteIndexFactory[any]()
+		args := factory.CreateDefaultArguments()
+		deleteIndexArgs, ok := args.(*deleteIndexArguments[any])
+		require.True(t, ok)
+		deleteIndexArgs.Target = &ottl.StandardPSliceGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Slice, error) {
+				return pcommon.NewSlice(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		deleteIndexArgs.StartIndex = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(0), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createDeleteIndexFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "DeleteIndexFactory args must be of type *deleteIndexArguments[K]")
+	})
+}
+
+func BenchmarkDeleteIndex(b *testing.B) {
+	var current pcommon.Slice
+	target := sliceGetSetter(func(context.Context, any) (any, error) {
+		return current, nil
+	})
+	startIndex := mockIntGetter(3)
+	exprFunc := deleteIndexFrom(target, startIndex, nilOptional)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		current = pcommon.NewSlice()
+		if err := current.FromRaw([]any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}); err != nil {
+			b.Fatal(err)
+		}
+		res := pcommon.NewSlice()
+		if _, err := exprFunc(ctx, res); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

@@ -5,11 +5,11 @@ package profiles // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func ProfileFunctions() map[string]ottl.Factory[*ottlprofile.TransformContext] {
-	// No profiles-only functions yet.
-	return ottlfuncs.StandardFuncs[*ottlprofile.TransformContext]()
+	return xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlprofile.TransformContext]())
 }
