@@ -24,7 +24,7 @@ import (
 
 type mockPartitionClient struct {
 	eventData []*azeventhubs.ReceivedEventData
-	closed    bool
+	closed    atomic.Bool
 	err       error
 	callCount atomic.Int32
 }
@@ -51,7 +51,7 @@ func (p *mockPartitionClient) ReceiveEvents(_ context.Context, maxBatchSize int,
 }
 
 func (p *mockPartitionClient) Close(_ context.Context) error {
-	p.closed = true
+	p.closed.Store(true)
 	return nil
 }
 
@@ -63,6 +63,7 @@ type mockAzeventHub struct {
 	prefetch            int32
 	closed              bool
 	partitionClient     *mockPartitionClient
+	newClientCount      atomic.Int32
 }
 
 func (a *mockAzeventHub) GetEventHubProperties(_ context.Context, _ *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
@@ -74,6 +75,7 @@ func (a *mockAzeventHub) GetPartitionProperties(_ context.Context, _ string, _ *
 }
 
 func (a *mockAzeventHub) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (azPartitionClient, error) {
+	a.newClientCount.Add(1)
 	a.partitionID = partitionID
 	if options != nil {
 		if options.StartPosition.Offset != nil {
@@ -323,6 +325,25 @@ func TestReceive_ContinuesAfterError(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool { return pc.callCount.Load() >= 2 }, 2*time.Second, 50*time.Millisecond)
+}
+
+func TestReceive_RecreatesClientOnOwnershipLost(t *testing.T) {
+	pc := &mockPartitionClient{err: &azeventhubs.Error{Code: azeventhubs.ErrorCodeOwnershipLost}}
+	hub := &mockAzeventHub{partitionClient: pc}
+	h := &hubWrapperAzeventhubImpl{
+		hub:    hub,
+		config: &Config{Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub", PollRate: 1},
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	_, err := h.Receive(ctx, "p1", func(_ context.Context, _ *azureEvent) error { return nil }, false, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	// first client is torn down after the ownership-lost error, a second one is opened and polled
+	require.Eventually(t, func() bool { return hub.newClientCount.Load() >= 2 && pc.callCount.Load() >= 2 }, 4*time.Second, 50*time.Millisecond)
+	assert.True(t, pc.closed.Load())
 }
 
 func TestGetConsumerGroup(t *testing.T) {
