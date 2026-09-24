@@ -76,7 +76,7 @@ func TestNewReceiver_EnablesResourceAttributeWhenClusterAliasSet(t *testing.T) {
 	c.Scrapers = []string{"brokers"}
 	c.ClusterAlias = "test-cluster"
 
-	mockScraper := func(_ context.Context, cfg Config, _ receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(_ context.Context, cfg Config, _ receiver.Settings, _ *franzAdminProvider) (scraper.Metrics, error) {
 		assert.True(t, cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled,
 			"KafkaClusterAlias resource attribute should be enabled when ClusterAlias is set")
 		return scraper.NewMetrics(
