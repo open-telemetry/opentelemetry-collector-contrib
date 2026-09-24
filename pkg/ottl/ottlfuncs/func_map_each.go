@@ -27,7 +27,7 @@ type mapEachArguments[K any] struct {
 // Experimental: *NOTE* this API is subject to change or removal in the future. It
 // requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewMapEachFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("MapEach", &mapEachArguments[K]{}, createMapEachFunction[K])
+	return ottl.NewFactory("MapEach", &mapEachArguments[K]{}, createMapEachFunction[K], ottl.WithExperimental[K]())
 }
 
 func createMapEachFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
