@@ -10,7 +10,6 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.161.0

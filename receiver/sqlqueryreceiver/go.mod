@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
 	github.com/SAP/go-hdb v1.18.9
-	github.com/docker/go-connections v0.7.0 // indirect
+	github.com/docker/go-connections v0.8.1 // indirect
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/lib/pq v1.12.3
 	github.com/microsoft/go-mssqldb v1.11.0
@@ -212,3 +212,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest => ../../pkg/semconvtest
