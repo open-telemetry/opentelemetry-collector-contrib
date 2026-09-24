@@ -16,6 +16,7 @@ func getPageFileStats() ([]*pageFileStats, error) {
 		deviceName:  "", // We do not support per-device swap
 		usedBytes:   vmem.SwapTotal - vmem.SwapFree - vmem.SwapCached,
 		freeBytes:   vmem.SwapFree,
+		totalBytes:  vmem.SwapTotal,
 		cachedBytes: &vmem.SwapCached,
 	}}, nil
 }
