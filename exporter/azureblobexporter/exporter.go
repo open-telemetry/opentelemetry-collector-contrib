@@ -338,8 +338,10 @@ func (e *azureBlobExporter) generateBlobNameWithCompression(signal pipeline.Sign
 		return "", err
 	}
 
-	// Append compression extension if configured. This must be done after generateBlobName
-	// so that the base name (including serial number etc) is generated first.
+	return e.appendCompressionExtension(blobName), nil
+}
+
+func (e *azureBlobExporter) appendCompressionExtension(blobName string) string {
 	switch e.config.Compression {
 	case configcompression.TypeGzip:
 		blobName += ".gz"
@@ -347,52 +349,48 @@ func (e *azureBlobExporter) generateBlobNameWithCompression(signal pipeline.Sign
 		blobName += ".zst"
 	}
 
-	return blobName, nil
+	return blobName
 }
 
 func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryData any) (string, error) {
-	// Get current time
-	now := time.Now()
+	var format string
+	switch signal {
+	case pipeline.SignalMetrics:
+		format = e.config.BlobNameFormat.MetricsFormat
+	case pipeline.SignalLogs:
+		format = e.config.BlobNameFormat.LogsFormat
+	case pipeline.SignalTraces:
+		format = e.config.BlobNameFormat.TracesFormat
+	default:
+		return "", fmt.Errorf("unsupported signal type: %v", signal)
+	}
 
+	// if template enabled, parse and apply template. if met error, fallback to default blob name format
+	if e.config.BlobNameFormat.TemplateEnabled {
+		// Render template with telemetry data
+		rendered, err := e.renderBlobNameTemplate(signal, telemetryData)
+		if err != nil {
+			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
+		} else {
+			format = rendered
+		}
+	}
+
+	return e.formatBlobName(format), nil
+}
+
+func (e *azureBlobExporter) formatBlobName(format string) string {
+	now := time.Now()
 	if e.timeLocation != nil {
 		now = now.In(e.timeLocation)
 	}
 
-	var format string
-	var tmpl *template.Template
-	switch signal {
-	case pipeline.SignalMetrics:
-		format = e.config.BlobNameFormat.MetricsFormat
-		tmpl = e.blobNameTemplate.metrics
-	case pipeline.SignalLogs:
-		format = e.config.BlobNameFormat.LogsFormat
-		tmpl = e.blobNameTemplate.logs
-	case pipeline.SignalTraces:
-		format = e.config.BlobNameFormat.TracesFormat
-		tmpl = e.blobNameTemplate.traces
-	default:
-		return "", fmt.Errorf("unsupported signal type: %v", signal)
-	}
-	var blobName string
-
-	// if template enabled, parse and apply template. if met error, fallback to default blob name format
-	if e.config.BlobNameFormat.TemplateEnabled {
-		// Parse and apply template with telemetry data
-		var buf bytes.Buffer
-		err := tmpl.Execute(&buf, telemetryData)
-		if err != nil {
-			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
-		} else {
-			blobName = buf.String()
-			format = blobName
-		}
-	}
-
 	if !e.config.BlobNameFormat.SerialNumEnabled {
 		// No serial number enabled, return the formatted blob name
-		return e.parseTimeInBlobName(now, format), nil
+		return e.parseTimeInBlobName(now, format)
 	}
 
+	var blobName string
 	if e.config.BlobNameFormat.SerialNumBeforeExtension {
 		// Append a random number and do so before the file extension if there is one
 		ext := filepath.Ext(format)
@@ -404,7 +402,7 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 		blobName = fmt.Sprintf("%s_%d", e.parseTimeInBlobName(now, format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)))
 	}
 
-	return blobName, nil
+	return blobName
 }
 
 func (e *azureBlobExporter) parseTimeInBlobName(now time.Time, format string) string {
@@ -467,42 +465,40 @@ func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	// Marshal the metrics data
-	data, err := e.marshaller.marshalMetrics(md)
-	if err != nil {
-		return fmt.Errorf("failed to marshal metrics: %w", err)
-	}
-
-	return e.consumeData(ctx, md, data, pipeline.SignalMetrics)
+	return exportPartitioned(ctx, e, metricsOps, md, e.marshaller.marshalMetrics)
 }
 
 func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	// Marshal the logs data
-	data, err := e.marshaller.marshalLogs(ld)
-	if err != nil {
-		return fmt.Errorf("failed to marshal logs: %w", err)
-	}
-
-	return e.consumeData(ctx, ld, data, pipeline.SignalLogs)
+	return exportPartitioned(ctx, e, logsOps, ld, e.marshaller.marshalLogs)
 }
 
 func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	// Marshal the trace data
-	data, err := e.marshaller.marshalTraces(td)
-	if err != nil {
-		return fmt.Errorf("failed to marshal traces: %w", err)
-	}
-
-	return e.consumeData(ctx, td, data, pipeline.SignalTraces)
+	return exportPartitioned(ctx, e, tracesOps, td, e.marshaller.marshalTraces)
 }
 
-func (e *azureBlobExporter) consumeData(ctx context.Context, telemetryData any, data []byte, signal pipeline.Signal) error {
-	// Generate a unique blob name
-	blobName, err := e.generateBlobNameWithCompression(signal, telemetryData)
-	if err != nil {
-		return fmt.Errorf("failed to generate blobname: %w", err)
+// renderBlobNameTemplate executes the blob name template for the given signal
+// against telemetryData and returns the rendered output.
+func (e *azureBlobExporter) renderBlobNameTemplate(signal pipeline.Signal, telemetryData any) (string, error) {
+	var tmpl *template.Template
+	switch signal {
+	case pipeline.SignalMetrics:
+		tmpl = e.blobNameTemplate.metrics
+	case pipeline.SignalLogs:
+		tmpl = e.blobNameTemplate.logs
+	case pipeline.SignalTraces:
+		tmpl = e.blobNameTemplate.traces
+	default:
+		return "", fmt.Errorf("unsupported signal type: %v", signal)
 	}
 
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, telemetryData); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func (e *azureBlobExporter) consumeData(ctx context.Context, blobName string, data []byte, signal pipeline.Signal) error {
 	// Compress the content if compression is configured (note: for append_blob, compression is applied to each block)
 	compressedData, err := e.compressContent(data)
 	if err != nil {
