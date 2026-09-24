@@ -199,7 +199,7 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 
 	// Store event-specific attributes.
 	for _, idx := range sample.AttributeIndices().All() {
-		if dic.AttributeTable().Len() < int(idx) {
+		if int(idx) < 0 || int(idx) >= dic.AttributeTable().Len() {
 			continue
 		}
 		attr := dic.AttributeTable().At(int(idx))
