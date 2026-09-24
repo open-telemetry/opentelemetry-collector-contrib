@@ -14,20 +14,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type ReduceArguments[K any] struct {
+type reduceArguments[K any] struct {
 	Source      ottl.Getter[K]
 	Seed        ottl.Getter[K]
 	Accumulator *ottl.LambdaExpression[K]
 }
 
+// NewReduceFactory returns a factory for the Reduce OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#reduce
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future. It
+// requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewReduceFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Reduce", &ReduceArguments[K]{}, createReduceFunction[K])
+	return ottl.NewFactory("Reduce", &reduceArguments[K]{}, createReduceFunction[K], ottl.WithExperimental[K]())
 }
 
 func createReduceFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ReduceArguments[K])
+	args, ok := oArgs.(*reduceArguments[K])
 	if !ok {
-		return nil, errors.New("ReduceFactory args must be of type *ReduceArguments[K]")
+		return nil, errors.New("ReduceFactory args must be of type *reduceArguments[K]")
 	}
 	return reduce(args.Source, args.Seed, args.Accumulator)
 }

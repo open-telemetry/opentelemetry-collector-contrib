@@ -42,8 +42,6 @@ func TestConfig(t *testing.T) {
 	defaultRawCfg.(*Config).Mapping.Mode = "raw"
 	defaultRawCfg.(*Config).Retry.RetryOnDocumentStatus = defaultRawCfg.(*Config).Retry.RetryOnStatus
 
-	defaultMaxIdleConns := 100
-	defaultIdleConnTimeout := 90 * time.Second
 	defaultCompression := configcompression.TypeGzip
 
 	tests := []struct {
@@ -60,18 +58,17 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			expected: &Config{
-				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers:    10,
-					QueueSize:       10,
-					BlockOnOverflow: true,
-					Sizer:           exporterhelper.RequestSizerTypeRequests,
-					Batch: configoptional.Some(exporterhelper.BatchConfig{
-						FlushTimeout: 10 * time.Second,
-						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      1000000,
-						MaxSize:      5000000,
-					}),
-				}),
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					qs := exporterhelper.NewDefaultQueueConfig()
+					qs.QueueSize = 10
+					qs.BlockOnOverflow = true
+					batch := qs.Batch.GetOrInsertDefault()
+					batch.FlushTimeout = 10 * time.Second
+					batch.Sizer = exporterhelper.RequestSizerTypeBytes
+					batch.MinSize = 1000000
+					batch.MaxSize = 5000000
+					return qs
+				}()),
 				Endpoints: []string{
 					"https://elastic.example.com:9200",
 				},
@@ -97,8 +94,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
@@ -152,18 +147,17 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers:    10,
-					QueueSize:       10,
-					BlockOnOverflow: true,
-					Sizer:           exporterhelper.RequestSizerTypeRequests,
-					Batch: configoptional.Some(exporterhelper.BatchConfig{
-						FlushTimeout: 10 * time.Second,
-						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      1000000,
-						MaxSize:      5000000,
-					}),
-				}),
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					qs := exporterhelper.NewDefaultQueueConfig()
+					qs.QueueSize = 10
+					qs.BlockOnOverflow = true
+					batch := qs.Batch.GetOrInsertDefault()
+					batch.FlushTimeout = 10 * time.Second
+					batch.Sizer = exporterhelper.RequestSizerTypeBytes
+					batch.MinSize = 1000000
+					batch.MaxSize = 5000000
+					return qs
+				}()),
 				Endpoints: []string{"http://localhost:9200"},
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
@@ -187,8 +181,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
@@ -229,18 +221,17 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers:    10,
-					QueueSize:       10,
-					BlockOnOverflow: true,
-					Sizer:           exporterhelper.RequestSizerTypeRequests,
-					Batch: configoptional.Some(exporterhelper.BatchConfig{
-						FlushTimeout: 10 * time.Second,
-						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      1000000,
-						MaxSize:      5000000,
-					}),
-				}),
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					qs := exporterhelper.NewDefaultQueueConfig()
+					qs.QueueSize = 10
+					qs.BlockOnOverflow = true
+					batch := qs.Batch.GetOrInsertDefault()
+					batch.FlushTimeout = 10 * time.Second
+					batch.Sizer = exporterhelper.RequestSizerTypeBytes
+					batch.MinSize = 1000000
+					batch.MaxSize = 5000000
+					return qs
+				}()),
 				Endpoints: []string{"http://localhost:9200"},
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -264,8 +255,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
@@ -378,14 +367,11 @@ func TestConfig(t *testing.T) {
 				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.QueueBatchConfig.Get().NumConsumers = 100
-				cfg.QueueBatchConfig.Get().Batch = configoptional.Some(
-					exporterhelper.BatchConfig{
-						Sizer:        exporterhelper.RequestSizerTypeItems,
-						FlushTimeout: time.Second,
-						MinSize:      1000,
-						MaxSize:      5000,
-					},
-				)
+				batch := cfg.QueueBatchConfig.Get().Batch.GetOrInsertDefault()
+				batch.Sizer = exporterhelper.RequestSizerTypeItems
+				batch.FlushTimeout = time.Second
+				batch.MinSize = 1000
+				batch.MaxSize = 5000
 			}),
 		},
 		{

@@ -1,0 +1,14 @@
+change_type: breaking
+
+component: all
+
+note: Remove the `pkg/pdatautil` module. Its hash helpers moved to `go.opentelemetry.io/collector/pdata/xpdata/xhash` in opentelemetry-collector.
+
+issues: [51108]
+
+subtext: |
+  Replace imports of `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil`
+  (`Hash`, `Hash64`, `MapHash`, `ValueHash`, and the `With*` options) with
+  `go.opentelemetry.io/collector/pdata/xpdata/xhash`.
+
+change_logs: [api]

@@ -44,7 +44,7 @@ func TestValidate(t *testing.T) {
 				Protocol: "rfc5424",
 				Network:  "ftp",
 			},
-			err: "unsupported network: network is required, only tcp/udp/unix supported",
+			err: "unsupported network: network is required, only tcp/udp/unix/unixgram supported",
 		},
 		{
 			name: "Unsupported Protocol",
