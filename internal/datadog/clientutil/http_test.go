@@ -34,6 +34,7 @@ func TestNewHTTPClient(t *testing.T) {
 		IdleConnTimeout:       45 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+		DisableKeepAlives:     true,
 		ForceAttemptHTTP2:     false,
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: false},
 	}
@@ -79,7 +80,6 @@ func TestNewHTTPClient(t *testing.T) {
 		MaxIdleConnsPerHost:   maxIdleConnPerHost,
 		MaxConnsPerHost:       maxConnPerHost,
 		IdleConnTimeout:       idleConnTimeout,
-		DisableKeepAlives:     true,
 		ForceAttemptHTTP2:     false,
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 	}
