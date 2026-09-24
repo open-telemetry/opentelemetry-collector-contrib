@@ -108,12 +108,12 @@ func triggerAttr(source triggerSource) metric.MeasurementOption {
 // pendingTrace holds spans accumulated for a single trace plus its arrival
 // metadata. Access is guarded by adaptiveTailSamplingProcessor.mu.
 type pendingTrace struct {
-	traceID     pcommon.TraceID
-	spans       []ptrace.ResourceSpans
-	spanCount   int
-	firstSeen   time.Time
-	hasRootSpan bool
-	triggered   bool
+	traceID                  pcommon.TraceID
+	spans                    []ptrace.ResourceSpans
+	spanCount                int
+	firstSeen                time.Time
+	rootSpanConditionMatches int
+	triggered                bool
 	// triggerReason records which event moved the trace out of buffering,
 	// stamped on kept spans and mirrored by the decision-triggers metric.
 	triggerReason triggerSource
@@ -577,10 +577,12 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 					newTraces = append(newTraces, id)
 				}
 				pt.spanCount++
-				// hasRootSpan only matters until the trace triggers, so skip
-				// the condition for spans arriving during decision_delay.
-				if !pt.hasRootSpan && !pt.triggered && p.evalRootSpanCondition(ctx, rs, ss, span) {
-					pt.hasRootSpan = true
+				if p.evalRootSpanCondition(ctx, rs, ss, span) {
+					pt.rootSpanConditionMatches++
+
+					if pt.rootSpanConditionMatches == 2 {
+						p.telemetry.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches.Record(ctx, 1)
+					}
 				}
 				b, ok := pendingBuckets[id]
 				if !ok {
@@ -603,7 +605,7 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 						triggered[id] = struct{}{}
 					}
 				}
-				if pt.hasRootSpan && !pt.triggered {
+				if pt.rootSpanConditionMatches > 0 && !pt.triggered {
 					if p.trigger(id, triggerRootSpan) {
 						triggered[id] = struct{}{}
 					}
