@@ -174,14 +174,14 @@ func Test_CoalesceFactory(t *testing.T) {
 		factory := NewCoalesceFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &CoalesceArguments[any]{}, args)
+		assert.IsType(t, &coalesceArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Values"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewCoalesceFactory[any]()
 		args := factory.CreateDefaultArguments()
-		coalesceArgs, ok := args.(*CoalesceArguments[any])
+		coalesceArgs, ok := args.(*coalesceArguments[any])
 		require.True(t, ok)
 		coalesceArgs.Values = []ottl.Getter[any]{
 			&ottl.StandardGetSetter[any]{
@@ -198,6 +198,28 @@ func Test_CoalesceFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createCoalesceFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "CoalesceFactory args must be of type *CoalesceArguments[K]")
+		assert.ErrorContains(t, err, "CoalesceFactory args must be of type *coalesceArguments[K]")
 	})
+}
+
+func BenchmarkCoalesce(b *testing.B) {
+	values := []ottl.Getter[any]{
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+			return nil, nil
+		}},
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+			return nil, nil
+		}},
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+			return "found", nil
+		}},
+	}
+	exprFunc := coalesce[any](values)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

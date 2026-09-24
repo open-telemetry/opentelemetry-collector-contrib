@@ -23,7 +23,7 @@ import (
 type testProvider string
 
 func (t testProvider) Source(context.Context) (source.Source, error) {
-	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: string(t), SourceIdentifier: source.SourceIdentifier{Primary: string(t)}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116) so not-yet-migrated readers (e.g. otlp/metrics fallback hostname) still see a value
 }
 
 func newTranslator(t *testing.T, logger *zap.Logger, opts ...metrics.TranslatorOption) metrics.Provider {
@@ -210,4 +210,31 @@ func TestToDataType(t *testing.T) {
 			assert.Equal(t, tt.want, consumer.toDataType(tt.in))
 		})
 	}
+}
+
+func TestAzureContainerAppsRunningMetric(t *testing.T) {
+	consumer := NewConsumer(nil)
+	tags := []string{
+		"replica:replica-1",
+		"name:my-app",
+		"subscription_id:sub-123",
+		"resource_group:my-rg",
+	}
+	consumer.ConsumeTagSet("azurecontainerapps", tags)
+	// Same tags — should deduplicate
+	consumer.ConsumeTagSet("azurecontainerapps", tags)
+
+	series, _ := consumer.All(uint64(1e9), component.BuildInfo{}, nil, metrics.Metadata{})
+
+	var acaSeries []datadogV2.MetricSeries
+	for _, s := range series {
+		if s.GetMetric() == "otel.datadog_exporter.metrics.running.azurecontainerapps" {
+			acaSeries = append(acaSeries, s)
+		}
+	}
+	require.Len(t, acaSeries, 1, "expected exactly one ACA metric (dedup check)")
+	assert.Contains(t, acaSeries[0].Tags, "replica:replica-1")
+	assert.Contains(t, acaSeries[0].Tags, "name:my-app")
+	assert.Contains(t, acaSeries[0].Tags, "subscription_id:sub-123")
+	assert.Contains(t, acaSeries[0].Tags, "resource_group:my-rg")
 }

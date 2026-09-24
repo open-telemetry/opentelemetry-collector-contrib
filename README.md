@@ -88,6 +88,8 @@ For more information about the maintainer role, see the [community repository](h
 - [David Ashpole](https://github.com/dashpole), Google
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [Joshua MacDonald](https://github.com/jmacd), Microsoft
+- [Matt Wear](https://github.com/mwear), Dash0
+- [Mike Goldsmith](https://github.com/MikeGoldsmith), Honeycomb
 - [Paulo Dias](https://github.com/paulojmdias), Five9
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
@@ -104,10 +106,9 @@ For more information about the approver role, see the [community repository](htt
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [Dylan Strohschein](https://github.com/dyl10s), Dynatrace
 - [George Krajcsovits](https://github.com/krajorama), Grafana Labs
-- [James Moessis](https://github.com/jamesmoessis), Atlassian
+- [James Moessis](https://github.com/jamesmoessis), Optiver
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Khushi Jain](https://github.com/khushijain21), Elastic
-- [Mike Goldsmith](https://github.com/MikeGoldsmith), Honeycomb
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Roger Coll](https://github.com/rogercoll), Elastic
@@ -127,7 +128,6 @@ For more information about the triager role, see the [community repository](http
 - [Gabriel Aszalos](https://github.com/gbbr), Triager
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Triager
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Maintainer
-- [Matt Wear](https://github.com/mwear), Approver
 - [Przemek Maciolek](https://github.com/pmm-sumo), Approver
 - [Punya Biswal](https://github.com/punya), Triager
 - [Ruslan Kovalov](https://github.com/kovrus), Approver

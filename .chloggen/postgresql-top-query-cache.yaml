@@ -1,0 +1,10 @@
+change_type: bug_fix
+component: receiver/postgresql
+note: Fix incorrect top-query counter increments and query ranking caused by an undersized counter cache.
+issues: [51066]
+subtext: |
+  With the defaults (top_n_query: 200, max_rows_per_query: 1000), the cache held 4,000 entries
+  for up to 10,000 counters, overflowing beyond roughly 400 statements when all ten counters were populated.
+  Eviction within a collection caused full cumulative totals to be reported as interval increments
+  on subsequent collections, also distorting which queries were selected as the top N.
+  The cache is now sized from max_rows_per_query, independently of the reporting limit.
