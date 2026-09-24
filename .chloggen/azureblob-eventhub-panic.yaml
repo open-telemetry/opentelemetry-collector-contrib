@@ -1,5 +1,5 @@
 change_type: bug_fix
-component: receiver/azureblob
+component: receiver/azure_blob
 note: Return an error instead of panicking when an Event Hub message has no events or an unexpected blob subject
 issues: [51474]
 subtext: |
