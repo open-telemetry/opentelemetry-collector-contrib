@@ -13,20 +13,20 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.161.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/client v1.67.1-0.20260917142259-65d9c38b188c
-	go.opentelemetry.io/collector/component v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/client v1.67.1-0.20260924183631-3a2ae66dedac
+	go.opentelemetry.io/collector/component v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260917142259-65d9c38b188c
-	go.opentelemetry.io/collector/config/configoptional v1.67.1-0.20260917142259-65d9c38b188c
-	go.opentelemetry.io/collector/confmap v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/config/configoptional v1.67.1-0.20260924183631-3a2ae66dedac
+	go.opentelemetry.io/collector/confmap v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/connector v0.161.1-0.20260917142259-65d9c38b188c
 	go.opentelemetry.io/collector/connector/connectortest v0.161.1-0.20260917142259-65d9c38b188c
 	go.opentelemetry.io/collector/connector/xconnector v0.161.1-0.20260917142259-65d9c38b188c
-	go.opentelemetry.io/collector/consumer v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/consumer v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/consumer/consumertest v0.161.1-0.20260917142259-65d9c38b188c
-	go.opentelemetry.io/collector/pdata v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/pdata v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260917142259-65d9c38b188c
 	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260917142259-65d9c38b188c
-	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260917142259-65d9c38b188c
+	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/otel v1.46.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
@@ -65,7 +65,7 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.161.1-0.20260917142259-65d9c38b188c // indirect
-	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260917142259-65d9c38b188c // indirect
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260924183631-3a2ae66dedac // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.161.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.1-0.20260917142259-65d9c38b188c // indirect
