@@ -232,7 +232,7 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 		if err != nil {
 			return nil, err
 		}
-		return otelModeEncoder{serializer: ser, profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode}}, nil
+		return otelModeEncoder{serializer: ser}, nil
 	}
 	return nil, fmt.Errorf("unknown mapping mode %q (%d)", mode, int(mode))
 }
@@ -256,7 +256,6 @@ type bodymapModeEncoder struct {
 
 type otelModeEncoder struct {
 	serializer *otelserializer.Serializer
-	profilesUnsupportedEncoder
 }
 
 const (
@@ -403,6 +402,15 @@ func (e otelModeEncoder) encodeSpanEvent(
 		span, spanEvent, idx, buf,
 	)
 	return idx, nil
+}
+
+func (e otelModeEncoder) encodeProfile(
+	ec encodingContext,
+	dic pprofile.ProfilesDictionary,
+	profile pprofile.Profile,
+	pushData func(*bytes.Buffer, string, string) error,
+) error {
+	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
 func (e otelModeEncoder) encodeMetrics(
