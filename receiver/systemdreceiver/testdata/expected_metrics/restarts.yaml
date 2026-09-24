@@ -15,7 +15,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{restarts}'
+            unit: '{restart}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
           version: latest
