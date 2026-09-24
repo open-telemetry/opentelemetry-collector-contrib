@@ -761,6 +761,7 @@ checks:
 	$(MAKE) genoteltestbedcol
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
+	$(MAKE) -j4 gotidy
 	$(MAKE) multimod-verify
 	$(MAKE) generate-schemas
 	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)
