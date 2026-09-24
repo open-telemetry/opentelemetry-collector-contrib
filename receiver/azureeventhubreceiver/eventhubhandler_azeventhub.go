@@ -197,17 +197,19 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 		if err != nil {
 			return nil, err
 		}
-		startPos := h.getStartPos(
-			applyOffset,
-			namespace,
-			pProps.EventHubName,
-			getConsumerGroup(h.config),
-			partitionID,
-		)
-		pc, err := h.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
-			StartPosition: startPos,
-			Prefetch:      h.config.PrefetchCount,
-		})
+		newClient := func() (azPartitionClient, error) {
+			return h.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
+				StartPosition: h.getStartPos(
+					applyOffset,
+					namespace,
+					pProps.EventHubName,
+					getConsumerGroup(h.config),
+					partitionID,
+				),
+				Prefetch: h.config.PrefetchCount,
+			})
+		}
+		pc, err := newClient()
 		if err != nil {
 			return nil, err
 		}
@@ -218,7 +220,7 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 
 		go func() {
 			defer close(w.done)
-			defer pc.Close(ctx)
+			defer func() { pc.Close(ctx) }()
 
 			maxPollEvents, pollRate := getPollConfig(h.config)
 			for {
@@ -231,6 +233,22 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 				cancelTimeout()
 				if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 					logger.Error("error receiving events", zap.Error(err))
+					var ehErr *azeventhubs.Error
+					if errors.As(err, &ehErr) && ehErr.Code == azeventhubs.ErrorCodeOwnershipLost {
+						// The SDK treats a stolen link as fatal and leaves the detached link cached,
+						// so every further poll returns the same error. Drop the client and open a
+						// new one from the last checkpoint once the poll interval has elapsed.
+						pc.Close(ctx)
+						select {
+						case <-ctx.Done():
+							return
+						case <-time.After(time.Second * time.Duration(pollRate)):
+						}
+						if pc, err = newClient(); err != nil {
+							w.setErr(err)
+							return
+						}
+					}
 					continue
 				}
 
