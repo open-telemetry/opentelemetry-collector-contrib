@@ -21,19 +21,10 @@ import (
 // Transform transforms a [pprofile.Profile] into our own
 // representation, for ingestion into Elasticsearch
 func Transform(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
-	var data []StackPayload
-
 	if err := serializer.CheckProfileType(dic, profile); err != nil {
-		return data, err
-	}
-
-	payloads, err := stackPayloads(dic, resource, scope, profile)
-	if err != nil {
 		return nil, err
 	}
-	data = append(data, payloads...)
-
-	return data, nil
+	return stackPayloads(dic, resource, scope, profile)
 }
 
 // stackPayloads creates a slice of StackPayloads from the given ResourceProfiles,
