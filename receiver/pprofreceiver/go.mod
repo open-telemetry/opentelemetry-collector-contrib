@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofr
 go 1.26.0
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.10.0
+	github.com/bmatcuk/doublestar/v4 v4.10.1
 	github.com/google/pprof v0.0.0-20260604005048-7023385849c0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof v0.161.0
 	github.com/stretchr/testify v1.12.1
