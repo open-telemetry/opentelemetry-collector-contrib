@@ -48,7 +48,7 @@ type Config struct {
 	FormatType string `mapstructure:"format"`
 
 	// Encoding defines the encoding of the telemetry data.
-	// If specified, an encoding extension produces the payload and `FormatType` only selects the framing.
+	// If specified, it overrides `FormatType` and applies an encoding extension.
 	Encoding *component.ID `mapstructure:"encoding"`
 
 	// Compression Codec used to export telemetry data

@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/file
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Frame encoded records by `format` when native compression is enabled, so a compressed file is delimited the same way an uncompressed one is.
+note: Write `text_encoding` output newline-delimited instead of length-prefixed when native compression is enabled, so the decompressed file is plain text.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49328]
@@ -16,8 +16,8 @@ issues: [49328]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Under the `exporter.file.nativeCompression` feature gate, an `encoding` with the default `format: json` is
-  now newline-delimited instead of length-prefixed. Set `format: proto` to keep length prefixes for a binary encoding.
+  Applies under the `exporter.file.nativeCompression` feature gate to encodings that support stream decoding.
+  Other encodings keep length-prefix framing.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

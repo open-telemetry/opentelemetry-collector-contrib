@@ -63,7 +63,7 @@ The following settings are optional:
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
 - `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
-- `encoding`[default: none]: if specified, uses an encoding extension to encode telemetry data. `format` then only selects the framing, see [File Format](#file-format).
+- `encoding`[default: none]: if specified, uses an encoding extension to encode telemetry data. Overrides `format`.
 - `append`[default: `false`] defines whether append to the file (`true`) or truncate (`false`). If `append: true` is set then setting `rotation` is currently not supported.
 - `compression`[no default]: the compression algorithm used when exporting telemetry data to file. Supported compression algorithms:`zstd`
 - `compression_params`
@@ -114,11 +114,11 @@ Currently, `fileexporter` support the `zstd` compression algorithm, and we will 
 
 Telemetry data is encoded according to the `format` setting and then written to the file.
 
-When `format` is json, each encoded object is written on its own line. This does not apply when `compression` is set without the `exporter.file.nativeCompression` feature gate.
+When `format` is json and `compression` is none, each encoded object is written on its own line.
+
+With the `exporter.file.nativeCompression` feature gate and `compression` set, `format: json` output and encodings that support stream decoding, such as `text_encoding`, are also written one object per line, so the decompressed file is plain text.
 
 Otherwise, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object. When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
-
-Setting `encoding` replaces the payload, not the framing. Use `format: proto` to keep length prefixes for an encoding that emits binary.
 
 ## Group by attribute
 

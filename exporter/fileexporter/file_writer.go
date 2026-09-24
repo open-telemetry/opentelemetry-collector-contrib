@@ -46,9 +46,10 @@ func exportMessageAsBuffer(w *fileWriter, buf []byte) error {
 	defer w.mutex.Unlock()
 	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
 	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
-	data := binary.BigEndian.AppendUint32(make([]byte, 0, 4+len(buf)), uint32(len(buf)))
-	_, err := w.file.Write(append(data, buf...))
-	return err
+	data := make([]byte, 4, 4+len(buf))
+	binary.BigEndian.PutUint32(data, uint32(len(buf)))
+
+	return binary.Write(w.file, binary.BigEndian, append(data, buf...))
 }
 
 func (w *fileWriter) export(buf []byte) error {
@@ -107,10 +108,18 @@ func (w *fileWriter) shutdown() error {
 }
 
 // buildExportFunc selects the framing used to write encoded telemetry.
-func buildExportFunc(cfg *Config) exportFunc {
-	// Per-message compression (gate off) emits binary, so JSON lines need the file itself uncompressed.
-	// Native compression frames by `format`, the same as uncompressed output. See #49328.
-	if cfg.FormatType == formatTypeJSON && (cfg.Compression == "" || metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled()) {
+// lineDelimited reports whether the configured encoding extension produces stream-decodable text.
+func buildExportFunc(cfg *Config, lineDelimited bool) exportFunc {
+	if cfg.FormatType != formatTypeJSON {
+		return exportMessageAsBuffer
+	}
+	if cfg.Compression == "" {
+		return exportMessageAsLine
+	}
+	// Per-message compression (gate off) emits binary, so it needs length prefixes.
+	// Native compression keeps JSON and text encodings readable after decompression.
+	// Other encodings may emit binary regardless of FormatType, so they keep length prefixes. See #49328.
+	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() && (cfg.Encoding == nil || lineDelimited) {
 		return exportMessageAsLine
 	}
 	return exportMessageAsBuffer

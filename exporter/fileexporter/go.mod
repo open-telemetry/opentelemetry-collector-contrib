@@ -6,6 +6,7 @@ require (
 	github.com/DeRuina/timberjack v1.4.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.20.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.161.0
@@ -46,7 +47,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.161.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.67.1-0.20260917142259-65d9c38b188c // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.67.1-0.20260917142259-65d9c38b188c // indirect

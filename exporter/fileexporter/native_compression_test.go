@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -24,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -275,14 +277,14 @@ func TestNativeZstdCompression_WithRotation(t *testing.T) {
 	require.Equal(t, 100, totalTraces, "expected all 100 traces to be recoverable across all files")
 }
 
-// textLogsEncoding marshals log bodies as text, standing in for encodings such as
-// textencodingextension whose output is meant to be read as plain text.
-type textLogsEncoding struct{}
+// binaryLogsEncoding marshals log bodies without advertising stream decoding,
+// standing in for encodings whose output may be binary, such as otlp_encoding.
+type binaryLogsEncoding struct{}
 
-func (textLogsEncoding) Start(context.Context, component.Host) error { return nil }
-func (textLogsEncoding) Shutdown(context.Context) error              { return nil }
+func (binaryLogsEncoding) Start(context.Context, component.Host) error { return nil }
+func (binaryLogsEncoding) Shutdown(context.Context) error              { return nil }
 
-func (textLogsEncoding) MarshalLogs(ld plog.Logs) ([]byte, error) {
+func (binaryLogsEncoding) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	var buf bytes.Buffer
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -297,6 +299,13 @@ func (textLogsEncoding) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// textLogsEncoding is binaryLogsEncoding plus stream decoding, standing in for textencodingextension.
+type textLogsEncoding struct{ binaryLogsEncoding }
+
+func (textLogsEncoding) NewLogsDecoder(io.Reader, ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return nil, errors.New("not implemented")
+}
+
 func logsWithBody(body string) plog.Logs {
 	ld := plog.NewLogs()
 	lr := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -304,23 +313,33 @@ func logsWithBody(body string) plog.Logs {
 	return ld
 }
 
-// An encoding written to a natively compressed file is framed by `format`, so the default
-// `json` yields clean text that survives zstdcat and grep. See #49328.
-func TestNativeCompression_EncodingFramedByFormat(t *testing.T) {
+// Under native compression, a stream-decodable encoding on the default `json` format is
+// newline-delimited so it survives zstdcat and grep. Every other encoding keeps length prefixes. See #49328.
+func TestNativeCompression_EncodingFraming(t *testing.T) {
+	const prefixed = "\x00\x00\x00\x08line-one\x00\x00\x00\x08line-two"
 	tests := []struct {
 		name       string
 		formatType string
+		encoding   component.Component
 		expected   string
 	}{
 		{
-			name:       "json writes newline delimited",
+			name:       "text encoding with json is newline delimited",
 			formatType: formatTypeJSON,
+			encoding:   textLogsEncoding{},
 			expected:   "line-one\nline-two\n",
 		},
 		{
-			name:       "proto keeps length prefixes",
+			name:       "text encoding with proto keeps length prefixes",
 			formatType: formatTypeProto,
-			expected:   "\x00\x00\x00\x08line-one\x00\x00\x00\x08line-two",
+			encoding:   textLogsEncoding{},
+			expected:   prefixed,
+		},
+		{
+			name:       "binary encoding with json keeps length prefixes",
+			formatType: formatTypeJSON,
+			encoding:   binaryLogsEncoding{},
+			expected:   prefixed,
 		},
 	}
 
@@ -338,7 +357,7 @@ func TestNativeCompression_EncodingFramedByFormat(t *testing.T) {
 				CompressionParams: configcompression.CompressionParams{Level: 3},
 			}
 
-			host := hostWithEncoding{map[component.ID]component.Component{encID: textLogsEncoding{}}}
+			host := hostWithEncoding{map[component.ID]component.Component{encID: test.encoding}}
 			fe := &fileExporter{conf: conf}
 			require.NoError(t, fe.Start(t.Context(), host))
 			require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-one")))
