@@ -159,3 +159,29 @@ func Test_ConvertSummarySumValToSum_validation(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkConvertSummarySumValToSum(b *testing.B) {
+	template := getTestSummaryMetric()
+
+	scopeMetrics := pmetric.NewScopeMetrics()
+	metric := scopeMetrics.Metrics().AppendEmpty()
+	template.CopyTo(metric)
+
+	transformContext := ottldatapoint.NewTransformContext(pmetric.NewResourceMetrics(), scopeMetrics, metric, pmetric.NewNumberDataPoint())
+	b.Cleanup(transformContext.Close)
+
+	exprFunc, err := convertSummarySumValToSum("delta", true, ottl.Optional[string]{})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		scopeMetrics.Metrics().RemoveIf(func(m pmetric.Metric) bool {
+			return m.Type() != pmetric.MetricTypeSummary
+		})
+		if _, err = exprFunc(b.Context(), transformContext); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

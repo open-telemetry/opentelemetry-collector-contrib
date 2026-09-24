@@ -177,7 +177,7 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		return nil, err
 	}
 
-	return &adaptiveTailSamplingProcessor{
+	p := &adaptiveTailSamplingProcessor{
 		logger:               set.Logger,
 		telemetry:            tb,
 		cfg:                  cfg,
@@ -190,7 +190,66 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		rootSpanCondEvalErrs: tb.ProcessorAdaptiveTailSamplingOttlEvalErrors,
 		rootSpanCondAttrSet:  metric.WithAttributes(attribute.String("rule", rootSpanConditionRuleLabel)),
 		rootSpanFastPath:     cfg.effectiveRootSpanCondition() == defaultRootSpanCondition,
-	}, nil
+	}
+
+	if err := registerSamplerMetricsCallbacks(tb, p.rules); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+// dynsampler-go GetMetrics suffixes. See dynsampler-go's dynsampler.go.
+const (
+	dynsamplerRequestCountSuffix = "request_count"
+	dynsamplerKeyspaceSizeSuffix = "keyspace_size"
+	dynsamplerBurstCountSuffix   = "burst_count"
+)
+
+// registerSamplerMetricsCallbacks wires each adaptive-sampler rule's
+// dynsampler-go internal metrics into the processor's async OTel metrics.
+// Rules whose sampler does not implement sampler.MetricsProvider (e.g.
+// always_sample, probabilistic) are skipped, as are metrics a
+// given dynsampler-go implementation does not produce (e.g.
+// adaptive_throughput_windowed has no burst count).
+func registerSamplerMetricsCallbacks(tb *metadata.TelemetryBuilder, rules []*rule) error {
+	observe := func(o metric.Int64Observer, suffix string) {
+		for _, r := range rules {
+			mp, ok := r.sampler.(sampler.MetricsProvider)
+			if !ok {
+				continue
+			}
+			// GetMetrics prefixes its map keys with whatever string is
+			// passed in; since the rule/sampler_type attribution comes from
+			// r.dynsamplerAttrSet instead, an empty prefix keeps the keys
+			// (and this lookup) as plain suffixes.
+			if v, ok := mp.GetMetrics("")[suffix]; ok {
+				o.Observe(v, r.dynsamplerAttrSet)
+			}
+		}
+	}
+
+	callback := func(suffix string) metric.Int64Callback {
+		return func(_ context.Context, o metric.Int64Observer) error {
+			observe(o, suffix)
+			return nil
+		}
+	}
+
+	registrations := []struct {
+		register func(metric.Int64Callback) error
+		suffix   string
+	}{
+		{tb.RegisterProcessorAdaptiveTailSamplingSamplerRequestCountCallback, dynsamplerRequestCountSuffix},
+		{tb.RegisterProcessorAdaptiveTailSamplingSamplerKeyspaceSizeCallback, dynsamplerKeyspaceSizeSuffix},
+		{tb.RegisterProcessorAdaptiveTailSamplingSamplerBurstCountCallback, dynsamplerBurstCountSuffix},
+	}
+	for _, reg := range registrations {
+		if err := reg.register(callback(reg.suffix)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // compileRootSpanCondition parses the operator-supplied (or defaulted) OTTL
@@ -255,7 +314,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 			GoalSamplingPercentage: sc.GoalPercentage,
 			AdjustmentInterval:     sc.AdjustmentInterval,
 			Weight:                 sc.Weight,
-			MaxKeys:                sc.MaxKeys,
+			MaxKeys:                sc.effectiveMaxKeys(),
 		})
 		if err != nil {
 			return nil, nil, err
@@ -279,7 +338,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 				InitialSamplingRate:  initialRate,
 				UpdateFrequency:      sc.UpdateFrequency,
 				LookbackFrequency:    sc.LookbackFrequency,
-				MaxKeys:              sc.MaxKeys,
+				MaxKeys:              sc.effectiveMaxKeys(),
 			})
 		} else {
 			s, err = sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
@@ -287,7 +346,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 				InitialSamplingRate:  initialRate,
 				AdjustmentInterval:   sc.AdjustmentInterval,
 				Weight:               sc.Weight,
-				MaxKeys:              sc.MaxKeys,
+				MaxKeys:              sc.effectiveMaxKeys(),
 			})
 		}
 		if err != nil {
