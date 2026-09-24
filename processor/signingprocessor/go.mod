@@ -10,7 +10,6 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/confmap v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/consumer v1.67.1-0.20260924183631-3a2ae66dedac
-	go.opentelemetry.io/collector/consumer/consumertest v0.161.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/processor v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/processor/processortest v0.161.1-0.20260924183631-3a2ae66dedac
@@ -72,6 +71,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.161.1-0.20260924183631-3a2ae66dedac // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.161.1-0.20260924183631-3a2ae66dedac // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.161.1-0.20260924183631-3a2ae66dedac // indirect
 	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260924183631-3a2ae66dedac // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260924183631-3a2ae66dedac // indirect
