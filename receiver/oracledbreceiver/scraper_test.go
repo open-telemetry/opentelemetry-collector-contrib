@@ -1768,8 +1768,9 @@ func TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent(t *testing.T) {
 	require.True(t, ok, "db.server.query_plan record is missing")
 	// oracledb.query_plan is compared against the disabled scrape's value: the payload has to survive
 	// the move byte for byte.
-	assert.Equal(t, 6, queryPlan.Attributes().Len())
+	assert.Equal(t, 7, queryPlan.Attributes().Len())
 	for attribute, want := range map[string]string{
+		"db.system.name":           "oracle",
 		"oracledb.sql_id":          "fxk8aq3nds8aw",
 		"oracledb.child_number":    "0",
 		"oracledb.child_address":   "0000000074C6E830",

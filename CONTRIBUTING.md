@@ -156,6 +156,7 @@ The following general labels are supported:
 | `os:windows`              | `os:windows`              |
 | `waiting for author`      | `waiting-for-author`      |
 | `waiting-for-code-owners` | `waiting-for-code-owners` |
+| `waiting-for-maintainers` | `waiting-for-maintainers` |
 | `bug`                     | `bug`                     |
 | `priority:p0`             | `priority:p0`             |
 | `priority:p1`             | `priority:p1`             |
