@@ -12,20 +12,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type WhenArguments[K any] struct {
+type whenArguments[K any] struct {
 	Condition  *ottl.LambdaExpression[K]
 	TrueValue  ottl.Getter[K]
 	FalseValue ottl.Getter[K]
 }
 
+// NewWhenFactory returns a factory for the When OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#when
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future. It
+// requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewWhenFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("When", &WhenArguments[K]{}, createWhenFunction[K])
+	return ottl.NewFactory("When", &whenArguments[K]{}, createWhenFunction[K], ottl.WithExperimental[K]())
 }
 
 func createWhenFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*WhenArguments[K])
+	args, ok := oArgs.(*whenArguments[K])
 	if !ok {
-		return nil, errors.New("WhenFactory args must be of type *WhenArguments[K]")
+		return nil, errors.New("WhenFactory args must be of type *whenArguments[K]")
 	}
 	return whenFunction(args.Condition, args.TrueValue, args.FalseValue)
 }

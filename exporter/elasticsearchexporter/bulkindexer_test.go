@@ -678,46 +678,60 @@ func newBenchBulkIndexerConfig(tb testing.TB, compressionLevel int) docappender.
 }
 
 func TestSyncBulkIndexer_SuppressConflictErrors(t *testing.T) {
-	responseBody := `{"items":[{"create":{"_index":"foo","status":409,"error":{"type":"version_conflict_engine_exception","reason":"document already exists"}}}]}`
+	for _, tt := range []struct {
+		name                   string
+		index                  string
+		suppressConflictErrors bool
+		wantLogs               int
+	}{
+		{name: "logged by default", index: "foo", wantLogs: 1},
+		{name: "suppress_conflict_errors", index: "foo", suppressConflictErrors: true},
+		{name: "ecs profiling index", index: ".profiling-stackframes-000001"},
+		{name: "otel profiling data stream", index: ".ds-profiling-stackframes.otel-default-2026.09.18-000001"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			responseBody := `{"items":[{"create":{"_index":"` + tt.index + `","status":409,"error":{"type":"version_conflict_engine_exception","reason":"document already exists"}}}]}`
 
-	cfg := Config{
-		QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
-			NumConsumers: 1,
-		}),
-		SuppressConflictErrors: true,
+			cfg := Config{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+					NumConsumers: 1,
+				}),
+				SuppressConflictErrors: tt.suppressConflictErrors,
+			}
+
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{
+					RoundTripFunc: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:       io.NopCloser(strings.NewReader(responseBody)),
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(
+				metadatatest.NewSettings(ct).TelemetrySettings,
+			)
+			require.NoError(t, err)
+
+			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
+
+			ctx := t.Context()
+			session := bi.StartSession(ctx)
+			require.NoError(t, session.Add(ctx, tt.index, "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+
+			require.NoError(t, session.Flush(ctx))
+			session.End()
+			require.NoError(t, bi.Close(ctx))
+
+			messages := observed.FilterMessage("failed to index document")
+			assert.Equal(t, tt.wantLogs, messages.Len())
+		})
 	}
-
-	esClient, err := elastictransport.New(elastictransport.Config{
-		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
-		Transport: &mockTransport{
-			RoundTripFunc: func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-					Body:       io.NopCloser(strings.NewReader(responseBody)),
-					StatusCode: http.StatusOK,
-				}, nil
-			},
-		},
-	})
-	require.NoError(t, err)
-
-	ct := componenttest.NewTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		metadatatest.NewSettings(ct).TelemetrySettings,
-	)
-	require.NoError(t, err)
-
-	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
-
-	ctx := t.Context()
-	session := bi.StartSession(ctx)
-	require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
-
-	require.NoError(t, session.Flush(ctx))
-	session.End()
-	require.NoError(t, bi.Close(ctx))
-
-	messages := observed.FilterMessage("failed to index document")
-	assert.Equal(t, 0, messages.Len(), "expected no error logs for version_conflict_engine_exception when SuppressConflictErrors is true")
 }

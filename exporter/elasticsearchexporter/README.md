@@ -491,6 +491,39 @@ exporters:
 > See [the Universal Profiling getting started documentation](https://www.elastic.co/guide/en/observability/current/profiling-get-started.html)
 > You will need to use the Elasticsearch endpoint, with an [Elasticsearch API key](https://www.elastic.co/guide/en/kibana/current/api-keys.html).
 
+### OTel profiling datastreams
+
+In `otel` mapping mode, profiling signals are ingested into OTel-native Elasticsearch datastreams.
+Each profiling signal type is written to a dedicated backing index:
+
+| Signal type    | Index pattern                                 |
+| -------------- | --------------------------------------------- |
+| Stack traces   | `profiling-stacktraces.otel-default`          |
+| Stack frames   | `profiling-stackframes.otel-default`          |
+| Executables    | `profiling-executables.otel-default`          |
+| Trace events   | `profiling-events-all.otel-default`           |
+| Host metadata  | `profiling-hosts.otel-default`                |
+
+> [!NOTE]
+> Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations)
+> and downsampled event indices (`profiling-events-5powNN.otel-default`) are not yet supported in OTel profiling datastream mode.
+
+> [!WARNING]
+> The `.otel-default` profiling datastream index templates are only available in **Elasticsearch 9.6.0 and later**.
+> If you send profiles with the default OTel mapping mode to an older cluster, documents will be rejected
+> with `index_not_found_exception` (HTTP 404) and profiling data will be lost.
+>
+> To continue sending profiles to Elasticsearch < 9.6.0, restrict the exporter to ECS mode:
+>
+> ```yaml
+> mapping:
+>   allowed_modes: [ecs]
+> ```
+>
+> This is a **breaking change** for existing OTel-mode profiling users (profiles are still in tech preview):
+> the backing indices are different from the ECS-schema indices used by prior versions,
+> and existing profiling data in the old indices is not migrated automatically.
+
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
 [configauth]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md#authentication-configuration

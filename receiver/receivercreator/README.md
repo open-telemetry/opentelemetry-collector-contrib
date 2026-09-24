@@ -76,8 +76,11 @@ port but the port needs to be set inside endpoint. You could do:
 
 ```yaml
 config:
-   endpoint: '`endpoint`:8080'
+   endpoint: '`joinHostPort(endpoint, 8080)`'
 ```
+
+`joinHostPort` accepts a bare hostname or IP address and a port as an integer
+or decimal string. It adds brackets when the host is an IPv6 address.
 
 If your target receiver provides an `endpoint` config field and you aren't
 manually setting it like the above example, the observer endpoint target value
@@ -320,7 +323,7 @@ receivers:
         rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"  && labels["app.kubernetes.io/component"] != "opentelemetry-collector
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
-          endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
+          endpoint: '`joinHostPort(endpoint, "prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090)`'
         resource_attributes:
           an.attribute: a.value
           # Dynamic configuration values
@@ -372,7 +375,7 @@ receivers:
         config:
           auth_type: serviceAccount
           collection_interval: 10s
-          endpoint: '`endpoint`:`kubelet_endpoint_port`'
+          endpoint: '`joinHostPort(endpoint, kubelet_endpoint_port)`'
           extra_metadata_labels:
             - container.id
           metric_groups:
@@ -384,7 +387,7 @@ receivers:
         rule: type == "k8s.service" && annotations["prometheus.io/probe"] == "true"
         config:
           targets:
-          - endpoint: 'http://`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
+          - endpoint: 'http://`joinHostPort(endpoint, "prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090)``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
   receiver_creator/4:

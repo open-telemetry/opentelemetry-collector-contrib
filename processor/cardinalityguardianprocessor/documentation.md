@@ -12,7 +12,7 @@ Total number of high-cardinality labels stripped or tagged.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {labels} | Sum | Int | true | Development |
+| {label} | Sum | Int | true | Development |
 
 ### otelcol_processor_cardinality_savings.estimated
 
@@ -20,7 +20,7 @@ Cumulative estimated dollar value of time-series churn prevented by the processo
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {dollars} | Sum | Double | true | Development |
+| {dollar} | Sum | Double | true | Development |
 
 ### otelcol_processor_cardinality_top.offenders
 
@@ -28,7 +28,7 @@ Cardinality delta of the top-N highest-growth (metric, label) pairs from the las
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {pairs} | Gauge | Int | Development |
+| {pair} | Gauge | Int | Development |
 
 ### otelcol_processor_cardinality_trackers.active
 
@@ -36,7 +36,7 @@ Current number of active cardinality trackers across all shards.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {trackers} | Gauge | Int | Development |
+| {tracker} | Gauge | Int | Development |
 
 ### otelcol_processor_cardinality_trackers.rejected
 
@@ -44,4 +44,4 @@ Number of new (metric, label) pairs ignored because max_tracker_count was reache
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {trackers} | Sum | Int | true | Development |
+| {tracker} | Sum | Int | true | Development |
