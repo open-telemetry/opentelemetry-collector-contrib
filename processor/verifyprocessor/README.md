@@ -25,13 +25,6 @@ and key material described by the resource attributes
 Failed records can optionally be marked or dropped, and verification failures
 can be written to a dead-letter storage extension.
 
-It is the verification counterpart to [`signingprocessor`](../signingprocessor).
-
-> **Note:** This first PR donates the component skeleton only (README, config,
-> factory, and passthrough processor). Concrete verification logic lands in a
-> follow-up PR per the
-> [donation guide](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/docs/new-components.md#donation).
-
 ## Configuration
 
 For complete examples of all supported configurations see
