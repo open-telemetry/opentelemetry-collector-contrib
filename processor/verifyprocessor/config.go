@@ -5,7 +5,6 @@ package verifyprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -15,25 +14,17 @@ const (
 	defaultMode        = "sync"
 	defaultFailureMode = "strict"
 	defaultProfile     = "default"
-)
 
-const (
-	ModeSync = "sync"
-)
+	modeSync = "sync"
 
-const (
-	FailureModeStrict = "strict"
-	FailureModeMark   = "mark"
-)
+	failureModeStrict = "strict"
+	failureModeMark   = "mark"
 
-const (
-	KeySourceK8sSecret = "k8s_secret"
-	KeySourceEnv       = "env"
-	KeySourceFile      = "file"
-	KeySourceBao       = "bao"
-)
+	keySourceK8sSecret = "k8s_secret"
+	keySourceEnv       = "env"
+	keySourceFile      = "file"
+	keySourceBao       = "bao"
 
-const (
 	defaultDeadLetterKeyPrefix = "dead_letter/"
 )
 
@@ -137,13 +128,13 @@ func createDefaultConfig() component.Config {
 func (c *Config) Validate() error {
 	if c.Mode == "" {
 		c.Mode = defaultMode
-	} else if c.Mode != ModeSync {
+	} else if c.Mode != modeSync {
 		return errInvalidMode
 	}
 
 	if c.FailureMode == "" {
 		c.FailureMode = defaultFailureMode
-	} else if c.FailureMode != FailureModeStrict && c.FailureMode != FailureModeMark {
+	} else if c.FailureMode != failureModeStrict && c.FailureMode != failureModeMark {
 		return errInvalidFailureMode
 	}
 
@@ -164,7 +155,7 @@ func (c *Config) Validate() error {
 
 func (c *Config) validateKeySource() error {
 	switch c.KeySource.Type {
-	case KeySourceK8sSecret:
+	case keySourceK8sSecret:
 		if c.KeySource.K8sSecret == nil {
 			return errMissingKeySourceConfig
 		}
@@ -177,21 +168,21 @@ func (c *Config) validateKeySource() error {
 		if c.KeySource.K8sSecret.CertKey == "" && c.KeySource.K8sSecret.HMACKey == "" {
 			return errKeySourceNeedsMaterial
 		}
-	case KeySourceEnv:
+	case keySourceEnv:
 		if c.KeySource.Env == nil {
 			return errMissingKeySourceConfig
 		}
 		if c.KeySource.Env.CertEnvVar == "" && c.KeySource.Env.HMACKeyEnvVar == "" {
 			return errKeySourceNeedsMaterial
 		}
-	case KeySourceFile:
+	case keySourceFile:
 		if c.KeySource.File == nil {
 			return errMissingKeySourceConfig
 		}
 		if c.KeySource.File.CertFile == "" && c.KeySource.File.HMACKeyFile == "" {
 			return errKeySourceNeedsMaterial
 		}
-	case KeySourceBao:
+	case keySourceBao:
 		if c.KeySource.Bao == nil {
 			return errMissingKeySourceConfig
 		}
@@ -218,15 +209,9 @@ func (dl *DeadLetterConfig) validate() error {
 		dl.KeyPrefix = defaultDeadLetterKeyPrefix
 	}
 	for _, mode := range dl.FailureModes {
-		if mode != FailureModeStrict && mode != FailureModeMark {
+		if mode != failureModeStrict && mode != failureModeMark {
 			return errInvalidDeadLetterMode
 		}
-	}
-	if dl.MaxEntrySizeBytes < 0 {
-		return fmt.Errorf("dead_letter.max_entry_size_bytes must be >= 0")
-	}
-	if dl.TTL < 0 {
-		return fmt.Errorf("dead_letter.ttl must be >= 0")
 	}
 	return nil
 }
