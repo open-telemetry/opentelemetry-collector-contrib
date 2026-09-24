@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/functions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
@@ -113,6 +114,9 @@ type DetectorConfig struct {
 	// AzureContainerAppsConfig contains user-specified configurations for the Azure Container Apps detector
 	AzureContainerAppsConfig containerapps.Config `mapstructure:"azurecontainerapps"`
 
+	// AzureFunctionsConfig contains user-specified configurations for the Azure Functions detector
+	AzureFunctionsConfig functions.Config `mapstructure:"azurefunctions"`
+
 	// ConsulConfig contains user-specified configurations for the Consul detector
 	ConsulConfig consul.Config `mapstructure:"consul"`
 
@@ -186,6 +190,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		AksConfig:                aks.CreateDefaultConfig(),
 		AzureAppServiceConfig:    appservice.CreateDefaultConfig(),
 		AzureContainerAppsConfig: containerapps.CreateDefaultConfig(),
+		AzureFunctionsConfig:     functions.CreateDefaultConfig(),
 		ConsulConfig:             consul.CreateDefaultConfig(),
 		DigitalOceanConfig:       digitalocean.CreateDefaultConfig(),
 		DockerConfig:             docker.CreateDefaultConfig(),
@@ -231,6 +236,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AzureAppServiceConfig
 	case containerapps.TypeStr:
 		return d.AzureContainerAppsConfig
+	case functions.TypeStr:
+		return d.AzureFunctionsConfig
 	case consul.TypeStr:
 		return d.ConsulConfig
 	case digitalocean.TypeStr:

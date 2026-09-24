@@ -50,6 +50,10 @@ const (
 	AlgorithmWindowed SamplerAlgorithm = "windowed"
 )
 
+// defaultMaxKeys is the max_keys value used when a rule omits it.
+// 0 value means unlimited.
+const defaultMaxKeys = 500
+
 // RecordFingerprint controls whether the matched rule's fingerprint value is
 // recorded as an attribute on the spans of kept traces.
 type RecordFingerprint string
@@ -237,6 +241,16 @@ type SamplerConfig struct {
 	// Used by: adaptive_throughput.
 	GoalThroughput int `mapstructure:"goal_throughput"`
 
+	// InitialSamplingPercentage is the percentage of traces kept before the
+	// sampler has learned per-fingerprint rates: during the first adjustment
+	// cycle after start, and (windowed algorithm) for fingerprints the
+	// sampler has no computed rate for, including max_keys overflow. A
+	// throughput goal cannot be converted to a sample rate without observed
+	// volume, so the bootstrap is explicit. Omit for the default of 10
+	// (keep 10%); supplied values must be in (0, 100] like every other
+	// percentage. Used by: adaptive_throughput.
+	InitialSamplingPercentage *float64 `mapstructure:"initial_sampling_percentage"`
+
 	// FingerprintAttributes is the list of scoped attribute selectors that
 	// identify what kind of trace this is for sampling purposes. Each entry
 	// has the form `<scope>.attributes["<name>"]` where scope is one of
@@ -247,9 +261,10 @@ type SamplerConfig struct {
 	FingerprintAttributes []string `mapstructure:"fingerprint_attributes"`
 
 	// MaxKeys caps the number of distinct sampling keys the sampler tracks.
-	// 0 means unlimited.
+	// Omitting the field defaults to defaultMaxKeys; explicitly setting it
+	// to 0 means unlimited.
 	// Used by: adaptive_percentage, adaptive_throughput.
-	MaxKeys int `mapstructure:"max_keys"`
+	MaxKeys *int `mapstructure:"max_keys"`
 
 	// AdjustmentInterval is how often the ema algorithm recalculates rates
 	// from recent observations.
@@ -431,7 +446,7 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if s.Weight < 0 || s.Weight >= 1 {
 			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
 		}
-		if s.MaxKeys < 0 {
+		if s.MaxKeys != nil && *s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
 		}
 		return s.rejectUnusedFields(ruleName, "adaptive_percentage", map[string]bool{
@@ -452,8 +467,11 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
-		if s.MaxKeys < 0 {
+		if s.MaxKeys != nil && *s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
+		}
+		if s.InitialSamplingPercentage != nil && (*s.InitialSamplingPercentage <= 0 || *s.InitialSamplingPercentage > 100) {
+			return fmt.Errorf("rule %q: initial_sampling_percentage must be in (0, 100]", ruleName)
 		}
 		switch s.effectiveAlgorithm() {
 		case AlgorithmEMA:
@@ -461,12 +479,13 @@ func (s *SamplerConfig) validate(ruleName string) error {
 				return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
 			}
 			return s.rejectUnusedFields(ruleName, "adaptive_throughput (ema)", map[string]bool{
-				"algorithm":              true,
-				"goal_throughput":        true,
-				"fingerprint_attributes": true,
-				"max_keys":               true,
-				"adjustment_interval":    true,
-				"weight":                 true,
+				"algorithm":                   true,
+				"goal_throughput":             true,
+				"initial_sampling_percentage": true,
+				"fingerprint_attributes":      true,
+				"max_keys":                    true,
+				"adjustment_interval":         true,
+				"weight":                      true,
 			})
 		case AlgorithmWindowed:
 			if s.UpdateFrequency < 0 {
@@ -476,12 +495,13 @@ func (s *SamplerConfig) validate(ruleName string) error {
 				return fmt.Errorf("rule %q: lookback_frequency must be non-negative", ruleName)
 			}
 			return s.rejectUnusedFields(ruleName, "adaptive_throughput (windowed)", map[string]bool{
-				"algorithm":              true,
-				"goal_throughput":        true,
-				"fingerprint_attributes": true,
-				"max_keys":               true,
-				"update_frequency":       true,
-				"lookback_frequency":     true,
+				"algorithm":                   true,
+				"goal_throughput":             true,
+				"initial_sampling_percentage": true,
+				"fingerprint_attributes":      true,
+				"max_keys":                    true,
+				"update_frequency":            true,
+				"lookback_frequency":          true,
 			})
 		default:
 			return fmt.Errorf("rule %q: unknown algorithm %q (must be %q or %q)", ruleName, s.Algorithm, AlgorithmEMA, AlgorithmWindowed)
@@ -499,6 +519,16 @@ func (s *SamplerConfig) effectiveAlgorithm() SamplerAlgorithm {
 		return AlgorithmEMA
 	}
 	return s.Algorithm
+}
+
+// effectiveMaxKeys returns the max_keys value a sampler should use,
+// defaulting to defaultMaxKeys when unset (explicit 0 means unlimited).
+// Only meaningful for adaptive types; validate rejects the field elsewhere.
+func (s *SamplerConfig) effectiveMaxKeys() int {
+	if s.MaxKeys == nil {
+		return defaultMaxKeys
+	}
+	return *s.MaxKeys
 }
 
 // rejectUnusedFields returns an error if any field is set that does not apply
@@ -523,10 +553,13 @@ func (s *SamplerConfig) rejectUnusedFields(ruleName, typeName string, allowed ma
 	if err := set("goal_throughput", s.GoalThroughput != 0); err != nil {
 		return err
 	}
+	if err := set("initial_sampling_percentage", s.InitialSamplingPercentage != nil); err != nil {
+		return err
+	}
 	if err := set("fingerprint_attributes", len(s.FingerprintAttributes) > 0); err != nil {
 		return err
 	}
-	if err := set("max_keys", s.MaxKeys != 0); err != nil {
+	if err := set("max_keys", s.MaxKeys != nil); err != nil {
 		return err
 	}
 	if err := set("adjustment_interval", s.AdjustmentInterval != 0); err != nil {

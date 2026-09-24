@@ -81,6 +81,18 @@ kafka/invalid_metadata_retry_backoff:
     retry:
       backoff: -1s
 
+kafka/sasl_and_kerberos:
+  auth:
+    sasl:
+      mechanism: PLAIN
+      username: abc
+      password: def
+    kerberos:
+      service_name: kafka
+      realm: EXAMPLE.COM
+      username: kafka
+      password: kafka
+
 kafka/foo:
   brokers:
     - "foo:123"

@@ -22,20 +22,11 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- `sending_queue`
-  - `enabled` (default = true)
-  - `num_consumers` (default = 10)
-  - `queue_size` (default = 1000)
-- `retry_on_failure`
-  - `enabled` (default = true)
-  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying.
-  - `max_interval` (default = 30s): Upper bound on backoff.
-  - `max_elapsed_time` (default = 300s): Maximum amount of time spent trying to send a batch.
-- `timeout` (default = 5s): HTTP request timeout when sending data.
+- `timeout` (default = 30s), `sending_queue` and `retry_on_failure` settings as provided by [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration).
 - `read_buffer_size` (default = 0): Size of the buffer used to read the response body.
 - `write_buffer_size` (default = 512 KiB): Size of the buffer used to write the request body.
 - `headers` (default = `{}`): Additional headers to send with the request.
-- `compression` (default = none): Compression method to use for the request body. Supported values: `none`, `gzip`.
+- `compression` (default = gzip): Compression method to use for the request body. Supported values: `none`, `gzip`.
 
 Example:
 

@@ -40,15 +40,22 @@ const (
 	// package: v0.22.1 introduced the --output=http flag that returns the
 	// live-check report in the /stop response.
 	minWeaverVersion = "v0.22.1"
+
+	// defaultWeaverVersion is the otel/weaver image version used when a test
+	// does not select one with WithVersion. Renovate watches the line below
+	// and opens an update PR when a new Weaver release appears.
+	// renovate: datasource=docker depName=otel/weaver
+	defaultWeaverVersion = "v0.26.1"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
 type WeaverOption func(*weaverOptions)
 
 // WithVersion selects the otel/weaver image version to use.
-// Defaults to "latest"; must be v0.22.1+ (the first version with
-// --output=http support). Semver versions older than that fail the
-// test immediately; non-semver tags are passed to Docker as-is.
+// Defaults to defaultWeaverVersion, a pinned version tested with this
+// package; must be v0.22.1+ (the first version with --output=http
+// support). Semver versions older than that fail the test immediately;
+// non-semver tags (e.g. "latest") are passed to Docker as-is.
 func WithVersion(version string) WeaverOption {
 	return func(o *weaverOptions) { o.version = version }
 }
@@ -65,8 +72,8 @@ type weaverOptions struct {
 }
 
 // validateWeaverVersion rejects semver versions older than minWeaverVersion.
-// Tags that don't parse as semver (e.g. "latest", digests) are passed
-// through so Docker can resolve them.
+// Tags that don't parse as semver (e.g. "latest") are passed through so
+// Docker can resolve them.
 func validateWeaverVersion(version string) error {
 	if version == "" || version == "latest" {
 		return nil
@@ -129,7 +136,7 @@ func TestTraces(tb testing.TB, traces ptrace.Traces, opts ...WeaverOption) []Pol
 func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context, *pdataClients) error) []PolicyFinding {
 	tb.Helper()
 
-	options := &weaverOptions{version: "latest"}
+	options := &weaverOptions{version: defaultWeaverVersion}
 	for _, opt := range opts {
 		opt(options)
 	}
@@ -287,10 +294,12 @@ func (s *weaverSession) shutdown(ctx context.Context) error {
 func (opts *weaverOptions) testContainerOptions() []testcontainers.ContainerCustomizer {
 	containerOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithCmdArgs(opts.cmdArgs()...),
-		// Expose the required ports on the container and wait for the OTLP
-		// listener to be ready before returning.
+		// Expose the required ports on the container and wait for Weaver's
+		// /health endpoint before returning. A plain port check is not
+		// reliable here: Docker's port proxy accepts connections on the host
+		// side before the process inside the container listens.
 		testcontainers.WithExposedPorts(weaverOTLPListenerPort, weaverStopPort),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(weaverOTLPListenerPort)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/health").WithPort(weaverStopPort)),
 	}
 	return containerOpts
 }
@@ -303,7 +312,14 @@ func (opts *weaverOptions) cmdArgs() []string {
 	if opts.registry != "" {
 		args = append(args, "--registry", opts.registry)
 	}
-	args = append(args, "--output", "http", "--format", "json")
+	// Weaver v0.26.0 changed the default bind address of the OTLP and admin
+	// listeners to 127.0.0.1, which makes the container's mapped ports
+	// unreachable. Bind all interfaces instead; the flag exists in all
+	// supported versions (v0.22.1+), where this was also the default.
+	// The bind applies inside the container's network namespace only, so it
+	// does not reintroduce the host-level exposure that the v0.26.0 change
+	// addressed.
+	args = append(args, "--output", "http", "--format", "json", "--otlp-grpc-address", "0.0.0.0")
 	return args
 }
 

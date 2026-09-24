@@ -205,6 +205,58 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 		},
 		{
+			name: "valid_adaptive_throughput_with_initial_sampling_percentage",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                      AdaptiveThroughput,
+					GoalThroughput:            100,
+					InitialSamplingPercentage: new(25.0),
+					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+					Weight:                    0.5,
+				},
+			}),
+		},
+		{
+			name: "adaptive_throughput_initial_sampling_percentage_zero_rejected",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                      AdaptiveThroughput,
+					GoalThroughput:            100,
+					InitialSamplingPercentage: new(0.0),
+					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+				},
+			}),
+			wantErr: "initial_sampling_percentage must be in (0, 100]",
+		},
+		{
+			name: "adaptive_throughput_initial_sampling_percentage_too_high",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                      AdaptiveThroughput,
+					GoalThroughput:            100,
+					InitialSamplingPercentage: new(101.0),
+					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+				},
+			}),
+			wantErr: "initial_sampling_percentage must be in (0, 100]",
+		},
+		{
+			name: "initial_sampling_percentage_rejected_on_adaptive_percentage",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                      AdaptivePercentage,
+					GoalPercentage:            10,
+					InitialSamplingPercentage: new(25.0),
+					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+				},
+			}),
+			wantErr: "adaptive_percentage does not use initial_sampling_percentage",
+		},
+		{
 			name: "adaptive_throughput_invalid_weight",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
@@ -490,6 +542,25 @@ func TestConfig_Validate(t *testing.T) {
 				return
 			}
 			assert.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestSamplerConfig_effectiveMaxKeys(t *testing.T) {
+	tests := []struct {
+		name string
+		set  *int
+		want int
+	}{
+		{name: "omitted_defaults_to_500", set: nil, want: defaultMaxKeys},
+		{name: "explicit_zero_is_unlimited", set: new(0), want: 0},
+		{name: "explicit_default_value_unchanged", set: new(500), want: 500},
+		{name: "explicit_non_default_value_unchanged", set: new(999), want: 999},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := SamplerConfig{MaxKeys: tt.set}
+			assert.Equal(t, tt.want, s.effectiveMaxKeys())
 		})
 	}
 }

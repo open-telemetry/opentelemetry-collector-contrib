@@ -28,6 +28,7 @@ The following settings are optional:
 - `auth.authenticator`: Specifies the component ID to use to authenticate requests to Azure API. Use [azureauth extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/azureauthextension).
 - `credentials` (Deprecated since [v0.129.0]: use `auth` instead)(default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
+- `resource_tags` (default = none): Filter metrics based on Azure resource tags. Each entry specifies a tag `name` and optionally a `value`. When `value` is omitted, the resource only needs to have the specified tag.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
@@ -98,6 +99,18 @@ receivers:
         ActiveConnections: []         # metric ActiveConnections with all known aggregations (same effect than [*])
 ```
 
+Filtering resources by tags:
+
+```yaml
+receivers:
+  azure_monitor:
+    resource_tags:
+      - name: environment
+        value: production
+      - name: team
+```
+
+The receiver will only scrape resources that have both the `environment=production` and `team` tags.
 Scraping guest OS metrics from a custom namespace (e.g. published by Azure Monitor Agent):
 
 ```yaml

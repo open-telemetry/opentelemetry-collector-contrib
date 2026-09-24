@@ -120,7 +120,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity, tt.suffix)
 			require.NoError(t, err)
 
-			tCtx := ottldatapoint.NewTransformContextPtr(pmetric.NewResourceMetrics(), smetrics, smetrics.Metrics().At(0), pmetric.NewNumberDataPoint())
+			tCtx := ottldatapoint.NewTransformContext(pmetric.NewResourceMetrics(), smetrics, smetrics.Metrics().At(0), pmetric.NewNumberDataPoint())
 			defer tCtx.Close()
 			_, err = evaluate(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -147,5 +147,31 @@ func Test_ConvertSummaryCountValToSum_validation(t *testing.T) {
 			_, err := convertSummaryCountValToSum(tt.stringAggTemp, true, ottl.Optional[string]{})
 			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 		})
+	}
+}
+
+func BenchmarkConvertSummaryCountValToSum(b *testing.B) {
+	template := getTestSummaryMetric()
+
+	scopeMetrics := pmetric.NewScopeMetrics()
+	metric := scopeMetrics.Metrics().AppendEmpty()
+	template.CopyTo(metric)
+
+	transformContext := ottldatapoint.NewTransformContext(pmetric.NewResourceMetrics(), scopeMetrics, metric, pmetric.NewNumberDataPoint())
+	b.Cleanup(transformContext.Close)
+
+	exprFunc, err := convertSummaryCountValToSum("delta", true, ottl.Optional[string]{})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		scopeMetrics.Metrics().RemoveIf(func(m pmetric.Metric) bool {
+			return m.Type() != pmetric.MetricTypeSummary
+		})
+		if _, err = exprFunc(b.Context(), transformContext); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
