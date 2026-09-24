@@ -92,6 +92,7 @@ exporter/zipkinexporter/                                         @open-telemetry
 extension/ackextension/                                          @open-telemetry/collector-contrib-approvers @splunkericl
 extension/asapauthextension/                                     @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
+extension/awssecretsmanagerprovider/                             @open-telemetry/collector-contrib-approvers @meebok @frzifus @thomasbaldwin @donny-z @lazureykis
 extension/azureauthextension/                                    @open-telemetry/collector-contrib-approvers @constanca-m @dyl10s
 extension/basicauthextension/                                    @open-telemetry/collector-contrib-approvers @frzifus
 extension/bearertokenauthextension/                              @open-telemetry/collector-contrib-approvers @frzifus
