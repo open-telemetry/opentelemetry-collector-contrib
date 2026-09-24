@@ -26,6 +26,7 @@ telemetry:
       histogram:
         value_type: int
       stability: development
+
     processor_adaptive_tail_sampling_decision_triggers:
       enabled: true
       description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown, span_limit).
@@ -34,6 +35,7 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+
     processor_adaptive_tail_sampling_fingerprint_duration:
       enabled: true
       description: Time spent extracting a rule's fingerprint per decision, in microseconds, labelled by rule. A relative signal for spotting expensive fingerprints (wide scopes such as any. on large traces); absolute values depend on host and load.
@@ -41,6 +43,7 @@ telemetry:
       histogram:
         value_type: int
       stability: development
+
     processor_adaptive_tail_sampling_incoming_tracestate_unparseable:
       enabled: true
       description: Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold.
@@ -49,6 +52,7 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+
     processor_adaptive_tail_sampling_ottl_eval_errors:
       enabled: true
       description: Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition).
@@ -57,6 +61,16 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+
+    processor_adaptive_tail_sampling_root_span_condition_multiple_matches:
+      enabled: true
+      description: Number of traces where root_span_condition matched more than one span.
+      unit: "{traces}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+
     processor_adaptive_tail_sampling_sampler_burst_count:
       enabled: true
       description: Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter.
@@ -66,6 +80,7 @@ telemetry:
         monotonic: true
         async: true
       stability: development
+
     processor_adaptive_tail_sampling_sampler_keyspace_size:
       enabled: true
       description: Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule, sampler_type, and sampler_algorithm. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use.
@@ -74,6 +89,7 @@ telemetry:
         value_type: int
         async: true
       stability: development
+
     processor_adaptive_tail_sampling_sampler_request_count:
       enabled: true
       description: Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm.
@@ -83,6 +99,7 @@ telemetry:
         monotonic: true
         async: true
       stability: development
+
     processor_adaptive_tail_sampling_trace_span_count:
       enabled: true
       description: Distribution of buffered span counts per trace at decision time, labelled by rule. Useful for sizing span_limit against the real trace-size distribution.
@@ -90,6 +107,7 @@ telemetry:
       histogram:
         value_type: int
       stability: development
+
     processor_adaptive_tail_sampling_traces_active:
       enabled: true
       description: Number of traces currently in the accumulation buffer awaiting a decision.
@@ -97,6 +115,7 @@ telemetry:
       gauge:
         value_type: int
       stability: development
+
     processor_adaptive_tail_sampling_traces_dropped:
       enabled: true
       description: Number of traces that were dropped, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _unmatched, _eviction).
@@ -105,6 +124,7 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+
     processor_adaptive_tail_sampling_traces_evicted:
       enabled: true
       description: Number of traces evicted from the buffer due to num_traces pressure. Evicted traces are decided immediately per the configured eviction policy.
@@ -113,6 +133,7 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+
     processor_adaptive_tail_sampling_traces_sampled:
       enabled: true
       description: Number of traces that were sampled, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _eviction).
