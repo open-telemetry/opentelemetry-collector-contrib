@@ -3,6 +3,23 @@ sem_conv_version: 1.40.0
 
 parent: resourcedetection
 
+feature_gates:
+  - id: processor.resourcedetection.elasticbeanstalk.DontEmitV0DeploymentConventions
+    stage: alpha
+    description: >-
+      When enabled, the detector no longer emits the deprecated deployment.environment and
+      service.instance.id resource attributes.
+      Requires processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions to also be enabled.
+    from_version: v0.159.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50130
+  - id: processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions
+    stage: alpha
+    description: >-
+      When enabled, the detector emits deployment.environment.name and deployment.id instead of the
+      deprecated deployment.environment and service.instance.id.
+    from_version: v0.159.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50130
+
 resource_attributes:
   cloud.platform:
     semantic_convention:
@@ -17,13 +34,25 @@ resource_attributes:
     type: string
     enabled: true
   deployment.environment:
-    description: The deployment.environment
+    description: The deployment.environment. Deprecated, use deployment.environment.name instead.
+    type: string
+    enabled: true
+  deployment.environment.name:
+    semantic_convention:
+      ref: deployment.md#deployment-environment-name
+    description: The name of the deployment environment.
+    type: string
+    enabled: true
+  deployment.id:
+    semantic_convention:
+      ref: deployment.md#deployment-id
+    description: The id of the deployment.
     type: string
     enabled: true
   service.instance.id:
     semantic_convention:
       ref: service.md#service-instance-id
-    description: The service.instance.id
+    description: The Elastic Beanstalk deployment ID. Superseded by deployment.id.
     type: string
     enabled: true
   service.version:
@@ -32,7 +61,3 @@ resource_attributes:
     description: The service.version
     type: string
     enabled: true
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

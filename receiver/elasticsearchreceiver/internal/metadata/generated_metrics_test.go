@@ -546,6 +546,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetElasticsearchClusterName("elasticsearch.cluster.name-val")
+			rb.SetElasticsearchClusterUUID("elasticsearch.cluster.uuid-val")
 			rb.SetElasticsearchIndexName("elasticsearch.index.name-val")
 			rb.SetElasticsearchNodeName("elasticsearch.node.name-val")
 			rb.SetElasticsearchNodeVersion("elasticsearch.node.version-val")

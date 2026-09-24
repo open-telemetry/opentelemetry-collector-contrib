@@ -10,8 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 type stubBoolExpr[K any] struct {
@@ -202,8 +200,8 @@ func TestLambdaExpression_Eval(t *testing.T) {
 					identifier: &basePath[any]{
 						name: "a",
 						keys: []Key[any]{
-							&baseKey[any]{s: ottltest.Strp("name")},
-							&baseKey[any]{i: ottltest.Intp(1)},
+							&baseKey[any]{s: new("name")},
+							&baseKey[any]{i: new(int64(1))},
 						},
 					},
 				},

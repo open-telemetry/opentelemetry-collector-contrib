@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -26,10 +27,6 @@ var buildInfo = component.BuildInfo{
 
 func TestNewHTTPClient(t *testing.T) {
 	hcsEmpty := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	hcsEmpty.MaxIdleConns = 0
-	hcsEmpty.IdleConnTimeout = 0
-	hcsEmpty.ForceAttemptHTTP2 = false
 	client1 := NewHTTPClient(hcsEmpty)
 	defaultTransport := &http.Transport{
 		MaxIdleConns:          100,
@@ -37,6 +34,7 @@ func TestNewHTTPClient(t *testing.T) {
 		IdleConnTimeout:       45 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+		DisableKeepAlives:     true,
 		ForceAttemptHTTP2:     false,
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: false},
 	}
@@ -55,16 +53,15 @@ func TestNewHTTPClient(t *testing.T) {
 	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
 	hcs := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	hcs.ForceAttemptHTTP2 = false
+	hcs.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
+		IdleConnTimeout:     idleConnTimeout,
+		MaxIdleConns:        maxIdleConn,
+		MaxIdleConnsPerHost: maxIdleConnPerHost,
+	})
 	hcs.ReadBufferSize = 100
 	hcs.WriteBufferSize = 200
 	hcs.Timeout = 10 * time.Second
-	hcs.IdleConnTimeout = idleConnTimeout
-	hcs.MaxIdleConns = maxIdleConn
-	hcs.MaxIdleConnsPerHost = maxIdleConnPerHost
 	hcs.MaxConnsPerHost = maxConnPerHost
-	hcs.DisableKeepAlives = true
 	hcs.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 	hcs.ProxyURL = "proxy"
 
@@ -83,7 +80,6 @@ func TestNewHTTPClient(t *testing.T) {
 		MaxIdleConnsPerHost:   maxIdleConnPerHost,
 		MaxConnsPerHost:       maxConnPerHost,
 		IdleConnTimeout:       idleConnTimeout,
-		DisableKeepAlives:     true,
 		ForceAttemptHTTP2:     false,
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 	}
@@ -100,16 +96,15 @@ func TestNewHTTPClient(t *testing.T) {
 	// Checking that the client config can receive ProxyUrl and
 	// it will be passed to the http client.
 	hcsForC3 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	hcsForC3.ForceAttemptHTTP2 = false
 	hcsForC3.ReadBufferSize = 100
 	hcsForC3.WriteBufferSize = 200
 	hcsForC3.Timeout = 10 * time.Second
-	hcsForC3.IdleConnTimeout = idleConnTimeout
-	hcsForC3.MaxIdleConns = maxIdleConn
-	hcsForC3.MaxIdleConnsPerHost = maxIdleConnPerHost
+	hcsForC3.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
+		IdleConnTimeout:     idleConnTimeout,
+		MaxIdleConns:        maxIdleConn,
+		MaxIdleConnsPerHost: maxIdleConnPerHost,
+	})
 	hcsForC3.MaxConnsPerHost = maxConnPerHost
-	hcsForC3.DisableKeepAlives = true
 	hcsForC3.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 	hcsForC3.ProxyURL = "http://datadog-proxy.myorganization.com:3128"
 
@@ -140,16 +135,15 @@ func TestNewHTTPClient(t *testing.T) {
 	// Checking that in the absence of ProxyUrl in the client config, the
 	// environment variable is used for the http proxy.
 	hcsForC5 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	hcsForC5.ForceAttemptHTTP2 = false
 	hcsForC5.ReadBufferSize = 100
 	hcsForC5.WriteBufferSize = 200
 	hcsForC5.Timeout = 10 * time.Second
-	hcsForC5.IdleConnTimeout = idleConnTimeout
-	hcsForC5.MaxIdleConns = maxIdleConn
-	hcsForC5.MaxIdleConnsPerHost = maxIdleConnPerHost
+	hcsForC5.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
+		IdleConnTimeout:     idleConnTimeout,
+		MaxIdleConns:        maxIdleConn,
+		MaxIdleConnsPerHost: maxIdleConnPerHost,
+	})
 	hcsForC5.MaxConnsPerHost = maxConnPerHost
-	hcsForC5.DisableKeepAlives = true
 	hcsForC5.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 
 	// The rest are ignored

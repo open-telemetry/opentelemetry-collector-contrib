@@ -126,11 +126,6 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	httpServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	httpServerConfig.WriteTimeout = 0
-	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0
-	httpServerConfig.KeepAlivesEnabled = false
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "0.0.0.0:12800",
@@ -154,11 +149,6 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	httpServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	httpServerConfig.WriteTimeout = 0
-	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0
-	httpServerConfig.KeepAlivesEnabled = false
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "0.0.0.0:12800",

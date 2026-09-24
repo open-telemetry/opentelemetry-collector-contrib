@@ -1,6 +1,11 @@
 default:
 all_set:
   metrics:
+    apache.connection.active:
+      enabled: true
+    apache.connection.status:
+      enabled: true
+      attributes: ["apache.connection.state"]
     apache.connections.async:
       enabled: true
       attributes: ["connection_state"]
@@ -17,6 +22,8 @@ all_set:
       enabled: true
     apache.load.5:
       enabled: true
+    apache.request.count:
+      enabled: true
     apache.request.rate:
       enabled: true
     apache.request.time:
@@ -32,8 +39,15 @@ all_set:
       enabled: true
     apache.uptime:
       enabled: true
+    apache.worker.active:
+      enabled: true
+    apache.worker.idle:
+      enabled: true
     apache.worker.limit:
       enabled: true
+    apache.worker.status:
+      enabled: true
+      attributes: ["apache.worker.state"]
     apache.workers:
       enabled: true
       attributes: ["state"]
@@ -44,6 +58,11 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    apache.connection.active:
+      enabled: true
+    apache.connection.status:
+      enabled: true
+      attributes: []
     apache.connections.async:
       enabled: true
       attributes: []
@@ -60,6 +79,8 @@ reaggregate_set:
       enabled: true
     apache.load.5:
       enabled: true
+    apache.request.count:
+      enabled: true
     apache.request.rate:
       enabled: true
     apache.request.time:
@@ -75,8 +96,15 @@ reaggregate_set:
       enabled: true
     apache.uptime:
       enabled: true
+    apache.worker.active:
+      enabled: true
+    apache.worker.idle:
+      enabled: true
     apache.worker.limit:
       enabled: true
+    apache.worker.status:
+      enabled: true
+      attributes: []
     apache.workers:
       enabled: true
       attributes: []
@@ -87,6 +115,11 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    apache.connection.active:
+      enabled: false
+    apache.connection.status:
+      enabled: false
+      attributes: ["apache.connection.state"]
     apache.connections.async:
       enabled: false
       attributes: ["connection_state"]
@@ -103,6 +136,8 @@ none_set:
       enabled: false
     apache.load.5:
       enabled: false
+    apache.request.count:
+      enabled: false
     apache.request.rate:
       enabled: false
     apache.request.time:
@@ -118,8 +153,15 @@ none_set:
       enabled: false
     apache.uptime:
       enabled: false
+    apache.worker.active:
+      enabled: false
+    apache.worker.idle:
+      enabled: false
     apache.worker.limit:
       enabled: false
+    apache.worker.status:
+      enabled: false
+      attributes: ["apache.worker.state"]
     apache.workers:
       enabled: false
       attributes: ["state"]

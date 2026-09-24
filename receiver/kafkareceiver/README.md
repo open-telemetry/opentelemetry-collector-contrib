@@ -31,8 +31,7 @@ headers to the downstream pipeline, giving access to the rest of the pipeline to
 > To enable this feature, prefix your topic with the `^` character. This is identical to how the `librdkafka`
 > client works.
 >
-> If you use the `^` prefix, in the deprecated `topic` setting, if **any** of the topics have the `^` prefix,
-> regex consuming will be enabled.
+> If **any** of the topics have the `^` prefix, regex consuming will be enabled and `exclude_topics` can be used (see [Regex topic patterns with exclusions](#regex-topic-patterns-with-exclusions) for an example).
 
 There are no required settings.
 
@@ -42,37 +41,21 @@ The following settings can be optionally configured:
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `logs`
-  - `topic` (Deprecated [v0.142.0]: use `topics`)
-     (default = otlp\_logs): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_logs): List of kafka topics from which to consume logs
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `exclude_topics` (default = []): When at least one entry in topics is a regex pattern (prefix with ^), topics matching any of these regular expressions are excluded.
 - `metrics`
-  - `topic` (Deprecated [v0.142.0]: use `topics`)
-     (default = otlp\_metrics): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_metrics): List of Kafka topic from which to consume metrics.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `exclude_topics` (default = []): When at least one entry in topics is a regex pattern (prefix with ^), topics matching any of these regular expressions are excluded.
 - `traces`
-  - `topic` (Deprecated [v0.142.0]: use `topics`)
-     (default = otlp\_spans): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_spans): List of Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `exclude_topics` (default = []): When at least one entry in topics is a regex pattern (prefix with ^), topics matching any of these regular expressions are excluded.
 - `profiles`
-  - `topic`  (Deprecated [v0.142.0]: use `topics`)
-     (default = otlp\_profiles): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_profiles): List of Kafka topic from which to consume profiles.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `exclude_topics` (default = []): When at least one entry in topics is a regex pattern (prefix with ^), topics matching any of these regular expressions are excluded.
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `rack_id` (default = ""): The rack identifier for this client. When set and brokers are configured with a rack-aware replica selector, the client will prefer fetching from the closest replica.
@@ -135,6 +118,9 @@ The following settings can be optionally configured:
     **Note: when `error_backoff` is enabled, the failed record is automatically retried on the next poll cycle once all retries are exhausted. Without `error_backoff`, the partition remains paused until a rebalance occurs.**
   - `on_permanent_error`: (default = value of `on_error`) If false, messages that generate permanent errors are not marked. If true, messages that generate permanent errors are marked.
     **Note: this can block the entire partition in case a message processing returns a permanent error. Permanent errors are not retried via `error_backoff`, but the uncommitted message will be reprocessed after a rebalance.**
+- `partition_processing`:
+  - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
+  - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -285,8 +271,13 @@ When using the `franz-go` client, you can consume from multiple topics using reg
 and exclude specific topics from consumption. This is useful when you want to consume from
 a dynamic set of topics but need to filter out certain ones.
 
-**Note:** Both `topic` and `exclude_topic` must use regex patterns (prefix with `^`) for
-exclusion to work. This feature is only available with the franz-go client.
+[!NOTE]
+`exclude_topics` only takes effect when at least one entry in `topics` is a regex pattern
+(prefixed with `^`); the receiver fails config validation otherwise.
+
+Entries in `exclude_topics` are regular expressions matched **unanchored**, so
+`exclude_topics: ["test"]` also excludes a topic named `prod-test-1`. Prefix them with `^`
+(and anchor with `$` where appropriate), as in the example below.
 
 ```yaml
 receivers:
@@ -308,3 +299,23 @@ In the example above:
   but will exclude `logs-test` and `logs-dev`
 - For metrics: the receiver will consume from topics like `metrics-app`, `metrics-infra`
   but will exclude any topics starting with `metrics-internal-`
+
+#### Independent partition processing
+
+> **NOTE**: Independent partition processing requires `autocommit.enable: true`. The receiver rejects configurations that combine independent processing with manual commits.
+
+Independent partition processing keeps records ordered within each partition while allowing other assigned partitions to continue when one downstream consumer is blocked. Each partition has a bounded mailbox. A full mailbox pauses only that partition and resumes it when capacity becomes available.
+
+The receiver creates one worker and mailbox per assigned partition. `max_buffered_batches` limits the number of fetched batches waiting in each mailbox, not the number of records or workers.
+
+Resource usage grows with the number of assigned partitions and `max_buffered_batches`. Increasing mailbox capacity allows more fetched data to remain in memory while waiting for processing.
+
+When a partition is revoked, its worker is cancelled and queued batches are discarded. The next owner fetches those records again from the committed offset, so standard Kafka at-least-once delivery and possible duplication still apply.
+
+```yaml
+receivers:
+  kafka:
+    partition_processing:
+      independent: true
+      max_buffered_batches: 1
+```

@@ -6,8 +6,8 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| cloud.platform | The cloud.platform | Any Str | false | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
-| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
-| cloud.region | The cloud region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
-| host.id | The host.id | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
-| host.name | The hostname | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
+| cloud.platform | The cloud.platform | Any Str | false | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.region | The cloud region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| host.id | The host.id | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-id) | - |
+| host.name | The hostname | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-name) | - |
