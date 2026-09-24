@@ -16,7 +16,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.34.4
 	github.com/linode/go-metadata v0.3.1
-	github.com/moby/moby/api v1.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.161.0
@@ -51,6 +50,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.18.0
 	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.18.0
 	go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.18.0
+	go.opentelemetry.io/contrib/detectors/docker v0.18.0
 	go.opentelemetry.io/contrib/detectors/hetzner v0.18.0
 	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.18.0
 	go.opentelemetry.io/contrib/detectors/vultr v0.18.0
@@ -146,6 +146,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/moby/api v1.56.0 // indirect
 	github.com/moby/moby/client v0.6.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
