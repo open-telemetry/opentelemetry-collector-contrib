@@ -201,7 +201,7 @@ Scope detection for the `build-and-test` workflow is handled by `.github/workflo
 bash .github/workflows/scripts/compute-ci-scope.sh
 ```
 
-The workflow honors a `ci:full` label on the pull request. Adding this label forces the full CI matrices regardless of what files changed; toggling it on or off on an open PR retriggers the workflow with the new scope.
+The workflow honors a `ci:full` label on the pull request. Adding this label forces the full CI matrices regardless of what files changed; toggling it on or off on an open PR takes effect on the next push, or after closing and reopening the PR.
 
 ## Portable Code
 
