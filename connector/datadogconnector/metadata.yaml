@@ -6,7 +6,7 @@ status:
   stability:
     beta: [traces_to_metrics, traces_to_traces]
   distributions: [contrib]
-  unsupported_platforms: [aix]
+  unsupported_platforms: [aix, solaris]
   codeowners:
     active: [mx-psi, dineshg13, jade-guiton-dd, IbraheemA]
     emeritus: [gbbr, ankitpatel96]

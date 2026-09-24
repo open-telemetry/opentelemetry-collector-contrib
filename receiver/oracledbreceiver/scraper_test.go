@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -1739,6 +1740,179 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent covers both sides of the db.server.query_plan switch.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent(t *testing.T) {
+	defaultRecords := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{topQueryEnabled: true}))
+	require.Len(t, defaultRecords, 1)
+	require.Equal(t, "db.server.top_query", defaultRecords[0].EventName())
+	planOnTopQuery, ok := defaultRecords[0].Attributes().Get("oracledb.query_plan")
+	require.True(t, ok, "db.server.top_query must keep oracledb.query_plan while db.server.query_plan is disabled")
+	require.NotEmpty(t, planOnTopQuery.Str())
+
+	records := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{topQueryEnabled: true, queryPlanEnabled: true}))
+	require.Len(t, records, 2)
+
+	byEventName := make(map[string]plog.LogRecord, len(records))
+	for _, record := range records {
+		byEventName[record.EventName()] = record
+	}
+
+	topQuery, ok := byEventName["db.server.top_query"]
+	require.True(t, ok, "db.server.top_query is still expected once db.server.query_plan is enabled")
+	_, hasPlan := topQuery.Attributes().Get("oracledb.query_plan")
+	assert.False(t, hasPlan, "oracledb.query_plan must be removed from db.server.top_query once db.server.query_plan is enabled")
+
+	queryPlan, ok := byEventName["db.server.query_plan"]
+	require.True(t, ok, "db.server.query_plan record is missing")
+	// oracledb.query_plan is compared against the disabled scrape's value: the payload has to survive
+	// the move byte for byte.
+	assert.Equal(t, 7, queryPlan.Attributes().Len())
+	for attribute, want := range map[string]string{
+		"db.system.name":           "oracle",
+		"oracledb.sql_id":          "fxk8aq3nds8aw",
+		"oracledb.child_number":    "0",
+		"oracledb.child_address":   "0000000074C6E830",
+		"oracledb.plan_hash_value": "3123456789",
+		"db.namespace":             "ORCLPDB1",
+		"oracledb.query_plan":      planOnTopQuery.Str(),
+	} {
+		got, found := queryPlan.Attributes().Get(attribute)
+		require.True(t, found, "db.server.query_plan is missing %s", attribute)
+		assert.Equal(t, want, got.Str(), attribute)
+	}
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventOnly asserts db.server.query_plan collects nothing
+// unless db.server.top_query is enabled too.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventOnly(t *testing.T) {
+	assert.Empty(t, logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{queryPlanEnabled: true})))
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventNoPlanRows asserts a cursor with no rows in
+// V$SQL_PLAN_STATISTICS_ALL yields a db.server.top_query record and no db.server.query_plan record.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventNoPlanRows(t *testing.T) {
+	records := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{
+		topQueryEnabled:  true,
+		queryPlanEnabled: true,
+		noPlanRows:       true,
+	}))
+	require.Len(t, records, 1)
+	assert.Equal(t, "db.server.top_query", records[0].EventName())
+	_, hasPlan := records[0].Attributes().Get("oracledb.query_plan")
+	assert.False(t, hasPlan, "oracledb.query_plan is removed from db.server.top_query whenever db.server.query_plan is enabled")
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden covers the enabled path over three cursors.
+// Two of them are the CDB collision the join keys exist for: identical SQL text in two PDBs, so same
+// SQL_ID, same CHILD_NUMBER and same PLAN_HASH_VALUE, separated only by oracledb.child_address and
+// db.namespace. The third has no rows in V$SQL_PLAN_STATISTICS_ALL.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden(t *testing.T) {
+	logs := scrapeTopNLogsForPlanEvent(t, planEventScrape{
+		topQueryEnabled:  true,
+		queryPlanEnabled: true,
+		multiCursor:      true,
+	})
+
+	expectedFile := filepath.Join("testdata", "expectedQueryPlanEvent.yaml")
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, logs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	assert.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp()))
+}
+
+// planEventScrape describes one canned top-N collection for the db.server.query_plan tests.
+type planEventScrape struct {
+	topQueryEnabled  bool
+	queryPlanEnabled bool
+	// noPlanRows makes V$SQL_PLAN_STATISTICS_ALL return nothing for the cursor.
+	noPlanRows bool
+	// multiCursor swaps in fixtures holding three cursors: two cursors of the same SQL_ID and
+	// CHILD_NUMBER in different PDBs, and a third cursor with no plan rows. The first two share a
+	// metric cache key, so the second one's deltas are computed against the first one's values.
+	multiCursor bool
+}
+
+// scrapeTopNLogsForPlanEvent runs a log collection over the canned query metrics and plan rows in testdata.
+func scrapeTopNLogsForPlanEvent(t *testing.T, opts planEventScrape) plog.Logs {
+	t.Helper()
+
+	metricsFile, planFile := "oracleQueryMetricsData.txt", "oracleQueryPlanData.txt"
+	if opts.multiCursor {
+		metricsFile, planFile = "oracleQueryMetricsMultiData.txt", "oracleQueryPlanMultiData.txt"
+	}
+
+	clientProviderFunc := func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+		file := metricsFile
+		if strings.Contains(s, SQLPlanTable) {
+			if opts.noPlanRows {
+				return &fakeDbClient{Responses: [][]metricRow{nil}}
+			}
+			file = planFile
+		}
+		var rows []metricRow
+		require.NoError(t, json.Unmarshal(readFile(file), &rows))
+		return &fakeDbClient{Responses: [][]metricRow{rows}}
+	}
+
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.ResourceAttributes.HostName.Enabled = true
+	logsCfg.Events.DbServerTopQuery.Enabled = opts.topQueryEnabled
+	logsCfg.Events.DbServerQueryPlan.Enabled = opts.queryPlanEnabled
+
+	lruCache, err := lru.New[string, map[string]int64](500)
+	require.NoError(t, err)
+	lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
+	if opts.multiCursor {
+		lruCache.Add("9xnp4vd2z3k7b:0", cacheValue)
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc:   clientProviderFunc,
+		id:                   component.ID{},
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		logsBuilderConfig:    logsCfg,
+		metricCache:          lruCache,
+		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+		instanceName:         "oraclehost:1521/ORCL",
+		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
+		obfuscator:           newObfuscator(),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
+	}
+
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	})
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+	return logs
+}
+
+func logRecordsFrom(logs plog.Logs) []plog.LogRecord {
+	var records []plog.LogRecord
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				records = append(records, logRecords.At(k))
+			}
+		}
+	}
+	return records
 }
 
 var samplesQueryResponses = map[string][]metricRow{
