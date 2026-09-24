@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -374,7 +375,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 
 	ctx = contextWithMetadata(ctx, record)
 	if propagator != nil {
-		ctx = propagator.Extract(ctx, (*headerCarrier)(&record.Headers))
+		ctx = propagator.Extract(ctx, (*kafka.HeaderCarrier)(&record.Headers))
 	}
 
 	obsCtx := handler.startObsReport(ctx)
@@ -452,38 +453,6 @@ func traceContextPropagator() propagation.TextMapPropagator {
 		return nil
 	}
 	return propagator
-}
-
-// headerCarrier adapts a kgo.RecordHeader slice to propagation.TextMapCarrier.
-type headerCarrier []kgo.RecordHeader
-
-var _ propagation.TextMapCarrier = (*headerCarrier)(nil)
-
-func (c *headerCarrier) Get(key string) string {
-	for _, h := range *c {
-		if h.Key == key {
-			return string(h.Value)
-		}
-	}
-	return ""
-}
-
-func (c *headerCarrier) Set(key, value string) {
-	for i, h := range *c {
-		if h.Key == key {
-			(*c)[i].Value = []byte(value)
-			return
-		}
-	}
-	*c = append(*c, kgo.RecordHeader{Key: key, Value: []byte(value)})
-}
-
-func (c *headerCarrier) Keys() []string {
-	keys := make([]string, len(*c))
-	for i, h := range *c {
-		keys[i] = h.Key
-	}
-	return keys
 }
 
 func contextWithMetadata(ctx context.Context, record *kgo.Record) context.Context {
