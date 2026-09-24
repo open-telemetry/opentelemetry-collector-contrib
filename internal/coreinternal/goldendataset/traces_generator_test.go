@@ -108,3 +108,17 @@ func TestGenerateTracesInvalidDatabaseFeatureGateCombination(t *testing.T) {
 	_, err := GenerateTraces("testdata/generated_pict_pairs_traces.txt", "testdata/generated_pict_pairs_spans.txt")
 	require.ErrorContains(t, err, "internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1DatabaseConventions")
 }
+
+func TestGenerateTracesInvalidNetworkV125FeatureGateCombination(t *testing.T) {
+	prevDontEmit := metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.IsEnabled()
+	prevEmitV1 := metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.ID(), prevDontEmit))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.ID(), prevEmitV1))
+	})
+
+	_, err := GenerateTraces("testdata/generated_pict_pairs_traces.txt", "testdata/generated_pict_pairs_spans.txt")
+	require.ErrorContains(t, err, "internal.coreinternal.goldendataset.DontEmitV0NetworkV125Conventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1NetworkV125Conventions")
+}
