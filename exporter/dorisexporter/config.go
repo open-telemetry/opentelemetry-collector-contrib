@@ -68,6 +68,23 @@ func (cfg *Config) Validate() (err error) {
 	if cfg.ClientConfig.Endpoint == "" {
 		err = errors.Join(err, errors.New("endpoint must be specified"))
 	}
+
+	if cfg.ClientConfig.Timeout < 0 {
+		err = errors.Join(err, errors.New("timeout must be greater than or equal to 0"))
+	}
+
+	if cfg.QueueSettings.HasValue() && cfg.QueueSettings.Get().QueueSize < 0 {
+		err = errors.Join(err, errors.New("queue_size must be greater than or equal to 0"))
+	}
+
+	if cfg.BackOffConfig.InitialInterval < 0 {
+		err = errors.Join(err, errors.New("initial_interval must be greater than or equal to 0"))
+	}
+
+	if cfg.BackOffConfig.MaxInterval < 0 {
+		err = errors.Join(err, errors.New("max_interval must be greater than or equal to 0"))
+	}
+
 	if cfg.CreateSchema {
 		if cfg.MySQLEndpoint == "" {
 			err = errors.Join(err, errors.New("mysql_endpoint must be specified"))
@@ -156,4 +173,11 @@ func (cfg *Config) propertiesStr() string {
 // // propertiesStrForUniqueKey returns the properties string for unique key tables.
 func (cfg *Config) propertiesStrForUniqueKey() string {
 	return fmt.Sprintf(properties, cfg.ReplicationNum, compactionPolicySizeBased, cfg.startHistoryDays(), cfg.CreateHistoryDays)
+}
+
+// expectedInitialPartitionCount returns the number of partitions Doris is
+// expected to create up-front for a dynamic-partition table: history_partition_num
+// history partitions + today + dynamic_partition.end future partitions (hard-coded to 1).
+func (cfg *Config) expectedInitialPartitionCount() int {
+	return int(cfg.CreateHistoryDays) + 2
 }

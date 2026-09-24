@@ -26,7 +26,7 @@ type reduceArguments[K any] struct {
 // Experimental: *NOTE* this API is subject to change or removal in the future. It
 // requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewReduceFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Reduce", &reduceArguments[K]{}, createReduceFunction[K])
+	return ottl.NewFactory("Reduce", &reduceArguments[K]{}, createReduceFunction[K], ottl.WithExperimental[K]())
 }
 
 func createReduceFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {

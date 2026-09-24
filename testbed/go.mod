@@ -87,24 +87,24 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.7.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.210 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.1 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.211 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/template v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.83.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.83.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.83.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.83.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.83.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.83.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.83.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.83.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.83.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.65.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.9.1 // indirect
 	github.com/DataDog/go-sqllexer v0.2.4 // indirect
@@ -123,13 +123,13 @@ require (
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go v1.55.8 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.0 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.33.4 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.4 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.33.5 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.5 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.332.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.335.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.89.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/elasticache v1.56.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
@@ -140,7 +140,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/signin v1.10.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.38.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.50.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.0 // indirect
 	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
@@ -161,7 +161,7 @@ require (
 	github.com/dgryski/go-metro v0.0.0-20250106013310-edb8663e5e33 // indirect
 	github.com/digitalocean/godo v1.201.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.7.0 // indirect
+	github.com/docker/go-connections v0.8.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/purego v0.10.2 // indirect
@@ -584,3 +584,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling =
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof => ../pkg/translator/pprof
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile => ../pkg/ottl/contexts/xprofile
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest => ../pkg/semconvtest
