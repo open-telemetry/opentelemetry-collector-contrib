@@ -72,7 +72,7 @@ GO_TOOL = GOOS= GOARCH= $(GOCMD) tool -modfile=$(TOOLS_MOD_FILE)
 # which are stripped when passed to the MSYS2/Git Bash shell used by Make.
 # $(subst \,/,...) converts them to forward slashes so the shell can find the binary.
 MDATAGEN            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/mdatagen))
-ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/rhysd/actionlint/cmd/actionlint))
+ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL) -n actionlint.kjanat.dev/cmd/actionlint))
 ADDLICENSE          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/google/addlicense))
 MISSPELL            = $(subst \,/,$(shell $(GO_TOOL) -n github.com/client9/misspell/cmd/misspell -error))
 MISSPELL_CORRECTION = $(subst \,/,$(shell $(GO_TOOL) -n github.com/client9/misspell/cmd/misspell -w))

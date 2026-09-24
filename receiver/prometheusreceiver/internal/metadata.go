@@ -16,7 +16,7 @@ type dataPoint struct {
 }
 
 // internalMetricMetadata allows looking up metadata for internal scrape metrics
-var internalMetricMetadata = map[string]*scrape.MetricMetadata{
+var internalMetricMetadata = map[string]scrape.MetricMetadata{
 	scrapeUpMetricName: {
 		MetricFamily: scrapeUpMetricName,
 		Type:         model.MetricTypeGauge,
@@ -45,12 +45,12 @@ var internalMetricMetadata = map[string]*scrape.MetricMetadata{
 	},
 }
 
-func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrape.MetricMetadata, string) {
+func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (scrape.MetricMetadata, string) {
 	if metadata, ok := internalMetricMetadata[metricName]; ok {
 		return metadata, metricName
 	}
 	if metadata, ok := mc.GetMetadata(metricName); ok {
-		return &metadata, metricName
+		return metadata, metricName
 	}
 	// If we didn't find metadata with the original name,
 	// try with suffixes trimmed, in-case it is a "merged" metric type.
@@ -59,15 +59,15 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 		if metadata.Type == model.MetricTypeCounter {
 			// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
 			if strings.HasSuffix(metricName, metricSuffixCreated) {
-				return &metadata, normalizedName + metricSuffixTotal
+				return metadata, normalizedName + metricSuffixTotal
 			}
 			// END NB (eriksywu)
-			return &metadata, metricName
+			return metadata, metricName
 		}
-		return &metadata, normalizedName
+		return metadata, normalizedName
 	}
 	// Otherwise, the metric is unknown
-	return &scrape.MetricMetadata{
+	return scrape.MetricMetadata{
 		MetricFamily: metricName,
 		Type:         model.MetricTypeUnknown,
 	}, metricName
@@ -87,6 +87,8 @@ func isCounterCreatedLine(metricName, normalizedMetricName string, mc scrape.Met
 }
 
 type emptyMetadataStore struct{}
+
+var emptyMetadataStoreInstance = &emptyMetadataStore{}
 
 func (emptyMetadataStore) ListMetadata() []scrape.MetricMetadata {
 	return nil
