@@ -1754,3 +1754,47 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().PutStr("flags", "C|D")
 	log.Attributes().PutStr("total.string", "345678")
 }
+
+func Test_ProcessLogs_MutateResourceFromLogContext(t *testing.T) {
+	statement := `set(resource.attributes["from_log_body"], body)`
+	ctxStatements := []common.ContextStatements{
+		{
+			Context:    "log",
+			Statements: []string{statement},
+		},
+	}
+
+	t.Run("flatMode disabled overwrites shared resource attributes (Issue 32080)", func(t *testing.T) {
+		td := constructLogs()
+		processor, err := NewProcessor(ctxStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+		require.NoError(t, err)
+
+		out, err := processor.ProcessLogs(t.Context(), td)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, out.ResourceLogs().Len())
+		resAttr, exists := out.ResourceLogs().At(0).Resource().Attributes().Get("from_log_body")
+		require.True(t, exists)
+		assert.Equal(t, "operationB", resAttr.AsString())
+	})
+
+	t.Run("flatMode enabled partitions records into distinct resources", func(t *testing.T) {
+		td := constructLogs()
+		processor, err := NewProcessor(ctxStatements, ottl.IgnoreError, true, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+		require.NoError(t, err)
+
+		out, err := processor.ProcessLogs(t.Context(), td)
+		require.NoError(t, err)
+
+		require.Equal(t, 2, out.ResourceLogs().Len())
+
+		resValues := make([]string, 0, 2)
+		for i := 0; i < out.ResourceLogs().Len(); i++ {
+			rl := out.ResourceLogs().At(i)
+			val, exists := rl.Resource().Attributes().Get("from_log_body")
+			require.True(t, exists)
+			resValues = append(resValues, val.AsString())
+		}
+		assert.ElementsMatch(t, []string{"operationA", "operationB"}, resValues)
+	})
+}
