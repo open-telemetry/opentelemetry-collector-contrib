@@ -17,13 +17,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
@@ -411,7 +411,9 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], nil)`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			statement: `set(attributes["test"], "nil")`,
@@ -421,7 +423,9 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], attributes["unknown"])`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			statement: `set(attributes["foo"]["test"], "pass")`,
@@ -555,7 +559,7 @@ func Test_e2e_editors(t *testing.T) {
 }
 
 func Test_e2e_converters(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 
 	tests := []struct {
 		statement string
@@ -673,7 +677,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
+			statement: `set(attributes["test"], Decode("cGFzcw==", "base64"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -712,6 +716,18 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Concat(Split(attributes["flags"], "|"), ":"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B:C")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Concat(attributes["primitiveValuesSlice"], ":"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "value1:42:true")
 			},
 		},
 		{
@@ -1312,12 +1328,6 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], "pass") where String(ProfileID(0x00000000000000000000000000000001)) == "[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]"`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
-			},
-		},
-		{
 			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
@@ -1847,7 +1857,7 @@ func Test_e2e_converters(t *testing.T) {
 }
 
 func Test_e2e_ottl_features(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate,
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate,
 		true))
 	tests := []struct {
 		name      string
@@ -1981,7 +1991,9 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			name:      "map value",
@@ -2169,6 +2181,18 @@ func Test_e2e_ottl_features(t *testing.T) {
 				sl.AppendEmpty().SetStr("A")
 				sl.AppendEmpty().SetStr("B")
 				sl.AppendEmpty().SetStr("C")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(nil))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(attributes["empty_value"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
 			},
 		},
 	}
@@ -2429,7 +2453,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 }
 
 func Test_e2e_lambda_expression(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 
 	wantValue := func(val any) func(tCtx *ottllog.TransformContext) any {
 		return func(*ottllog.TransformContext) any {
@@ -2905,6 +2929,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	logRecord.Attributes().PutInt("int_value", 0)
 	logRecord.Attributes().PutStr("int_value_str", "0")
 	logRecord.Attributes().PutStr("nil_string", "nil")
+	logRecord.Attributes().PutEmpty("empty_value")
 	logRecord.Attributes().PutStr("server.ip", "192.168.0.1")
 	arr := logRecord.Attributes().PutEmptySlice("array")
 	arr0 := arr.AppendEmpty()
@@ -2938,7 +2963,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	s4.AppendEmpty().SetInt(42)
 	s4.AppendEmpty().SetBool(true)
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructLogTransformContextEditors() *ottllog.TransformContext {
@@ -2991,7 +3016,7 @@ func constructLogTransformContextEditors() *ottllog.TransformContext {
 	s3.AppendEmpty().SetStr("bar")
 	s3.AppendEmpty().SetStr("baz")
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
@@ -3043,7 +3068,7 @@ func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
 	thing2 := s2.AppendEmpty().SetEmptyMap()
 	thing2.PutStr("name", "bar")
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructSpanTransformContext() *ottlspan.TransformContext {
@@ -3055,7 +3080,7 @@ func constructSpanTransformContext() *ottlspan.TransformContext {
 	span := ss.Spans().AppendEmpty()
 	fillSpanOne(span)
 
-	return ottlspan.NewTransformContextPtr(rs, ss, span)
+	return ottlspan.NewTransformContext(rs, ss, span)
 }
 
 func constructSpanEventTransformContext() *ottlspanevent.TransformContext {
@@ -3070,7 +3095,7 @@ func constructSpanEventTransformContext() *ottlspanevent.TransformContext {
 	ev1 := span.Events().AppendEmpty()
 	ev1.SetName("event-1")
 
-	return ottlspanevent.NewTransformContextPtr(rs, ss, span, ev1, ottlspanevent.WithEventIndex(0))
+	return ottlspanevent.NewTransformContext(rs, ss, span, ev1, ottlspanevent.WithEventIndex(0))
 }
 
 func newResourceLogs(tCtx *ottllog.TransformContext) plog.ResourceLogs {
@@ -3111,7 +3136,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 		rLogs := plog.NewResourceLogs()
 		logRecord := rLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(testXML)
-		return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+		return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 	}
 
 	settings := componenttest.NewNopTelemetrySettings()

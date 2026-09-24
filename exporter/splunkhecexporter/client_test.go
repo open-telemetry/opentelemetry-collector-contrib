@@ -2607,11 +2607,10 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 func TestBatcherPartitionsByHecToken(t *testing.T) {
 	makeCfg := func() *Config {
 		cfg := createDefaultConfig().(*Config)
-		cfg.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      2,
-		})
+		batch := cfg.QueueSettings.Get().Batch.GetOrInsertDefault()
+		batch.FlushTimeout = 200 * time.Millisecond
+		batch.Sizer = exporterhelper.RequestSizerTypeItems
+		batch.MinSize = 2
 		return cfg
 	}
 
