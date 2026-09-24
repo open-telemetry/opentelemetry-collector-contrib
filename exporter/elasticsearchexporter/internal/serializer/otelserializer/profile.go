@@ -58,6 +58,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 
 			if payload.StackTrace.DocID != "" {
 				if !tracesSet.CheckAndAdd(payload.StackTrace.DocID) {
+					// TODO: on error, the document ID remains in the LRU and will not be sent again for
+					// knownDocsRefreshInterval (24 hours). Ideally, we'd remove it from the LRU on failure.
 					err = pushDataAsJSON(payload.StackTrace, payload.StackTrace.DocID, StackTraceIndex)
 					if err != nil {
 						return err
@@ -78,6 +80,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 			for j := range payload.StackFrames {
 				stackFrame := &payload.StackFrames[j]
 				if !framesSet.CheckAndAdd(stackFrame.DocID) {
+					// TODO: if the push fails, the document ID remains in the LRU and will not be sent again for
+					// knownDocsRefreshInterval (24 hours). Ideally, we'd remove it from the LRU on failure.
 					err = pushDataAsJSON(stackFrame, stackFrame.DocID, StackFrameIndex)
 					if err != nil {
 						return err

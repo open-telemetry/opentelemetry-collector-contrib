@@ -97,6 +97,9 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 		}
 	}
 
+	if len(stackPayload) == 0 {
+		return nil, nil
+	}
 	return stackPayload, nil
 }
 
