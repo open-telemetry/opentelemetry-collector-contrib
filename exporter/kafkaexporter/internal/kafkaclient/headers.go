@@ -32,9 +32,9 @@ func metadataToHeaders(ctx context.Context, keys []string) []kgo.RecordHeader {
 	return headers
 }
 
-// traceContextToHeaders converts the trace context in ctx into a
-// kgo.RecordHeader slice using propagator.
-func traceContextToHeaders(ctx context.Context, propagator propagation.TextMapPropagator) []kgo.RecordHeader {
+// traceContextToHeaders converts the trace context in ctx into Kafka record
+// headers using propagator.
+func traceContextToHeaders(ctx context.Context, propagator propagation.TextMapPropagator) kafka.HeaderCarrier {
 	var headers kafka.HeaderCarrier
 	propagator.Inject(ctx, &headers)
 	return headers

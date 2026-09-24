@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"slices"
 	"sync"
 	"time"
 
@@ -21,6 +20,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 var (
@@ -109,8 +110,7 @@ type FranzSyncProducer struct {
 	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
 
-	propagator       propagation.TextMapPropagator
-	propagatorFields []string
+	propagator propagation.TextMapPropagator
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
@@ -123,12 +123,11 @@ func NewFranzSyncProducer(client *kgo.Client,
 	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
 	propagator := otel.GetTextMapPropagator()
-	fields := propagator.Fields()
+	if len(propagator.Fields()) == 0 {
+		propagator = nil
+	}
 	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
 	for _, pair := range recordHeaders {
-		if slices.Contains(fields, pair.Name) {
-			continue
-		}
 		headers = append(headers, kgo.RecordHeader{
 			Key:   pair.Name,
 			Value: []byte(pair.Value),
@@ -136,30 +135,33 @@ func NewFranzSyncProducer(client *kgo.Client,
 	}
 
 	return &FranzSyncProducer{
-		client:           client,
-		clientCancel:     clientCancel,
-		metadataKeys:     metadataKeys,
-		recordHeaders:    headers,
-		maxMessageBytes:  maxMessageBytes,
-		propagator:       propagator,
-		propagatorFields: fields,
+		client:          client,
+		clientCancel:    clientCancel,
+		metadataKeys:    metadataKeys,
+		recordHeaders:   headers,
+		maxMessageBytes: maxMessageBytes,
+		propagator:      propagator,
 	}
 }
 
 // ExportData sends a batch of records to Kafka. It attaches configured
 // record headers, per-call metadata-derived headers, and trace context headers
-// to each record before producing.
+// to each record before producing. Trace context headers take precedence over
+// the configured and metadata-derived headers with the same key.
 func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Record) error {
 	metadataHeaders := metadataToHeaders(ctx, p.metadataKeys)
-	var traceHeaders []kgo.RecordHeader
-	if len(p.propagatorFields) > 0 && trace.SpanContextFromContext(ctx).IsValid() {
+	var traceHeaders kafka.HeaderCarrier
+	if p.propagator != nil && trace.SpanContextFromContext(ctx).IsValid() {
 		traceHeaders = traceContextToHeaders(ctx, p.propagator)
 	}
+	// Only the headers the propagator injected are replaced: a configured or
+	// metadata header the propagator did not write survives untouched.
+	injectedKeys := traceHeaders.Keys()
 	var headers []kgo.RecordHeader
 	if n := len(p.recordHeaders) + len(metadataHeaders) + len(traceHeaders); n > 0 {
 		headers = make([]kgo.RecordHeader, 0, n)
-		headers = append(headers, p.recordHeaders...)
-		headers = appendHeadersExcept(headers, metadataHeaders, p.propagatorFields)
+		headers = appendHeadersExcept(headers, p.recordHeaders, injectedKeys)
+		headers = appendHeadersExcept(headers, metadataHeaders, injectedKeys)
 		headers = append(headers, traceHeaders...)
 	}
 	for _, r := range records {
