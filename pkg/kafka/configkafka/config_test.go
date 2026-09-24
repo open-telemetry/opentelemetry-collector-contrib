@@ -144,6 +144,7 @@ func TestClientConfig(t *testing.T) {
 		},
 		"invalid_metadata_retry_backoff": {
 			expectedErr: "metadata::retry::backoff (-1s) must be non-negative",
+		},
 		"sasl_and_kerberos": {
 			expectedErr: "auth: only one of sasl or kerberos authentication can be configured",
 		},
