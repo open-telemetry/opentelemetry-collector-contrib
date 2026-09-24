@@ -67,13 +67,14 @@ func StackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Fra
 
 		frameID := GetFrameID(dic, location)
 
-		frames = append([]Frame{{
+		frames = append(frames, []Frame{{
 			ID:           frameID,
 			DocID:        frameID.String(),
 			FileName:     fileNames,
 			FunctionName: functionNames,
 			LineNumber:   lineNumbers,
-		}}, frames...)
+		})
+		slices.Reverse(frames)
 	}
 
 	return frames, frameTypes, nil
