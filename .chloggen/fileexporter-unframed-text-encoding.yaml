@@ -16,16 +16,8 @@ issues: [49328]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Setting `encoding` used to force length-prefix framing under the `exporter.file.nativeCompression`
-  feature gate, even though the same configuration without compression writes records newline-delimited.
-  A text encoding such as `text_encoding` therefore produced a `.zst` file with 4-byte binary headers
-  that `zstdcat` and `grep` could not read. Framing now follows `format` whether or not compression is
-  enabled: `json` (the default) writes one record per line and `proto` length-prefixes each record.
-
-  This changes behaviour for one configuration: an `encoding` combined with `compression` under the
-  feature gate previously received length prefixes and now does not. Set `format: proto` to keep them
-  for an encoding that emits binary. Note that the same encoding without `compression` is already
-  written without length prefixes today, so this makes the compressed and uncompressed output agree.
+  Under the `exporter.file.nativeCompression` feature gate, an `encoding` with the default `format: json` is
+  now newline-delimited instead of length-prefixed. Set `format: proto` to keep length prefixes for a binary encoding.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

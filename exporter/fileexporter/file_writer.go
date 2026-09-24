@@ -46,10 +46,9 @@ func exportMessageAsBuffer(w *fileWriter, buf []byte) error {
 	defer w.mutex.Unlock()
 	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
 	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
-	data := make([]byte, 4, 4+len(buf))
-	binary.BigEndian.PutUint32(data, uint32(len(buf)))
-
-	return binary.Write(w.file, binary.BigEndian, append(data, buf...))
+	data := binary.BigEndian.AppendUint32(make([]byte, 0, 4+len(buf)), uint32(len(buf)))
+	_, err := w.file.Write(append(data, buf...))
+	return err
 }
 
 func (w *fileWriter) export(buf []byte) error {
@@ -108,25 +107,11 @@ func (w *fileWriter) shutdown() error {
 }
 
 // buildExportFunc selects the framing used to write encoded telemetry.
-func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
-	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() && cfg.Compression != "" {
-		// The compression stream carries the file-level framing, so message framing follows
-		// `format` alone, exactly as it does when compression is off: `json` is written
-		// newline-delimited and `proto` keeps the length prefix. An `encoding` replaces the
-		// payload, not the framing, so set `format: proto` to keep length prefixes for an
-		// encoding that emits binary.
-		if cfg.FormatType == formatTypeJSON {
-			return exportMessageAsLine
-		}
-		return exportMessageAsBuffer
+func buildExportFunc(cfg *Config) exportFunc {
+	// Per-message compression (gate off) emits binary, so JSON lines need the file itself uncompressed.
+	// Native compression frames by `format`, the same as uncompressed output. See #49328.
+	if cfg.FormatType == formatTypeJSON && (cfg.Compression == "" || metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled()) {
+		return exportMessageAsLine
 	}
-	// Legacy behavior
-	if cfg.FormatType == formatTypeProto {
-		return exportMessageAsBuffer
-	}
-	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
-	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {
-		return exportMessageAsBuffer
-	}
-	return exportMessageAsLine
+	return exportMessageAsBuffer
 }

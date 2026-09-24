@@ -46,7 +46,7 @@ properties:
     description: DirectoryPermissions specifies permissions used when creating directories (minus process umask). Value must be an octal string like "0755".
     type: string
   encoding:
-    description: Encoding defines the encoding of the telemetry data. If specified, it overrides `FormatType` and applies an encoding extension.
+    description: Encoding defines the encoding of the telemetry data. If specified, an encoding extension produces the payload and `FormatType` only selects the framing.
     x-pointer: true
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID

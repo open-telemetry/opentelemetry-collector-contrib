@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
@@ -20,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -58,17 +56,7 @@ func TestNativeZstdCompression(t *testing.T) {
 	require.NoError(t, fe.consumeTraces(t.Context(), td))
 	require.NoError(t, fe.Shutdown(t.Context()))
 
-	// Read and decompress the file with Go's zstd decoder
-	compressed, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.NotEmpty(t, compressed)
-
-	reader, err := zstd.NewReader(bytes.NewReader(compressed))
-	require.NoError(t, err)
-	defer reader.Close()
-
-	decompressed, err := io.ReadAll(reader)
-	require.NoError(t, err)
+	decompressed := decompressZstd(t, path)
 	require.NotEmpty(t, decompressed)
 
 	// Verify proto messages can be read from decompressed data
@@ -107,16 +95,7 @@ func TestNativeZstdCompression_JSONFormat(t *testing.T) {
 	require.NoError(t, fe.consumeTraces(t.Context(), td))
 	require.NoError(t, fe.Shutdown(t.Context()))
 
-	// Decompress and verify JSON lines
-	compressed, err := os.ReadFile(path)
-	require.NoError(t, err)
-
-	reader, err := zstd.NewReader(bytes.NewReader(compressed))
-	require.NoError(t, err)
-	defer reader.Close()
-
-	decompressed, err := io.ReadAll(reader)
-	require.NoError(t, err)
+	decompressed := decompressZstd(t, path)
 
 	// With native compression + JSON, data should be newline-delimited JSON
 	br := bufio.NewReader(bytes.NewReader(decompressed))
@@ -322,7 +301,6 @@ func logsWithBody(body string) plog.Logs {
 	ld := plog.NewLogs()
 	lr := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	lr.Body().SetStr(body)
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return ld
 }
 
@@ -370,39 +348,6 @@ func TestNativeCompression_EncodingFramedByFormat(t *testing.T) {
 			require.Equal(t, test.expected, string(decompressZstd(t, path)))
 		})
 	}
-}
-
-// Native compression must frame an encoding the same way the uncompressed path already
-// does, which is what #49328 reported as broken.
-func TestBuildExportFunc_EncodingFramingMatchesUncompressed(t *testing.T) {
-	encID := component.MustNewID("enc")
-	line := []byte("hello\n")
-	prefixed := []byte{0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o'}
-
-	for _, formatType := range []string{formatTypeJSON, formatTypeProto} {
-		t.Run(formatType, func(t *testing.T) {
-			expected := line
-			if formatType == formatTypeProto {
-				expected = prefixed
-			}
-
-			setNativeCompressionFeatureGate(t, false)
-			uncompressed := &Config{FormatType: formatType, Encoding: &encID}
-			require.Equal(t, expected, runExport(t, buildExportFunc(uncompressed), []byte("hello")))
-
-			setNativeCompressionFeatureGate(t, true)
-			compressed := &Config{FormatType: formatType, Encoding: &encID, Compression: compressionZSTD}
-			require.Equal(t, expected, runExport(t, buildExportFunc(compressed), []byte("hello")))
-		})
-	}
-}
-
-func runExport(t *testing.T, export exportFunc, buf []byte) []byte {
-	t.Helper()
-	out := &bytes.Buffer{}
-	w := &fileWriter{file: &nopWriteCloser{out}}
-	require.NoError(t, export(w, buf))
-	return out.Bytes()
 }
 
 func decompressZstd(t *testing.T, path string) []byte {

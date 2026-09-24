@@ -63,7 +63,7 @@ The following settings are optional:
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
 - `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
-- `encoding`[default: none]: if specified, uses an encoding extension to encode telemetry data. Overrides `format`.
+- `encoding`[default: none]: if specified, uses an encoding extension to encode telemetry data. `format` then only selects the framing, see [File Format](#file-format).
 - `append`[default: `false`] defines whether append to the file (`true`) or truncate (`false`). If `append: true` is set then setting `rotation` is currently not supported.
 - `compression`[no default]: the compression algorithm used when exporting telemetry data to file. Supported compression algorithms:`zstd`
 - `compression_params`
@@ -105,14 +105,8 @@ Telemetry data is compressed according to the `compression` setting.
 > [!NOTE]
 > An alpha feature gate `exporter.file.nativeCompression` is available that switches from
 > per-message compression to native file-level compression, producing standard `.zst` files
-> compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details.
->
-> With this gate enabled the compression stream carries the file-level framing, so message
-> framing follows `format` alone, matching what an uncompressed file already does. `json`
-> is written newline-delimited, which keeps the decompressed file usable with `zstdcat`,
-> `grep` and similar tooling, including when an `encoding` such as `text_encoding` supplies
-> the payload. Use `format: proto` to keep the length-prefix framing described under
-> [File Format](#file-format) for an encoding that emits binary.
+> compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details,
+> and [File Format](#file-format) for how records are framed.
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
@@ -120,11 +114,11 @@ Currently, `fileexporter` support the `zstd` compression algorithm, and we will 
 
 Telemetry data is encoded according to the `format` setting and then written to the file.
 
-When `format` is json and `compression` is none , telemetry data is written to file in JSON format. Each line in the file is a JSON object.
+When `format` is json, each encoded object is written on its own line. This does not apply when `compression` is set without the `exporter.file.nativeCompression` feature gate.
 
-Otherwise, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
+Otherwise, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object. When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
 
-Setting `encoding` replaces the payload, not the framing: an encoded object is delimited according to `format`, so the default `json` writes one record per line and `proto` length-prefixes each record.
+Setting `encoding` replaces the payload, not the framing. Use `format: proto` to keep length prefixes for an encoding that emits binary.
 
 ## Group by attribute
 
