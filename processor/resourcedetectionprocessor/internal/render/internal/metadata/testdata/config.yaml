@@ -1,0 +1,37 @@
+default:
+all_set:
+  resource_attributes:
+    cloud.provider:
+      enabled: true
+    render.app.id:
+      enabled: true
+    render.dyno.id:
+      enabled: true
+    render.release.commit:
+      enabled: true
+    render.release.creation_timestamp:
+      enabled: true
+    service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.version:
+      enabled: true
+none_set:
+  resource_attributes:
+    cloud.provider:
+      enabled: false
+    render.app.id:
+      enabled: false
+    render.dyno.id:
+      enabled: false
+    render.release.commit:
+      enabled: false
+    render.release.creation_timestamp:
+      enabled: false
+    service.instance.id:
+      enabled: false
+    service.name:
+      enabled: false
+    service.version:
+      enabled: false
