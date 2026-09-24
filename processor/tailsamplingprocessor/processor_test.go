@@ -519,9 +519,6 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, tsp.Shutdown(t.Context()))
-	}()
 
 	var expectedSpans atomic.Int64
 	wg := sync.WaitGroup{}
@@ -558,14 +555,9 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	<-errDone
 	require.NoError(t, combinedErr)
 
-	// verify
-	// despite all the concurrency above, we should eventually sample all the spans.
-	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		received := int64(msp.SpanCount())
-		expected := expectedSpans.Load()
-		missing := expected - received
-		require.Equal(collect, expected, received, "expected %d spans, received %d, missing %d", expected, received, missing)
-	}, 1*time.Second, 100*time.Millisecond)
+	// Shutting down drains all pending traces, so every span must be forwarded.
+	require.NoError(t, tsp.Shutdown(t.Context()))
+	require.Equal(t, expectedSpans.Load(), int64(msp.SpanCount()))
 }
 
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
