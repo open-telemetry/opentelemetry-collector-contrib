@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/shirou/gopsutil/v4/net"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/ucal"
 )
 
 func TestScrape(t *testing.T) {
@@ -216,6 +218,71 @@ func TestScrape(t *testing.T) {
 	}
 }
 
+func TestScrapeNetworkBandwidthMetrics(t *testing.T) {
+	cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
+	cfg.Metrics.SystemNetworkConnections.Enabled = false
+	cfg.Metrics.SystemNetworkBandwidthUtilization.Enabled = true
+
+	scraper, err := newNetworkScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+
+	scrape := 0
+	scraper.ioCounters = func(context.Context, bool) ([]net.IOCountersStat, error) {
+		scrape++
+		if scrape == 1 {
+			return []net.IOCountersStat{
+				{Name: "eth0", BytesRecv: 1000, BytesSent: 2000},
+				{Name: "eth1", BytesRecv: 1000, BytesSent: 1000},
+				{Name: "lo", BytesRecv: 1000, BytesSent: 1000},
+			}, nil
+		}
+		return []net.IOCountersStat{
+			{Name: "eth0", BytesRecv: 2000, BytesSent: 3000},
+			{Name: "eth1", BytesRecv: 1000, BytesSent: 1000},
+			{Name: "lo", BytesRecv: 1000, BytesSent: 1000},
+		}, nil
+	}
+	scraper.linkInfo = func(_ context.Context, device string) (ucal.LinkInfo, error) {
+		switch device {
+		case "eth0":
+			return ucal.LinkInfo{SpeedMbps: 100, FullDuplex: true}, nil
+		case "eth1":
+			return ucal.LinkInfo{}, nil
+		case "lo":
+			return ucal.LinkInfo{Loopback: true}, nil
+		default:
+			return ucal.LinkInfo{}, nil
+		}
+	}
+	scraper.now = func() time.Time {
+		if scrape == 0 {
+			return time.Unix(100, 0)
+		}
+		return time.Unix(110, 0)
+	}
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	requireMetricAbsent(t, md, "system.network.bandwidth.utilization")
+
+	md, err = scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	utilizationMetric := requireMetric(t, md, "system.network.bandwidth.utilization")
+	require.Equal(t, 2, utilizationMetric.Gauge().DataPoints().Len())
+
+	devicePoint := utilizationMetric.Gauge().DataPoints().At(0)
+	assert.Equal(t, "eth0", devicePoint.Attributes().AsRaw()["device"])
+	assert.InDelta(t, 0.000008, devicePoint.DoubleValue(), 0.0000001)
+
+	hostPoint := utilizationMetric.Gauge().DataPoints().At(1)
+	_, ok := hostPoint.Attributes().Get("device")
+	assert.False(t, ok)
+	assert.InDelta(t, 0.000004, hostPoint.DoubleValue(), 0.0000001)
+}
+
 func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedName string, startTime pcommon.Timestamp) {
 	assert.Equal(t, expectedName, metric.Name())
 	if startTime != 0 {
@@ -234,4 +301,33 @@ func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
 	// Flaky test gives 12 or 13, so bound it
 	assert.LessOrEqual(t, 12, metric.Sum().DataPoints().Len())
 	assert.GreaterOrEqual(t, 13, metric.Sum().DataPoints().Len())
+}
+
+func requireMetric(t *testing.T, md pmetric.Metrics, name string) pmetric.Metric {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				metric := metrics.At(k)
+				if metric.Name() == name {
+					return metric
+				}
+			}
+		}
+	}
+	require.Failf(t, "metric not found", "metric %q not found", name)
+	return pmetric.Metric{}
+}
+
+func requireMetricAbsent(t *testing.T, md pmetric.Metrics, name string) {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				require.NotEqual(t, name, metrics.At(k).Name())
+			}
+		}
+	}
 }
