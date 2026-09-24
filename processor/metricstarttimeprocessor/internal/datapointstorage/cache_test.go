@@ -10,8 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 func TestStartTimeCache_NewStartTimeCache(t *testing.T) {
@@ -28,7 +27,7 @@ func TestStartTimeCache_Get(t *testing.T) {
 	stc := NewCache(time.Minute)
 	resourceAttrs := pcommon.NewMap()
 	resourceAttrs.PutStr("k1", "v1")
-	resourceHash := pdatautil.MapHash(resourceAttrs)
+	resourceHash := xhash.MapHash(resourceAttrs)
 
 	tsm, ok1 := stc.Get(resourceHash)
 	assert.NotNil(t, tsm)
@@ -47,10 +46,10 @@ func TestStartTimeCache_GC(t *testing.T) {
 	stc := NewCache(time.Hour)
 	resourceAttrs := pcommon.NewMap()
 	resourceAttrs.PutStr("k1", "v1")
-	resourceHash := pdatautil.MapHash(resourceAttrs)
+	resourceHash := xhash.MapHash(resourceAttrs)
 	resourceAttrs2 := pcommon.NewMap()
 	resourceAttrs2.PutStr("k2", "v2")
-	resourceHash2 := pdatautil.MapHash(resourceAttrs2)
+	resourceHash2 := xhash.MapHash(resourceAttrs2)
 
 	tsm, ok1 := stc.Get(resourceHash)
 	tsm2, ok2 := stc.Get(resourceHash2)

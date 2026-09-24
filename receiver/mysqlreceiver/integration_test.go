@@ -126,6 +126,8 @@ func TestIntegration(t *testing.T) {
 				),
 				scraperinttest.WithCompareOptions(
 					pmetrictest.IgnoreResourceAttributeValue("mysql.instance.endpoint"),
+					pmetrictest.IgnoreResourceAttributeValue("server.address"),
+					pmetrictest.IgnoreResourceAttributeValue("server.port"),
 					pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
 					pmetrictest.IgnoreMetricValues(),
 					pmetrictest.IgnoreMetricDataPointsOrder(),
