@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
 var (
@@ -27,9 +29,9 @@ var (
 	buildID3, buildID3Encoded, _ = formatFileIDFormat(0x1122334455667788,
 		0x99aabbccddeeffee)
 
-	frameIDBase64  = newFrameID(buildID, address).String()
-	frameID2Base64 = newFrameID(buildID2, address2).String()
-	frameID3Base64 = newFrameID(buildID3, address3).String()
+	frameIDBase64  = serializer.NewFrameID(buildID, address).String()
+	frameID2Base64 = serializer.NewFrameID(buildID2, address2).String()
+	frameID3Base64 = serializer.NewFrameID(buildID3, address3).String()
 )
 
 const (
@@ -53,9 +55,9 @@ func formatFileIDFormat(hi, lo uint64) (fileID libpf.FileID, fileIDHex, fileIDBa
 }
 
 func TestTransform(t *testing.T) {
-	wantedTraceID := mkStackTraceID(t, []frameID{
-		newFrameID(buildID, address),
-		newFrameID(buildID2, address2),
+	wantedTraceID := mkStackTraceID(t, []serializer.FrameID{
+		serializer.NewFrameID(buildID, address),
+		serializer.NewFrameID(buildID2, address2),
 	})
 	for _, tt := range []struct {
 		name                  string
@@ -234,13 +236,13 @@ func TestTransform(t *testing.T) {
 					Executables: []ExeMetadata{
 						NewExeMetadata(
 							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
+							serializer.GetStartOfWeekFromTime(time.Now()),
 							buildIDBase64,
 							"firefox",
 						),
 						NewExeMetadata(
 							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
+							serializer.GetStartOfWeekFromTime(time.Now()),
 							buildID2Base64,
 							"libc.so",
 						),
@@ -303,9 +305,9 @@ func TestTransform(t *testing.T) {
 }
 
 func TestStackPayloads(t *testing.T) {
-	wantedTraceID := mkStackTraceID(t, []frameID{
-		newFrameID(buildID, address),
-		newFrameID(buildID2, address2),
+	wantedTraceID := mkStackTraceID(t, []serializer.FrameID{
+		serializer.NewFrameID(buildID, address),
+		serializer.NewFrameID(buildID2, address2),
 	})
 	for name, tt := range map[string]struct {
 		buildDictionary       func() pprofile.ProfilesDictionary
@@ -388,13 +390,13 @@ func TestStackPayloads(t *testing.T) {
 					Executables: []ExeMetadata{
 						NewExeMetadata(
 							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
+							serializer.GetStartOfWeekFromTime(time.Now()),
 							buildIDBase64,
 							"firefox",
 						),
 						NewExeMetadata(
 							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
+							serializer.GetStartOfWeekFromTime(time.Now()),
 							buildID2Base64,
 							"libc.so",
 						),
@@ -504,13 +506,13 @@ func TestStackPayloads(t *testing.T) {
 					Executables: []ExeMetadata{
 						NewExeMetadata(
 							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
+							serializer.GetStartOfWeekFromTime(time.Now()),
 							buildIDBase64,
 							"firefox",
 						),
 						NewExeMetadata(
 							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
+							serializer.GetStartOfWeekFromTime(time.Now()),
 							buildID2Base64,
 							"libc.so",
 						),
@@ -632,13 +634,13 @@ func TestStackPayloads(t *testing.T) {
 					Executables: []ExeMetadata{
 						NewExeMetadata(
 							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
+							serializer.GetStartOfWeekFromTime(time.Now()),
 							buildIDBase64,
 							"firefox",
 						),
 						NewExeMetadata(
 							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
+							serializer.GetStartOfWeekFromTime(time.Now()),
 							buildID2Base64,
 							"libc.so",
 						),
@@ -847,10 +849,10 @@ func TestStackTraceEvent(t *testing.T) {
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
 			s := p.Samples().At(0)
 
-			resourceAttrs, err := populateResourceData(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
+			resourceAttrs, err := serializer.PopulateResourceData(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
 			require.NoError(t, err)
 			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, resourceAttrs)
-			event.TimeStamp = newUnixTime64(tt.timestamp)
+			event.TimeStamp = serializer.NewUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)
 		})
@@ -968,7 +970,7 @@ func TestStackTrace(t *testing.T) {
 			p := tt.buildProfile()
 			s := p.Samples().At(0)
 
-			frames, frameTypes, _, err := stackFrames(dic, s)
+			frames, frameTypes, err := serializer.StackFrames(dic, s)
 			require.NoError(t, err)
 
 			stacktrace := stackTrace("", frames, frameTypes)
@@ -997,7 +999,7 @@ func TestGetLocations(t *testing.T) {
 	stack.LocationIndices().Append(1, 2, 3)
 
 	// Call getLocations and check the result
-	locations := getLocations(dic, stack)
+	locations := serializer.GetLocations(dic, stack)
 	require.Len(t, locations, 3)
 	assert.Equal(t, uint64(0x1000), locations[0].Address())
 	assert.Equal(t, uint64(0x2000), locations[1].Address())
@@ -1005,7 +1007,7 @@ func TestGetLocations(t *testing.T) {
 
 	// Test with empty stack
 	emptyStack := dic.StackTable().AppendEmpty()
-	locations = getLocations(dic, emptyStack)
+	locations = serializer.GetLocations(dic, emptyStack)
 	assert.Empty(t, locations)
 }
 
@@ -1016,11 +1018,11 @@ func TestGetLocations(t *testing.T) {
 // In libpf/frametype.go you find DotnetFrame with value 10.
 func frameTypesToString(frameTypes []libpf.FrameType) string {
 	buf := bytes.NewBuffer(make([]byte, 0, 32))
-	encodeFrameTypesTo(buf, frameTypes)
+	serializer.EncodeFrameTypesTo(buf, frameTypes)
 	return buf.String()
 }
 
-func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
+func mkStackTraceID(t *testing.T, frameIDs []serializer.FrameID) string {
 	dic := pprofile.NewProfilesDictionary()
 	dic.MappingTable().AppendEmpty()
 
@@ -1057,13 +1059,10 @@ func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 		stack.LocationIndices().Append(int32(dic.LocationTable().Len() - 1))
 	}
 
-	frames, _, _, err := stackFrames(dic, s)
+	frames, _, err := serializer.StackFrames(dic, s)
 	require.NoError(t, err)
 
-	traceID, err := stackTraceID(frames)
-	require.NoError(t, err)
-
-	return traceID
+	return serializer.StackTraceID(frames)
 }
 
 // sortPayloads brings the payloads into a deterministic form to allow comparisons.

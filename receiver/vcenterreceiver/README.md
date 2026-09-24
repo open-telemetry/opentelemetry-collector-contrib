@@ -61,9 +61,6 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 **BETA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
 
-The feature gate `receiver.vcenter.resourcePoolMemoryUsageAttribute` once enabled will enable the memory usage type attribute for 
-the `vcenter.resource_pool.memory.usage` metric.
-
-This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
-to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
-is v0.107.0.
+This feature gate is enabled by default. It adds the `memory_usage_type` attribute to the
+`vcenter.resource_pool.memory.usage` metric. Disabling the gate retains the previous behavior:
+only guest memory usage is emitted, without the attribute.

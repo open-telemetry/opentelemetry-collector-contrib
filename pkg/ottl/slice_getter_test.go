@@ -171,11 +171,22 @@ func TestGetScalarLiteralValues(t *testing.T) {
 		require.Equal(t, []float64{1.5, 2.5}, vals)
 	})
 
-	t.Run("range error returns false", func(t *testing.T) {
-		sg := newTestSliceGetterWithRuntimeSource[any, string](
-			newTestRuntimeSliceSource[any, string](errSliceGetter{err: errors.New("range failed")}),
-		)
-		vals, ok := GetScalarLiteralValues(&sg)
+	t.Run("runtime slice", func(t *testing.T) {
+		pc := parseContext[any]{}
+		slice := &SliceGetter[any, int64]{
+			runtimeSlice: &runtimeSliceSource[any]{
+				Getter: &exprGetter[any]{
+					expr: Expr[any]{
+						exprFunc: func(context.Context, any) (any, error) {
+							t.Error("runtime slice getter shouldn't be called")
+							return int64(0), nil
+						},
+					},
+				},
+				sliceElementCoercer: newSliceElementCoercer[any](reflect.TypeFor[int64](), pc.buildStandardGetSetter),
+			},
+		}
+		vals, ok := GetScalarLiteralValues[any, int64](slice)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
@@ -223,6 +234,26 @@ func TestGetLiteralValues(t *testing.T) {
 		require.Nil(t, vals)
 	})
 
+	t.Run("runtime slice", func(t *testing.T) {
+		pc := parseContext[any]{}
+		slice := &SliceGetter[any, StringGetter[any]]{
+			runtimeSlice: &runtimeSliceSource[any]{
+				Getter: &exprGetter[any]{
+					expr: Expr[any]{
+						exprFunc: func(context.Context, any) (any, error) {
+							t.Error("runtime slice getter shouldn't be called")
+							return nil, nil
+						},
+					},
+				},
+				sliceElementCoercer: newSliceElementCoercer[any](reflect.TypeFor[any](), pc.buildStandardGetSetter),
+			},
+		}
+		vals, ok := GetLiteralValues[any, string, StringGetter[any]](slice)
+		require.False(t, ok)
+		require.Nil(t, vals)
+	})
+
 	t.Run("mixed literal and non-literal literal values", func(t *testing.T) {
 		sg := SliceGetter[any, StringGetter[any]]{
 			typedValues: []StringGetter[any]{
@@ -230,15 +261,6 @@ func TestGetLiteralValues(t *testing.T) {
 				nonLiteralStringGetter[any]{v: "dynamic"},
 			},
 		}
-		vals, ok := GetLiteralValues[any, string, StringGetter[any]](&sg)
-		require.False(t, ok)
-		require.Nil(t, vals)
-	})
-
-	t.Run("range error returns false", func(t *testing.T) {
-		sg := newTestSliceGetterWithRuntimeSource[any, StringGetter[any]](
-			newTestRuntimeSliceSource[any, StringGetter[any]](errSliceGetter{err: errors.New("range failed")}),
-		)
 		vals, ok := GetLiteralValues[any, string, StringGetter[any]](&sg)
 		require.False(t, ok)
 		require.Nil(t, vals)
