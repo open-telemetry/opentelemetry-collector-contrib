@@ -22,7 +22,7 @@ postgresql/all:
     - otel
   exclude_databases:
     - template0
-  connect_database: mon
+  connect_database: monitoring
   collection_interval: 10s
   tls:
     insecure: false

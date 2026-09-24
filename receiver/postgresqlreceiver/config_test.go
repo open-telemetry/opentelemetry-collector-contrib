@@ -104,8 +104,8 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.ConnectDatabase = "mon"
-				cfg.Databases = []string{"landonline"}
+				cfg.ConnectDatabase = "monitoring"
+				cfg.Databases = []string{"mydb"}
 			},
 			expected: nil,
 		},
@@ -190,7 +190,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
 		expected.ExcludeDatabases = []string{"template0"}
-		expected.ConnectDatabase = "mon"
+		expected.ConnectDatabase = "monitoring"
 		expected.ControllerConfig.CollectionInterval = 10 * time.Second
 		expected.ClientConfig = configtls.ClientConfig{
 			Insecure:           false,

@@ -101,9 +101,9 @@ The following settings are optional:
 
 - `connect_database` (default = `postgres`): The database the receiver connects to for discovery and server-level queries, including `pg_stat_statements`. Independent of `databases` — `pg_stat_statements` is tracked cluster-wide, so any database with the extension installed works as the connection target, regardless of which databases are being monitored. Use this if `pg_stat_statements` lives outside `postgres`, or if you connect through a dedicated monitoring-only database:
   ```yaml
-  connect_database: "mon"   # extension lives here
+  connect_database: "monitoring"   # extension lives here
   databases:
-    - "landonline"          # database being monitored
+    - "mydb"                       # database being monitored
   ```
 
 > [!NOTE]
@@ -172,12 +172,19 @@ We provide functionality to collect the most executed queries from PostgreSQL. I
 
 Along with those attributes, we will also report the query plan we gathered if it is possible. 
 
-By default, top query collection is disabled, also note, to use it, you will need 
-to create the extension to every database. Take the example from `testdata/integration/02-create-extension.sh`
+By default, top query collection is disabled, also note, to use it, you will need
+to create the extension in the database the receiver connects to (`connect_database`,
+default `postgres`) — `pg_stat_statements` is tracked cluster-wide, so it does not need to be
+created in every database. Take the example from `testdata/integration/02-create-extension.sh`
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 ```
+
+> [!NOTE]
+> This is different from [vector metrics](#vector-metrics) below, which query per-database
+> clients — `connect_database` has no effect there, and `pg_stat_statements` must be installed
+> in every scanned database for vector metrics to work.
 
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 

@@ -56,8 +56,9 @@ type Config struct {
 	Databases        []string                       `mapstructure:"databases"`
 	ExcludeDatabases []string                       `mapstructure:"exclude_databases"`
 	// ConnectDatabase is the connection target for cluster-wide queries.
-	// Defaults to "postgres". Independent of Databases (the reporting scope).
-	ConnectDatabase       string                        `mapstructure:"connect_database,omitempty"`
+	// Defaults to "postgres" (see createDefaultConfig). Independent of
+	// Databases (the reporting scope).
+	ConnectDatabase       string                        `mapstructure:"connect_database"`
 	AddrConfig            confignet.AddrConfig          `mapstructure:",squash"`       // provides Endpoint and Transport
 	ClientConfig          configtls.ClientConfig        `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool        ConnectionPool                `mapstructure:"connection_pool,omitempty"`
