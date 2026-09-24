@@ -4,7 +4,23 @@
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
+	"fmt"
 	"time"
+)
+
+// EmitStrategy controls how the processor groups spans before releasing them to
+// the next consumer.
+type EmitStrategy string
+
+const (
+	// EmitStrategyTrace (default) buffers all spans for a trace together and
+	// releases them as one batch after wait_duration.
+	EmitStrategyTrace EmitStrategy = "trace"
+
+	// EmitStrategyService buffers the spans a trace passed through each service
+	// and releases them separately after wait_duration, one batch per call to a
+	// service.
+	EmitStrategyService EmitStrategy = "service"
 )
 
 // Config is the configuration for the processor.
@@ -32,4 +48,20 @@ type Config struct {
 	// Default: false.
 	// Not yet implemented, and an error will be returned when this option is used.
 	StoreOnDisk bool `mapstructure:"store_on_disk"`
+
+	// EmitStrategy controls the span-emit granularity.
+	// Valid values: "trace" (default), "service".
+	EmitStrategy EmitStrategy `mapstructure:"emit_strategy"`
+}
+
+func (cfg *Config) Validate() error {
+	switch cfg.EmitStrategy {
+	case EmitStrategyTrace, EmitStrategyService:
+		// valid
+	default:
+		return fmt.Errorf("unknown emit_strategy %q: valid values are %q and %q",
+			cfg.EmitStrategy, EmitStrategyTrace, EmitStrategyService)
+	}
+
+	return nil
 }
