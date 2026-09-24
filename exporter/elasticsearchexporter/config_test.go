@@ -42,8 +42,6 @@ func TestConfig(t *testing.T) {
 	defaultRawCfg.(*Config).Mapping.Mode = "raw"
 	defaultRawCfg.(*Config).Retry.RetryOnDocumentStatus = defaultRawCfg.(*Config).Retry.RetryOnStatus
 
-	defaultMaxIdleConns := 100
-	defaultIdleConnTimeout := 90 * time.Second
 	defaultCompression := configcompression.TypeGzip
 
 	tests := []struct {
@@ -96,8 +94,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
@@ -185,8 +181,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
@@ -261,8 +255,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
