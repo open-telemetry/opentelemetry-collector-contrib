@@ -7,9 +7,7 @@ note: Fix missing metrics when using direct SQL Server connection - `sqlserver.l
 issues: [51384]
 
 subtext: |
-  `sqlserver.lock.wait_time.avg` is derived from the `Average Wait Time (ms)` counter and its base counter as
-  the wait time accrued since the last scrape divided by the number of waits in that window, matching what
-  the Windows PDH path reports. No data point is emitted on the first scrape, because an average needs two
-  samples, nor for a window in which no lock waits occurred.
+  `sqlserver.lock.wait_time.avg` emits no data point on the first scrape, because it is derived from the
+  change in two counters between scrapes.
 
 change_logs: [user]

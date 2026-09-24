@@ -7,18 +7,7 @@ note: Performance counters read from the SQL Server `Databases` object on a dire
 issues: [51384]
 
 subtext: |
-  These counters are reported once per database. Previously every database produced a data point with an
-  identical resource and no distinguishing attribute, so the values collapsed into a single series and only
-  one database's value survived. Attributing them with `sqlserver.database.name` matches what the Windows
-  PDH path already does.
-
-  The `_Total` row is dropped rather than emitted alongside the per-database rows. It is exactly the sum of
-  them, so publishing both made any aggregation double-count. Consumers that want a server-wide figure
-  should sum across `sqlserver.database.name`.
-
-  `sqlserver.database.backup_or_restore.rate` already existed on the direct-connection path, so consumers
-  will see it split from one series into one series per database, and the unlabeled series it previously
-  reported is gone. Dashboards or alerts built on that series need to aggregate across
-  `sqlserver.database.name` instead.
+  `sqlserver.database.backup_or_restore.rate` splits from one series into one per database, and the
+  unlabeled series it previously reported is gone. Aggregate across `sqlserver.database.name` instead.
 
 change_logs: [user]
