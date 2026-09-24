@@ -77,7 +77,7 @@ func (t *TimeParser) Validate() error {
 		return errors.New("missing required parameter 'parse_from'")
 	}
 
-	if err := t.DropFieldConfig.Validate(*t.ParseFrom); err != nil {
+	if err := t.ValidateDropField(*t.ParseFrom); err != nil {
 		return err
 	}
 

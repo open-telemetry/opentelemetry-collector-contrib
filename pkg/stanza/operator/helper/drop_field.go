@@ -16,8 +16,8 @@ type DropFieldConfig struct {
 	DropField bool `mapstructure:"drop_field,omitempty"`
 }
 
-// Validate checks that parseFrom can be safely dropped when DropField is true.
-func (c DropFieldConfig) Validate(parseFrom entry.Field) error {
+// ValidateDropField checks that parseFrom can be safely dropped when DropField is true.
+func (c DropFieldConfig) ValidateDropField(parseFrom entry.Field) error {
 	if !c.DropField {
 		return nil
 	}
@@ -31,10 +31,10 @@ func (c DropFieldConfig) Validate(parseFrom entry.Field) error {
 	return nil
 }
 
-// ValidateWithTarget checks that parseFrom can be safely dropped and does not
+// ValidateDropFieldWithTarget checks that parseFrom can be safely dropped and does not
 // equal or contain parseTo when DropField is true.
-func (c DropFieldConfig) ValidateWithTarget(parseFrom, parseTo entry.Field) error {
-	if err := c.Validate(parseFrom); err != nil {
+func (c DropFieldConfig) ValidateDropFieldWithTarget(parseFrom, parseTo entry.Field) error {
+	if err := c.ValidateDropField(parseFrom); err != nil {
 		return err
 	}
 	if !c.DropField {

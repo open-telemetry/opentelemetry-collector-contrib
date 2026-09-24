@@ -52,7 +52,7 @@ func (c ParserConfig) Build(set component.TelemetrySettings) (ParserOperator, er
 		return ParserOperator{}, errors.New("`parse_to: body` not allowed when `body` is configured")
 	}
 
-	if err := c.DropFieldConfig.ValidateWithTarget(c.ParseFrom, c.ParseTo.Field); err != nil {
+	if err := c.ValidateDropFieldWithTarget(c.ParseFrom, c.ParseTo.Field); err != nil {
 		return ParserOperator{}, err
 	}
 

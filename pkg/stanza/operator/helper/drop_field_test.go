@@ -11,7 +11,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
-func TestDropFieldConfigValidate(t *testing.T) {
+func TestDropFieldConfigValidateDropField(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -63,7 +63,7 @@ func TestDropFieldConfigValidate(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := DropFieldConfig{DropField: tc.dropField}
-			err := cfg.Validate(tc.parseFrom)
+			err := cfg.ValidateDropField(tc.parseFrom)
 			if tc.expectedErr != "" {
 				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
@@ -73,7 +73,7 @@ func TestDropFieldConfigValidate(t *testing.T) {
 	}
 }
 
-func TestDropFieldConfigValidateWithTarget(t *testing.T) {
+func TestDropFieldConfigValidateDropFieldWithTarget(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -127,7 +127,7 @@ func TestDropFieldConfigValidateWithTarget(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := DropFieldConfig{DropField: tc.dropField}
-			err := cfg.ValidateWithTarget(tc.parseFrom, tc.parseTo)
+			err := cfg.ValidateDropFieldWithTarget(tc.parseFrom, tc.parseTo)
 			if tc.expectedErr != "" {
 				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
