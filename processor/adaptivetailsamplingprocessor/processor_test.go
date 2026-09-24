@@ -639,6 +639,55 @@ func TestProcessor_RootSpanTriggersEarlyDecision(t *testing.T) {
 	}, time.Second, 10*time.Millisecond, "root span should trigger decision before trace_timeout")
 }
 
+func TestProcessor_CustomRootSpanConditionTriggersEarlyDecision(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:      time.Hour,
+		DecisionDelay:     50 * time.Millisecond,
+		NumTraces:         10,
+		RootSpanCondition: `span.attributes["trigger"] == true`,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	})
+
+	traceID := pcommon.TraceID([16]byte{0xAC})
+	td := newTrace(traceID, ptrace.StatusCodeUnset)
+
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	span.Attributes().PutBool("trigger", true)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond,
+		"custom root_span_condition should trigger the decision")
+
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("trigger", "root_span"),
+			),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+}
+
 func TestProcessor_RootSpanTriggerIsIdempotent(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
@@ -662,6 +711,67 @@ func TestProcessor_RootSpanTriggerIsIdempotent(t *testing.T) {
 	// Only one decision should have fired: total traces forwarded is one batch
 	// for the trace, containing all three spans accumulated.
 	assert.Len(t, sink.AllTraces(), 1)
+}
+
+func TestProcessor_RootSpanConditionMultipleMatches(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:      time.Hour,
+		DecisionDelay:     100 * time.Millisecond,
+		NumTraces:         10,
+		RootSpanCondition: `span.attributes["trigger"] == true`,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	})
+
+	traceID := pcommon.TraceID([16]byte{0xAD})
+
+	first := newTrace(traceID, ptrace.StatusCodeUnset)
+	firstSpan := first.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	firstSpan.Attributes().PutBool("trigger", true)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), first))
+
+	// The first matching span triggers the decision-delay timer.
+	require.Never(t, func() bool {
+		return sink.SpanCount() > 0
+	}, 20*time.Millisecond, 5*time.Millisecond)
+
+	second := newTrace(traceID, ptrace.StatusCodeUnset)
+	secondSpan := second.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	secondSpan.Attributes().PutBool("trigger", true)
+
+	third := newTrace(traceID, ptrace.StatusCodeUnset)
+	thirdSpan := third.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	thirdSpan.Attributes().PutBool("trigger", true)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), second))
+	require.NoError(t, p.ConsumeTraces(t.Context(), third))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 3
+	}, time.Second, 10*time.Millisecond)
+
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches(
+		t,
+		tt,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
 }
 
 func TestProcessor_TraceTimeoutFiresWithoutRootSpan(t *testing.T) {
