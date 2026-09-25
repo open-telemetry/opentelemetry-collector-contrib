@@ -59,6 +59,7 @@ components:
     - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
+    - exporter/nats
     - exporter/opensearch
     - exporter/otelarrow
     - exporter/prometheus
