@@ -1,0 +1,31 @@
+{#-
+  One Go file per semconv release: gen_ai.* attribute keys to the kind Coerce
+  enforces. A registry `type` is either a string naming a primitive or an
+  object carrying `members`, which is an enum; enums are carried as kindString
+  and their value sets are not enforced.
+-#}
+{%- set kinds = {
+  "string":   "kindString",
+  "int":      "kindInt",
+  "double":   "kindDouble",
+  "boolean":  "kindBoolean",
+  "string[]": "kindStringSlice",
+  "any":      "kindAny",
+} -%}
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// Code generated from semantic convention specification. DO NOT EDIT.
+//
+// Regenerate with `make generate-semconv-types`.
+
+package otelsemconv // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
+
+// types{{ params.ident }} holds the gen_ai.* attributes defined at
+// {{ params.tag | replace("_", ".") }} of open-telemetry/semantic-conventions,
+// excluding deprecated ones.
+var types{{ params.ident }} = map[string]kind{
+{%- for attr in ctx %}
+	"{{ attr.name }}": {% if attr.type is string %}{{ kinds[attr.type] }}{% else %}kindString{% endif %},
+{%- endfor %}
+}
