@@ -86,6 +86,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mongodb.operation.latency.time"] = mb.metricMongodbOperationLatencyTime.config.AggregationStrategy
 			aggMap["mongodb.operation.repl.count"] = mb.metricMongodbOperationReplCount.config.AggregationStrategy
 			aggMap["mongodb.operation.time"] = mb.metricMongodbOperationTime.config.AggregationStrategy
+			aggMap["mongodb.query_executor.collection_scan.count"] = mb.metricMongodbQueryExecutorCollectionScanCount.config.AggregationStrategy
+			aggMap["mongodb.query_executor.scanned.count"] = mb.metricMongodbQueryExecutorScannedCount.config.AggregationStrategy
 			aggMap["mongodb.replica.status"] = mb.metricMongodbReplicaStatus.config.AggregationStrategy
 			aggMap["mongodb.replica_set.headroom"] = mb.metricMongodbReplicaSetHeadroom.config.AggregationStrategy
 			aggMap["mongodb.replica_set.lag"] = mb.metricMongodbReplicaSetLag.config.AggregationStrategy
@@ -277,6 +279,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbQueriesRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(ts, 1, AttributeMongodbQueryExecutorCollectionScanTypeTailable)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(ts, 3, AttributeMongodbQueryExecutorCollectionScanTypeNonTailable)
+			}
+
+			allMetricsCount++
+			mb.RecordMongodbQueryExecutorScannedCountDataPoint(ts, 1, AttributeMongodbQueryExecutorScanTypeIndexKey)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbQueryExecutorScannedCountDataPoint(ts, 3, AttributeMongodbQueryExecutorScanTypeDocument)
+			}
+
+			allMetricsCount++
 			mb.RecordMongodbReplCommandsPerSecDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -386,6 +400,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMongodbOperationLatencyTime.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbOperationReplCount.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbOperationTime.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbQueryExecutorCollectionScanCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbQueryExecutorScannedCount.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbReplicaStatus.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbReplicaSetHeadroom.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbReplicaSetLag.aggDataPoints)
@@ -1576,6 +1592,94 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "mongodb.query_executor.collection_scan.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.query_executor.collection_scan.count"], "Found a duplicate in the metrics slice: mongodb.query_executor.collection_scan.count")
+						validatedMetrics["mongodb.query_executor.collection_scan.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of queries that performed a collection scan.", mi.Description())
+						assert.Equal(t, "{query}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mongodbQueryExecutorCollectionScanTypeAttrVal, ok := dp.Attributes().Get("mongodb.query_executor.collection_scan.type")
+						assert.True(t, ok)
+						assert.Equal(t, "tailable", mongodbQueryExecutorCollectionScanTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.query_executor.collection_scan.count"], "Found a duplicate in the metrics slice: mongodb.query_executor.collection_scan.count")
+						validatedMetrics["mongodb.query_executor.collection_scan.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of queries that performed a collection scan.", mi.Description())
+						assert.Equal(t, "{query}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.query_executor.collection_scan.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("mongodb.query_executor.collection_scan.type")
+						assert.False(t, ok)
+					}
+				case "mongodb.query_executor.scanned.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.query_executor.scanned.count"], "Found a duplicate in the metrics slice: mongodb.query_executor.scanned.count")
+						validatedMetrics["mongodb.query_executor.scanned.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of index keys and documents scanned by the query executor.", mi.Description())
+						assert.Equal(t, "{item}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mongodbQueryExecutorScanTypeAttrVal, ok := dp.Attributes().Get("mongodb.query_executor.scan.type")
+						assert.True(t, ok)
+						assert.Equal(t, "index_key", mongodbQueryExecutorScanTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.query_executor.scanned.count"], "Found a duplicate in the metrics slice: mongodb.query_executor.scanned.count")
+						validatedMetrics["mongodb.query_executor.scanned.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of index keys and documents scanned by the query executor.", mi.Description())
+						assert.Equal(t, "{item}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.query_executor.scanned.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("mongodb.query_executor.scan.type")
+						assert.False(t, ok)
+					}
 				case "mongodb.repl_commands_per_sec":
 					assert.False(t, validatedMetrics["mongodb.repl_commands_per_sec"], "Found a duplicate in the metrics slice: mongodb.repl_commands_per_sec")
 					validatedMetrics["mongodb.repl_commands_per_sec"] = true

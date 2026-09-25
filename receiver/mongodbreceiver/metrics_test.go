@@ -68,6 +68,99 @@ func newWTScraper(t *testing.T) *mongodbScraper {
 	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 }
 
+// newQueryExecutorScraper builds a scraper with both query executor metrics enabled.
+func newQueryExecutorScraper(t *testing.T) *mongodbScraper {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorScannedCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled = true
+	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+}
+
+func TestRecordQueryExecutorScanned(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorScanned(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.scanned.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	byType := sumIntByAttr(t, m, "mongodb.query_executor.scan.type")
+	// scanned counts index entries; scannedObjects counts documents.
+	require.Equal(t, map[string]int64{
+		"index_key": 123456,
+		"document":  234567,
+	}, byType)
+}
+
+func TestRecordQueryExecutorCollectionScans(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorCollectionScans(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.collection_scan.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	byType := sumIntByAttr(t, m, "mongodb.query_executor.collection_scan.type")
+	// The fixture reports total 1200 and nonTailable 900, so tailable is the derived 300.
+	require.Equal(t, map[string]int64{
+		"non_tailable": 900,
+		"tailable":     300,
+	}, byType)
+	// The two values partition the server's total rather than overlapping it.
+	require.Equal(t, int64(1200), byType["non_tailable"]+byType["tailable"])
+}
+
+// TestRecordQueryExecutorCollectionScansUnderflow covers a collectionScans subdocument where the
+// non-tailable count exceeds the total, which would make the derived tailable count negative.
+func TestRecordQueryExecutorCollectionScansUnderflow(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc := bson.M{
+		"metrics": bson.M{
+			"queryExecutor": bson.M{
+				"collectionScans": bson.M{
+					"nonTailable": int64(1200),
+					"total":       int64(900),
+				},
+			},
+		},
+	}
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorCollectionScans(now, doc, errs)
+	require.ErrorContains(t, errs.Combine(), "collectionScans.nonTailable is greater than collectionScans.total")
+
+	// The non-tailable value is still recorded; only the derived tailable value is skipped.
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.collection_scan.count")
+	require.Equal(t, map[string]int64{"non_tailable": 1200}, sumIntByAttr(t, m, "mongodb.query_executor.collection_scan.type"))
+}
+
+// TestRecordQueryExecutorMissingSubdocument covers a server that does not report queryExecutor at
+// all: the scrape records partial errors rather than failing, and emits no data points.
+func TestRecordQueryExecutorMissingSubdocument(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorScanned(now, bson.M{}, errs)
+	s.recordQueryExecutorCollectionScans(now, bson.M{}, errs)
+
+	var partial scrapererror.PartialScrapeError
+	require.ErrorAs(t, errs.Combine(), &partial)
+	// Two scanned data points and the non-tailable read that gates the collection-scan metric.
+	require.Equal(t, 3, partial.Failed)
+	require.Equal(t, 0, s.mb.Emit().MetricCount())
+}
+
 func TestRecordWTLogWrite(t *testing.T) {
 	s := newWTScraper(t)
 	doc, err := loadAdminStatusAsMap()
