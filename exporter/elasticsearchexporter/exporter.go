@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/client"
@@ -28,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
@@ -605,6 +603,12 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 		}
 		errs = append(errs, err)
 	}
+	if err := scopeMappingModeSessions.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
@@ -617,26 +621,26 @@ func (*elasticsearchExporter) pushProfileRecord(
 	defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession bulkIndexerSession,
 ) error {
 	return encoder.encodeProfile(ec, dic, profile, func(buf *bytes.Buffer, docID, index string) error {
-		switch {
-		case index == otelserializer.StackTraceIndex || index == ecsserializer.StackTraceIndex:
+		switch index {
+		case otelserializer.StackTraceIndex, ecsserializer.StackTraceIndex:
 			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case index == otelserializer.StackFrameIndex || index == ecsserializer.StackFrameIndex:
+		case otelserializer.StackFrameIndex, ecsserializer.StackFrameIndex:
 			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case strings.HasPrefix(index, serializer.EventsIndexPrefix):
-			// Covers the full events index (profiling-events-all, profiling-events-all.otel-default)
-			// and the downsampled ones (profiling-events-5powNN, profiling-events-5powNN.otel-default).
+		case otelserializer.AllEventsIndex, ecsserializer.AllEventsIndex:
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case index == otelserializer.ExecutablesIndex:
+		case otelserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case index == ecsserializer.ExecutablesIndex:
+		case ecsserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
-		case index == ecsserializer.ExecutablesSymQueueIndex ||
-			index == ecsserializer.LeafFramesSymQueueIndex ||
-			index == ecsserializer.HostsMetadataIndex ||
-			index == otelserializer.HostsMetadataIndex:
+		case ecsserializer.ExecutablesSymQueueIndex,
+			ecsserializer.LeafFramesSymQueueIndex,
+			ecsserializer.HostsMetadataIndex,
+			otelserializer.HostsMetadataIndex:
 			// These regular indices have a low write-frequency and can share the executablesSession.
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		default:
+			// Covers the downsampled events indices (profiling-events-5powNN,
+			// profiling-events-5powNN.otel-default).
 			return defaultSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		}
 	})

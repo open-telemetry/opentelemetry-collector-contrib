@@ -81,7 +81,7 @@ const (
 	samplingRatio    = 1.0 / float64(samplingFactor)
 
 	// EventsIndexPrefix is shared by the full events index and all downsampled events indexes.
-	EventsIndexPrefix = "profiling-events"
+	eventsIndexPrefix = "profiling-events"
 )
 
 // randFloat64 is a variable so tests can substitute a seeded source.
@@ -94,7 +94,7 @@ func DownsampledEventIndices(suffix string) []string {
 
 	for i := range maxEventsIndexes {
 		indices = append(indices, fmt.Sprintf("%s-%dpow%02d%s",
-			EventsIndexPrefix, samplingFactor, i+1, suffix))
+			eventsIndexPrefix, samplingFactor, i+1, suffix))
 	}
 
 	return indices
