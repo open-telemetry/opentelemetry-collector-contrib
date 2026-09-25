@@ -75,14 +75,13 @@ func createTracesProcessor(
 	processor.st = st
 
 	if oCfg.EmitStrategy == EmitStrategyService {
-		processor.eventMachine.onSubtraceExpired = processor.onSubtraceExpired
-		processor.eventMachine.onSubtraceRemoved = processor.onSubtraceRemoved
+		processor.eventMachine.onSubtraceTick = processor.onSubtraceTick
 
-		// Each worker gets its own ring buffer and span storage. Traces are routed
-		// to a worker by trace ID, so nothing is shared between them.
+		// Each worker gets its own ring buffer, deadlines and span storage. Traces
+		// are routed to a worker by trace ID, so nothing is shared between them.
 		for _, w := range processor.eventMachine.workers {
 			w.subtraceBuffer = newSubtraceRingBuffer(max(1, oCfg.NumTraces/oCfg.NumWorkers))
-			w.evictedSubtraces = make(map[subtraceID]int)
+			w.deadlines = newSubtraceDeadlines()
 			w.subSt = newSubtraceMemoryStorage(processor.telemetryBuilder)
 		}
 	}

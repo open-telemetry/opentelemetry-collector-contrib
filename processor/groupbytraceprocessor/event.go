@@ -33,13 +33,12 @@ const (
 	// traceID to be removed
 	traceRemoved
 
-	// Subtrace events. Only used when EmitStrategy == EmitStrategyService:
+	// Subtrace event. Only used when EmitStrategy == EmitStrategyService:
 
-	// subtraceID whose wait timer has fired
-	subtraceExpired
-
-	// subtraceID to be removed from storage
-	subtraceRemoved
+	// the worker's subtrace timer has gone off. The event carries no payload:
+	// what is due is whatever the worker's own deadlines say is due when it gets
+	// here, which is the only account of it that can't be out of date.
+	subtraceTick
 )
 
 var (
@@ -74,10 +73,8 @@ func (t eventType) String() string {
 		return "onTraceReleased"
 	case traceRemoved:
 		return "onTraceRemoved"
-	case subtraceExpired:
-		return "subtrace_expired"
-	case subtraceRemoved:
-		return "subtrace_removed"
+	case subtraceTick:
+		return "subtrace_tick"
 	}
 	return "unknown"
 }
@@ -105,8 +102,7 @@ type eventMachine struct {
 	onTraceReleased func(rss []ptrace.ResourceSpans) error
 	onTraceRemoved  func(traceID pcommon.TraceID) error
 
-	onSubtraceExpired func(id subtraceID, worker *eventMachineWorker) error
-	onSubtraceRemoved func(id subtraceID, worker *eventMachineWorker) error
+	onSubtraceTick func(worker *eventMachineWorker) error
 
 	onError func(event)
 
@@ -158,7 +154,7 @@ func (em *eventMachine) periodicMetrics() {
 	em.logger.Debug("recording current state of the queue", zap.Int("num-events", numEvents))
 	em.telemetry.ProcessorGroupbytraceNumEventsInQueue.Record(context.Background(), int64(numEvents))
 
-	if em.onSubtraceExpired != nil {
+	if em.onSubtraceTick != nil {
 		var numSubtraces int
 		for _, w := range em.workers {
 			if w.subSt != nil {
@@ -252,33 +248,14 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceRemoved(payload)
 		})
-	case subtraceExpired:
-		if em.onSubtraceExpired == nil {
+	case subtraceTick:
+		if em.onSubtraceTick == nil {
 			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
-		payload, ok := e.payload.(subtraceID)
-		if !ok {
-			em.callOnError(e)
-			return
-		}
 		em.handleEventWithObservability(e.typ, func() error {
-			return em.onSubtraceExpired(payload, w)
-		})
-	case subtraceRemoved:
-		if em.onSubtraceRemoved == nil {
-			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
-			em.callOnError(e)
-			return
-		}
-		payload, ok := e.payload.(subtraceID)
-		if !ok {
-			em.callOnError(e)
-			return
-		}
-		em.handleEventWithObservability(e.typ, func() error {
-			return em.onSubtraceRemoved(payload, w)
+			return em.onSubtraceTick(w)
 		})
 	default:
 		em.logger.Info("unknown event type", zap.Stringer("event", e.typ))
@@ -395,12 +372,11 @@ type eventMachineWorker struct {
 	// subtraceBuffer holds the IDs for all in-flight subtraces (EmitStrategyService).
 	subtraceBuffer *subtraceRingBuffer
 
-	// evictedSubtraces counts pending timer firings for subtraceIDs removed from
-	// subtraceBuffer by eviction. Each eviction increments the count; each timer
-	// firing decrements it. When the count reaches 0 the entry is deleted.
-	// onSubtraceExpired uses this to distinguish expected timer-after-eviction
-	// firings from genuine incomplete releases.
-	evictedSubtraces map[subtraceID]int
+	// deadlines says when each buffered subtrace next falls due, and
+	// subtraceTimer wakes the worker for the earliest of them. Both belong to
+	// the worker and are only ever touched from a worker turn.
+	deadlines     *subtraceDeadlines
+	subtraceTimer *time.Timer
 
 	// subSt holds the spans buffered for this worker's subtraces
 	// (EmitStrategyService). Traces are routed to a worker by trace ID, so a
@@ -409,6 +385,37 @@ type eventMachineWorker struct {
 	subSt subtraceStorage
 
 	events chan event
+}
+
+// armSubtraceTimer points the worker's timer at the earliest deadline it holds.
+// Only a worker turn may call it.
+//
+// The timer's only job is to wake the worker: the event it fires says nothing
+// about which subtraces are due, so a wake-up that arrives early, late, or with
+// nothing left to do is harmless. That is what lets deadlines be added and
+// dropped freely without having to chase down a timer for each one.
+func (w *eventMachineWorker) armSubtraceTimer() {
+	next, held := w.deadlines.next()
+	if !held {
+		w.stopSubtraceTimer()
+		return
+	}
+
+	wait := max(time.Until(next), 0)
+	if w.subtraceTimer == nil {
+		w.subtraceTimer = time.AfterFunc(wait, func() {
+			// if the event machine has stopped, it will just discard the event
+			w.fire(event{typ: subtraceTick})
+		})
+		return
+	}
+	w.subtraceTimer.Reset(wait)
+}
+
+func (w *eventMachineWorker) stopSubtraceTimer() {
+	if w.subtraceTimer != nil {
+		w.subtraceTimer.Stop()
+	}
 }
 
 func (w *eventMachineWorker) start() {

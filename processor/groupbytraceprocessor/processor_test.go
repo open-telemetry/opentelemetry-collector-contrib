@@ -884,6 +884,179 @@ func TestSubtrace_EvictionDoesNotIncrementIncompleteReleases(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 }
 
+// Sustained eviction churn, with a wait duration short enough that evictions
+// and deadlines keep landing on top of each other: every span must still come
+// out exactly once and none of it may be counted as an incomplete release.
+func TestSubtrace_EvictionChurn(t *testing.T) {
+	const rounds = 200
+
+	tel := componenttest.NewTelemetry()
+	defer func() { assert.NoError(t, tel.Shutdown(t.Context())) }()
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    1, // every submission evicts the one before it
+		NumWorkers:   1,
+		WaitDuration: time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessorWithSettings(t, cfg, sink, metadatatest.NewSettings(tel))
+
+	for i := range rounds {
+		// Alternating between two traces means a subtrace that was evicted
+		// earlier keeps being re-admitted with a fresh deadline, which is what
+		// the bookkeeping this replaced could not keep straight.
+		traceID := makeTraceID(byte(1 + i%2))
+		require.NoError(t, p.ConsumeTraces(t.Context(),
+			buildServiceTrace(traceID, "svc", makeSpanID(byte(i+1)))))
+	}
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == rounds
+	}, 10*time.Second, 5*time.Millisecond, "not all spans reached the next consumer")
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	counts := spanIDCounts(sink.AllTraces())
+	require.Len(t, counts, rounds, "every submitted span must be emitted")
+	for id, n := range counts {
+		assert.Equal(t, 1, n, "span %v emitted %d times", id, n)
+	}
+
+	metadatatest.AssertEqualProcessorGroupbytraceIncompleteReleases(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 0}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+// Eviction drops the subtrace's deadline in the same worker turn as its ring
+// buffer entry. That is what removes the whole question of a timer firing for a
+// subtrace the worker has already let go of: there is no such timer to fire, so
+// no later tick can mistake the eviction for an incomplete release.
+func TestSubtrace_EvictionLeavesNoDeadlineBehind(t *testing.T) {
+	const waitDuration = 10 * time.Millisecond
+
+	tel := componenttest.NewTelemetry()
+	defer func() { assert.NoError(t, tel.Shutdown(t.Context())) }()
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    1, // the second arrival evicts the first
+		NumWorkers:   1,
+		WaitDuration: waitDuration,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newUnstartedSubtraceProcessorWithSettings(t, cfg, sink, metadatatest.NewSettings(tel))
+	worker := p.eventMachine.workers[0]
+
+	// Start would register this, and the test needs it on record as zero rather
+	// than absent. Starting the machine would take the worker out of our hands.
+	p.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(t.Context(), 0)
+
+	receive := func(i byte) {
+		t.Helper()
+		td := buildServiceTrace(makeTraceID(i), "svc", makeSpanID(i))
+		traceID, err := getTraceID(td)
+		require.NoError(t, err)
+		require.NoError(t, p.onTraceReceivedSubtrace(tracesWithID{id: traceID, td: td}, worker))
+	}
+
+	evicted := subtraceIDFor(makeTraceID(1), "svc")
+	receive(1)
+	require.Contains(t, worker.deadlines.index, evicted)
+
+	receive(2)
+	assert.NotContains(t, worker.deadlines.index, evicted,
+		"the evicted subtrace still has a deadline to come back on")
+	assert.Equal(t, 1, worker.deadlines.len())
+
+	// However long the worker is left, nothing comes back for the evicted
+	// subtrace: the one deadline left belongs to the subtrace that displaced it.
+	time.Sleep(2 * waitDuration)
+	require.NoError(t, p.onSubtraceTick(worker))
+	assert.Equal(t, 0, worker.deadlines.len())
+
+	p.releases.Wait()
+	assert.Equal(t, 2, sink.SpanCount(), "the evicted subtrace must be released, not dropped")
+	metadatatest.AssertEqualProcessorGroupbytraceTracesEvicted(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorGroupbytraceIncompleteReleases(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 0}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+// A worker holds one deadline for each subtrace in its ring buffer, no more and
+// no fewer. Everything the scheduling relies on follows from that, so check it
+// holds as subtraces arrive, overflow the buffer and come due.
+//
+// The worker is driven by hand here rather than through the event machine: its
+// ring buffer and deadlines are its own, so this is the only way to read them
+// without racing it.
+func TestSubtrace_DeadlinesTrackTheRingBuffer(t *testing.T) {
+	const (
+		capacity     = 4
+		waitDuration = 10 * time.Millisecond
+	)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    capacity,
+		NumWorkers:   1,
+		WaitDuration: waitDuration,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newUnstartedSubtraceProcessor(t, cfg, sink)
+	worker := p.eventMachine.workers[0]
+
+	receive := func(i byte) {
+		t.Helper()
+		td := buildServiceTrace(makeTraceID(i), "svc", makeSpanID(i))
+		traceID, err := getTraceID(td)
+		require.NoError(t, err)
+		require.NoError(t, p.onTraceReceivedSubtrace(tracesWithID{id: traceID, td: td}, worker))
+		requireDeadlinesMatchBuffer(t, worker)
+	}
+
+	for i := byte(1); i <= capacity; i++ {
+		receive(i)
+		require.Equal(t, int(i), worker.deadlines.len())
+	}
+
+	// Past capacity each arrival evicts the oldest, so the count holds steady
+	// and the deadline goes out with the entry it belonged to.
+	for i := byte(capacity + 1); i <= 3*capacity; i++ {
+		receive(i)
+		require.Equal(t, capacity, worker.deadlines.len())
+	}
+
+	// A tick before anything is due changes nothing.
+	require.NoError(t, p.onSubtraceTick(worker))
+	require.Equal(t, capacity, worker.deadlines.len())
+	requireDeadlinesMatchBuffer(t, worker)
+
+	// Once the wait duration has passed, one tick clears everything that is due:
+	// a single timer per worker still releases every subtrace behind it.
+	time.Sleep(2 * waitDuration)
+	require.NoError(t, p.onSubtraceTick(worker))
+	assert.Equal(t, 0, worker.deadlines.len())
+	assert.Empty(t, worker.subtraceBuffer.idToIndex)
+	requireDeadlinesMatchBuffer(t, worker)
+
+	p.releases.Wait()
+	assert.Equal(t, 3*capacity, sink.SpanCount())
+}
+
+// requireDeadlinesMatchBuffer checks the worker holds exactly one deadline per
+// ring buffer entry. It reads state the worker owns, so only a test driving
+// that worker itself may call it.
+func requireDeadlinesMatchBuffer(t *testing.T, w *eventMachineWorker) {
+	t.Helper()
+	require.Len(t, w.subtraceBuffer.idToIndex, w.deadlines.len(),
+		"a deadline and a ring buffer entry have come apart")
+	for id := range w.subtraceBuffer.idToIndex {
+		require.Contains(t, w.deadlines.index, id, "buffered subtrace has no deadline")
+	}
+}
+
 // spanIDsAcross returns the span IDs found in all of the given batches.
 func spanIDsAcross(batches []ptrace.Traces) map[pcommon.SpanID]bool {
 	ids := map[pcommon.SpanID]bool{}
@@ -1161,19 +1334,31 @@ func newSubtraceProcessor(t *testing.T, cfg Config, next consumer.Traces) *group
 // settings supplied, so that a test can read the recorded telemetry.
 func newSubtraceProcessorWithSettings(t *testing.T, cfg Config, next consumer.Traces, set processor.Settings) *groupByTraceProcessor {
 	t.Helper()
+	p := newUnstartedSubtraceProcessorWithSettings(t, cfg, next, set)
+	require.NoError(t, p.Start(t.Context(), nil))
+	return p
+}
+
+// newUnstartedSubtraceProcessor is newSubtraceProcessor without the Start, for
+// tests that drive a worker's callbacks themselves rather than letting the
+// event machine deliver them.
+func newUnstartedSubtraceProcessor(t *testing.T, cfg Config, next consumer.Traces) *groupByTraceProcessor {
+	t.Helper()
+	return newUnstartedSubtraceProcessorWithSettings(t, cfg, next, processortest.NewNopSettings(metadata.Type))
+}
+
+func newUnstartedSubtraceProcessorWithSettings(t *testing.T, cfg Config, next consumer.Traces, set processor.Settings) *groupByTraceProcessor {
+	t.Helper()
 	cfg.EmitStrategy = EmitStrategyService
 	p := newGroupByTraceProcessor(set, next, cfg)
 	require.NotNil(t, p)
 
-	p.eventMachine.onSubtraceExpired = p.onSubtraceExpired
-	p.eventMachine.onSubtraceRemoved = p.onSubtraceRemoved
+	p.eventMachine.onSubtraceTick = p.onSubtraceTick
 	for _, w := range p.eventMachine.workers {
 		w.subtraceBuffer = newSubtraceRingBuffer(cfg.NumTraces / cfg.NumWorkers)
-		w.evictedSubtraces = make(map[subtraceID]int)
+		w.deadlines = newSubtraceDeadlines()
 		w.subSt = newSubtraceMemoryStorage(p.telemetryBuilder)
 	}
-
-	require.NoError(t, p.Start(t.Context(), nil))
 	return p
 }
 

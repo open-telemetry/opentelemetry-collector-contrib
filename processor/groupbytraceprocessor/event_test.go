@@ -675,7 +675,7 @@ func (tt *testTelemetry) Shutdown(ctx context.Context) error {
 func TestEventTypeString(t *testing.T) {
 	all := []eventType{
 		traceReceived, traceExpired, traceReleased, traceRemoved,
-		subtraceExpired, subtraceRemoved,
+		subtraceTick,
 	}
 	seen := make(map[string]bool, len(all))
 	for _, typ := range all {

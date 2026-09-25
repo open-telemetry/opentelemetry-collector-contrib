@@ -123,6 +123,7 @@ func (sp *groupByTraceProcessor) Shutdown(ctx context.Context) error {
 		// Flush whatever is still buffered, rather than dropping it.
 		var errs error
 		for _, w := range sp.eventMachine.workers {
+			w.stopSubtraceTimer()
 			for _, id := range w.subSt.subtraceIDs() {
 				calls, _ := w.subSt.deleteSubtrace(id)
 				for _, call := range calls {
@@ -190,6 +191,11 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 }
 
 func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, worker *eventMachineWorker) error {
+	// Taking the batch in may add deadlines and, through eviction, drop them.
+	// Re-arming once at the end covers every change this turn made.
+	defer worker.armSubtraceTimer()
+
+	var errs error
 	for _, rs := range trace.td.ResourceSpans().All() {
 		rctx := newResourceContext(rs)
 		id := subtraceID{traceID: trace.id, serviceID: rctx.serviceID}
@@ -198,26 +204,46 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 			sctx := newSpanContext(rctx, ss.Scope())
 			for _, s := range ss.Spans().All() {
 				if err := worker.subSt.insertSpan(id, sctx, s); err != nil {
-					return fmt.Errorf("couldn't insert span: %w", err)
+					return multierr.Append(errs, fmt.Errorf("couldn't insert span: %w", err))
 				}
 			}
 		}
 
 		// Which call each span belongs to is worked out when the subtrace is
 		// released, so buffering one is nothing more than recording where its spans
-		// go and starting its timer.
+		// go and when it next falls due.
 		if worker.subtraceBuffer.contains(id) {
 			continue // already waiting to be released
 		}
 		if evicted, ok := worker.subtraceBuffer.put(id); ok {
-			sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
-			worker.fire(event{typ: subtraceRemoved, payload: evicted})
-			sp.logger.Info("subtrace evicted and released early: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
-				zap.Stringer("traceID", evicted.traceID))
+			errs = multierr.Append(errs, sp.evictSubtrace(evicted, worker))
 		}
-
-		sp.scheduleSubtraceRelease(id, worker, sp.config.WaitDuration)
+		worker.deadlines.set(id, time.Now().Add(sp.config.WaitDuration))
 	}
+	return errs
+}
+
+// evictSubtrace handles a subtrace pushed out of the ring buffer. Eviction is
+// there to bound how much the processor holds, and handing the spans to the
+// next consumer achieves that just as well as discarding them, so they go out
+// early rather than being lost. The eviction is still counted in
+// traces_evicted, so a non-zero count continues to mean wait_duration or
+// num_traces wants adjusting.
+//
+// It runs in the same turn as the put that displaced the subtrace, and drops
+// the deadline along with the ring buffer entry, so nothing is left behind to
+// come back for a subtrace the worker has let go of.
+func (sp *groupByTraceProcessor) evictSubtrace(id subtraceID, worker *eventMachineWorker) error {
+	sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
+	sp.logger.Info("subtrace evicted and released early: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
+		zap.Stringer("traceID", id.traceID))
+
+	worker.deadlines.remove(id)
+	calls, err := worker.subSt.deleteSubtrace(id)
+	if err != nil {
+		return fmt.Errorf("couldn't delete subtrace: %w", err)
+	}
+	sp.releaseCalls(calls)
 	return nil
 }
 
@@ -307,55 +333,51 @@ func (sp *groupByTraceProcessor) addSpans(traceID pcommon.TraceID, trace ptrace.
 	return sp.st.createOrAppend(traceID, trace)
 }
 
-// scheduleSubtraceRelease arranges for the subtrace to be reconsidered after
-// the given delay.
-func (sp *groupByTraceProcessor) scheduleSubtraceRelease(id subtraceID, worker *eventMachineWorker, delay time.Duration) {
-	sp.logger.Debug("scheduled to release subtrace", zap.Duration("duration", delay))
-	time.AfterFunc(delay, func() {
-		// if the event machine has stopped, it will just discard the event
-		worker.fire(event{typ: subtraceExpired, payload: id})
-	})
-}
+// onSubtraceTick releases every subtrace that has come due. The deadlines and
+// the ring buffer are both the worker's own and are settled together here, so a
+// subtrace is never released on the strength of a deadline it no longer holds.
+func (sp *groupByTraceProcessor) onSubtraceTick(worker *eventMachineWorker) error {
+	defer worker.armSubtraceTimer()
 
-func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventMachineWorker) error {
-	if !worker.subtraceBuffer.contains(id) {
-		if count := worker.evictedSubtraces[id]; count > 0 {
-			worker.evictedSubtraces[id]--
-			if worker.evictedSubtraces[id] == 0 {
-				delete(worker.evictedSubtraces, id)
-			}
-			return nil
+	now := time.Now()
+	cutoff := now.Add(-sp.config.WaitDuration)
+
+	var errs error
+	for _, id := range worker.deadlines.popDue(now) {
+		if !worker.subtraceBuffer.contains(id) {
+			// A deadline is set and dropped with the ring buffer entry it belongs
+			// to, so reaching this means the two have come apart.
+			sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 1)
+			sp.logger.Debug("subtrace came due with no ring buffer entry",
+				zap.Stringer("traceID", id.traceID), zap.String("serviceID", id.serviceID))
+			continue
 		}
-		sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 1)
-		return nil
-	}
 
-	// Only the calls that have waited out wait_duration go now. A trace that came
-	// back to this service after the timer was set has a later deadline of its
-	// own, and keeps its place in the buffer until then.
-	due, nextArrival, err := worker.subSt.releaseDue(id, time.Now().Add(-sp.config.WaitDuration))
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve subtrace: %w", err)
-	}
+		// Only the calls that have waited out wait_duration go now. A trace that
+		// came back to this service after the deadline was set has a later one of
+		// its own, and keeps its place in the buffer until then.
+		due, nextArrival, err := worker.subSt.releaseDue(id, cutoff)
+		if err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("couldn't retrieve subtrace: %w", err))
+			continue
+		}
 
-	// The ring buffer and the timers belong to this worker, so decide about them
-	// here rather than from the goroutine below.
-	if nextArrival.IsZero() {
-		worker.subtraceBuffer.delete(id)
-	} else {
-		sp.scheduleSubtraceRelease(id, worker, time.Until(nextArrival.Add(sp.config.WaitDuration)))
-	}
+		if nextArrival.IsZero() {
+			worker.subtraceBuffer.delete(id)
+		} else {
+			worker.deadlines.set(id, nextArrival.Add(sp.config.WaitDuration))
+		}
 
-	if len(due) == 0 {
-		// The spans are already gone, released by an earlier expiry or dropped
-		// when the subtrace was evicted.
-		sp.logger.Debug("subtrace expired with no spans to release",
-			zap.Stringer("traceID", id.traceID), zap.String("serviceID", id.serviceID))
-		return nil
-	}
+		if len(due) == 0 {
+			// The spans are already gone, released by an earlier tick.
+			sp.logger.Debug("subtrace came due with no spans to release",
+				zap.Stringer("traceID", id.traceID), zap.String("serviceID", id.serviceID))
+			continue
+		}
 
-	sp.releaseCalls(due)
-	return nil
+		sp.releaseCalls(due)
+	}
+	return errs
 }
 
 // releaseCalls assembles and emits calls off the worker goroutine, where
@@ -388,20 +410,4 @@ func (sp *groupByTraceProcessor) releaseSubtrace(ctx context.Context, td ptrace.
 	if err := sp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		sp.logger.Error("consume failed", zap.Error(err))
 	}
-}
-
-// onSubtraceRemoved handles a subtrace pushed out of the ring buffer. Eviction
-// is there to bound how much the processor holds, and handing the spans to the
-// next consumer achieves that just as well as discarding them, so they go out
-// early rather than being lost. The eviction is still counted in
-// traces_evicted, so a non-zero count continues to mean wait_duration or
-// num_traces wants adjusting.
-func (sp *groupByTraceProcessor) onSubtraceRemoved(id subtraceID, worker *eventMachineWorker) error {
-	worker.evictedSubtraces[id]++
-	calls, err := worker.subSt.deleteSubtrace(id)
-	if err != nil {
-		return fmt.Errorf("couldn't delete subtrace: %w", err)
-	}
-	sp.releaseCalls(calls)
-	return nil
 }
