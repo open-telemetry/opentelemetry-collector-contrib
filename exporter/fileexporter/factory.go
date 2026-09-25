@@ -40,9 +40,6 @@ const (
 	defaultMaxOpenFiles = 100
 
 	defaultResourceAttribute = "fileexporter.path_segment"
-
-	// Permissions used when creating new export files.
-	defaultFilePermissions = 0o644
 )
 
 type FileExporter interface {
@@ -172,9 +169,15 @@ func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
 	}
 }
 
-func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc, compression string, compressionLevel int) (*fileWriter, error) {
+func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc, compression string, compressionLevel int, fileMode os.FileMode) (*fileWriter, error) {
 	var baseWriter io.WriteCloser
 	var wc io.WriteCloser
+
+	// A zero fileMode means the config was not validated; fall back to the default.
+	// Timberjack must also never see a zero mode, since it would then apply its own different default.
+	if fileMode == 0 {
+		fileMode = defaultFilePermissions
+	}
 
 	if rotation == nil {
 		fileFlags := os.O_RDWR | os.O_CREATE
@@ -183,7 +186,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 		} else {
 			fileFlags |= os.O_TRUNC
 		}
-		f, err := os.OpenFile(path, fileFlags, defaultFilePermissions)
+		f, err := os.OpenFile(path, fileFlags, fileMode)
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +198,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 			MaxAge:      rotation.MaxDays,
 			MaxBackups:  rotation.MaxBackups,
 			LocalTime:   rotation.LocalTime,
-			FileMode:    defaultFilePermissions,
+			FileMode:    fileMode,
 			Compression: "none", // ensure compression is handled by the collector
 		}
 	}
