@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/yaml.v3"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
@@ -139,7 +138,9 @@ type Config struct {
 	DefaultProperties map[string]string `mapstructure:"default_properties"`
 
 	// Correlation configuration for syncing traces service and environment to metrics.
-	Correlation *correlation.Config `mapstructure:"correlation"`
+	//
+	// Deprecated: this configuration section is ignored
+	Correlation map[string]string `mapstructure:"correlation"`
 
 	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
 	// to be used in a dimension key.

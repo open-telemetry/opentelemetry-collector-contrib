@@ -34,6 +34,7 @@ func (p *parsedStatement) checkForCustomError() error {
 	return validator.join()
 }
 
+// constExpr represents a constant expression that resolves to either a boolean or a converter.
 type constExpr struct {
 	Boolean   *boolean   `parser:"( @Boolean"`
 	Converter *converter `parser:"| @@ )"`
@@ -227,11 +228,13 @@ func (c *converter) accept(v grammarVisitor) {
 	}
 }
 
+// lambdaExpr represents a lambda function definition with its parameters and body.
 type lambdaExpr struct {
 	Params []localIdentifierDecl `parser:"'(' ( (@Lowercase | @Underscore) ( ',' (@Lowercase | @Underscore ) )* )? ')'"`
 	Body   lambdaBody            `parser:"LambdaArrow @@"`
 }
 
+// lambdaBody represents the body of a lambda expression, which is either a value or a boolean expression.
 type lambdaBody struct {
 	Value *value             `parser:"( @@ (?! OpOr | OpAnd | OpComparison)"`
 	Expr  *booleanExpression `parser:"| @@ )"`
@@ -259,6 +262,7 @@ func (n *localIdentifierDecl) IsBlank() bool {
 	return n.Name() == "_"
 }
 
+// argument represents a single argument passed to an editor or converter function call.
 type argument struct {
 	Name         string  `parser:"(@(Lowercase(Uppercase | Lowercase)*) Equal)?"`
 	Value        value   `parser:"( @@"`
@@ -362,6 +366,7 @@ func (f *field) accept(v grammarVisitor) {
 	}
 }
 
+// key represents an index into a path or converter.
 type key struct {
 	String         *string          `parser:"'[' (@String "`
 	Int            *int64           `parser:"| @Int"`
@@ -378,10 +383,12 @@ func (k *key) accept(v grammarVisitor) {
 	}
 }
 
+// list represents a literal list of values.
 type list struct {
-	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
+	Values []value `parser:"'[' (@@ (',' @@)*)? ']'"`
 }
 
+// mapValue represents a literal map of key/value pairs.
 type mapValue struct {
 	Values []mapItem `parser:"'{' (@@ ','?)* '}'"`
 }
@@ -394,6 +401,7 @@ func (m *mapValue) accept(v grammarVisitor) {
 	}
 }
 
+// mapItem is a single key/value entry within a mapValue.
 type mapItem struct {
 	Key   *string `parser:"@String ':'"`
 	Value *value  `parser:"@@"`
@@ -406,7 +414,7 @@ func (b *byteSlice) Capture(values []string) error {
 	rawStr := values[0][2:]
 	newBytes, err := hex.DecodeString(rawStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("byte literals must have an even number of hexadecimal digits, but got %s: %w", values[0], err)
 	}
 	*b = newBytes
 	return nil
@@ -428,6 +436,7 @@ func (n *isNil) Capture(_ []string) error {
 	return nil
 }
 
+// mathExprLiteral represents a leaf value within a math expression.
 type mathExprLiteral struct {
 	// If editor is matched then error
 	Editor    *editor    `parser:"( @@"`
@@ -450,6 +459,7 @@ func (m *mathExprLiteral) accept(v grammarVisitor) {
 	}
 }
 
+// mathValue represents a value within a math expression, optionally negated or parenthesized.
 type mathValue struct {
 	UnaryOp       *mathOp          `parser:"@OpAddSub?"`
 	Literal       *mathExprLiteral `parser:"( @@"`
@@ -465,6 +475,7 @@ func (m *mathValue) accept(v grammarVisitor) {
 	}
 }
 
+// opMultDivValue represents the right side of a multiplication or division expression.
 type opMultDivValue struct {
 	Operator mathOp     `parser:"@OpMultDiv"`
 	Value    *mathValue `parser:"@@"`
@@ -476,6 +487,7 @@ func (m *opMultDivValue) accept(v grammarVisitor) {
 	}
 }
 
+// addSubTerm represents an arbitrary number of math values joined by multiplication or division.
 type addSubTerm struct {
 	Left  *mathValue        `parser:"@@"`
 	Right []*opMultDivValue `parser:"@@*"`
@@ -492,6 +504,7 @@ func (m *addSubTerm) accept(v grammarVisitor) {
 	}
 }
 
+// opAddSubTerm represents the right side of an addition or subtraction expression.
 type opAddSubTerm struct {
 	Operator mathOp      `parser:"@OpAddSub"`
 	Term     *addSubTerm `parser:"@@"`
@@ -503,6 +516,7 @@ func (r *opAddSubTerm) accept(v grammarVisitor) {
 	}
 }
 
+// mathExpression represents a numeric computation expressed as an arbitrary number of terms separated by addition or subtraction.
 type mathExpression struct {
 	Left  *addSubTerm     `parser:"@@"`
 	Right []*opAddSubTerm `parser:"@@*"`

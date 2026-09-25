@@ -116,6 +116,26 @@ assertion, so omitting a key is the way to assert that it must not appear.
 `/exists: true` is the only supported value; any other value is a schema
 error.
 
+### Attribute include matcher
+
+Use `attributes/include` instead of `attributes` when you want to assert a
+subset of the attribute map. Every expected key must be present and match, but
+additional actual keys are allowed:
+
+```yaml
+attributes/include:
+  service.name: app
+  service.instance.id/exists: true
+```
+
+This is useful when the environment or component configuration adds extra
+attributes that the test does not care about. `/exists` can be combined with
+`/include`.
+
+`attributes/include` may be applied to both resource attributes and datapoint
+attributes. Specifying both `attributes` and `attributes/include` on the same
+element is an error.
+
 ### Attribute regex matcher
 
 Attribute keys can use the `/regex` suffix when the attribute value is a
@@ -149,6 +169,108 @@ Use at most one of `version:`, `version/exists:`, or `version/regex:` per
 scope. `version/exists` accepts only `true`; any other value is a schema
 error.
 
+### Datapoint value precision matcher
+
+A `double_value` key can use the `/precision<n>` suffix when the value is a
+float whose trailing digits are not stable. Both sides are rounded to `n`
+decimal places before they are compared, matching `pmetrictest`'s
+`IgnoreMetricFloatPrecision`:
+
+```yaml
+datapoints:
+  - attributes:
+      state: user
+    double_value/precision3: 1.235
+```
+
+`n` must be between 0 and 15; beyond that a `float64` cannot distinguish the
+values. Use at most one of `double_value:` or `double_value/precision<n>:` per
+datapoint. The operator applies only to `double_value`, since integer values
+have no float precision to ignore.
+
+### Collection include matcher
+
+`resources`, `scopes`, `metrics`, and `datapoints` are matched exactly by
+default: an actual item with no expected counterpart fails the assertion. Add
+the `/include` suffix to assert that the listed items are present while
+tolerating additional ones:
+
+```yaml
+version: 1
+signal: metrics
+resources/include:
+  - attributes/include:
+      k8s.node.name: node-1
+    scopes/include:
+      - name: github.com/example/receiver
+        version/exists: true
+        metrics/include:
+          - name: container.cpu.usage
+            type: sum
+```
+
+This is the assertion-file equivalent of asserting that a payload contains the
+metrics a test cares about, without pinning the rest of the inventory. Each
+collection chooses its own mode, so an exact collection can be nested inside an
+`/include` one — the example above still pins nothing about the other metrics,
+but replacing `metrics/include` with `metrics` would require the listed
+metrics to be the only ones present.
+
+The items that `/include` does list are validated in full: metric type, unit,
+temporality, monotonicity, and datapoint values are compared exactly as they
+are in an exact collection.
+
+Within an item matched by `/include`, an omitted nested collection asserts
+nothing about it. In the example above the metric does not list `datapoints:`,
+so `container.cpu.usage` only has to be present with the expected identity —
+its datapoints are not constrained, which is what makes the operator useful for
+multi-series metrics. Listing `datapoints:` (or `datapoints/include:`)
+restores the constraint.
+
+Use at most one of `<collection>:` and `<collection>/include:` per element;
+specifying both is a schema error. `WriteAssertionFile` always emits the
+default exact form.
+
+### Collection count matcher
+
+The `/count` suffix asserts how many items a collection has, without naming
+them. It takes a mapping with `exact`, or with `min` and/or `max`, where the
+bounds are inclusive. `exact` cannot be combined with the other two:
+
+```yaml
+version: 1
+signal: metrics
+resources/count:
+  min: 1
+```
+
+`/count` composes with `/include`, so a test can pin the items it cares about
+and still assert the size of the whole collection:
+
+```yaml
+metrics/include:
+  - name: container.cpu.usage
+    type: sum
+metrics/count:
+  min: 3
+```
+
+A collection that is only given a `/count` asserts nothing about which items
+are present, so unlisted items are not reported as unexpected. This also means
+the single empty-attribute datapoint shorthand does not apply to a metric whose
+`datapoints` are only counted:
+
+```yaml
+- name: k8s.node.network.io
+  type: sum
+  datapoints/count:
+    min: 2
+```
+
+Pairing `/count` with an exact `<collection>:` list is a schema error, because
+an exact collection already fixes its size. `WriteAssertionFile` never emits
+`/count`.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -174,11 +296,15 @@ common case readable. The shorthand relies on the invariant that a `Metric`
 must contain at least one datapoint; see
 [#48106](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48106).
 
+The shorthand applies to metrics in an exact collection only. A metric matched
+by `metrics/include` that omits `datapoints:` asserts nothing about its
+datapoints rather than pinning it to a single attribute-less one.
+
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond attribute `/exists`/`/regex` and scope `version`
-`/exists`/`/regex` (`/include`, `/exclude`, `/all`, `/count`, `/approx`,
-`/gt|gte|lt|lte`) and opt-in fields
+extensions beyond attribute `/exists`/`/regex`, `attributes/include`, scope
+`version` `/exists`/`/regex`, and collection `/include`/`/count` (`/exclude`,
+`/all`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
 (`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
 histogram fields) are tracked as follow-ups under that issue.

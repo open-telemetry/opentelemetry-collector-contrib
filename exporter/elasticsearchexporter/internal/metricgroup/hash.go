@@ -48,7 +48,7 @@ func isReservedAttr(k string, extraExcludes []string) bool {
 // e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
 //
 // TODO(carsonip): https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39377
-// Use opentelemetry-collector-contrib/pkg/pdatautil/hash.go when it can optionally exclude attributes
+// Use go.opentelemetry.io/collector/pdata/xpdata/xhash when it can optionally exclude attributes
 // We could have used it now but it'll involve creating a new Map and copying things over.
 func mapHashSortedExcludeReservedAttrs(hasher *xxhash.Digest, kvs []kv, m pcommon.Map, extraExcludes ...string) []kv {
 	kvs = appendSortedKVsExcludeReservedAttrs(resetKVs(kvs, m.Len()), m, extraExcludes...)

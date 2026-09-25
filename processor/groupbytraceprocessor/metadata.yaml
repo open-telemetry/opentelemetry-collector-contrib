@@ -13,9 +13,8 @@ status:
     emeritus: [jpkrohling]
     seeking_new: true
 tests:
+  skip_context_propagation: true
   config:
-  goleak:
-    skip: true
 
 telemetry:
   metrics:

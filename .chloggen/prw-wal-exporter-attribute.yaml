@@ -1,9 +1,0 @@
-change_type: enhancement
-
-component: exporter/prometheus_remote_write
-
-note: Add the exporter ID as an attribute on WAL telemetry metrics to disambiguate multiple PRW exporters sharing a collector.
-
-issues: [49130]
-
-change_logs: [user]

@@ -74,6 +74,28 @@ func TestConfigValidate(t *testing.T) {
 			expectedCount:      2,
 		},
 		{
+			name: "invalid record type",
+			cfg: &Config{
+				DNSServers: []DNSServerConfig{{Endpoint: "8.8.8.8"}},
+				Hostnames:  []HostnameConfig{{Name: "example.com", RecordType: "BOGUS"}},
+			},
+			expectedUniqueErrs: []error{errInvalidRecordType},
+			expectedCount:      1,
+		},
+		{
+			name: "valid non-address record types",
+			cfg: &Config{
+				DNSServers: []DNSServerConfig{{Endpoint: "8.8.8.8"}},
+				Hostnames: []HostnameConfig{
+					{Name: "example.com", RecordType: "MX"},
+					{Name: "example.com", RecordType: "TXT"},
+					{Name: "example.com", RecordType: "CNAME"},
+				},
+			},
+			expectedUniqueErrs: []error{},
+			expectedCount:      0,
+		},
+		{
 			name: "all valid",
 			cfg: &Config{
 				DNSServers: []DNSServerConfig{

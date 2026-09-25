@@ -917,8 +917,3 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
-}

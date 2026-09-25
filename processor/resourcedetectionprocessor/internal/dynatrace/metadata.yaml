@@ -6,7 +6,3 @@ status:
     alpha: [traces, metrics, logs]
   codeowners:
     active: [bacherfl, evan-bradley]
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

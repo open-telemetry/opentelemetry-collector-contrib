@@ -21,8 +21,8 @@ func assertArgumentFieldNames(t *testing.T, args ottl.Arguments, expected []stri
 	}
 	require.Equal(t, reflect.Struct, typ.Kind())
 	got := make([]string, 0, typ.NumField())
-	for i := 0; i < typ.NumField(); i++ {
-		got = append(got, typ.Field(i).Name)
+	for field := range typ.Fields() {
+		got = append(got, field.Name)
 	}
 	assert.Equal(t, expected, got)
 }
