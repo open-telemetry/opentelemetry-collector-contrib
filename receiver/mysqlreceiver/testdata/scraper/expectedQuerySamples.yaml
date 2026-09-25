@@ -49,6 +49,12 @@ resourceLogs:
               - key: mysql.event_id
                 value:
                   intValue: "17470257762"
+              - key: mysql.wait_event.type
+                value:
+                  stringValue: io
+              - key: mysql.wait_event.name
+                value:
+                  stringValue: table/sql/handler
               - key: mysql.wait_type
                 value:
                   stringValue: CPU
