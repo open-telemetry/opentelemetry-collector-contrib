@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 )
@@ -143,7 +144,7 @@ func TestSerializeProfile(t *testing.T) {
 							"buildid":     "YA3K_koRAADyvzjEk_X7kg",
 							"ecs.version": "1.12.0",
 							"filename":    "samples",
-							"timestamp":   json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
+							"timestamp":   json.Number(fmt.Sprintf("%d", serializer.GetStartOfWeekFromTime(time.Now()))),
 						},
 						"source": serializeprofiles.ExeMetadataUpsertScript,
 					},

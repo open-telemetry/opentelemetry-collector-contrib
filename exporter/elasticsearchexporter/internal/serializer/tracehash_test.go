@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package serializeprofiles
+package serializer
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestTraceHashSprintf(t *testing.T) {
-	origHash := newTraceHash(0x0001C03F8D6B8520, 0xEDEAEEA9460BEEBB)
+	origHash := NewTraceHash(0x0001C03F8D6B8520, 0xEDEAEEA9460BEEBB)
 
 	marshaled := fmt.Sprintf("%d", origHash)
 	//nolint:goconst
@@ -32,7 +32,7 @@ func TestTraceHashSprintf(t *testing.T) {
 	assert.Equal(t, expected, marshaled)
 
 	// Values were chosen to test non-zero-padded output
-	traceHash := newTraceHash(42, 100)
+	traceHash := NewTraceHash(42, 100)
 
 	marshaled = fmt.Sprintf("%x", traceHash)
 	expected = "2a0000000000000064"

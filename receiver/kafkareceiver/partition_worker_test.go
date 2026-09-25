@@ -115,7 +115,7 @@ func TestProcessPartitionBatchMarkOwnership(t *testing.T) {
 			batch.Topic = topic
 			batch.Records[0].Topic = topic
 			batch.Records[0].Partition = 0
-			consumer.processPartitionBatch(t.Context(), partitionConsumer, batch)
+			consumer.processPartitionBatch(partitionConsumer, batch)
 
 			marked := kafkaClient.MarkedOffsets()[topic]
 			if tc.wantMarked {

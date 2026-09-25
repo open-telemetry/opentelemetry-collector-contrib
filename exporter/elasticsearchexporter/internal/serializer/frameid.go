@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
+package serializer // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 
 import (
 	"encoding/base64"
@@ -11,9 +11,9 @@ import (
 	"go.opentelemetry.io/ebpf-profiler/libpf"
 )
 
-// frameID represents a frame as an address in an executable file
+// FrameID represents a frame as an address in an executable file
 // or as a line in a source code file.
-type frameID struct {
+type FrameID struct {
 	// fileID is the fileID of the frame
 	fileID libpf.FileID
 
@@ -21,29 +21,29 @@ type frameID struct {
 	addressOrLineno libpf.AddressOrLineno
 }
 
-// newFrameID creates a new FrameID from the fileId and address or line.
-func newFrameID(fileID libpf.FileID, addressOrLineno libpf.AddressOrLineno) frameID {
-	return frameID{
+// NewFrameID creates a new FrameID from the fileId and address or line.
+func NewFrameID(fileID libpf.FileID, addressOrLineno libpf.AddressOrLineno) FrameID {
+	return FrameID{
 		fileID:          fileID,
 		addressOrLineno: addressOrLineno,
 	}
 }
 
-// newFrameIDFromString creates a new FrameID from its base64 string representation.
-func newFrameIDFromString(frameEncoded string) (frameID, error) {
-	var fID frameID
+// NewFrameIDFromString creates a new FrameID from its base64 string representation.
+func NewFrameIDFromString(frameEncoded string) (FrameID, error) {
+	var fID FrameID
 
 	bytes, err := base64.RawURLEncoding.DecodeString(frameEncoded)
 	if err != nil {
 		return fID, fmt.Errorf("failed to decode frameID %v: %w", frameEncoded, err)
 	}
 
-	return newFrameIDFromBytes(bytes)
+	return NewFrameIDFromBytes(bytes)
 }
 
-// newFrameIDFromBytes creates a new FrameID from a byte array of length 24.
-func newFrameIDFromBytes(bytes []byte) (frameID, error) {
-	var fID frameID
+// NewFrameIDFromBytes creates a new FrameID from a byte array of length 24.
+func NewFrameIDFromBytes(bytes []byte) (FrameID, error) {
+	var fID FrameID
 	var err error
 
 	if len(bytes) != 24 {
@@ -61,7 +61,7 @@ func newFrameIDFromBytes(bytes []byte) (frameID, error) {
 }
 
 // Bytes returns the frameid as byte sequence.
-func (f frameID) Bytes() []byte {
+func (f FrameID) Bytes() []byte {
 	// Using frameID := make([byte, 24]) here makes the function ~5% slower.
 	var fID [24]byte
 
@@ -71,16 +71,16 @@ func (f frameID) Bytes() []byte {
 }
 
 // String returns the base64 encoded representation.
-func (f frameID) String() string {
+func (f FrameID) String() string {
 	return base64.RawURLEncoding.EncodeToString(f.Bytes())
 }
 
 // FileID returns the fileID part of the frameID.
-func (f frameID) FileID() libpf.FileID {
+func (f FrameID) FileID() libpf.FileID {
 	return f.fileID
 }
 
 // AddressOrLine returns the addressOrLine part of the frameID.
-func (f frameID) AddressOrLine() libpf.AddressOrLineno {
+func (f FrameID) AddressOrLine() libpf.AddressOrLineno {
 	return f.addressOrLineno
 }
