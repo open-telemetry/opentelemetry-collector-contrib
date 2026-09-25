@@ -14,19 +14,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
 )
 
-type AnyArguments[K any] struct {
+type anyArguments[K any] struct {
 	Source    ottl.Getter[K]
 	Predicate *ottl.LambdaExpression[K]
 }
 
+// NewAnyFactory returns a factory for the Any OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#any
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future. It
+// requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewAnyFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Any", &AnyArguments[K]{}, createAnyFunction[K])
+	return ottl.NewFactory("Any", &anyArguments[K]{}, createAnyFunction[K], ottl.WithExperimental[K]())
 }
 
 func createAnyFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*AnyArguments[K])
+	args, ok := oArgs.(*anyArguments[K])
 	if !ok {
-		return nil, errors.New("AnyFactory args must be of type *AnyArguments[K]")
+		return nil, errors.New("AnyFactory args must be of type *anyArguments[K]")
 	}
 	return anyMatch(args.Source, args.Predicate)
 }

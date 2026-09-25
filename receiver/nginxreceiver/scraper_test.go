@@ -56,10 +56,6 @@ func TestScraperError(t *testing.T) {
 	}))
 	t.Run("404", func(t *testing.T) {
 		clientConfig := confighttp.NewDefaultClientConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-		clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-		clientConfig.ForceAttemptHTTP2 = false
 		clientConfig.Endpoint = nginxMock.URL + "/badpath"
 		sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 			ClientConfig: clientConfig,
@@ -72,10 +68,6 @@ func TestScraperError(t *testing.T) {
 
 	t.Run("parse error", func(t *testing.T) {
 		clientConfig := confighttp.NewDefaultClientConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-		clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-		clientConfig.ForceAttemptHTTP2 = false
 		clientConfig.Endpoint = nginxMock.URL + "/status"
 		sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 			ClientConfig: clientConfig,
@@ -90,10 +82,6 @@ func TestScraperError(t *testing.T) {
 
 func TestScraperFailedStart(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "localhost:8080"
 	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{

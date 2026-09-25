@@ -335,14 +335,14 @@ func Test_DeleteIndexFactory(t *testing.T) {
 		factory := NewDeleteIndexFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &DeleteIndexArguments[any]{}, args)
+		assert.IsType(t, &deleteIndexArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "StartIndex", "EndIndex"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewDeleteIndexFactory[any]()
 		args := factory.CreateDefaultArguments()
-		deleteIndexArgs, ok := args.(*DeleteIndexArguments[any])
+		deleteIndexArgs, ok := args.(*deleteIndexArguments[any])
 		require.True(t, ok)
 		deleteIndexArgs.Target = &ottl.StandardPSliceGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Slice, error) {
@@ -365,6 +365,28 @@ func Test_DeleteIndexFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createDeleteIndexFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "DeleteIndexFactory args must be of type *DeleteIndexArguments[K]")
+		assert.ErrorContains(t, err, "DeleteIndexFactory args must be of type *deleteIndexArguments[K]")
 	})
+}
+
+func BenchmarkDeleteIndex(b *testing.B) {
+	var current pcommon.Slice
+	target := sliceGetSetter(func(context.Context, any) (any, error) {
+		return current, nil
+	})
+	startIndex := mockIntGetter(3)
+	exprFunc := deleteIndexFrom(target, startIndex, nilOptional)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		current = pcommon.NewSlice()
+		if err := current.FromRaw([]any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}); err != nil {
+			b.Fatal(err)
+		}
+		res := pcommon.NewSlice()
+		if _, err := exprFunc(ctx, res); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

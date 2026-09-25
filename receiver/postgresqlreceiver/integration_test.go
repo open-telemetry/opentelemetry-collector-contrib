@@ -75,13 +75,13 @@ func integrationTest(
 	name string,
 	databases []string,
 	pgVersion string,
-	additionalIgnoredResourceAttributeValues ...string,
 ) func(*testing.T) {
 	compareOptions := []pmetrictest.CompareMetricsOption{
+		// All three derive from the container endpoint, whose host name and mapped port
+		// differ on every run.
 		pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
-	}
-	for _, attribute := range additionalIgnoredResourceAttributeValues {
-		compareOptions = append(compareOptions, pmetrictest.IgnoreResourceAttributeValue(attribute))
+		pmetrictest.IgnoreResourceAttributeValue("server.address"),
+		pmetrictest.IgnoreResourceAttributeValue("server.port"),
 	}
 	compareOptions = append(
 		compareOptions,
@@ -193,7 +193,7 @@ func integrationTest(
 }
 
 func integrationTestSemconv(name string, databases []string, pgVersion string) func(*testing.T) {
-	return integrationTest(name, databases, pgVersion, "server.address", "server.port")
+	return integrationTest(name, databases, pgVersion)
 }
 
 func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {

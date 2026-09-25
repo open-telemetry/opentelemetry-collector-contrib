@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -1741,6 +1742,179 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 	}
 }
 
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent covers both sides of the db.server.query_plan switch.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEvent(t *testing.T) {
+	defaultRecords := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{topQueryEnabled: true}))
+	require.Len(t, defaultRecords, 1)
+	require.Equal(t, "db.server.top_query", defaultRecords[0].EventName())
+	planOnTopQuery, ok := defaultRecords[0].Attributes().Get("oracledb.query_plan")
+	require.True(t, ok, "db.server.top_query must keep oracledb.query_plan while db.server.query_plan is disabled")
+	require.NotEmpty(t, planOnTopQuery.Str())
+
+	records := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{topQueryEnabled: true, queryPlanEnabled: true}))
+	require.Len(t, records, 2)
+
+	byEventName := make(map[string]plog.LogRecord, len(records))
+	for _, record := range records {
+		byEventName[record.EventName()] = record
+	}
+
+	topQuery, ok := byEventName["db.server.top_query"]
+	require.True(t, ok, "db.server.top_query is still expected once db.server.query_plan is enabled")
+	_, hasPlan := topQuery.Attributes().Get("oracledb.query_plan")
+	assert.False(t, hasPlan, "oracledb.query_plan must be removed from db.server.top_query once db.server.query_plan is enabled")
+
+	queryPlan, ok := byEventName["db.server.query_plan"]
+	require.True(t, ok, "db.server.query_plan record is missing")
+	// oracledb.query_plan is compared against the disabled scrape's value: the payload has to survive
+	// the move byte for byte.
+	assert.Equal(t, 7, queryPlan.Attributes().Len())
+	for attribute, want := range map[string]string{
+		"db.system.name":           "oracle",
+		"oracledb.sql_id":          "fxk8aq3nds8aw",
+		"oracledb.child_number":    "0",
+		"oracledb.child_address":   "0000000074C6E830",
+		"oracledb.plan_hash_value": "3123456789",
+		"db.namespace":             "ORCLPDB1",
+		"oracledb.query_plan":      planOnTopQuery.Str(),
+	} {
+		got, found := queryPlan.Attributes().Get(attribute)
+		require.True(t, found, "db.server.query_plan is missing %s", attribute)
+		assert.Equal(t, want, got.Str(), attribute)
+	}
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventOnly asserts db.server.query_plan collects nothing
+// unless db.server.top_query is enabled too.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventOnly(t *testing.T) {
+	assert.Empty(t, logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{queryPlanEnabled: true})))
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventNoPlanRows asserts a cursor with no rows in
+// V$SQL_PLAN_STATISTICS_ALL yields a db.server.top_query record and no db.server.query_plan record.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventNoPlanRows(t *testing.T) {
+	records := logRecordsFrom(scrapeTopNLogsForPlanEvent(t, planEventScrape{
+		topQueryEnabled:  true,
+		queryPlanEnabled: true,
+		noPlanRows:       true,
+	}))
+	require.Len(t, records, 1)
+	assert.Equal(t, "db.server.top_query", records[0].EventName())
+	_, hasPlan := records[0].Attributes().Get("oracledb.query_plan")
+	assert.False(t, hasPlan, "oracledb.query_plan is removed from db.server.top_query whenever db.server.query_plan is enabled")
+}
+
+// TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden covers the enabled path over three cursors.
+// Two of them are the CDB collision the join keys exist for: identical SQL text in two PDBs, so same
+// SQL_ID, same CHILD_NUMBER and same PLAN_HASH_VALUE, separated only by oracledb.child_address and
+// db.namespace. The third has no rows in V$SQL_PLAN_STATISTICS_ALL.
+func TestScraper_ScrapeTopNLogsDbServerQueryPlanEventGolden(t *testing.T) {
+	logs := scrapeTopNLogsForPlanEvent(t, planEventScrape{
+		topQueryEnabled:  true,
+		queryPlanEnabled: true,
+		multiCursor:      true,
+	})
+
+	expectedFile := filepath.Join("testdata", "expectedQueryPlanEvent.yaml")
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, logs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	assert.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp()))
+}
+
+// planEventScrape describes one canned top-N collection for the db.server.query_plan tests.
+type planEventScrape struct {
+	topQueryEnabled  bool
+	queryPlanEnabled bool
+	// noPlanRows makes V$SQL_PLAN_STATISTICS_ALL return nothing for the cursor.
+	noPlanRows bool
+	// multiCursor swaps in fixtures holding three cursors: two cursors of the same SQL_ID and
+	// CHILD_NUMBER in different PDBs, and a third cursor with no plan rows. The first two share a
+	// metric cache key, so the second one's deltas are computed against the first one's values.
+	multiCursor bool
+}
+
+// scrapeTopNLogsForPlanEvent runs a log collection over the canned query metrics and plan rows in testdata.
+func scrapeTopNLogsForPlanEvent(t *testing.T, opts planEventScrape) plog.Logs {
+	t.Helper()
+
+	metricsFile, planFile := "oracleQueryMetricsData.txt", "oracleQueryPlanData.txt"
+	if opts.multiCursor {
+		metricsFile, planFile = "oracleQueryMetricsMultiData.txt", "oracleQueryPlanMultiData.txt"
+	}
+
+	clientProviderFunc := func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+		file := metricsFile
+		if strings.Contains(s, SQLPlanTable) {
+			if opts.noPlanRows {
+				return &fakeDbClient{Responses: [][]metricRow{nil}}
+			}
+			file = planFile
+		}
+		var rows []metricRow
+		require.NoError(t, json.Unmarshal(readFile(file), &rows))
+		return &fakeDbClient{Responses: [][]metricRow{rows}}
+	}
+
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.ResourceAttributes.HostName.Enabled = true
+	logsCfg.Events.DbServerTopQuery.Enabled = opts.topQueryEnabled
+	logsCfg.Events.DbServerQueryPlan.Enabled = opts.queryPlanEnabled
+
+	lruCache, err := lru.New[string, map[string]int64](500)
+	require.NoError(t, err)
+	lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
+	if opts.multiCursor {
+		lruCache.Add("9xnp4vd2z3k7b:0", cacheValue)
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc:   clientProviderFunc,
+		id:                   component.ID{},
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		logsBuilderConfig:    logsCfg,
+		metricCache:          lruCache,
+		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+		instanceName:         "oraclehost:1521/ORCL",
+		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
+		obfuscator:           newObfuscator(),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
+	}
+
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	})
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+	return logs
+}
+
+func logRecordsFrom(logs plog.Logs) []plog.LogRecord {
+	var records []plog.LogRecord
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				records = append(records, logRecords.At(k))
+			}
+		}
+	}
+	return records
+}
+
 var samplesQueryResponses = map[string][]metricRow{
 	samplesQuery: {{
 		"ACTION": "00-0af7651916cd43dd8448eb211c80319c-a7ad6b7169203331-01", "MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "WAIT_TIME_SEC": "0.5", "PROCEDURE_NAME": "BLAH",
@@ -2487,6 +2661,154 @@ func TestScraper_StartCDBRoot_FallbackWhenGrantsMissing(t *testing.T) {
 
 	_, err = scrpr.scrape(t.Context())
 	require.NoError(t, err)
+}
+
+// On a direct-PDB connection (e.g. RDS Oracle), V$SYSMETRIC returns no rows even
+// though CDB reads "yes" — RDS never grants access to the CDB root. The scraper
+// must route sysmetric collection through V$CON_SYSMETRIC instead of relying on
+// the standalone V$SYSMETRIC client, and fall through to it harmlessly rather
+// than skip it outright. Shared Pool Free % is intentionally not recovered here:
+// V$SGASTAT is container-scoped, so a PDB-derived free % conflates CDB-wide
+// unclaimed memory with the PDB's own usage and comes out systematically wrong.
+func TestScraper_ScrapeSysMetrics_ConnectedToPDB_RDSFallback(t *testing.T) {
+	const floatDelta = 0.001
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbSessionAverage.Enabled = true
+	cfg.Metrics.OracledbCPUUsageRate.Enabled = true
+	cfg.Metrics.OracledbCursorCacheUtilization.Enabled = true
+	cfg.Metrics.OracledbTransactionResponseTime.Enabled = true
+	cfg.Metrics.OracledbSharedPoolUtilization.Enabled = true
+
+	pdbResponses := map[string][]metricRow{
+		sysmetricCDBSQL: {
+			{"METRIC_NAME": sysmetricAverageActiveSessions, "VALUE": "2.50", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricCPUUsagePerSec, "VALUE": "150.00", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricCursorCacheHitRatio, "VALUE": "96.40", "PDB_NAME": "PDB1"},
+			{"METRIC_NAME": sysmetricResponseTimePerTxn, "VALUE": "12.34", "PDB_NAME": "PDB1"},
+		},
+		// V$SYSMETRIC genuinely returns 0 rows from a PDB connection; an empty
+		// response (not an error) reflects real RDS behavior after the scraper
+		// falls through to it.
+		sysmetricSQL: {},
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if rows, ok := pdbResponses[s]; ok {
+				return &fakeDbClient{Responses: [][]metricRow{rows}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: true, pdbName: "PDB1"},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	require.False(t, scrpr.isCDBRoot, "a direct-PDB connection must not use CDB-root queries")
+	require.NotNil(t, scrpr.sysmetricCDBClient)
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metricMap := make(map[string]float64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+			metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+		}
+	}
+
+	assert.InDelta(t, 2.50, metricMap["oracledb.session.average"], floatDelta)
+	assert.InDelta(t, 1.50, metricMap["oracledb.cpu.usage.rate"], floatDelta)
+	assert.InDelta(t, 96.40, metricMap["oracledb.cursor.cache.utilization"], floatDelta)
+	assert.InDelta(t, 0.1234, metricMap["oracledb.transaction.response.time"], floatDelta)
+	_, hasSharedPool := metricMap["oracledb.shared_pool.utilization"]
+	assert.False(t, hasSharedPool, "Shared Pool Free % cannot be measured accurately from a PDB connection and must not be recorded")
+}
+
+// On a direct-PDB connection (e.g. RDS Oracle), V$RESOURCE_LIMIT returns no rows
+// even though CDB reads "yes" — RDS restricts access to that CDB-root view. The
+// scraper must derive resource limits from V$PARAMETER/V$PROCESS/V$SESSION/
+// V$TRANSACTION instead of falling back to the (empty) standalone query.
+func TestScraper_ScrapeResourceLimits_ConnectedToPDB_RDSFallback(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbProcessesUsage.Enabled = true
+	cfg.Metrics.OracledbProcessesLimit.Enabled = true
+	cfg.Metrics.OracledbSessionsLimit.Enabled = true
+	cfg.Metrics.OracledbDmlLocksUsage.Enabled = true
+	cfg.Metrics.OracledbDmlLocksLimit.Enabled = true
+	cfg.Metrics.OracledbTransactionsUsage.Enabled = true
+	cfg.Metrics.OracledbTransactionsLimit.Enabled = true
+
+	pdbLimitRows := []metricRow{
+		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "12", "LIMIT_VALUE": "1000"},
+		{"RESOURCE_NAME": "sessions", "CURRENT_UTILIZATION": "20", "LIMIT_VALUE": "1105"},
+		{"RESOURCE_NAME": "transactions", "CURRENT_UTILIZATION": "3", "LIMIT_VALUE": "1215"},
+		{"RESOURCE_NAME": "dml_locks", "CURRENT_UTILIZATION": "5", "LIMIT_VALUE": "220"},
+	}
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			// V$RESOURCE_LIMIT is empty from a PDB connection on RDS; trap it so
+			// the test fails if the scraper ever falls back to querying it.
+			if s == systemResourceLimitsSQL {
+				return &fakeDbClient{Err: errors.New("should not be called: v$resource_limit returns 0 rows from a PDB connection")}
+			}
+			if s == systemResourceLimitsPDBSQL {
+				return &fakeDbClient{Responses: [][]metricRow{pdbLimitRows}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+		instanceInfo:         oracleInstanceInfo{isCDB: true, connectedToPDB: true, pdbName: "PDB1"},
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	require.NotNil(t, scrpr.systemResourceLimitsPDBClient)
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	metricMap := make(map[string]int64)
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+			metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).IntValue()
+		}
+	}
+
+	assert.Equal(t, int64(12), metricMap["oracledb.processes.usage"])
+	assert.Equal(t, int64(1000), metricMap["oracledb.processes.limit"])
+	assert.Equal(t, int64(1105), metricMap["oracledb.sessions.limit"])
+	assert.Equal(t, int64(5), metricMap["oracledb.dml_locks.usage"])
+	assert.Equal(t, int64(220), metricMap["oracledb.dml_locks.limit"])
+	assert.Equal(t, int64(3), metricMap["oracledb.transactions.usage"])
+	assert.Equal(t, int64(1215), metricMap["oracledb.transactions.limit"])
 }
 
 // sysmetricDirectionValues collects gauge data points keyed by metric name then by
