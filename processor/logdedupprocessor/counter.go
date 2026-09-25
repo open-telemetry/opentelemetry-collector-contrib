@@ -14,10 +14,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
-// Attributes names for first and last observed timestamps
+// Attribute names added to each emitted log record.
 const (
-	firstObservedTSAttr = "first_observed_timestamp"
-	lastObservedTSAttr  = "last_observed_timestamp"
+	firstAggregationTSAttr = "first_aggregation_timestamp"
+	lastAggregationTSAttr  = "last_aggregation_timestamp"
+	firstEventTSAttr       = "first_event_timestamp"
+	lastEventTSAttr        = "last_event_timestamp"
+
+	numAddedAttributesAggregated = 5 // log_count, first_aggregation_timestamp, last_aggregation_timestamp, first_event_timestamp, last_event_timestamp
+	numAddedAttributesPreserved  = 4 // log_count, first_aggregation_timestamp, last_aggregation_timestamp, last_event_timestamp
 )
 
 // timeNow can be reassigned for testing
@@ -30,16 +35,24 @@ type logAggregator struct {
 	timezone          *time.Location
 	telemetryBuilder  *metadata.TelemetryBuilder
 	dedupFields       []string
+	timestampMode     TimestampMode
 }
 
 // newLogAggregator creates a new LogCounter.
-func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder, dedupFields []string) *logAggregator {
+func newLogAggregator(
+	logCountAttribute string,
+	timezone *time.Location,
+	telemetryBuilder *metadata.TelemetryBuilder,
+	dedupFields []string,
+	timestampMode TimestampMode,
+) *logAggregator {
 	return &logAggregator{
 		resources:         make(map[uint64]*resourceAggregator),
 		logCountAttribute: logCountAttribute,
 		timezone:          timezone,
 		telemetryBuilder:  telemetryBuilder,
 		dedupFields:       dedupFields,
+		timestampMode:     timestampMode,
 	}
 }
 
@@ -57,22 +70,56 @@ func (l *logAggregator) Export(ctx context.Context) plog.Logs {
 
 			for _, logAggregator := range scopeAggregator.logCounters {
 				// Record aggregated logs records
-				l.telemetryBuilder.DedupProcessorAggregatedLogs.Record(ctx, logAggregator.count)
+				l.telemetryBuilder.DedupProcessorAggregatedLogs.Record(
+					ctx,
+					logAggregator.count,
+				)
 
 				lr := sl.LogRecords().AppendEmpty()
 				logAggregator.logRecord.CopyTo(lr)
 
-				// Set log record timestamps
-				lr.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
-				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(logAggregator.firstObservedTimestamp))
+				// Set ObservedTimestamp to when the first record in this window was observed by the processor.
+				lr.SetObservedTimestamp(
+					pcommon.NewTimestampFromTime(
+						logAggregator.firstAggregationTimestamp,
+					),
+				)
 
-				// Add attributes for log count and first/last observed timestamps
-				lr.Attributes().EnsureCapacity(lr.Attributes().Len() + 3)
+				// Capture the original event timestamp from the first record.
+				firstEventTimestamp := lr.Timestamp()
+
+				// In aggregated mode (the default), overwrite the event Timestamp with the batch export time
+				// and include first_event_timestamp. In preserved mode, the original event Timestamp is
+				// retained and first_event_timestamp is omitted as it is redundant.
+				numAttrs := numAddedAttributesPreserved
+				if l.timestampMode != TimestampModePreserved {
+					lr.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
+					numAttrs = numAddedAttributesAggregated
+				}
+
+				lr.Attributes().EnsureCapacity(lr.Attributes().Len() + numAttrs)
 				lr.Attributes().PutInt(l.logCountAttribute, logAggregator.count)
-				firstTimestampStr := logAggregator.firstObservedTimestamp.In(l.timezone).Format(time.RFC3339)
-				lr.Attributes().PutStr(firstObservedTSAttr, firstTimestampStr)
-				lastTimestampStr := logAggregator.lastObservedTimestamp.In(l.timezone).Format(time.RFC3339)
-				lr.Attributes().PutStr(lastObservedTSAttr, lastTimestampStr)
+				firstAggregationTimestampStr := logAggregator.firstAggregationTimestamp.In(l.timezone).
+					Format(time.RFC3339)
+				lr.Attributes().
+					PutStr(firstAggregationTSAttr, firstAggregationTimestampStr)
+				lastAggregationTimestampStr := logAggregator.lastAggregationTimestamp.In(l.timezone).
+					Format(time.RFC3339)
+				lr.Attributes().
+					PutStr(lastAggregationTSAttr, lastAggregationTimestampStr)
+
+				if l.timestampMode != TimestampModePreserved {
+					firstEventTimestampStr := firstEventTimestamp.AsTime().
+						In(l.timezone).
+						Format(time.RFC3339)
+					lr.Attributes().
+						PutStr(firstEventTSAttr, firstEventTimestampStr)
+				}
+
+				lastEventTimestampStr := logAggregator.lastEventTimestamp.AsTime().
+					In(l.timezone).
+					Format(time.RFC3339)
+				lr.Attributes().PutStr(lastEventTSAttr, lastEventTimestampStr)
 			}
 		}
 	}
@@ -81,7 +128,11 @@ func (l *logAggregator) Export(ctx context.Context) plog.Logs {
 }
 
 // Add adds the logRecord to the resource aggregator that is identified by the resource attributes
-func (l *logAggregator) Add(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord) {
+func (l *logAggregator) Add(
+	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
+	logRecord plog.LogRecord,
+) {
 	key := getResourceKey(resource)
 	resourceAggregator, ok := l.resources[key]
 	if !ok {
@@ -104,7 +155,10 @@ type resourceAggregator struct {
 }
 
 // newResourceAggregator creates a new ResourceCounter.
-func newResourceAggregator(resource pcommon.Resource, dedupFields []string) *resourceAggregator {
+func newResourceAggregator(
+	resource pcommon.Resource,
+	dedupFields []string,
+) *resourceAggregator {
 	cloneResource := pcommon.NewResource()
 	resource.CopyTo(cloneResource)
 	return &resourceAggregator{
@@ -115,7 +169,10 @@ func newResourceAggregator(resource pcommon.Resource, dedupFields []string) *res
 }
 
 // Add increments the counter that the logRecord matches.
-func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord plog.LogRecord) {
+func (r *resourceAggregator) Add(
+	scope pcommon.InstrumentationScope,
+	logRecord plog.LogRecord,
+) {
 	key := getScopeKey(scope)
 	scopeAggregator, ok := r.scopeCounters[key]
 	if !ok {
@@ -133,7 +190,10 @@ type scopeAggregator struct {
 }
 
 // newScopeAggregator creates a new ScopeCounter.
-func newScopeAggregator(scope pcommon.InstrumentationScope, dedupFields []string) *scopeAggregator {
+func newScopeAggregator(
+	scope pcommon.InstrumentationScope,
+	dedupFields []string,
+) *scopeAggregator {
 	cloneScope := pcommon.NewInstrumentationScope()
 	scope.CopyTo(cloneScope)
 	return &scopeAggregator{
@@ -150,16 +210,19 @@ func (s *scopeAggregator) Add(logRecord plog.LogRecord) {
 	if !ok {
 		lc = newLogCounter(logRecord)
 		s.logCounters[key] = lc
+	} else {
+		lc.lastEventTimestamp = logRecord.Timestamp()
 	}
 	lc.Increment()
 }
 
 // logCounter is a counter for a log record.
 type logCounter struct {
-	logRecord              plog.LogRecord
-	firstObservedTimestamp time.Time
-	lastObservedTimestamp  time.Time
-	count                  int64
+	logRecord                 plog.LogRecord
+	firstAggregationTimestamp time.Time
+	lastAggregationTimestamp  time.Time
+	lastEventTimestamp        pcommon.Timestamp
+	count                     int64
 }
 
 // newLogCounter creates a new AttributeCounter.
@@ -168,16 +231,17 @@ func newLogCounter(logRecord plog.LogRecord) *logCounter {
 	movedLogRecord := plog.NewLogRecord()
 	logRecord.MoveTo(movedLogRecord)
 	return &logCounter{
-		logRecord:              movedLogRecord,
-		count:                  0,
-		firstObservedTimestamp: timeNow().UTC(),
-		lastObservedTimestamp:  timeNow().UTC(),
+		logRecord:                 movedLogRecord,
+		count:                     0,
+		firstAggregationTimestamp: timeNow().UTC(),
+		lastAggregationTimestamp:  timeNow().UTC(),
+		lastEventTimestamp:        movedLogRecord.Timestamp(),
 	}
 }
 
 // Increment increments the counter.
 func (a *logCounter) Increment() {
-	a.lastObservedTimestamp = timeNow().UTC()
+	a.lastAggregationTimestamp = timeNow().UTC()
 	a.count++
 }
 
@@ -240,7 +304,10 @@ func getMap(logRecord plog.LogRecord, leadingPart string) (pcommon.Map, bool) {
 	return m, false
 }
 
-func getKeyValue(valueMap pcommon.Map, keyParts []string) (pcommon.Value, bool) {
+func getKeyValue(
+	valueMap pcommon.Map,
+	keyParts []string,
+) (pcommon.Value, bool) {
 	nextKeyPart, remainingParts := keyParts[0], keyParts[1:]
 
 	// Look for the value associated with the next key part.
