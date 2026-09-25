@@ -74,6 +74,7 @@
     -- on MySQL 5.7 and MariaDB the value is VARCHAR, so CONVERT is a no-op.
     -- utf8mb4 is used instead of the deprecated utf8 alias.
     COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8mb4), '') AS traceparent,
+    {{- if .supportsDataLockWaits}}
     -- blockers is a JSON array of {thread_id, session_id} tuples, one entry per
     -- concurrent InnoDB row-lock blocker for this thread. LEFT JOIN means a
     -- blocker that has already disconnected still appears (thread_id populated,
@@ -82,18 +83,31 @@
     -- that table requires the global PROCESS privilege, and MySQL checks
     -- privileges on every referenced table at prepare time regardless of whether
     -- a row is actually needed, so the entire query failed outright for any
-    -- monitoring user without PROCESS the moment a real block existed.
+    -- monitoring user without PROCESS the moment a real block existed. DISTINCT
+    -- collapses duplicate rows data_lock_waits can produce when the same blocker
+    -- holds multiple conflicting lock structures against this thread's single
+    -- wait, so blocker.count reflects distinct blocking sessions, not lock rows.
     COALESCE(
         (
             SELECT JSON_ARRAYAGG(JSON_OBJECT('thread_id', ordered.thread_id, 'session_id', ordered.session_id))
             FROM (
-                SELECT lw.BLOCKING_THREAD_ID AS thread_id, bt.PROCESSLIST_ID AS session_id
+                SELECT DISTINCT lw.BLOCKING_THREAD_ID AS thread_id, bt.PROCESSLIST_ID AS session_id
                 FROM performance_schema.data_lock_waits AS lw
                 LEFT JOIN performance_schema.threads AS bt ON bt.THREAD_ID = lw.BLOCKING_THREAD_ID
                 WHERE lw.REQUESTING_THREAD_ID = thread.thread_id
             ) AS ordered
         ), '[]'
-    ) AS blockers
+    )
+    {{- else}}
+    -- blockers is unavailable on MySQL <8.0.11 and MariaDB: the only way to
+    -- identify a blocking session's thread/session ID on these versions is
+    -- information_schema.INNODB_TRX/INNODB_LOCK_WAITS, both of which require the
+    -- global PROCESS privilege (confirmed via live testing against MySQL 5.7.44
+    -- and MariaDB 10.5.29) -- the same PROCESS dependency avoided above.
+    -- Reporting empty here keeps the rest of this event intact for monitoring
+    -- users without that privilege, rather than failing the whole query.
+    '[]'
+    {{- end}} AS blockers
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
