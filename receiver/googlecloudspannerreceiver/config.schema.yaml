@@ -25,6 +25,8 @@ properties:
     type: boolean
   cardinality_total_limit:
     type: integer
+  hide_pii_values:
+    type: boolean
   hide_topn_lockstats_rowrangestartkey:
     type: boolean
   projects:

@@ -22,6 +22,7 @@ const (
 	defaultTopMetricsQueryMaxRows            = 100
 	defaultBackfillEnabled                   = false
 	defaultHideTopnLockstatsRowrangestartkey = false
+	defaultHidePIIValues                     = false
 	defaultTruncateText                      = false
 )
 
@@ -40,6 +41,7 @@ func createDefaultConfig() component.Config {
 		TopMetricsQueryMaxRows:            defaultTopMetricsQueryMaxRows,
 		BackfillEnabled:                   defaultBackfillEnabled,
 		HideTopnLockstatsRowrangestartkey: defaultHideTopnLockstatsRowrangestartkey,
+		HidePIIValues:                     defaultHidePIIValues,
 		TruncateText:                      defaultTruncateText,
 	}
 }
