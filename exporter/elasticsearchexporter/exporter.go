@@ -623,6 +623,8 @@ func (*elasticsearchExporter) pushProfileRecord(
 		case index == otelserializer.StackFrameIndex || index == ecsserializer.StackFrameIndex:
 			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case strings.HasPrefix(index, serializer.EventsIndexPrefix):
+			// Covers the full events index (profiling-events-all, profiling-events-all.otel-default)
+			// and the downsampled ones (profiling-events-5powNN, profiling-events-5powNN.otel-default).
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case index == otelserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
