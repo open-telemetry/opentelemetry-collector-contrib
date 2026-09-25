@@ -1,4 +1,4 @@
-{{/* Fallback for MySQL <8 / MariaDB. Keep in sync with topQuery.tmpl — differs only in omitting query_sample_text from SELECT and using a 6-column (not 7-column) Scan. */}}
+{{/* Fallback for MySQL <8 / MariaDB. Keep in sync with topQuery.tmpl — this SELECT is a strict prefix of that one, omitting only the trailing query_sample_text column. */}}
 SELECT
     COALESCE(`schema_name`, ''),
     COALESCE(`digest`, ''),
