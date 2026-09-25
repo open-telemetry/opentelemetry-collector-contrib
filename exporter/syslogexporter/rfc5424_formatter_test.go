@@ -189,3 +189,46 @@ func TestRFC5424Formatter_NanoFractionIsTruncatedToMicro(t *testing.T) {
 	octetCounting := newRFC5424Formatter(true).format(logRecord)
 	assert.True(t, strings.HasPrefix(octetCounting, fmt.Sprintf("%d ", len(actual))))
 }
+
+func TestRFC5424Formatter_SanitizationAndTruncation(t *testing.T) {
+	expected := "<165>1 2003-08-24T05:14:15.000003Z " +
+		strings.Repeat("H", 255) + " " +
+		strings.Repeat("A", 48) + " " +
+		strings.Repeat("P", 128) + " " +
+		strings.Repeat("M", 32) + " " +
+		"[cleanID@ sdkey=\"sdval  \"] test    message\n"
+
+	logRecord := plog.NewLogRecord()
+	logRecord.Attributes().PutStr("appname", strings.Repeat("A", 100)+"\n\t ")
+	logRecord.Attributes().PutStr("hostname", strings.Repeat("H", 300)+"\r")
+	logRecord.Attributes().PutStr("proc_id", strings.Repeat("P", 200)+" ")
+	logRecord.Attributes().PutStr("msg_id", strings.Repeat("M", 50))
+	logRecord.Attributes().PutStr("message", "test \n\r message")
+	logRecord.Attributes().PutInt("priority", 165)
+	logRecord.Attributes().PutInt("version", 1)
+
+	logRecord.Attributes().PutEmptyMap("structured_data")
+	sd, found := logRecord.Attributes().Get("structured_data")
+	require.True(t, found)
+	sd.Map().PutEmptyMap("cleanID\n @=")
+	submap, found := sd.Map().Get("cleanID\n @=")
+	require.True(t, found)
+	submap.Map().PutStr("sdkey\n= ", "sdval\n\r")
+
+	timestamp, err := time.Parse(rfc5424.RFC3339MICRO, "2003-08-24T05:14:15.000003Z")
+	require.NoError(t, err)
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+
+	actual := newRFC5424Formatter(false).format(logRecord)
+	assert.Equal(t, expected, actual)
+
+	expected = "<165>1 2003-08-24T05:14:15.000003Z - - - - - message\n"
+	logRecord = plog.NewLogRecord()
+	logRecord.Attributes().PutStr("priority", "invalid_priority")
+	logRecord.Attributes().PutStr("version", "invalid_version")
+	logRecord.Attributes().PutStr("message", "message")
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+
+	actual = newRFC5424Formatter(false).format(logRecord)
+	assert.Equal(t, expected, actual)
+}
