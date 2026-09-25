@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -1858,6 +1859,99 @@ func TestExplainQueryUsesContext(t *testing.T) {
 	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", logger)
 	require.Error(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestStart_VersionDetectionSuccess(t *testing.T) {
+	factory := new(mockClientFactory)
+	versionClient := new(mockClient)
+	versionClient.On("Close").Return(nil)
+	versionClient.On("getVersion").Return("14.5", nil)
+	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(versionClient, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	assert.Equal(t, "14.5", scraper.dbVersion)
+	factory.AssertExpectations(t)
+	versionClient.AssertExpectations(t)
+}
+
+func TestStart_VersionDetectionConnectFailure(t *testing.T) {
+	factory := new(mockClientFactory)
+	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).
+		Return((*mockClient)(nil), errors.New("connection refused"))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	core, logs := observer.New(zapcore.WarnLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	assert.Equal(t, "", scraper.dbVersion)
+	assert.Equal(t, 1, logs.FilterMessage("failed to connect for version detection. db.system.version will not be set").Len())
+}
+
+func TestStart_VersionDetectionQueryFailure(t *testing.T) {
+	factory := new(mockClientFactory)
+	versionClient := new(mockClient)
+	versionClient.On("Close").Return(nil)
+	versionClient.On("getVersion").Return("", errors.New("query failed"))
+	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(versionClient, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	core, logs := observer.New(zapcore.WarnLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	assert.Equal(t, "", scraper.dbVersion)
+	assert.Equal(t, 1, logs.FilterMessage("failed to detect PostgreSQL version. db.system.version will not be set").Len())
+	factory.AssertExpectations(t)
+	versionClient.AssertExpectations(t)
+}
+
+func TestSetServerResourceAttributes_VersionEmittedWhenEnabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	scraper := &postgreSQLScraper{
+		config:    cfg,
+		mb:        metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		dbVersion: "17.2",
+	}
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setServerResourceAttributes(rb)
+	res := rb.Emit()
+
+	version, ok := res.Attributes().Get("db.system.version")
+	require.True(t, ok)
+	assert.Equal(t, "17.2", version.Str())
+}
+
+func TestSetServerResourceAttributes_EmptyVersionOmitsAttribute(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	scraper := &postgreSQLScraper{
+		config:    cfg,
+		mb:        metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		dbVersion: "",
+	}
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setServerResourceAttributes(rb)
+	res := rb.Emit()
+
+	_, ok := res.Attributes().Get("db.system.version")
+	assert.False(t, ok)
 }
 
 type (
