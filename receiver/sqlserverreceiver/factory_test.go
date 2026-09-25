@@ -4,6 +4,7 @@
 package sqlserverreceiver
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -402,6 +404,85 @@ func TestDBProviderCloseIsSafe(t *testing.T) {
 		require.ErrorIs(t, err, errDBProviderClosed)
 		require.Nil(t, db, "getDB must not open a pool after close")
 	})
+}
+
+func TestDBProviderDetectVersionCaches(t *testing.T) {
+	// Open a real *sql.DB then close it so queries fail — we only need the
+	// provider's caching behavior, not a live SQL Server.
+	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+	require.NoError(t, err)
+	defer db.Close()
+
+	provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+	provider.db = db
+	provider.opened = true
+
+	// Manually inject a version to simulate a successful prior detection.
+	v := "15.0.4261.1"
+	provider.dbVersion = &v
+
+	// All subsequent calls must return the cached value without touching the DB.
+	got, resolved := provider.detectVersion(t.Context(), zap.NewNop())
+	require.Equal(t, "15.0.4261.1", got)
+	require.True(t, resolved)
+	got, resolved = provider.detectVersion(t.Context(), zap.NewNop())
+	require.Equal(t, "15.0.4261.1", got)
+	require.True(t, resolved)
+}
+
+func TestDBProviderDetectVersionRetriesOnFailure(t *testing.T) {
+	provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+	// db is nil — first call must return "" and leave dbVersion nil.
+	result, resolved := provider.detectVersion(t.Context(), zap.NewNop())
+	require.Empty(t, result)
+	require.False(t, resolved)
+	require.Nil(t, provider.dbVersion)
+
+	// After a real (closed) DB is injected, the next call should retry.
+	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+	provider.db = db
+
+	// Query will fail on a closed DB, so result is still "" — but the retry
+	// path was exercised and dbVersion remains nil.
+	result, resolved = provider.detectVersion(t.Context(), zap.NewNop())
+	require.Empty(t, result)
+	require.False(t, resolved)
+	require.Nil(t, provider.dbVersion)
+}
+
+func TestDBProviderDetectVersionNullLatches(t *testing.T) {
+	// When SERVERPROPERTY returns NULL, detectVersion must latch dbVersion so
+	// subsequent intervals do not retry.
+	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+	require.NoError(t, err)
+	defer db.Close()
+
+	provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+	provider.db = db
+
+	// Inject a stub that returns the NULL signal.
+	orig := detectSQLServerVersion
+	t.Cleanup(func() { detectSQLServerVersion = orig })
+	nullStr := ""
+	detectSQLServerVersion = func(_ context.Context, _ *sql.DB) (*string, error) {
+		return &nullStr, nil // NULL: non-nil pointer to empty string
+	}
+
+	result, resolved := provider.detectVersion(t.Context(), zap.NewNop())
+	require.Empty(t, result)
+	require.True(t, resolved)
+	require.NotNil(t, provider.dbVersion) // latched — will not retry
+
+	// Second call must return "" from cache, not re-query.
+	detectSQLServerVersion = func(_ context.Context, _ *sql.DB) (*string, error) {
+		t.Fatal("detectSQLServerVersion called again after NULL was latched")
+		return nil, nil
+	}
+	result, resolved = provider.detectVersion(t.Context(), zap.NewNop())
+	require.Empty(t, result)
+	require.True(t, resolved)
 }
 
 func TestSetupQueries(t *testing.T) {

@@ -1406,6 +1406,73 @@ func TestSetupResourceBuilder(t *testing.T) {
 	}
 }
 
+func TestDetectSQLServerVersion_WarnOnScanFailure(t *testing.T) {
+	// Open a real *sql.DB, then close it before querying so that
+	// QueryRowContext returns an error — triggering the warning path.
+	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
+	v, err := detectSQLServerVersion(t.Context(), db)
+
+	assert.Nil(t, v)
+	assert.Error(t, err)
+}
+
+func TestDetectSQLServerVersion_EmittedInResourceBuilder(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Server = "testserver.example.com"
+	cfg.Port = 1433
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	scraper := newSQLServerScraper(
+		settings.ID,
+		"SELECT 1",
+		sqlquery.TelemetryConfig{},
+		func() (*sql.DB, error) { return nil, nil },
+		func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient { return nil },
+		settings,
+		cfg,
+		nil,
+	)
+	scraper.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+	scraper.dbVersion = "15.0.4261.1"
+
+	row := sqlquery.StringMap{computerNameKey: "test-computer", instanceNameKey: "test-instance"}
+	resource := scraper.setupResourceBuilder(scraper.mb.NewResourceBuilder(), row).Emit()
+
+	version, exists := resource.Attributes().Get("db.system.version")
+	assert.True(t, exists)
+	assert.Equal(t, "15.0.4261.1", version.AsString())
+}
+
+func TestDetectSQLServerVersion_NotEmittedWhenEmpty(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Server = "testserver.example.com"
+	cfg.Port = 1433
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	scraper := newSQLServerScraper(
+		settings.ID,
+		"SELECT 1",
+		sqlquery.TelemetryConfig{},
+		func() (*sql.DB, error) { return nil, nil },
+		func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient { return nil },
+		settings,
+		cfg,
+		nil,
+	)
+	scraper.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+	// dbVersion deliberately left as ""
+
+	row := sqlquery.StringMap{computerNameKey: "test-computer", instanceNameKey: "test-instance"}
+	resource := scraper.setupResourceBuilder(scraper.mb.NewResourceBuilder(), row).Emit()
+
+	_, exists := resource.Attributes().Get("db.system.version")
+	assert.False(t, exists, "db.system.version should not be emitted when version detection failed")
+}
+
 func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
