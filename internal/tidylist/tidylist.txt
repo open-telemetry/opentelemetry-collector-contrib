@@ -344,7 +344,6 @@ receiver/tlscheckreceiver
 receiver/udplogreceiver
 receiver/vcenterreceiver
 receiver/vcrreceiver
-receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
