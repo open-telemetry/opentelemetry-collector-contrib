@@ -6,7 +6,7 @@ status:
   stability:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
-  unsupported_platforms: [aix]
+  unsupported_platforms: [aix, solaris]
   codeowners:
     active: [dao-jun]
     emeritus: [dmitryax]
