@@ -84,9 +84,8 @@ const (
 	EventsIndexPrefix = "profiling-events"
 )
 
-// A fixed seed is used for deterministic tests and development.
-// There is no downside in using a fixed seed in production.
-var rnd = rand.New(rand.NewPCG(0, 0))
+// randFloat64 is a variable so tests can substitute a seeded source.
+var randFloat64 = rand.Float64
 
 // DownsampledEventIndices returns the downsampled events index names, from the 5^1 to the
 // 5^maxEventsIndexes index, each carrying the given suffix (e.g. "" or ".otel-default").
@@ -118,7 +117,7 @@ func IndexDownsampledEvent(count uint16, indices []string, push func(count uint1
 		for range count {
 			// samplingRatio is the probability p=0.2 for an event to be copied into the next
 			// downsampled index.
-			if rnd.Float64() < samplingRatio {
+			if randFloat64() < samplingRatio {
 				sampled++
 			}
 		}

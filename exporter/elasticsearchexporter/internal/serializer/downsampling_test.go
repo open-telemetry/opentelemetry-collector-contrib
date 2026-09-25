@@ -16,33 +16,40 @@ func TestIndexDownsampledEvent(t *testing.T) {
 		count uint16
 	}
 
+	// To make the expected data deterministic, use a seeded random number generator.
+	// If the seed changes or the random number generator changes, this test will fail.
+	randFloat64 = rand.New(rand.NewPCG(0, 0)).Float64
+	t.Cleanup(func() { randFloat64 = rand.Float64 })
+
 	for _, suffix := range []string{"", ".otel-default"} {
 		t.Run("suffix="+suffix, func(t *testing.T) {
-			var pushedData []result
-			push := func(count uint16, index string) error {
-				pushedData = append(pushedData, result{index, count})
+			randFloat64 = rand.New(rand.NewPCG(0, 0)).Float64
+
+			var pushed []result
+			err := IndexDownsampledEvent(1000, DownsampledEventIndices(suffix), func(count uint16, index string) error {
+				pushed = append(pushed, result{index, count})
 				return nil
-			}
-
-			// To make the expected data deterministic, seed the random number generator.
-			// If the seed changes or the random number generator changes, this test will fail.
-			rnd = rand.New(rand.NewPCG(0, 0))
-
-			err := IndexDownsampledEvent(1000, DownsampledEventIndices(suffix), push)
+			})
 			require.NoError(t, err)
 
-			expectedData := []result{
+			require.Equal(t, []result{
 				{"profiling-events-5pow01" + suffix, 201},
 				{"profiling-events-5pow02" + suffix, 42},
 				{"profiling-events-5pow03" + suffix, 9},
 				{"profiling-events-5pow04" + suffix, 2},
 				{"profiling-events-5pow05" + suffix, 1},
 				{"profiling-events-5pow06" + suffix, 1},
-			}
-
-			require.Equal(t, expectedData, pushedData)
+			}, pushed)
 		})
 	}
+
+	t.Run("zero count", func(t *testing.T) {
+		err := IndexDownsampledEvent(0, DownsampledEventIndices(""), func(uint16, string) error {
+			t.Fatal("unexpected push")
+			return nil
+		})
+		require.NoError(t, err)
+	})
 }
 
 func TestDownsampledEventIndices(t *testing.T) {
