@@ -12,6 +12,9 @@
 // Attribute keys may use /exists when the key must be present but its value is
 // volatile, or /regex to match a volatile string value with a full-string
 // regular expression. The scope version field supports the same operators.
+// [WithAttributeExists] and [WithAttributeRegex] generate these matchers when
+// writing snapshots.
+//
 // Attribute maps may use attributes/include instead of attributes to assert a
 // subset of the map while allowing extra keys.
 // A double_value key may use the /precision<n> suffix to compare rounded to n

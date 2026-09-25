@@ -39,6 +39,22 @@ Use `IncludeValues()` to write supported datapoint values, or
 `IncludeHistogramExplicitBounds()` to write histogram bounds without other
 histogram values.
 
+Use `WithAttributeExists()` and `WithAttributeRegex()` to generate matchers for
+volatile resource or datapoint attributes:
+
+```go
+pmetricassert.WriteAssertionFile(t, expectedFile, actualMetrics,
+    pmetricassert.WithAttributeExists("service.instance.id"),
+    pmetricassert.WithAttributeRegex(map[string]string{
+        "host.name": `worker-[0-9]+`,
+    }),
+)
+```
+
+The options apply wherever the selected keys occur in resource or datapoint
+attributes. Regex patterns use full-string matching, and snapshot generation
+fails if an encountered value does not match its pattern.
+
 `WriteAssertionFile` expects semantically valid metrics. It normalizes valid
 metrics into an assertion snapshot; it is not a validator for producer output.
 
