@@ -96,8 +96,8 @@ See [documentation.md](./documentation.md) for the full list of resource attribu
 
 ### Instance detection
 
-These grants are required to populate the `oracle.db.version`, `oracle.db.role`,
-`oracle.db.open_mode`, and `oracle.db.pdb` resource attributes.
+These grants are required to populate the `oracle.db.version`, `oracle.db.edition`,
+`oracle.db.role`, `oracle.db.open_mode`, and `oracle.db.pdb` resource attributes.
 Detection is best-effort; failures are logged at warn level and the receiver continues.
 
 ```sql

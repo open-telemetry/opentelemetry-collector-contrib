@@ -127,6 +127,19 @@ func TestDetectInstanceInfo_EditionPopulated(t *testing.T) {
 	assert.Equal(t, "EE", info.dbEdition)
 }
 
+func TestDetectInstanceInfo_EditionUnknownTreatedAsEmpty(t *testing.T) {
+	// Oracle returns "UNKNOWN" for edition on some releases; treat it as absent.
+	info := detectInstanceInfo(t.Context(),
+		rowClient(versionEditionRow("19.0.0.0.0", "UNKNOWN")),
+		rowClient(cdbRow("NO", "PRIMARY", "READ WRITE")),
+		noopClient(t), noopClient(t),
+		emptyClient(), emptyClient(), emptyClient(),
+		zap.NewNop(),
+	)
+	assert.Equal(t, "19.0.0.0.0", info.dbVersion)
+	assert.Empty(t, info.dbEdition)
+}
+
 func TestDetectInstanceInfo_VersionQueryFails(t *testing.T) {
 	// Version query fails: all fields stay at zero, detection stops.
 	core, logs := observer.New(zapcore.WarnLevel)

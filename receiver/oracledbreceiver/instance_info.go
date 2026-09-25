@@ -50,7 +50,11 @@ const (
 	instanceOCICDBServicesSQL = "SELECT 1 FROM cdb_services WHERE name LIKE '%oraclecloud%' AND rownum = 1"
 	instanceOCISQL            = "SELECT 1 FROM v$pdbs WHERE cloud_identity LIKE '%oraclecloud%' AND rownum = 1"
 	instanceRDSSQL            = "SELECT SUBSTR(name,1,10) AS path FROM v$datafile WHERE rownum = 1"
-	instanceVersionSQL        = "SELECT version, edition FROM v$instance"
+	instanceVersionSQL = "SELECT version FROM v$instance"
+	// instanceVersionEditionSQL selects edition only when oracle.db.edition is enabled.
+	// edition is absent on some older Oracle releases; selecting it unconditionally
+	// causes ORA-00904 and drops the entire row, losing version/role/open_mode too.
+	instanceVersionEditionSQL = "SELECT version, edition FROM v$instance"
 
 	// minHostingDetectionVersion is the first Oracle version where RDS/OCI probes are reliable.
 	minHostingDetectionVersion = 19
@@ -98,8 +102,10 @@ func detectInstanceInfo(
 	}
 	if info.dbEdition == "" {
 		logger.Debug("Oracle edition not reported by v$instance. oracle.db.edition will not be set")
+		logger.Info("detected Oracle version", zap.String("version", info.dbVersion))
+	} else {
+		logger.Info("detected Oracle version", zap.String("version", info.dbVersion), zap.String("edition", info.dbEdition))
 	}
-	logger.Info("detected Oracle version", zap.String("version", info.dbVersion), zap.String("edition", info.dbEdition))
 
 	if majorVersion(info.dbVersion) < minMultitenantVersion {
 		logger.Info("oracledbreceiver: Oracle version is pre-12c; multitenant detection skipped",
