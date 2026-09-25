@@ -284,7 +284,7 @@ func TestFillHostMetadataWithAliases(t *testing.T) {
 	t.Run("aliases added from source provider", func(t *testing.T) {
 		pcfg := PusherConfig{ConfigHostname: "config-hostname"}
 		p := &mockSourceAliasesProvider{
-			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname"},
+			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname", SourceIdentifier: source.SourceIdentifier{Primary: "config-hostname"}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 			aliases: []string{"my-node-my-cluster"},
 		}
 		metadata := payload.NewEmpty()
@@ -296,7 +296,7 @@ func TestFillHostMetadataWithAliases(t *testing.T) {
 	t.Run("alias not duplicated when already present", func(t *testing.T) {
 		pcfg := PusherConfig{ConfigHostname: "config-hostname"}
 		p := &mockSourceAliasesProvider{
-			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname"},
+			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname", SourceIdentifier: source.SourceIdentifier{Primary: "config-hostname"}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 			aliases: []string{"my-node-my-cluster"},
 		}
 		metadata := payload.NewEmpty()
@@ -314,7 +314,7 @@ func TestFillHostMetadataWithAliases(t *testing.T) {
 	t.Run("no aliases when hostname already set from resource attributes", func(t *testing.T) {
 		pcfg := PusherConfig{ConfigHostname: "config-hostname"}
 		p := &mockSourceAliasesProvider{
-			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname"},
+			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname", SourceIdentifier: source.SourceIdentifier{Primary: "config-hostname"}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 			aliases: []string{"should-not-appear"},
 		}
 		metadata := payload.NewEmpty()

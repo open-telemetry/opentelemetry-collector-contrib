@@ -845,7 +845,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
     s.n_tup_del AS del,
     s.n_tup_hot_upd AS hot_upd,
     s.seq_scan AS seq_scans,
-    pg_relation_size(s.relid) AS table_size,
+    pg_total_relation_size(s.relid) AS table_size,
     s.vacuum_count
 FROM pg_stat_user_tables s
 LEFT JOIN (
@@ -1528,6 +1528,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		querySampleSimpleColumns := []string{
 			querySampleColumnClientHostname,
 			querySampleColumnQueryStart,
+			querySampleColumnBackendStart,
 			querySampleColumnWaitEventType,
 			querySampleColumnWaitEvent,
 			querySampleColumnQueryID,

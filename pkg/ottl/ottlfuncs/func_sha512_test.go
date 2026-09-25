@@ -33,12 +33,11 @@ func Test_SHA512(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := SHA512HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := sha512HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
@@ -70,13 +69,12 @@ func Test_SHA512Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := SHA512HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := sha512HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
-			_, err = exprFunc(nil, nil)
+			_, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -92,14 +90,14 @@ func Test_SHA512Factory(t *testing.T) {
 		factory := NewSHA512Factory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SHA512Arguments[any]{}, args)
+		assert.IsType(t, &sHA512Arguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSHA512Factory[any]()
 		args := factory.CreateDefaultArguments()
-		shaArgs, ok := args.(*SHA512Arguments[any])
+		shaArgs, ok := args.(*sHA512Arguments[any])
 		require.True(t, ok)
 		shaArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -114,6 +112,21 @@ func Test_SHA512Factory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSHA512Function[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SHA512Factory args must be of type *SHA512Arguments[K]")
+		assert.ErrorContains(t, err, "SHA512Factory args must be of type *sHA512Arguments[K]")
 	})
+}
+
+func BenchmarkSHA512(b *testing.B) {
+	exprFunc := sha512HashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

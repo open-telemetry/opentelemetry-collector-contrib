@@ -1,0 +1,11 @@
+{
+	"ns": "local.oplog.rs",
+	"storageStats": {
+		"size": {
+			"$numberLong": "1073741824"
+		},
+		"maxSize": {
+			"$numberLong": "2147483648"
+		}
+	}
+}

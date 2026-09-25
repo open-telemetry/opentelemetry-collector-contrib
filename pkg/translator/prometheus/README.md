@@ -84,10 +84,10 @@ The following transformations are performed on OpenTelemetry *Attributes* to pro
 * Drop unsupported characters and replace with underscores (`_`)
 * Prefix label with `key_` if it doesn't start with a letter, except if it's already prefixed with double-underscore (`__`). This is to provide compatibility with OpenMetrics 1.0.
 
-By default, labels that start with a simple underscore (`_`) are prefixed with `key`, which is strictly unnecessary to follow Prometheus labels naming rules. This behavior can be disabled with the feature `pkg.translator.prometheus.PermissiveLabelSanitization`, which must be activated with the feature gate option of the collector:
+By default, labels that start with a simple underscore (`_`) are left as-is. The previous behavior of prefixing them with `key` can be restored by disabling the feature gate `pkg.translator.prometheus.PermissiveLabelSanitization`:
 
 ```shell-session
-$ otelcol --config=config.yaml --feature-gates=pkg.translator.prometheus.PermissiveLabelSanitization
+$ otelcol --config=config.yaml --feature-gates=-pkg.translator.prometheus.PermissiveLabelSanitization
 ```
 
 Examples:
@@ -100,5 +100,5 @@ Examples:
 | `name (of the host)` | `name__of_the_host_` |
 | `2 cents` | `key_2_cents` |
 | `__name` | `__name` |
-| `_name` | `key_name` |
-| `_name` | `_name` (if `PermissiveLabelSanitization` is enabled) |
+| `_name` | `_name` |
+| `_name` | `key_name` (if `PermissiveLabelSanitization` is disabled) |
