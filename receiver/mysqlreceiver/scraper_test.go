@@ -1711,7 +1711,8 @@ func (c *mockClient) getTopQueries(uint64, uint64, bool) ([]topQuery, error) {
 		q.digestText = text[2]
 		q.countStar, _ = parseInt(text[3])
 		q.sumTimerWaitInPicoSeconds, _ = parseInt(text[4])
-		// 5-column fixtures (MySQL <8 / MariaDB fallback) omit querySampleText.
+		// Fallback fixtures (MySQL <8 / MariaDB) leave this field blank since the
+		// fallback template omits query_sample_text.
 		if len(text) > 5 {
 			q.querySampleText = text[5]
 		}
@@ -2301,7 +2302,7 @@ func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 }
 
 // TestScrapeTopQueryFuncScanRowWithSampleText verifies that when MySQL 8 is detected
-// (supportsSampleText=true), the 6-column scanRow path is used and querySampleText
+// (supportsSampleText=true), the primary scanRow path is used and querySampleText
 // is passed as the sampleStatement argument to explainQuery.
 func TestScrapeTopQueryFuncScanRowWithSampleText(t *testing.T) {
 	v8 := mustDBVersion(t, "8.0.27")

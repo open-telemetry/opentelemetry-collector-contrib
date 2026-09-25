@@ -984,7 +984,8 @@ var topQueryNoSampleTextTemplate string
 func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSampleText bool) ([]topQuery, error) {
 	// Select the appropriate template based on version support.
 	// MySQL <8 and all MariaDB versions lack query_sample_text in
-	// events_statements_summary_by_digest, so we use the 5-column fallback.
+	// events_statements_summary_by_digest, so we use the fallback template,
+	// whose SELECT is a strict prefix of the primary one (see topQueryNoSampleText.tmpl).
 	tmplSrc := topQueryTemplate
 	if !supportsSampleText {
 		tmplSrc = topQueryNoSampleTextTemplate
