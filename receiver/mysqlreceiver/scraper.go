@@ -1224,6 +1224,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			clientPort,
 			networkPeerAddress,
 			networkPeerPort,
+			sample.statementTimerStart,
 		)
 	}
 

@@ -937,6 +937,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
+| mysql.events_statements_current.timer_start | Internal, monotonically increasing picosecond counter (not wall-clock time) marking when the current statement started executing. Changes only when a new statement begins on this thread, making it a stable per-execution key for deduplicating a statement's wait-event rows across scrape cycles. | Any Int | - |
 
 ### db.server.top_query
 
