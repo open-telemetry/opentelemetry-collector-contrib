@@ -1,0 +1,32 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: receiver/aws_cloudwatch
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add optional log group tag enrichment to the logs receiver, attaching CloudWatch log group tags as resource attributes on emitted log records.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [48574]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Enabled per log group via `include_tags` (default `false`) on the `autodiscover` and `named` group
+  configs. Tags can be filtered with `tag_names` (allowlist) or `tag_prefix` (mutually exclusive), and the
+  resource-attribute prefix is configurable via `tag_attribute_prefix` (default `cloudwatch.log.group.tag.`).
+  When enabled, the receiver calls `ListTagsForResource`, so the `logs:ListTagsForResource` IAM permission is
+  required. Disabled by default; existing behavior is unchanged.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
