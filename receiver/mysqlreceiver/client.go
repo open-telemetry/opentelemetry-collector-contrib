@@ -1020,9 +1020,9 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 				&tq.digestText,
 				&tq.countStar,
 				&tq.sumTimerWaitInPicoSeconds,
-				&tq.querySampleText,
 				&tq.sumRowsExamined,
 				&tq.sumRowsSent,
+				&tq.querySampleText,
 			)
 		}
 		// querySampleText stays "" — sentinel for "no sample available"
