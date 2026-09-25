@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -47,7 +48,8 @@ func (lbi *logBulkIndexer) close(ctx context.Context) {
 
 func (lbi *logBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
-		lbi.appendPermanentError(consumererror.NewPermanent(indexerErr))
+		// retryable, not permanent
+		lbi.errs = append(lbi.errs, indexerErr)
 	}
 }
 
@@ -128,8 +130,15 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, i
 		// Non-recoverable OpenSearch error while indexing document
 		lbi.appendPermanentError(responseAsError(resp))
 	default:
-		// Encoding error. We didn't even attempt to send the event
-		lbi.appendPermanentError(itemErr)
+		// resp.Status == 0 + itemErr: could be encoding error OR transport error
+		var netErr *net.OpError
+		if errors.As(itemErr, &netErr) {
+			// transport error, retryable
+			lbi.appendRetryLogError(itemErr, logs)
+		} else {
+			// encoding error, permanent
+			lbi.appendPermanentError(itemErr)
+		}
 	}
 }
 
