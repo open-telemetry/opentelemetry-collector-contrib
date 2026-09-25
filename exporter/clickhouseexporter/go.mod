@@ -11,6 +11,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.44.0
 	go.opentelemetry.io/collector/component v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260924183631-3a2ae66dedac
+	go.opentelemetry.io/collector/config/configauth v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/config/configopaque v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/config/configoptional v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/config/configretry v1.67.1-0.20260924183631-3a2ae66dedac
@@ -21,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.161.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/exporter/exportertest v0.161.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/exporter/xexporter v0.161.1-0.20260924183631-3a2ae66dedac
+	go.opentelemetry.io/collector/extension/extensionauth v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/otel v1.46.0
