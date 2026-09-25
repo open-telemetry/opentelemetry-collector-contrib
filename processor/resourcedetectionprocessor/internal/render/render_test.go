@@ -4,7 +4,6 @@
 package render
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ func TestDetectRenderEnv(t *testing.T) {
 	t.Setenv("RENDER_GIT_COMMIT", "deadbeef")
 
 	d := &detector{logger: zap.NewNop(), rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
-	res, schemaURL, err := d.Detect(context.Background())
+	res, schemaURL, err := d.Detect(t.Context())
 
 	assert.NoError(t, err)
 	assert.NotEmpty(t, schemaURL)
@@ -31,7 +30,7 @@ func TestDetectRenderEnv(t *testing.T) {
 
 func TestDetectRenderEnvMissing(t *testing.T) {
 	d := &detector{logger: zap.NewNop(), rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
-	res, _, err := d.Detect(context.Background())
+	res, _, err := d.Detect(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, 0, res.Attributes().Len())
 }
