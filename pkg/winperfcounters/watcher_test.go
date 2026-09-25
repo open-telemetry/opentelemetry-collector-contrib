@@ -47,6 +47,9 @@ func TestCounterPath(t *testing.T) {
 func Test_Scraping_Wildcard(t *testing.T) {
 	watcher, err := NewWatcher("LogicalDisk", "*", "Free Megabytes")
 	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, watcher.Close())
+	}()
 
 	values, err := watcher.ScrapeData()
 	require.NoError(t, err)
@@ -98,6 +101,9 @@ func TestNewPerfCounter_InvalidPath(t *testing.T) {
 func TestNewPerfCounter(t *testing.T) {
 	pc, err := newPerfCounter(`\Memory\Committed Bytes`, false)
 	require.NoError(t, err, "Failed to create performance counter: %v", err)
+	defer func() {
+		require.NoError(t, pc.Close())
+	}()
 
 	assert.NotNil(t, pc.query)
 	assert.NotNil(t, pc.handle)
@@ -107,14 +113,14 @@ func TestNewPerfCounter(t *testing.T) {
 	vals, err = pc.query.GetFormattedCounterArrayDouble(pc.handle)
 	require.NoError(t, err)
 	assert.Equal(t, []CounterValue{{InstanceName: "", Value: 0}}, vals)
-
-	err = pc.query.Close()
-	require.NoError(t, err, "Failed to close initialized performance counter query: %v", err)
 }
 
 func TestNewPerfCounter_CollectOnStartup(t *testing.T) {
 	pc, err := newPerfCounter(`\Memory\Committed Bytes`, true)
 	require.NoError(t, err, "Failed to create performance counter: %v", err)
+	defer func() {
+		require.NoError(t, pc.Close())
+	}()
 
 	assert.NotNil(t, pc.query)
 	assert.NotNil(t, pc.handle)
@@ -124,9 +130,6 @@ func TestNewPerfCounter_CollectOnStartup(t *testing.T) {
 	vals, err = pc.query.GetFormattedCounterArrayDouble(pc.handle)
 	require.NoError(t, err)
 	assert.Greater(t, vals[0].Value, float64(0))
-
-	err = pc.query.Close()
-	require.NoError(t, err, "Failed to close initialized performance counter query: %v", err)
 }
 
 func TestPerfCounter_Close(t *testing.T) {
@@ -145,6 +148,9 @@ func TestPerfCounter_Close(t *testing.T) {
 func TestPerfCounter_NonExistentInstance_NoError(t *testing.T) {
 	pc, err := newPerfCounter(`\Process(NonExistentInstance)\% Processor Time`, true)
 	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, pc.Close())
+	}()
 
 	data, err := pc.ScrapeData()
 	require.NoError(t, err)
@@ -160,6 +166,9 @@ func TestPerfCounter_Reset(t *testing.T) {
 		WithIncludeAggregationInstance(),
 	)
 	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, pc.Close())
+	}()
 
 	path, handle, query := pc.Path(), pc.handle, pc.query
 	assert.Equal(t, "_Global_", pc.aggregationName)
@@ -252,6 +261,9 @@ func TestPerfCounter_Scrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			pc, err := newPerfCounter(test.path, false, test.options...)
 			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, pc.Close())
+			}()
 
 			data, err := pc.ScrapeData()
 			require.NoError(t, err, "Failed to scrape data: %v", err)
