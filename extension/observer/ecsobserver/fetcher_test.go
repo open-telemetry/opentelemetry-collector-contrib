@@ -281,3 +281,49 @@ func TestFetcher_AttachService(t *testing.T) {
 	assert.NotNil(t, tasks[nTasks-2].Service)
 	assert.Nil(t, tasks[nTasks-1].Service)
 }
+
+func TestFetcher_AttachServiceMultipleDeployments(t *testing.T) {
+	c := ecsmock.NewCluster()
+	f := newTestTaskFetcher(t, c, c)
+	// Single service with two deployments to simulate an update
+	const nServices = 1
+	c.SetServices(ecsmock.GenServices("s", nServices, func(i int, s *ecstypes.Service) {
+		s.Deployments = []ecstypes.Deployment{
+			{
+				Status: aws.String("ACTIVE"),
+				Id:     aws.String(fmt.Sprintf("deploy-active-%d", i)),
+			},
+			{
+				Status: aws.String("PRIMARY"),
+				Id:     aws.String(fmt.Sprintf("deploy-primary-%d", i)),
+			},
+		}
+	}))
+	c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("def", nServices, 1, nil))
+	const nTasks = 3
+	c.SetTasks(ecsmock.GenTasks("t", nTasks, func(i int, task *ecstypes.Task) {
+		deployID := 0
+		task.TaskDefinitionArn = aws.String(fmt.Sprintf("def%d:1", deployID))
+		switch i % 3 {
+		case 0:
+			task.StartedBy = aws.String(fmt.Sprintf("deploy-active-%d", deployID))
+		case 1:
+			task.StartedBy = aws.String(fmt.Sprintf("deploy-primary-%d", deployID))
+		}
+	}))
+
+	ctx := t.Context()
+	rawTasks, err := f.getDiscoverableTasks(ctx)
+	require.NoError(t, err)
+	tasks, err := f.attachTaskDefinition(ctx, rawTasks)
+	require.NoError(t, err)
+	services, err := f.getAllServices(ctx)
+	require.NoError(t, err)
+	f.attachService(tasks, services)
+
+	assert.Len(t, tasks, nTasks)
+	assert.Equal(t, "s0", *tasks[0].Service.ServiceArn)
+	assert.Equal(t, "s0", *tasks[1].Service.ServiceArn)
+	assert.NotNil(t, tasks[nTasks-2].Service)
+	assert.Nil(t, tasks[nTasks-1].Service)
+}
