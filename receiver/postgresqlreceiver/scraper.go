@@ -220,7 +220,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	if len(databases) == 0 {
 		dbList, dbErr := listClient.listDatabases(ctx)
 		if dbErr != nil {
-			p.logger.Error("Failed to request list of databases from postgres", zap.Error(dbErr))
+			p.logger.Error("Failed to request list of databases from configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(dbErr))
 			return pmetric.NewMetrics(), dbErr
 		}
 		databases = dbList
