@@ -137,7 +137,7 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 	}
 	needsRoot := false
 	for _, sel := range fingerprint {
-		if sel.Scope == sampler.ScopeRoot {
+		if sel.Root {
 			needsRoot = true
 			break
 		}
