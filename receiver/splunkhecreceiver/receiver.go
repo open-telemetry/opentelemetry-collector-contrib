@@ -32,21 +32,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
+// Splunk HEC response bodies; "code" is a Splunk HEC status code.
+// https://docs.splunk.com/Documentation/Splunk/latest/Data/TroubleshootHTTPEventCollector
 const (
 	ackResponse                       = `{"acks": %s}`
 	responseOK                        = `{"text": "Success", "code": 0}`
 	responseOKWithAckID               = `{"text": "Success", "code": 0, "ackId": %d}`
 	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
-	responseInvalidMethodPostOnly     = `"Only \"POST\" method is supported"`
-	responseInvalidEncoding           = `"\"Content-Encoding\" must be \"gzip\" or empty"`
+	responseInvalidMethodPostOnly     = `{"text":"Only \"POST\" method is supported","code":6}`
+	responseInvalidEncoding           = `{"text":"\"Content-Encoding\" must be \"gzip\" or empty","code":6}`
 	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
 	responseErrEventRequired          = `{"text":"Event field is required","code":12}`
 	responseErrEventBlank             = `{"text":"Event field cannot be blank","code":13}`
-	responseErrGzipReader             = `"Error on gzip body"`
-	responseErrUnmarshalBody          = `"Failed to unmarshal message body"`
-	responseErrInternalServerError    = `"Internal Server Error"`
-	responseErrUnsupportedMetricEvent = `"Unsupported metric event"`
-	responseErrUnsupportedLogEvent    = `"Unsupported log event"`
+	responseErrGzipReader             = `{"text":"Error on gzip body","code":6}`
+	responseErrUnmarshalBody          = `{"text":"Failed to unmarshal message body","code":6}`
+	responseErrInternalServerError    = `{"text":"Internal server error","code":8}`
+	responseErrUnsupportedMetricEvent = `{"text":"Unsupported metric event","code":6}`
+	responseErrUnsupportedLogEvent    = `{"text":"Unsupported log event","code":6}`
 	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
 	responseErrDataChannelMissing     = `{"text": "Data channel is missing","code":10}`
 	responseErrInvalidDataChannel     = `{"text": "Invalid data channel", "code": 11}`
@@ -601,10 +603,12 @@ func (r *splunkReceiver) failRequest(
 	jsonResponse []byte,
 	err error,
 ) {
+	if len(jsonResponse) > 0 {
+		// Content-Type must be set before WriteHeader; headers added afterward are ignored.
+		resp.Header().Add("Content-Type", "application/json")
+	}
 	resp.WriteHeader(httpStatusCode)
 	if len(jsonResponse) > 0 {
-		// The response needs to be written as a JSON string.
-		resp.Header().Add("Content-Type", "application/json")
 		_, writeErr := resp.Write(jsonResponse)
 		if writeErr != nil {
 			r.settings.Logger.Warn("Error writing HTTP response message", zap.Error(writeErr))

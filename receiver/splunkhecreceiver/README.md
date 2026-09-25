@@ -77,4 +77,24 @@ receivers:
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
+## Response codes
+
+The receiver replies with the Splunk HEC JSON response body `{"text": ..., "code": ...}`,
+where `code` is a Splunk HEC status code. It uses these codes:
+
+| HTTP | Splunk `code` | Meaning |
+|------|---------------|---------|
+| 200  | 0             | Success |
+| 200  | 17            | HEC is healthy (health check endpoint) |
+| 400  | 5             | No data |
+| 400  | 6             | Invalid data format (malformed body, bad encoding, unsupported event) |
+| 400  | 10 / 11       | Data channel missing / invalid data channel |
+| 400  | 12 / 13       | Event field is required / cannot be blank |
+| 400  | 15            | Error in handling indexed fields |
+| 500  | 8             | Internal server error |
+
+See Splunk's [HTTP Event Collector response codes][hec-codes] for the full list
+of status and sub-code values.
+
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls
+[hec-codes]: https://docs.splunk.com/Documentation/Splunk/latest/Data/TroubleshootHTTPEventCollector
