@@ -775,6 +775,46 @@ func (ms *K8sNodeNetworkIoMetricConfig) Validate() error {
 	return nil
 }
 
+// K8sNodeProcessCountMetricConfig provides config for the k8s.node.process.count metric.
+type K8sNodeProcessCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodeProcessCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sNodeProcessLimitMetricConfig provides config for the k8s.node.process.limit metric.
+type K8sNodeProcessLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodeProcessLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // K8sNodeSystemContainerCPUTimeMetricConfig provides config for the k8s.node.system_container.cpu.time metric.
 type K8sNodeSystemContainerCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1489,6 +1529,8 @@ type MetricsConfig struct {
 	K8sNodeMemoryWorkingSet                K8sNodeMemoryWorkingSetMetricConfig                `mapstructure:"k8s.node.memory.working_set"`
 	K8sNodeNetworkErrors                   K8sNodeNetworkErrorsMetricConfig                   `mapstructure:"k8s.node.network.errors"`
 	K8sNodeNetworkIo                       K8sNodeNetworkIoMetricConfig                       `mapstructure:"k8s.node.network.io"`
+	K8sNodeProcessCount                    K8sNodeProcessCountMetricConfig                    `mapstructure:"k8s.node.process.count"`
+	K8sNodeProcessLimit                    K8sNodeProcessLimitMetricConfig                    `mapstructure:"k8s.node.process.limit"`
 	K8sNodeSystemContainerCPUTime          K8sNodeSystemContainerCPUTimeMetricConfig          `mapstructure:"k8s.node.system_container.cpu.time"`
 	K8sNodeSystemContainerCPUUsage         K8sNodeSystemContainerCPUUsageMetricConfig         `mapstructure:"k8s.node.system_container.cpu.usage"`
 	K8sNodeSystemContainerMemoryUsage      K8sNodeSystemContainerMemoryUsageMetricConfig      `mapstructure:"k8s.node.system_container.memory.usage"`
@@ -1631,6 +1673,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []K8sNodeNetworkIoMetricAttributeKey{K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection},
+		},
+		K8sNodeProcessCount: K8sNodeProcessCountMetricConfig{
+			Enabled: false,
+		},
+		K8sNodeProcessLimit: K8sNodeProcessLimitMetricConfig{
+			Enabled: false,
 		},
 		K8sNodeSystemContainerCPUTime: K8sNodeSystemContainerCPUTimeMetricConfig{
 			Enabled: false,
