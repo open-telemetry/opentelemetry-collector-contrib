@@ -476,6 +476,17 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		database, _ := row[string(semconv.DBNamespaceKey)].(string)
+		rolname, _ := row[dbAttributePrefix+"rolname"].(string)
+		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel).
+		// Include database and role to separate their independent counter streams.
+		// NUL cannot occur in PostgreSQL identifiers.
+		//
+		// Note: the SQL template does not select toplevel, so this key does not
+		// distinguish it. With pg_stat_statements.track=all, top-level and nested
+		// statements sharing the same database, role, and queryid can still collide.
+		cacheKeyPrefix := database + "\x00" + rolname + "\x00" + queryID.(string) + "\x00"
+
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]
@@ -484,14 +495,15 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			} else {
 				valInAtts = _val.(float64)
 			}
-			valInCache, exist := p.cache.Get(queryID.(string) + columnName)
+			cacheKey := cacheKeyPrefix + columnName
+			valInCache, exist := p.cache.Get(cacheKey)
 			valDelta := valInAtts
 			if exist {
 				valDelta = valInAtts - valInCache
 			}
 			finalValue := float64(0)
 			if valDelta > 0 {
-				p.cache.Add(queryID.(string)+columnName, valInAtts)
+				p.cache.Add(cacheKey, valInAtts)
 				finalValue = valDelta
 			}
 			if info.finalConverter != nil {
@@ -519,9 +531,11 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
+		rolname := item.Value[dbAttributePrefix+"rolname"].(string)
+		planCacheKey := database + "\x00" + rolname + "\x00" + queryID
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
-		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
+		plan, ok := p.queryPlanCache.Get(planCacheKey)
 		if !ok && explained < maxExplainEachInterval {
 			dbClient, err := clientFactory.getClient(ctx, database)
 			if err == nil {
@@ -531,7 +545,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 				}
 				// to avoid flood the error message. there are some internal queries meant to not be
 				// explained. we wait for the cache to expire and report the error again.
-				p.queryPlanCache.Add(queryID+"-plan", plan)
+				p.queryPlanCache.Add(planCacheKey, plan)
 				err = dbClient.Close()
 				if err != nil {
 					logger.Error("failed to close", zap.Error(err))
@@ -555,7 +569,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
 			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
-			item.Value[dbAttributePrefix+"rolname"].(string),
+			rolname,
 			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,

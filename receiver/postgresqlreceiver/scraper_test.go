@@ -1355,17 +1355,18 @@ func TestScrapeTopQueries(t *testing.T) {
 	queryid := "114514"
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
-	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)
-	scraper.cache.Add(queryid+totalPlanTimeColumnName, 11)
-	scraper.cache.Add(queryid+callsColumnName, 120)
-	scraper.cache.Add(queryid+rowsColumnName, 20)
+	cacheKeyPrefix := "postgres\x00master\x00" + queryid + "\x00"
+	scraper.cache.Add(cacheKeyPrefix+totalExecTimeColumnName, 10)
+	scraper.cache.Add(cacheKeyPrefix+totalPlanTimeColumnName, 11)
+	scraper.cache.Add(cacheKeyPrefix+callsColumnName, 120)
+	scraper.cache.Add(cacheKeyPrefix+rowsColumnName, 20)
 
-	scraper.cache.Add(queryid+sharedBlksDirtiedColumnName, 1110)
-	scraper.cache.Add(queryid+sharedBlksHitColumnName, 1110)
-	scraper.cache.Add(queryid+sharedBlksReadColumnName, 1110)
-	scraper.cache.Add(queryid+sharedBlksWrittenColumnName, 1110)
-	scraper.cache.Add(queryid+tempBlksReadColumnName, 1110)
-	scraper.cache.Add(queryid+tempBlksWrittenColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+sharedBlksDirtiedColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+sharedBlksHitColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+sharedBlksReadColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+sharedBlksWrittenColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+tempBlksReadColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+tempBlksWrittenColumnName, 1110)
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 		callsColumnName:             "123",
@@ -1399,13 +1400,13 @@ func TestScrapeTopQueries(t *testing.T) {
 
 	// Verify the cache has updated with latest counter
 
-	calls, callsExists := scraper.cache.Get(queryid + callsColumnName)
+	calls, callsExists := scraper.cache.Get(cacheKeyPrefix + callsColumnName)
 	assert.True(t, callsExists)
 	assert.Equal(t, float64(123), calls)
-	execTime, execTimeExists := scraper.cache.Get(queryid + totalExecTimeColumnName)
+	execTime, execTimeExists := scraper.cache.Get(cacheKeyPrefix + totalExecTimeColumnName)
 	assert.True(t, execTimeExists)
 	assert.Equal(t, float64(11), execTime)
-	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
+	planTime, planTimeExists := scraper.cache.Get(cacheKeyPrefix + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
 	assert.Equal(t, float64(12), planTime)
 }
