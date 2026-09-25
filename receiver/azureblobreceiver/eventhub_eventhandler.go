@@ -153,9 +153,9 @@ func (p *eventHubEventHandler) newMessageHandler(ctx context.Context, event *aze
 // parseBlobSubject extracts the container and blob names from a blob event
 // subject of the form "/blobServices/default/containers/{container}/blobs/{blob}".
 func parseBlobSubject(subject string) (containerName, blobName string, err error) {
-	_, afterContainers, found := strings.Cut(subject, "containers/")
+	_, afterContainers, found := strings.Cut(subject, "/containers/")
 	if !found {
-		return "", "", fmt.Errorf("unexpected blob event subject %q: missing %q", subject, "containers/")
+		return "", "", fmt.Errorf("unexpected blob event subject %q: missing %q", subject, "/containers/")
 	}
 	containerName, afterContainer, _ := strings.Cut(afterContainers, "/")
 	blobName, found = strings.CutPrefix(afterContainer, "blobs/")

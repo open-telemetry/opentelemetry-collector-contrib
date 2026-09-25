@@ -176,6 +176,7 @@ func TestParseBlobSubject(t *testing.T) {
 		{subject: "/blobServices/default/containers/blobs/blobs/x", wantContainer: "blobs", wantBlob: "x"},
 		{subject: "/blobServices/default/containers/logs/blobs/a/blobs/b.json", wantContainer: "logs", wantBlob: "a/blobs/b.json"},
 		{subject: "/some/other/resource", wantErr: true},
+		{subject: "/blobServices/default/notcontainers/logs/blobs/x", wantErr: true},
 		{subject: "/blobServices/default/containers/logs", wantErr: true},
 		{subject: "/blobServices/default/containers/logs/blobs/", wantErr: true},
 		{subject: "/blobServices/default/containers//blobs/x", wantErr: true},
