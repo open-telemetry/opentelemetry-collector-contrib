@@ -4,6 +4,8 @@
 package simpleprometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 
 import (
+	"errors"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -27,6 +29,17 @@ type Config struct {
 	UseServiceAccount bool `mapstructure:"use_service_account"`
 	// JobName allows users to customize the job name optionally.
 	JobName string `mapstructure:"job_name"`
+}
+
+// Validate checks the receiver configuration is valid.
+func (cfg *Config) Validate() error {
+	if cfg.ClientConfig.Endpoint == "" {
+		return errors.New("endpoint must be specified")
+	}
+	if cfg.CollectionInterval <= 0 {
+		return fmt.Errorf("collection_interval must be positive, got %s", cfg.CollectionInterval)
+	}
+	return nil
 }
 
 // TODO: Move to a common package for use by other receivers and also pull
