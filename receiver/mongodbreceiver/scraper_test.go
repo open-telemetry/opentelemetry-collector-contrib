@@ -883,6 +883,50 @@ func TestScrapeLogs(t *testing.T) {
 	}
 }
 
+// TestSecondaryDiscoverySkipReason covers when replica set secondary discovery is skipped. The
+// mongodb+srv case matters because the driver enables TLS implicitly for the configured host from
+// the URI, while secondary connections are built from a host list and would not inherit it.
+func TestSecondaryDiscoverySkipReason(t *testing.T) {
+	tests := []struct {
+		name       string
+		configure  func(*Config)
+		wantSkip   bool
+		wantReason string
+	}{
+		{
+			name:      "default replica set config discovers secondaries",
+			configure: func(*Config) {},
+			wantSkip:  false,
+		},
+		{
+			name:       "direct connection pins the client to one member",
+			configure:  func(c *Config) { c.DirectConnection = true },
+			wantSkip:   true,
+			wantReason: "direct_connection is enabled",
+		},
+		{
+			name:       "mongodb+srv cannot pass its implicit TLS to secondaries",
+			configure:  func(c *Config) { c.Scheme = "mongodb+srv" },
+			wantSkip:   true,
+			wantReason: "the mongodb+srv scheme applies TLS that secondary connections cannot inherit",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			tt.configure(cfg)
+
+			reason := cfg.secondaryDiscoverySkipReason()
+			if !tt.wantSkip {
+				require.Empty(t, reason)
+				return
+			}
+			require.Equal(t, tt.wantReason, reason)
+		})
+	}
+}
+
 func TestScrapeLogsWithSecondaries(t *testing.T) {
 	testCases := []struct {
 		desc                  string

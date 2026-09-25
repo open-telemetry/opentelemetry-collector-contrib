@@ -122,8 +122,9 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	s.client = c
 
-	// Skip secondary host discovery if direct connection is enabled
-	if s.config.DirectConnection {
+	if reason := s.config.secondaryDiscoverySkipReason(); reason != "" {
+		s.logger.Info("skipping replica set secondary discovery, scraping only the configured host",
+			zap.String("reason", reason))
 		return nil
 	}
 
