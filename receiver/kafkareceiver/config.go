@@ -100,6 +100,9 @@ func (c *Config) Validate() error {
 	if c.PartitionProcessing.Independent && c.PartitionProcessing.MaxBufferedBatches <= 0 {
 		return errors.New("partition_processing.max_buffered_batches must be greater than zero")
 	}
+	if c.PartitionProcessing.Independent && c.PartitionProcessing.MaxInFlight <= 0 {
+		return errors.New("partition_processing.max_in_flight must be greater than zero")
+	}
 	if c.PartitionProcessing.Independent && !c.ConsumerConfig.AutoCommit.Enable {
 		return errors.New("partition_processing.independent requires autocommit.enable")
 	}
@@ -187,15 +190,20 @@ type MessageMarking struct {
 	OnPermanentError bool `mapstructure:"on_permanent_error"`
 }
 
-// PartitionProcessing controls optional ordered, independent processing of
-// assigned Kafka partitions.
+// PartitionProcessing controls optional independent processing of assigned
+// Kafka partitions.
 type PartitionProcessing struct {
-	// Independent enables ordered processing by independent partition workers.
+	// Independent enables independent partition workers. Records stay ordered
+	// within a partition unless MaxInFlight is above 1.
 	Independent bool `mapstructure:"independent"`
 
 	// MaxBufferedBatches bounds the number of fetched batches waiting for each
 	// partition worker.
 	MaxBufferedBatches int `mapstructure:"max_buffered_batches"`
+
+	// MaxInFlight limits concurrent unmarshal-plus-Consume calls for each
+	// independent partition worker. Default 1.
+	MaxInFlight int `mapstructure:"max_in_flight"`
 }
 
 type HeaderExtraction struct {

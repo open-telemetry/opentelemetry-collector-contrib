@@ -126,6 +126,7 @@ The following settings can be optionally configured:
 - `partition_processing`:
   - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
   - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
+  - `max_in_flight` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -309,13 +310,19 @@ In the example above:
 
 > **NOTE**: Independent partition processing requires `autocommit.enable: true`. The receiver rejects configurations that combine independent processing with manual commits.
 
-Independent partition processing keeps records ordered within each partition while allowing other assigned partitions to continue when one downstream consumer is blocked. Each partition has a bounded mailbox. A full mailbox pauses only that partition and resumes it when capacity becomes available.
+Independent partition processing runs each assigned partition in its own worker. A blocked partition does not block polling or workers for other partitions.
 
-The receiver creates one worker and mailbox per assigned partition. `max_buffered_batches` limits the number of fetched batches waiting in each mailbox, not the number of records or workers.
+Each partition has one worker and one mailbox. `max_buffered_batches` is how many fetched batches may wait in that mailbox. It is not a record count or a worker count. A full mailbox pauses only that partition. The partition resumes when a slot is free.
 
-Resource usage grows with the number of assigned partitions and `max_buffered_batches`. Increasing mailbox capacity allows more fetched data to remain in memory while waiting for processing.
+`max_in_flight` (default 1) is how many unmarshal-plus-Consume calls one partition worker may run at once. The worker starts those calls only for records already in a fetched batch. An idle partition still has one worker. At 1, records stay in offset order inside the partition. Above 1, later records in the same fetch can reach Consume before earlier ones finish.
 
-When a partition is revoked, its worker is cancelled and queued batches are discarded. The next owner fetches those records again from the committed offset, so standard Kafka at-least-once delivery and possible duplication still apply.
+When `max_in_flight` is above 1, the worker marks the contiguous successful prefix as soon as those records finish. Later records in the same fetch can still be in Consume. The worker always marks after processing, so `message_marking.after: false` does not mark before Consume. Kafka commits marks on the autocommit interval (default 1s). A crash re-fetches from the last committed offset, which can lag the marks.
+
+Above 1, unmarked transient errors with `error_backoff` enabled retry that record once in memory. If the retry succeeds, later successes in that wave are not fetched again. If the retry fails and this worker rewinds, it skips Consume for offsets it already finished above the hole. A new owner after pause or rebalance does not skip those offsets. Later records from that fetch that already reached Consume can hit Consume again. While the failed call still runs, including backoff, other slots can start more records from the same fetch.
+
+Resource usage grows with the number of assigned partitions and `max_buffered_batches`. A larger mailbox keeps more fetched data in memory. A larger `max_in_flight` starts more in-flight pipeline calls per partition.
+
+When a partition is revoked, its worker is cancelled and queued batches are discarded. The next owner fetches from the committed offset. Standard Kafka at-least-once delivery still applies.
 
 ```yaml
 receivers:
@@ -323,4 +330,5 @@ receivers:
     partition_processing:
       independent: true
       max_buffered_batches: 1
+      max_in_flight: 4
 ```
