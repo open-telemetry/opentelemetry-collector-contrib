@@ -97,7 +97,7 @@ attributes:
     enum: [accepted, closed, rejected]
     requirement_level: recommended
   db.namespace:
-    description: The default database for the thread, or empty if none has been selected (originally processlist_db).
+    description: The name of the database the statement was executed against, or empty if not available.
     type: string
   db.query.text:
     description: The SQL statement text for the event.
