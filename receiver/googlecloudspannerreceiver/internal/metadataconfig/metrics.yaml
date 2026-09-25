@@ -541,3 +541,35 @@ metadata:
         data:
           type: "gauge"
         unit: "byte"
+
+#
+# -------------------------------------------- Table Operation Stats -------------------------------------------------
+#
+  - name: "minute table operation stats"
+    query: "SELECT * FROM SPANNER_SYS.TABLE_OPERATIONS_STATS_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, WRITE_COUNT DESC"
+    metric_name_prefix: "database/spanner/table_operations/minute/top/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+    metrics:
+      - name: "read_query_count"
+        column_name: "READ_QUERY_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "write_count"
+        column_name: "WRITE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "delete_count"
+        column_name: "DELETE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
