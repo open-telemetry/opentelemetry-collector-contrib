@@ -876,6 +876,75 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 	require.True(t, sa.unsubscribed)
 }
 
+func TestHealthReportingReportsAttributeChanges(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	statusUpdateChannel := make(chan *status.AggregateStatus)
+	sa := &mockStatusAggregator{
+		statusChan: statusUpdateChannel,
+	}
+
+	mtx := &sync.RWMutex{}
+	receivedHealthUpdates := 0
+
+	mockOpampClient := &mockOpAMPClient{
+		setHealthFunc: func(_ *protobufs.ComponentHealth) error {
+			mtx.Lock()
+			defer mtx.Unlock()
+			receivedHealthUpdates++
+			return nil
+		},
+	}
+
+	o := newTestOpampAgent(cfg, set, mockOpampClient, sa)
+	o.initHealthReporting()
+	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+
+	now := time.Now()
+	sendUpdate := func(attrs pcommon.Map) {
+		attrCopy := pcommon.NewMap()
+		attrs.CopyTo(attrCopy)
+		statusUpdateChannel <- &status.AggregateStatus{
+			Event: &mockStatusEvent{
+				status:     componentstatus.StatusOK,
+				timestamp:  now,
+				attributes: &attrCopy,
+			},
+		}
+	}
+
+	attrsV1 := pcommon.NewMap()
+	attrsV1.PutStr("detail", "v1")
+	sendUpdate(attrsV1)
+
+	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
+		return receivedHealthUpdates >= 2
+	}, 1*time.Second, 50*time.Millisecond)
+
+	sendUpdate(attrsV1)
+
+	time.Sleep(150 * time.Millisecond)
+	mtx.RLock()
+	countAfterDuplicate := receivedHealthUpdates
+	mtx.RUnlock()
+
+	attrsV2 := pcommon.NewMap()
+	attrsV2.PutStr("detail", "v2")
+	sendUpdate(attrsV2)
+
+	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
+		return receivedHealthUpdates == countAfterDuplicate+1
+	}, 1*time.Second, 50*time.Millisecond)
+
+	assert.NoError(t, o.Shutdown(t.Context()))
+	require.True(t, sa.unsubscribed)
+}
+
 func TestHealthReportingDisabled(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
