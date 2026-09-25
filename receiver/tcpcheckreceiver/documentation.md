@@ -18,7 +18,7 @@ Measures the duration of TCP connection.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ms | Gauge | Int | Alpha |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ Records errors occurring during TCP check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | Development |
+| {errors} | Sum | Int | Cumulative | true | Alpha |
 
 #### Attributes
 
@@ -47,7 +47,7 @@ Records errors occurring during TCP check.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
+| 1 | Gauge | Int | Alpha |
 
 #### Attributes
 

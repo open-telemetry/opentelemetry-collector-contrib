@@ -1710,6 +1710,7 @@ The execution plan for a query.
 
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | oracledb.sql_id | The SQL ID of the query. | Any Str | - |
 | oracledb.child_number | The child number of the query. | Any Str | - |
 | oracledb.child_address | Address of the child cursor. | Any Str | - |
@@ -1776,6 +1777,7 @@ Per-session wait event statistics from v$session_event.
 
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | oracledb.sid | ID of the Oracle Server session. | Any Str | - |
 | oracledb.serial | Serial number associated with a session. | Any Str | - |
 | oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |

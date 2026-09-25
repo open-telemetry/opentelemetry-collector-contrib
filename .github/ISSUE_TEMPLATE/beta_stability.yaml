@@ -70,6 +70,7 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
+      - exporter/nats
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
