@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: receiver/mysql
 
-note: Add `mysql.events_statements_summary_by_digest.sum_rows_examined` and `sum_rows_sent` deltas to `db.server.top_query`, and extend `db.namespace` onto that event.
+note: Add row-count and database namespace context to the top query event
 
 issues: [51312]
 
