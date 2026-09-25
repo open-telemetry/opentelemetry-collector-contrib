@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
@@ -28,11 +28,6 @@ import (
 
 func TestConfig_Validate(t *testing.T) {
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -187,9 +182,6 @@ func TestConfig_Validate(t *testing.T) {
 func TestExtensionWithProxyConfig(t *testing.T) {
 	// Create config with proxy settings
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.ProxyURL = "http://proxy.example.com:8080"
 	clientConfig.Timeout = 30 * time.Second
@@ -215,8 +207,9 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 	}
 	hostProvider := &mockSourceProvider{
 		source: source.Source{
-			Kind:       source.HostnameKind,
-			Identifier: "test-host",
+			Kind:             source.HostnameKind,
+			Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+			SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 		},
 	}
 	uuidProvider := &mockUUIDProvider{
@@ -241,11 +234,6 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 
 func TestConfig_DeploymentTypeDefault(t *testing.T) {
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -269,11 +257,6 @@ func TestConfig_DeploymentTypeDefault(t *testing.T) {
 
 func TestConfig_InstallationMethodDefault(t *testing.T) {
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -313,11 +296,6 @@ func TestConfig_InstallationMethodValidValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			serverConfig := confighttp.NewDefaultServerConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			serverConfig.WriteTimeout = 0
-			serverConfig.ReadHeaderTimeout = 0
-			serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-			serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 			serverConfig.NetAddr = confignet.AddrConfig{
 				Transport: confignet.TransportTypeTCP,
 				Endpoint:  "localhost:8080",
@@ -381,11 +359,6 @@ func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			serverConfig := confighttp.NewDefaultServerConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			serverConfig.WriteTimeout = 0
-			serverConfig.ReadHeaderTimeout = 0
-			serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-			serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 			serverConfig.NetAddr = confignet.AddrConfig{
 				Transport: confignet.TransportTypeTCP,
 				Endpoint:  "localhost:8080",
@@ -416,11 +389,6 @@ func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 func TestConfig_GatewayTopologyFields(t *testing.T) {
 	baseConfig := func() Config {
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:8080",

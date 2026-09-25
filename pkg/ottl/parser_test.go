@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func Test_parse(t *testing.T) {
@@ -2322,6 +2324,66 @@ func Test_ParseValueExpression_full(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:            "int list",
+			valueExpression: `[1, 2, 3]`,
+			expected: func() any {
+				return []any{int64(1), int64(2), int64(3)}
+			},
+		},
+		{
+			name:            "float list",
+			valueExpression: `[1.5, 2.5]`,
+			expected: func() any {
+				return []any{1.5, 2.5}
+			},
+		},
+		{
+			name:            "bool list",
+			valueExpression: `[true, false, true]`,
+			expected: func() any {
+				return []any{true, false, true}
+			},
+		},
+		{
+			name:            "nil list",
+			valueExpression: `[nil, nil]`,
+			expected: func() any {
+				return []any{nil, nil}
+			},
+		},
+		{
+			name:            "enum list",
+			valueExpression: `[TEST_ENUM_ONE, TEST_ENUM_TWO]`,
+			expected: func() any {
+				return []any{int64(1), int64(2)}
+			},
+		},
+		{
+			name:            "math expression list",
+			valueExpression: `[1 + 1, 2 * 3]`,
+			expected: func() any {
+				return []any{int64(2), int64(6)}
+			},
+		},
+		{
+			name:            "map list",
+			valueExpression: `[{"a": 1}, {"b": 2}]`,
+			expected: func() any {
+				m1 := pcommon.NewMap()
+				m1.PutInt("a", 1)
+				m2 := pcommon.NewMap()
+				m2.PutInt("b", 2)
+				return []any{m1, m2}
+			},
+		},
+		{
+			name:            "mixed type list",
+			valueExpression: `[1, "two", true, nil, 3.5]`,
+			expected: func() any {
+				return []any{int64(1), "two", true, nil, 3.5}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2479,6 +2541,82 @@ func Test_String(t *testing.T) {
 	})
 }
 
+func Test_Parser_experimentalFunctionWarning(t *testing.T) {
+	type mockSetArguments[K any] struct {
+		Target Setter[K]
+		Value  Getter[K]
+	}
+
+	noop := func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+		return func(context.Context, any) (any, error) {
+			return "value", nil
+		}, nil
+	}
+
+	stableSet := NewFactory("set", &mockSetArguments[any]{}, noop)
+	expEditor := NewFactory("expEditor", &struct{}{}, noop, WithExperimental[any]())
+	expConverter := NewFactory("ExpConverter", &struct{}{}, noop, WithExperimental[any]())
+
+	newParser := func(t *testing.T) (Parser[any], *observer.ObservedLogs) {
+		core, logs := observer.New(zap.WarnLevel)
+		set := componenttest.NewNopTelemetrySettings()
+		set.Logger = zap.New(core)
+		p, err := NewParser(
+			CreateFactoryMap[any](stableSet, expEditor, expConverter),
+			testParsePath[any],
+			set,
+			WithEnumParser[any](testParseEnum),
+		)
+		require.NoError(t, err)
+		return p, logs
+	}
+
+	assertWarning := func(t *testing.T, logs *observer.ObservedLogs, want []string) {
+		warns := logs.FilterLevelExact(zap.WarnLevel).All()
+		require.Len(t, warns, 1)
+		assert.Contains(t, warns[0].Message, "experimental functions")
+		funcs, ok := warns[0].ContextMap()["functions"].([]any)
+		require.True(t, ok, "warning must include a functions field")
+		got := make([]string, 0, len(funcs))
+		for _, f := range funcs {
+			got = append(got, f.(string))
+		}
+		assert.Equal(t, want, got)
+	}
+
+	t.Run("no warning without experimental functions", func(t *testing.T) {
+		p, logs := newParser(t)
+		_, err := p.ParseStatements([]string{`set(name, "bar")`})
+		require.NoError(t, err)
+		assert.Empty(t, logs.All())
+	})
+
+	t.Run("single deduped warning across statements", func(t *testing.T) {
+		p, logs := newParser(t)
+		_, err := p.ParseStatements([]string{
+			`expEditor()`,
+			`set(name, ExpConverter())`,
+			`expEditor()`,
+		})
+		require.NoError(t, err)
+		assertWarning(t, logs, []string{"ExpConverter", "expEditor"})
+	})
+
+	t.Run("warning for conditions", func(t *testing.T) {
+		p, logs := newParser(t)
+		_, err := p.ParseConditions([]string{`ExpConverter() == "value"`})
+		require.NoError(t, err)
+		assertWarning(t, logs, []string{"ExpConverter"})
+	})
+
+	t.Run("warning for value expressions", func(t *testing.T) {
+		p, logs := newParser(t)
+		_, err := p.ParseValueExpressions([]string{`ExpConverter()`})
+		require.NoError(t, err)
+		assertWarning(t, logs, []string{"ExpConverter"})
+	})
+}
+
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.
 // It's a fast way to check a large range of possible syntaxes.
 func Test_parseStatement(t *testing.T) {
@@ -2490,6 +2628,10 @@ func Test_parseStatement(t *testing.T) {
 		wantErr           bool
 		wantErrContaining string
 	}{
+		{statement: `set(attributes["x"], {foo: "bar"})`, wantErrContaining: "invalid syntax at 1:20 near `, {foo"},
+		{statement: `set(attributes["x"], {fooBar: "bar"})`, wantErr: true},
+		{statement: `set(attributes["x"], {"a": {b: 1}})`, wantErr: true},
+		{statement: `set(attributes["x"], {"foo": "bar"})`},
 		{statement: `set(`, wantErr: true},
 		{statement: `set("foo)`, wantErr: true},
 		{statement: `set(name.)`, wantErr: true},
@@ -2543,6 +2685,28 @@ func Test_parseStatement(t *testing.T) {
 		{statement: `Test()`, wantErr: true},
 		{statement: `set() where test(foo)["key"] == "bar"`, wantErrContaining: converterNameErrorPrefix},
 		{statement: `set() where test(foo)["key"] == "bar"`, wantErrContaining: editorWithIndexErrorPrefix},
+		{statement: `set(attributes["test"], [1 2 3])`, wantErr: true},
+		{statement: `set(attributes["test"], [1 2, 3])`, wantErr: true},
+		{statement: `set(attributes["test"], [,1,2])`, wantErr: true},
+		{statement: `set(attributes["test"], [1, 2,])`, wantErr: true},
+		{statement: `set(attributes["test"], [1,,2])`, wantErr: true},
+		{statement: `set(attributes["test"], [1.5 2.5])`, wantErr: true},
+		{statement: `set(attributes["test"], ["a" "b"])`, wantErr: true},
+		{statement: `set(attributes["test"], [true false])`, wantErr: true},
+		{statement: `set(attributes["test"], [nil nil])`, wantErr: true},
+		{statement: `set(attributes["test"], [{"a": 1} {"b": 2}])`, wantErr: true},
+		{statement: `set(attributes["test"], [[1, 2] [3, 4]])`, wantErr: true},
+		{statement: `set(attributes["test"], [1 "two"])`, wantErr: true},
+		{statement: `set(attributes["test"], [1, 2, 3])`},
+		{statement: `set(attributes["test"], [1.5, 2.5])`},
+		{statement: `set(attributes["test"], ["a", "b"])`},
+		{statement: `set(attributes["test"], [true, false])`},
+		{statement: `set(attributes["test"], [nil, nil])`},
+		{statement: `set(attributes["test"], [{"a": 1}, {"b": 2}])`},
+		{statement: `set(attributes["test"], [[1, 2], [3, 4]])`},
+		{statement: `set(attributes["test"], [1, "two", true, nil, 3.5])`},
+		{statement: `set(attributes["test"], [])`},
+		{statement: `set(attributes["test"], [1])`},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
@@ -2636,12 +2800,19 @@ func Test_parseCondition(t *testing.T) {
 func Test_parseValueExpression(t *testing.T) {
 	converterNameErrorPrefix := "converter names must start with an uppercase letter"
 	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
+	byteSliceErrorPrefix := "byte literals must have an even number of hexadecimal digits"
 
 	tests := []struct {
 		valueExpression   string
 		wantErr           bool
 		wantErrContaining string
 	}{
+		{valueExpression: `0xABCD`},
+		{valueExpression: `0xABC`, wantErrContaining: byteSliceErrorPrefix},
+		{valueExpression: `{"foo": "bar"}`},
+		{valueExpression: `{foo: "bar"}`, wantErrContaining: "invalid syntax at 1:2 near `foo"},
+		{valueExpression: `{fooBar: "bar"}`, wantErr: true},
+		{valueExpression: `{"a": {b: 1}}`, wantErr: true},
 		{valueExpression: `time_end - time_end`},
 		{valueExpression: `time_end - time_end - attributes["foo"]`},
 		{valueExpression: `Test("foo")`},
@@ -2665,6 +2836,46 @@ func Test_parseValueExpression(t *testing.T) {
 			if tt.wantErrContaining != "" {
 				require.ErrorContains(t, err, tt.wantErrContaining)
 			}
+		})
+	}
+}
+
+func Test_formatParseError(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		parse   func(string) error
+		wantErr string
+	}{
+		{
+			name:    "unexpected token reports position and nearby source",
+			raw:     `set(attributes["x"], {foo: "bar"})`,
+			parse:   func(s string) error { _, err := parseStatement(s); return err },
+			wantErr: "statement has invalid syntax at 1:20 near `, {foo: \"b`: (expected \")\" Key*)",
+		},
+		{
+			name:    "unexpected token at end of input omits the near clause",
+			raw:     `set(`,
+			parse:   func(s string) error { _, err := parseStatement(s); return err },
+			wantErr: "statement has invalid syntax at 1:5: (expected \")\" Key*)",
+		},
+		{
+			name:    "value expression keeps its kind",
+			raw:     `{foo: "bar"}`,
+			parse:   func(s string) error { _, err := parseValueExpression(s); return err },
+			wantErr: "expression has invalid syntax at 1:2 near `foo: \"bar\"`: (expected \"}\")",
+		},
+		{
+			name:    "non-token participle errors keep their own message",
+			raw:     `0xABC`,
+			parse:   func(s string) error { _, err := parseValueExpression(s); return err },
+			wantErr: "expression has invalid syntax: 1:1: failed to capture: byte literals must have an even number of hexadecimal digits, but got 0xABC: encoding/hex: odd length hex string",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.parse(tt.raw)
+			require.EqualError(t, err, tt.wantErr)
 		})
 	}
 }

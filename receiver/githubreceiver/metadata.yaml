@@ -1,6 +1,7 @@
 display_name: GitHub Receiver
 type: github
 
+
 sem_conv_version: 1.40.0
 
 status:
@@ -9,7 +10,8 @@ status:
     alpha: [metrics, traces]
   distributions: [contrib]
   codeowners:
-    active: [adrielp, crobert-1, TylerHelmuth]
+    active: [adrielp, crobert-1]
+    seeking_new: true
 
 feature_gates:
   - id: receiver.githubreceiver.UseCheckRunID

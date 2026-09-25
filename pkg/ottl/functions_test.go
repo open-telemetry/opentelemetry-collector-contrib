@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_NewFunctionCall_invalid(t *testing.T) {
@@ -627,7 +627,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 
 	tests := []struct {
 		name      string
@@ -1117,6 +1117,69 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: 2,
+		},
+		{
+			name: "slicegetter literal list arg",
+			inv: editor{
+				Function: "testing_slicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{String: new("a")},
+									{String: new("b")},
+									{String: new("c")},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "slicegetter empty list arg",
+			inv: editor{
+				Function: "testing_slicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{},
+							},
+						},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name: "optional slicegetter with list",
+			inv: editor{
+				Function: "testing_optional_slicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{String: new("a")},
+									{String: new("b")},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "optional slicegetter omitted",
+			inv: editor{
+				Function:  "testing_optional_slicegetter",
+				Arguments: []argument{},
+			},
+			want: 0,
 		},
 		{
 			name: "stringlikegetter slice arg",
@@ -2388,6 +2451,38 @@ func functionWithGetterSlice(getters []Getter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type sliceGetterArguments struct {
+	Values SliceGetter[any, StringGetter[any]]
+}
+
+func functionWithSliceGetter(values SliceGetter[any, StringGetter[any]]) (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
+		vals, err := values.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return len(vals), nil
+	}, nil
+}
+
+type optionalSliceGetterArguments struct {
+	Values Optional[SliceGetter[any, Getter[any]]]
+}
+
+func functionWithOptionalSliceGetter(values Optional[SliceGetter[any, Getter[any]]]) (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
+		if values.IsEmpty() {
+			return 0, nil
+		}
+		sliceGetter := values.Get()
+		vals, err := sliceGetter.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return len(vals), nil
+	}, nil
+}
+
 type stringGetterSliceArguments struct {
 	StringGetters []StringGetter[any]
 }
@@ -2857,6 +2952,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_getter_slice",
 			&getterSliceArguments{},
 			functionWithGetterSlice,
+		),
+		createFactory[any](
+			"testing_slicegetter",
+			&sliceGetterArguments{},
+			functionWithSliceGetter,
+		),
+		createFactory[any](
+			"testing_optional_slicegetter",
+			&optionalSliceGetterArguments{},
+			functionWithOptionalSliceGetter,
 		),
 		createFactory[any](
 			"testing_stringgetter_slice",
@@ -3433,13 +3538,13 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 	)
 
 	t.Run("enabled with lambda", func(t *testing.T) {
-		defer ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true)()
+		defer testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true)()
 		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
 		require.NoError(t, err)
 	})
 
 	t.Run("disabled with lambda", func(t *testing.T) {
-		defer ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false)()
 		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
 		require.ErrorContains(t, err, "lambda expression arguments require the `ottl.functions.enableLambda` feature gate to be enabled")
 	})

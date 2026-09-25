@@ -95,9 +95,21 @@ The following settings are optional:
 - `endpoint` (default = `localhost:5432`): The endpoint of the PostgreSQL server. Whether using TCP or Unix sockets, this value should be `host:port`. If `transport` is set to `unix`, the endpoint will internally be translated from `host:port` to `/host.s.PGSQL.port`
 - `transport` (default = `tcp`): The transport protocol being used to connect to PostgreSQL. Available options are `tcp` and `unix`.
 
-- `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
+- `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases. This list applies to metrics only; the query sample and top query collectors ignore it and are filtered solely by `exclude_databases`.
 
-- `exclude_databases` (default = `[]`): List of databases which will be excluded when collecting statistics.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the default `postgres` database for discovery and server-level queries, even if it is listed here.
+
+> [!NOTE]
+> Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:
+>
+> | Service | Databases to exclude |
+> |---|---|
+> | Amazon RDS / Aurora PostgreSQL | `rdsadmin` |
+> | Azure Database for PostgreSQL | `azure_maintenance` |
+> | Google Cloud SQL | `cloudsqladmin` |
+> | Google AlloyDB | `alloydbadmin`, `alloydbmetadata` |
+>
+> Example: `exclude_databases: [rdsadmin]`
 
 The following settings are also optional and nested under `tls` to help configure client transport security
 
@@ -305,9 +317,21 @@ receivers:
 The feature gate `receiver.postgresql.useOTelSemconv` (alpha, disabled by default) controls the resource model used by this receiver:
 
 - **Gate disabled (default):** Legacy per-entity resource model. Each database, table, and index emits metrics under a separate resource with `postgresql.database.name`, `postgresql.table.name`, `postgresql.index.name`, and `postgresql.schema.name` as resource attributes. `service.instance.id` is in `host:port` format.
-- **Gate enabled:** Single resource per server. All metrics are emitted under one resource with `server.address`, `server.port`, and `service.instance.id` (UUID v5) as resource attributes, aligning with OpenTelemetry semantic conventions. Metric-level attributes `db.namespace`, `db.collection.name`, and `postgresql.index.name` are present on applicable metrics.
+- **Gate enabled:** Single resource per server. All metrics are emitted under one resource with `service.instance.id` (UUID v5) as a resource attribute, aligning with OpenTelemetry semantic conventions. Metric-level attributes `db.namespace`, `db.collection.name`, and `postgresql.index.name` are present on applicable metrics.
+
+`server.address` and `server.port` are emitted in both models and are not affected by this gate.
 
 This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` — both cannot be enabled simultaneously.
+
+### Server address resolution
+
+`server.address` and `server.port` describe the monitored server. When `endpoint` is a loopback address
+(`localhost`, `127.0.0.1`, or `::1`), the server is only reachable because it is co-located with the
+collector, so `server.address` reports the name of the machine running the collector rather than the
+loopback address, which every monitored host would otherwise report identically. This is the same host
+already used to derive `service.instance.id`, and both are resolved when the receiver starts, so the
+two attributes always agree and a host name change is picked up on restart. Non-loopback endpoints
+are reported as configured, and with `transport: unix` the socket path is reported instead.
 
 ## Metrics
 
