@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 /*
@@ -26,10 +28,18 @@ const (
 	sumsuffix = "sum"
 	// Count used in summary , histogram and also in exponential histogram
 	countsuffix = "count"
+	// Min observed value in a histogram data point
+	minsuffix = "min"
+	// Max observed value in a histogram data point
+	maxsuffix = "max"
 	// Indicates the sum that is used in both summary and in histogram
 	sumdescription = "(Sum total of samples)"
 	// Count used in summary , histogram and also in exponential histogram
 	countdescription = "(Count of samples)"
+	// Min observed value description
+	mindescription = "(Minimum value observed)"
+	// Max observed value description
+	maxdescription = "(Maximum value observed)"
 )
 
 // This is derived from the specification https://opentelemetry.io/docs/reference/specification/metrics/datamodel/
@@ -45,13 +55,88 @@ type adxMetric struct {
 	// Additional properties
 	Host               string         // The hostname for analysis of the metric. Extracted from https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/
 	ResourceAttributes map[string]any // The originating Resource attributes. Refer https://opentelemetry.io/docs/reference/specification/resource/sdk/
+	// Exemplars are sampled measurements that carry the trace context (trace_id/span_id)
+	// of an example request, bridging aggregate metrics to concrete traces. Only populated
+	// when include_exemplars is enabled. Omitted from the payload when empty for backward
+	// compatibility with the existing metrics table schema.
+	Exemplars []map[string]any `json:"Exemplars,omitempty"` // [{value, timestamp, trace_id, span_id, attributes}]
 }
 
 /*
 	Convert the pMetric to the type ADXMetric , this matches the scheme in the OTELMetric table in the database
 */
 
-func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[string]any, logger *zap.Logger) []*adxMetric {
+// jsonSafeFloat converts a float64 into a value that can be JSON-serialized. NaN and
+// ±Inf have no JSON representation and make the encoder fail the entire row, so they
+// are emitted in their string form instead.
+func jsonSafeFloat(value float64) any {
+	switch {
+	case math.IsNaN(value):
+		return "NaN"
+	case math.IsInf(value, 1):
+		return "Infinity"
+	case math.IsInf(value, -1):
+		return "-Infinity"
+	default:
+		return value
+	}
+}
+
+// jsonSafeValue walks a raw attribute value and replaces any non-finite float so that a
+// single exemplar attribute cannot fail serialization of the whole metric row.
+func jsonSafeValue(value any) any {
+	switch v := value.(type) {
+	case float64:
+		return jsonSafeFloat(v)
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for k, item := range v {
+			out[k] = jsonSafeValue(item)
+		}
+		return out
+	case []any:
+		out := make([]any, len(v))
+		for i, item := range v {
+			out[i] = jsonSafeValue(item)
+		}
+		return out
+	default:
+		return value
+	}
+}
+
+// extractExemplars flattens an OTLP exemplar slice into a representation suitable for
+// the ADX Exemplars dynamic column. trace_id/span_id use the same hex formatting as the
+// traces exporter so they join directly against the OTELTraces table.
+func extractExemplars(exemplars pmetric.ExemplarSlice) []map[string]any {
+	if exemplars.Len() == 0 {
+		return nil
+	}
+	out := make([]map[string]any, 0, exemplars.Len())
+	for i := 0; i < exemplars.Len(); i++ {
+		e := exemplars.At(i)
+		exemplar := map[string]any{
+			"timestamp":  e.Timestamp().AsTime().Format(time.RFC3339Nano),
+			"trace_id":   traceutil.TraceIDToHexOrEmptyString(e.TraceID()),
+			"span_id":    traceutil.SpanIDToHexOrEmptyString(e.SpanID()),
+			"attributes": jsonSafeValue(e.FilteredAttributes().AsRaw()),
+		}
+		//exhaustive:enforce
+		switch e.ValueType() {
+		case pmetric.ExemplarValueTypeInt:
+			// Kept as int64: widening to float64 would silently lose precision beyond 2^53.
+			exemplar["value"] = e.IntValue()
+		case pmetric.ExemplarValueTypeDouble:
+			exemplar["value"] = jsonSafeFloat(e.DoubleValue())
+		case pmetric.ExemplarValueTypeEmpty:
+			// No recorded value; omit the key rather than reporting a synthetic 0.
+		}
+		out = append(out, exemplar)
+	}
+	return out
+}
+
+func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[string]any, includeExemplars bool, logger *zap.Logger) []*adxMetric {
 	logger.Debug("Entering processing of toAdxMetric function")
 	// default to collectors host name. Ignore the error here. This should not cause the failure of the process
 	host, err := os.Hostname()
@@ -90,7 +175,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 		adxMetrics := make([]*adxMetric, dataPoints.Len())
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
-			adxMetrics[gi] = createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+			adxMetric := createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
 				var metricValue float64
 				switch dataPoint.ValueType() {
 				case pmetric.NumberDataPointValueTypeInt:
@@ -100,6 +185,10 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				}
 				return metricValue
 			}, "", "", pmetric.MetricTypeGauge)
+			if includeExemplars {
+				adxMetric.Exemplars = extractExemplars(dataPoint.Exemplars())
+			}
+			adxMetrics[gi] = adxMetric
 		}
 		return adxMetrics
 	case pmetric.MetricTypeHistogram:
@@ -109,19 +198,40 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			dataPoint := dataPoints.At(gi)
 			bounds := dataPoint.ExplicitBounds()
 			counts := dataPoint.BucketCounts()
+			// Exemplars belong to the histogram data point as a whole; attach them to the
+			// representative _count row so they can be joined to traces.
+			countMetric := createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+				// Change int to float. The value is a float64 in the table
+				return float64(dataPoint.Count())
+			},
+				fmt.Sprintf("%s_%s", md.Name(), countsuffix),
+				fmt.Sprintf("%s%s", md.Description(), countdescription),
+				pmetric.MetricTypeHistogram)
+			if includeExemplars {
+				countMetric.Exemplars = extractExemplars(dataPoint.Exemplars())
+			}
 			adxMetrics = append(adxMetrics,
 				// first, add one event for sum, and one for count
 				createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
 					fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
 					fmt.Sprintf("%s%s", md.Description(), sumdescription),
 					pmetric.MetricTypeHistogram),
-				createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
-					// Change int to float. The value is a float64 in the table
-					return float64(dataPoint.Count())
-				},
-					fmt.Sprintf("%s_%s", md.Name(), countsuffix),
-					fmt.Sprintf("%s%s", md.Description(), countdescription),
-					pmetric.MetricTypeHistogram))
+				countMetric)
+			// Emit min and max when available from the SDK
+			if dataPoint.HasMin() {
+				adxMetrics = append(adxMetrics,
+					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Min,
+						fmt.Sprintf("%s_%s", md.Name(), minsuffix),
+						fmt.Sprintf("%s%s", md.Description(), mindescription),
+						pmetric.MetricTypeHistogram))
+			}
+			if dataPoint.HasMax() {
+				adxMetrics = append(adxMetrics,
+					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Max,
+						fmt.Sprintf("%s_%s", md.Name(), maxsuffix),
+						fmt.Sprintf("%s%s", md.Description(), maxdescription),
+						pmetric.MetricTypeHistogram))
+			}
 			// Spec says counts is optional but if present it must have one more
 			// element than the bounds array.
 			if counts.Len() == 0 || counts.Len() != bounds.Len()+1 {
@@ -169,7 +279,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 		adxMetrics := make([]*adxMetric, dataPoints.Len())
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
-			adxMetrics[gi] = createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+			adxMetric := createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
 				var metricValue float64
 				switch dataPoint.ValueType() {
 				case pmetric.NumberDataPointValueTypeInt:
@@ -179,6 +289,10 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				}
 				return metricValue
 			}, "", "", pmetric.MetricTypeSum)
+			if includeExemplars {
+				adxMetric.Exemplars = extractExemplars(dataPoint.Exemplars())
+			}
+			adxMetrics[gi] = adxMetric
 		}
 		return adxMetrics
 	case pmetric.MetricTypeSummary:
@@ -233,7 +347,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 }
 
 // Given all the metrics , transform that to the representative structure
-func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *zap.Logger) []*adxMetric {
+func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, includeExemplars bool, logger *zap.Logger) []*adxMetric {
 	var transformedAdxMetrics []*adxMetric
 	resourceMetric := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetric.Len(); i++ {
@@ -245,7 +359,7 @@ func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *
 			// get details of the scope from the scope metric
 			scopeAttr := getScopeMap(scopeMetric.Scope())
 			for k := 0; k < metrics.Len(); k++ {
-				transformedAdxMetrics = append(transformedAdxMetrics, mapToAdxMetric(res, metrics.At(k), scopeAttr, logger)...)
+				transformedAdxMetrics = append(transformedAdxMetrics, mapToAdxMetric(res, metrics.At(k), scopeAttr, includeExemplars, logger)...)
 			}
 		}
 	}
