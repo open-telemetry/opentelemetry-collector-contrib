@@ -4,8 +4,11 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -33,6 +36,7 @@ type blobReceiver struct {
 	logger             *zap.Logger
 	logsEncoding       string
 	tracesEncoding     string
+	compression        string
 	logsUnmarshaler    plog.Unmarshaler
 	tracesUnmarshaler  ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
@@ -83,6 +87,11 @@ func (b *blobReceiver) consumeLogs(ctx context.Context, data []byte) error {
 		return nil
 	}
 
+	data, err := b.decompress(data)
+	if err != nil {
+		return fmt.Errorf("failed to decompress logs: %w", err)
+	}
+
 	logsContext := b.obsrecv.StartLogsOp(ctx)
 
 	logs, err := b.logsUnmarshaler.UnmarshalLogs(data)
@@ -102,6 +111,11 @@ func (b *blobReceiver) consumeTraces(ctx context.Context, data []byte) error {
 		return nil
 	}
 
+	data, err := b.decompress(data)
+	if err != nil {
+		return fmt.Errorf("failed to decompress traces: %w", err)
+	}
+
 	tracesContext := b.obsrecv.StartTracesOp(ctx)
 
 	traces, err := b.tracesUnmarshaler.UnmarshalTraces(data)
@@ -116,8 +130,28 @@ func (b *blobReceiver) consumeTraces(ctx context.Context, data []byte) error {
 	return err
 }
 
+// gzipMagic is the two byte header every gzip stream starts with, see RFC 1952.
+var gzipMagic = []byte{0x1f, 0x8b}
+
+// decompress returns the decompressed payload according to the configured
+// compression format. In "auto" mode, payloads without a gzip header are
+// returned unchanged.
+func (b *blobReceiver) decompress(data []byte) ([]byte, error) {
+	if b.compression == CompressionNone || (b.compression == CompressionAuto && !bytes.HasPrefix(data, gzipMagic)) {
+		return data, nil
+	}
+
+	reader, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	return io.ReadAll(reader)
+}
+
 // Returns a new instance of the log receiver
-func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding, tracesEncoding string) (component.Component, error) {
+func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding, tracesEncoding, compression string) (component.Component, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",
@@ -132,6 +166,7 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding,
 		logger:           set.Logger,
 		logsEncoding:     logsEncoding,
 		tracesEncoding:   tracesEncoding,
+		compression:      compression,
 		obsrecv:          obsrecv,
 	}, nil
 }

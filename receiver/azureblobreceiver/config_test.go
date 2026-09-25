@@ -94,6 +94,28 @@ func TestInvalidEncoding(t *testing.T) {
 	assert.Contains(t, err.Error(), `traces.encoding "also not valid" is not a supported built-in encoding`)
 }
 
+func TestInvalidCompression(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.ConnectionString = goodConnectionString
+
+	cfg.Compression = "snappy"
+
+	err := cfg.Validate()
+	assert.Contains(t, err.Error(), `compression "snappy" is not supported`)
+}
+
+func TestValidCompression(t *testing.T) {
+	for _, compression := range []string{CompressionNone, CompressionGzip, CompressionAuto} {
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.ConnectionString = goodConnectionString
+		cfg.Compression = compression
+
+		assert.NoError(t, cfg.Validate())
+	}
+}
+
 func TestEncodingExtensionIDAcceptedByValidation(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
