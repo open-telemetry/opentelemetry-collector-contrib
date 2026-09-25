@@ -172,6 +172,9 @@ attributes:
     type: string
     enum: [waits, write_requests, writes, fsyncs]
     requirement_level: recommended
+  mysql.client.name:
+    description: The client driver's self-reported identity at connection time (performance_schema.session_connect_attrs, ATTR_NAME='_client_name'), e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side.
+    type: string
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -356,6 +359,7 @@ events:
       - client.port
       - network.peer.address
       - network.peer.port
+      - mysql.client.name
 
   db.server.top_query:
     enabled: false

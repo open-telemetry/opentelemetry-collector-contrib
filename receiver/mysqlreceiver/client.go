@@ -366,6 +366,11 @@ type querySample struct {
 	waitTime           float64
 	statementTimerWait float64
 	traceparent        string
+	// clientProgramName is the client driver's self-reported identity
+	// (session_connect_attrs, ATTR_NAME='_client_name'), e.g. "MySQL
+	// Connector/J" or "libmysql". Empty if the client reported no connect
+	// attributes.
+	clientProgramName string
 }
 
 type topQuery struct {
@@ -1106,6 +1111,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.statementTimerWait)
 			case "traceparent":
 				dest = append(dest, &s.traceparent)
+			case "client_program_name":
+				dest = append(dest, &s.clientProgramName)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}
