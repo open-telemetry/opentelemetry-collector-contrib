@@ -22,7 +22,7 @@ The UDP Log Receiver receives logs over UDP.
 | ---                       | ---                  | ---                                                                                                                |
 | `listen_address`          | required             | A listen address of the form `<ip>:<port>`                                                                         |
 | `attributes`              | {}                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
-| `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
+| `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance. Leaving this `false` does not on its own split a multi-line packet into separate logs; see the [`multiline` configuration](#multiline-configuration). |
 | `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
 | `add_attributes`          | false                | Adds network attributes to each log record. By default the deprecated `net.*` attributes are added (see [deprecated network attributes](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#deprecated-network-attributes)). Enable the `stanza.udp.useStableNetworkAttributes` feature gate to emit the [stable network attributes](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#network-attributes) instead. See [Feature Gates](#feature-gates). |
 | `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
@@ -48,6 +48,7 @@ Many parsers operators can be configured to embed certain followup operations su
 If set, the `multiline` configuration block instructs the `udp_log` receiver to split log entries on a pattern other than newlines.
 
 **note** If `multiline` is not set at all, it won't split log entries at all. Every UDP packet is going to be treated as log.
+**note** Setting `one_log_per_packet` to `false` does not by itself enable splitting. Without a `multiline` block, a packet carrying several newline-separated messages (e.g. `msg1\nmsg2`) is still emitted as a single log whose body contains the embedded newline. Configure `multiline` (for example `line_end_pattern: '\n'`) to split such packets into separate logs.
 **note** `multiline` detection works per UDP packet due to protocol limitations.
 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
