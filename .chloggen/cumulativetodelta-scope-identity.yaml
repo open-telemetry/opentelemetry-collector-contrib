@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: processor/cumulative_to_delta
+note: Preserve instrumentation scope schema URL and attributes when identifying metric streams.
+issues: [51492]
+subtext:
+change_logs: [user]
