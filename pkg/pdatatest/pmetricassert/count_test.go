@@ -333,12 +333,12 @@ resources/count:
 `)
 	doc, err := readDocument(path)
 	require.NoError(t, err)
-	require.NotNil(t, doc.ResourcesCount)
+	require.NotNil(t, doc.Resources.count)
 
 	out := writeAssertionYAML(t, "")
 	require.NoError(t, writeDocument(out, doc))
 
 	roundTripped, err := readDocument(out)
 	require.NoError(t, err)
-	require.Nil(t, roundTripped.ResourcesCount)
+	require.Nil(t, roundTripped.Resources.count)
 }

@@ -150,12 +150,12 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 				sort.Slice(dpList, func(i, j int) bool {
 					return canonKey(dpList[i].Attributes) < canonKey(dpList[j].Attributes)
 				})
-				metricAssert.Datapoints = dpList
-				scope.Metrics = append(scope.Metrics, metricAssert)
+				metricAssert.Datapoints.items = dpList
+				scope.Metrics.items = append(scope.Metrics.items, metricAssert)
 			}
-			res.Scopes = append(res.Scopes, scope)
+			res.Scopes.items = append(res.Scopes.items, scope)
 		}
-		doc.Resources = append(doc.Resources, res)
+		doc.Resources.items = append(doc.Resources.items, res)
 	}
 	return doc
 }
