@@ -15,6 +15,7 @@ import (
 type MetricIdentity struct {
 	Resource               pcommon.Resource
 	InstrumentationLibrary pcommon.InstrumentationScope
+	ScopeSchemaURL         string
 	MetricType             pmetric.MetricType
 	MetricIsMonotonic      bool
 	MetricName             string
@@ -44,6 +45,13 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteString(mi.InstrumentationLibrary.Name())
 	b.WriteByte(SEP)
 	b.WriteString(mi.InstrumentationLibrary.Version())
+	b.WriteByte(SEP)
+	b.WriteString(mi.ScopeSchemaURL)
+	if mi.InstrumentationLibrary.Attributes().Len() > 0 {
+		b.WriteByte(SEP)
+		scopeHash := xhash.MapHash(mi.InstrumentationLibrary.Attributes())
+		b.Write(scopeHash[:])
+	}
 	b.WriteByte(SEP)
 	if mi.MetricIsMonotonic {
 		b.WriteByte('Y')
