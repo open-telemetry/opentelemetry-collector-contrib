@@ -8,11 +8,6 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
-| render.app.id | The render.app.id | Any Str | true | [render.app.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/render.md#render-app-id) | - |
-| render.dyno.id | The render.dyno.id | Any Str | true | - | - |
-| render.release.commit | The render.release.commit | Any Str | true | [render.release.commit](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/render.md#render-release-commit) | - |
-| render.release.creation_timestamp | The render.release.creation_timestamp | Any Str | true | [render.release.creation_timestamp](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/render.md#render-release-creation-timestamp) | - |
 | service.instance.id | The service.instance.id | Any Str | true | [service.instance.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-instance-id) | - |
-| service.name | Render app name recorded as service.name. | Any Str | true | [service.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-name) | - |
-| service.version | Render release version set as service.version. | Any Str | true | [service.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-version) | - |
+| service.name | Render service name recorded as service.name. | Any Str | true | [service.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-name) | - |
+| service.version | Render git commit set as service.version. | Any Str | true | [service.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-version) | - |
