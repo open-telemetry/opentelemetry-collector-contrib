@@ -1153,10 +1153,6 @@ component_management:
     name: receiver_vcr
     paths:
     - receiver/vcrreceiver/**
-  - component_id: receiver_wavefront
-    name: receiver_wavefront
-    paths:
-    - receiver/wavefrontreceiver/**
   - component_id: receiver_webhookevent
     name: receiver_webhookevent
     paths:
