@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
@@ -81,7 +81,8 @@ func newTracesExporter(
 	apiClient := clientutil.CreateAPIClient(
 		params.BuildInfo,
 		cfg.Metrics.Endpoint,
-		cfg.ClientConfig)
+		cfg.ClientConfig,
+	)
 	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {
@@ -136,7 +137,7 @@ func (exp *traceExporter) consumeTraces(
 		}
 		switch src.Kind {
 		case source.HostnameKind:
-			hosts[src.Identifier] = struct{}{}
+			hosts[src.Identifier] = struct{}{} //nolint:staticcheck // SA1019: pkg/trace's OTLPReceiver fallback-hostname path (datadog-agent's api/otlp.go) does not yet populate SourceIdentifier; revisit once that's migrated
 		case source.AWSECSFargateKind:
 			tags[src.Tag()] = struct{}{}
 		case source.InvalidKind:
@@ -191,7 +192,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 		return nil, err
 	}
 	if src.Kind == source.HostnameKind {
-		acfg.Hostname = src.Identifier
+		acfg.Hostname = src.SourceIdentifier.Primary
 	}
 	acfg.OTLPReceiver.AttributesTranslator = attrsTranslator
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
@@ -228,6 +229,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	}
 	if !featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
+	}
+	if !featuregates.ScopeConventionFeatureGate.IsEnabled() {
+		acfg.Features["disable_otel_scope_convention"] = struct{}{}
 	}
 	tracelog.SetLogger(&agentcomponents.ZapLogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil

@@ -296,20 +296,6 @@ func TestEndpointEnv(t *testing.T) {
 				"container_image": "test-app:v1.0.0",
 			},
 		},
-		{
-			name: "Kafka topic",
-			endpoint: Endpoint{
-				ID:      EndpointID("topic1"),
-				Target:  "topic1",
-				Details: &KafkaTopic{},
-			},
-			want: EndpointEnv{
-				"id":       "topic1",
-				"type":     "kafka.topics",
-				"host":     "topic1",
-				"endpoint": "topic1",
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

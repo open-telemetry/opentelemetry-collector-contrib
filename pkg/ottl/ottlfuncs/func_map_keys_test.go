@@ -117,29 +117,65 @@ func Test_mapKeys_lambda_type_error(t *testing.T) {
 	assert.ErrorContains(t, err, "lambda expression must return a value of type string")
 }
 
-func Test_createMapKeysFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	keyMapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
-		k := resolveBinding("k")
-		return k.(string), nil
+func Test_MapKeysFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewMapKeysFactory[any]()
+		assert.Equal(t, "MapKeys", factory.Name())
 	})
-	source := ottl.StandardPMapGetter[any]{
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewMapKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &mapKeysArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "KeyMapper"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewMapKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+		mapKeysArgs, ok := args.(*mapKeysArguments[any])
+		require.True(t, ok)
+		mapKeysArgs.Source = ottl.StandardPMapGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		mapKeysArgs.KeyMapper = ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			return resolveBinding("k").(string), nil
+		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createMapKeysFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "MapKeysFactory args must be of type *mapKeysArguments[K]")
+	})
+}
+
+func BenchmarkMapKeys(b *testing.B) {
+	source := pcommon.NewMap()
+	source.PutStr("a", "1")
+	source.PutStr("b", "2")
+	source.PutStr("c", "3")
+	target := ottl.StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
+			return source, nil
 		},
 	}
-
-	t.Run("valid args", func(t *testing.T) {
-		fn, err := createMapKeysFunction[any](fCtx, &MapKeysArguments[any]{
-			Source:    source,
-			KeyMapper: keyMapper,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, fn)
+	keyMapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		return "prefix." + resolveBinding("k").(string), nil
 	})
-
-	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createMapKeysFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "MapKeysFactory args must be of type *MapKeysArguments[K]")
-	})
+	exprFunc, err := mapKeys(target, keyMapper)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

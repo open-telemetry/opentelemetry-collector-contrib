@@ -33,7 +33,8 @@ func getContainer(req testcontainers.ContainerRequest) (testcontainers.Container
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
-		})
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure container: %w", err)
 	}

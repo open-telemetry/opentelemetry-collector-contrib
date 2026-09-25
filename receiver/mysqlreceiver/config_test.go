@@ -8,8 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
@@ -60,4 +62,44 @@ func TestLoadConfigDefaultTLS(t *testing.T) {
 	expected.TLS.ServerName = "localhost"
 
 	require.Equal(t, expected, cfg)
+}
+
+func TestConfigValidate_UnixSocketEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.AddrConfig.Transport = confignet.TransportTypeUnix
+	cfg.AddrConfig.Endpoint = "/var/run/mysqld/mysqld.sock"
+
+	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_UnixSocketMissingEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.AddrConfig.Transport = confignet.TransportTypeUnix
+	cfg.AddrConfig.Endpoint = ""
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), ErrNoEndpoint)
+}
+
+func TestConfigValidate_TCPEndpointWithoutPort(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.AddrConfig.Transport = confignet.TransportTypeTCP
+	cfg.AddrConfig.Endpoint = "localhost"
+
+	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_TCPMissingEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.AddrConfig.Transport = confignet.TransportTypeTCP
+	cfg.AddrConfig.Endpoint = ""
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), ErrNoEndpoint)
 }

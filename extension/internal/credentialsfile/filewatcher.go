@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
@@ -22,15 +23,22 @@ type fileWatcher struct {
 	value      atomic.Pointer[string]
 	logger     *zap.Logger
 	onChange   func(string)
+	retryCfg   RetryOnFailureConfig
 	shutdownCH chan struct{}
 	doneCH     chan struct{}
 }
 
-func newFileWatcher(path string, logger *zap.Logger, onChange func(string)) *fileWatcher {
+func newFileWatcher(
+	path string,
+	logger *zap.Logger,
+	onChange func(string),
+	retryCfg RetryOnFailureConfig,
+) *fileWatcher {
 	return &fileWatcher{
 		path:     path,
 		logger:   logger,
 		onChange: onChange,
+		retryCfg: retryCfg,
 	}
 }
 
@@ -42,6 +50,46 @@ func (w *fileWatcher) Value() string {
 }
 
 func (w *fileWatcher) Start(ctx context.Context) error {
+	if !w.retryCfg.Enabled {
+		return w.start(ctx)
+	}
+
+	// Try reading the file immediately, then retry waiting Interval between
+	// each attempt, up to MaxRetries times before giving up. The Interval is
+	// only applied after a failed attempt, so an already-present file is read
+	// without any delay.
+	timer := time.NewTimer(0)
+	defer timer.Stop()
+	counter := 0
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("failed to read credentials file %q after %d retry", w.path, counter)
+		case <-timer.C:
+			if _, err := os.Stat(w.path); err == nil {
+				return w.start(ctx)
+			}
+			counter++
+			if w.retryCfg.MaxRetries != 0 && counter > w.retryCfg.MaxRetries {
+				return fmt.Errorf("failed to read credentials file %q after reaching out max number of retries", w.path)
+			}
+			if w.retryCfg.MaxRetries != 0 {
+				w.logger.Warn("retrying to read credentials file",
+					zap.String("file", w.path),
+					zap.String("attempt", fmt.Sprintf("%d/%d", counter, w.retryCfg.MaxRetries)),
+					zap.Duration("next_attempt_in", w.retryCfg.Interval))
+			} else {
+				w.logger.Warn("retrying to read credentials file",
+					zap.String("file", w.path),
+					zap.Int("attempt", counter),
+					zap.Duration("next_attempt_in", w.retryCfg.Interval))
+			}
+			timer.Reset(w.retryCfg.Interval)
+		}
+	}
+}
+
+func (w *fileWatcher) start(ctx context.Context) error {
 	if w.shutdownCH != nil {
 		return errors.New("file watcher already started")
 	}

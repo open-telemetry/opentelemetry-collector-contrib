@@ -10,6 +10,248 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+// OracledbAsmDiskErrorsMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk.errors metric.
+type OracledbAsmDiskErrorsMetricAttributeKey string
+
+const (
+	OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskErrorsMetricAttributeKey = "oracledb.asm.disk_group.name"
+	OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName      OracledbAsmDiskErrorsMetricAttributeKey = "oracledb.asm.disk.name"
+	OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection          OracledbAsmDiskErrorsMetricAttributeKey = "disk.io.direction"
+)
+
+// OracledbAsmDiskErrorsMetricConfig provides config for the oracledb.asm.disk.errors metric.
+type OracledbAsmDiskErrorsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbAsmDiskErrorsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbAsmDiskErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbAsmDiskErrorsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection:
+		default:
+			return fmt.Errorf("metric oracledb.asm.disk.errors doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name, oracledb.asm.disk.name, disk.io.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbAsmDiskGroupCapacityMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk_group.capacity metric.
+type OracledbAsmDiskGroupCapacityMetricAttributeKey string
+
+const (
+	OracledbAsmDiskGroupCapacityMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskGroupCapacityMetricAttributeKey = "oracledb.asm.disk_group.name"
+)
+
+// OracledbAsmDiskGroupCapacityMetricConfig provides config for the oracledb.asm.disk_group.capacity metric.
+type OracledbAsmDiskGroupCapacityMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbAsmDiskGroupCapacityMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbAsmDiskGroupCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbAsmDiskGroupCapacityMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbAsmDiskGroupCapacityMetricAttributeKeyOracledbAsmDiskGroupName:
+		default:
+			return fmt.Errorf("metric oracledb.asm.disk_group.capacity doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbAsmDiskGroupFreeMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk_group.free metric.
+type OracledbAsmDiskGroupFreeMetricAttributeKey string
+
+const (
+	OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskGroupFreeMetricAttributeKey = "oracledb.asm.disk_group.name"
+)
+
+// OracledbAsmDiskGroupFreeMetricConfig provides config for the oracledb.asm.disk_group.free metric.
+type OracledbAsmDiskGroupFreeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbAsmDiskGroupFreeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbAsmDiskGroupFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbAsmDiskGroupFreeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName:
+		default:
+			return fmt.Errorf("metric oracledb.asm.disk_group.free doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbAsmDiskGroupOfflineDisksMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk_group.offline_disks metric.
+type OracledbAsmDiskGroupOfflineDisksMetricAttributeKey string
+
+const (
+	OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskGroupOfflineDisksMetricAttributeKey = "oracledb.asm.disk_group.name"
+)
+
+// OracledbAsmDiskGroupOfflineDisksMetricConfig provides config for the oracledb.asm.disk_group.offline_disks metric.
+type OracledbAsmDiskGroupOfflineDisksMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbAsmDiskGroupOfflineDisksMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbAsmDiskGroupOfflineDisksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbAsmDiskGroupOfflineDisksMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName:
+		default:
+			return fmt.Errorf("metric oracledb.asm.disk_group.offline_disks doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbAsmDiskGroupUsableFreeMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk_group.usable_free metric.
+type OracledbAsmDiskGroupUsableFreeMetricAttributeKey string
+
+const (
+	OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskGroupUsableFreeMetricAttributeKey = "oracledb.asm.disk_group.name"
+)
+
+// OracledbAsmDiskGroupUsableFreeMetricConfig provides config for the oracledb.asm.disk_group.usable_free metric.
+type OracledbAsmDiskGroupUsableFreeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbAsmDiskGroupUsableFreeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbAsmDiskGroupUsableFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbAsmDiskGroupUsableFreeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName:
+		default:
+			return fmt.Errorf("metric oracledb.asm.disk_group.usable_free doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbBufferInspectedMetricAttributeKey specifies the key of an attribute for the oracledb.buffer.inspected metric.
 type OracledbBufferInspectedMetricAttributeKey string
 
@@ -4545,6 +4787,154 @@ func (ms *OracledbSystemProcessCountMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
+// OracledbTablespaceLimitMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace.limit metric.
+type OracledbTablespaceLimitMetricAttributeKey string
+
+const (
+	OracledbTablespaceLimitMetricAttributeKeyTablespaceName OracledbTablespaceLimitMetricAttributeKey = "tablespace_name"
+	OracledbTablespaceLimitMetricAttributeKeyOracleDbPdb    OracledbTablespaceLimitMetricAttributeKey = "oracle.db.pdb"
+)
+
+// OracledbTablespaceLimitMetricConfig provides config for the oracledb.tablespace.limit metric.
+type OracledbTablespaceLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbTablespaceLimitMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbTablespaceLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbTablespaceLimitMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbTablespaceLimitMetricAttributeKeyTablespaceName, OracledbTablespaceLimitMetricAttributeKeyOracleDbPdb:
+		default:
+			return fmt.Errorf("metric oracledb.tablespace.limit doesn't have an attribute %v, valid attributes: [tablespace_name, oracle.db.pdb]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbTablespaceStatusMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace.status metric.
+type OracledbTablespaceStatusMetricAttributeKey string
+
+const (
+	OracledbTablespaceStatusMetricAttributeKeyTablespaceName          OracledbTablespaceStatusMetricAttributeKey = "tablespace_name"
+	OracledbTablespaceStatusMetricAttributeKeyOracledbTablespaceState OracledbTablespaceStatusMetricAttributeKey = "oracledb.tablespace.state"
+	OracledbTablespaceStatusMetricAttributeKeyOracleDbPdb             OracledbTablespaceStatusMetricAttributeKey = "oracle.db.pdb"
+)
+
+// OracledbTablespaceStatusMetricConfig provides config for the oracledb.tablespace.status metric.
+type OracledbTablespaceStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbTablespaceStatusMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbTablespaceStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbTablespaceStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbTablespaceStatusMetricAttributeKeyTablespaceName, OracledbTablespaceStatusMetricAttributeKeyOracledbTablespaceState, OracledbTablespaceStatusMetricAttributeKeyOracleDbPdb:
+		default:
+			return fmt.Errorf("metric oracledb.tablespace.status doesn't have an attribute %v, valid attributes: [tablespace_name, oracledb.tablespace.state, oracle.db.pdb]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbTablespaceUtilizationMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace.utilization metric.
+type OracledbTablespaceUtilizationMetricAttributeKey string
+
+const (
+	OracledbTablespaceUtilizationMetricAttributeKeyTablespaceName OracledbTablespaceUtilizationMetricAttributeKey = "tablespace_name"
+	OracledbTablespaceUtilizationMetricAttributeKeyOracleDbPdb    OracledbTablespaceUtilizationMetricAttributeKey = "oracle.db.pdb"
+)
+
+// OracledbTablespaceUtilizationMetricConfig provides config for the oracledb.tablespace.utilization metric.
+type OracledbTablespaceUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbTablespaceUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbTablespaceUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbTablespaceUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbTablespaceUtilizationMetricAttributeKeyTablespaceName, OracledbTablespaceUtilizationMetricAttributeKeyOracleDbPdb:
+		default:
+			return fmt.Errorf("metric oracledb.tablespace.utilization doesn't have an attribute %v, valid attributes: [tablespace_name, oracle.db.pdb]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbTablespaceSizeLimitMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace_size.limit metric.
 type OracledbTablespaceSizeLimitMetricAttributeKey string
 
@@ -4926,6 +5316,11 @@ func (ms *OracledbUserRollbacksMetricConfig) Validate() error {
 
 // MetricsConfig provides config for oracledb metrics.
 type MetricsConfig struct {
+	OracledbAsmDiskErrors                         OracledbAsmDiskErrorsMetricConfig                         `mapstructure:"oracledb.asm.disk.errors"`
+	OracledbAsmDiskGroupCapacity                  OracledbAsmDiskGroupCapacityMetricConfig                  `mapstructure:"oracledb.asm.disk_group.capacity"`
+	OracledbAsmDiskGroupFree                      OracledbAsmDiskGroupFreeMetricConfig                      `mapstructure:"oracledb.asm.disk_group.free"`
+	OracledbAsmDiskGroupOfflineDisks              OracledbAsmDiskGroupOfflineDisksMetricConfig              `mapstructure:"oracledb.asm.disk_group.offline_disks"`
+	OracledbAsmDiskGroupUsableFree                OracledbAsmDiskGroupUsableFreeMetricConfig                `mapstructure:"oracledb.asm.disk_group.usable_free"`
 	OracledbBufferInspected                       OracledbBufferInspectedMetricConfig                       `mapstructure:"oracledb.buffer.inspected"`
 	OracledbBufferRequests                        OracledbBufferRequestsMetricConfig                        `mapstructure:"oracledb.buffer.requests"`
 	OracledbBufferCacheBlockChanges               OracledbBufferCacheBlockChangesMetricConfig               `mapstructure:"oracledb.buffer_cache.block.changes"`
@@ -5044,6 +5439,9 @@ type MetricsConfig struct {
 	OracledbSystemCPUCount                        OracledbSystemCPUCountMetricConfig                        `mapstructure:"oracledb.system.cpu.count"`
 	OracledbSystemMemoryLimit                     OracledbSystemMemoryLimitMetricConfig                     `mapstructure:"oracledb.system.memory.limit"`
 	OracledbSystemProcessCount                    OracledbSystemProcessCountMetricConfig                    `mapstructure:"oracledb.system.process.count"`
+	OracledbTablespaceLimit                       OracledbTablespaceLimitMetricConfig                       `mapstructure:"oracledb.tablespace.limit"`
+	OracledbTablespaceStatus                      OracledbTablespaceStatusMetricConfig                      `mapstructure:"oracledb.tablespace.status"`
+	OracledbTablespaceUtilization                 OracledbTablespaceUtilizationMetricConfig                 `mapstructure:"oracledb.tablespace.utilization"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
 	OracledbTransactionResponseTime               OracledbTransactionResponseTimeMetricConfig               `mapstructure:"oracledb.transaction.response.time"`
@@ -5057,6 +5455,31 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		OracledbAsmDiskErrors: OracledbAsmDiskErrorsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbAsmDiskErrorsMetricAttributeKey{OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection},
+		},
+		OracledbAsmDiskGroupCapacity: OracledbAsmDiskGroupCapacityMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbAsmDiskGroupCapacityMetricAttributeKey{OracledbAsmDiskGroupCapacityMetricAttributeKeyOracledbAsmDiskGroupName},
+		},
+		OracledbAsmDiskGroupFree: OracledbAsmDiskGroupFreeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbAsmDiskGroupFreeMetricAttributeKey{OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName},
+		},
+		OracledbAsmDiskGroupOfflineDisks: OracledbAsmDiskGroupOfflineDisksMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbAsmDiskGroupOfflineDisksMetricAttributeKey{OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName},
+		},
+		OracledbAsmDiskGroupUsableFree: OracledbAsmDiskGroupUsableFreeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbAsmDiskGroupUsableFreeMetricAttributeKey{OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName},
+		},
 		OracledbBufferInspected: OracledbBufferInspectedMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
@@ -5565,6 +5988,21 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbSystemProcessCount: OracledbSystemProcessCountMetricConfig{
 			Enabled: false,
 		},
+		OracledbTablespaceLimit: OracledbTablespaceLimitMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbTablespaceLimitMetricAttributeKey{OracledbTablespaceLimitMetricAttributeKeyTablespaceName},
+		},
+		OracledbTablespaceStatus: OracledbTablespaceStatusMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []OracledbTablespaceStatusMetricAttributeKey{OracledbTablespaceStatusMetricAttributeKeyTablespaceName, OracledbTablespaceStatusMetricAttributeKeyOracledbTablespaceState},
+		},
+		OracledbTablespaceUtilization: OracledbTablespaceUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbTablespaceUtilizationMetricAttributeKey{OracledbTablespaceUtilizationMetricAttributeKeyTablespaceName},
+		},
 		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
@@ -5630,17 +6068,25 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for oracledb events.
 type EventsConfig struct {
+	DbServerQueryPlan         EventConfig `mapstructure:"db.server.query_plan"`
 	DbServerQuerySample       EventConfig `mapstructure:"db.server.query_sample"`
 	DbServerSessionWaitSample EventConfig `mapstructure:"db.server.session.wait_sample"`
+	DbServerTopProcedure      EventConfig `mapstructure:"db.server.top_procedure"`
 	DbServerTopQuery          EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerQueryPlan: EventConfig{
+			Enabled: false,
+		},
 		DbServerQuerySample: EventConfig{
 			Enabled: false,
 		},
 		DbServerSessionWaitSample: EventConfig{
+			Enabled: false,
+		},
+		DbServerTopProcedure: EventConfig{
 			Enabled: false,
 		},
 		DbServerTopQuery: EventConfig{
@@ -5859,6 +6305,76 @@ func (rac *OracledbInstanceNameResourceAttributeConfig) Unmarshal(parser *confma
 	return nil
 }
 
+// ServerAddressResourceAttributeConfig provides config for the server.address resource attribute.
+type ServerAddressResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerAddressResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServerPortResourceAttributeConfig provides config for the server.port resource attribute.
+type ServerPortResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *int64 `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerPortResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ServiceInstanceIDResourceAttributeConfig provides config for the service.instance.id resource attribute.
 type ServiceInstanceIDResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -5972,6 +6488,8 @@ type ResourceAttributesConfig struct {
 	OracleDbRole         OracleDbRoleResourceAttributeConfig         `mapstructure:"oracle.db.role"`
 	OracleDbVersion      OracleDbVersionResourceAttributeConfig      `mapstructure:"oracle.db.version"`
 	OracledbInstanceName OracledbInstanceNameResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
+	ServerAddress        ServerAddressResourceAttributeConfig        `mapstructure:"server.address"`
+	ServerPort           ServerPortResourceAttributeConfig           `mapstructure:"server.port"`
 	ServiceInstanceID    ServiceInstanceIDResourceAttributeConfig    `mapstructure:"service.instance.id"`
 	ServiceName          ServiceNameResourceAttributeConfig          `mapstructure:"service.name"`
 	ServiceNamespace     ServiceNamespaceResourceAttributeConfig     `mapstructure:"service.namespace"`
@@ -5995,6 +6513,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerAddress: ServerAddressResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerPort: ServerPortResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
@@ -6031,6 +6555,12 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	if rac.OracledbInstanceName.Enabled && rac.OracledbInstanceName.OverrideValue != nil {
 		res.Attributes().PutStr("oracledb.instance.name", *rac.OracledbInstanceName.OverrideValue)
 	}
+	if rac.ServerAddress.Enabled && rac.ServerAddress.OverrideValue != nil {
+		res.Attributes().PutStr("server.address", *rac.ServerAddress.OverrideValue)
+	}
+	if rac.ServerPort.Enabled && rac.ServerPort.OverrideValue != nil {
+		res.Attributes().PutInt("server.port", *rac.ServerPort.OverrideValue)
+	}
 	if rac.ServiceInstanceID.Enabled && rac.ServiceInstanceID.OverrideValue != nil {
 		res.Attributes().PutStr("service.instance.id", *rac.ServiceInstanceID.OverrideValue)
 	}
@@ -6053,11 +6583,6 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for oracledb logs builder.

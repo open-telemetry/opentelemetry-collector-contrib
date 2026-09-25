@@ -28,6 +28,9 @@ set -euo pipefail
 #   BASE_REF    (Optional): Branch target. Defaults to 'main' locally.
 #   TARGET_CONCURRENCY    (Optional): Max concurrent buckets. Defaults to 10.
 #   FORCE_ALL  (Optional): Set to "true" to force full matrix output.
+#   CHANGED_FILES_JSON (Optional): JSON array of changed file paths, as
+#     produced by dorny/paths-filter. When set, this is used instead of a
+#     local git diff, so the checkout doesn't need any history depth.
 # ======================================================================================
 
 # Ensure we are in the repo root
@@ -110,16 +113,25 @@ fi
 # -----------------------------------------------------------------------------
 # Check what changed
 # -----------------------------------------------------------------------------
-echo "Calculating git diff against origin/${BASE_REF}..." >&2
+if [[ -n "${CHANGED_FILES_JSON:-}" ]]; then
+  # Pre-computed via the GitHub API (dorny/paths-filter), so this doesn't
+  # need any git history at all -- a non-zero fetch-depth on checkout only
+  # fetches the checked-out ref, never other branches, so origin/main
+  # wouldn't exist locally for a merge-base otherwise.
+  echo "Using pre-computed changed files list." >&2
+  changed_files="$(echo "${CHANGED_FILES_JSON}" | jq -r '.[]')"
+else
+  echo "Calculating git diff against origin/${BASE_REF}..." >&2
 
-# Fetch origin/main locally if needed to ensure comparison works
-if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
-  git fetch origin "${BASE_REF}" >/dev/null 2>&1 || true
+  # Fetch origin/main locally if needed to ensure comparison works
+  if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
+    git fetch origin "${BASE_REF}" >/dev/null 2>&1 || true
+  fi
+
+  # Calculate the merge base
+  base_sha="$(git merge-base "origin/${BASE_REF}" "${PR_HEAD}")"
+  changed_files="$(git diff --name-only --diff-filter=ACMRTUXB "${base_sha}" "${PR_HEAD}")"
 fi
-
-# Calculate the merge base
-base_sha="$(git merge-base "origin/${BASE_REF}" "${PR_HEAD}")"
-changed_files="$(git diff --name-only --diff-filter=ACMRTUXB "${base_sha}" "${PR_HEAD}")"
 
 if [[ -z "${changed_files}" ]]; then
   echo "No changed files detected." >&2

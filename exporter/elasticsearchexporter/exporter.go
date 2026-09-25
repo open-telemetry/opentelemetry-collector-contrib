@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
 
@@ -127,6 +128,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 				resourceSchemaURL: rl.SchemaUrl(),
 				scope:             scope,
 				scopeSchemaURL:    ill.SchemaUrl(),
+				ecsDoc:            newECSDocument(mappingMode),
 			}
 
 			for _, lr := range ill.LogRecords().All() {
@@ -393,6 +395,7 @@ func (e *elasticsearchExporter) pushTraceData(
 				resourceSchemaURL: il.SchemaUrl(),
 				scope:             scope,
 				scopeSchemaURL:    scopeSpan.SchemaUrl(),
+				ecsDoc:            newECSDocument(mappingMode),
 			}
 
 			for _, span := range scopeSpan.Spans().All() {
@@ -613,16 +616,19 @@ func (*elasticsearchExporter) pushProfileRecord(
 ) error {
 	return encoder.encodeProfile(ec, dic, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
-		case otelserializer.StackTraceIndex:
+		case otelserializer.StackTraceIndex, ecsserializer.StackTraceIndex:
 			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.StackFrameIndex:
+		case otelserializer.StackFrameIndex, ecsserializer.StackFrameIndex:
 			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.AllEventsIndex:
+		case otelserializer.AllEventsIndex, ecsserializer.AllEventsIndex:
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
+			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
+		case ecsserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
-		case otelserializer.ExecutablesSymQueueIndex,
-			otelserializer.LeafFramesSymQueueIndex,
+		case ecsserializer.ExecutablesSymQueueIndex,
+			ecsserializer.LeafFramesSymQueueIndex,
+			ecsserializer.HostsMetadataIndex,
 			otelserializer.HostsMetadataIndex:
 			// These regular indices have a low write-frequency and can share the executablesSession.
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)

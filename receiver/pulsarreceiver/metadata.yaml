@@ -9,14 +9,12 @@ status:
   stability:
     alpha: [metrics, traces, logs]
   distributions: [contrib]
-  unsupported_platforms: [aix]
+  unsupported_platforms: [aix, solaris]
   codeowners:
     active: [dao-jun]
     emeritus: [dmitryax]
 
-# TODO: Update the receiver to pass the tests
 tests:
-  skip_lifecycle: true
   goleak:
     ignore:
       any:

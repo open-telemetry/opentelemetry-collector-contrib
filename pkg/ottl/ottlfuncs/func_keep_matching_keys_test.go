@@ -171,3 +171,82 @@ func Test_keepMatchingKeys_get_nil(t *testing.T) {
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
 }
+
+func Test_KeepMatchingKeysFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewKeepMatchingKeysFactory[any]()
+		assert.Equal(t, "keep_matching_keys", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewKeepMatchingKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &keepMatchingKeysArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewKeepMatchingKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+		keepMatchingKeysArgs, ok := args.(*keepMatchingKeysArguments[any])
+		require.True(t, ok)
+		keepMatchingKeysArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		keepMatchingKeysArgs.Pattern = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "foo.*", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createKeepMatchingKeysFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "KeepMatchingKeysFactory args must be of type *keepMatchingKeysArguments[K")
+	})
+}
+
+func BenchmarkKeepMatchingKeys(b *testing.B) {
+	input := pcommon.NewMap()
+	input.PutStr("foo", "bar")
+	input.PutStr("foo1", "bar")
+	input.PutInt("foo2", 3)
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			v, ok := m.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	pattern := &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+			return `\d$`, nil
+		},
+	}
+	exprFunc, err := keepMatchingKeys(target, pattern)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		input.CopyTo(scenarioMap)
+		if _, err := exprFunc(ctx, scenarioMap); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -74,6 +74,22 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["k8s.pod.network.io"] = mb.metricK8sPodNetworkIo.config.AggregationStrategy
 
 			expectedWarnings := 0
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `k8s.container.cpu.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `container.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `k8s.container.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `container.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `k8s.pod.cpu.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `k8s.pod.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
@@ -176,6 +192,12 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeFilesystemInodeCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeFilesystemInodeFreeDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
@@ -671,6 +693,34 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Node filesystem capacity", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.filesystem.inode.count":
+					assert.False(t, validatedMetrics["k8s.node.filesystem.inode.count"], "Found a duplicate in the metrics slice: k8s.node.filesystem.inode.count")
+					validatedMetrics["k8s.node.filesystem.inode.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of inodes in the node's root filesystem.", mi.Description())
+					assert.Equal(t, "{inode}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.filesystem.inode.free":
+					assert.False(t, validatedMetrics["k8s.node.filesystem.inode.free"], "Found a duplicate in the metrics slice: k8s.node.filesystem.inode.free")
+					validatedMetrics["k8s.node.filesystem.inode.free"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of free inodes in the node's root filesystem.", mi.Description())
+					assert.Equal(t, "{inode}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

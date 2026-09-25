@@ -394,7 +394,8 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return fmt.Errorf(
 			"operator '%s' has 'add_metadata_from_filepath' enabled, but the log record attribute '%s' is missing. Perhaps enable the 'include_file_path' option?",
 			p.OperatorID,
-			logPathField)
+			logPathField,
+		)
 	}
 
 	rawLogPath, ok := logPath.(string)

@@ -27,10 +27,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
-	clientConfig.ForceAttemptHTTP2 = false
 
 	tests := []struct {
 		id       component.ID

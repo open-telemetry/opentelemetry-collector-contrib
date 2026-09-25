@@ -65,7 +65,7 @@ func NewHTTPTransport(hcs confighttp.ClientConfig) *http.Transport {
 		// Not supported by intake
 		ForceAttemptHTTP2: false,
 		TLSClientConfig:   &tls.Config{InsecureSkipVerify: hcs.TLS.InsecureSkipVerify},
-		DisableKeepAlives: hcs.DisableKeepAlives,
+		DisableKeepAlives: !hcs.Keepalive.HasValue(),
 	}
 	if hcs.ReadBufferSize > 0 {
 		transport.ReadBufferSize = hcs.ReadBufferSize
@@ -73,17 +73,13 @@ func NewHTTPTransport(hcs confighttp.ClientConfig) *http.Transport {
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
-	if hcs.MaxIdleConns > 0 {
-		transport.MaxIdleConns = hcs.MaxIdleConns
-	}
-	if hcs.MaxIdleConnsPerHost > 0 {
-		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
-	}
 	if hcs.MaxConnsPerHost > 0 {
 		transport.MaxConnsPerHost = hcs.MaxConnsPerHost
 	}
-	if hcs.IdleConnTimeout > 0 {
-		transport.IdleConnTimeout = hcs.IdleConnTimeout
+	if hcs.Keepalive.HasValue() {
+		transport.MaxIdleConns = hcs.Keepalive.Get().MaxIdleConns
+		transport.MaxIdleConnsPerHost = hcs.Keepalive.Get().MaxIdleConnsPerHost
+		transport.IdleConnTimeout = hcs.Keepalive.Get().IdleConnTimeout
 	}
 
 	return &transport

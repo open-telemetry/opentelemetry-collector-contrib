@@ -125,8 +125,12 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		batches = splitMetricsByAttributes(md, e.routingAttrs)
 	}
 
-	// Now assign each batch to an exporter, and merge as we go
-	metricsByExporter := map[*wrappedExporter]pmetric.Metrics{}
+	// Now assign each batch to an exporter, and merge as we go. A Merger (as
+	// opposed to repeated metrics.Merge calls) caches the identities of the
+	// accumulated data, so merging N batches costs O(N) identity computations
+	// instead of O(N^2) — with per-stream routing keys N can easily be in the
+	// thousands per ConsumeMetrics call.
+	metricsByExporter := map[*wrappedExporter]*metrics.Merger{}
 	exporterEndpoints := map[*wrappedExporter]string{}
 
 	for routingID, mds := range batches {
@@ -135,19 +139,20 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			return err
 		}
 
-		expMetrics, ok := metricsByExporter[exp]
+		merger, ok := metricsByExporter[exp]
 		if !ok {
 			exp.consumeWG.Add(1)
-			expMetrics = pmetric.NewMetrics()
-			metricsByExporter[exp] = expMetrics
+			merger = metrics.NewMerger(pmetric.NewMetrics())
+			metricsByExporter[exp] = merger
 			exporterEndpoints[exp] = endpoint
 		}
 
-		metrics.Merge(expMetrics, mds)
+		merger.Merge(mds)
 	}
 
 	var errs error
-	for exp, mds := range metricsByExporter {
+	for exp, merger := range metricsByExporter {
+		mds := merger.Metrics()
 		start := time.Now()
 		err := exp.ConsumeMetrics(ctx, mds)
 		duration := time.Since(start)

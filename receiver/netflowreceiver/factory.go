@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !solaris
+
 package netflowreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver"
 
 import (
@@ -13,21 +15,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 )
 
-const (
-	defaultSockets = 1
-	defaultWorkers = 2
-	// The default UDP packet buffer size in GoFlow2 is 9000 bytes, which means
-	// that for a full queue of 1000 messages, the size in memory will be 9MB.
-	// Source: https://github.com/netsampler/goflow2/blob/v2.2.1/README.md#security-notes-and-assumptions
-	defaultQueueSize = 1_000
-)
-
 // NewFactory creates a factory for netflow receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 // Config defines configuration for netflow receiver.
@@ -46,7 +40,7 @@ func createDefaultConfig() component.Config {
 // We also create the UDP receiver, which is the piece of software that actually listens
 // for incoming netflow traffic on an UDP port.
 func createLogsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Logs) (receiver.Logs, error) {
-	conf := *(cfg.(*Config))
+	conf := *cfg.(*Config)
 
 	nr, err := newNetflowLogsReceiver(params, conf, consumer)
 	if err != nil {
