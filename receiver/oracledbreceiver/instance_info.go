@@ -50,7 +50,7 @@ const (
 	instanceOCICDBServicesSQL = "SELECT 1 FROM cdb_services WHERE name LIKE '%oraclecloud%' AND rownum = 1"
 	instanceOCISQL            = "SELECT 1 FROM v$pdbs WHERE cloud_identity LIKE '%oraclecloud%' AND rownum = 1"
 	instanceRDSSQL            = "SELECT SUBSTR(name,1,10) AS path FROM v$datafile WHERE rownum = 1"
-	instanceVersionSQL = "SELECT version FROM v$instance"
+	instanceVersionSQL        = "SELECT version FROM v$instance"
 	// instanceVersionEditionSQL selects edition only when oracle.db.edition is enabled.
 	// edition is absent on some older Oracle releases; selecting it unconditionally
 	// causes ORA-00904 and drops the entire row, losing version/role/open_mode too.
