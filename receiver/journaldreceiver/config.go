@@ -24,13 +24,15 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// receiverType implements adapter.LogReceiverType
+// receiverType implements adapter.LogReceiverTypeWithScope
 // to create a journald receiver
 type receiverType struct{}
 
-// Type is the receiver type
+var _ adapter.LogReceiverTypeWithScope = (*receiverType)(nil)
+
 func (receiverType) ScopeName() string { return metadata.ScopeName }
 
+// Type is the receiver type
 func (receiverType) Type() component.Type {
 	return metadata.Type
 }

@@ -22,13 +22,15 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-// ReceiverType implements stanza.LogReceiverType
+// ReceiverType implements adapter.LogReceiverTypeWithScope
 // to create a file tailing receiver
 type ReceiverType struct{}
 
-// Type is the receiver type
+var _ adapter.LogReceiverTypeWithScope = (*ReceiverType)(nil)
+
 func (ReceiverType) ScopeName() string { return metadata.ScopeName }
 
+// Type is the receiver type
 func (ReceiverType) Type() component.Type {
 	return metadata.Type
 }

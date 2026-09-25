@@ -65,10 +65,6 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if err != nil {
 			return nil, err
 		}
-		var scopeName string
-		if lrs, ok := logReceiverType.(LogReceiverTypeWithScope); ok {
-			scopeName = lrs.ScopeName()
-		}
 		rcv := &receiver{
 			set:       params.TelemetrySettings,
 			id:        params.ID,
@@ -76,7 +72,9 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,
-			scopeName: scopeName,
+		}
+		if lrs, ok := logReceiverType.(LogReceiverTypeWithScope); ok {
+			rcv.scopeName = lrs.ScopeName()
 		}
 
 		var emitterOpts []helper.EmitterOption
