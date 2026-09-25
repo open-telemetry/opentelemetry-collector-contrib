@@ -135,6 +135,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq

@@ -12,10 +12,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadatatest"
 )
 
 // TestClearPauseReasons proves fetch resumes only after the last pause reason is cleared.
@@ -137,7 +133,7 @@ func TestProcessPartitionBatchStopsWhenCancelled(t *testing.T) {
 			kafkaClient, cfg := mustNewMarkedFakeCluster(t, kfake.SeedTopics(1, topic))
 			cfg.PartitionProcessing.Independent = tc.independent
 			cfg.MessageMarking = tc.marking
-			settings, tel, _ := mustNewSettings(t)
+			settings, _, _ := mustNewSettings(t)
 			consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
 			require.NoError(t, err)
 			consumer.client = kafkaClient
@@ -181,7 +177,7 @@ func TestProcessPartitionBatchStopsWhenCancelled(t *testing.T) {
 			}
 			batch.HighWatermark = records
 
-			consumer.processPartitionBatch(partitionConsumer.ctx, partitionConsumer, batch)
+			consumer.processPartitionBatch(partitionConsumer, batch)
 
 			require.Equal(t, tc.wantConsumed, consumed,
 				"records sent to the pipeline")
@@ -198,9 +194,10 @@ func TestProcessPartitionBatchStopsWhenCancelled(t *testing.T) {
 
 			// The loop breaks instead of returning, so the records it did
 			// process still report their lag.
-			metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
-				Value: (records - 1) - (tc.wantMarkedOffset - 1),
-			}}, metricdatatest.IgnoreTimestamp())
+			require.True(t, partitionConsumer.offsetLagReportable.Load(),
+				"a partition that processed records reports its lag")
+			require.Equal(t, (records-1)-(tc.wantMarkedOffset-1),
+				partitionConsumer.offsetLag.Load())
 		})
 	}
 }
@@ -268,7 +265,7 @@ func TestProcessPartitionBatchMarkOwnership(t *testing.T) {
 			batch.Topic = topic
 			batch.Records[0].Topic = topic
 			batch.Records[0].Partition = 0
-			consumer.processPartitionBatch(t.Context(), partitionConsumer, batch)
+			consumer.processPartitionBatch(partitionConsumer, batch)
 
 			marked := kafkaClient.MarkedOffsets()[topic]
 			if tc.wantMarked {

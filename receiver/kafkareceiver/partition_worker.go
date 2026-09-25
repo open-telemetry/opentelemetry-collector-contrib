@@ -13,7 +13,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -44,6 +43,16 @@ type pc struct {
 	mailbox *partitionMailbox
 	// pauseReasons stores a bitmask of partitionPauseReason values.
 	pauseReasons atomic.Uint32
+
+	// offsetLag holds the last reported offset lag
+	offsetLag atomic.Int64
+	// offsetLagReportable flag to track when an active partition has a reportable offset lag
+	offsetLagReportable atomic.Bool
+
+	// currentOffset holds the offset of the last record handed to message processing
+	currentOffset atomic.Int64
+	// currentOffsetReportable flag to track when an active partition has a reportable current offset
+	currentOffsetReportable atomic.Bool
 
 	// mu prevents cancellation from racing a new wg.Add.
 	mu sync.RWMutex
@@ -119,7 +128,7 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 				break
 			}
 
-			result := c.processPartitionBatch(pc.ctx, pc, batch)
+			result := c.processPartitionBatch(pc, batch)
 			if result.rewindRecord != nil {
 				pc.mailbox.requestRewind(result.rewindRecord, true, func() {
 					pc.addPauseReason(partitionPauseRewind)
@@ -165,7 +174,7 @@ func (c *franzConsumer) applyMailboxRewind(pc *pc, tp topicPartition, partition 
 //     dequeues the batch. Records still waiting in the mailbox are not marked.
 //   - Legacy with autocommit disabled marks records here. consume commits all
 //     marked partitions after the fetched batch finishes.
-func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
+func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
 	var fatalRecord *kgo.Record
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
@@ -191,7 +200,8 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 		if !c.config.MessageMarking.After {
 			c.markCommitRecords(pc, p.Topic, p.Partition, msg)
 		}
-		c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
+		// Record the current consumer offset.
+		pc.currentOffset.Store(msg.Offset)
 		if err := c.handleMessage(pc, msg); err != nil {
 			if pc.ctx.Err() != nil {
 				pc.logger.Debug("message processing interrupted",
@@ -216,8 +226,8 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 		}
 		lastProcessed = msg
 	}
-
 	result := partitionBatchResult{}
+	terminallyPaused := false
 	if fatalRecord != nil {
 		switch {
 		case c.config.ErrorBackOff.Enabled && !fatalIsPermanent:
@@ -260,6 +270,12 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 				// Pause to prevent later records from passing the failed,
 				// unmarked record.
 				c.client.PauseFetchPartitions(map[string][]int32{p.Topic: {p.Partition}})
+
+				// Stop reporting lag and current offset because this partition
+				// cannot resume without reassignment.
+				pc.offsetLagReportable.Store(false)
+				pc.currentOffsetReportable.Store(false)
+				terminallyPaused = true
 			}
 			c.mu.RUnlock()
 			if !canPause {
@@ -280,14 +296,25 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 			result.terminal = true
 		}
 	}
+
+	if len(p.Records) > 0 && !terminallyPaused {
+		// Every loop iteration stores the record offset before any break, so
+		// currentOffset is set before the flag becomes observable.
+		pc.currentOffsetReportable.Store(true)
+	}
+
 	if lastProcessed == nil {
+		// no messages were processed, return early
 		return result
 	}
-	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(
-		ctx,
-		(p.HighWatermark-1)-lastProcessed.Offset,
-		metric.WithAttributeSet(pc.attrs),
-	)
+
+	// Record the current consumer lag
+	// Skip for terminally paused partitions, reporting will resume after rebalance.
+	if !terminallyPaused {
+		pc.offsetLag.Store((p.HighWatermark - 1) - lastProcessed.Offset)
+		pc.offsetLagReportable.Store(true)
+	}
+
 	if c.config.MessageMarking.After {
 		// Mark the latest accepted record after processing. This also covers
 		// every earlier record in the batch.
