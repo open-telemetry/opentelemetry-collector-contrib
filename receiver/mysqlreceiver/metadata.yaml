@@ -187,10 +187,10 @@ attributes:
   mysql.events_statements_summary_by_digest.digest:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
-  mysql.events_statements_summary_by_digest.sum_rows_examined:
+  mysql.events_statements_summary_by_digest.examined_rows:
     description: The number of rows examined by the statement, reported as a delta value.
     type: int
-  mysql.events_statements_summary_by_digest.sum_rows_sent:
+  mysql.events_statements_summary_by_digest.returned_rows:
     description: The number of rows returned by the statement, reported as a delta value.
     type: int
   mysql.events_statements_summary_by_digest.sum_timer_wait:
@@ -377,8 +377,8 @@ events:
       - mysql.events_statements_summary_by_digest.count_star
       - mysql.events_statements_summary_by_digest.sum_timer_wait
       - db.namespace
-      - mysql.events_statements_summary_by_digest.sum_rows_examined
-      - mysql.events_statements_summary_by_digest.sum_rows_sent
+      - mysql.events_statements_summary_by_digest.examined_rows
+      - mysql.events_statements_summary_by_digest.returned_rows
 
 metrics:
   mysql.buffer_pool.data_pages:

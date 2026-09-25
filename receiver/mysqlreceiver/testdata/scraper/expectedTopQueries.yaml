@@ -40,10 +40,10 @@ resourceLogs:
               - key: db.namespace
                 value:
                   stringValue: mysql
-              - key: mysql.events_statements_summary_by_digest.sum_rows_examined
+              - key: mysql.events_statements_summary_by_digest.examined_rows
                 value:
                   intValue: "0"
-              - key: mysql.events_statements_summary_by_digest.sum_rows_sent
+              - key: mysql.events_statements_summary_by_digest.returned_rows
                 value:
                   intValue: "0"
             body: {}

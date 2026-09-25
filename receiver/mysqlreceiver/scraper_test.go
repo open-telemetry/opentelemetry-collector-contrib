@@ -2026,12 +2026,12 @@ func TestScrapeTopQueriesRowsExaminedSent(t *testing.T) {
 		require.Equal(t, 1, logs.ResourceLogs().Len())
 		lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
-		examinedVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.sum_rows_examined")
-		require.True(t, ok, "mysql.events_statements_summary_by_digest.sum_rows_examined must be present")
+		examinedVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.examined_rows")
+		require.True(t, ok, "mysql.events_statements_summary_by_digest.examined_rows must be present")
 		assert.Equal(t, int64(1), examinedVal.Int(), "must be the per-cycle delta (101-100), not the raw cumulative fixture value")
 
-		sentVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.sum_rows_sent")
-		require.True(t, ok, "mysql.events_statements_summary_by_digest.sum_rows_sent must be present")
+		sentVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.returned_rows")
+		require.True(t, ok, "mysql.events_statements_summary_by_digest.returned_rows must be present")
 		assert.Equal(t, int64(1), sentVal.Int(), "must be the per-cycle delta (51-50), not the raw cumulative fixture value")
 	})
 
@@ -2053,12 +2053,12 @@ func TestScrapeTopQueriesRowsExaminedSent(t *testing.T) {
 		require.Equal(t, 1, logs.ResourceLogs().Len())
 		lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
-		examinedVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.sum_rows_examined")
-		require.True(t, ok, "mysql.events_statements_summary_by_digest.sum_rows_examined must be present")
+		examinedVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.examined_rows")
+		require.True(t, ok, "mysql.events_statements_summary_by_digest.examined_rows must be present")
 		assert.Equal(t, int64(1), examinedVal.Int())
 
-		sentVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.sum_rows_sent")
-		require.True(t, ok, "mysql.events_statements_summary_by_digest.sum_rows_sent must be present")
+		sentVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.returned_rows")
+		require.True(t, ok, "mysql.events_statements_summary_by_digest.returned_rows must be present")
 		assert.Equal(t, int64(1), sentVal.Int())
 	})
 }
