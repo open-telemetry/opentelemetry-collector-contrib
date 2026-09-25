@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/lru"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 )
 
@@ -23,6 +24,8 @@ const (
 
 	HostsMetadataIndex = "profiling-hosts.otel-default"
 )
+
+var downsampledEventIndices = serializer.DownsampledEventIndices(".otel-default")
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
 func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
@@ -51,6 +54,13 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 
 			if event.StackTraceID != "" {
 				err = pushDataAsJSON(event, "", AllEventsIndex)
+				if err != nil {
+					return err
+				}
+				err = serializer.IndexDownsampledEvent(event.Count, downsampledEventIndices, func(count uint16, index string) error {
+					event.Count = count
+					return pushDataAsJSON(event, "", index)
+				})
 				if err != nil {
 					return err
 				}
