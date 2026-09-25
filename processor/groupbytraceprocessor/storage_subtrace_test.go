@@ -35,7 +35,7 @@ func insertTestSpan(t *testing.T, st *subtraceMemoryStorage, traceID pcommon.Tra
 	if service != "" {
 		r.Attributes().PutStr("service.name", service)
 	}
-	rctx := newResourceContext(r)
+	rctx := resourceContextFor(r)
 	sp := ptrace.NewSpan()
 	sp.SetTraceID(traceID)
 	sp.SetSpanID(spanID)
@@ -251,7 +251,7 @@ func BenchmarkSubtraceBufferAndRelease(b *testing.B) {
 					var ids []subtraceID
 					for _, td := range batches {
 						rs := td.ResourceSpans().At(0)
-						rctx := newResourceContext(rs.Resource())
+						rctx := newResourceContext(rs)
 						id := subtraceID{traceID: traceID, serviceID: rctx.serviceID}
 						ids = append(ids, id)
 

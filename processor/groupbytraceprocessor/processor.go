@@ -182,7 +182,7 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 
 func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, worker *eventMachineWorker) error {
 	for _, rs := range trace.td.ResourceSpans().All() {
-		rctx := newResourceContext(rs.Resource())
+		rctx := newResourceContext(rs)
 		id := subtraceID{traceID: trace.id, serviceID: rctx.serviceID}
 
 		for _, ss := range rs.ScopeSpans().All() {

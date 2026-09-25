@@ -40,7 +40,8 @@ type scopeKey struct {
 // each scope or each span. The copy must not be mutated afterwards: it backs
 // every bufferedSpan that shares it, and the derived keys would go stale.
 type resourceContext struct {
-	resource pcommon.Resource
+	resource  pcommon.Resource
+	schemaURL string
 
 	// serviceID is what spans are grouped by; resourceKey is what assemble groups
 	// resources on when rebuilding a batch.
@@ -51,12 +52,13 @@ type resourceContext struct {
 // newResourceContext deep-copies the resource so the result is self-contained
 // and the caller can recycle its pdata objects, then derives the keys used to
 // group the spans reported under it.
-func newResourceContext(resource pcommon.Resource) resourceContext {
+func newResourceContext(rs ptrace.ResourceSpans) resourceContext {
 	rCopy := pcommon.NewResource()
-	resource.CopyTo(rCopy)
+	rs.Resource().CopyTo(rCopy)
 
 	return resourceContext{
 		resource:    rCopy,
+		schemaURL:   rs.SchemaUrl(),
 		serviceID:   serviceIdentity(rCopy),
 		resourceKey: hashMapAttrs(rCopy.Attributes()),
 	}
@@ -301,6 +303,7 @@ func assemble(members []*bufferedSpan) ptrace.Traces {
 			if !ok {
 				rs = td.ResourceSpans().AppendEmpty()
 				bs.resource.CopyTo(rs.Resource())
+				rs.SetSchemaUrl(bs.schemaURL)
 				rsIndex[bs.resourceKey] = rs
 			}
 			ss = rs.ScopeSpans().AppendEmpty()

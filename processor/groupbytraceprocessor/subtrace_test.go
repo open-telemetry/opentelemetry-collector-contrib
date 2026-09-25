@@ -35,6 +35,14 @@ type callInput struct {
 	remote bool
 }
 
+// resourceContextFor builds a resourceContext from a bare resource, for the
+// tests that have no ResourceSpans of their own and no interest in a schema URL.
+func resourceContextFor(r pcommon.Resource) resourceContext {
+	rs := ptrace.NewResourceSpans()
+	r.CopyTo(rs.Resource())
+	return newResourceContext(rs)
+}
+
 // buildCallInput turns the given spans into the arguments splitCalls takes. Span
 // IDs listed in elsewhere stand for spans buffered under a different service in
 // the same trace, which is what makes an entry span distinguishable from a span
@@ -42,7 +50,7 @@ type callInput struct {
 func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callInput) (map[pcommon.SpanID]*bufferedSpan, map[pcommon.SpanID]string) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", service)
-	ctx := newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope())
+	ctx := newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope())
 
 	spans := map[pcommon.SpanID]*bufferedSpan{}
 	traceSpanIDs := map[pcommon.SpanID]string{}
@@ -282,7 +290,7 @@ func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
 	r.Attributes().PutStr("service.name", "svc-a")
 	sc := pcommon.NewInstrumentationScope()
 	sc.SetName("lib")
-	ctx := newSpanContext(newResourceContext(r), sc)
+	ctx := newSpanContext(resourceContextFor(r), sc)
 
 	var members []*bufferedSpan
 	for i := byte(1); i <= 3; i++ {
@@ -304,7 +312,7 @@ func TestAssemble_SeparatesDistinctResources(t *testing.T) {
 		r.Attributes().PutStr("service.name", service)
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
-		return newBufferedSpan(newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope()), s)
+		return newBufferedSpan(newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope()), s)
 	}
 
 	td := assemble([]*bufferedSpan{makeBS("svc-a", 1), makeBS("svc-b", 2)})
@@ -314,7 +322,7 @@ func TestAssemble_SeparatesDistinctResources(t *testing.T) {
 func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", "svc-a")
-	rctx := newResourceContext(r)
+	rctx := resourceContextFor(r)
 
 	makeBS := func(name, version string, id byte) *bufferedSpan {
 		sc := pcommon.NewInstrumentationScope()
@@ -373,7 +381,7 @@ func TestAssemble_PreservesSpanPayload(t *testing.T) {
 	lk.SetTraceID(makeTraceID(9))
 	lk.Attributes().PutStr("link.kind", "follows_from")
 
-	td := assemble([]*bufferedSpan{newBufferedSpan(newSpanContext(newResourceContext(r), sc), s)})
+	td := assemble([]*bufferedSpan{newBufferedSpan(newSpanContext(resourceContextFor(r), sc), s)})
 
 	require.Equal(t, 1, td.ResourceSpans().Len())
 	rs := td.ResourceSpans().At(0)
@@ -414,7 +422,7 @@ func TestAssemble_PreservesSpanPayload(t *testing.T) {
 func TestAssemble_TakesOwnershipOfSpans(t *testing.T) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", "svc-a")
-	ctx := newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope())
+	ctx := newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope())
 
 	s := ptrace.NewSpan()
 	s.SetSpanID(makeSpanID(1))
