@@ -15,9 +15,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 )
 
-func ConvertEntries(entries []*entry.Entry) plog.Logs {
+func ConvertEntries(entries []*entry.Entry, defaultScopeName, defaultScopeVersion string) plog.Logs {
 	resourceHashToIdx := make(map[uint64]int)
 	scopeIdxByResource := make(map[uint64]map[string]int)
 
@@ -37,14 +38,32 @@ func ConvertEntries(entries []*entry.Entry) plog.Logs {
 
 			scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
 			sl = rl.ScopeLogs().AppendEmpty()
-			sl.Scope().SetName(e.ScopeName)
+			if metadata.PkgStanzaAddDefaultScopeNameFeatureGate.IsEnabled() {
+				if e.ScopeName != "" {
+					sl.Scope().SetName(e.ScopeName)
+				} else {
+					sl.Scope().SetName(defaultScopeName)
+					sl.Scope().SetVersion(defaultScopeVersion)
+				}
+			} else {
+				sl.Scope().SetName(e.ScopeName)
+			}
 		} else {
 			rl = pLogs.ResourceLogs().At(resourceIdx)
 			scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
 			if !ok {
 				scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
 				sl = rl.ScopeLogs().AppendEmpty()
-				sl.Scope().SetName(e.ScopeName)
+				if metadata.PkgStanzaAddDefaultScopeNameFeatureGate.IsEnabled() {
+					if e.ScopeName != "" {
+						sl.Scope().SetName(e.ScopeName)
+					} else {
+						sl.Scope().SetName(defaultScopeName)
+						sl.Scope().SetVersion(defaultScopeVersion)
+					}
+				} else {
+					sl.Scope().SetName(e.ScopeName)
+				}
 			} else {
 				sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
 			}

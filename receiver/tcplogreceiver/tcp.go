@@ -22,9 +22,14 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-// ReceiverType implements adapter.LogReceiverType
+// ReceiverType implements adapter.LogReceiverTypeWithScope
 // to create a tcp receiver
 type ReceiverType struct{}
+
+var _ adapter.LogReceiverTypeWithScope = (*ReceiverType)(nil)
+
+// ScopeName sets the scope name that will be used on all logs coming from the receiver.
+func (ReceiverType) ScopeName() string { return metadata.ScopeName }
 
 // Type is the receiver type
 func (ReceiverType) Type() component.Type {
