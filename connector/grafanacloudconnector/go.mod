@@ -4,16 +4,16 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.67.1-0.20260924183631-3a2ae66dedac
+	go.opentelemetry.io/collector/component v1.67.1-0.20260924205005-ee42c62804c0
 	go.opentelemetry.io/collector/component/componenttest v0.161.1-0.20260924183631-3a2ae66dedac
-	go.opentelemetry.io/collector/confmap v1.67.1-0.20260924183631-3a2ae66dedac
+	go.opentelemetry.io/collector/confmap v1.67.1-0.20260924205005-ee42c62804c0
 	go.opentelemetry.io/collector/connector v0.161.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/connector/connectortest v0.161.1-0.20260924183631-3a2ae66dedac
 	go.opentelemetry.io/collector/connector/xconnector v0.161.1-0.20260924183631-3a2ae66dedac
-	go.opentelemetry.io/collector/consumer v1.67.1-0.20260924183631-3a2ae66dedac
+	go.opentelemetry.io/collector/consumer v1.67.1-0.20260924205005-ee42c62804c0
 	go.opentelemetry.io/collector/consumer/consumertest v0.161.1-0.20260924183631-3a2ae66dedac
-	go.opentelemetry.io/collector/pdata v1.67.1-0.20260924183631-3a2ae66dedac
-	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260924183631-3a2ae66dedac
+	go.opentelemetry.io/collector/pdata v1.67.1-0.20260924205005-ee42c62804c0
+	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260924205005-ee42c62804c0
 	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/sdk/metric v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
@@ -42,7 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.161.1-0.20260924183631-3a2ae66dedac // indirect
-	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260924183631-3a2ae66dedac // indirect
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260924205005-ee42c62804c0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260924183631-3a2ae66dedac // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.161.1-0.20260924183631-3a2ae66dedac // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260924183631-3a2ae66dedac // indirect
