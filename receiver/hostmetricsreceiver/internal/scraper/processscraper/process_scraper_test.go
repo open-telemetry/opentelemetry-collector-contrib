@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -198,7 +197,7 @@ func assertValidProcessResourceAttributes(t *testing.T, resourceMetrics pmetric.
 		"process.command",
 		"process.command_line",
 		"process.owner",
-		string(conventions.ProcessParentPIDKey),
+		"process.parent_pid",
 	}
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		attrs := resourceMetrics.At(i).Resource().Attributes().AsRaw()
