@@ -479,6 +479,74 @@ func TestGetInnodbTransactionStats(t *testing.T) {
 	assert.Equal(t, int64(17), got.maxActiveTransactionDuration)
 }
 
+func TestRowsIterationErrorIsReturned(t *testing.T) {
+	// sql.Rows.Next() returns false both at the end of the result set and when
+	// iteration fails, so each query method must check rows.Err() before
+	// returning. Without that check these methods return the rows collected so
+	// far together with a nil error, reporting a partial scrape as a success.
+	tests := []struct {
+		name    string
+		columns []string
+		values  []driver.Value
+		call    func(*mySQLClient) (any, error)
+	}{
+		{
+			name:    "getGlobalStats",
+			columns: []string{"Variable_name", "Value"},
+			values:  []driver.Value{"Threads_connected", "12"},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getGlobalStats()
+			},
+		},
+		{
+			name:    "getTableStats",
+			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "TABLE_ROWS", "AVG_ROW_LENGTH", "DATA_LENGTH", "INDEX_LENGTH"},
+			values:  []driver.Value{"schema", "table", 1, 2, 3, 4},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getTableStats()
+			},
+		},
+		{
+			name:    "getTableIoWaitsStats",
+			columns: []string{"OBJECT_SCHEMA", "OBJECT_NAME", "COUNT_DELETE", "COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "SUM_TIMER_DELETE", "SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE"},
+			values:  []driver.Value{"schema", "table", 1, 2, 3, 4, 5, 6, 7, 8},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getTableIoWaitsStats()
+			},
+		},
+		{
+			name:    "getIndexIoWaitsStats",
+			columns: []string{"OBJECT_SCHEMA", "OBJECT_NAME", "INDEX_NAME", "COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "COUNT_DELETE", "SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE", "SUM_TIMER_DELETE"},
+			values:  []driver.Value{"schema", "table", "index", 1, 2, 3, 4, 5, 6, 7, 8},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getIndexIoWaitsStats()
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			// The first row scans fine; iteration then fails on the second.
+			rows := sqlmock.NewRows(tt.columns).
+				AddRow(tt.values...).
+				AddRow(tt.values...).
+				RowError(1, assert.AnError)
+			mock.ExpectQuery(".*").WillReturnRows(rows)
+
+			c := &mySQLClient{client: db}
+			got, err := tt.call(c)
+			require.Error(t, err, "iteration error must not be swallowed")
+			assert.ErrorIs(t, err, assert.AnError)
+			assert.Nil(t, got, "no partial results should be returned alongside the error")
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestCheckDBAvailability(t *testing.T) {
 	tests := []struct {
 		name     string
