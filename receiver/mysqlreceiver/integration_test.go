@@ -521,6 +521,7 @@ func TestVersionCompatibility(t *testing.T) {
 		wantReplicaStatus bool // true ↔ SHOW REPLICA STATUS used instead of SHOW SLAVE STATUS
 		wantRedoLogStats  bool // true ↔ InnoDB redo-log LSN metrics are supported
 		wantBackupAdmin   bool // true ↔ redo-log metrics require BACKUP_ADMIN
+		wantDataLockWaits bool // true ↔ mysql.blocking.blockers is populated from performance_schema.data_lock_waits
 	}{
 		{
 			name:              "MySQL 8.0.33",
@@ -530,6 +531,7 @@ func TestVersionCompatibility(t *testing.T) {
 			wantReplicaStatus: true,
 			wantRedoLogStats:  true,
 			wantBackupAdmin:   false,
+			wantDataLockWaits: true,
 		},
 		{
 			// mysql:5.7 has no official ARM64 image; this case is skipped on
@@ -541,6 +543,7 @@ func TestVersionCompatibility(t *testing.T) {
 			wantReplicaStatus: false,
 			wantRedoLogStats:  false,
 			wantBackupAdmin:   false,
+			wantDataLockWaits: false,
 		},
 		{
 			name:              "MariaDB 10.11",
@@ -550,6 +553,7 @@ func TestVersionCompatibility(t *testing.T) {
 			wantReplicaStatus: false,
 			wantRedoLogStats:  false,
 			wantBackupAdmin:   false,
+			wantDataLockWaits: false,
 		},
 		{
 			name:              "MariaDB 11.4",
@@ -559,6 +563,7 @@ func TestVersionCompatibility(t *testing.T) {
 			wantReplicaStatus: false,
 			wantRedoLogStats:  false,
 			wantBackupAdmin:   false,
+			wantDataLockWaits: false,
 		},
 	}
 
@@ -622,6 +627,7 @@ func TestVersionCompatibility(t *testing.T) {
 			assert.Equal(t, tc.wantReplicaStatus, dv.supportsReplicaStatus(), "supportsReplicaStatus mismatch")
 			assert.Equal(t, tc.wantRedoLogStats, dv.supportsInnodbRedoLogStats(), "supportsInnodbRedoLogStats mismatch")
 			assert.Equal(t, tc.wantBackupAdmin, dv.requiresBackupAdminForInnodbRedoLogStats(), "requiresBackupAdminForInnodbRedoLogStats mismatch")
+			assert.Equal(t, tc.wantDataLockWaits, dv.supportsDataLockWaits(), "supportsDataLockWaits mismatch")
 
 			// --- getTopQueries: must succeed without error ---
 			// No workload is running, so the result may be empty, but the query
@@ -646,9 +652,21 @@ func TestVersionCompatibility(t *testing.T) {
 			}
 
 			// --- getQuerySamples: must succeed without error ---
-			// Result may be empty if no active sessions.
-			_, err = c.getQuerySamples(10, dv.supportsProcesslist())
+			// Result may be empty if no active sessions. This also proves
+			// supportsDataLockWaits selected a query that doesn't reference
+			// performance_schema.data_lock_waits on versions that lack it.
+			samples, err := c.getQuerySamples(10, dv.supportsProcesslist(), dv.supportsDataLockWaits())
 			require.NoError(t, err, "getQuerySamples should not fail (wrong template would cause 'unknown table' error)")
+
+			// On MySQL <8.0.11 and MariaDB, blockers must always be the literal
+			// empty-array sentinel -- there is no privilege-safe way to populate it
+			// on these versions (see supportsDataLockWaits's doc comment).
+			if !tc.wantDataLockWaits {
+				for _, s := range samples {
+					assert.Equal(t, "[]", s.blockers,
+						"blockers must be the empty-array sentinel when supportsDataLockWaits is false (session_id: %d)", s.sessionID)
+				}
+			}
 
 			// --- getReplicaStatusStats: must succeed without error ---
 			// Proves the correct SHOW REPLICA STATUS vs SHOW SLAVE STATUS template was

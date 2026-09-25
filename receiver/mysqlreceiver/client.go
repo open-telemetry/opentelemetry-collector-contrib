@@ -45,6 +45,11 @@ var minMySQLPerfSchemaLogStatusVersion = version.Must(version.NewVersion("8.0.11
 // structured InnoDB redo-log status variables were added to SHOW GLOBAL STATUS.
 var minMySQLGlobalStatusRedoLogVersion = version.Must(version.NewVersion("8.0.30"))
 
+// minMySQLDataLockWaitsVersion is the first GA MySQL version with
+// performance_schema.data_lock_waits (8.0.11). Absent on MySQL <8.0.11 and all
+// MariaDB versions.
+var minMySQLDataLockWaitsVersion = version.Must(version.NewVersion("8.0.11"))
+
 type innodbRedoLogStatsSource int
 
 const (
@@ -127,6 +132,26 @@ func (v dbVersion) supportsProcesslist() bool {
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLReplicaStatusVersion)
 }
 
+// supportsDataLockWaits reports whether performance_schema.data_lock_waits is
+// available (MySQL 8.0.11+ only, never on MariaDB). This gates the
+// mysql.blocking.blockers/blocker.count attributes on db.server.query_sample:
+// on MySQL <8.0.11 and all MariaDB versions, identifying a blocking session's
+// thread/session ID requires information_schema.INNODB_TRX/INNODB_LOCK_WAITS,
+// both of which require the global PROCESS privilege (confirmed via live
+// testing against MySQL 5.7.44 and MariaDB 10.5.29) -- the same class of
+// dependency this receiver already avoids for data_lock_waits itself. Rather
+// than reintroduce that failure mode for unprivileged monitoring users, the
+// blockers attribute is simply omitted (reports "[]"/0) on those versions.
+func (v dbVersion) supportsDataLockWaits() bool {
+	if !v.isValid() {
+		return false
+	}
+	if v.product == dbProductMariaDB {
+		return false
+	}
+	return !v.version.LessThan(minMySQLDataLockWaitsVersion)
+}
+
 func (v dbVersion) supportsInnodbRedoLogStats() bool {
 	return v.innodbRedoLogStatsSource() != innodbRedoLogStatsSourceUnsupported
 }
@@ -170,7 +195,9 @@ type client interface {
 	getTopQueries(topN, lookback uint64, supportsSampleText bool) ([]topQuery, error)
 	// supportsProcesslist controls whether the performance_schema.processlist JOIN
 	// is included to populate client.port and network.peer.port (MySQL 8.0.22+).
-	getQuerySamples(limit uint64, supportsProcesslist bool) ([]querySample, error)
+	// supportsDataLockWaits controls whether mysql.blocking.blockers/blocker.count
+	// are populated from performance_schema.data_lock_waits (MySQL 8.0.11+ only).
+	getQuerySamples(limit uint64, supportsProcesslist, supportsDataLockWaits bool) ([]querySample, error)
 	explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string
 	Close() error
 }
@@ -1047,13 +1074,14 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 //go:embed templates/querySample.tmpl
 var querySampleTemplate string
 
-func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([]querySample, error) {
+func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist, supportsDataLockWaits bool) ([]querySample, error) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, map[string]any{
-		"limit":               limit,
-		"supportsProcesslist": supportsProcesslist,
+		"limit":                 limit,
+		"supportsProcesslist":   supportsProcesslist,
+		"supportsDataLockWaits": supportsDataLockWaits,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
