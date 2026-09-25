@@ -895,6 +895,68 @@ func spanIDsAcross(batches []ptrace.Traces) map[pcommon.SpanID]bool {
 	return ids
 }
 
+// blockingTracesConsumer holds the first ConsumeTraces call open until it is
+// released, so that a test can arrange for a shutdown to land while a release
+// is still in flight. Later calls pass straight through.
+type blockingTracesConsumer struct {
+	sink    *consumertest.TracesSink
+	once    sync.Once
+	entered chan struct{}
+	unblock chan struct{}
+}
+
+func (*blockingTracesConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (c *blockingTracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	c.once.Do(func() { close(c.entered) })
+	<-c.unblock
+	return c.sink.ConsumeTraces(ctx, td)
+}
+
+// A release takes its spans out of storage before handing them on, so by the
+// time one is in flight the drain in Shutdown can no longer account for it.
+// Shutdown has to wait for the release instead.
+func TestSubtrace_ShutdownWaitsForInFlightRelease(t *testing.T) {
+	next := &blockingTracesConsumer{
+		sink:    new(consumertest.TracesSink),
+		entered: make(chan struct{}),
+		unblock: make(chan struct{}),
+	}
+	cfg := Config{NumTraces: 100, NumWorkers: 1, WaitDuration: 10 * time.Millisecond, EmitStrategy: EmitStrategyService}
+	p := newSubtraceProcessor(t, cfg, next)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(makeTraceID(90), "svc-a",
+		spanSpec{id: spanIDAt(1), parent: pcommon.NewSpanIDEmpty()})))
+
+	select {
+	case <-next.entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the subtrace was never released")
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- p.Shutdown(t.Context()) }()
+
+	select {
+	case <-done:
+		t.Fatal("Shutdown returned while a release was still in flight")
+	case <-time.After(200 * time.Millisecond):
+	}
+
+	close(next.unblock)
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown did not return once the release completed")
+	}
+
+	counts := spanIDCounts(next.sink.AllTraces())
+	assert.Equal(t, map[pcommon.SpanID]int{spanIDAt(1): 1}, counts)
+}
+
 func TestSubtrace_ShutdownFlushesBufferedSpans(t *testing.T) {
 	traceID := makeTraceID(6)
 	rootID := makeSpanID(1)
@@ -1090,21 +1152,20 @@ func buildSpecTrace(traceID pcommon.TraceID, serviceName string, specs ...spanSp
 // newSubtraceProcessor creates a started groupByTraceProcessor wired with the
 // given config (EmitStrategy must be EmitStrategyService) and a consumertest.TracesSink.
 // The caller is responsible for calling Shutdown.
-func newSubtraceProcessor(t *testing.T, cfg Config, sink *consumertest.TracesSink) *groupByTraceProcessor {
+func newSubtraceProcessor(t *testing.T, cfg Config, next consumer.Traces) *groupByTraceProcessor {
 	t.Helper()
-	return newSubtraceProcessorWithSettings(t, cfg, sink, processortest.NewNopSettings(metadata.Type))
+	return newSubtraceProcessorWithSettings(t, cfg, next, processortest.NewNopSettings(metadata.Type))
 }
 
 // newSubtraceProcessorWithSettings is newSubtraceProcessor with the processor
 // settings supplied, so that a test can read the recorded telemetry.
-func newSubtraceProcessorWithSettings(t *testing.T, cfg Config, sink *consumertest.TracesSink, set processor.Settings) *groupByTraceProcessor {
+func newSubtraceProcessorWithSettings(t *testing.T, cfg Config, next consumer.Traces, set processor.Settings) *groupByTraceProcessor {
 	t.Helper()
 	cfg.EmitStrategy = EmitStrategyService
-	p := newGroupByTraceProcessor(set, sink, cfg)
+	p := newGroupByTraceProcessor(set, next, cfg)
 	require.NotNil(t, p)
 
 	p.eventMachine.onSubtraceExpired = p.onSubtraceExpired
-	p.eventMachine.onSubtraceReleased = p.onSubtraceReleased
 	p.eventMachine.onSubtraceRemoved = p.onSubtraceRemoved
 	for _, w := range p.eventMachine.workers {
 		w.subtraceBuffer = newSubtraceRingBuffer(cfg.NumTraces / cfg.NumWorkers)

@@ -76,7 +76,6 @@ func createTracesProcessor(
 
 	if oCfg.EmitStrategy == EmitStrategyService {
 		processor.eventMachine.onSubtraceExpired = processor.onSubtraceExpired
-		processor.eventMachine.onSubtraceReleased = processor.onSubtraceReleased
 		processor.eventMachine.onSubtraceRemoved = processor.onSubtraceRemoved
 
 		// Each worker gets its own ring buffer and span storage. Traces are routed

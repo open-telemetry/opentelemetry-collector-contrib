@@ -6,6 +6,7 @@ package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -42,6 +43,11 @@ type groupByTraceProcessor struct {
 
 	// trace storage (used when EmitStrategy == EmitStrategyTrace)
 	st traceStorage
+
+	// releases tracks the subtrace releases currently in flight. Their spans are
+	// out of storage already, so Shutdown waits on this rather than leaving them
+	// to a goroutine it has stopped being able to hear from.
+	releases sync.WaitGroup
 }
 
 var _ processor.Traces = (*groupByTraceProcessor)(nil)
@@ -109,15 +115,18 @@ func (sp *groupByTraceProcessor) Shutdown(ctx context.Context) error {
 	sp.eventMachine.shutdown()
 
 	if sp.config.EmitStrategy == EmitStrategyService {
+		// The event machine has returned its workers, so no further release can
+		// start. Let the ones already under way finish: their spans left storage
+		// before the machine stopped and the drain below can no longer see them.
+		sp.releases.Wait()
+
 		// Flush whatever is still buffered, rather than dropping it.
 		var errs error
 		for _, w := range sp.eventMachine.workers {
 			for _, id := range w.subSt.subtraceIDs() {
 				calls, _ := w.subSt.deleteSubtrace(id)
 				for _, call := range calls {
-					if err := sp.nextConsumer.ConsumeTraces(ctx, assemble(call)); err != nil {
-						sp.logger.Error("shutdown drain consume failed", zap.Error(err))
-					}
+					sp.releaseSubtrace(ctx, assemble(call))
 				}
 			}
 			errs = multierr.Append(errs, w.subSt.shutdown())
@@ -345,29 +354,40 @@ func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventM
 		return nil
 	}
 
-	// Assembling can be slow for a large subtrace, so keep it off the worker.
-	go func() {
-		// A service entered more than once in this trace releases one batch per
-		// call. Firing them together keeps a concurrent shutdown from taking some
-		// and leaving the rest.
-		events := make([]event, 0, len(due))
-		for _, call := range due {
-			events = append(events, event{typ: subtraceReleased, payload: assemble(call)})
-		}
-		worker.fire(events...)
-	}()
+	sp.releaseCalls(due)
 	return nil
 }
 
-func (sp *groupByTraceProcessor) onSubtraceReleased(td ptrace.Traces) error {
+// releaseCalls assembles and emits calls off the worker goroutine, where
+// assembling a large subtrace won't hold up the events queued behind it. A
+// service entered more than once in a trace releases one batch per call.
+//
+// The batches go straight to the next consumer rather than back through the
+// event machine. Storage hands its spans over as it returns them, so an event
+// dropped by a concurrent shutdown would lose them outright, and the drain in
+// Shutdown can no longer see them to make up for it.
+func (sp *groupByTraceProcessor) releaseCalls(calls [][]*bufferedSpan) {
+	if len(calls) == 0 {
+		return
+	}
+
+	// Registering on the worker, ahead of the goroutine, is what lets Shutdown
+	// treat every release the worker has decided on as in flight.
+	sp.releases.Go(func() {
+		for _, call := range calls {
+			sp.releaseSubtrace(context.Background(), assemble(call))
+		}
+	})
+}
+
+// releaseSubtrace hands an assembled subtrace to the next consumer. It consumes
+// synchronously: every caller is off the worker goroutine already.
+func (sp *groupByTraceProcessor) releaseSubtrace(ctx context.Context, td ptrace.Traces) {
 	sp.telemetryBuilder.ProcessorGroupbytraceSpansReleased.Add(context.Background(), int64(td.SpanCount()))
 	sp.telemetryBuilder.ProcessorGroupbytraceTracesReleased.Add(context.Background(), 1)
-	go func() {
-		if err := sp.nextConsumer.ConsumeTraces(context.Background(), td); err != nil {
-			sp.logger.Error("consume failed", zap.Error(err))
-		}
-	}()
-	return nil
+	if err := sp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
+		sp.logger.Error("consume failed", zap.Error(err))
+	}
 }
 
 // onSubtraceRemoved handles a subtrace pushed out of the ring buffer. Eviction
@@ -382,10 +402,6 @@ func (sp *groupByTraceProcessor) onSubtraceRemoved(id subtraceID, worker *eventM
 	if err != nil {
 		return fmt.Errorf("couldn't delete subtrace: %w", err)
 	}
-	for _, call := range calls {
-		if err := sp.onSubtraceReleased(assemble(call)); err != nil {
-			return err
-		}
-	}
+	sp.releaseCalls(calls)
 	return nil
 }

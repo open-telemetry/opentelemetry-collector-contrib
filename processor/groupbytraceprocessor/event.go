@@ -38,9 +38,6 @@ const (
 	// subtraceID whose wait timer has fired
 	subtraceExpired
 
-	// assembled ptrace.Traces ready for the next consumer
-	subtraceReleased
-
 	// subtraceID to be removed from storage
 	subtraceRemoved
 )
@@ -79,8 +76,6 @@ func (t eventType) String() string {
 		return "onTraceRemoved"
 	case subtraceExpired:
 		return "subtrace_expired"
-	case subtraceReleased:
-		return "subtrace_released"
 	case subtraceRemoved:
 		return "subtrace_removed"
 	}
@@ -110,15 +105,19 @@ type eventMachine struct {
 	onTraceReleased func(rss []ptrace.ResourceSpans) error
 	onTraceRemoved  func(traceID pcommon.TraceID) error
 
-	onSubtraceExpired  func(id subtraceID, worker *eventMachineWorker) error
-	onSubtraceReleased func(td ptrace.Traces) error
-	onSubtraceRemoved  func(id subtraceID, worker *eventMachineWorker) error
+	onSubtraceExpired func(id subtraceID, worker *eventMachineWorker) error
+	onSubtraceRemoved func(id subtraceID, worker *eventMachineWorker) error
 
 	onError func(event)
 
 	// shutdown sync
 	shutdownLock *sync.RWMutex
 	closed       bool
+
+	// workersWG tracks the running worker goroutines, so that shutdown can wait
+	// for a handler that is still in progress instead of returning while it is
+	// touching worker state or starting asynchronous work.
+	workersWG sync.WaitGroup
 }
 
 func newEventMachine(logger *zap.Logger, bufferSize, numWorkers, numTraces int, telemetry *metadata.TelemetryBuilder) *eventMachine {
@@ -183,7 +182,7 @@ func (em *eventMachine) periodicMetrics() {
 
 func (em *eventMachine) startWorkers() {
 	for _, worker := range em.workers {
-		go worker.start()
+		em.workersWG.Go(worker.start)
 	}
 }
 
@@ -266,20 +265,6 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 		}
 		em.handleEventWithObservability(e.typ, func() error {
 			return em.onSubtraceExpired(payload, w)
-		})
-	case subtraceReleased:
-		if em.onSubtraceReleased == nil {
-			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
-			em.callOnError(e)
-			return
-		}
-		payload, ok := e.payload.(ptrace.Traces)
-		if !ok {
-			em.callOnError(e)
-			return
-		}
-		em.handleEventWithObservability(e.typ, func() error {
-			return em.onSubtraceReleased(payload)
 		})
 	case subtraceRemoved:
 		if em.onSubtraceRemoved == nil {
@@ -369,6 +354,11 @@ func (em *eventMachine) shutdown() {
 		em.logger.Info("forcing the shutdown of the event manager", zap.Int("pending-events", em.numEvents()))
 	}
 	close(em.close)
+
+	// Returning while a handler is still running would let it start work the
+	// caller has no way left to wait for. A handler is abandoned after a second,
+	// so this waits at most that long.
+	em.workersWG.Wait()
 }
 
 func (em *eventMachine) callOnError(e event) {
