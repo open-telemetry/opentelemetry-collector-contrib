@@ -9,6 +9,7 @@ status:
   codeowners:
     active: [adrielp, niwoerner]
     emeritus: [atoulme]
+    seeking_new: true
 tests:
   config:
     webhook:

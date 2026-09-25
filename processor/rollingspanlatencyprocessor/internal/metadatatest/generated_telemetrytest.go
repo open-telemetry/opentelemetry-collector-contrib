@@ -25,7 +25,7 @@ func AssertEqualProcessorRollingSpanLatencyActiveBaselines(t *testing.T, tt *com
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_rolling_span_latency_active_baselines",
 		Description: "Current number of active per-key latency baselines tracked by the processor. [Development]",
-		Unit:        "{baselines}",
+		Unit:        "{baseline}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -39,7 +39,7 @@ func AssertEqualProcessorRollingSpanLatencyDroppedKeysTotal(t *testing.T, tt *co
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_rolling_span_latency_dropped_keys_total",
 		Description: "Number of new baseline keys dropped because max_baselines was reached. [Development]",
-		Unit:        "{keys}",
+		Unit:        "{key}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
