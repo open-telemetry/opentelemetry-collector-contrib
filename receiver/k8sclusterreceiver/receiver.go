@@ -58,9 +58,11 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 		return err
 	}
 
-	if err := kr.resourceWatcher.initialize(); err != nil {
+	if err := kr.resourceWatcher.initialize(ctx); err != nil {
 		return err
 	}
+
+	kr.dataCollector.SetClusterUID(kr.resourceWatcher.getClusterUID())
 
 	go func() {
 		kr.settings.Logger.Info("Starting shared informers and wait for initial cache sync.")

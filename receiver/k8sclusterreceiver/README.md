@@ -33,6 +33,28 @@ The receiver collects service endpoint metrics (`k8s.service.endpoint.count`) fr
 
 Refer to [documentation.md](./documentation.md) for detailed information on these metrics and their semantics.
 
+### Cluster UID Resource Attribute
+
+The `k8s.cluster.uid` resource attribute identifies the cluster the telemetry comes from.
+[Semantic conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/#k8s-cluster-uid)
+define its value as the UID of the `kube-system` namespace. The attribute is off by default; opt in via the
+receiver configuration:
+
+```yaml
+  k8s_cluster:
+    resource_attributes:
+      k8s.cluster.uid:
+        enabled: true
+```
+
+Once enabled, every metric and entity event emitted by this receiver carries the attribute. The receiver reads the
+`kube-system` namespace once at startup, which requires [RBAC](#rbac) permissions. If the namespace cannot be read,
+a warning is logged and the attribute is omitted from the emitted telemetry.
+
+The `metrics_include` and `metrics_exclude` filters have no effect for `k8s.cluster.uid`: the attribute is added after
+the metrics have been assembled, that is, after the point where those filters are applied. Filtering on the cluster UID
+would not be useful anyway, since one receiver instance only ever watches a single cluster.
+
 ## Configuration
 
 The following settings are required:
@@ -424,6 +446,23 @@ subjects:
     name: otelcontribcol
     namespace: default
 EOF
+```
+
+The [`k8s.cluster.uid` resource attribute](#cluster-uid-resource-attribute) cannot be used without a `ClusterRole`,
+since reading the `kube-system` namespace is a cluster-scoped operation. If you want to enable it in a namespace-scope
+setup, grant the collector a `ClusterRole` that allows `get` on the `kube-system` namespace, in addition to the `Role`s
+above:
+
+```yaml
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    resourceNames:
+      - kube-system
+    verbs:
+      - get
 ```
 
 ### Deployment
