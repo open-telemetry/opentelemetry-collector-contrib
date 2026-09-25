@@ -25,6 +25,7 @@ type LogReceiverType interface {
 	CreateDefaultConfig() component.Config
 	BaseConfig(component.Config) BaseConfig
 	InputConfig(component.Config) operator.Config
+	ScopeName() string
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -66,6 +67,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,
+			scopeName: logReceiverType.ScopeName(),
 		}
 
 		var emitterOpts []helper.EmitterOption

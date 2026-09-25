@@ -29,6 +29,8 @@ func createDefaultConfig() component.Config {
 type receiverType struct{}
 
 // Type is the receiver type
+func (receiverType) ScopeName() string { return metadata.ScopeName }
+
 func (receiverType) Type() component.Type {
 	return metadata.Type
 }
