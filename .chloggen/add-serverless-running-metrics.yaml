@@ -10,7 +10,7 @@ component: exporter/datadog
 note: "Emit running metrics for Azure App Services, Azure Functions, Cloud Run services, and Cloud Run Functions workloads sending metrics through the Datadog exporter."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [49615]
+issues: [51501]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
