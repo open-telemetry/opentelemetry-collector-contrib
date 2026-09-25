@@ -62,6 +62,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		rcv := &receiver{
 			set:       params.TelemetrySettings,
 			id:        params.ID,
+			buildInfo: params.BuildInfo,
 			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,
