@@ -5,6 +5,9 @@ k8s_cluster/all_settings:
   allocatable_types_to_report: [ "cpu","memory" ]
   metadata_exporters: [ nop ]
   metadata_collection_interval: 30m
+  collect_sidecar_container_metrics: true
+  collect_all_init_container_metrics: true
+  collect_ephemeral_container_metrics: true
 k8s_cluster/partial_settings:
   collection_interval: 30s
   distribution: openshift
