@@ -35,6 +35,7 @@ The receiver makes requests to the `sts.GetCallerIdentity` API endpoint, which i
 | `logs`          | *optional* | `Logs`    | Configuration for logs collection. See [Logs Parameters](#logs-parameters).       |
 | `metrics`       | *optional* | `Metrics` | Configuration for metrics collection via GetMetricData. See [Metrics Parameters](#metrics-parameters-getmetricdata--listmetrics). |
 | `storage`       | *optional* | string    | The ID of a storage extension to be used for state persistence.                   |
+| `k8s_leader_elector` | *optional* | string | The ID of a [k8sleaderelector](../../extension/k8sleaderelector/README.md) extension. When set, the receiver only collects while it holds the lease. See [Leader Election](#leader-election). |
 
 ### Logs Parameters
 
@@ -221,6 +222,45 @@ awscloudwatch:
         /aws/eks/dev-0/cluster: 
           names: [kube-apiserver-ea9c831555adca1815ae04b87661klasdj]
 ```
+
+## Leader Election
+
+Running the same receiver configuration on several collector replicas polls CloudWatch once per
+replica. That duplicates the data and, because `GetMetricData` and `FilterLogEvents` are billed per
+request, the CloudWatch bill as well. Setting `k8s_leader_elector` makes the receiver collect only
+while it holds the Kubernetes lease, so the remaining replicas stay idle until they take over.
+
+```yaml
+extensions:
+  k8s_leader_elector:
+    auth_type: serviceAccount
+    lease_name: aws-cloudwatch-receiver
+    lease_namespace: otel
+
+receivers:
+  aws_cloudwatch:
+    region: us-west-1
+    k8s_leader_elector: k8s_leader_elector
+    metrics:
+      collection_interval: 5m
+      discovery:
+        filters:
+          namespace: AWS/EC2
+
+service:
+  extensions: [k8s_leader_elector]
+  pipelines:
+    metrics:
+      receivers: [aws_cloudwatch]
+```
+
+The extension needs permission to manage its lease; see
+[Suggested RBAC](../../extension/k8sleaderelector/README.md#suggested-rbac).
+
+For logs, combine leader election with a `storage` extension whose state every replica can read,
+such as a `ReadWriteMany` volume. A new leader that cannot read the previous leader's checkpoint
+restarts from `start_from`/`initial_lookback`, which duplicates or skips events on every failover.
+The receiver logs a warning when leader election is enabled without a storage extension.
 
 ## Sample Configs
 
