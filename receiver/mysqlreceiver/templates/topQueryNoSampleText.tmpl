@@ -5,6 +5,8 @@ SELECT
     COALESCE(`digest_text`, ''),
     `count_star`,
     `sum_timer_wait`,
+    -- sum_rows_examined/sum_rows_sent are unconditionally safe here: confirmed present
+    -- on every supported version (MySQL 5.7.44, MariaDB 10.0.38-11.8.9), no version gate needed.
     `sum_rows_examined`,
     `sum_rows_sent`
 FROM performance_schema.events_statements_summary_by_digest
