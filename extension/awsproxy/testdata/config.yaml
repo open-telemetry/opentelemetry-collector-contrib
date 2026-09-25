@@ -1,5 +1,5 @@
-awsproxy:
-awsproxy/1:
+aws_proxy:
+aws_proxy/1:
   endpoint: "0.0.0.0:1234"
   proxy_address: "https://proxy.proxy.com"
   tls:
