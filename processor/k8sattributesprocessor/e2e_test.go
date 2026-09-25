@@ -2094,38 +2094,25 @@ func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expe
 	})
 }
 
-// scanResourcesForAttributes waits until a resource of expectedService has all the expected attributes.
+// scanResourcesForAttributes waits until the most recent resource of expectedService has all the expected attributes.
 // Telemetry received before the processor has cached the pod metadata is not annotated, so it retries
-// until an annotated resource is received.
+// until newer telemetry is received.
 func scanResourcesForAttributes(t *testing.T, signal, expectedService string, kvs map[string]*expectedValue,
 	getResources func() []pcommon.Resource,
 ) {
 	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		// Iterate over the received set of resources starting from the most recent entries due to a bug in the processor:
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
-		// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
 		resources := getResources()
-		var lastErr error
 		for i := len(resources) - 1; i >= 0; i-- {
 			service, exist := resources[i].Attributes().Get("service.name")
 			assert.True(c, exist, "%s do not has 'service.name' attribute in resource", signal)
 			if service.AsString() != expectedService {
 				continue
 			}
-			err := resourceHasAttributes(resources[i], kvs)
-			if err == nil {
-				return
-			}
-			if lastErr == nil {
-				lastErr = err
-			}
-		}
-		if lastErr != nil {
-			assert.NoError(c, lastErr)
+			assert.NoError(c, resourceHasAttributes(resources[i], kvs))
 			return
 		}
 		assert.Failf(c, "no data found", "no %s found for service %s", signal, expectedService)
-	}, 1*time.Minute, 1*time.Second)
+	}, 10*time.Second, 1*time.Second)
 }
 
 func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedValue) error {
