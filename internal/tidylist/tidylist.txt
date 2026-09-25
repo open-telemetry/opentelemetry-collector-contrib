@@ -45,6 +45,7 @@ pkg/translator/zipkin
 receiver/zipkinreceiver
 exporter/zipkinexporter
 extension/storage
+pkg/semconvtest
 pkg/stanza
 pkg/translator/jaeger
 receiver/carbonreceiver
@@ -134,6 +135,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
@@ -201,7 +203,6 @@ internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
 internal/kubelet
-pkg/semconvtest
 processor/k8sattributesprocessor
 processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
