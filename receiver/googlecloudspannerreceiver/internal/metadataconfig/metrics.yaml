@@ -541,3 +541,51 @@ metadata:
         data:
           type: "gauge"
         unit: "byte"
+      - name: "used_ssd_bytes"
+        column_name: "USED_SSD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "used_hdd_bytes"
+        column_name: "USED_HDD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "columnar_used_bytes"
+        column_name: "COLUMNAR_USED_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "columnar_used_ssd_bytes"
+        column_name: "COLUMNAR_USED_SSD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "columnar_used_hdd_bytes"
+        column_name: "COLUMNAR_USED_HDD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "columnar_coverage_ratio"
+        column_name: "COLUMNAR_COVERAGE_RATIO"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "columnar_ssd_coverage_ratio"
+        column_name: "COLUMNAR_SSD_COVERAGE_RATIO"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "columnar_hdd_coverage_ratio"
+        column_name: "COLUMNAR_HDD_COVERAGE_RATIO"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
