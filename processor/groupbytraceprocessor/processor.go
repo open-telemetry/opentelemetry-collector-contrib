@@ -310,8 +310,11 @@ func (sp *groupByTraceProcessor) scheduleSubtraceRelease(id subtraceID, worker *
 
 func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventMachineWorker) error {
 	if !worker.subtraceBuffer.contains(id) {
-		if _, wasEvicted := worker.evictedSubtraces[id]; wasEvicted {
-			delete(worker.evictedSubtraces, id)
+		if count := worker.evictedSubtraces[id]; count > 0 {
+			worker.evictedSubtraces[id]--
+			if worker.evictedSubtraces[id] == 0 {
+				delete(worker.evictedSubtraces, id)
+			}
 			return nil
 		}
 		sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 1)
@@ -374,7 +377,7 @@ func (sp *groupByTraceProcessor) onSubtraceReleased(td ptrace.Traces) error {
 // traces_evicted, so a non-zero count continues to mean wait_duration or
 // num_traces wants adjusting.
 func (sp *groupByTraceProcessor) onSubtraceRemoved(id subtraceID, worker *eventMachineWorker) error {
-	worker.evictedSubtraces[id] = struct{}{}
+	worker.evictedSubtraces[id]++
 	calls, err := worker.subSt.deleteSubtrace(id)
 	if err != nil {
 		return fmt.Errorf("couldn't delete subtrace: %w", err)

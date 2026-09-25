@@ -83,7 +83,7 @@ func createTracesProcessor(
 		// to a worker by trace ID, so nothing is shared between them.
 		for _, w := range processor.eventMachine.workers {
 			w.subtraceBuffer = newSubtraceRingBuffer(max(1, oCfg.NumTraces/oCfg.NumWorkers))
-			w.evictedSubtraces = make(map[subtraceID]struct{})
+			w.evictedSubtraces = make(map[subtraceID]int)
 			w.subSt = newSubtraceMemoryStorage(processor.telemetryBuilder)
 		}
 	}

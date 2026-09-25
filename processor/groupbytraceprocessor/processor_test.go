@@ -1108,7 +1108,7 @@ func newSubtraceProcessorWithSettings(t *testing.T, cfg Config, sink *consumerte
 	p.eventMachine.onSubtraceRemoved = p.onSubtraceRemoved
 	for _, w := range p.eventMachine.workers {
 		w.subtraceBuffer = newSubtraceRingBuffer(cfg.NumTraces / cfg.NumWorkers)
-		w.evictedSubtraces = make(map[subtraceID]struct{})
+		w.evictedSubtraces = make(map[subtraceID]int)
 		w.subSt = newSubtraceMemoryStorage(p.telemetryBuilder)
 	}
 

@@ -405,11 +405,12 @@ type eventMachineWorker struct {
 	// subtraceBuffer holds the IDs for all in-flight subtraces (EmitStrategyService).
 	subtraceBuffer *subtraceRingBuffer
 
-	// evictedSubtraces tracks subtraceIDs removed from subtraceBuffer by eviction
-	// whose timers have not yet fired. When the timer fires, onSubtraceExpired
-	// checks this set to distinguish expected timer-after-eviction firings from
-	// genuine incomplete releases.
-	evictedSubtraces map[subtraceID]struct{}
+	// evictedSubtraces counts pending timer firings for subtraceIDs removed from
+	// subtraceBuffer by eviction. Each eviction increments the count; each timer
+	// firing decrements it. When the count reaches 0 the entry is deleted.
+	// onSubtraceExpired uses this to distinguish expected timer-after-eviction
+	// firings from genuine incomplete releases.
+	evictedSubtraces map[subtraceID]int
 
 	// subSt holds the spans buffered for this worker's subtraces
 	// (EmitStrategyService). Traces are routed to a worker by trace ID, so a
