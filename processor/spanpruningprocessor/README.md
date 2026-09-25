@@ -105,6 +105,11 @@ processors:
     # Default: false
     enable_bytes_metrics: false
 
+    # Recognize summary spans left by an earlier run and merge new spans into
+    # them, for a second pruning pass over a partially pruned trace
+    # Default: false
+    merge_existing_summaries: false
+
     # Enable IQR or MAD outlier detection and attribute correlation
     # When enabled, adds duration_median_ns and outlier_correlated_attributes
     # to summary spans
@@ -205,6 +210,7 @@ processors:
 | `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (records attribute-loss metrics and adds summary span loss attributes) |
 | `attribute_loss_exemplar_sample_rate` | float64 | 0 (disabled) | Fraction of attribute-loss metric recordings with exemplars (0.0-1.0). Only applies when `enable_attribute_loss_analysis` is true. |
 | `enable_bytes_metrics` | bool | false | Enable measurement of serialized trace sizes (bytes_received/bytes_processed_input/bytes_processed_output/bytes_emitted metrics) |
+| `merge_existing_summaries` | bool | false | Recognize summary spans from an earlier run and merge new spans into them (see [Merging Existing Summaries](#merging-existing-summaries)) |
 | `enable_outlier_analysis` | bool | false | Enable outlier detection and correlation analysis |
 | `outlier_analysis.method` | string | "iqr" | Statistical method: "iqr" or "mad" |
 | `outlier_analysis.iqr_multiplier` | float64 | 1.5 | IQR threshold multiplier (when method=iqr) |
@@ -276,6 +282,7 @@ The following attributes are added to the summary span (shown with default `aggr
 | `<prefix>duration_total_ns` | int64 | Total duration in nanoseconds |
 | `<prefix>histogram_bucket_bounds_s` | []float64 | Bucket upper bounds in seconds (excludes +Inf) |
 | `<prefix>histogram_bucket_counts` | []int64 | Cumulative count per bucket (includes +Inf bucket) |
+| `<prefix>aggregation_level` | int64 | Level the group was aggregated at: `0` for a leaf group, `1` for the parents of aggregated leaves, and so on |
 
 ### Optional Attribute Loss Analysis
 
@@ -578,6 +585,39 @@ When at least one exemplar is preserved, the summary span gets:
   untouched (it is kept deterministically, so its effective keep-probability is
   1). Non-outlier exemplars compose their threshold by `D/N` over the full group,
   so adjusted counts remain consistent.
+
+## Merging Existing Summaries
+
+By default the processor is single-shot: a span that is itself a summary from an
+earlier run is treated as an ordinary span.
+
+With `merge_existing_summaries: true` it is recognized and merged into instead,
+so a second pruning pass can fold late-arriving spans into the summaries an
+upstream prune already produced.
+
+```yaml
+processors:
+  spanpruning:
+    merge_existing_summaries: true
+```
+
+What changes when it is enabled:
+
+- Statistics are weighted: an existing summary contributes its stored
+  `span_count`, and its stored min/max/total durations fold into the merged ones.
+- A group holding an existing summary aggregates even below
+  `min_spans_to_aggregate`, provided it has another member.
+- Merged histograms reuse the bounds the existing summary stores rather than the
+  configured ones, and are dropped instead of approximated when the two cannot
+  be combined.
+- Outlier detection and exemplar sampling cover only the newly arrived spans.
+- A span whose summary attributes are missing or inconsistent is left alone.
+
+A late span merges only when the summary it belongs beside is still present; one
+whose own parent was pruned away is not reattached.
+
+`<prefix>aggregation_level` is written by every run, including when this flag is
+off, since a later run needs it to merge parent-level summaries.
 
 ## Pipeline Placement
 
