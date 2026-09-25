@@ -45,7 +45,8 @@ type collectionMode int
 const (
 	// collectionModeExact requires the actual collection to contain exactly
 	// the expected items — no missing and no extra ones. It is the default,
-	// and the only form WriteAssertionFile emits.
+	// and the only form WriteAssertionFile emits. The `/exact` operator
+	// suffix, e.g. `metrics/exact`, selects it explicitly.
 	collectionModeExact collectionMode = iota
 	// collectionModeInclude requires every expected item to be present but
 	// allows additional actual items. It is selected by the `/include`
@@ -60,23 +61,9 @@ type countMatcher struct {
 	max *int
 }
 
-// decodeCount reads an optional `<key>/count` constraint from the parent node's
-// raw keys. It accepts a mapping with `exact`, or with `min` and/or `max`, as
-// described in issue #48079. An absent key yields a nil matcher.
-//
-// `/count` pairs with `<key>/include` and may also stand alone, but pairing it
-// with an exact `<key>` list is a schema error: an exact collection already
-// fixes its size.
-func decodeCount(raw map[string]yaml.Node, key string) (*countMatcher, error) {
-	countKey := key + "/count"
-	node, ok := raw[countKey]
-	if !ok {
-		return nil, nil
-	}
-	if _, hasExact := raw[key]; hasExact {
-		return nil, fmt.Errorf("cannot specify both %q and %q, an exact collection already fixes its size", key, countKey)
-	}
-
+// decodeCount reads a `<key>/count` mapping with `exact`, or with `min` and/or
+// `max`, as described in issue #48079.
+func decodeCount(node yaml.Node, countKey string) (*countMatcher, error) {
 	if node.Kind == yaml.ScalarNode {
 		if node.Tag == "!!null" {
 			return nil, fmt.Errorf("%s has no value, want a mapping with %q, %q or %q", countKey, "exact", "min", "max")
@@ -170,32 +157,95 @@ func (c *countMatcher) String() string {
 	}
 }
 
-// decodeCollection reads a collection from the parent node's `<key>` (exact,
-// the default) or `<key>/include` (subset) entry. An absent key yields a nil
-// slice; specifying both forms is a schema error.
+// collectionMatcher is the assertion on one collection of resources, scopes,
+// metrics, or datapoints: the expected items, how they are matched, and an
+// optional size constraint.
+//
+// A nil items slice means the collection was omitted, which is distinct from
+// an explicit empty list: in exact mode the latter asserts that the collection
+// is empty.
+type collectionMatcher[T any] struct {
+	items []T
+	mode  collectionMode
+	count *countMatcher
+}
+
+// MarshalYAML emits the items as a plain `<key>` list. WriteAssertionFile only
+// produces exact collections, so no operator suffix is ever written.
+func (c collectionMatcher[T]) MarshalYAML() (any, error) {
+	return c.items, nil
+}
+
+// IsZero lets `omitempty` drop a collection with no items, as it would a slice.
+func (c collectionMatcher[T]) IsZero() bool {
+	return len(c.items) == 0
+}
+
+// UnmarshalYAML decodes a plain `<key>` list as an exact collection. Parents
+// with operator-suffixed keys resolve the full matcher with decodeCollection.
+func (c *collectionMatcher[T]) UnmarshalYAML(node *yaml.Node) error {
+	var items []T
+	if err := node.Decode(&items); err != nil {
+		return err
+	}
+	*c = collectionMatcher[T]{items: items}
+	return nil
+}
+
+// decodeCollection reads a collection from the parent node's `<key>` or
+// `<key>/exact` (exact, the default), `<key>/include` (subset), and
+// `<key>/count` (size) entries. An absent list yields nil items.
+//
+// At most one list form may be given, and `/count` pairs with `<key>/include`
+// or stands alone: pairing it with an exact list is a schema error, since an
+// exact collection already fixes its size.
 //
 // fixup, when non-nil, is called with each decoded item and that item's raw
 // keys, so a nested collection can be resolved for item types that have no
 // UnmarshalYAML of their own.
-func decodeCollection[T any](raw map[string]yaml.Node, key string, fixup func(*T, map[string]yaml.Node) error) ([]T, collectionMode, error) {
-	includeKey := key + "/include"
-	includeNode, hasInclude := raw[includeKey]
-	exactNode, hasExact := raw[key]
+func decodeCollection[T any](raw map[string]yaml.Node, key string, fixup func(*T, map[string]yaml.Node) error) (collectionMatcher[T], error) {
+	var out collectionMatcher[T]
+	countKey := key + "/count"
+	countNode, hasCount := raw[countKey]
 
-	if hasInclude && hasExact {
-		return nil, collectionModeExact, fmt.Errorf("cannot specify both %q and %q", key, includeKey)
+	var listKey string
+	for _, k := range []string{key, key + "/exact", key + "/include"} {
+		if _, ok := raw[k]; !ok {
+			continue
+		}
+		if listKey != "" {
+			return out, fmt.Errorf("cannot specify both %q and %q", listKey, k)
+		}
+		listKey = k
+	}
+	if listKey == key+"/include" {
+		out.mode = collectionModeInclude
+	} else if listKey != "" && hasCount {
+		return out, fmt.Errorf("cannot specify both %q and %q, an exact collection already fixes its size", listKey, countKey)
 	}
 
-	node, mode, usedKey := exactNode, collectionModeExact, key
-	if hasInclude {
-		node, mode, usedKey = includeNode, collectionModeInclude, includeKey
-	} else if !hasExact {
-		return nil, collectionModeExact, nil
+	if listKey != "" {
+		items, err := decodeItems(raw[listKey], listKey, fixup)
+		if err != nil {
+			return out, err
+		}
+		out.items = items
 	}
+	if hasCount {
+		count, err := decodeCount(countNode, countKey)
+		if err != nil {
+			return out, err
+		}
+		out.count = count
+	}
+	return out, nil
+}
 
+// decodeItems decodes the list under usedKey, applying fixup to each item.
+func decodeItems[T any](node yaml.Node, usedKey string, fixup func(*T, map[string]yaml.Node) error) ([]T, error) {
 	var out []T
 	if err := node.Decode(&out); err != nil {
-		return nil, mode, fmt.Errorf("decode %s: %w", usedKey, err)
+		return nil, fmt.Errorf("decode %s: %w", usedKey, err)
 	}
 	// An explicit empty list must stay non-nil: in exact mode it asserts that
 	// the collection is empty, which is distinct from omitting the key.
@@ -205,19 +255,19 @@ func decodeCollection[T any](raw map[string]yaml.Node, key string, fixup func(*T
 	if fixup != nil {
 		// A sequence node decoded into a slice has one child per element.
 		if len(node.Content) != len(out) {
-			return nil, mode, fmt.Errorf("decode %s: got %d items but %d nodes", usedKey, len(out), len(node.Content))
+			return nil, fmt.Errorf("decode %s: got %d items but %d nodes", usedKey, len(out), len(node.Content))
 		}
 		for i := range out {
 			var item map[string]yaml.Node
 			if err := node.Content[i].Decode(&item); err != nil {
-				return nil, mode, fmt.Errorf("decode %s: %w", usedKey, err)
+				return nil, fmt.Errorf("decode %s: %w", usedKey, err)
 			}
 			if err := fixup(&out[i], item); err != nil {
-				return nil, mode, err
+				return nil, err
 			}
 		}
 	}
-	return out, mode, nil
+	return out, nil
 }
 
 // document is the YAML-serializable form of a metrics assertion snapshot.
@@ -225,27 +275,23 @@ func decodeCollection[T any](raw map[string]yaml.Node, key string, fixup func(*T
 // The schema implements the identity-only subset of the grammar proposed in
 // issue #48079: default-exact matching, order-insensitive collections,
 // identity fields only. Attribute maps and collections support /include mode,
-// and collections additionally support /count. Operator-suffix extensions
+// and collections additionally support /exact and /count. Operator-suffix extensions
 // (/exclude, /approx, ...) are tracked as follow-ups.
 type document struct {
-	Version        int                 `yaml:"version"`
-	Signal         string              `yaml:"signal"`
-	Resources      []resourceAssertion `yaml:"resources"`
-	ResourcesMode  collectionMode      `yaml:"-"`
-	ResourcesCount *countMatcher       `yaml:"-"`
+	Version   int                                  `yaml:"version"`
+	Signal    string                               `yaml:"signal"`
+	Resources collectionMatcher[resourceAssertion] `yaml:"resources"`
 }
 
 type resourceAssertion struct {
-	Attributes    map[string]any   `yaml:"attributes,omitempty"`
-	AttributeMode attributeMode    `yaml:"-"`
-	Scopes        []scopeAssertion `yaml:"scopes"`
-	ScopesMode    collectionMode   `yaml:"-"`
-	ScopesCount   *countMatcher    `yaml:"-"`
+	Attributes    map[string]any                    `yaml:"attributes,omitempty"`
+	AttributeMode attributeMode                     `yaml:"-"`
+	Scopes        collectionMatcher[scopeAssertion] `yaml:"scopes"`
 }
 
 // UnmarshalYAML implements custom unmarshaling to support `attributes/include`
-// as an alternative to `attributes`, and `scopes/include` as an alternative to
-// `scopes`. When `attributes/include` is used the AttributeMode is set to
+// as an alternative to `attributes`, and the collection operators on `scopes`.
+// When `attributes/include` is used the AttributeMode is set to
 // attributeModeInclude; specifying both keys is an error.
 func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 	// Decode into a raw map to detect operator-suffixed keys.
@@ -272,26 +318,20 @@ func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 		r.AttributeMode = attributeModeExact
 	}
 
-	scopes, mode, err := decodeCollection[scopeAssertion](raw, "scopes", nil)
+	scopes, err := decodeCollection[scopeAssertion](raw, "scopes", nil)
 	if err != nil {
 		return fmt.Errorf("resource assertion: %w", err)
 	}
-	count, err := decodeCount(raw, "scopes")
-	if err != nil {
-		return fmt.Errorf("resource assertion: %w", err)
-	}
-	r.Scopes, r.ScopesMode, r.ScopesCount = scopes, mode, count
+	r.Scopes = scopes
 	return nil
 }
 
 type scopeAssertion struct {
 	// Name is always matched exactly: it is the stable instrumentation library
 	// identity, so it has no /exists or /regex operator (unlike Version).
-	Name         string
-	Version      versionMatcher
-	Metrics      []metricAssertion
-	MetricsMode  collectionMode
-	MetricsCount *countMatcher
+	Name    string
+	Version versionMatcher
+	Metrics collectionMatcher[metricAssertion]
 }
 
 type matcherOp int
@@ -318,11 +358,11 @@ type scopeAssertionYAML struct {
 	VersionExists *bool   `yaml:"version/exists,omitempty"`
 	VersionRegex  *string `yaml:"version/regex,omitempty"`
 
-	Metrics []metricAssertion `yaml:"metrics"`
+	Metrics collectionMatcher[metricAssertion] `yaml:"metrics"`
 }
 
 // UnmarshalYAML decodes a scope, resolving the version operator keys into a
-// versionMatcher and `metrics` / `metrics/include` into the metric collection.
+// versionMatcher and the `metrics` keys into the metric collection.
 func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
 	var raw scopeAssertionYAML
 	if err := value.Decode(&raw); err != nil {
@@ -338,18 +378,14 @@ func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
 	if err != nil {
 		return err
 	}
-	metrics, mode, err := decodeCollection(keys, "metrics", resolveMetricDatapoints)
-	if err != nil {
-		return fmt.Errorf("scope assertion: %w", err)
-	}
-	count, err := decodeCount(keys, "metrics")
+	metrics, err := decodeCollection(keys, "metrics", resolveMetricDatapoints)
 	if err != nil {
 		return fmt.Errorf("scope assertion: %w", err)
 	}
 
 	s.Name = raw.Name
 	s.Version = version
-	s.Metrics, s.MetricsMode, s.MetricsCount = metrics, mode, count
+	s.Metrics = metrics
 	return nil
 }
 
@@ -409,29 +445,23 @@ func (s scopeAssertion) MarshalYAML() (any, error) {
 }
 
 type metricAssertion struct {
-	Name            string               `yaml:"name"`
-	Type            string               `yaml:"type"`
-	Unit            string               `yaml:"unit,omitempty"`
-	Temporality     string               `yaml:"temporality,omitempty"`
-	Monotonic       *bool                `yaml:"monotonic,omitempty"`
-	Datapoints      []datapointAssertion `yaml:"datapoints,omitempty"`
-	DatapointsMode  collectionMode       `yaml:"-"`
-	DatapointsCount *countMatcher        `yaml:"-"`
+	Name        string                                `yaml:"name"`
+	Type        string                                `yaml:"type"`
+	Unit        string                                `yaml:"unit,omitempty"`
+	Temporality string                                `yaml:"temporality,omitempty"`
+	Monotonic   *bool                                 `yaml:"monotonic,omitempty"`
+	Datapoints  collectionMatcher[datapointAssertion] `yaml:"datapoints,omitempty"`
 }
 
-// resolveMetricDatapoints reads `datapoints` / `datapoints/include` from a
-// metric's raw keys. metricAssertion has no UnmarshalYAML of its own, so this
+// resolveMetricDatapoints reads the `datapoints` collection from a metric's raw
+// keys. metricAssertion has no UnmarshalYAML of its own, so this
 // runs as decodeCollection's per-item fixup when a metrics collection is read.
 func resolveMetricDatapoints(m *metricAssertion, raw map[string]yaml.Node) error {
-	datapoints, mode, err := decodeCollection[datapointAssertion](raw, "datapoints", nil)
+	datapoints, err := decodeCollection[datapointAssertion](raw, "datapoints", nil)
 	if err != nil {
 		return fmt.Errorf("metric %q: %w", m.Name, err)
 	}
-	count, err := decodeCount(raw, "datapoints")
-	if err != nil {
-		return fmt.Errorf("metric %q: %w", m.Name, err)
-	}
-	m.Datapoints, m.DatapointsMode, m.DatapointsCount = datapoints, mode, count
+	m.Datapoints = datapoints
 	return nil
 }
 
@@ -594,22 +624,18 @@ func readDocument(path string) (*document, error) {
 		return nil, fmt.Errorf("assertion file %s: unsupported signal %q (want %q)",
 			path, doc.Signal, "metrics")
 	}
-	// The `resources/include` and `resources/count` keys cannot be expressed as
-	// struct tags alongside `resources`, so they are resolved from the raw
-	// top-level keys here.
+	// The `resources/exact`, `resources/include` and `resources/count` keys
+	// cannot be expressed as struct tags alongside `resources`, so they are
+	// resolved from the raw top-level keys here.
 	var raw map[string]yaml.Node
 	if err := yaml.Unmarshal(b, &raw); err != nil {
 		return nil, fmt.Errorf("parse assertion file %s: %w", path, err)
 	}
-	resources, mode, err := decodeCollection[resourceAssertion](raw, "resources", nil)
+	resources, err := decodeCollection[resourceAssertion](raw, "resources", nil)
 	if err != nil {
 		return nil, fmt.Errorf("assertion file %s: %w", path, err)
 	}
-	count, err := decodeCount(raw, "resources")
-	if err != nil {
-		return nil, fmt.Errorf("assertion file %s: %w", path, err)
-	}
-	doc.Resources, doc.ResourcesMode, doc.ResourcesCount = resources, mode, count
+	doc.Resources = resources
 
 	expandShorthand(&doc)
 	return &doc, nil
@@ -624,39 +650,39 @@ func readDocument(path string) (*document, error) {
 // before comparison, so pmetricassert does not accept the empty-metric
 // encoding as a valid assertion either.
 func expandShorthand(doc *document) {
-	doc.ResourcesMode = effectiveMode(doc.Resources, doc.ResourcesMode, false, doc.ResourcesCount)
-	for i := range doc.Resources {
-		expandResourceShorthand(&doc.Resources[i], doc.ResourcesMode)
+	doc.Resources.mode = doc.Resources.effectiveMode(false)
+	for i := range doc.Resources.items {
+		expandResourceShorthand(&doc.Resources.items[i], doc.Resources.mode)
 	}
 }
 
 // expandResourceShorthand expands r, which was listed in a collection matched
 // with parentMode.
 func expandResourceShorthand(r *resourceAssertion, parentMode collectionMode) {
-	r.ScopesMode = effectiveMode(r.Scopes, r.ScopesMode, parentMode == collectionModeInclude, r.ScopesCount)
-	for i := range r.Scopes {
-		expandScopeShorthand(&r.Scopes[i], r.ScopesMode)
+	r.Scopes.mode = r.Scopes.effectiveMode(parentMode == collectionModeInclude)
+	for i := range r.Scopes.items {
+		expandScopeShorthand(&r.Scopes.items[i], r.Scopes.mode)
 	}
 }
 
 func expandScopeShorthand(s *scopeAssertion, parentMode collectionMode) {
-	s.MetricsMode = effectiveMode(s.Metrics, s.MetricsMode, parentMode == collectionModeInclude, s.MetricsCount)
-	for i := range s.Metrics {
-		expandMetricShorthand(&s.Metrics[i], s.MetricsMode)
+	s.Metrics.mode = s.Metrics.effectiveMode(parentMode == collectionModeInclude)
+	for i := range s.Metrics.items {
+		expandMetricShorthand(&s.Metrics.items[i], s.Metrics.mode)
 	}
 }
 
 func expandMetricShorthand(m *metricAssertion, parentMode collectionMode) {
-	m.DatapointsMode = effectiveMode(m.Datapoints, m.DatapointsMode, parentMode == collectionModeInclude, m.DatapointsCount)
+	m.Datapoints.mode = m.Datapoints.effectiveMode(parentMode == collectionModeInclude)
 	// The implicit single empty-attribute datapoint only applies to an exact
 	// collection: under /include, an omitted `datapoints:` asserts nothing
 	// about the datapoints, so injecting one would pin cardinality to 1.
-	if m.DatapointsMode == collectionModeExact && len(m.Datapoints) == 0 {
-		m.Datapoints = []datapointAssertion{{}}
+	if m.Datapoints.mode == collectionModeExact && len(m.Datapoints.items) == 0 {
+		m.Datapoints.items = []datapointAssertion{{}}
 	}
 }
 
-// effectiveMode resolves the mode of a collection whose keys have been decoded.
+// effectiveMode resolves the mode of c once its keys have been decoded.
 //
 // An omitted collection (a nil slice, as opposed to an explicit empty list)
 // asserts nothing about which items are present in two cases: when the item
@@ -664,11 +690,11 @@ func expandMetricShorthand(m *metricAssertion, parentMode collectionMode) {
 // and not that it has nothing below it; and when only the collection's size is
 // asserted by /count. Include mode over an empty expected list is exactly that,
 // since every expected item is trivially present and extras are allowed.
-func effectiveMode[T any](items []T, mode collectionMode, parentIncluded bool, count *countMatcher) collectionMode {
-	if items == nil && mode == collectionModeExact && (parentIncluded || count != nil) {
+func (c collectionMatcher[T]) effectiveMode(parentIncluded bool) collectionMode {
+	if c.items == nil && c.mode == collectionModeExact && (parentIncluded || c.count != nil) {
 		return collectionModeInclude
 	}
-	return mode
+	return c.mode
 }
 
 func writeDocument(path string, doc *document) error {
@@ -684,12 +710,12 @@ func writeDocument(path string, doc *document) error {
 // single empty-attribute datapoint so the emitted YAML reads as "metric with
 // no dimensioning attributes" rather than "metric with one empty datapoint".
 func compactShorthand(doc *document) {
-	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && isEmptyDatapointAssertion(m.Datapoints[0]) {
-					m.Datapoints = nil
+	for i := range doc.Resources.items {
+		for j := range doc.Resources.items[i].Scopes.items {
+			for k := range doc.Resources.items[i].Scopes.items[j].Metrics.items {
+				m := &doc.Resources.items[i].Scopes.items[j].Metrics.items[k]
+				if len(m.Datapoints.items) == 1 && isEmptyDatapointAssertion(m.Datapoints.items[0]) {
+					m.Datapoints.items = nil
 				}
 			}
 		}

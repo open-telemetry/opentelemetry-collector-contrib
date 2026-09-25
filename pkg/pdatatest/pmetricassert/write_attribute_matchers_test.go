@@ -25,14 +25,14 @@ func TestWriteAssertionFile_AttributeMatchers(t *testing.T) {
 
 	doc, err := readDocument(path)
 	require.NoError(t, err)
-	require.Len(t, doc.Resources, 2)
-	for _, resource := range doc.Resources {
+	require.Len(t, doc.Resources.items, 2)
+	for _, resource := range doc.Resources.items {
 		require.Equal(t, map[string]any{
 			"host.name/regex":    `worker-[0-9]+`,
 			"resource.id/exists": true,
 			"service.name":       "svc",
 		}, resource.Attributes)
-		datapoints := resource.Scopes[0].Metrics[0].Datapoints
+		datapoints := resource.Scopes.items[0].Metrics.items[0].Datapoints.items
 		require.Len(t, datapoints, 2)
 		for _, datapoint := range datapoints {
 			require.Equal(t, map[string]any{
@@ -68,11 +68,11 @@ func TestWriteAssertionFile_AttributeMatchersDefaultUnchanged(t *testing.T) {
 		"host.name":    "worker-1",
 		"resource.id":  "resource-1",
 		"service.name": "svc",
-	}, doc.Resources[0].Attributes)
+	}, doc.Resources.items[0].Attributes)
 	require.Equal(t, map[string]any{
 		"datapoint.id": "datapoint-11",
 		"request.id":   "request-11",
-	}, doc.Resources[0].Scopes[0].Metrics[0].Datapoints[0].Attributes)
+	}, doc.Resources.items[0].Scopes.items[0].Metrics.items[0].Datapoints.items[0].Attributes)
 }
 
 func TestWriteAssertionFile_AttributeRegexValidation(t *testing.T) {
