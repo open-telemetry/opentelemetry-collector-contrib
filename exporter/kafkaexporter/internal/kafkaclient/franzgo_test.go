@@ -6,6 +6,7 @@ package kafkaclient
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -21,6 +22,9 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -229,6 +233,111 @@ func TestExportData_AttachesHeaders(t *testing.T) {
 		"dynamic-key-ONLY": "dynamic-value",
 		"shared-key":       "dynamic-value-wins",
 	}, got)
+}
+
+func TestExportData_PropagateTraceContext(t *testing.T) {
+	const topic = "test-topic"
+	cluster, err := kfake.NewCluster(kfake.SeedTopics(1, topic))
+	require.NoError(t, err)
+	t.Cleanup(cluster.Close)
+
+	kgoClient, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(kgoClient.Close)
+
+	newSpanContext := func(flags trace.TraceFlags, traceState string) trace.SpanContext {
+		ts, err := trace.ParseTraceState(traceState)
+		require.NoError(t, err)
+		return trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    trace.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+			SpanID:     trace.SpanID{1, 2, 3, 4, 5, 6, 7, 8},
+			TraceFlags: flags,
+			TraceState: ts,
+		})
+	}
+
+	// Trace context headers from other sources, e.g. forwarded from an
+	// upstream Kafka record, belong to a different trace. They are kept
+	// unless the propagator injects a header with the same key.
+	upstreamHeaders := []kgo.RecordHeader{
+		{Key: "static-key", Value: []byte("static-value")},
+		{Key: "traceparent", Value: []byte("static-traceparent")},
+		{Key: "tracestate", Value: []byte("upstream=state")},
+		{Key: "metadata-key", Value: []byte("metadata-value")},
+	}
+	// propagation.TraceContext injects tracestate only when the span's trace
+	// state is non-empty, so the upstream tracestate survives without it.
+	traceparentOnlyHeaders := []kgo.RecordHeader{
+		{Key: "static-key", Value: []byte("static-value")},
+		{Key: "tracestate", Value: []byte("upstream=state")},
+		{Key: "metadata-key", Value: []byte("metadata-value")},
+	}
+	nonTraceHeaders := []kgo.RecordHeader{
+		{Key: "static-key", Value: []byte("static-value")},
+		{Key: "metadata-key", Value: []byte("metadata-value")},
+	}
+
+	for name, testcase := range map[string]struct {
+		propagator  propagation.TextMapPropagator
+		spanContext trace.SpanContext
+		expected    []kgo.RecordHeader
+	}{
+		"no propagator": {
+			propagator:  propagation.NewCompositeTextMapPropagator(),
+			spanContext: newSpanContext(trace.FlagsSampled, ""),
+			expected:    upstreamHeaders,
+		},
+		"without span": {
+			propagator: propagation.TraceContext{},
+			expected:   upstreamHeaders,
+		},
+		"with unsampled span": {
+			propagator:  propagation.TraceContext{},
+			spanContext: newSpanContext(0, ""),
+			expected: append(slices.Clone(traceparentOnlyHeaders),
+				kgo.RecordHeader{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-00")},
+			),
+		},
+		"with sampled span": {
+			propagator:  propagation.TraceContext{},
+			spanContext: newSpanContext(trace.FlagsSampled, ""),
+			expected: append(slices.Clone(traceparentOnlyHeaders),
+				kgo.RecordHeader{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01")},
+			),
+		},
+		"with sampled span and tracestate": {
+			propagator:  propagation.TraceContext{},
+			spanContext: newSpanContext(trace.FlagsSampled, "vendor=value"),
+			expected: append(slices.Clone(nonTraceHeaders),
+				kgo.RecordHeader{Key: "tracestate", Value: []byte("vendor=value")},
+				kgo.RecordHeader{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01")},
+			),
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			otel.SetTextMapPropagator(testcase.propagator)
+			t.Cleanup(func() { otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator()) })
+
+			producer := NewFranzSyncProducer(kgoClient,
+				[]string{"tracestate", "metadata-key"},
+				[]RecordHeader{
+					{Name: "static-key", Value: configopaque.String("static-value")},
+					{Name: "traceparent", Value: configopaque.String("static-traceparent")},
+				},
+				1024*1024,
+				nil,
+			)
+
+			ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{
+				"tracestate":   {"upstream=state"},
+				"metadata-key": {"metadata-value"},
+			})})
+			ctx = trace.ContextWithSpanContext(ctx, testcase.spanContext)
+			records := []*kgo.Record{{Topic: topic, Value: []byte("test-payload")}}
+			require.NoError(t, producer.ExportData(ctx, records))
+			assert.Equal(t, testcase.expected, records[0].Headers)
+		})
+	}
 }
 
 func TestClose_UnblocksInFlightExportData(t *testing.T) {
