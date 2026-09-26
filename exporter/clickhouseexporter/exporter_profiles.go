@@ -48,7 +48,7 @@ func (e *profilesExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	if e.cfg.shouldCreateSchema() {
-		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
+		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString(), e.cfg.databaseEngineString()); err != nil {
 			return err
 		}
 
@@ -286,7 +286,7 @@ func renderCreateProfilesTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
 
 	return fmt.Sprintf(sqltemplates.ProfilesCreateTable,
-		cfg.database(), cfg.ProfilesTableName, cfg.clusterString(),
+		cfg.database(), cfg.ProfilesTableName, cfg.tableClusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
 	)
