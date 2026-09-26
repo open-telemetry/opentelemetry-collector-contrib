@@ -178,7 +178,7 @@ func (r *memcachedScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	return r.mb.Emit(), nil
 }
 
-func calculateHitRatio(misses, hits int64) float64 {
+func calculateHitRatio(hits, misses int64) float64 {
 	if misses+hits == 0 {
 		return 0
 	}
