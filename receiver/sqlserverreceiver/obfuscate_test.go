@@ -4,6 +4,9 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"encoding/xml"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,6 +82,85 @@ func TestObfuscateQueryPlan(t *testing.T) {
 	result, err := newObfuscator(zap.NewNop()).obfuscateXMLPlan(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedQueryPlan, result)
+	assertNamespacesPreserved(t, string(input), result)
+}
+
+// xmlShape is the namespace-aware shape of one element: its qualified name and
+// the qualified names of its non-declaration attributes, in document order.
+type xmlShape struct {
+	space, local string
+	attrs        []xml.Name
+}
+
+// decodeShape walks doc and returns the shape of every element in document
+// order, how many times the root declares the default namespace, and the names
+// of any descendants that re-declare the root's default namespace. Go's decoder
+// accepts duplicate xmlns attributes, so the well-formedness claim is carried by
+// the declaration counts, not by the decode succeeding.
+func decodeShape(t *testing.T, doc string) (shape []xmlShape, rootDecls int, redeclared []string) {
+	t.Helper()
+	decoder := xml.NewDecoder(strings.NewReader(doc))
+	depth := 0
+	rootNS := ""
+	for {
+		token, err := decoder.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		require.NoError(t, err)
+		switch elem := token.(type) {
+		case xml.StartElement:
+			var attrs []xml.Name
+			for _, a := range elem.Attr {
+				isDefaultDecl := a.Name.Space == "" && a.Name.Local == "xmlns"
+				if isDefaultDecl || a.Name.Space == "xmlns" {
+					if isDefaultDecl && depth == 0 {
+						rootDecls++
+						rootNS = a.Value
+					}
+					if isDefaultDecl && depth > 0 && a.Value == rootNS {
+						redeclared = append(redeclared, elem.Name.Local)
+					}
+					continue
+				}
+				attrs = append(attrs, a.Name)
+			}
+			shape = append(shape, xmlShape{space: elem.Name.Space, local: elem.Name.Local, attrs: attrs})
+			depth++
+		case xml.EndElement:
+			depth--
+		}
+	}
+	return shape, rootDecls, redeclared
+}
+
+// assertNamespacesPreserved checks that obfuscation changed attribute values
+// only: every element and attribute resolves to the same qualified name as in
+// the input, the root declares the default namespace exactly once, and no
+// descendant re-declares it.
+func assertNamespacesPreserved(t *testing.T, input, result string) {
+	t.Helper()
+	inShape, _, _ := decodeShape(t, input)
+	outShape, rootDecls, redeclared := decodeShape(t, result)
+	assert.Equal(t, inShape, outShape, "obfuscation must not change element or attribute qualified names")
+	assert.Equal(t, 1, rootDecls, "root must declare the default namespace exactly once")
+	assert.Empty(t, redeclared, "no descendant may re-declare the root's default namespace")
+}
+
+func TestObfuscateQueryPlanPreservesNamespaces(t *testing.T) {
+	const showplan = "http://schemas.microsoft.com/sqlserver/2004/07/showplan"
+	tests := map[string]string{
+		"prefixed declarations on the root": `<ShowPlanXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.564" Build="16.0.4150.1" xmlns="` + showplan + `"><BatchSequence><Batch><Statements><StmtSimple StatementText="SELECT * from table where value = 120" StatementId="1"/></Statements></Batch></BatchSequence></ShowPlanXML>`,
+		"nested namespace scope and reset":  `<ShowPlanXML xmlns="` + showplan + `" Version="1.564"><BatchSequence><Batch><Statements><StmtSimple StatementText="SELECT 1"><InternalInfo xmlns="` + showplan + `/internalinfo"><Field FieldName="wszWarning" FieldValue="none"/></InternalInfo><NoNamespaceChild xmlns=""><Inner Attr="v"/></NoNamespaceChild></StmtSimple></Statements></Batch></BatchSequence></ShowPlanXML>`,
+		"xsi:type on a descendant":          `<ShowPlanXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="` + showplan + `" Version="1.564"><BatchSequence><Batch><Statements><StmtSimple StatementText="SELECT 1"><QueryPlan><RelOp xsi:type="Scan" NodeId="0"/></QueryPlan></StmtSimple></Statements></Batch></BatchSequence></ShowPlanXML>`,
+	}
+	for name, input := range tests {
+		t.Run(name, func(t *testing.T) {
+			result, err := newObfuscator(zap.NewNop()).obfuscateXMLPlan(input)
+			require.NoError(t, err)
+			assertNamespacesPreserved(t, input, result)
+		})
+	}
 }
 
 func TestInvalidQueryPlans(t *testing.T) {
