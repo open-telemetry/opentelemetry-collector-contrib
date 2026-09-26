@@ -1,0 +1,6 @@
+change_type: breaking
+component: receiver/postgresql
+note: Set the default scrape timeout to 60s to cancel blocked PostgreSQL queries.
+issues: [50757]
+subtext: 'Increase `timeout` for longer scrapes, or set `timeout: 0` to restore the unbounded behavior.'
+change_logs: [user]
