@@ -27,7 +27,9 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/docker resource attributes.
 type ResourceAttributesConfig struct {
+	ContainerImageID   ResourceAttributeConfig `mapstructure:"container.image.id"`
 	ContainerImageName ResourceAttributeConfig `mapstructure:"container.image.name"`
+	ContainerImageTags ResourceAttributeConfig `mapstructure:"container.image.tags"`
 	ContainerName      ResourceAttributeConfig `mapstructure:"container.name"`
 	HostName           ResourceAttributeConfig `mapstructure:"host.name"`
 	OsType             ResourceAttributeConfig `mapstructure:"os.type"`
@@ -35,7 +37,13 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		ContainerImageID: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		ContainerImageName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ContainerImageTags: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		ContainerName: ResourceAttributeConfig{

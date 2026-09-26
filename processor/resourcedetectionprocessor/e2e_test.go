@@ -178,6 +178,8 @@ func TestE2EDockerDetector(t *testing.T) {
 	wantEntries := 10
 	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
+	// The EmitSemconvContainerAttributes gate is off by default, so container.name still
+	// carries the leading slash the Docker API returns.
 	containerResourceName := "/" + containerName
 	setResourceAttributeValue(expected, "container.name", containerResourceName)
 
@@ -210,6 +212,7 @@ func TestE2EDockerDetector(t *testing.T) {
 
 			pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("container.image.name", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("container.image.id", replaceWithStar),
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)
