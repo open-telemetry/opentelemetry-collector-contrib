@@ -1,0 +1,13 @@
+change_type: breaking
+
+component: receiver/sqlserver
+
+note: Performance counters read from the SQL Server `Databases` object on a direct database connection now carry the `sqlserver.database.name` resource attribute and no longer emit an unlabeled `_Total` aggregate, which changes the series identity of `sqlserver.database.backup_or_restore.rate`.
+
+issues: [51384]
+
+subtext: |
+  `sqlserver.database.backup_or_restore.rate` splits from one series into one per database, and the
+  unlabeled series it previously reported is gone. Aggregate across `sqlserver.database.name` instead.
+
+change_logs: [user]
