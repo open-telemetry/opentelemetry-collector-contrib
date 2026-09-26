@@ -55,12 +55,24 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 			},
 			old: ExponentialBuckets{
 				Offset:       1,
-				BucketCounts: []uint64{3, 0, 6, 1, 1},
+				BucketCounts: []uint64{0, 0, 6, 1, 1},
 			},
 			want: ExponentialBuckets{
 				Offset:       2,
 				BucketCounts: []uint64{5, 0, 8},
 			},
+		},
+		{
+			name: "reset when non-zero old bucket precedes current offset",
+			current: ExponentialBuckets{
+				Offset:       1,
+				BucketCounts: []uint64{3, 8},
+			},
+			old: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{5, 3, 8}, // bucket 0 (count=5) is below current.Offset=1
+			},
+			reset: true,
 		},
 		{
 			name: "monotonicity failure means a reset",
@@ -94,7 +106,7 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 			},
 			old: ExponentialBuckets{
 				Offset:       -4,
-				BucketCounts: []uint64{1, 1, 3, 1},
+				BucketCounts: []uint64{0, 1, 3, 1},
 			},
 			want: ExponentialBuckets{
 				Offset:       -3,
