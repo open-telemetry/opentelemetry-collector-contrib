@@ -74,8 +74,7 @@ type Config struct {
 	CreateDirectory bool `mapstructure:"create_directory"`
 	// DirectoryPermissions specifies permissions used when creating directories (minus process umask).
 	// Value must be an octal string like "0755".
-	DirectoryPermissions       string `mapstructure:"directory_permissions"`
-	directoryPermissionsParsed int64  `mapstructure:"-"`
+	DirectoryPermissions string `mapstructure:"directory_permissions"`
 }
 
 // Rotation an option to rolling log files
@@ -126,6 +125,9 @@ func (cfg *Config) Validate() error {
 	if cfg.Append && cfg.Rotation != nil {
 		return errors.New("append and rotation enabled at the same time is not supported")
 	}
+	if cfg.Rotation != nil && (cfg.Rotation.MaxMegabytes < 0 || cfg.Rotation.MaxDays < 0 || cfg.Rotation.MaxBackups < 0) {
+		return errors.New("rotation max_megabytes, max_days and max_backups must not be negative")
+	}
 	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
 		return errors.New("format type is not supported")
 	}
@@ -155,30 +157,38 @@ func (cfg *Config) Validate() error {
 		if cfg.GroupBy.ResourceAttribute == "" {
 			return errors.New("resource_attribute must not be empty when group_by is enabled")
 		}
+
+		if cfg.GroupBy.MaxOpenFiles <= 0 {
+			return errors.New("max_open_files must be positive when group_by is enabled")
+		}
 	}
 
-	// If directory auto-creation is enabled, validate and parse permissions.
+	// If directory auto-creation is enabled, validate permissions.
 	if cfg.CreateDirectory {
-		permStr := cfg.DirectoryPermissions
-		// Default to 0755 if not provided.
-		if permStr == "" {
-			permStr = "0755"
-			cfg.DirectoryPermissions = permStr
+		if _, err := cfg.dirPermissions(); err != nil {
+			return err
 		}
-		permissions, err := strconv.ParseInt(permStr, 8, 32)
-		if err != nil {
-			return errInvalidOctal
-		}
-		if permissions&int64(os.ModePerm) != permissions {
-			return errInvalidPermissionBits
-		}
-		cfg.directoryPermissionsParsed = permissions
 	} else if cfg.DirectoryPermissions != "" {
 		// If not creating directories, directory_permissions must not be set.
 		return errDirPermsRequireCreate
 	}
 
 	return nil
+}
+
+// dirPermissions returns the mode used when creating directories, defaulting to 0755.
+func (cfg *Config) dirPermissions() (os.FileMode, error) {
+	if cfg.DirectoryPermissions == "" {
+		return 0o755, nil
+	}
+	permissions, err := strconv.ParseInt(cfg.DirectoryPermissions, 8, 32)
+	if err != nil {
+		return 0, errInvalidOctal
+	}
+	if permissions&int64(os.ModePerm) != permissions {
+		return 0, errInvalidPermissionBits
+	}
+	return os.FileMode(permissions), nil
 }
 
 // Unmarshal a confmap.Conf into the config struct.

@@ -32,6 +32,7 @@ type groupingFileExporter struct {
 	pathSuffix    string
 	attribute     string
 	maxOpenFiles  int
+	dirPerm       os.FileMode
 	newFileWriter func(path string) (*fileWriter, error)
 
 	mutex   sync.Mutex
@@ -215,11 +216,7 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 		return writer, nil
 	}
 
-	perm := os.FileMode(0o755)
-	if e.conf.directoryPermissionsParsed != 0 {
-		perm = os.FileMode(e.conf.directoryPermissionsParsed)
-	}
-	err := os.MkdirAll(path.Dir(fullPath), perm)
+	err := os.MkdirAll(path.Dir(fullPath), e.dirPerm)
 	if err != nil {
 		return nil, err
 	}
@@ -298,6 +295,11 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 		return err
 	}
 	export := buildExportFunc(e.conf)
+
+	e.dirPerm, err = e.conf.dirPermissions()
+	if err != nil {
+		return err
+	}
 
 	pathParts := strings.Split(e.conf.Path, "*")
 
