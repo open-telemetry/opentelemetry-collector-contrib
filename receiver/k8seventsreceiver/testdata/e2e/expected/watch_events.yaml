@@ -1,9 +1,9 @@
 resourceLogs:
   - resource:
       attributes:
-        - key: k8s.node.name
+        - key: k8s.namespace.name
           value:
-            stringValue: test-node
+            stringValue: test-k8sevents-e2e
         - key: k8s.object.kind
           value:
             stringValue: Pod
@@ -36,7 +36,7 @@ resourceLogs:
                   stringValue: TestEvent
               - key: k8s.event.action
                 value:
-                  stringValue: ""
+                  stringValue: "TestEvent"
               - key: k8s.event.start_time
                 value:
                   stringValue: "placeholder"
@@ -46,17 +46,11 @@ resourceLogs:
               - key: k8s.event.uid
                 value:
                   stringValue: "placeholder"
-              - key: k8s.namespace.name
-                value:
-                  stringValue: test-k8sevents-e2e
               - key: k8s.event.reporting_controller
                 value:
-                  stringValue: ""
+                  stringValue: e2etest
               - key: k8s.event.reporting_instance
                 value:
-                  stringValue: ""
-              - key: k8s.event.count
-                value:
-                  intValue: "1"
+                  stringValue: test-node
             traceId: ""
             spanId: ""
