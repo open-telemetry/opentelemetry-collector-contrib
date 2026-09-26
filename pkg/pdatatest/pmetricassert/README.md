@@ -100,6 +100,13 @@ resources:
                   method: POST
 ```
 
+The schema is validated when the file is read. An unknown key or operator
+suffix on the document, a resource, scope, metric, or datapoint (for example a
+misspelled `metrics/cuont`) is a schema error. Attribute maps are the
+exception: attribute keys are arbitrary and may contain `/`, so only `/exists`
+and `/regex` are operators there, and a key with any other suffix, such as
+`k8s/thing`, is a literal attribute key.
+
 ### Attribute presence matcher
 
 Attribute keys can use the `/exists: true` suffix when the attribute must be
@@ -149,7 +156,11 @@ attributes:
 
 Regex matchers are supported for resource attributes and datapoint attributes.
 The attribute map remains exact: unexpected attributes still fail the
-assertion.
+assertion. A pattern that is not a string or does not compile is a schema
+error.
+
+Use at most one of `key:`, `key/exists:`, or `key/regex:` for the same
+attribute in one map; specifying more than one is a schema error.
 
 ### Scope version matchers
 
