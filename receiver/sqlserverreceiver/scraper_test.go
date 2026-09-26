@@ -515,10 +515,14 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("cpuMemoryQueryData.txt")
 	case getSQLServerDiskIOQuery(mc.instanceName):
 		queryResults, err = readFile("diskIOQueryData.txt")
-	case getSQLServerQueryTextAndPlanQuery():
+	case getSQLServerQueryTextAndPlanQuery(false):
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
-	case getSQLServerQuerySamplesQuery():
+	case getSQLServerQueryTextAndPlanQuery(true):
+		queryResults, err = readFile("queryTextAndPlanQueryDataWithFullQueryText.txt")
+	case getSQLServerQuerySamplesQuery(false):
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
+	case getSQLServerQuerySamplesQuery(true):
+		queryResults, err = readFile("recordDatabaseSampleQueryDataWithFullQueryText.txt")
 	case getSQLServerTopProcedureQuery(mc.instanceName):
 		fixture := "topProcedureQueryData.txt"
 		if mc.procedureFixtureFile != "" {
@@ -540,9 +544,9 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 	var err error
 
 	switch mc.SQL {
-	case getSQLServerQuerySamplesQuery():
+	case getSQLServerQuerySamplesQuery(false):
 		queryResults, err = readFile("recordInvalidDatabaseSampleQueryData.txt")
-	case getSQLServerQueryTextAndPlanQuery():
+	case getSQLServerQueryTextAndPlanQuery(false):
 		queryResults, err = readFile("queryTextAndPlanQueryInvalidData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -556,7 +560,7 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 
 func (mc mockMultiStatementProcClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	switch mc.SQL {
-	case getSQLServerQueryTextAndPlanQuery():
+	case getSQLServerQueryTextAndPlanQuery(false):
 		return readFile("queryTextAndPlanMultiStatementProcData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -705,6 +709,141 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 	assert.NoError(t, errs)
+}
+
+// TestQueryTextAndPlanQueryWithFullQueryText covers db.server.top_query with
+// collect_full_query_text enabled on top_query_collection.
+func TestQueryTextAndPlanQueryWithFullQueryText(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+	cfg.TopQueryCollection.CollectFullQueryText = true
+	cfg.TopQueryCollection.AllowedCommentKeys = []string{"traceparent", "framework"}
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+	procedureID := "0"
+	for column, value := range map[string]int64{
+		"total_elapsed_time":        846,
+		"total_rows":                1,
+		"total_logical_reads":       1,
+		"total_logical_writes":      1,
+		"total_physical_reads":      1,
+		"execution_count":           1,
+		"total_worker_time":         845,
+		"total_grant_kb":            1,
+		"procedure_execution_count": 0,
+	} {
+		scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, column, value)
+	}
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	// Only the allow-listed keys are exported, in the order they are configured,
+	// and `secret` in the fixture's comment is dropped.
+	commentTags, ok := logRecord.Attributes().Get("db.query.comment_tags")
+	assert.True(t, ok)
+	assert.Equal(t,
+		"traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate'",
+		commentTags.Str())
+	assert.NotContains(t, commentTags.Str(), "secret")
+
+	// The full text spans the whole batch, is obfuscated, and no longer carries the
+	// comment the tags were harvested from.
+	fullText, ok := logRecord.Attributes().Get("db.query.full_text")
+	assert.True(t, ok)
+	assert.NotEmpty(t, fullText.Str())
+	assert.NotContains(t, fullText.Str(), "traceparent")
+	assert.NotContains(t, fullText.Str(), "do-not-export")
+
+	expectedFile := filepath.Join("testdata", "expectedQueryTextAndPlanQueryWithFullQueryText.yaml")
+
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, actualLogs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	assert.NoError(t, err)
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	assert.Equal(t, "db.server.top_query", logRecord.EventName())
+	assert.NoError(t, errs)
+}
+
+// TestQueryTextAndPlanQueryFullQueryTextDisabled asserts the attributes stay empty
+// when the collection has not opted in, which is the default.
+func TestQueryTextAndPlanQueryFullQueryTextDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+	// An allow-list alone must not turn anything on.
+	cfg.TopQueryCollection.AllowedCommentKeys = []string{"traceparent"}
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scraper := scrapers[0]
+
+	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+	for column, value := range map[string]int64{
+		"total_elapsed_time": 846, "total_rows": 1, "total_logical_reads": 1,
+		"total_logical_writes": 1, "total_physical_reads": 1, "execution_count": 1,
+		"total_worker_time": 845, "total_grant_kb": 1, "procedure_execution_count": 0,
+	} {
+		scraper.cacheAndDiff(queryHash, queryPlanHash, "0", column, value)
+	}
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	require.Positive(t, actualLogs.LogRecordCount())
+
+	logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	for _, attr := range []string{"db.query.full_text", "db.query.comment_tags"} {
+		value, ok := logRecord.Attributes().Get(attr)
+		assert.True(t, ok, "%s is always emitted by the generated event builder", attr)
+		assert.Empty(t, value.Str(), "%s must stay empty when the collection has not opted in", attr)
+	}
 }
 
 func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
@@ -1031,8 +1170,8 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			// golden.WriteLogs(t, filepath.Join("testdata", tc.expectedFile), actualLogs)
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
 			assert.NoError(t, err)
-			removeAttributeFromAllLogRecords(expectedLogs, "sqlserver.blocking.start_time")
-			removeAttributeFromAllLogRecords(actualLogs, "sqlserver.blocking.start_time")
+			removeBlockingStartTimeFromAllLogRecords(expectedLogs)
+			removeBlockingStartTimeFromAllLogRecords(actualLogs)
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 			assert.Equal(t, "db.server.query_sample", logRecord.EventName())
 			assert.NoError(t, errs)
@@ -1040,14 +1179,114 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 	}
 }
 
-func removeAttributeFromAllLogRecords(logs plog.Logs, key string) {
+// TestRecordDatabaseSampleQueryWithFullQueryText covers db.server.query_sample with
+// collect_full_query_text enabled on query_sample_collection.
+func TestRecordDatabaseSampleQueryWithFullQueryText(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+
+	cfg.QuerySample.CollectFullQueryText = true
+	cfg.QuerySample.AllowedCommentKeys = []string{"traceparent", "framework"}
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	scraper.client = mockClient{
+		instanceName:    scraper.instanceName,
+		SQL:             scraper.sqlQuery,
+		maxRowsPerQuery: 100,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	commentTags, ok := logRecord.Attributes().Get("db.query.comment_tags")
+	assert.True(t, ok)
+	assert.Equal(t,
+		"traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate'",
+		commentTags.Str())
+
+	fullText, ok := logRecord.Attributes().Get("db.query.full_text")
+	assert.True(t, ok)
+	assert.NotEmpty(t, fullText.Str())
+	assert.NotContains(t, fullText.Str(), "traceparent")
+	assert.NotContains(t, fullText.Str(), "ABC-123", "literals in the batch must be obfuscated")
+
+	expectedFile := filepath.Join("testdata", "expectedRecordDatabaseSampleQueryWithFullQueryText.yaml")
+
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, actualLogs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	assert.NoError(t, err)
+	removeBlockingStartTimeFromAllLogRecords(expectedLogs)
+	removeBlockingStartTimeFromAllLogRecords(actualLogs)
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	assert.Equal(t, "db.server.query_sample", logRecord.EventName())
+	assert.NoError(t, errs)
+}
+
+// TestRecordDatabaseSampleQueryCommentKeysGateExtraction asserts the tags stay empty
+// when no keys are allowed, even though the full text itself is collected.
+func TestRecordDatabaseSampleQueryCommentKeysGateExtraction(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+
+	cfg.QuerySample.CollectFullQueryText = true
+	cfg.QuerySample.AllowedCommentKeys = nil
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scraper := scrapers[0]
+	scraper.client = mockClient{
+		instanceName:    scraper.instanceName,
+		SQL:             scraper.sqlQuery,
+		maxRowsPerQuery: 100,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	require.Positive(t, actualLogs.LogRecordCount())
+
+	logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	commentTags, ok := logRecord.Attributes().Get("db.query.comment_tags")
+	assert.True(t, ok)
+	assert.Empty(t, commentTags.Str(), "no allowed keys must extract no tags")
+
+	fullText, ok := logRecord.Attributes().Get("db.query.full_text")
+	assert.True(t, ok)
+	assert.NotEmpty(t, fullText.Str(), "the full text itself is still collected")
+}
+
+// removeBlockingStartTimeFromAllLogRecords drops sqlserver.blocking.start_time,
+// whose value derives from the current time and so cannot be pinned in a golden
+// file. Its presence is asserted separately by the callers.
+func removeBlockingStartTimeFromAllLogRecords(logs plog.Logs) {
 	resourceLogs := logs.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
-				logRecords.At(k).Attributes().Remove(key)
+				logRecords.At(k).Attributes().Remove("sqlserver.blocking.start_time")
 			}
 		}
 	}

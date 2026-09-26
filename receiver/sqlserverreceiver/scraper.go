@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlcomments"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -167,13 +168,13 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	var isQuerySample bool
 	switch s.sqlQuery {
-	case getSQLServerQueryTextAndPlanQuery():
+	case getSQLServerQueryTextAndPlanQuery(s.config.TopQueryCollection.CollectFullQueryText):
 		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopQueryCollection.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
 		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx)
-	case getSQLServerQuerySamplesQuery():
+	case getSQLServerQuerySamplesQuery(s.config.QuerySample.CollectFullQueryText):
 		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
 	case getSQLServerTopProcedureQuery(s.config.InstanceName):
@@ -1626,6 +1627,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryPlan         = "query_plan"
 		queryPlanHash     = "query_plan_hash"
 		queryText         = "query_text"
+		fullQueryText     = "full_query_text"
 		rowsReturned      = "total_rows"
 		// the time returned from mssql is in microsecond
 		totalElapsedTime = "total_elapsed_time"
@@ -1712,6 +1714,12 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		if queryTextVal.(string) == "" {
 			continue
 		}
+
+		fullQueryTextVal, commentTagsVal := s.collectFullQueryText(
+			row[fullQueryText],
+			s.config.TopQueryCollection.CollectFullQueryText,
+			s.config.TopQueryCollection.AllowedCommentKeys,
+		)
 
 		databaseNameVal := row[databaseName]
 
@@ -1806,6 +1814,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			row[storedProcedureName],
 			lastExecutionTimeVal,
 			planCreationTimeVal,
+			fullQueryTextVal,
+			commentTagsVal,
 		)
 		s.lb.RecordDbServerQueryPlanEvent(
 			context.Background(),
@@ -1818,6 +1828,31 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		)
 	}
 	return resources, errors.Join(errs...)
+}
+
+// collectFullQueryText derives the db.query.full_text and
+// db.query.comment_tags attribute values from the raw batch text of a row.
+// Both are empty when the collection has not opted in, and the caller always
+// passes them on, since the generated event builder emits every declared
+// attribute regardless.
+//
+// The comment tags are read from the raw text before obfuscation: the obfuscator
+// strips comments, so anything not harvested here is gone by the time full_text
+// is produced.
+func (s *sqlServerScraperHelper) collectFullQueryText(rawFullText string, collect bool, allowedCommentKeys []string) (fullQueryText, commentTags string) {
+	if !collect || rawFullText == "" {
+		return "", ""
+	}
+
+	commentTags = sqlcomments.ExtractAndFilterComments(rawFullText, allowedCommentKeys)
+
+	obfuscated, err := s.obfuscator.obfuscateSQLString(rawFullText)
+	if err != nil {
+		s.logger.Error("failed to obfuscate full SQL batch text", zap.Error(err))
+		return "", commentTags
+	}
+
+	return obfuscated, commentTags
 }
 
 func (s *sqlServerScraperHelper) retrieveValue(
@@ -2047,6 +2082,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const sessionStartTime = "session_start_time"
 	const sessionStatus = "session_status"
 	const statementText = "statement_text"
+	const fullQueryText = "full_query_text"
 	const totalElapsedTimeMillisecond = "total_elapsed_time"
 	const transactionID = "transaction_id"
 	const transactionIsolationLevel = "transaction_isolation_level"
@@ -2159,6 +2195,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			continue
 		}
 
+		fullQueryTextVal, commentTagsVal := s.collectFullQueryText(
+			row[fullQueryText],
+			s.config.QuerySample.CollectFullQueryText,
+			s.config.QuerySample.AllowedCommentKeys,
+		)
+
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
@@ -2241,6 +2283,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 			row[storedProcedureID], row[storedProcedureName],
+			fullQueryTextVal, commentTagsVal,
 		)
 
 		if !resourcesAdded {

@@ -153,14 +153,14 @@ resourceLogs:
                   stringValue: ""
               - key: db.query.full_text
                 value:
-                  stringValue: ""
+                  stringValue: SELECT name FROM inventory.items WHERE sku = ? AND qty > ?
               - key: db.query.comment_tags
                 value:
-                  stringValue: ""
+                  stringValue: traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate'
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6a7169203331
-            timeUnixNano: "1790107220700969000"
+            timeUnixNano: "1790107220702734000"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

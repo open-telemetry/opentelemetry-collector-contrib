@@ -16,6 +16,15 @@ import (
 type QuerySample struct {
 	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
 
+	// CollectFullQueryText enables collection of the full SQL batch text for the
+	// db.server.query_sample event, in addition to the statement-level substring
+	// already captured in db.query.text.
+	CollectFullQueryText bool `mapstructure:"collect_full_query_text"`
+	// AllowedCommentKeys lists the keys to extract from the key=value pairs in the
+	// leading comments of the batch text of the db.server.query_sample event.
+	// Empty extracts nothing.
+	AllowedCommentKeys []string `mapstructure:"allowed_comment_keys,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -63,6 +72,15 @@ type TopQueryCollection struct {
 	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint          `mapstructure:"top_query_count"`
 	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
+
+	// CollectFullQueryText enables collection of the full SQL batch text for the
+	// db.server.top_query event, in addition to the statement-level substring
+	// already captured in db.query.text.
+	CollectFullQueryText bool `mapstructure:"collect_full_query_text"`
+	// AllowedCommentKeys lists the keys to extract from the key=value pairs in the
+	// leading comments of the batch text of the db.server.top_query event.
+	// Empty extracts nothing.
+	AllowedCommentKeys []string `mapstructure:"allowed_comment_keys,omitempty"`
 }
 
 // Config defines configuration for a sqlserver receiver.

@@ -1316,6 +1316,8 @@ query sample
 | user.name | Login name associated with the SQL Server session. | Any Str | - |
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
+| db.query.full_text | The obfuscated text of the full SQL batch or stored procedure the statement was extracted from. Unlike db.query.text, which covers only the statement, this spans the whole batch. Empty unless collect_full_query_text is enabled for the collection emitting this event. | Any Str | - |
+| db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. Empty unless collect_full_query_text is also enabled for the collection emitting this event. | Any Str | - |
 
 ### db.server.top_procedure
 
@@ -1368,6 +1370,8 @@ top query
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
 | sqlserver.query.last_started | Timestamp of when the SQL query last started executing (ISO 8601 format). | Any Str | - |
 | sqlserver.query.plan.creation_time | Timestamp of when the SQL query execution plan was compiled (ISO 8601 format). | Any Str | - |
+| db.query.full_text | The obfuscated text of the full SQL batch or stored procedure the statement was extracted from. Unlike db.query.text, which covers only the statement, this spans the whole batch. Empty unless collect_full_query_text is enabled for the collection emitting this event. | Any Str | - |
+| db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. Empty unless collect_full_query_text is also enabled for the collection emitting this event. | Any Str | - |
 
 ## Resource Attributes
 

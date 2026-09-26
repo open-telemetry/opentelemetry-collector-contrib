@@ -24,6 +24,14 @@ $defs:
   query_sample:
     type: object
     properties:
+      allowed_comment_keys:
+        description: AllowedCommentKeys lists the keys to extract from the key=value pairs in the leading comments of the batch text of the db.server.query_sample event. Empty extracts nothing.
+        type: array
+        items:
+          type: string
+      collect_full_query_text:
+        description: CollectFullQueryText enables collection of the full SQL batch text for the db.server.query_sample event, in addition to the statement-level substring already captured in db.query.text.
+        type: boolean
       max_rows_per_query:
         type: integer
         x-customType: uint64
@@ -44,6 +52,14 @@ $defs:
   top_query_collection:
     type: object
     properties:
+      allowed_comment_keys:
+        description: AllowedCommentKeys lists the keys to extract from the key=value pairs in the leading comments of the batch text of the db.server.top_query event. Empty extracts nothing.
+        type: array
+        items:
+          type: string
+      collect_full_query_text:
+        description: CollectFullQueryText enables collection of the full SQL batch text for the db.server.top_query event, in addition to the statement-level substring already captured in db.query.text.
+        type: boolean
       collection_interval:
         type: string
         format: duration

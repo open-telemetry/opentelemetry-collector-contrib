@@ -148,7 +148,8 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 		instanceName             string
 		maxQuerySampleCount      uint
 		lookbackTime             uint
-		getQuery                 func() string
+		collectFullQueryText     bool
+		getQuery                 func(bool) string
 		expectedQueryValFilename string
 	}{
 		{
@@ -159,13 +160,22 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerQueryTextAndPlanQuery,
 			expectedQueryValFilename: "databaseTopQueryWithoutInstanceName.txt",
 		},
+		{
+			name:                     "Test query text and query plan with full query text",
+			instanceName:             "",
+			maxQuerySampleCount:      1000,
+			lookbackTime:             60,
+			collectFullQueryText:     true,
+			getQuery:                 getSQLServerQueryTextAndPlanQuery,
+			expectedQueryValFilename: "databaseTopQueryWithFullQueryText.txt",
+		},
 	}
 
 	for _, tt := range queryTests {
 		t.Run(tt.name, func(t *testing.T) {
 			expected, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
 			require.NoError(t, err)
-			actual := tt.getQuery()
+			actual := tt.getQuery(tt.collectFullQueryText)
 			require.NoError(t, err)
 			require.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(actual))
 		})
@@ -176,7 +186,8 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 	queryTests := []struct {
 		name                     string
 		instanceName             string
-		getQuery                 func() string
+		collectFullQueryText     bool
+		getQuery                 func(bool) string
 		expectedQueryValFilename string
 		maxRowsPerQuery          uint64
 	}{
@@ -187,6 +198,14 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			getQuery:                 getSQLServerQuerySamplesQuery,
 			expectedQueryValFilename: "testQuerySampleQuery.txt",
 		},
+		{
+			name:                     "Test query sample query with full query text",
+			instanceName:             "",
+			maxRowsPerQuery:          1000,
+			collectFullQueryText:     true,
+			getQuery:                 getSQLServerQuerySamplesQuery,
+			expectedQueryValFilename: "testQuerySampleQueryWithFullQueryText.txt",
+		},
 	}
 
 	for _, tt := range queryTests {
@@ -195,7 +214,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			require.NoError(t, err)
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
-			actual := strings.ReplaceAll(tt.getQuery(), "\r\n", "\n")
+			actual := strings.ReplaceAll(tt.getQuery(tt.collectFullQueryText), "\r\n", "\n")
 			require.Equal(t, expected, actual)
 		})
 	}
@@ -215,7 +234,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 // If a future change violates any of these, the failing assertion pinpoints the
 // specific problem instead of just a diff error.
 func TestQuerySampleQueryDetectsSchemaLockBlocking(t *testing.T) {
-	query := getSQLServerQuerySamplesQuery()
+	query := getSQLServerQuerySamplesQuery(false)
 
 	// Invariant 1: must not use CROSS APPLY on dm_exec_sql_text.
 	// CROSS APPLY drops rows when the TVF returns zero rows, which is exactly what

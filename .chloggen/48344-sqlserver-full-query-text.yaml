@@ -1,0 +1,30 @@
+change_type: enhancement
+
+component: receiver/sqlserver
+
+note: Add opt-in `collect_full_query_text` and `allowed_comment_keys` options to `top_query_collection` and `query_sample_collection`, emitting the obfuscated full SQL batch text as `db.query.full_text` and allow-listed SQL comment metadata as `db.query.comment_tags`.
+
+issues: [48344]
+
+subtext: |
+  `db.query.text` is extracted from SQL Server's DMVs by byte offset, so it covers
+  only the statement and drops anything the surrounding batch carried — including
+  the metadata that W3C traceparent propagation, sqlcommenter and ORM frameworks
+  inject as SQL comments. `db.query.full_text` spans the whole batch, and
+  `db.query.comment_tags` carries the `key=value` pairs from its comments, filtered to
+  the keys named in `allowed_comment_keys`. Extraction reuses the shared
+  `internal/common/sqlcomments` package introduced for the `oracledb` receiver, so the
+  option name and attribute name match across the two receivers.
+
+  Both options are per collection, so `db.server.top_query` and
+  `db.server.query_sample` opt in independently. Both default to off, and the
+  batch-text column is only added to the query when a collection opts in, so the
+  emitted SQL is byte-identical to before for anyone who leaves this disabled.
+  Note that the two attributes are present but empty on both events when disabled.
+
+  Comment tags are read from the raw batch text before obfuscation, since
+  obfuscation strips comments. Only keys listed in `allowed_comment_keys` are
+  exported, so nothing from a comment leaves the receiver until an operator names
+  the keys they consider safe.
+
+change_logs: [user]
