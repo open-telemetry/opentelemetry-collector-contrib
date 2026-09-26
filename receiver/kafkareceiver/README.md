@@ -180,6 +180,10 @@ Additionally, all Kafka message headers are included in the request metadata.
 This metadata can then be used throughout the pipeline, for example to set attributes using the
 [attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md).
 
+### Trace context propagation
+
+The receiver extracts the trace context from record headers, using the propagators configured in `service::telemetry::traces::propagators`. The receiver span starts a new trace and links to the extracted trace context. Propagators are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted.
+
 ### Example configurations
 
 #### Minimal configuration
