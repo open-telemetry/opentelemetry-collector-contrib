@@ -53,13 +53,12 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 	// When native compression is enabled, skip message-level compression
 	// since the compressingWriter handles it at the file stream level.
 	compression := conf.Compression
-	compressor, err := buildCompressor(conf.Compression, int(conf.CompressionParams.Level))
+	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() {
+		compression = ""
+	}
+	compressor, err := buildCompressor(compression, int(conf.CompressionParams.Level))
 	if err != nil {
 		return nil, err
-	}
-	if conf.Compression != "" && metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() {
-		compression = ""
-		compressor = noneCompress
 	}
 
 	if conf.Encoding != nil {
