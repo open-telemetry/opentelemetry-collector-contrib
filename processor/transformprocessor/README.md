@@ -1092,6 +1092,7 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the Transform Processor is NOOP.  To modify a data type you must use a function specific to that purpose.
 - [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs.
+- Other: Statements that modify a higher context (`resource` or `scope`) using values from a lower context (for example, `set(resource.attributes["to"], log.attributes["from"])`) may produce unexpected results. The statement runs once per span, metric, or log record, and every record that shares the same resource or scope writes to the same shared value, so the last record processed determines the final value. For logs, the [`flatten_data`](#transformflattenlogs) option can be used to avoid this. See [#32080](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080) for more details.
 
 ## Feature Gate
 
@@ -1181,6 +1182,8 @@ The following metrics are emitted for the processor:
 - `otelcol_processor_incoming_items`: the number of items (spans, metric data points, or log records)
   passed to the processor.
 - `otelcol_processor_outgoing_items`: the number of items emitted by the processor.
+- `otelcol_processor_internal_duration`: a histogram of the time taken to process a batch of
+  telemetry through the processor.
 
 These metrics carry the `otel.signal` and `processor` attributes, so you can observe throughput per
 signal and per configured transform processor instance.

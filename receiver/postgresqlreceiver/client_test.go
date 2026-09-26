@@ -639,6 +639,58 @@ func TestRepairNormalizedQuery(t *testing.T) {
 	}
 }
 
+func TestGetVersion(t *testing.T) {
+	tests := []struct {
+		name        string
+		serverValue string
+		want        string
+		wantErr     bool
+	}{
+		{
+			name:        "plain version",
+			serverValue: "17.2",
+			want:        "17.2",
+		},
+		{
+			name:        "debian packaging suffix stripped",
+			serverValue: "17.2 (Debian 17.2-1.pgdg120+1)",
+			want:        "17.2",
+		},
+		{
+			name:        "alpine/minimal build no suffix",
+			serverValue: "16.1",
+			want:        "16.1",
+		},
+		{
+			name:        "empty response is an error",
+			serverValue: "",
+			wantErr:     true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+			mock.ExpectQuery("SHOW server_version;").
+				WillReturnRows(sqlmock.NewRows([]string{"server_version"}).AddRow(tc.serverValue))
+
+			got, err := client.getVersion(t.Context())
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestProtectedSpans(t *testing.T) {
 	tests := []struct {
 		name string
