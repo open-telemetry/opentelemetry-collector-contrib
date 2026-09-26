@@ -29,8 +29,8 @@ The following settings are required:
 
 The following settings are optional:
 
-* `path` (default: '/events'): Path where the receiver instance will accept events 
-* `health_path` (default: '/health_check'): Path available for checking receiver status
+* `path` (default: '/events'): Path where the receiver instance will accept events. Must begin with a leading `/`.
+* `health_path` (default: '/health_check'): Path available for checking receiver status. Must begin with a leading `/`.
 * `read_timeout` (default: '500ms'): Maximum wait time while attempting to read a received event
 * `write_timeout` (default: '500ms'): Maximum wait time while attempting to write a response
 * `required_header` (optional):  
@@ -124,8 +124,8 @@ receivers:
     webhook_event:
         endpoint: localhost:8088
         read_timeout: "500ms"
-        path: "eventsource/receiver"
-        health_path: "eventreceiver/healthcheck"
+        path: "/eventsource/receiver"
+        health_path: "/eventreceiver/healthcheck"
         required_header:
             key: "required-header-key"
             value: "required-header-value"
