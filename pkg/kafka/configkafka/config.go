@@ -487,7 +487,9 @@ type SASLConfig struct {
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "AWS_MSK_IAM_OAUTHBEARER":
-		// TODO validate c.AWSMSK
+		if c.AWSMSK.Region == "" {
+			return errors.New("region is required for AWS_MSK_IAM_OAUTHBEARER")
+		}
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {

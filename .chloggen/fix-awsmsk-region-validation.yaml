@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/kafka/configkafka
+note: Validate that AWSMSK.Region is set when SASL mechanism is AWS_MSK_IAM_OAUTHBEARER, instead of failing later at connection time with a confusing AWS SDK error.
+issues: [51510]
+subtext:
+change_logs: [user]
