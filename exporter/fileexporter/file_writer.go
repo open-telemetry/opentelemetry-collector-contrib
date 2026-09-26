@@ -25,6 +25,10 @@ type fileWriter struct {
 	flushInterval time.Duration
 	flushTicker   *time.Ticker
 	stopTicker    chan struct{}
+	// Protected by mutex
+	refs    int  // number of active references to this writer
+	evicted bool // true if the writer has been evicted from the LRU
+	closed  bool
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
@@ -71,16 +75,18 @@ func (w *fileWriter) startFlusher() {
 	w.stopTicker = make(chan struct{})
 	// Start the ticker.
 	w.flushTicker = time.NewTicker(w.flushInterval)
+	// use the local copies so the goroutine does not read these fields without the lock.
+	ticker := w.flushTicker
+	stop := w.stopTicker
 	go func() {
 		for {
 			select {
-			case <-w.flushTicker.C:
+			case <-ticker.C:
 				w.mutex.Lock()
 				ff.flush()
 				w.mutex.Unlock()
-			case <-w.stopTicker:
-				w.flushTicker.Stop()
-				w.flushTicker = nil
+			case <-stop:
+				ticker.Stop()
 				return
 			}
 		}
@@ -94,17 +100,61 @@ func (w *fileWriter) start() {
 	}
 }
 
-// Shutdown stops the exporter and is invoked during shutdown.
-// It stops the flush ticker if set.
-func (w *fileWriter) shutdown() error {
-	// Stop the flush ticker.
-	if w.flushTicker != nil {
-		// Stop the go routine.
-		w.mutex.Lock()
-		close(w.stopTicker)
-		w.mutex.Unlock()
+// acquire increments the reference count for this writer.
+func (w *fileWriter) acquire() {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	w.refs++
+}
+
+// release decrements the reference count. If the writer was evicted and this
+// was the last reference, it shuts down the writer.
+func (w *fileWriter) release() error {
+	w.mutex.Lock()
+	w.refs--
+	handOff := w.refs == 0 && w.evicted
+	w.mutex.Unlock()
+	if !handOff {
+		return nil
 	}
+	return w.shutdown()
+}
+
+// evict marks the writer as evicted and shuts it down if there are no more references.
+func (w *fileWriter) evict() error {
+	w.mutex.Lock()
+	w.evicted = true
+	idle := w.refs == 0
+	w.mutex.Unlock()
+	if !idle {
+		return nil
+	}
+	return w.shutdown()
+}
+
+// shutdown stops the flusher and closes the file. It is safe to call multiple times.
+func (w *fileWriter) shutdown() error {
+	w.stopFlusher()
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	if w.closed {
+		return nil
+	}
+	w.closed = true
+	// Close the file. This will flush any buffered data.
 	return w.file.Close()
+}
+
+// stopFlusher stops the flusher if it is running.
+func (w *fileWriter) stopFlusher() {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	if w.stopTicker == nil {
+		return
+	}
+	close(w.stopTicker)
+	w.stopTicker = nil
+	w.flushTicker = nil
 }
 
 func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
