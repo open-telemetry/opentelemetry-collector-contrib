@@ -1,0 +1,14 @@
+change_type: bug_fix
+
+component: receiver/kafka
+
+note: Stop processing a fetched batch once the partition consumer is cancelled, instead of marking and dropping the rest of it
+
+issues: [50753]
+
+subtext: |
+  `message_marking.on_error` and `message_marking.on_permanent_error` no longer mark a
+  record that was interrupted by the cancellation. At shutdown, records that were
+  fetched but not delivered are redelivered on the next run instead of being committed.
+
+change_logs: [user]

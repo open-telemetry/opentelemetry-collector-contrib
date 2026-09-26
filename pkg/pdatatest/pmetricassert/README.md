@@ -39,6 +39,22 @@ Use `IncludeValues()` to write supported datapoint values, or
 `IncludeHistogramExplicitBounds()` to write histogram bounds without other
 histogram values.
 
+Use `WithAttributeExists()` and `WithAttributeRegex()` to generate matchers for
+volatile resource or datapoint attributes:
+
+```go
+pmetricassert.WriteAssertionFile(t, expectedFile, actualMetrics,
+    pmetricassert.WithAttributeExists("service.instance.id"),
+    pmetricassert.WithAttributeRegex(map[string]string{
+        "host.name": `worker-[0-9]+`,
+    }),
+)
+```
+
+The options apply wherever the selected keys occur in resource or datapoint
+attributes. Regex patterns use full-string matching, and snapshot generation
+fails if an encountered value does not match its pattern.
+
 `WriteAssertionFile` expects semantically valid metrics. It normalizes valid
 metrics into an assertion snapshot; it is not a validator for producer output.
 
@@ -215,6 +231,46 @@ Use at most one of `<collection>:` and `<collection>/include:` per element;
 specifying both is a schema error. `WriteAssertionFile` always emits the
 default exact form.
 
+### Collection count matcher
+
+The `/count` suffix asserts how many items a collection has, without naming
+them. It takes a mapping with `exact`, or with `min` and/or `max`, where the
+bounds are inclusive. `exact` cannot be combined with the other two:
+
+```yaml
+version: 1
+signal: metrics
+resources/count:
+  min: 1
+```
+
+`/count` composes with `/include`, so a test can pin the items it cares about
+and still assert the size of the whole collection:
+
+```yaml
+metrics/include:
+  - name: container.cpu.usage
+    type: sum
+metrics/count:
+  min: 3
+```
+
+A collection that is only given a `/count` asserts nothing about which items
+are present, so unlisted items are not reported as unexpected. This also means
+the single empty-attribute datapoint shorthand does not apply to a metric whose
+`datapoints` are only counted:
+
+```yaml
+- name: k8s.node.network.io
+  type: sum
+  datapoints/count:
+    min: 2
+```
+
+Pairing `/count` with an exact `<collection>:` list is a schema error, because
+an exact collection already fixes its size. `WriteAssertionFile` never emits
+`/count`.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -248,8 +304,7 @@ datapoints rather than pinning it to a single attribute-less one.
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
 extensions beyond attribute `/exists`/`/regex`, `attributes/include`, scope
-`version` `/exists`/`/regex`, and collection `/include` (`/exclude`, `/all`,
-`/count`, `/approx`,
-`/gt|gte|lt|lte`) and opt-in fields
+`version` `/exists`/`/regex`, and collection `/include`/`/count` (`/exclude`,
+`/all`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
 (`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
 histogram fields) are tracked as follow-ups under that issue.
