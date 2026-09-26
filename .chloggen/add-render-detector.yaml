@@ -1,0 +1,6 @@
+change_type: enhancement
+component: processor/resource_detection
+note: Add Render.com resource detector.
+issues: [49165]
+subtext:
+change_logs: [user]
