@@ -37,10 +37,26 @@ func AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t *testing.T, tt *
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualProcessorProbabilisticSamplerCountSpansProcessedTotal(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_probabilistic_sampler_count_spans_processed_total",
+		Description: "Count of spans that were sampled or not [Development]",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_probabilistic_sampler_count_spans_processed_total")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorProbabilisticSamplerCountTracesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_probabilistic_sampler_count_traces_sampled",
-		Description: "Count of traces that were sampled or not [Development]",
+		Description: "[DEPRECATED] Count of spans that were sampled or not [Deprecated]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

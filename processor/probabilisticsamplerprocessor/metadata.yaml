@@ -26,10 +26,21 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    processor_probabilistic_sampler_count_spans_processed_total:
+      enabled: true
+      description: Count of spans that were sampled or not
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
     processor_probabilistic_sampler_count_traces_sampled:
       enabled: true
-      description: Count of traces that were sampled or not
-      stability: development
+      description: "[DEPRECATED] Count of spans that were sampled or not"
+      deprecated:
+        since: 0.161.0
+        note: "Use processor_probabilistic_sampler_count_spans_processed_total instead"
+      stability: deprecated
       unit: "1"
       sum:
         value_type: int

@@ -20,8 +20,12 @@ func TestSetupTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	defer tb.Shutdown()
 	tb.ProcessorProbabilisticSamplerCountLogsSampled.Add(context.Background(), 1)
+	tb.ProcessorProbabilisticSamplerCountSpansProcessedTotal.Add(context.Background(), 1)
 	tb.ProcessorProbabilisticSamplerCountTracesSampled.Add(context.Background(), 1)
 	AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorProbabilisticSamplerCountSpansProcessedTotal(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorProbabilisticSamplerCountTracesSampled(t, testTel,

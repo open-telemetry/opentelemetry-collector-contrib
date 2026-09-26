@@ -22,11 +22,12 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                           metric.Meter
-	mu                                              sync.Mutex
-	registrations                                   []metric.Registration
-	ProcessorProbabilisticSamplerCountLogsSampled   metric.Int64Counter
-	ProcessorProbabilisticSamplerCountTracesSampled metric.Int64Counter
+	meter                                                 metric.Meter
+	mu                                                    sync.Mutex
+	registrations                                         []metric.Registration
+	ProcessorProbabilisticSamplerCountLogsSampled         metric.Int64Counter
+	ProcessorProbabilisticSamplerCountSpansProcessedTotal metric.Int64Counter
+	ProcessorProbabilisticSamplerCountTracesSampled       metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -64,9 +65,15 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ProcessorProbabilisticSamplerCountSpansProcessedTotal, err = builder.meter.Int64Counter(
+		"otelcol_processor_probabilistic_sampler_count_spans_processed_total",
+		metric.WithDescription("Count of spans that were sampled or not [Development]"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorProbabilisticSamplerCountTracesSampled, err = builder.meter.Int64Counter(
 		"otelcol_processor_probabilistic_sampler_count_traces_sampled",
-		metric.WithDescription("Count of traces that were sampled or not [Development]"),
+		metric.WithDescription("[DEPRECATED] Count of spans that were sampled or not [Deprecated]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
