@@ -491,3 +491,38 @@ func TestTemporalityString(t *testing.T) {
 	assert.Equal(t, "AGGREGATION_TEMPORALITY_CUMULATIVE", temporalityString(pmetric.AggregationTemporalityCumulative))
 	assert.Equal(t, "AGGREGATION_TEMPORALITY_UNSPECIFIED", temporalityString(pmetric.AggregationTemporalityUnspecified))
 }
+
+// TestEncodeMetric_DottedAttributeConflict ensures the metric data-point
+// attributes go through the dotted-key conflict resolution so a metric carrying
+// both code.function and code.function.name does not produce a document that
+// OpenSearch would reject with a mapper_parsing_exception.
+func TestEncodeMetric_DottedAttributeConflict(t *testing.T) {
+	for _, mode := range []struct {
+		name  string
+		model *encodeModel
+	}{
+		{name: "ss4o", model: &encodeModel{sso: true, dataset: "default", namespace: "namespace"}},
+		{name: "otel-v1", model: &encodeModel{otelV1: true}},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			resource, scope := testMetricResourceAndScope()
+
+			metric := pmetric.NewMetric()
+			metric.SetName("system.cpu.usage")
+			dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+			dp.SetDoubleValue(0.42)
+			dp.Attributes().PutStr("code.function", "doWork")
+			dp.Attributes().PutStr("code.function.name", "doWork")
+
+			payload, err := mode.model.encodeMetric(resource, scope, "", metric, dp)
+			doc := encodeToMap(t, payload, err)
+
+			attrs, ok := doc["attributes"].(map[string]any)
+			require.True(t, ok)
+			_, hasConcrete := attrs["code.function"]
+			assert.False(t, hasConcrete, "bare concrete code.function must be rewritten")
+			assert.Equal(t, "doWork", attrs["code.function.value"])
+			assert.Equal(t, "doWork", attrs["code.function.name"])
+		})
+	}
+}
