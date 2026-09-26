@@ -729,6 +729,10 @@ component_management:
     name: processor_unroll
     paths:
     - processor/unrollprocessor/**
+  - component_id: processor_verify
+    name: processor_verify
+    paths:
+    - processor/verifyprocessor/**
   - component_id: receiver_activedirectoryds
     name: receiver_activedirectoryds
     paths:

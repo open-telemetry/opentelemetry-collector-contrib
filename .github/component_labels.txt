@@ -235,6 +235,7 @@ processor/telemetrypolicyprocessor processor/telemetrypolicy
 processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll
+processor/verifyprocessor processor/verify
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/activedirectoryinvreceiver receiver/activedirectoryinv
 receiver/aerospikereceiver receiver/aerospike

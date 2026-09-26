@@ -250,6 +250,7 @@ processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/telemetrypolicyprocessor
 processor/unrollprocessor
+processor/verifyprocessor
 receiver/activedirectorydsreceiver
 receiver/activedirectoryinvreceiver
 receiver/aerospikereceiver

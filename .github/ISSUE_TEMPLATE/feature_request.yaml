@@ -248,6 +248,7 @@ body:
       - processor/transform
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
+      - processor/verify
       - receiver/activedirectoryds
       - receiver/activedirectoryinv
       - receiver/aerospike

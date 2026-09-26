@@ -1,0 +1,19 @@
+type: verify
+
+status:
+  class: processor
+  stability:
+    development: [logs]
+  distributions: []
+  warnings: []
+  codeowners:
+    active: [MJarmo, hilmarf, jmacd]
+
+tests:
+  config:
+    mode: sync
+    failure_mode: mark
+    key_source:
+      type: file
+      file:
+        hmac_key: testdata/dev_hmac_key.txt
