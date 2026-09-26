@@ -247,6 +247,12 @@ feature_gates:
       When enabled, semconv stable attributes are enabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+  - id: processor.k8sattributes.EnableKubeletPodSource
+    stage: alpha
+    description: >-
+      When enabled, k8sattributesprocessor can use kubelet /pods polling as the pod metadata source.
+    from_version: v0.157.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14475
   - id: processor.k8sattributes.ShareProcessorBetweenPipelines
     stage: alpha
     description: >-
