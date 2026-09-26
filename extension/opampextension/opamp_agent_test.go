@@ -876,6 +876,75 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 	require.True(t, sa.unsubscribed)
 }
 
+func TestHealthReportingReportsAttributeChanges(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	statusUpdateChannel := make(chan *status.AggregateStatus)
+	sa := &mockStatusAggregator{
+		statusChan: statusUpdateChannel,
+	}
+
+	mtx := &sync.RWMutex{}
+	receivedHealthUpdates := 0
+
+	mockOpampClient := &mockOpAMPClient{
+		setHealthFunc: func(_ *protobufs.ComponentHealth) error {
+			mtx.Lock()
+			defer mtx.Unlock()
+			receivedHealthUpdates++
+			return nil
+		},
+	}
+
+	o := newTestOpampAgent(cfg, set, mockOpampClient, sa)
+	o.initHealthReporting()
+	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+
+	now := time.Now()
+	sendUpdate := func(attrs pcommon.Map) {
+		attrCopy := pcommon.NewMap()
+		attrs.CopyTo(attrCopy)
+		statusUpdateChannel <- &status.AggregateStatus{
+			Event: &mockStatusEvent{
+				status:     componentstatus.StatusOK,
+				timestamp:  now,
+				attributes: &attrCopy,
+			},
+		}
+	}
+
+	attrsV1 := pcommon.NewMap()
+	attrsV1.PutStr("detail", "v1")
+	sendUpdate(attrsV1)
+
+	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
+		return receivedHealthUpdates >= 2
+	}, 1*time.Second, 50*time.Millisecond)
+
+	sendUpdate(attrsV1)
+
+	time.Sleep(150 * time.Millisecond)
+	mtx.RLock()
+	countAfterDuplicate := receivedHealthUpdates
+	mtx.RUnlock()
+
+	attrsV2 := pcommon.NewMap()
+	attrsV2.PutStr("detail", "v2")
+	sendUpdate(attrsV2)
+
+	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
+		return receivedHealthUpdates == countAfterDuplicate+1
+	}, 1*time.Second, 50*time.Millisecond)
+
+	assert.NoError(t, o.Shutdown(t.Context()))
+	require.True(t, sa.unsubscribed)
+}
+
 func TestHealthReportingDisabled(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
@@ -1147,6 +1216,10 @@ func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRe
 	return nil
 }
 
+func (mockOpAMPClient) SetConnectionSettingsStatus(*protobufs.ConnectionSettingsStatus) error {
+	return nil
+}
+
 func (mockOpAMPClient) SetCustomCapabilities(*protobufs.CustomCapabilities) error {
 	return nil
 }
@@ -1162,25 +1235,29 @@ func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) er
 }
 
 type mockStatusEvent struct {
-	status    componentstatus.Status
-	err       error
-	timestamp time.Time
+	status     componentstatus.Status
+	err        error
+	timestamp  time.Time
+	attributes *pcommon.Map
 }
 
-func (m mockStatusEvent) Status() componentstatus.Status {
+func (m *mockStatusEvent) Status() componentstatus.Status {
 	return m.status
 }
 
-func (m mockStatusEvent) Err() error {
+func (m *mockStatusEvent) Err() error {
 	return m.err
 }
 
-func (m mockStatusEvent) Timestamp() time.Time {
+func (m *mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
 }
 
-func (mockStatusEvent) Attributes() pcommon.Map {
-	return pcommon.NewMap()
+func (m *mockStatusEvent) Attributes() pcommon.Map {
+	if m.attributes == nil {
+		return pcommon.NewMap()
+	}
+	return *m.attributes
 }
 
 func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *mockOpAMPClient, sa *mockStatusAggregator) *opampAgent {

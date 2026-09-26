@@ -710,8 +710,9 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 	var (
 		lastStatus componentstatus.Status
 		lastErr    string
-		currentErr string
+		lastAttrs  pcommon.Map
 	)
+	lastAttrs = pcommon.NewMap()
 
 	for {
 		select {
@@ -727,16 +728,18 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 			}
 
 			currentStatus := statusUpdate.Status()
+			currentErr := ""
 			if statusUpdate.Err() != nil {
 				currentErr = statusUpdate.Err().Error()
 			}
 
-			if currentStatus == lastStatus && currentErr == lastErr {
+			if currentStatus == lastStatus && currentErr == lastErr && statusUpdate.Attributes().Equal(lastAttrs) {
 				continue
 			}
 
 			lastStatus = currentStatus
 			lastErr = currentErr
+			statusUpdate.Attributes().CopyTo(lastAttrs)
 
 			componentHealth := convertComponentHealth(statusUpdate)
 
@@ -761,6 +764,10 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 
 	if statusUpdate.Err() != nil {
 		componentHealth.LastError = statusUpdate.Err().Error()
+	}
+
+	if attrs := pcommonMapToKeyValues(statusUpdate.Attributes()); len(attrs) > 0 {
+		componentHealth.Attributes = attrs
 	}
 
 	if len(statusUpdate.ComponentStatusMap) > 0 {
