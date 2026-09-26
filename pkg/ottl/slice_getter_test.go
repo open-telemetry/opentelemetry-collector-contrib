@@ -386,37 +386,109 @@ func TestSliceGetter_Get(t *testing.T) {
 	})
 }
 
+func TestSliceGetter_DistinguishesNilAndEmptySlices(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		value      any
+		wantNonNil bool
+	}{
+		{name: "nil", wantNonNil: false},
+		{name: "typed nil", value: []StringGetter[any](nil), wantNonNil: false},
+		{name: "coerced nil", value: []string(nil), wantNonNil: false},
+		{name: "empty", value: []StringGetter[any]{}, wantNonNil: true},
+		{name: "coerced empty", value: []string{}, wantNonNil: true},
+		{name: "pdata empty", value: pcommon.NewSlice(), wantNonNil: true},
+		{name: "pdata value empty", value: pcommon.NewValueSlice(), wantNonNil: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, isLiteral := range []bool{true, false} {
+				var name string
+				var getter Getter[any]
+				if isLiteral {
+					name = "literal"
+					getter = newLiteral[any, any](tt.value)
+				} else {
+					name = "runtime"
+					getter = &exprGetter[any]{expr: Expr[any]{
+						exprFunc: func(context.Context, any) (any, error) {
+							return tt.value, nil
+						},
+					}}
+				}
+				t.Run(name, func(t *testing.T) {
+					var sg SliceGetter[any, StringGetter[any]]
+					source := newTestRuntimeSliceSource[any, StringGetter[any]](getter)
+					require.NoError(t, sg.setReflectValue(reflect.ValueOf(*source)))
+					nonNil, err := sg.Range(t.Context(), nil, func(StringGetter[any]) bool {
+						t.Fatal("nil or empty slice must not invoke yield")
+						return false
+					})
+					require.NoError(t, err)
+					require.Equal(t, tt.wantNonNil, nonNil)
+					values, err := sg.Get(t.Context(), nil)
+					require.NoError(t, err)
+					require.Equal(t, tt.wantNonNil, values != nil)
+				})
+			}
+		})
+	}
+}
+
+func TestSliceGetter_RangeEvaluatesOnceAndStopsEarly(t *testing.T) {
+	getCalls := 0
+	sg := newTestSliceGetterWithRuntimeSource[any, StringGetter[any]](
+		newTestRuntimeSliceSource[any, StringGetter[any]](&exprGetter[any]{expr: Expr[any]{
+			exprFunc: func(context.Context, any) (any, error) {
+				getCalls++
+				return []string{"a", "b"}, nil
+			},
+		}}),
+	)
+	calls := 0
+	nonNil, err := sg.Range(t.Context(), nil, func(StringGetter[any]) bool {
+		calls++
+		return false
+	})
+	require.NoError(t, err)
+	require.True(t, nonNil)
+	require.Equal(t, 1, calls)
+	require.Equal(t, 1, getCalls)
+}
+
 func TestSliceGetter_Range(t *testing.T) {
 	t.Run("static values", func(t *testing.T) {
 		sg := SliceGetter[any, int]{typedValues: []int{1, 2, 3}}
 		var collected []int
-		err := sg.Range(t.Context(), nil, func(v int) bool {
+		nonNil, err := sg.Range(t.Context(), nil, func(v int) bool {
 			collected = append(collected, v)
 			return true
 		})
 		require.NoError(t, err)
+		require.True(t, nonNil)
 		require.Equal(t, []int{1, 2, 3}, collected)
 	})
 
 	t.Run("early stop", func(t *testing.T) {
 		sg := SliceGetter[any, int]{typedValues: []int{1, 2, 3}}
 		var collected []int
-		err := sg.Range(t.Context(), nil, func(v int) bool {
+		nonNil, err := sg.Range(t.Context(), nil, func(v int) bool {
 			collected = append(collected, v)
 			return v < 2
 		})
 		require.NoError(t, err)
+		require.True(t, nonNil)
 		require.Equal(t, []int{1, 2}, collected)
 	})
 
 	t.Run("dynamic []V fast path", func(t *testing.T) {
 		sg := NewTestingSliceGetter[any, int](false, []int{4, 5, 6})
 		var collected []int
-		err := sg.Range(t.Context(), nil, func(v int) bool {
+		nonNil, err := sg.Range(t.Context(), nil, func(v int) bool {
 			collected = append(collected, v)
 			return true
 		})
 		require.NoError(t, err)
+		require.True(t, nonNil)
 		require.Equal(t, []int{4, 5, 6}, collected)
 	})
 
@@ -425,11 +497,12 @@ func TestSliceGetter_Range(t *testing.T) {
 			newTestRuntimeSliceSource[any, StringGetter[any]](newLiteral[any, any]([]any{"a", "b"})),
 		)
 		count := 0
-		err := sg.Range(t.Context(), nil, func(_ StringGetter[any]) bool {
+		nonNil, err := sg.Range(t.Context(), nil, func(_ StringGetter[any]) bool {
 			count++
 			return true
 		})
 		require.NoError(t, err)
+		require.True(t, nonNil)
 		require.Equal(t, 2, count)
 	})
 
@@ -437,8 +510,9 @@ func TestSliceGetter_Range(t *testing.T) {
 		sg := newTestSliceGetterWithRuntimeSource[any, string](
 			newTestRuntimeSliceSource[any, string](errSliceGetter{err: errors.New("range get failed")}),
 		)
-		err := sg.Range(t.Context(), nil, func(_ string) bool { return true })
+		nonNil, err := sg.Range(t.Context(), nil, func(_ string) bool { return true })
 		require.Error(t, err)
+		require.False(t, nonNil)
 		require.EqualError(t, err, "range get failed")
 	})
 
@@ -452,8 +526,9 @@ func TestSliceGetter_Range(t *testing.T) {
 		sg := newTestSliceGetterWithRuntimeSource[any, StringGetter[any]](
 			newTestRuntimeSliceSourceWithCoercer[any](newLiteral[any, any]([]string{"x"}), coercer),
 		)
-		err := sg.Range(t.Context(), nil, func(_ StringGetter[any]) bool { return true })
+		nonNil, err := sg.Range(t.Context(), nil, func(_ StringGetter[any]) bool { return true })
 		require.Error(t, err)
+		require.False(t, nonNil)
 		var typeErr TypeError
 		require.ErrorAs(t, err, &typeErr)
 	})
@@ -462,8 +537,9 @@ func TestSliceGetter_Range(t *testing.T) {
 		sg := newTestSliceGetterWithRuntimeSource[any, string](
 			newTestRuntimeSliceSource[any, string](newLiteral[any, any]("not-a-slice")),
 		)
-		err := sg.Range(t.Context(), nil, func(_ string) bool { return true })
+		nonNil, err := sg.Range(t.Context(), nil, func(_ string) bool { return true })
 		require.Error(t, err)
+		require.False(t, nonNil)
 		require.Contains(t, err.Error(), "expected a slice")
 	})
 }
@@ -524,7 +600,7 @@ func BenchmarkSliceGetter(b *testing.B) {
 		b.ReportAllocs()
 		total := 0
 		for b.Loop() {
-			err := sliceGetter.Range(ctx, nil, func(val string) bool {
+			_, err := sliceGetter.Range(ctx, nil, func(val string) bool {
 				total += len(val)
 				return true
 			})
@@ -586,7 +662,7 @@ func BenchmarkSliceGetter(b *testing.B) {
 		total := 0
 		for b.Loop() {
 			var getErr error
-			err := sliceGetter.Range(ctx, nil, func(getter StringGetter[any]) bool {
+			_, err := sliceGetter.Range(ctx, nil, func(getter StringGetter[any]) bool {
 				val, err := getter.Get(ctx, nil)
 				if err != nil {
 					getErr = err
@@ -655,11 +731,12 @@ func TestSliceGetter_nilRuntimeSlice(t *testing.T) {
 
 	t.Run("Range", func(t *testing.T) {
 		calls := 0
-		err := sg.Range(ctx, nil, func(_ string) bool {
+		nonNil, err := sg.Range(ctx, nil, func(_ string) bool {
 			calls++
 			return true
 		})
 		require.NoError(t, err)
+		require.False(t, nonNil)
 		require.Equal(t, 0, calls)
 	})
 }
@@ -678,11 +755,12 @@ func TestSliceGetter_nilLiteralSlice(t *testing.T) {
 
 	t.Run("Range", func(t *testing.T) {
 		calls := 0
-		err := sg.Range(ctx, nil, func(_ string) bool {
+		nonNil, err := sg.Range(ctx, nil, func(_ string) bool {
 			calls++
 			return true
 		})
 		require.NoError(t, err)
+		require.False(t, nonNil)
 		require.Zero(t, calls)
 	})
 }
@@ -734,7 +812,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 				return nil, errors.New("build failed")
 			},
 		)
-		err := coercer.rangeSlice([]any{"a"}, func(_ any) bool { return true })
+		_, err := coercer.rangeSlice([]any{"a"}, func(_ any) bool { return true })
 		require.Error(t, err)
 		require.EqualError(t, err, "build failed")
 	})
@@ -742,7 +820,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 	t.Run("yield stops early", func(t *testing.T) {
 		coercer := newTestSliceElementCoercer[any, string]()
 		calls := 0
-		err := coercer.rangeSlice([]string{"a", "b", "c"}, func(_ any) bool {
+		_, err := coercer.rangeSlice([]string{"a", "b", "c"}, func(_ any) bool {
 			calls++
 			return calls < 2
 		})
@@ -754,7 +832,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 		coercer := newTestSliceElementCoercer[any, Getter[any]]()
 		original := newLiteral[any, any]("kept")
 		var seen Getter[any]
-		err := coercer.rangeSlice([]Getter[any]{original}, func(val any) bool {
+		_, err := coercer.rangeSlice([]Getter[any]{original}, func(val any) bool {
 			seen = val.(Getter[any])
 			return true
 		})
@@ -768,7 +846,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 		pSlice.AppendEmpty().SetStr("coerced")
 
 		var got string
-		err := coercer.rangeSlice(pSlice, func(val any) bool {
+		_, err := coercer.rangeSlice(pSlice, func(val any) bool {
 			sg := val.(StringGetter[any])
 			str, err := sg.Get(t.Context(), nil)
 			require.NoError(t, err)
@@ -789,7 +867,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 		pSlice := pcommon.NewSlice()
 		pSlice.AppendEmpty().SetStr("item")
 
-		err := coercer.rangeSlice(pSlice, func(_ any) bool { return true })
+		_, err := coercer.rangeSlice(pSlice, func(_ any) bool { return true })
 		require.Error(t, err)
 		require.EqualError(t, err, "pcommon build failed")
 	})
@@ -801,7 +879,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 		pSlice.AppendEmpty().SetStr("b")
 
 		calls := 0
-		err := coercer.rangeSlice(pSlice, func(_ any) bool {
+		_, err := coercer.rangeSlice(pSlice, func(_ any) bool {
 			calls++
 			return calls < 2
 		})
@@ -815,7 +893,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 		pVal.Slice().AppendEmpty().SetStr("wrapped")
 
 		count := 0
-		err := coercer.rangeSlice(pVal, func(val any) bool {
+		_, err := coercer.rangeSlice(pVal, func(val any) bool {
 			count++
 			_, ok := val.(StringGetter[any])
 			require.True(t, ok)
@@ -827,7 +905,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 
 	t.Run("pcommon.Value non-slice error", func(t *testing.T) {
 		coercer := newTestSliceElementCoercer[any, string]()
-		err := coercer.rangeSlice(pcommon.NewValueStr("text"), func(_ any) bool { return true })
+		_, err := coercer.rangeSlice(pcommon.NewValueStr("text"), func(_ any) bool { return true })
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "expected a slice")
 	})
@@ -835,7 +913,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 	t.Run("reflect slice with matching element type", func(t *testing.T) {
 		coercer := newTestSliceElementCoercer[any, string]()
 		var collected []string
-		err := coercer.rangeSlice([]string{"direct"}, func(val any) bool {
+		_, err := coercer.rangeSlice([]string{"direct"}, func(val any) bool {
 			collected = append(collected, val.(string))
 			return true
 		})
@@ -846,7 +924,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 	t.Run("reflect slice matching type yield stops early", func(t *testing.T) {
 		coercer := newTestSliceElementCoercer[any, string]()
 		calls := 0
-		err := coercer.rangeSlice([]string{"a", "b", "c"}, func(_ any) bool {
+		_, err := coercer.rangeSlice([]string{"a", "b", "c"}, func(_ any) bool {
 			calls++
 			return calls < 2
 		})
@@ -857,7 +935,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 	t.Run("reflect slice coerced yield stops early", func(t *testing.T) {
 		coercer := newTestSliceElementCoercer[any, StringGetter[any]]()
 		calls := 0
-		err := coercer.rangeSlice([]any{"a", "b"}, func(_ any) bool {
+		_, err := coercer.rangeSlice([]any{"a", "b"}, func(_ any) bool {
 			calls++
 			return calls < 2
 		})
@@ -868,7 +946,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 	t.Run("reflect slice reuses getter yield stops early", func(t *testing.T) {
 		coercer := newTestSliceElementCoercer[any, Getter[any]]()
 		calls := 0
-		err := coercer.rangeSlice([]Getter[any]{
+		_, err := coercer.rangeSlice([]Getter[any]{
 			newLiteral[any, any]("a"),
 			newLiteral[any, any]("b"),
 		}, func(_ any) bool {
@@ -881,7 +959,7 @@ func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
 
 	t.Run("reflect non-slice error", func(t *testing.T) {
 		coercer := newTestSliceElementCoercer[any, string]()
-		err := coercer.rangeSlice(123, func(_ any) bool { return true })
+		_, err := coercer.rangeSlice(123, func(_ any) bool { return true })
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "expected a slice")
 	})
