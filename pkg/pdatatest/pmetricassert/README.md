@@ -227,9 +227,10 @@ its datapoints are not constrained, which is what makes the operator useful for
 multi-series metrics. Listing `datapoints:` (or `datapoints/include:`)
 restores the constraint.
 
-Use at most one of `<collection>:` and `<collection>/include:` per element;
-specifying both is a schema error. `WriteAssertionFile` always emits the
-default exact form.
+`<collection>/exact:` spells out the default and is equivalent to
+`<collection>:`. Use at most one of `<collection>:`, `<collection>/exact:`, and
+`<collection>/include:` per element; specifying more than one is a schema
+error. `WriteAssertionFile` always emits the default `<collection>:` form.
 
 ### Collection count matcher
 
@@ -267,9 +268,9 @@ the single empty-attribute datapoint shorthand does not apply to a metric whose
     min: 2
 ```
 
-Pairing `/count` with an exact `<collection>:` list is a schema error, because
-an exact collection already fixes its size. `WriteAssertionFile` never emits
-`/count`.
+Pairing `/count` with an exact `<collection>:` or `<collection>/exact:` list is
+a schema error, because an exact collection already fixes its size.
+`WriteAssertionFile` never emits `/count`.
 
 ### Shorthand: single empty-attribute datapoint
 
@@ -304,7 +305,7 @@ datapoints rather than pinning it to a single attribute-less one.
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
 extensions beyond attribute `/exists`/`/regex`, `attributes/include`, scope
-`version` `/exists`/`/regex`, and collection `/include`/`/count` (`/exclude`,
+`version` `/exists`/`/regex`, and collection `/exact`/`/include`/`/count` (`/exclude`,
 `/all`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
 (`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
 histogram fields) are tracked as follow-ups under that issue.

@@ -94,6 +94,54 @@ resources:
 	require.ErrorContains(t, err, `unexpected metric "svc.requests"`)
 }
 
+// /exact spells out the default and matches the same way as the bare key.
+func TestAssertMetrics_ExactSuffix(t *testing.T) {
+	require.NoError(t, assertSample(t, `version: 1
+signal: metrics
+resources/exact:
+  - attributes:
+      service.name: svc
+    scopes/exact:
+      - name: github.com/example/receiver
+        version: v0.0.1
+        metrics/exact:
+          - name: svc.active
+            type: gauge
+            unit: "1"
+          - name: svc.requests
+            type: sum
+            unit: "{requests}"
+            temporality: cumulative
+            monotonic: true
+            datapoints/exact:
+              - attributes:
+                  method: GET
+              - attributes:
+                  method: POST
+`))
+
+	err := assertSample(t, `version: 1
+signal: metrics
+resources/exact:
+  - attributes:
+      service.name: svc
+    scopes/exact:
+      - name: github.com/example/receiver
+        version: v0.0.1
+        metrics/exact:
+          - name: svc.requests
+            type: sum
+            unit: "{requests}"
+            temporality: cumulative
+            monotonic: true
+            datapoints/exact:
+              - attributes:
+                  method: GET
+`)
+	require.ErrorContains(t, err, `unexpected metric "svc.active"`)
+	require.ErrorContains(t, err, `unexpected datapoint with attributes [["method","POST"]]`)
+}
+
 // An exact collection nested inside an /include item stays exact.
 func TestAssertMetrics_ExactCollectionNestedUnderInclude(t *testing.T) {
 	err := assertSample(t, `version: 1

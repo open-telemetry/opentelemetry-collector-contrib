@@ -68,16 +68,16 @@ func applyWriteAttributeMatchers(doc *document, opts writeOptions) error {
 	if err != nil {
 		return err
 	}
-	for i := range doc.Resources {
-		resource := &doc.Resources[i]
+	for i := range doc.Resources.items {
+		resource := &doc.Resources.items[i]
 		if err := matchers.apply(resource.Attributes); err != nil {
 			return fmt.Errorf("resource attributes: %w", err)
 		}
-		for j := range resource.Scopes {
-			for k := range resource.Scopes[j].Metrics {
-				metric := &resource.Scopes[j].Metrics[k]
-				for l := range metric.Datapoints {
-					if err := matchers.apply(metric.Datapoints[l].Attributes); err != nil {
+		for j := range resource.Scopes.items {
+			for k := range resource.Scopes.items[j].Metrics.items {
+				metric := &resource.Scopes.items[j].Metrics.items[k]
+				for l := range metric.Datapoints.items {
+					if err := matchers.apply(metric.Datapoints.items[l].Attributes); err != nil {
 						return fmt.Errorf("metric %q datapoint attributes: %w", metric.Name, err)
 					}
 				}
