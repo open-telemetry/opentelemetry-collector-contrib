@@ -1711,9 +1711,16 @@ func (c *mockClient) getTopQueries(uint64, uint64, bool) ([]topQuery, error) {
 		q.digestText = text[2]
 		q.countStar, _ = parseInt(text[3])
 		q.sumTimerWaitInPicoSeconds, _ = parseInt(text[4])
-		// 5-column fixtures (MySQL <8 / MariaDB fallback) omit querySampleText.
+		// Fallback fixtures (MySQL <8 / MariaDB) leave this field blank since the
+		// fallback template omits query_sample_text.
 		if len(text) > 5 {
 			q.querySampleText = text[5]
+		}
+		if len(text) > 6 {
+			q.sumRowsExamined, _ = parseInt(text[6])
+		}
+		if len(text) > 7 {
+			q.sumRowsSent, _ = parseInt(text[7])
 		}
 
 		queries = append(queries, q)
@@ -1999,6 +2006,64 @@ func TestScrapeTopQueriesMariaDB(t *testing.T) {
 	}
 }
 
+// TestScrapeTopQueriesRowsExaminedSent verifies that SUM_ROWS_EXAMINED/SUM_ROWS_SENT
+// are diffed per scrape cycle exactly like count_star, on both the with-sample-text
+// and no-sample-text (MariaDB/MySQL<8) template paths.
+func TestScrapeTopQueriesRowsExaminedSent(t *testing.T) {
+	const schema = "mysql"
+	const digest = "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739"
+
+	t.Run("with sample text", func(t *testing.T) {
+		mc := &mockClient{topQueriesFile: "top_queries_rows_examined_sent"}
+		s := newTopQueryScraper(t, mc)
+
+		s.cacheAndDiff(schema, digest, "count_star", 1)
+		s.cacheAndDiff(schema, digest, "sum_timer_wait", 1)
+		s.cacheAndDiff(schema, digest, "sum_rows_examined", 100)
+		s.cacheAndDiff(schema, digest, "sum_rows_sent", 50)
+
+		logs, err := s.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 1, logs.ResourceLogs().Len())
+		lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		examinedVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.examined_rows")
+		require.True(t, ok, "mysql.events_statements_summary_by_digest.examined_rows must be present")
+		assert.Equal(t, int64(1), examinedVal.Int(), "must be the per-cycle delta (101-100), not the raw cumulative fixture value")
+
+		sentVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.returned_rows")
+		require.True(t, ok, "mysql.events_statements_summary_by_digest.returned_rows must be present")
+		assert.Equal(t, int64(1), sentVal.Int(), "must be the per-cycle delta (51-50), not the raw cumulative fixture value")
+	})
+
+	t.Run("no sample text (MariaDB/MySQL<8 fallback)", func(t *testing.T) {
+		v57 := mustDBVersion(t, "5.7.38")
+		mc := &mockClient{
+			topQueriesFile:    "top_queries_no_sample_text_rows_examined_sent",
+			dbVersionOverride: &v57,
+		}
+		s := newTopQueryScraper(t, mc)
+
+		s.cacheAndDiff(schema, digest, "count_star", 1)
+		s.cacheAndDiff(schema, digest, "sum_timer_wait", 1)
+		s.cacheAndDiff(schema, digest, "sum_rows_examined", 100)
+		s.cacheAndDiff(schema, digest, "sum_rows_sent", 50)
+
+		logs, err := s.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 1, logs.ResourceLogs().Len())
+		lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		examinedVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.examined_rows")
+		require.True(t, ok, "mysql.events_statements_summary_by_digest.examined_rows must be present")
+		assert.Equal(t, int64(1), examinedVal.Int())
+
+		sentVal, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.returned_rows")
+		require.True(t, ok, "mysql.events_statements_summary_by_digest.returned_rows must be present")
+		assert.Equal(t, int64(1), sentVal.Int())
+	})
+}
+
 // TestScrapeQuerySamplesExplainPlan verifies that scrapeQuerySamples emits the
 // correct attributes on query_sample events. mysql.query_plan belongs only on
 // top_query events; scrapeQuerySampleFunc never calls explainQuery.
@@ -2237,7 +2302,7 @@ func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 }
 
 // TestScrapeTopQueryFuncScanRowWithSampleText verifies that when MySQL 8 is detected
-// (supportsSampleText=true), the 6-column scanRow path is used and querySampleText
+// (supportsSampleText=true), the primary scanRow path is used and querySampleText
 // is passed as the sampleStatement argument to explainQuery.
 func TestScrapeTopQueryFuncScanRowWithSampleText(t *testing.T) {
 	v8 := mustDBVersion(t, "8.0.27")

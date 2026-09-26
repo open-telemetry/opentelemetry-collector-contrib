@@ -236,8 +236,8 @@ func runPerfSchemaSetup(t *testing.T, cfg *Config) {
 // end-to-end against real database containers:
 //
 //   - getDBVersion() correctly identifies MySQL vs MariaDB
-//   - scrapeTopQueryFunc uses the 6-column template on MySQL 8+ (query_sample_text present)
-//     and the 5-column fallback on MariaDB (no query_sample_text column)
+//   - scrapeTopQueryFunc uses the primary template on MySQL 8+ (query_sample_text
+//     present) and the fallback template on MariaDB (no query_sample_text column)
 //   - The shared plan cache is populated by scrapeTopQueryFunc so that
 //     scrapeQuerySampleFunc reuses cached plans without a second EXPLAIN call
 //
@@ -504,7 +504,7 @@ func TestIntegrationLogScraper(t *testing.T) {
 // TestVersionCompatibility verifies that getDBVersion() correctly identifies
 // MySQL and MariaDB flavors, and that getTopQueries() and getQuerySamples() select
 // the right query templates:
-//   - getTopQueries: 6-column (query_sample_text) for MySQL 8+, 5-column fallback otherwise
+//   - getTopQueries: primary template (with query_sample_text) for MySQL 8+, fallback otherwise
 //
 // This test manages containers directly with testcontainers.GenericContainer rather
 // than using scraperinttest.NewIntegrationTest. scraperinttest validates metrics
@@ -517,7 +517,7 @@ func TestVersionCompatibility(t *testing.T) {
 		name              string
 		image             string
 		wantProduct       dbProduct
-		wantSampleTextCol bool // true ↔ 6-column top-query template used
+		wantSampleTextCol bool // true ↔ primary top-query template (with query_sample_text) used
 		wantReplicaStatus bool // true ↔ SHOW REPLICA STATUS used instead of SHOW SLAVE STATUS
 		wantRedoLogStats  bool // true ↔ InnoDB redo-log LSN metrics are supported
 		wantBackupAdmin   bool // true ↔ redo-log metrics require BACKUP_ADMIN
@@ -626,12 +626,12 @@ func TestVersionCompatibility(t *testing.T) {
 			// --- getTopQueries: must succeed without error ---
 			// No workload is running, so the result may be empty, but the query
 			// itself must execute without error — which proves the correct template
-			// (5-column vs 6-column) was chosen for this server version.
+			// (primary vs fallback) was chosen for this server version.
 			queries, err := c.getTopQueries(10, 60, dv.supportsQuerySampleText())
 			require.NoError(t, err, "getTopQueries should not fail (wrong template would cause 'unknown column' error)")
 
 			// For MySQL 8+, any top queries returned must have querySampleText
-			// populated (non-empty string is only possible with the 6-column query).
+			// populated (non-empty string is only possible with the primary query).
 			// For MySQL <8 / MariaDB, querySampleText must always be empty string
 			// because the fallback template omits the column.
 			for _, q := range queries {

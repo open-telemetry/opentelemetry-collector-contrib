@@ -375,6 +375,10 @@ type topQuery struct {
 	countStar                 int64
 	sumTimerWaitInPicoSeconds int64
 	querySampleText           string
+	// sumRowsExamined and sumRowsSent are raw cumulative counters from
+	// events_statements_summary_by_digest, diffed the same way as countStar.
+	sumRowsExamined int64
+	sumRowsSent     int64
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -980,7 +984,8 @@ var topQueryNoSampleTextTemplate string
 func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSampleText bool) ([]topQuery, error) {
 	// Select the appropriate template based on version support.
 	// MySQL <8 and all MariaDB versions lack query_sample_text in
-	// events_statements_summary_by_digest, so we use the 5-column fallback.
+	// events_statements_summary_by_digest, so we use the fallback template,
+	// whose SELECT is a strict prefix of the primary one (see topQueryNoSampleText.tmpl).
 	tmplSrc := topQueryTemplate
 	if !supportsSampleText {
 		tmplSrc = topQueryNoSampleTextTemplate
@@ -1016,6 +1021,8 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 				&tq.digestText,
 				&tq.countStar,
 				&tq.sumTimerWaitInPicoSeconds,
+				&tq.sumRowsExamined,
+				&tq.sumRowsSent,
 				&tq.querySampleText,
 			)
 		}
@@ -1026,6 +1033,8 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 			&tq.digestText,
 			&tq.countStar,
 			&tq.sumTimerWaitInPicoSeconds,
+			&tq.sumRowsExamined,
+			&tq.sumRowsSent,
 		)
 	}
 
