@@ -15,6 +15,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -188,6 +189,16 @@ func TestMultipleJSONV1BatchesToTraces(t *testing.T) {
 }
 
 func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
+	// These cases assert the v0 (http.status_code) attribute is emitted, so pin the
+	// HTTP semantic-convention gates to their pre-Beta (disabled) state and restore
+	// the Beta default afterwards.
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0HttpConventions", false))
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1HttpConventions", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0HttpConventions", true))
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1HttpConventions", true))
+	})
+
 	type test struct {
 		name           string
 		haveTags       []*binaryAnnotation
