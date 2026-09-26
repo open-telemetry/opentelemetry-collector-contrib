@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
 
@@ -34,7 +35,9 @@ const (
 	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
 	MetadataFromJob = "job"
 	// MetadataFromCronJob is used to specify to extract metadata/labels/annotations from cronjob
-	MetadataFromCronJob    = "cronjob"
+	MetadataFromCronJob = "cronjob"
+	// MetadataFromHPA is used to specify to extract metadata/labels/annotations from horizontalpodautoscaler
+	MetadataFromHPA        = "horizontalpodautoscaler"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -96,6 +99,7 @@ type Client interface {
 	GetDaemonSet(string) (*DaemonSet, bool)
 	GetJob(string) (*Job, bool)
 	GetCronJob(string) (*CronJob, bool)
+	GetHPA(string) (*HPA, bool)
 	Start() error
 	Stop()
 }
@@ -314,6 +318,7 @@ type FieldExtractionRule struct {
 	//  - daemonset
 	//  - job
 	//  - cronjob
+	//  - horizontalpodautoscaler
 	From string
 }
 
@@ -368,6 +373,12 @@ func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]s
 
 func (r *FieldExtractionRule) extractFromCronJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromCronJob {
+		r.extractFromMetadata(metadata, tags, attrFunc)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromHPAMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+	if r.From == MetadataFromHPA {
 		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
@@ -480,6 +491,26 @@ type CronJob struct {
 	Name       string
 	UID        string
 	Attributes map[string]string
+}
+
+// HPA represents a kubernetes horizontalpodautoscaler.
+type HPA struct {
+	Name       string
+	UID        string
+	Attributes map[string]string
+}
+
+// K8SHPALabel and K8SHPAAnnotation mirror the generated per-resource label/annotation
+// functions in go.opentelemetry.io/otel/semconv (e.g. K8SCronJobLabel) for the other
+// workload types this processor supports. k8s.hpa.label/k8s.hpa.annotation aren't yet
+// part of that package, so they're declared locally here pending semantic-conventions
+// approval (tracked alongside this change).
+func K8SHPALabel(key, val string) attribute.KeyValue {
+	return attribute.String("k8s.hpa.label."+key, val)
+}
+
+func K8SHPAAnnotation(key, val string) attribute.KeyValue {
+	return attribute.String("k8s.hpa.annotation."+key, val)
 }
 
 func OtelAnnotations() FieldExtractionRule {

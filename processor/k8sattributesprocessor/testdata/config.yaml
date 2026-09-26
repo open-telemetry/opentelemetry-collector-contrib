@@ -279,6 +279,13 @@ k8s_attributes/extract_from_cronjob:
         key: app
         from: cronjob
 
+k8s_attributes/extract_from_hpa:
+  extract:
+    labels:
+      - tag_name: hpa_label
+        key: app
+        from: horizontalpodautoscaler
+
 k8s_attributes/all_metadata_fields:
   extract:
     metadata:
