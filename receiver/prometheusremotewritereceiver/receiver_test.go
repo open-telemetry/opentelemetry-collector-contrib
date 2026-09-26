@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -189,6 +190,324 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNHCBUnrepresentablePopulationIsDropped(t *testing.T) {
+	// Five buckets of 2^62 sum past what a uint64 count can hold, so there is no data point that
+	// both keeps the buckets and carries a count OTLP accepts. The declared count is the value
+	// the sum wraps to, so nothing earlier refuses it first.
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_metric", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Histograms: []writev2.Histogram{{
+					Count:          &writev2.Histogram_CountInt{CountInt: 1 << 62},
+					Sum:            1,
+					Timestamp:      1,
+					Schema:         -53,
+					CustomValues:   []float64{1.0, 2.0, 3.0, 4.0},
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 5}},
+					PositiveDeltas: []int64{1 << 62, 0, 0, 0, 0},
+				}},
+			},
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 0, stats.Histograms)
+
+	// The populations are only summed once the spans have been walked, so the metric container
+	// is already there and comes out empty. Every late rejection has that shape, tracked in
+	// #50340.
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		Histogram().DataPoints()
+	assert.Equal(t, 0, dps.Len(), "a population that cannot be represented is not published")
+}
+
+func TestMalformedNHCBIsNotTruncated(t *testing.T) {
+	// The dense form is as long as the bounds, so spans and deltas that describe a different
+	// shape have no translation. Reading as far as the shorter of the two and reporting what
+	// that produced would drop observations the sender wrote, with a count that agrees with
+	// the buckets and says nothing about what went missing.
+	for _, tc := range []struct {
+		name   string
+		bounds []float64
+		spans  []writev2.BucketSpan
+		deltas []int64
+		count  uint64
+	}{
+		{
+			name:   "more buckets than the bounds allow",
+			bounds: []float64{1},
+			spans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+			deltas: []int64{1, 1, 1},
+			count:  6,
+		},
+		{
+			name:   "fewer deltas than the span declares",
+			bounds: []float64{1, 2},
+			spans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+			deltas: []int64{1},
+			count:  1,
+		},
+		{
+			name:   "offset past the last bucket",
+			bounds: []float64{1},
+			spans:  []writev2.BucketSpan{{Offset: 10, Length: 1}},
+			deltas: []int64{5},
+			count:  5,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Schema:         -53,
+							Count:          &writev2.Histogram_CountInt{CountInt: tc.count},
+							Sum:            1,
+							Timestamp:      1,
+							CustomValues:   tc.bounds,
+							PositiveSpans:  tc.spans,
+							PositiveDeltas: tc.deltas,
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 0, stats.Histograms, "a histogram that was not translated is not written")
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(),
+				"a shape with no translation leaves nothing behind")
+		})
+	}
+}
+
+func TestNHCBNegativeBucketPopulationIsDropped(t *testing.T) {
+	// Deltas are cumulative, so a run of them can go below zero. A bucket holds a count of
+	// observations, which cannot, so the conversion to uint64 would turn one into a very large
+	// population, and the data point count comes from those buckets.
+	for _, tc := range []struct {
+		name   string
+		deltas []int64
+	}{
+		{name: "first delta below zero", deltas: []int64{-1, 0}},
+		{name: "running count falls below zero", deltas: []int64{1, -5}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Count:          &writev2.Histogram_CountInt{CountInt: 1},
+							Sum:            1,
+							Timestamp:      1,
+							Schema:         -53,
+							CustomValues:   []float64{1.0},
+							PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+							PositiveDeltas: tc.deltas,
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 0, stats.Histograms)
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(),
+				"a negative bucket population is not published")
+		})
+	}
+}
+
+func TestStaleCustomBucketMarkerCarriesNoPopulation(t *testing.T) {
+	// A stale marker says the series stopped, so its spans and deltas describe nothing and are
+	// left unread. Reading them would put observations on a data point whose count is zero, and
+	// for deltas that overflow it would take the marker down with them.
+	for _, tc := range []struct {
+		name   string
+		count  uint64
+		bounds []float64
+		spans  []writev2.BucketSpan
+		deltas []int64
+	}{
+		{
+			name:   "deltas that would populate the buckets",
+			count:  777,
+			bounds: []float64{1.0, 2.0},
+			spans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+			deltas: []int64{9, 9},
+		},
+		{
+			name:   "deltas that would overflow the count",
+			count:  0,
+			bounds: []float64{1, 2, 3, 4},
+			spans:  []writev2.BucketSpan{{Offset: 0, Length: 5}},
+			deltas: []int64{1 << 62, 0, 0, 0, 0},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Schema:         -53,
+							Count:          &writev2.Histogram_CountInt{CountInt: tc.count},
+							Sum:            math.Float64frombits(value.StaleNaN),
+							Timestamp:      1,
+							CustomValues:   tc.bounds,
+							PositiveSpans:  tc.spans,
+							PositiveDeltas: tc.deltas,
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, stats.Histograms)
+
+			dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+				Histogram().DataPoints()
+			require.Equal(t, 1, dps.Len(), "the stale marker is published")
+			dp := dps.At(0)
+			assert.True(t, dp.Flags().NoRecordedValue())
+			assert.Equal(t, uint64(0), dp.Count())
+			assert.Equal(t, make([]uint64, len(tc.bounds)+1), dp.BucketCounts().AsRaw(), "the deltas are not read")
+			assert.Equal(t, tc.bounds, dp.ExplicitBounds().AsRaw(), "the shape is still described")
+		})
+	}
+}
+
+func TestNHCBWithoutBoundsIsKept(t *testing.T) {
+	// Bounds sit between buckets, so a histogram with none of them still has the bucket above the
+	// last one. Prometheus produces that shape for a classic histogram whose only bucket was +Inf.
+	for _, tc := range []struct {
+		name     string
+		count    uint64
+		spans    []writev2.BucketSpan
+		deltas   []int64
+		expected []uint64
+	}{
+		{
+			name:     "one observation in the implicit bucket",
+			count:    1,
+			spans:    []writev2.BucketSpan{{Offset: 0, Length: 1}},
+			deltas:   []int64{1},
+			expected: []uint64{1},
+		},
+		{
+			name:     "no observations at all",
+			expected: []uint64{0},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Count:          &writev2.Histogram_CountInt{CountInt: tc.count},
+							Sum:            1,
+							Timestamp:      1,
+							Schema:         -53,
+							PositiveSpans:  tc.spans,
+							PositiveDeltas: tc.deltas,
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, stats.Histograms)
+
+			dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+				Histogram().DataPoints().At(0)
+			assert.Empty(t, dp.ExplicitBounds().AsRaw())
+			assert.Equal(t, tc.expected, dp.BucketCounts().AsRaw())
+			assert.Equal(t, tc.count, dp.Count())
+		})
+	}
+}
+
+func TestNHCBCountComesFromTheBuckets(t *testing.T) {
+	// An observation of NaN raises the Prometheus count without landing in a bucket, so the count
+	// that arrives can be larger than the buckets account for. OTLP requires the two to agree.
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_metric", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Histograms: []writev2.Histogram{{
+					// Three observations landed in buckets and one was NaN.
+					Count:          &writev2.Histogram_CountInt{CountInt: 4},
+					Sum:            math.NaN(),
+					Timestamp:      1,
+					Schema:         -53,
+					CustomValues:   []float64{1.0},
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+					PositiveDeltas: []int64{1, 1},
+				}},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, stats.Histograms)
+
+	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		Histogram().DataPoints().At(0)
+	assert.Equal(t, []uint64{1, 2}, dp.BucketCounts().AsRaw())
+	assert.Equal(t, uint64(3), dp.Count(), "the count is the sum of the buckets, not the 4 that arrived")
+	assert.True(t, dp.HasSum() && math.IsNaN(dp.Sum()), "the NaN sum is carried through")
 }
 
 func TestTranslateV2(t *testing.T) {
@@ -415,7 +734,7 @@ func TestTranslateV2(t *testing.T) {
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
@@ -512,7 +831,7 @@ func TestTranslateV2(t *testing.T) {
 				expDP := expHist.DataPoints().AppendEmpty()
 				expDP.SetStartTimestamp(pcommon.Timestamp(150 * int64(time.Millisecond)))
 				expDP.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				expDP.SetCount(6)
+				expDP.SetCount(7) // 1 zero + 6 across the buckets
 				expDP.SetSum(1)
 				expDP.SetScale(0)
 				expDP.SetZeroThreshold(1)
@@ -762,7 +1081,7 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetScale(-4)
 				dp.SetSum(30)
-				dp.SetCount(20)
+				dp.SetCount(1015) // 2 zero + 1009 positive + 4 negative
 				dp.SetZeroCount(2)
 				dp.SetZeroThreshold(1)
 				dp.Positive().SetOffset(0)
@@ -824,6 +1143,145 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
+			name: "nhcb histogram - all observations outside the buckets leave no count or sum",
+			// A histogram whose only observation was NaN has nothing in any bucket. OTLP requires
+			// the sum to be zero when the count is, so it carries neither.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 48},
+								Sum:            math.NaN(),
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         -53,
+								CustomValues:   []float64{1.0},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Histograms: 1,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.ExplicitBounds().FromRaw([]float64{1.0})
+				dp.BucketCounts().FromRaw([]uint64{0, 0})
+
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - float carrying a stale marker is dropped",
+			// A stale marker short circuits the rest of the histogram, so the flavor has to be
+			// checked before it. Otherwise a float histogram is admitted whenever it happens to
+			// be stale, and emits a data point the specification says to drop.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountFloat{CountFloat: 0},
+								Sum:            math.Float64frombits(value.StaleNaN),
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+			},
+			expectedMetrics: pmetric.NewMetrics(),
+		},
+		{
+			name: "nhcb histogram - float carrying a stale marker is dropped",
+			// The custom bucket schema reaches the stale short circuit through a different branch.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountFloat{CountFloat: 0},
+								Sum:            math.Float64frombits(value.StaleNaN),
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         -53,
+								CustomValues:   []float64{1.0},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+			},
+			expectedMetrics: pmetric.NewMetrics(),
+		},
+		{
 			name: "exponential histogram - float",
 			request: &writev2.Request{
 				Symbols: []string{
@@ -863,48 +1321,10 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
-			expectedMetrics: func() pmetric.Metrics {
-				metrics := pmetric.NewMetrics()
-				rm := metrics.ResourceMetrics().AppendEmpty()
-				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
-				attrs.PutStr("service.instance.id", "107cn001")
-
-				sm := rm.ScopeMetrics().AppendEmpty()
-				sm.Scope().SetName("scope1")
-				sm.Scope().SetVersion("v1")
-
-				m := sm.Metrics().AppendEmpty()
-				m.SetName("test_metric")
-				m.SetUnit("")
-				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
-
-				hist := m.SetEmptyExponentialHistogram()
-				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
-				dp := hist.DataPoints().AppendEmpty()
-				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				dp.SetScale(-4)
-				dp.SetSum(33.3)
-				dp.SetCount(20)
-				dp.SetZeroCount(2)
-				dp.SetZeroThreshold(1)
-				dp.Positive().SetOffset(0)
-				dp.Positive().BucketCounts().FromRaw([]uint64{33, 30, 0, 0, 0, 26, 0, 0, 0, 0, 0, 100})
-				dp.Negative().BucketCounts().FromRaw([]uint64{1})
-				dp.Negative().SetOffset(-1)
-				dp.Negative().BucketCounts().FromRaw([]uint64{1})
-				dp.Attributes().PutStr("attr1", "attr1")
-
-				return metrics
-			}(),
+			// The float flavor must be dropped, so nothing is emitted.
+			expectedMetrics: pmetric.NewMetrics(),
 			expectedStats: remote.WriteResponseStats{
-				Confirmed:  true,
-				Samples:    0,
-				Histograms: 1,
-				Exemplars:  0,
+				Confirmed: true,
 			},
 		},
 		{
@@ -1374,7 +1794,7 @@ func TestTranslateV2(t *testing.T) {
 				dp2.SetTimestamp(pcommon.Timestamp(123456790 * int64(time.Millisecond)))
 				dp2.SetScale(-4)
 				dp2.SetSum(200.0)
-				dp2.SetCount(100)
+				dp2.SetCount(105) // 5 zero + 100 across the buckets
 				dp2.SetZeroCount(5)
 				dp2.SetZeroThreshold(1.0)
 				dp2.Positive().SetOffset(0)
@@ -1453,7 +1873,7 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetScale(-4)
 				dp.SetSum(30)
-				dp.SetCount(20)
+				dp.SetCount(1015) // 2 zero + 1009 positive + 4 negative
 				dp.SetZeroCount(2)
 				dp.SetZeroThreshold(1)
 				dp.Positive().SetOffset(0)
@@ -1560,7 +1980,7 @@ func TestTranslateV2(t *testing.T) {
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
@@ -1848,7 +2268,7 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetScale(0)
 				dp.SetSum(100)
-				dp.SetCount(20)
+				dp.SetCount(10) // recomputed from the one retained bucket
 
 				dp.Positive().SetOffset(1023)
 				dp.Positive().BucketCounts().FromRaw([]uint64{10})
@@ -1857,10 +2277,9 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 		},
 		{
-			name: "exponential histogram - float overflow buckets dropped",
-			// The float twin of the case above. It walks a different converter, so the integer
-			// case does not cover it: bucket 1024 is kept, bucket 1025 is the overflow bucket and
-			// is dropped along with its 30 observations, leaving a count of 50 - 30.
+			name: "exponential histogram - float overflow buckets are dropped with the histogram",
+			// The integer twin of this case keeps bucket 1024 and drops the overflow bucket. The
+			// float flavor is turned away before any of that, so nothing is emitted at all.
 			request: &writev2.Request{
 				Symbols: []string{
 					"",
@@ -1891,42 +2310,9 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectedStats: remote.WriteResponseStats{
-				Confirmed:  true,
-				Histograms: 1,
+				Confirmed: true,
 			},
-			expectedMetrics: func() pmetric.Metrics {
-				metrics := pmetric.NewMetrics()
-				rm := metrics.ResourceMetrics().AppendEmpty()
-				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
-				attrs.PutStr("service.instance.id", "107cn001")
-
-				sm := rm.ScopeMetrics().AppendEmpty()
-				sm.Scope().SetName("scope1")
-				sm.Scope().SetVersion("v1")
-
-				m := sm.Metrics().AppendEmpty()
-				m.SetName("test_metric")
-				m.SetUnit("")
-				m.SetDescription("")
-				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
-
-				hist := m.SetEmptyExponentialHistogram()
-				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
-				dp := hist.DataPoints().AppendEmpty()
-				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				dp.SetScale(0)
-				dp.SetSum(100)
-				dp.SetCount(20)
-
-				dp.Positive().SetOffset(1023)
-				dp.Positive().BucketCounts().FromRaw([]uint64{10})
-
-				return metrics
-			}(),
+			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
 			name: "exponential histogram - malformed negative spans drop the histogram",
@@ -2328,7 +2714,7 @@ func TestTranslateV2(t *testing.T) {
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
@@ -2349,7 +2735,7 @@ func TestTranslateV2(t *testing.T) {
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
@@ -2904,7 +3290,7 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Schema:         -53,
-								Count:          &writev2.Histogram_CountInt{CountInt: 10},
+								Count:          &writev2.Histogram_CountInt{CountInt: 26},
 								Sum:            5.0,
 								Timestamp:      1,
 								StartTimestamp: 1,
@@ -2933,7 +3319,7 @@ func TestTranslateV2(t *testing.T) {
 				dp := hist.DataPoints().AppendEmpty()
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				dp.SetCount(10)
+				dp.SetCount(26)
 				dp.SetSum(5.0)
 				dp.ExplicitBounds().FromRaw([]float64{0.1, 0.5, 1.0})
 				dp.BucketCounts().FromRaw([]uint64{2, 5, 9, 10})
@@ -3370,7 +3756,7 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Schema:         -53, // NHCB
-								Count:          &writev2.Histogram_CountInt{CountInt: 2},
+								Count:          &writev2.Histogram_CountInt{CountInt: 3},
 								Sum:            3.0,
 								Timestamp:      1000,
 								CustomValues:   []float64{1.0},
@@ -3402,7 +3788,7 @@ func TestTranslateV2(t *testing.T) {
 				dp := hist.DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.Timestamp(1000 * int64(time.Millisecond)))
 				dp.SetSum(3.0)
-				dp.SetCount(2)
+				dp.SetCount(3)
 				dp.ExplicitBounds().FromRaw([]float64{1.0})
 				dp.BucketCounts().FromRaw([]uint64{1, 2})
 				dp.Attributes().PutStr("dp_attr", "dp_value")
@@ -3514,6 +3900,7 @@ func TestTranslateV2(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
+			assertExponentialHistogramInvariants(t, metrics)
 			assert.Equal(t, tc.expectedStats, stats)
 			assert.Equal(t, buildMetaDataMapByID(tc.expectedMetrics), buildMetaDataMapByID(metrics))
 		})
@@ -3530,7 +3917,8 @@ func TestValidateBucketSpanLayout(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
 		spans         []writev2.BucketSpan
-		valueCount    int
+		valueCount    int     // shorthand for valueCount zero deltas, for the cases about layout
+		deltas        []int64 // set instead of valueCount for the cases about population
 		overflowLimit int32
 		expected      bucketSpanLayout
 		expectError   string
@@ -3679,9 +4067,48 @@ func TestValidateBucketSpanLayout(t *testing.T) {
 			overflowLimit: schema0Limit,
 			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 1024, lastIndex: 1024, numBuckets: 1},
 		},
+		{
+			// Deltas are cumulative: 1,2,-2 holds 1,3,1.
+			name:          "population is the running total of the deltas",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 3}},
+			deltas:        []int64{1, 2, -2},
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 2, numBuckets: 3, retained: 5},
+		},
+		{
+			// The overflow bucket is consumed so the deltas after it still add up, but it holds
+			// observations no OTLP bucket can carry, so it is left out of the population.
+			name:          "the overflow bucket is not counted",
+			spans:         []writev2.BucketSpan{{Offset: 1024, Length: 2}},
+			deltas:        []int64{7, 0},
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 1024, lastIndex: 1024, numBuckets: 1, retained: 7},
+		},
+		{
+			name:          "a delta that takes a bucket below zero is rejected",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 2}},
+			deltas:        []int64{1, -3},
+			overflowLimit: schema0Limit,
+			expectError:   "bucket 2 holds a negative population of -2",
+		},
+		{
+			// Deltas are cumulative, so these are five buckets holding 2^62 each. Every bucket
+			// fits an int64; their total does not fit a uint64.
+			name:          "a population no uint64 can hold is rejected",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 5}},
+			deltas:        []int64{1 << 62, 0, 0, 0, 0},
+			overflowLimit: schema0Limit,
+			expectError:   "bucket populations are too large to represent",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			layout, err := validateBucketSpanLayout(tc.spans, tc.valueCount, tc.overflowLimit)
+			// A zero delta leaves every bucket empty, so a case that says nothing about the
+			// deltas keeps the layout it asserted before they were read here.
+			deltas := tc.deltas
+			if deltas == nil {
+				deltas = make([]int64, tc.valueCount)
+			}
+			layout, err := validateBucketSpanLayout(tc.spans, deltas, tc.overflowLimit)
 			if tc.expectError != "" {
 				assert.ErrorContains(t, err, tc.expectError)
 				return
@@ -3701,7 +4128,7 @@ func TestSpanRangeWiderThanInt32(t *testing.T) {
 		{Offset: math.MaxInt32, Length: 1},
 		{Offset: 1023, Length: 1},
 	}
-	layout, err := validateBucketSpanLayout(spans, 3, exponentialHistogramFiniteLimit(0))
+	layout, err := validateBucketSpanLayout(spans, make([]int64, 3), exponentialHistogramFiniteLimit(0))
 	require.NoError(t, err)
 
 	// Comparing against an int64 also pins the field's type: narrowing it to an int makes this
@@ -3813,14 +4240,15 @@ func TestConvertDeltaBucketsWhenEveryBucketOverflows(t *testing.T) {
 	spans := []writev2.BucketSpan{{Offset: 1025, Length: 1}}
 	deltas := []int64{10}
 
-	layout, err := validateBucketSpanLayout(spans, len(deltas), exponentialHistogramFiniteLimit(0))
+	layout, err := validateBucketSpanLayout(spans, deltas, exponentialHistogramFiniteLimit(0))
 	require.NoError(t, err)
 	require.False(t, layout.hasBuckets)
 
 	dp := pmetric.NewExponentialHistogramDataPoint()
-	dropped := convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
+	convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
 
-	assert.Equal(t, uint64(10), dropped)
+	// The overflow bucket is consumed but never emitted, so it contributes nothing to Count.
+	assert.Equal(t, uint64(0), layout.retained)
 	assert.Empty(t, dp.Positive().BucketCounts().AsRaw())
 	assert.Equal(t, int32(0), dp.Positive().Offset())
 }
@@ -3831,7 +4259,7 @@ func TestExponentialHistogramSpanExpansionIsBounded(t *testing.T) {
 	spans := []writev2.BucketSpan{{Offset: 0, Length: 2}, {Offset: 100_000_000, Length: 0}}
 	deltas := []int64{1, 2}
 
-	layout, err := validateBucketSpanLayout(spans, len(deltas), exponentialHistogramFiniteLimit(0))
+	layout, err := validateBucketSpanLayout(spans, deltas, exponentialHistogramFiniteLimit(0))
 	require.NoError(t, err)
 	require.Equal(t, int64(2), layout.numBuckets)
 
@@ -3840,16 +4268,544 @@ func TestExponentialHistogramSpanExpansionIsBounded(t *testing.T) {
 	runtime.ReadMemStats(&before)
 
 	dp := pmetric.NewExponentialHistogramDataPoint()
-	dropped := convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
+	convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
 
 	runtime.ReadMemStats(&after)
 
-	assert.Zero(t, dropped)
+	// Both buckets are emitted, holding 1 and 3.
+	assert.Equal(t, uint64(4), layout.retained)
 	assert.Equal(t, int32(-1), dp.Positive().Offset())
 	assert.Equal(t, []uint64{1, 3}, dp.Positive().BucketCounts().AsRaw())
 	// Reserving one bucket per unit of offset would allocate 800MB here, so the budget only has
 	// to be far below that to catch it.
 	assert.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(8<<20))
+}
+
+func TestTranslatedHistogramsSatisfyTheDataModel(t *testing.T) {
+	// The checks a custom bucket histogram goes through are written here rather than borrowed, so
+	// this drives random shapes past them and asserts the OTLP rules on whatever comes out: the
+	// bounds increase, there is one more bucket than bounds, and the count is the bucket total.
+	prwReceiver := setupMetricsReceiver(t)
+	random := rand.New(rand.NewPCG(20260916, 20260916))
+	stale := math.Float64frombits(value.StaleNaN)
+
+	emitted := 0
+	for n := range 50000 {
+		bounds := make([]float64, random.IntN(6))
+		for i := range bounds {
+			bounds[i] = float64(i) + random.Float64()
+		}
+		// Every so often, break one of the rules the bounds have to follow.
+		if len(bounds) > 1 {
+			switch random.IntN(20) {
+			case 0:
+				bounds[0], bounds[1] = bounds[1], bounds[0]
+			case 1:
+				bounds[1] = bounds[0]
+			case 2:
+				bounds[random.IntN(len(bounds))] = math.NaN()
+			case 3:
+				bounds[random.IntN(len(bounds))] = math.Inf(random.IntN(2)*2 - 1)
+			}
+		}
+
+		spans := make([]writev2.BucketSpan, random.IntN(4))
+		declared := 0
+		for i := range spans {
+			spans[i] = writev2.BucketSpan{Offset: int32(random.IntN(5)) - 1, Length: uint32(random.IntN(5))}
+			declared += int(spans[i].Length)
+		}
+		// Sometimes send a number of values the spans did not ask for.
+		if random.IntN(3) == 0 {
+			declared = random.IntN(8)
+		}
+		deltas := make([]int64, declared)
+		for i := range deltas {
+			deltas[i] = int64(random.IntN(11)) - 3
+		}
+
+		histogram := writev2.Histogram{
+			Schema:         -53,
+			Count:          &writev2.Histogram_CountInt{CountInt: uint64(random.IntN(50))},
+			Sum:            1,
+			Timestamp:      1,
+			CustomValues:   bounds,
+			PositiveSpans:  spans,
+			PositiveDeltas: deltas,
+		}
+		if random.IntN(8) == 0 {
+			histogram.Sum = stale
+		}
+		if random.IntN(30) == 0 {
+			histogram.ZeroCount = &writev2.Histogram_ZeroCountInt{ZeroCountInt: uint64(random.IntN(3))}
+		}
+
+		metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_metric", // 1, 2
+				"job", "service-x/test", // 3, 4
+				"instance", "107cn001", // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Histograms: []writev2.Histogram{histogram},
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		// Worked out from the request on its own, so that a shape the converter should have
+		// refused cannot pass by producing output that is merely self consistent.
+		translatable := true
+		previous := math.Inf(-1)
+		for _, bound := range bounds {
+			if math.IsNaN(bound) || math.IsInf(bound, 0) || bound <= previous {
+				translatable = false
+			}
+			previous = bound
+		}
+		if !value.IsStaleNaN(histogram.Sum) {
+			described, dense := 0, 0
+			for _, span := range spans {
+				if span.Offset < 0 {
+					translatable = false
+				}
+				described += int(span.Length)
+				dense += int(span.Offset) + int(span.Length)
+			}
+			if described != len(deltas) || dense > len(bounds)+1 {
+				translatable = false
+			}
+			running := int64(0)
+			for _, delta := range deltas {
+				running += delta
+				if running < 0 {
+					translatable = false
+				}
+			}
+			if histogram.GetZeroCountInt() != 0 {
+				translatable = false
+			}
+		}
+
+		rms := metrics.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				ms := sms.At(j).Metrics()
+				for k := 0; k < ms.Len(); k++ {
+					if ms.At(k).Type() != pmetric.MetricTypeHistogram {
+						continue
+					}
+					dps := ms.At(k).Histogram().DataPoints()
+					for d := 0; d < dps.Len(); d++ {
+						emitted++
+						require.True(t, translatable,
+							"iteration %d: a shape the converter cannot represent was published", n)
+						dp := dps.At(d)
+						buckets := dp.BucketCounts().AsRaw()
+						explicit := dp.ExplicitBounds().AsRaw()
+						require.Len(t, buckets, len(explicit)+1,
+							"iteration %d: one more bucket than bounds", n)
+
+						previous := math.Inf(-1)
+						for b, bound := range explicit {
+							require.False(t, math.IsNaN(bound) || math.IsInf(bound, 0),
+								"iteration %d: bound %d is %v", n, b, bound)
+							require.Greater(t, bound, previous, "iteration %d: bound %d", n, b)
+							previous = bound
+						}
+
+						var population uint64
+						for _, bucket := range buckets {
+							population += bucket
+						}
+						require.Equal(t, population, dp.Count(),
+							"iteration %d: count is the bucket total", n)
+						if dp.Count() == 0 {
+							require.False(t, dp.HasSum(), "iteration %d: no sum without a count", n)
+						}
+					}
+				}
+			}
+		}
+	}
+	// A run that rejected everything would satisfy the assertions above without testing them.
+	require.Greater(t, emitted, 1000, "the shapes generated here have to reach the converter")
+}
+
+func TestCustomBoundsThatCannotDescribeABucketAreRejected(t *testing.T) {
+	// The bounds are copied into ExplicitBounds unchanged, and a bucket between two bounds that
+	// do not increase, or either side of an infinity, can hold nothing. A stale marker copies
+	// them too, so it is checked the same way.
+	stale := math.Float64frombits(value.StaleNaN)
+	for _, tc := range []struct {
+		name   string
+		bounds []float64
+		sum    float64
+	}{
+		{name: "leading -Inf", bounds: []float64{math.Inf(-1), 1}, sum: 1},
+		{name: "trailing +Inf", bounds: []float64{1, math.Inf(1)}, sum: 1},
+		{name: "NaN bound", bounds: []float64{1, math.NaN()}, sum: 1},
+		{name: "bounds out of order", bounds: []float64{5, 1}, sum: 1},
+		{name: "repeated bound", bounds: []float64{1, 1}, sum: 1},
+		{name: "stale marker, -Inf bound", bounds: []float64{math.Inf(-1), 1}, sum: stale},
+		{name: "stale marker, bounds out of order", bounds: []float64{5, 1, 3}, sum: stale},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Schema:         -53,
+							Count:          &writev2.Histogram_CountInt{CountInt: 0},
+							Sum:            tc.sum,
+							Timestamp:      1,
+							CustomValues:   tc.bounds,
+							PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+							PositiveDeltas: []int64{0, 0, 0},
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "bounds are checked before anything is built")
+		})
+	}
+}
+
+func TestBoundsOnASchemaWithoutThemAreRejected(t *testing.T) {
+	// Only the custom bucket schema separates its buckets with explicit bounds. On any other one
+	// they are wire data the translation never looks at, so the histogram is refused rather than
+	// carried across without them.
+	for _, tc := range []struct {
+		name   string
+		bounds []float64
+	}{
+		{name: "finite bounds on the standard schema", bounds: []float64{1, 2}},
+		{name: "a NaN bound on the standard schema", bounds: []float64{math.NaN()}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Schema:         0,
+							Count:          &writev2.Histogram_CountInt{CountInt: 2},
+							Sum:            1,
+							Timestamp:      1,
+							CustomValues:   tc.bounds,
+							PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+							PositiveDeltas: []int64{1, 0},
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "the schema is checked before anything is built")
+		})
+	}
+}
+
+func TestNHCBCountIsRebuiltLikeTheExponentialSchemas(t *testing.T) {
+	// Count is derived from the buckets for both schemas, so a count that disagrees with them is
+	// replaced rather than refused. Prometheus sends one when an observation of NaN raised the
+	// count without landing in a bucket.
+	for _, tc := range []struct {
+		name string
+		hist writev2.Histogram
+	}{
+		{
+			name: "custom buckets",
+			hist: writev2.Histogram{
+				Schema:         -53,
+				Count:          &writev2.Histogram_CountInt{CountInt: 5},
+				Sum:            1,
+				Timestamp:      1,
+				CustomValues:   []float64{1},
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{1, 0},
+			},
+		},
+		{
+			name: "standard schema",
+			hist: writev2.Histogram{
+				Schema:         0,
+				Count:          &writev2.Histogram_CountInt{CountInt: 5},
+				Sum:            1,
+				Timestamp:      1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{1, 0},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{tc.hist},
+					},
+				},
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, stats.Histograms)
+
+			metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+			var count uint64
+			if metric.Type() == pmetric.MetricTypeHistogram {
+				count = metric.Histogram().DataPoints().At(0).Count()
+			} else {
+				count = metric.ExponentialHistogram().DataPoints().At(0).Count()
+			}
+			assert.Equal(t, uint64(2), count, "the count comes from the two buckets, not from the wire")
+		})
+	}
+}
+
+func TestFloatFlavorHistogramsAreDropped(t *testing.T) {
+	// The compatibility mapping requires float flavored native histograms to be dropped, for the
+	// custom bucket schema as well as the standard one.
+	// A count field can be left unset on the wire, so the flavor is not always visible in the
+	// count oneof. The bucket lists and the zero count carry it too.
+	for _, tc := range []struct {
+		name string
+		hist writev2.Histogram
+	}{
+		{
+			name: "standard schema",
+			hist: writev2.Histogram{
+				Schema:         0,
+				Count:          &writev2.Histogram_CountFloat{CountFloat: 3},
+				Sum:            6,
+				Timestamp:      1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveCounts: []float64{1, 2},
+			},
+		},
+		{
+			name: "custom buckets",
+			hist: writev2.Histogram{
+				Schema:         -53,
+				Count:          &writev2.Histogram_CountFloat{CountFloat: 30},
+				Sum:            1,
+				Timestamp:      1,
+				CustomValues:   []float64{1, 2, 3},
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 1, Length: 1}},
+				PositiveCounts: []float64{10, 20},
+			},
+		},
+		{
+			name: "no count, float buckets",
+			hist: writev2.Histogram{
+				Schema:         -53,
+				Sum:            1,
+				Timestamp:      1,
+				CustomValues:   []float64{1},
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveCounts: []float64{1, 2},
+			},
+		},
+		{
+			name: "integer count, float zero count",
+			hist: writev2.Histogram{
+				Schema:         0,
+				Count:          &writev2.Histogram_CountInt{CountInt: 2},
+				ZeroCount:      &writev2.Histogram_ZeroCountFloat{ZeroCountFloat: 1},
+				Sum:            1,
+				Timestamp:      1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{1, 0},
+			},
+		},
+		{
+			name: "stale marker, float buckets",
+			hist: writev2.Histogram{
+				Schema:         -53,
+				Sum:            math.Float64frombits(value.StaleNaN),
+				Timestamp:      1,
+				CustomValues:   []float64{1},
+				PositiveCounts: []float64{1, 2},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{"", "__name__", "test_hist", "job", "service-x/test", "instance", "107cn001"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{tc.hist},
+					},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "nothing should be emitted")
+			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
+		})
+	}
+}
+
+func TestHistogramWithOnlyOverflowBucketHasNoSum(t *testing.T) {
+	// Every observation landed in the +Inf bucket, which cannot be represented, so the data point
+	// holds nothing. OTLP requires the sum to be absent once the count is zero.
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{"", "__name__", "test_hist", "job", "service-x/test", "instance", "107cn001"},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Histograms: []writev2.Histogram{{
+					Schema:         0,
+					Count:          &writev2.Histogram_CountInt{CountInt: 5},
+					Sum:            100,
+					Timestamp:      1,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 1025, Length: 1}},
+					PositiveDeltas: []int64{10},
+				}},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints().At(0)
+	assert.Equal(t, uint64(0), dp.Count())
+	assert.False(t, dp.HasSum(), "OTLP requires no sum once the count is zero")
+	assert.Empty(t, dp.Positive().BucketCounts().AsRaw())
+}
+
+func TestHistogramWithUnrepresentablePopulationIsDropped(t *testing.T) {
+	// No data point can satisfy the OTLP rule that the count equals the bucket populations when
+	// those populations do not fit a uint64, so the histogram is dropped rather than emitted with
+	// a count that silently wrapped. Deltas are cumulative, so a leading 2^62 and then zeroes is
+	// a run of buckets holding 2^62 each.
+	const huge = int64(1) << 62
+
+	for _, tc := range []struct {
+		name      string
+		histogram writev2.Histogram
+	}{
+		{
+			// Five buckets of 2^62 pass the limit within the positive range on its own.
+			name: "one range overflows by itself",
+			histogram: writev2.Histogram{
+				Schema:         0,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 5}},
+				PositiveDeltas: []int64{huge, 0, 0, 0, 0},
+			},
+		},
+		{
+			// Three buckets of 2^62 fit a uint64, so neither range reaches the limit alone. They
+			// only pass it once both are added to the count the data point has to carry.
+			name: "the two ranges only overflow together",
+			histogram: writev2.Histogram{
+				Schema:         0,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+				PositiveDeltas: []int64{huge, 0, 0},
+				NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+				NegativeDeltas: []int64{huge, 0, 0},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			histogram := tc.histogram
+			histogram.Count = &writev2.Histogram_CountInt{CountInt: 5}
+			histogram.Sum = 1
+			histogram.Timestamp = 1
+
+			prwReceiver := setupMetricsReceiver(t)
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{"", "__name__", "test_hist", "job", "service-x/test", "instance", "107cn001"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{histogram},
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			// The population is read while the spans are validated, which is before the series is
+			// given a resource, a scope or a metric, so the rejection leaves nothing behind.
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "no data point can represent this population")
+			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
+		})
+	}
+}
+
+// assertExponentialHistogramInvariants checks the two rules the OTLP data model states for an
+// exponential histogram data point: the count equals zero_count plus the bucket populations, and
+// the sum is absent when the count is zero.
+func assertExponentialHistogramInvariants(t *testing.T, md pmetric.Metrics) {
+	t.Helper()
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		sms := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				if ms.At(k).Type() != pmetric.MetricTypeExponentialHistogram {
+					continue
+				}
+				dps := ms.At(k).ExponentialHistogram().DataPoints()
+				for d := 0; d < dps.Len(); d++ {
+					dp := dps.At(d)
+					population := dp.ZeroCount()
+					for b := 0; b < dp.Positive().BucketCounts().Len(); b++ {
+						population += dp.Positive().BucketCounts().At(b)
+					}
+					for b := 0; b < dp.Negative().BucketCounts().Len(); b++ {
+						population += dp.Negative().BucketCounts().At(b)
+					}
+					assert.Equal(t, population, dp.Count(),
+						"metric %q: count must equal zero_count plus the bucket populations", ms.At(k).Name())
+					if dp.Count() == 0 {
+						assert.False(t, dp.HasSum(),
+							"metric %q: sum must not be set when count is zero", ms.At(k).Name())
+					}
+				}
+			}
+		}
+	}
 }
 
 type nonMutatingConsumer struct{}
