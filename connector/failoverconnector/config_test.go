@@ -120,6 +120,11 @@ func TestValidateConfig(t *testing.T) {
 			id:   component.NewIDWithName(metadata.Type, "emptycondition"),
 			err:  errNoConditionDefined,
 		},
+		{
+			name: "empty error contains string",
+			id:   component.NewIDWithName(metadata.Type, "emptyerrorcontains"),
+			err:  errEmptyErrorContains,
+		},
 	}
 
 	for _, tc := range testcases {
