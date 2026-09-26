@@ -116,6 +116,87 @@ func TestEventHubEventHandler_ProcessBlobCreated_DeletesAfterSuccessfulConsume(t
 	blobClient.AssertCalled(t, "deleteBlob", mock.Anything, logsContainerName, "logs-1")
 }
 
+func TestEventHubEventHandler_NewMessageHandler_MalformedMessageDoesNotPanic(t *testing.T) {
+	tests := []struct {
+		name    string
+		body    string
+		wantErr bool
+	}{
+		{
+			name:    "empty event array",
+			body:    `[]`,
+			wantErr: true,
+		},
+		{
+			name:    "blob created with subject missing containers",
+			body:    `[{"subject":"/some/other/resource","eventType":"Microsoft.Storage.BlobCreated"}]`,
+			wantErr: true,
+		},
+		{
+			name:    "blob created with subject missing blobs",
+			body:    `[{"subject":"/blobServices/default/containers/logs","eventType":"Microsoft.Storage.BlobCreated"}]`,
+			wantErr: true,
+		},
+		{
+			name:    "other event type with unparseable subject is ignored",
+			body:    `[{"subject":"/some/other/resource","eventType":"Microsoft.Storage.BlobDeleted"}]`,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			blobClient := newMockBlobClient()
+			handler := getEventHubEventHandler(t, blobClient)
+
+			var err error
+			require.NotPanics(t, func() {
+				err = handler.newMessageHandler(t.Context(), getEventHubEvent([]byte(tt.body)))
+			})
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			blobClient.AssertNotCalled(t, "readBlob", mock.Anything, mock.Anything, mock.Anything)
+		})
+	}
+}
+
+func TestParseBlobSubject(t *testing.T) {
+	tests := []struct {
+		subject       string
+		wantContainer string
+		wantBlob      string
+		wantErr       bool
+	}{
+		{subject: "/blobServices/default/containers/logs/blobs/logs-1", wantContainer: "logs", wantBlob: "logs-1"},
+		{subject: "/blobServices/default/containers/logs/blobs/dir/sub/file.json", wantContainer: "logs", wantBlob: "dir/sub/file.json"},
+		{subject: "/blobServices/default/containers/containers/blobs/x", wantContainer: "containers", wantBlob: "x"},
+		{subject: "/blobServices/default/containers/blobs/blobs/x", wantContainer: "blobs", wantBlob: "x"},
+		{subject: "/blobServices/default/containers/logs/blobs/a/blobs/b.json", wantContainer: "logs", wantBlob: "a/blobs/b.json"},
+		{subject: "/some/other/resource", wantErr: true},
+		{subject: "/blobServices/default/notcontainers/logs/blobs/x", wantErr: true},
+		{subject: "/blobServices/default/containers/logs", wantErr: true},
+		{subject: "/blobServices/default/containers/logs/blobs/", wantErr: true},
+		{subject: "/blobServices/default/containers//blobs/x", wantErr: true},
+		{subject: "", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.subject, func(t *testing.T) {
+			container, blob, err := parseBlobSubject(tt.subject)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantContainer, container)
+			assert.Equal(t, tt.wantBlob, blob)
+		})
+	}
+}
+
 func getEventHubEvent(eventData []byte) *azeventhubs.ReceivedEventData {
 	return &azeventhubs.ReceivedEventData{
 		EventData: azeventhubs.EventData{
