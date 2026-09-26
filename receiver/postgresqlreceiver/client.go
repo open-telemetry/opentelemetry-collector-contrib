@@ -1436,8 +1436,17 @@ func (c *postgreSQLClient) getVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version;"
 	row := c.client.QueryRowContext(ctx, query)
 	var version string
-	err := row.Scan(&version)
-	return version, err
+	if err := row.Scan(&version); err != nil {
+		return "", err
+	}
+	// SHOW server_version includes a packaging suffix on Debian/pgdg builds
+	// e.g. "17.2 (Debian 17.2-1.pgdg120+1)". Take only the leading token so
+	// db.system.version is consistent across packaging variants.
+	fields := strings.Fields(version)
+	if len(fields) == 0 {
+		return "", errors.New("empty server version")
+	}
+	return fields[0], nil
 }
 
 func parseMajorVersion(ver string) (int, error) {
