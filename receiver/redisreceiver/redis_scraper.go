@@ -89,6 +89,21 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
+	// Cluster health - state, slot counts, known nodes - lives in CLUSTER INFO,
+	// not INFO, so it takes a second call. Only a cluster-enabled instance has
+	// anything to report, and a failure here must not cost us the INFO metrics
+	// already in hand.
+	if inf["cluster_enabled"] == "1" {
+		clusterInf, clusterErr := rs.redisSvc.clusterInfo()
+		if clusterErr != nil {
+			rs.settings.Logger.Warn("failed to retrieve cluster info", zap.Error(clusterErr))
+		} else {
+			for k, v := range clusterInf {
+				inf[k] = v
+			}
+		}
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 	currentUptime, err := inf.getUptimeInSeconds()
 	if err != nil {
@@ -143,21 +158,14 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info, reco
 			recordDataPoint(ts, val)
 
 		case func(pcommon.Timestamp, int64, metadata.AttributeClusterState):
-			val, err := strconv.ParseInt(infoVal, 10, 64)
-			if err != nil {
-				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
-					zap.String("val", infoVal), zap.Error(err))
-				continue
+			// cluster_state is the one field here whose value is a word rather
+			// than a number - "ok" or "fail". Record the constant 1 and let the
+			// attribute carry which, the same shape as redis.role and redis.mode.
+			state := metadata.AttributeClusterStateFail
+			if infoVal == "ok" {
+				state = metadata.AttributeClusterStateOk
 			}
-			var state metadata.AttributeClusterState
-			if infoKey == "cluster_state" {
-				if infoVal == "ok" {
-					state = metadata.AttributeClusterStateOk
-				} else {
-					state = metadata.AttributeClusterStateFail
-				}
-			}
-			recordDataPoint(ts, val, state)
+			recordDataPoint(ts, 1, state)
 		}
 	}
 }
