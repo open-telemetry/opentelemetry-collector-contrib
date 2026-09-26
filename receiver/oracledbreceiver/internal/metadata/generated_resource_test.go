@@ -16,6 +16,7 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetHostName("host.name-val")
+			rb.SetOracleDbEdition("oracle.db.edition-val")
 			rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 			rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
 			rb.SetOracleDbRole("oracle.db.role-val")
@@ -34,7 +35,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 11, res.Attributes().Len())
+				assert.Equal(t, 12, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -45,6 +46,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
+			}
+			oracleDbEditionAttrVal, ok := res.Attributes().Get("oracle.db.edition")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "oracle.db.edition-val", oracleDbEditionAttrVal.Str())
 			}
 			oracleDbHostingTypeAttrVal, ok := res.Attributes().Get("oracle.db.hosting_type")
 			assert.True(t, ok)
@@ -105,6 +111,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	rb.SetHostName("host.name-val")
+	rb.SetOracleDbEdition("oracle.db.edition-val")
 	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
 	rb.SetOracleDbRole("oracle.db.role-val")
@@ -122,6 +129,13 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 		assert.True(t, ok, "host.name should be present")
 		if ok {
 			assert.Equal(t, "override-host.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("oracle.db.edition")
+		assert.True(t, ok, "oracle.db.edition should be present")
+		if ok {
+			assert.Equal(t, "override-oracle.db.edition", val.Str())
 		}
 	}
 	{
@@ -211,6 +225,13 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 		}
 	}
 	{
+		val, ok := res.Attributes().Get("oracle.db.edition")
+		assert.True(t, ok, "oracle.db.edition should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-oracle.db.edition", val.Str())
+		}
+	}
+	{
 		val, ok := res.Attributes().Get("oracle.db.hosting_type")
 		assert.True(t, ok, "oracle.db.hosting_type should be present even without calling Set")
 		if ok {
@@ -286,6 +307,7 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
 	cfg.HostName.Enabled = false
+	cfg.OracleDbEdition.Enabled = false
 	cfg.OracleDbHostingType.Enabled = false
 	cfg.OracleDbOpenMode.Enabled = false
 	cfg.OracleDbRole.Enabled = false
@@ -308,6 +330,7 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
 	require.NoError(t, confmap.Validate(cfg))
 	assert.Nil(t, cfg.HostName.OverrideValue, "OverrideValue should be nil for host.name")
+	assert.Nil(t, cfg.OracleDbEdition.OverrideValue, "OverrideValue should be nil for oracle.db.edition")
 	assert.Nil(t, cfg.OracleDbHostingType.OverrideValue, "OverrideValue should be nil for oracle.db.hosting_type")
 	assert.Nil(t, cfg.OracleDbOpenMode.OverrideValue, "OverrideValue should be nil for oracle.db.open_mode")
 	assert.Nil(t, cfg.OracleDbRole.OverrideValue, "OverrideValue should be nil for oracle.db.role")
@@ -320,6 +343,7 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
 	rb := NewResourceBuilder(cfg)
 	rb.SetHostName("host.name-val")
+	rb.SetOracleDbEdition("oracle.db.edition-val")
 	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
 	rb.SetOracleDbRole("oracle.db.role-val")
@@ -332,11 +356,16 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 11, res.Attributes().Len())
+	assert.Equal(t, 12, res.Attributes().Len())
 	hostNameAttrVal, ok := res.Attributes().Get("host.name")
 	assert.True(t, ok)
 	if ok {
 		assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
+	}
+	oracleDbEditionAttrVal, ok := res.Attributes().Get("oracle.db.edition")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "oracle.db.edition-val", oracleDbEditionAttrVal.Str())
 	}
 	oracleDbHostingTypeAttrVal, ok := res.Attributes().Get("oracle.db.hosting_type")
 	assert.True(t, ok)

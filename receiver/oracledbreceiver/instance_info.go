@@ -15,6 +15,7 @@ import (
 // oracleInstanceInfo holds Oracle deployment metadata detected once at scraper start time.
 type oracleInstanceInfo struct {
 	dbVersion      string
+	dbEdition      string
 	databaseRole   string
 	openMode       string
 	hostingType    string
@@ -50,6 +51,10 @@ const (
 	instanceOCISQL            = "SELECT 1 FROM v$pdbs WHERE cloud_identity LIKE '%oraclecloud%' AND rownum = 1"
 	instanceRDSSQL            = "SELECT SUBSTR(name,1,10) AS path FROM v$datafile WHERE rownum = 1"
 	instanceVersionSQL        = "SELECT version FROM v$instance"
+	// instanceVersionEditionSQL selects edition only when oracle.db.edition is enabled.
+	// edition is absent on some older Oracle releases; selecting it unconditionally
+	// causes ORA-00904 and drops the entire row, losing version/role/open_mode too.
+	instanceVersionEditionSQL = "SELECT version, edition FROM v$instance"
 
 	// minHostingDetectionVersion is the first Oracle version where RDS/OCI probes are reliable.
 	minHostingDetectionVersion = 19
@@ -60,6 +65,7 @@ const (
 	colConName      = "CON_NAME"
 	colConType      = "CON_TYPE"
 	colDatabaseRole = "DATABASE_ROLE"
+	colEdition      = "EDITION"
 	colOpenMode     = "OPEN_MODE"
 	colPath         = "PATH"
 	colVersion      = "VERSION"
@@ -85,12 +91,21 @@ func detectInstanceInfo(
 
 	rows, err := versionClient.metricRows(ctx)
 	if err != nil || len(rows) == 0 {
-		logger.Warn("oracledbreceiver: failed to detect Oracle version; oracle.db.version attribute will not be set",
+		logger.Warn("failed to detect Oracle version. oracle.db.version and oracle.db.edition will not be set",
 			zap.Error(err))
 		return info
 	}
 	info.dbVersion = rows[0][colVersion]
-	logger.Info("oracledbreceiver: detected Oracle version", zap.String("version", info.dbVersion))
+	info.dbEdition = rows[0][colEdition]
+	if info.dbEdition == "UNKNOWN" {
+		info.dbEdition = ""
+	}
+	if info.dbEdition == "" {
+		logger.Debug("Oracle edition not reported by v$instance. oracle.db.edition will not be set")
+		logger.Info("detected Oracle version", zap.String("version", info.dbVersion))
+	} else {
+		logger.Info("detected Oracle version", zap.String("version", info.dbVersion), zap.String("edition", info.dbEdition))
+	}
 
 	if majorVersion(info.dbVersion) < minMultitenantVersion {
 		logger.Info("oracledbreceiver: Oracle version is pre-12c; multitenant detection skipped",
