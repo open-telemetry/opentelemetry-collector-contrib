@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
+package serializer // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 
 import (
 	"fmt"
@@ -80,28 +80,30 @@ const (
 	samplingFactor   = 5
 	samplingRatio    = 1.0 / float64(samplingFactor)
 
+	// EventsIndexPrefix is shared by the full events index and all downsampled events indexes.
 	eventsIndexPrefix = "profiling-events"
 )
 
-var eventIndices = initEventIndexes(maxEventsIndexes)
+// randFloat64 is a variable so tests can substitute a seeded source.
+var randFloat64 = rand.Float64
 
-// A fixed seed is used for deterministic tests and development.
-// There is no downside in using a fixed seed in production.
-var rnd = rand.New(rand.NewPCG(0, 0))
+// DownsampledEventIndices returns the downsampled events index names, from the 5^1 to the
+// 5^maxEventsIndexes index, each carrying the given suffix (e.g. "" or ".otel-default").
+func DownsampledEventIndices(suffix string) []string {
+	indices := make([]string, 0, maxEventsIndexes)
 
-// initEventIndexes initializes eventIndexes to avoid calculations for every TraceEvent later.
-func initEventIndexes(count int) []string {
-	indices := make([]string, 0, count)
-
-	for i := range count {
-		indices = append(indices, fmt.Sprintf("%s-%dpow%02d",
-			eventsIndexPrefix, samplingFactor, i+1))
+	for i := range maxEventsIndexes {
+		indices = append(indices, fmt.Sprintf("%s-%dpow%02d%s",
+			eventsIndexPrefix, samplingFactor, i+1, suffix))
 	}
 
 	return indices
 }
 
-func IndexDownsampledEvent(event StackTraceEvent, pushData func(any, string, string) error) error {
+// IndexDownsampledEvent applies the sampling cascade to a stacktrace event observed count times
+// and calls push with the surviving count for each index in indices, in order. The cascade stops
+// at the first index for which no event survives.
+func IndexDownsampledEvent(count uint16, indices []string, push func(count uint16, index string) error) error {
 	// Each event has a probability of p=1/5=0.2 to go from one index into the next downsampled
 	// index. Since we aggregate identical stacktrace events by timestamp when reported and stored,
 	// we have a 'Count' value for each. To be statistically correct, we have to apply p=0.2 to
@@ -110,23 +112,21 @@ func IndexDownsampledEvent(event StackTraceEvent, pushData func(any, string, str
 	// the next downsampled index.
 	// We only store aggregates with 'Count' > 0. If 'Count' becomes 0, we are done and can
 	// continue with the next stacktrace event.
-	for _, index := range eventIndices {
-		var count uint16
-		for range event.Count {
+	for _, index := range indices {
+		var sampled uint16
+		for range count {
 			// samplingRatio is the probability p=0.2 for an event to be copied into the next
 			// downsampled index.
-			if rnd.Float64() < samplingRatio {
-				count++
+			if randFloat64() < samplingRatio {
+				sampled++
 			}
 		}
-		if count == 0 {
+		if sampled == 0 {
 			return nil
 		}
 
-		// Store the event with its new downsampled count in the downsampled index.
-		event.Count = count
-
-		if err := pushData(event, "", index); err != nil {
+		count = sampled
+		if err := push(count, index); err != nil {
 			return err
 		}
 	}
