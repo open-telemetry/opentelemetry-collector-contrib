@@ -6,6 +6,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -105,7 +106,11 @@ func (m *MetricDeclaration) init(logger *zap.Logger) error {
 
 	m.metricRegexList = make([]*regexp.Regexp, len(m.MetricNameSelectors))
 	for i, selector := range m.MetricNameSelectors {
-		m.metricRegexList[i] = regexp.MustCompile(selector)
+		re, err := regexp.Compile(selector)
+		if err != nil {
+			return fmt.Errorf("invalid metric name selector %q: %w", selector, err)
+		}
+		m.metricRegexList[i] = re
 	}
 
 	// Initialize label matchers
