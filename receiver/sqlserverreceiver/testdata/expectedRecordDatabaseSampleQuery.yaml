@@ -111,7 +111,7 @@ resourceLogs:
                   intValue: "1"
               - key: sqlserver.session.duration
                 value:
-                  doubleValue: 720.456
+                  doubleValue: 720456
               - key: sqlserver.session.start_time
                 value:
                   stringValue: "2025-02-12T15:00:00.000+08:00"
