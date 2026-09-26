@@ -2309,6 +2309,18 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				m.PutStr("list.0.test", "hello")
 			},
 		},
+		{
+			name: "keep keys from cache slice",
+			statements: []string{
+				`set(cache["x"], ["flags"])`,
+				`keep_keys(attributes, cache["x"])`,
+			},
+			want: func(tCtx *ottllog.TransformContext) {
+				attributes := tCtx.GetLogRecord().Attributes()
+				attributes.Clear()
+				attributes.PutStr("flags", "A|B|C")
+			},
+		},
 	}
 
 	for _, tt := range tests {

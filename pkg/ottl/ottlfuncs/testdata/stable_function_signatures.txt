@@ -100,7 +100,7 @@ delete_index(Target ottl.PSliceGetSetter[interface {}], StartIndex ottl.IntGette
 delete_key(Target ottl.PMapGetSetter[interface {}], Key ottl.StringGetter[interface {}])
 delete_matching_keys(Target ottl.PMapGetSetter[interface {}], Pattern ottl.StringGetter[interface {}])
 flatten(Target ottl.PMapGetSetter[interface {}], Prefix ottl.Optional[string], Depth ottl.Optional[int64], ResolveConflicts ottl.Optional[bool])
-keep_keys(Target ottl.PMapGetSetter[interface {}], Keys []ottl.StringGetter[interface {}])
+keep_keys(Target ottl.PMapGetSetter[interface {}], Keys ottl.SliceGetter[interface {},ottl.StringGetter[interface {}]])
 keep_matching_keys(Target ottl.PMapGetSetter[interface {}], Pattern ottl.StringGetter[interface {}])
 limit(Target ottl.PMapGetSetter[interface {}], Limit int64, PriorityKeys []string)
 merge_maps(Target ottl.PMapGetSetter[interface {}], Source ottl.PMapGetter[interface {}], Strategy string)
