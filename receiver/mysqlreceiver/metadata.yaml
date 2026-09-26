@@ -172,6 +172,12 @@ attributes:
     type: string
     enum: [waits, write_requests, writes, fsyncs]
     requirement_level: recommended
+  mysql.blocking.blocker.count:
+    description: The number of concurrent InnoDB row-lock blockers currently holding a lock this session is waiting on. 0 indicates the session is not currently blocked.
+    type: int
+  mysql.blocking.blockers:
+    description: A JSON array of {thread_id, session_id} tuples, one per concurrent InnoDB row-lock blocker for this session. Unordered. session_id is null when that blocker's PROCESSLIST_ID could not be resolved (e.g. it disconnected between reads). "[]" when not blocked.
+    type: string
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -356,6 +362,8 @@ events:
       - client.port
       - network.peer.address
       - network.peer.port
+      - mysql.blocking.blockers
+      - mysql.blocking.blocker.count
 
   db.server.top_query:
     enabled: false
