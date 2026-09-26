@@ -976,7 +976,7 @@ Number of free list stalls.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {stalls}/s | Gauge | Int | Development |
+| {stalls}/s | Gauge | Double | Development |
 
 ### sqlserver.page.compression.rate
 
