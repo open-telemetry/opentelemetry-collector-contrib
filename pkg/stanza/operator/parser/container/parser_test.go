@@ -1541,3 +1541,56 @@ func TestProcessBatchDockerQuietModeWithMixedEntries(t *testing.T) {
 		return len(entries) == 2
 	}))
 }
+
+func TestContainerdTimestampWithOffset(t *testing.T) {
+	expected := time.Date(2026, time.September, 18, 3, 0, 0, 123456789, time.UTC)
+	cases := []struct {
+		name string
+		body string
+	}{
+		{
+			name: "utc",
+			body: `2026-09-18T03:00:00.123456789Z stdout F containerd line`,
+		},
+		{
+			name: "positive_offset",
+			body: `2026-09-18T13:00:00.123456789+10:00 stdout F containerd line`,
+		},
+		{
+			name: "negative_offset",
+			body: `2026-09-17T22:00:00.123456789-05:00 stdout F containerd line`,
+		},
+	}
+
+	for _, tc := range cases {
+		for _, batch := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/batch=%t", tc.name, batch), func(t *testing.T) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.Format = "containerd"
+				op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+				require.NoError(t, err)
+				defer func() { require.NoError(t, op.Stop()) }()
+
+				fake := testutil.NewFakeOutput(t)
+				op.(*Parser).OutputOperators = []operator.Operator{fake}
+
+				e := entry.New()
+				e.Body = tc.body
+				if batch {
+					require.NoError(t, op.ProcessBatch(t.Context(), []*entry.Entry{e}))
+				} else {
+					require.NoError(t, op.Process(t.Context(), e))
+				}
+
+				select {
+				case got := <-fake.Received:
+					require.Equal(t, "containerd line", got.Body)
+					require.True(t, expected.Equal(got.Timestamp), "expected %s, got %s", expected, got.Timestamp)
+				case <-time.After(time.Second):
+					require.FailNow(t, "timed out waiting for entry")
+				}
+			})
+		}
+	}
+}

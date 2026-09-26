@@ -30,10 +30,10 @@ const (
 	recombineInternalID = "recombine_container_internal"
 	dockerPattern       = "^\\{"
 	crioPattern         = "^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
-	containerdPattern   = "^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
+	containerdPattern   = "^(?P<time>[^ Z]+(?:Z|[+-]\\d{2}:\\d{2})) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
 	logpathPattern      = "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$"
 	logPathField        = attrs.LogFilePath
-	crioTimeLayout      = "2006-01-02T15:04:05.999999999Z07:00"
+	criTimeLayout       = "2006-01-02T15:04:05.999999999Z07:00"
 	goTimeLayout        = "2006-01-02T15:04:05.999Z"
 )
 
@@ -136,7 +136,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 					}
 					continue
 				}
-				p.timeLayout = goTimeLayout
+				p.timeLayout = criTimeLayout
 			} else {
 				err = p.ParseWith(ctx, ent, p.parseCRIO, write)
 				if err != nil {
@@ -145,7 +145,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 					}
 					continue
 				}
-				p.timeLayout = crioTimeLayout
+				p.timeLayout = criTimeLayout
 			}
 
 			if err = p.handleTimeAndAttributeMappings(ent); err != nil {
@@ -224,7 +224,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				}
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
-			p.timeLayout = goTimeLayout
+			p.timeLayout = criTimeLayout
 		} else {
 			// parse the message
 			err = p.ParseWith(ctx, entry, p.parseCRIO, p.Write)
@@ -234,7 +234,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				}
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
-			p.timeLayout = crioTimeLayout
+			p.timeLayout = criTimeLayout
 		}
 
 		err = p.handleTimeAndAttributeMappings(entry)
