@@ -4,15 +4,14 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -8016,6 +8015,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.SqlserverDatabaseName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["sqlserver.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDatabaseName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SqlserverDbEdition.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["sqlserver.db.edition"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDbEdition.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SqlserverDbEdition.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["sqlserver.db.edition"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDbEdition.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.SqlserverInstanceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["sqlserver.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverInstanceName.MetricsInclude)

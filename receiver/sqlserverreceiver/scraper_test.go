@@ -2044,3 +2044,56 @@ func TestProcedureLookbackSeconds(t *testing.T) {
 		assert.LessOrEqual(t, got, 80, "expected roughly 65s elapsed plus a 10s buffer, with some slack for test timing")
 	})
 }
+
+func TestEngineEditionToString(t *testing.T) {
+	tests := []struct {
+		edition  int
+		expected string
+	}{
+		{2, "Standard"},
+		{3, "Enterprise"},
+		{4, "Express"},
+		{5, "AzureSQLDatabase"},
+		{8, "ManagedInstance"},
+		{0, ""},
+		{1, ""},
+		{99, ""},
+	}
+	for _, tc := range tests {
+		require.Equal(t, tc.expected, engineEditionToString(tc.edition), "edition %d", tc.edition)
+	}
+}
+
+func TestDetectSQLServerEdition(t *testing.T) {
+	t.Run("db nil returns nil nil", func(t *testing.T) {
+		v, err := detectSQLServerEdition(t.Context(), nil)
+		require.NoError(t, err)
+		require.Nil(t, v)
+	})
+
+	t.Run("stub returns enterprise", func(t *testing.T) {
+		orig := detectSQLServerEdition
+		t.Cleanup(func() { detectSQLServerEdition = orig })
+		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
+			v := "Enterprise"
+			return &v, nil
+		}
+		v, err := detectSQLServerEdition(t.Context(), &sql.DB{})
+		require.NoError(t, err)
+		require.NotNil(t, v)
+		require.Equal(t, "Enterprise", *v)
+	})
+
+	t.Run("stub returns empty string for unknown edition", func(t *testing.T) {
+		orig := detectSQLServerEdition
+		t.Cleanup(func() { detectSQLServerEdition = orig })
+		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
+			v := ""
+			return &v, nil
+		}
+		v, err := detectSQLServerEdition(t.Context(), &sql.DB{})
+		require.NoError(t, err)
+		require.NotNil(t, v)
+		require.Empty(t, *v)
+	})
+}
