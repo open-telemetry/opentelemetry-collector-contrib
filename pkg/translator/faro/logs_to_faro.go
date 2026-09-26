@@ -383,10 +383,13 @@ func parseIntegrationsFromString(integrationsString string) []faroTypes.SDKInteg
 	}
 
 	for integrationString := range strings.SplitSeq(integrationsString, ",") {
-		integrationNameVersion := strings.Split(integrationString, ":")
+		name, version, found := strings.Cut(integrationString, ":")
+		if !found {
+			continue
+		}
 		sdkIntegrations = append(sdkIntegrations, faroTypes.SDKIntegration{
-			Name:    integrationNameVersion[0],
-			Version: integrationNameVersion[1],
+			Name:    name,
+			Version: version,
 		})
 	}
 

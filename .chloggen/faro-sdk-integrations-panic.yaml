@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: pkg/faro
+note: Skip malformed `sdk_integrations` entries instead of panicking when translating logs to Faro payloads
+issues: [51484]
+subtext: |
+  An integration entry without a `:` separator, or a trailing comma, caused the Faro exporter to
+  crash the collector. Such entries are now skipped. Versions that contain `:` are also no longer
+  truncated.
+change_logs: [user]
