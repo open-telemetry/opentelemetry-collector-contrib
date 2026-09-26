@@ -5,19 +5,356 @@ package signingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"hash"
+	"strconv"
+	"strings"
+	"unicode/utf8"
 
+	"github.com/gowebpki/jcs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
+	"go.uber.org/zap"
+)
+
+const (
+	// jsonMaxDepth caps recursion in valueToInterface, which walks OTLP
+	// Slice/Map values onto the Go call stack. A fatal stack overflow from
+	// deep nesting cannot be caught by recover(); the Go runtime kills the
+	// collector at roughly 700k–800k levels for json.Marshal and somewhat
+	// higher for valueToInterface itself. 128 is a conservative cap for
+	// operator-supplied data; legitimate attribute nesting rarely exceeds
+	// single digits.
+	jsonMaxDepth = 128
+	// jsonMaxInputBytes caps the serialized JSON size before JCS canonicalization.
+	jsonMaxInputBytes = 1 << 21 // 2 MiB
 )
 
 type signingProcessor struct {
-	nextConsumer consumer.Logs
+	config       *Config
+	logger       *zap.Logger
+	nextLogs     consumer.Logs
+	provider     KeyMaterialProvider
+	hashFunc     func() hash.Hash
+	jwaAlgorithm string // audit.integrity.algorithm value (e.g. "RS256")
+	certRef      string // audit.integrity.certificate value (fingerprint or full DER)
 }
 
-func newProcessor(_ *Config, nextConsumer consumer.Logs, _ processor.Settings) *signingProcessor {
-	return &signingProcessor{nextConsumer: nextConsumer}
+func newProcessor(ctx context.Context, cfg *Config, nextLogs consumer.Logs, settings processor.Settings) (*signingProcessor, error) {
+	provider, err := newKeyMaterialProvider(ctx, cfg, settings.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize key material provider: %w", err)
+	}
+
+	var hashFunc func() hash.Hash
+	switch cfg.GetHash() {
+	case crypto.SHA256:
+		hashFunc = func() hash.Hash { return crypto.SHA256.New() }
+	case crypto.SHA512:
+		hashFunc = func() hash.Hash { return crypto.SHA512.New() }
+	default:
+		// EdDSA (crypto.Hash(0)): no pre-hashing; hashFunc left nil
+	}
+
+	var certRef string
+	if cfg.Algorithm != AlgorithmHMACSHA256 {
+		certRef, err = buildCertificateRef(provider, cfg.CertificateRef)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build certificate reference: %w", err)
+		}
+	}
+
+	return &signingProcessor{
+		config:       cfg,
+		logger:       settings.Logger,
+		nextLogs:     nextLogs,
+		provider:     provider,
+		hashFunc:     hashFunc,
+		jwaAlgorithm: cfg.Algorithm,
+		certRef:      certRef,
+	}, nil
+}
+
+func (*signingProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	resourceLogs := ld.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		resourceLog := resourceLogs.At(i)
+
+		signed := 0
+		scopeLogs := resourceLog.ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			scopeLog := scopeLogs.At(j)
+			logRecords := scopeLog.LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				logRecord := logRecords.At(k)
+				if err := p.processLogRecord(logRecord); err != nil {
+					return fmt.Errorf("failed to process log record: %w", err)
+				}
+				signed++
+			}
+		}
+
+		// audit.integrity.algorithm and audit.integrity.certificate are Resource-level
+		// attributes per the audit logging spec. Set them only after all records in
+		// this ResourceLogs block have been signed successfully, and only when at
+		// least one record was actually signed.
+		if signed > 0 {
+			resourceLog.Resource().Attributes().PutStr("audit.integrity.algorithm", p.jwaAlgorithm)
+			if p.certRef != "" {
+				resourceLog.Resource().Attributes().PutStr("audit.integrity.certificate", p.certRef)
+			}
+		}
+	}
+
+	return p.nextLogs.ConsumeLogs(ctx, ld)
+}
+
+// processLogRecord computes a canonical JSON hash (RFC 8785) of the log record
+// and signs it with the configured algorithm. It adds two attributes:
+//   - audit.integrity.value:  base64-encoded signature
+//   - audit.integrity.signer: "collector"
+//
+// Fields excluded from the signed payload (per spec or by design):
+//   - audit.integrity.* attributes (carry the proof itself)
+//   - SeverityNumber / SeverityText (SHOULD NOT be set on audit records per spec)
+//   - Flags (W3C trace-context sampling bit; observability concept, not audit-relevant;
+//     may be modified by intermediaries without breaking audit semantics)
+func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
+	logData, err := p.serializeLogRecord(lr)
+	if err != nil {
+		return fmt.Errorf("failed to serialize log record: %w", err)
+	}
+
+	signature, err := p.sign(logData)
+	if err != nil {
+		return fmt.Errorf("failed to sign log record: %w", err)
+	}
+
+	lr.Attributes().PutStr("audit.integrity.value", base64.StdEncoding.EncodeToString(signature))
+	lr.Attributes().PutStr("audit.integrity.signer", "collector")
+	return nil
+}
+
+// sign produces a signature over payload using the configured JWA algorithm.
+// For RS256/RS512/ES256 it hashes payload first; for EdDSA it passes the raw
+// message because ed25519 hashes internally (SHA-512); for HMAC-SHA256 it
+// computes an HMAC-SHA256 MAC.
+func (p *signingProcessor) sign(payload []byte) ([]byte, error) {
+	switch p.config.Algorithm {
+	case AlgorithmRS256, AlgorithmRS512:
+		h := p.hashFunc()
+		if _, err := h.Write(payload); err != nil {
+			return nil, fmt.Errorf("failed to compute hash: %w", err)
+		}
+		hashBytes := h.Sum(nil)
+		privateKey := p.provider.GetPrivateKey()
+		rsaKey, ok := privateKey.(*rsa.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("algorithm %s requires an RSA private key", p.config.Algorithm)
+		}
+		return rsa.SignPKCS1v15(rand.Reader, rsaKey, p.config.GetHash(), hashBytes)
+
+	case AlgorithmES256:
+		h := p.hashFunc()
+		if _, err := h.Write(payload); err != nil {
+			return nil, fmt.Errorf("failed to compute hash: %w", err)
+		}
+		hashBytes := h.Sum(nil)
+		privateKey := p.provider.GetPrivateKey()
+		ecKey, ok := privateKey.(*ecdsa.PrivateKey)
+		if !ok {
+			return nil, errors.New("algorithm ES256 requires an ECDSA private key")
+		}
+		return ecdsa.SignASN1(rand.Reader, ecKey, hashBytes)
+
+	case AlgorithmEdDSA:
+		privateKey := p.provider.GetPrivateKey()
+		edKey, ok := privateKey.(ed25519.PrivateKey)
+		if !ok {
+			return nil, errors.New("algorithm EdDSA requires an Ed25519 private key")
+		}
+		// Ed25519 signs the raw message; no pre-hashing.
+		return ed25519.Sign(edKey, payload), nil
+
+	case AlgorithmHMACSHA256:
+		key := p.provider.GetHMACKey()
+		if len(key) == 0 {
+			return nil, errors.New("algorithm HMAC-SHA256 requires a non-empty HMAC key")
+		}
+		mac := hmac.New(sha256.New, key)
+		if _, err := mac.Write(payload); err != nil {
+			return nil, fmt.Errorf("failed to compute HMAC: %w", err)
+		}
+		return mac.Sum(nil), nil
+
+	default:
+		return nil, fmt.Errorf("unsupported algorithm: %s", p.config.Algorithm)
+	}
+}
+
+// serializeLogRecord produces a canonical JSON representation of the log record
+// for signing. Excluded from the signed payload:
+//   - audit.integrity.* attributes (carry the proof; must not be part of the input)
+//   - SeverityNumber, SeverityText (SHOULD NOT be set on audit records per spec)
+//   - Flags (W3C trace-context sampling bit; not audit-relevant)
+func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
+	data := make(map[string]any)
+
+	if lr.EventName() != "" {
+		if err := checkUTF8(lr.EventName(), "event name"); err != nil {
+			return nil, err
+		}
+		data["event_name"] = lr.EventName()
+	}
+
+	if lr.Body().Type() != pcommon.ValueTypeEmpty {
+		body, err := p.valueToInterface(lr.Body(), 0)
+		if err != nil {
+			return nil, fmt.Errorf("log record body: %w", err)
+		}
+		data["body"] = body
+	}
+
+	if lr.Timestamp() != 0 {
+		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
+	}
+
+	if lr.ObservedTimestamp() != 0 {
+		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
+	}
+
+	if !lr.TraceID().IsEmpty() {
+		data["trace_id"] = lr.TraceID().String()
+	}
+
+	if !lr.SpanID().IsEmpty() {
+		data["span_id"] = lr.SpanID().String()
+	}
+
+	attrs := make(map[string]any)
+	var attrErr error
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+		if strings.HasPrefix(k, "audit.integrity.") {
+			return true
+		}
+		if err := checkUTF8(k, "attribute key"); err != nil {
+			attrErr = err
+			return false
+		}
+		val, err := p.valueToInterface(v, 0)
+		if err != nil {
+			attrErr = err
+			return false
+		}
+		attrs[k] = val
+		return true
+	})
+	if attrErr != nil {
+		return nil, attrErr
+	}
+	if len(attrs) > 0 {
+		data["attributes"] = attrs
+	}
+
+	return p.marshalJCS(data)
+}
+
+// marshalJCS produces a RFC 8785 (JCS) canonical JSON byte slice.
+// json.Marshal sorts map keys (Go ≥ 1.12), then jcs.Transform normalises
+// number representation and validates the result per the JCS spec.
+func (*signingProcessor) marshalJCS(v any) ([]byte, error) {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) > jsonMaxInputBytes {
+		return nil, fmt.Errorf("serialized log record exceeds size limit (%d > %d bytes)", len(raw), jsonMaxInputBytes)
+	}
+	return jcs.Transform(raw)
+}
+
+func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, error) {
+	if depth > jsonMaxDepth {
+		return nil, fmt.Errorf("value exceeds nesting depth limit (%d)", jsonMaxDepth)
+	}
+	switch v.Type() {
+	case pcommon.ValueTypeStr:
+		s := v.Str()
+		if err := checkUTF8(s, "string value"); err != nil {
+			return nil, err
+		}
+		return map[string]any{"stringValue": s}, nil
+	case pcommon.ValueTypeInt:
+		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}, nil
+	case pcommon.ValueTypeDouble:
+		return map[string]any{"doubleValue": v.Double()}, nil
+	case pcommon.ValueTypeBool:
+		return map[string]any{"boolValue": v.Bool()}, nil
+	case pcommon.ValueTypeBytes:
+		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}, nil
+	case pcommon.ValueTypeSlice:
+		slice := make([]any, v.Slice().Len())
+		for i := 0; i < v.Slice().Len(); i++ {
+			val, err := p.valueToInterface(v.Slice().At(i), depth+1) // recursive call!
+			if err != nil {
+				return nil, err
+			}
+			slice[i] = val
+		}
+		return slice, nil
+	case pcommon.ValueTypeMap:
+		m := make(map[string]any)
+		var mapErr error
+		v.Map().Range(func(k string, val pcommon.Value) bool {
+			if err := checkUTF8(k, "map key"); err != nil {
+				mapErr = err
+				return false
+			}
+			converted, err := p.valueToInterface(val, depth+1) // recursive call!
+			if err != nil {
+				mapErr = err
+				return false
+			}
+			m[k] = converted
+			return true
+		})
+		if mapErr != nil {
+			return nil, mapErr
+		}
+		return m, nil
+	default:
+		return nil, nil
+	}
+}
+
+// checkUTF8 refuses a string that is not valid UTF-8. json.Marshal would
+// otherwise replace each invalid byte with U+FFFD, so two records that differ
+// only in such bytes would canonicalize to the same payload and share a
+// signature. Every string that reaches the payload passes through here: the
+// event name, attribute keys, nested map keys, and string values.
+func checkUTF8(s, what string) error {
+	if !utf8.ValidString(s) {
+		return fmt.Errorf("%s contains invalid UTF-8", what)
+	}
+	return nil
 }
 
 func (*signingProcessor) Start(_ context.Context, _ component.Host) error {
@@ -28,10 +365,20 @@ func (*signingProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (*signingProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	return p.nextConsumer.ConsumeLogs(ctx, ld)
+// buildCertificateRef computes the audit.integrity.certificate attribute value.
+// "fingerprint" produces "sha256:<hex>" of the DER-encoded certificate.
+// "full" produces the base64 (standard, no line wrapping) of the DER-encoded certificate.
+func buildCertificateRef(provider KeyMaterialProvider, mode string) (string, error) {
+	cert := provider.GetCertificate()
+	if cert == nil {
+		return "", errors.New("key material provider returned nil certificate")
+	}
+	der := cert.Raw
+	switch mode {
+	case CertificateRefFull:
+		return base64.StdEncoding.EncodeToString(der), nil
+	default: // CertificateRefFingerprint
+		sum := sha256.Sum256(der)
+		return "sha256:" + hex.EncodeToString(sum[:]), nil
+	}
 }

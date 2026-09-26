@@ -98,7 +98,7 @@ func Test_GetXML(t *testing.T) {
 			factory := NewGetXMLFactory[any]()
 			exprFunc, err := factory.CreateFunction(
 				ottl.FunctionContext{},
-				&GetXMLArguments[any]{
+				&getXMLArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
 						Getter: func(context.Context, any) (any, error) {
 							return tt.document, nil
@@ -127,7 +127,7 @@ func TestCreateGetXMLFunc(t *testing.T) {
 
 	// Invalid XPath should error on function creation
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &GetXMLArguments[any]{
+		fCtx, &getXMLArguments[any]{
 			XPath: "!",
 		},
 	)
@@ -136,7 +136,7 @@ func TestCreateGetXMLFunc(t *testing.T) {
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &GetXMLArguments[any]{
+		fCtx, &getXMLArguments[any]{
 			Target: invalidXMLGetter(),
 			XPath:  "/",
 		},
@@ -157,14 +157,14 @@ func Test_GetXMLFactory(t *testing.T) {
 		factory := NewGetXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &GetXMLArguments[any]{}, args)
+		assert.IsType(t, &getXMLArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "XPath"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewGetXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
-		getXMLArgs, ok := args.(*GetXMLArguments[any])
+		getXMLArgs, ok := args.(*getXMLArguments[any])
 		require.True(t, ok)
 		getXMLArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -182,4 +182,19 @@ func Test_GetXMLFactory(t *testing.T) {
 		_, err := createGetXMLFunction[any](ottl.FunctionContext{}, "invalid args")
 		assert.ErrorContains(t, err, "GetXML args must be of type *GetXMLAguments[K]")
 	})
+}
+
+func BenchmarkGetXML(b *testing.B) {
+	exprFunc := getXML[any](ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a><x>1</x><b><x>2</x></b><d><e><f><x>3</x></f></e></d></a>`, nil
+		},
+	}, "/a//x")
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

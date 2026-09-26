@@ -1,0 +1,9 @@
+change_type: enhancement
+component: extension/json_log_encoding
+note: Add the opt-in `parse_ints` setting to preserve JSON integer literals within the `int64` range.
+issues: [51299]
+subtext: |
+  Applies to array and single-document/NDJSON input, including nested objects and arrays.
+  Decimal, exponent, and out-of-range integer literals are still parsed as `float64`.
+  The option defaults to `false` and adds processing overhead when enabled.
+change_logs: [user]

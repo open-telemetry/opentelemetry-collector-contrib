@@ -22,11 +22,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
@@ -58,7 +58,6 @@ type transaction struct {
 	externalLabels        labels.Labels
 	nodeResources         map[resourceKey]pcommon.Resource
 	scopeAttributes       map[resourceKey]map[scopeID]pcommon.Map
-	ignoreScopeInfoMetric bool
 	logger                *zap.Logger
 	buildInfo             component.BuildInfo
 	obsrecv               *receiverhelper.ObsReport
@@ -85,20 +84,19 @@ func newTransaction(
 	useMetadata bool,
 ) *transaction {
 	return &transaction{
-		ctx:                   ctx,
-		families:              make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
-		isNew:                 true,
-		trimSuffixes:          trimSuffixes,
-		useMetadata:           useMetadata,
-		sink:                  sink,
-		externalLabels:        externalLabels,
-		logger:                settings.Logger,
-		buildInfo:             settings.BuildInfo,
-		obsrecv:               obsrecv,
-		bufBytes:              make([]byte, 0, 1024),
-		scopeAttributes:       make(map[resourceKey]map[scopeID]pcommon.Map),
-		ignoreScopeInfoMetric: mdata.ReceiverPrometheusreceiverIgnoreScopeInfoMetricFeatureGate.IsEnabled(),
-		nodeResources:         map[resourceKey]pcommon.Resource{},
+		ctx:             ctx,
+		families:        make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
+		isNew:           true,
+		trimSuffixes:    trimSuffixes,
+		useMetadata:     useMetadata,
+		sink:            sink,
+		externalLabels:  externalLabels,
+		logger:          settings.Logger,
+		buildInfo:       settings.BuildInfo,
+		obsrecv:         obsrecv,
+		bufBytes:        make([]byte, 0, 1024),
+		scopeAttributes: make(map[resourceKey]map[scopeID]pcommon.Map),
+		nodeResources:   map[resourceKey]pcommon.Resource{},
 	}
 }
 
@@ -112,7 +110,7 @@ func (t *transaction) append(ls labels.Labels, atMs int64, val float64) (storage
 		return 0, err
 	}
 
-	return t.addSampleDatapoint(*rKey, ls, metricName, atMs, val, 0)
+	return t.addSampleDatapoint(rKey, ls, metricName, atMs, val, 0)
 }
 
 // addSampleDatapoint processes one scraped sample and stores it in the
@@ -149,12 +147,6 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 	// For the `target_info` metric we need to convert it to resource attributes.
 	if metricName == prometheus.TargetInfoMetricName {
 		t.AddTargetInfo(rKey, ls)
-		return 0, nil
-	}
-
-	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	if metricName == prometheus.ScopeInfoMetricName && !t.ignoreScopeInfoMetric {
-		t.addScopeInfo(rKey, ls)
 		return 0, nil
 	}
 
@@ -279,8 +271,8 @@ func (t *transaction) appendExemplar(l labels.Labels, e exemplar.Exemplar) error
 	}
 
 	scope, attrs := getScopeID(l)
-	t.addScopeAttributesFromLabels(*rKey, scope, attrs)
-	mf := t.getOrCreateMetricFamily(*rKey, scope, mn)
+	t.addScopeAttributesFromLabels(rKey, scope, attrs)
+	mf := t.getOrCreateMetricFamily(rKey, scope, mn)
 	seriesRef := t.getSeriesRef(l, mf.mtype)
 	mf.addExemplar(seriesRef, e)
 
@@ -305,7 +297,7 @@ func (t *transaction) appendHistogram(ls labels.Labels, atMs int64, h *histogram
 	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
 	// thus we don't check for them here as opposed to the Append function.
 
-	return t.addHistogramDatapoint(*rKey, ls, metricName, atMs, h, fh, schema, 0)
+	return t.addHistogramDatapoint(rKey, ls, metricName, atMs, h, fh, schema, 0)
 }
 
 // addHistogramDatapoint adds a native histogram or NHCB datapoint to the appropriate metric family.
@@ -364,10 +356,10 @@ func (t *transaction) appendHistogramSTZeroSample(ls labels.Labels, atMs, stMs i
 
 // prepareLabels merges external labels, initializes the transaction, validates
 // labels and extracts the metric name. It is shared by both V1 and V2 appender paths.
-func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, *resourceKey, string, error) {
+func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, resourceKey, string, error) {
 	select {
 	case <-t.ctx.Done():
-		return labels.EmptyLabels(), nil, "", errTransactionAborted
+		return labels.EmptyLabels(), resourceKey{}, "", errTransactionAborted
 	default:
 	}
 
@@ -381,7 +373,7 @@ func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, *resourceK
 
 	rKey, err := t.initTransaction(ls)
 	if err != nil {
-		return labels.EmptyLabels(), nil, "", err
+		return labels.EmptyLabels(), resourceKey{}, "", err
 	}
 
 	// Any datapoint with duplicate labels MUST be rejected per:
@@ -389,12 +381,12 @@ func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, *resourceK
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
 	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
 	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
-		return labels.EmptyLabels(), nil, "", fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
+		return labels.EmptyLabels(), resourceKey{}, "", fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
 	}
 
 	metricName := ls.Get(model.MetricNameLabel)
 	if metricName == "" {
-		return labels.EmptyLabels(), nil, "", errMetricNameNotFound
+		return labels.EmptyLabels(), resourceKey{}, "", errMetricNameNotFound
 	}
 
 	return ls, rKey, metricName, nil
@@ -407,8 +399,8 @@ func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (sto
 	}
 
 	scope, attrs := getScopeID(ls)
-	t.addScopeAttributesFromLabels(*rKey, scope, attrs)
-	curMF := t.getOrCreateMetricFamily(*rKey, scope, metricName)
+	t.addScopeAttributesFromLabels(rKey, scope, attrs)
+	curMF := t.getOrCreateMetricFamily(rKey, scope, metricName)
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 	curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
 
@@ -510,7 +502,7 @@ func getScopeID(ls labels.Labels) (scopeID, pcommon.Map) {
 		attrKey := strings.TrimPrefix(lbl.Name, prometheus.ScopeLabelPrefix)
 		attrs.PutStr(attrKey, lbl.Value)
 	})
-	scope.attrsHash = pdatautil.MapHash(attrs)
+	scope.attrsHash = xhash.MapHash(attrs)
 	return scope, attrs
 }
 
@@ -529,37 +521,41 @@ func (t *transaction) addScopeAttributesFromLabels(key resourceKey, scope scopeI
 	t.scopeAttributes[key][scope] = copied
 }
 
-func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
+func (t *transaction) initTransaction(lbs labels.Labels) (resourceKey, error) {
+	rKey, err := t.getJobAndInstance(lbs)
+	if err != nil {
+		return resourceKey{}, err
+	}
+	if !t.isNew {
+		if _, ok := t.nodeResources[rKey]; ok {
+			return rKey, nil
+		}
+	}
+
 	target, ok := scrape.TargetFromContext(t.ctx)
 	if !ok {
-		return nil, errors.New("unable to find target in context")
+		return resourceKey{}, errors.New("unable to find target in context")
 	}
 	if t.useMetadata {
 		t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
 		if !ok {
-			return nil, errors.New("unable to find MetricMetadataStore in context")
+			return resourceKey{}, errors.New("unable to find MetricMetadataStore in context")
 		}
 	} else {
-		t.mc = &emptyMetadataStore{}
+		t.mc = emptyMetadataStoreInstance
 	}
 
-	rKey, err := t.getJobAndInstance(lbs)
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := t.nodeResources[*rKey]; !ok {
-		t.nodeResources[*rKey] = CreateResource(rKey.job, rKey.instance, target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels())))
-	}
+	t.nodeResources[rKey] = CreateResource(rKey.job, rKey.instance, target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels())))
 
 	t.isNew = false
 	return rKey, nil
 }
 
-func (t *transaction) getJobAndInstance(labels labels.Labels) (*resourceKey, error) {
+func (t *transaction) getJobAndInstance(labels labels.Labels) (resourceKey, error) {
 	// first, try to get job and instance from the labels
 	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
 	if job != "" && instance != "" {
-		return &resourceKey{
+		return resourceKey{
 			job:      job,
 			instance: instance,
 		}, nil
@@ -578,13 +574,13 @@ func (t *transaction) getJobAndInstance(labels labels.Labels) (*resourceKey, err
 			instance = target.GetValue(model.InstanceLabel)
 		}
 		if job != "" && instance != "" {
-			return &resourceKey{
+			return resourceKey{
 				job:      job,
 				instance: instance,
 			}, nil
 		}
 	}
-	return nil, errNoJobInstance
+	return resourceKey{}, errNoJobInstance
 }
 
 func (t *transaction) Commit() error {
@@ -632,35 +628,6 @@ func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
 	}
 }
 
-func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
-	t.addingNativeHistogram = false
-	t.addingNHCB = false
-	attrs := pcommon.NewMap()
-	scope := scopeID{}
-	ls.Range(func(lbl labels.Label) {
-		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
-			return
-		}
-		if lbl.Name == prometheus.ScopeNameLabelKey {
-			scope.name = lbl.Value
-			return
-		}
-		if lbl.Name == prometheus.ScopeVersionLabelKey {
-			scope.version = lbl.Value
-			return
-		}
-		if lbl.Name == prometheus.ScopeSchemaURLLabelKey {
-			scope.schemaURL = lbl.Value
-			return
-		}
-		attrs.PutStr(lbl.Name, lbl.Value)
-	})
-	if _, ok := t.scopeAttributes[key]; !ok {
-		t.scopeAttributes[key] = make(map[scopeID]pcommon.Map)
-	}
-	t.scopeAttributes[key][scope] = attrs
-}
-
 func getSeriesRefWithoutScopeLabels(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
 	return ls.HashWithoutLabels(bytes, getSortedNotUsefulLabelsForSeries(mtype, ls)...)
 }
@@ -687,12 +654,12 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, stMs, atMs i
 		t.addingNativeHistogram = true
 		t.addingNHCB = schema == histogram.CustomBucketsSchema
 
-		sRef, _ = t.addHistogramDatapoint(*rKey, ls, metricName, atMs, h, fh, schema, stMs)
+		sRef, _ = t.addHistogramDatapoint(rKey, ls, metricName, atMs, h, fh, schema, stMs)
 	} else {
 		t.addingNativeHistogram = false
 		t.addingNHCB = false
 
-		sRef, _ = t.addSampleDatapoint(*rKey, ls, metricName, atMs, val, stMs)
+		sRef, _ = t.addSampleDatapoint(rKey, ls, metricName, atMs, val, stMs)
 	}
 
 	// Append the exemplars, continuing on error to try all exemplars.

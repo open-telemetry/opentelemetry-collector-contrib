@@ -1,0 +1,12 @@
+change_type: enhancement
+
+component: receiver/journald
+
+note: Add "convert_to_semantic_conventions" config option to map well-known journald fields to OpenTelemetry semantic convention attributes
+
+issues: [7298]
+
+subtext: |
+  See the [Semantic Conventions Mapping](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/journaldreceiver/README.md#semantic-conventions-mapping) section of the receiver README for details on what `convert_to_semantic_conventions` does.
+
+change_logs: [user]

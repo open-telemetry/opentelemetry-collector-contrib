@@ -129,7 +129,7 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			evaluate, err := convertSummaryQuantileValToGauge(tt.key, tt.suffix)
 			require.NoError(t, err)
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0))
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0))
 			defer tCtx.Close()
 			_, err = evaluate(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -146,5 +146,28 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
+	}
+}
+
+func BenchmarkConvertSummaryQuantileValToGauge(b *testing.B) {
+	template := pmetric.NewScopeMetrics()
+	getTestSummaryMetric().CopyTo(template.Metrics().AppendEmpty())
+
+	sMetrics := pmetric.NewScopeMetrics()
+	template.CopyTo(sMetrics)
+
+	exprFunc, err := convertSummaryQuantileValToGauge(ottl.Optional[string]{}, ottl.Optional[string]{})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0))
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(sMetrics)
+		if _, err = exprFunc(b.Context(), transformContext); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
