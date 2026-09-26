@@ -245,6 +245,24 @@ func TestHandleRequest(t *testing.T) {
 			expectedStatusCode: http.StatusUnauthorized,
 		},
 		{
+			// Same length as the configured secret, differing only in the final byte.
+			// A comparison that short-circuits on the first mismatch would reject this
+			// just as fast as a wholly different value; the point of the case is that
+			// it is still rejected once the comparison is constant-time.
+			name: "Wrong secret of equal length",
+			request: &http.Request{
+				Method: http.MethodPost,
+				URL:    &url.URL{},
+				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"}`)),
+				Header: map[string][]string{
+					textproto.CanonicalMIMEHeaderKey(secretHeaderName): {"abc124"},
+				},
+			},
+			logExpected:        false,
+			consumerFailure:    false,
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+		{
 			name: "Invalid payload",
 			request: &http.Request{
 				Method: http.MethodPost,
