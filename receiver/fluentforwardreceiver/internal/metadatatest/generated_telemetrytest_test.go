@@ -24,6 +24,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.FluentOpenedConnections.Add(context.Background(), 1)
 	tb.FluentParseFailures.Add(context.Background(), 1)
 	tb.FluentRecordsGenerated.Add(context.Background(), 1)
+	tb.FluentRefusedConnections.Add(context.Background(), 1)
 	AssertEqualFluentClosedConnections(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -37,6 +38,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualFluentRecordsGenerated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualFluentRefusedConnections(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
