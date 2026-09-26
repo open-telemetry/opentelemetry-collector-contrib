@@ -17,6 +17,8 @@ import (
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 )
 
 const (
@@ -41,7 +43,9 @@ func createTestConfig(metricsOverrides map[string]string, enableMetrics bool) *C
 
 func initHeartbeater(t *testing.T, metricsOverrides map[string]string, enableMetrics bool, consumeFn func(ctx context.Context, ld plog.Logs) error, mp *sdkmetric.MeterProvider) {
 	config := createTestConfig(metricsOverrides, enableMetrics)
-	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn, mp.Meter("test"))
+	tb, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: mp})
+	require.NoError(t, err)
+	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn, tb, mp.Meter("test"))
 	t.Cleanup(func() {
 		hbter.shutdown()
 	})
@@ -85,9 +89,11 @@ func getAttributes(reader *sdkmetric.ManualReader, name string) ([]attribute.Set
 func Test_newHeartbeater_disabled(t *testing.T) {
 	config := createTestConfig(map[string]string{}, false)
 	config.Heartbeat.Interval = 0
+	tb, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: metricnoop.NewMeterProvider()})
+	require.NoError(t, err)
 	hb := newHeartbeater(config, component.NewDefaultBuildInfo(), func(_ context.Context, _ plog.Logs) error {
 		return nil
-	}, metricnoop.NewMeterProvider().Meter("test"))
+	}, tb, metricnoop.NewMeterProvider().Meter("test"))
 	assert.Nil(t, hb)
 }
 
@@ -109,6 +115,11 @@ func Test_Heartbeat_success(t *testing.T) {
 		{
 			metricsOverrides: map[string]string{},
 			enableMetrics:    false,
+		},
+		{
+			// No overrides: the metric defined in metadata.yaml is used.
+			metricsOverrides: map[string]string{},
+			enableMetrics:    true,
 		},
 	}
 
