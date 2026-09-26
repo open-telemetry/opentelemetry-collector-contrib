@@ -50,6 +50,54 @@ func (ms *MongodbActiveWritesMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
+// MongodbAssertCountMetricAttributeKey specifies the key of an attribute for the mongodb.assert.count metric.
+type MongodbAssertCountMetricAttributeKey string
+
+const (
+	MongodbAssertCountMetricAttributeKeyMongodbAssertType MongodbAssertCountMetricAttributeKey = "mongodb.assert.type"
+)
+
+// MongodbAssertCountMetricConfig provides config for the mongodb.assert.count metric.
+type MongodbAssertCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbAssertCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbAssertCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbAssertCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbAssertCountMetricAttributeKeyMongodbAssertType:
+		default:
+			return fmt.Errorf("metric mongodb.assert.count doesn't have an attribute %v, valid attributes: [mongodb.assert.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MongodbCacheOperationsMetricAttributeKey specifies the key of an attribute for the mongodb.cache.operations metric.
 type MongodbCacheOperationsMetricAttributeKey string
 
@@ -477,6 +525,54 @@ func (ms *MongodbGetmoresRateMetricConfig) Unmarshal(parser *confmap.Conf) error
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbGlobalLockQueueCountMetricAttributeKey specifies the key of an attribute for the mongodb.global_lock.queue.count metric.
+type MongodbGlobalLockQueueCountMetricAttributeKey string
+
+const (
+	MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType MongodbGlobalLockQueueCountMetricAttributeKey = "mongodb.global_lock.queue.type"
+)
+
+// MongodbGlobalLockQueueCountMetricConfig provides config for the mongodb.global_lock.queue.count metric.
+type MongodbGlobalLockQueueCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbGlobalLockQueueCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbGlobalLockQueueCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbGlobalLockQueueCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType:
+		default:
+			return fmt.Errorf("metric mongodb.global_lock.queue.count doesn't have an attribute %v, valid attributes: [mongodb.global_lock.queue.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1755,6 +1851,26 @@ func (ms *MongodbUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// MongodbWriteConcernWaitTimeMetricConfig provides config for the mongodb.write_concern.wait.time metric.
+type MongodbWriteConcernWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbWriteConcernWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey specifies the key of an attribute for the mongodb.wt.concurrent_transaction.ticket.in_use metric.
 type MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey string
 
@@ -1935,6 +2051,7 @@ func (ms *MongodbWtcacheBytesReadMetricConfig) Unmarshal(parser *confmap.Conf) e
 type MetricsConfig struct {
 	MongodbActiveReads                        MongodbActiveReadsMetricConfig                        `mapstructure:"mongodb.active.reads"`
 	MongodbActiveWrites                       MongodbActiveWritesMetricConfig                       `mapstructure:"mongodb.active.writes"`
+	MongodbAssertCount                        MongodbAssertCountMetricConfig                        `mapstructure:"mongodb.assert.count"`
 	MongodbCacheOperations                    MongodbCacheOperationsMetricConfig                    `mapstructure:"mongodb.cache.operations"`
 	MongodbCollectionCount                    MongodbCollectionCountMetricConfig                    `mapstructure:"mongodb.collection.count"`
 	MongodbCommandsRate                       MongodbCommandsRateMetricConfig                       `mapstructure:"mongodb.commands.rate"`
@@ -1948,6 +2065,7 @@ type MetricsConfig struct {
 	MongodbExtentCount                        MongodbExtentCountMetricConfig                        `mapstructure:"mongodb.extent.count"`
 	MongodbFlushesRate                        MongodbFlushesRateMetricConfig                        `mapstructure:"mongodb.flushes.rate"`
 	MongodbGetmoresRate                       MongodbGetmoresRateMetricConfig                       `mapstructure:"mongodb.getmores.rate"`
+	MongodbGlobalLockQueueCount               MongodbGlobalLockQueueCountMetricConfig               `mapstructure:"mongodb.global_lock.queue.count"`
 	MongodbGlobalLockTime                     MongodbGlobalLockTimeMetricConfig                     `mapstructure:"mongodb.global_lock.time"`
 	MongodbHealth                             MongodbHealthMetricConfig                             `mapstructure:"mongodb.health"`
 	MongodbIndexAccessCount                   MongodbIndexAccessCountMetricConfig                   `mapstructure:"mongodb.index.access.count"`
@@ -1986,6 +2104,7 @@ type MetricsConfig struct {
 	MongodbStorageSize                        MongodbStorageSizeMetricConfig                        `mapstructure:"mongodb.storage.size"`
 	MongodbUpdatesRate                        MongodbUpdatesRateMetricConfig                        `mapstructure:"mongodb.updates.rate"`
 	MongodbUptime                             MongodbUptimeMetricConfig                             `mapstructure:"mongodb.uptime"`
+	MongodbWriteConcernWaitTime               MongodbWriteConcernWaitTimeMetricConfig               `mapstructure:"mongodb.write_concern.wait.time"`
 	MongodbWtConcurrentTransactionTicketInUse MongodbWtConcurrentTransactionTicketInUseMetricConfig `mapstructure:"mongodb.wt.concurrent_transaction.ticket.in_use"`
 	MongodbWtFsyncCount                       MongodbWtFsyncCountMetricConfig                       `mapstructure:"mongodb.wt.fsync.count"`
 	MongodbWtLogOperationCount                MongodbWtLogOperationCountMetricConfig                `mapstructure:"mongodb.wt.log.operation.count"`
@@ -2001,6 +2120,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbActiveWrites: MongodbActiveWritesMetricConfig{
 			Enabled: false,
+		},
+		MongodbAssertCount: MongodbAssertCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbAssertCountMetricAttributeKey{MongodbAssertCountMetricAttributeKeyMongodbAssertType},
 		},
 		MongodbCacheOperations: MongodbCacheOperationsMetricConfig{
 			Enabled:             true,
@@ -2052,6 +2176,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbGetmoresRate: MongodbGetmoresRateMetricConfig{
 			Enabled: false,
+		},
+		MongodbGlobalLockQueueCount: MongodbGlobalLockQueueCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbGlobalLockQueueCountMetricAttributeKey{MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType},
 		},
 		MongodbGlobalLockTime: MongodbGlobalLockTimeMetricConfig{
 			Enabled: true,
@@ -2201,6 +2330,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MongodbUptime: MongodbUptimeMetricConfig{
+			Enabled: false,
+		},
+		MongodbWriteConcernWaitTime: MongodbWriteConcernWaitTimeMetricConfig{
 			Enabled: false,
 		},
 		MongodbWtConcurrentTransactionTicketInUse: MongodbWtConcurrentTransactionTicketInUseMetricConfig{

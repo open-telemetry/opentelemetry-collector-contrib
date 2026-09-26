@@ -856,6 +856,18 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordGlobalLockTime(now, document, errs)
 	}
 
+	if s.config.MetricsBuilderConfig.Metrics.MongodbAssertCount.Enabled {
+		s.recordAsserts(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbGlobalLockQueueCount.Enabled {
+		s.recordGlobalLockQueue(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWriteConcernWaitTime.Enabled {
+		s.recordWriteConcernWaitTime(now, document, errs)
+	}
+
 	if s.config.MetricsBuilderConfig.Metrics.MongodbNetworkRequestCount.Enabled {
 		s.recordNetworkCount(now, document, errs)
 	}

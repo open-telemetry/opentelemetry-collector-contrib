@@ -113,6 +113,16 @@ attributes:
     enum:
       - resident
       - virtual
+  mongodb.assert.type:
+    description: The type of assertion raised by the server.
+    type: string
+    requirement_level: recommended
+    enum:
+      - msg
+      - regular
+      - user
+      - warning
+      - tripwire
   mongodb.client.app.name:
     description: The identifier of the client application which ran the operation, as set by the driver's `appName` connection option.
     type: string
@@ -143,6 +153,13 @@ attributes:
   mongodb.explain_plan.text:
     description: The obfuscated query explain plan, if collection is enabled.
     type: string
+  mongodb.global_lock.queue.type:
+    description: The type of operation waiting for the global lock.
+    type: string
+    requirement_level: recommended
+    enum:
+      - read
+      - write
   mongodb.lsid.id:
     description: The UUID portion of the logical session identifier associated with the MongoDB operation.
     type: string
@@ -360,6 +377,16 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     attributes: []
+  mongodb.assert.count:
+    description: The number of assertions raised since the server process started.
+    stability: development
+    unit: "{assert}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [mongodb.assert.type]
   mongodb.cache.operations:
     description: The number of cache operations of the instance.
     stability: development
@@ -486,6 +513,16 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
+  mongodb.global_lock.queue.count:
+    description: The number of operations queued waiting for the global lock.
+    stability: development
+    unit: "{operation}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [mongodb.global_lock.queue.type]
   mongodb.global_lock.time:
     description: The time the global lock has been held.
     stability: development
@@ -849,6 +886,23 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: []
+  mongodb.write_concern.wait.time:
+    description: The cumulative time spent waiting for write concern acknowledgement.
+    extended_documentation: |
+      Read from serverStatus.metrics.getLastError.wtime.totalMillis, whose name is a legacy artifact
+      of a command removed in MongoDB 5.1. The counter increments for write operations that specify
+      a write concern greater than w:1, which includes the w:"majority" default applied to replica
+      sets since MongoDB 5.0, so it accumulates under an ordinary replica set workload. It stays at
+      zero on a standalone deployment, where there is no acknowledgement to wait for, and for writes
+      that explicitly specify w:1.
+    stability: development
+    unit: s
+    enabled: false
+    sum:
+      value_type: double
+      aggregation_temporality: cumulative
+      monotonic: true
     attributes: []
   mongodb.wt.concurrent_transaction.ticket.in_use:
     description: The number of in-flight WiredTiger read/write concurrent-transaction tickets.
