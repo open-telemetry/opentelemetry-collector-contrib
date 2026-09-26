@@ -661,6 +661,20 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+The execution plan for a query.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` | - |
+| postgresql.queryid | Hash code to identify identical normalized queries. | Any Str | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | - |
+| postgresql.rolname | The name of the PostgreSQL role that executed the query. | Any Str | - |
+| postgresql.query_plan | The execution plan used by PostgreSQL for the query. | Any Str | - |
+
 ### db.server.query_sample
 
 query sample
