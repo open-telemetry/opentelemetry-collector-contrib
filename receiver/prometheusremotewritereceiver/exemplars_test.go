@@ -30,9 +30,10 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 		expectedExemplars int
 		expectedGroups    int
 		expectedWarnMsgs  []string
+		expectedErr       string
 	}{
 		{
-			name: "invalid exemplar label refs logs warning",
+			name: "invalid exemplar label refs are refused",
 			req: &writev2.Request{
 				Symbols: []string{
 					"",
@@ -54,11 +55,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 					},
 				},
 			},
-			expectedExemplars: 0,
-			expectedGroups:    1,
-			expectedWarnMsgs: []string{
-				"error converting exemplar label refs",
-			},
+			expectedErr: `exemplar of "request_duration_ms" cannot be read`,
 		},
 		{
 			name: "missing metric name logs warning",
@@ -138,7 +135,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			expectedWarnMsgs:  nil,
 		},
 		{
-			name: "mixed valid and invalid exemplars logs once and keeps valid",
+			name: "one unreadable exemplar refuses the rest with it",
 			req: &writev2.Request{
 				Symbols: []string{
 					"",
@@ -170,11 +167,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 					},
 				},
 			},
-			expectedExemplars: 1,
-			expectedGroups:    1,
-			expectedWarnMsgs: []string{
-				"error converting exemplar label refs",
-			},
+			expectedErr: `exemplar of "request_duration_ms" cannot be read`,
 		},
 	}
 
@@ -189,7 +182,13 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 				},
 			}
 
-			result := collectExemplars(tt.req, settings, stats)
+			result, err := collectExemplars(tt.req, settings, stats)
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+				assert.Nil(t, result)
+				return
+			}
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedExemplars, stats.Exemplars)
 			assert.Len(t, result, tt.expectedGroups)
