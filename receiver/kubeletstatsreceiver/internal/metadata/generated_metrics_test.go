@@ -67,9 +67,27 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["container.cpu.pressure.avg"] = mb.metricContainerCPUPressureAvg.config.AggregationStrategy
+			aggMap["container.cpu.pressure.time"] = mb.metricContainerCPUPressureTime.config.AggregationStrategy
+			aggMap["container.io.pressure.avg"] = mb.metricContainerIoPressureAvg.config.AggregationStrategy
+			aggMap["container.io.pressure.time"] = mb.metricContainerIoPressureTime.config.AggregationStrategy
+			aggMap["container.memory.pressure.avg"] = mb.metricContainerMemoryPressureAvg.config.AggregationStrategy
+			aggMap["container.memory.pressure.time"] = mb.metricContainerMemoryPressureTime.config.AggregationStrategy
 			aggMap["k8s.container.ephemeral_storage.usage"] = mb.metricK8sContainerEphemeralStorageUsage.config.AggregationStrategy
+			aggMap["k8s.node.cpu.pressure.avg"] = mb.metricK8sNodeCPUPressureAvg.config.AggregationStrategy
+			aggMap["k8s.node.cpu.pressure.time"] = mb.metricK8sNodeCPUPressureTime.config.AggregationStrategy
+			aggMap["k8s.node.io.pressure.avg"] = mb.metricK8sNodeIoPressureAvg.config.AggregationStrategy
+			aggMap["k8s.node.io.pressure.time"] = mb.metricK8sNodeIoPressureTime.config.AggregationStrategy
+			aggMap["k8s.node.memory.pressure.avg"] = mb.metricK8sNodeMemoryPressureAvg.config.AggregationStrategy
+			aggMap["k8s.node.memory.pressure.time"] = mb.metricK8sNodeMemoryPressureTime.config.AggregationStrategy
 			aggMap["k8s.node.network.errors"] = mb.metricK8sNodeNetworkErrors.config.AggregationStrategy
 			aggMap["k8s.node.network.io"] = mb.metricK8sNodeNetworkIo.config.AggregationStrategy
+			aggMap["k8s.pod.cpu.pressure.avg"] = mb.metricK8sPodCPUPressureAvg.config.AggregationStrategy
+			aggMap["k8s.pod.cpu.pressure.time"] = mb.metricK8sPodCPUPressureTime.config.AggregationStrategy
+			aggMap["k8s.pod.io.pressure.avg"] = mb.metricK8sPodIoPressureAvg.config.AggregationStrategy
+			aggMap["k8s.pod.io.pressure.time"] = mb.metricK8sPodIoPressureTime.config.AggregationStrategy
+			aggMap["k8s.pod.memory.pressure.avg"] = mb.metricK8sPodMemoryPressureAvg.config.AggregationStrategy
+			aggMap["k8s.pod.memory.pressure.time"] = mb.metricK8sPodMemoryPressureTime.config.AggregationStrategy
 			aggMap["k8s.pod.network.errors"] = mb.metricK8sPodNetworkErrors.config.AggregationStrategy
 			aggMap["k8s.pod.network.io"] = mb.metricK8sPodNetworkIo.config.AggregationStrategy
 
@@ -120,6 +138,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
+
+			allMetricsCount++
+			mb.RecordContainerCPUPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerCPUPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordContainerCPUPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerCPUPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUTimeDataPoint(ts, 1)
@@ -135,6 +165,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerIoPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerIoPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordContainerIoPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerIoPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryAvailableDataPoint(ts, 1)
@@ -144,6 +186,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryPageFaultsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerMemoryPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordContainerMemoryPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerMemoryPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryRssDataPoint(ts, 1)
@@ -180,6 +234,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sContainerMemoryRequestUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeCPUPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sNodeCPUPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordK8sNodeCPUPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sNodeCPUPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
@@ -201,6 +267,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeIoPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sNodeIoPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordK8sNodeIoPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sNodeIoPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
@@ -210,6 +288,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryPageFaultsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeMemoryPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sNodeMemoryPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordK8sNodeMemoryPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sNodeMemoryPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryRssDataPoint(ts, 1)
@@ -249,6 +339,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sPodCPUNodeUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPodCPUPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sPodCPUPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordK8sPodCPUPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sPodCPUPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
@@ -270,6 +372,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPodIoPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sPodIoPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordK8sPodIoPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sPodIoPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
@@ -282,6 +396,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPodMemoryPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sPodMemoryPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+			}
+
+			allMetricsCount++
+			mb.RecordK8sPodMemoryPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sPodMemoryPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryRssDataPoint(ts, 1)
@@ -351,9 +477,27 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricContainerCPUPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricContainerCPUPressureTime.aggDataPoints)
+				assert.Empty(t, mb.metricContainerIoPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricContainerIoPressureTime.aggDataPoints)
+				assert.Empty(t, mb.metricContainerMemoryPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricContainerMemoryPressureTime.aggDataPoints)
 				assert.Empty(t, mb.metricK8sContainerEphemeralStorageUsage.aggDataPoints)
+				assert.Empty(t, mb.metricK8sNodeCPUPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricK8sNodeCPUPressureTime.aggDataPoints)
+				assert.Empty(t, mb.metricK8sNodeIoPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricK8sNodeIoPressureTime.aggDataPoints)
+				assert.Empty(t, mb.metricK8sNodeMemoryPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricK8sNodeMemoryPressureTime.aggDataPoints)
 				assert.Empty(t, mb.metricK8sNodeNetworkErrors.aggDataPoints)
 				assert.Empty(t, mb.metricK8sNodeNetworkIo.aggDataPoints)
+				assert.Empty(t, mb.metricK8sPodCPUPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricK8sPodCPUPressureTime.aggDataPoints)
+				assert.Empty(t, mb.metricK8sPodIoPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricK8sPodIoPressureTime.aggDataPoints)
+				assert.Empty(t, mb.metricK8sPodMemoryPressureAvg.aggDataPoints)
+				assert.Empty(t, mb.metricK8sPodMemoryPressureTime.aggDataPoints)
 				assert.Empty(t, mb.metricK8sPodNetworkErrors.aggDataPoints)
 				assert.Empty(t, mb.metricK8sPodNetworkIo.aggDataPoints)
 			}
@@ -383,6 +527,95 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
+				case "container.cpu.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.cpu.pressure.avg"], "Found a duplicate in the metrics slice: container.cpu.pressure.avg")
+						validatedMetrics["container.cpu.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.cpu.pressure.avg"], "Found a duplicate in the metrics slice: container.cpu.pressure.avg")
+						validatedMetrics["container.cpu.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["container.cpu.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "container.cpu.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.cpu.pressure.time"], "Found a duplicate in the metrics slice: container.cpu.pressure.time")
+						validatedMetrics["container.cpu.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.cpu.pressure.time"], "Found a duplicate in the metrics slice: container.cpu.pressure.time")
+						validatedMetrics["container.cpu.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["container.cpu.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "container.cpu.time":
 					assert.False(t, validatedMetrics["container.cpu.time"], "Found a duplicate in the metrics slice: container.cpu.time")
 					validatedMetrics["container.cpu.time"] = true
@@ -445,6 +678,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.io.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.io.pressure.avg"], "Found a duplicate in the metrics slice: container.io.pressure.avg")
+						validatedMetrics["container.io.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.io.pressure.avg"], "Found a duplicate in the metrics slice: container.io.pressure.avg")
+						validatedMetrics["container.io.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["container.io.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "container.io.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.io.pressure.time"], "Found a duplicate in the metrics slice: container.io.pressure.time")
+						validatedMetrics["container.io.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.io.pressure.time"], "Found a duplicate in the metrics slice: container.io.pressure.time")
+						validatedMetrics["container.io.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["container.io.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "container.memory.available":
 					assert.False(t, validatedMetrics["container.memory.available"], "Found a duplicate in the metrics slice: container.memory.available")
 					validatedMetrics["container.memory.available"] = true
@@ -481,6 +803,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.memory.pressure.avg"], "Found a duplicate in the metrics slice: container.memory.pressure.avg")
+						validatedMetrics["container.memory.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.memory.pressure.avg"], "Found a duplicate in the metrics slice: container.memory.pressure.avg")
+						validatedMetrics["container.memory.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["container.memory.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "container.memory.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.memory.pressure.time"], "Found a duplicate in the metrics slice: container.memory.pressure.time")
+						validatedMetrics["container.memory.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.memory.pressure.time"], "Found a duplicate in the metrics slice: container.memory.pressure.time")
+						validatedMetrics["container.memory.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["container.memory.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "container.memory.rss":
 					assert.False(t, validatedMetrics["container.memory.rss"], "Found a duplicate in the metrics slice: container.memory.rss")
 					validatedMetrics["container.memory.rss"] = true
@@ -647,6 +1058,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.node.cpu.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.node.cpu.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.cpu.pressure.avg")
+						validatedMetrics["k8s.node.cpu.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.node.cpu.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.cpu.pressure.avg")
+						validatedMetrics["k8s.node.cpu.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.node.cpu.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "k8s.node.cpu.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.node.cpu.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.cpu.pressure.time")
+						validatedMetrics["k8s.node.cpu.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.node.cpu.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.cpu.pressure.time")
+						validatedMetrics["k8s.node.cpu.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.node.cpu.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "k8s.node.cpu.time":
 					assert.False(t, validatedMetrics["k8s.node.cpu.time"], "Found a duplicate in the metrics slice: k8s.node.cpu.time")
 					validatedMetrics["k8s.node.cpu.time"] = true
@@ -737,6 +1237,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.io.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.node.io.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.io.pressure.avg")
+						validatedMetrics["k8s.node.io.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.node.io.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.io.pressure.avg")
+						validatedMetrics["k8s.node.io.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.node.io.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "k8s.node.io.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.node.io.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.io.pressure.time")
+						validatedMetrics["k8s.node.io.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.node.io.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.io.pressure.time")
+						validatedMetrics["k8s.node.io.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.node.io.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "k8s.node.memory.available":
 					assert.False(t, validatedMetrics["k8s.node.memory.available"], "Found a duplicate in the metrics slice: k8s.node.memory.available")
 					validatedMetrics["k8s.node.memory.available"] = true
@@ -773,6 +1362,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.memory.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.node.memory.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.memory.pressure.avg")
+						validatedMetrics["k8s.node.memory.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.node.memory.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.memory.pressure.avg")
+						validatedMetrics["k8s.node.memory.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.node.memory.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "k8s.node.memory.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.node.memory.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.memory.pressure.time")
+						validatedMetrics["k8s.node.memory.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.node.memory.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.memory.pressure.time")
+						validatedMetrics["k8s.node.memory.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.node.memory.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "k8s.node.memory.rss":
 					assert.False(t, validatedMetrics["k8s.node.memory.rss"], "Found a duplicate in the metrics slice: k8s.node.memory.rss")
 					validatedMetrics["k8s.node.memory.rss"] = true
@@ -983,6 +1661,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.pod.cpu.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.pod.cpu.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.cpu.pressure.avg")
+						validatedMetrics["k8s.pod.cpu.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.pod.cpu.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.cpu.pressure.avg")
+						validatedMetrics["k8s.pod.cpu.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.pod.cpu.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "k8s.pod.cpu.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.pod.cpu.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.cpu.pressure.time")
+						validatedMetrics["k8s.pod.cpu.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.pod.cpu.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.cpu.pressure.time")
+						validatedMetrics["k8s.pod.cpu.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.pod.cpu.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "k8s.pod.cpu.time":
 					assert.False(t, validatedMetrics["k8s.pod.cpu.time"], "Found a duplicate in the metrics slice: k8s.pod.cpu.time")
 					validatedMetrics["k8s.pod.cpu.time"] = true
@@ -1069,6 +1836,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.io.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.pod.io.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.io.pressure.avg")
+						validatedMetrics["k8s.pod.io.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.pod.io.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.io.pressure.avg")
+						validatedMetrics["k8s.pod.io.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.pod.io.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "k8s.pod.io.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.pod.io.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.io.pressure.time")
+						validatedMetrics["k8s.pod.io.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.pod.io.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.io.pressure.time")
+						validatedMetrics["k8s.pod.io.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.pod.io.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "k8s.pod.memory.available":
 					assert.False(t, validatedMetrics["k8s.pod.memory.available"], "Found a duplicate in the metrics slice: k8s.pod.memory.available")
 					validatedMetrics["k8s.pod.memory.available"] = true
@@ -1117,6 +1973,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.pressure.avg":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.pod.memory.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.memory.pressure.avg")
+						validatedMetrics["k8s.pod.memory.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+						psiWindowAttrVal, ok := dp.Attributes().Get("psi.window")
+						assert.True(t, ok)
+						assert.Equal(t, "10s", psiWindowAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.pod.memory.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.memory.pressure.avg")
+						validatedMetrics["k8s.pod.memory.pressure.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.pod.memory.pressure.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("psi.window")
+						assert.False(t, ok)
+					}
+				case "k8s.pod.memory.pressure.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.pod.memory.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.memory.pressure.time")
+						validatedMetrics["k8s.pod.memory.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						psiTypeAttrVal, ok := dp.Attributes().Get("psi.type")
+						assert.True(t, ok)
+						assert.Equal(t, "some", psiTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.pod.memory.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.memory.pressure.time")
+						validatedMetrics["k8s.pod.memory.pressure.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["k8s.pod.memory.pressure.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("psi.type")
+						assert.False(t, ok)
+					}
 				case "k8s.pod.memory.rss":
 					assert.False(t, validatedMetrics["k8s.pod.memory.rss"], "Found a duplicate in the metrics slice: k8s.pod.memory.rss")
 					validatedMetrics["k8s.pod.memory.rss"] = true

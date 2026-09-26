@@ -62,6 +62,17 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryMetrics, s.Memory, currentTime, resources{}, 0)
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
 	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime, a.allNetworkInterfaces[NodeMetricGroup])
+	// PSI (Pressure Stall Information) — requires Linux >= 4.20, cgroup v2.
+	// PSI fields are *PSIStats pointers; addPSIMetrics is nil-safe.
+	if s.CPU != nil {
+		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeCPUPressureMetrics, s.CPU.PSI, currentTime)
+	}
+	if s.Memory != nil {
+		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryPressureMetrics, s.Memory.PSI, currentTime)
+	}
+	if s.IO != nil {
+		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeIOPressureMetrics, s.IO.PSI, currentTime)
+	}
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sNodeName(s.NodeName)
@@ -97,6 +108,16 @@ func (a *metricDataAccumulator) podStats(s *stats.PodStats) {
 	addMemoryMetrics(a.mbs.PodMetricsBuilder, metadata.PodMemoryMetrics, s.Memory, currentTime, a.metadata.podResources[s.PodRef.UID], a.metadata.nodeInfo.MemoryCapacity)
 	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime, a.allNetworkInterfaces[PodMetricGroup])
+	// PSI — nil-safe; absent on cgroup v1 / Windows nodes.
+	if s.CPU != nil {
+		addPSIMetrics(a.mbs.PodMetricsBuilder, metadata.PodCPUPressureMetrics, s.CPU.PSI, currentTime)
+	}
+	if s.Memory != nil {
+		addPSIMetrics(a.mbs.PodMetricsBuilder, metadata.PodMemoryPressureMetrics, s.Memory.PSI, currentTime)
+	}
+	if s.IO != nil {
+		addPSIMetrics(a.mbs.PodMetricsBuilder, metadata.PodIOPressureMetrics, s.IO.PSI, currentTime)
+	}
 
 	rb := a.mbs.PodMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sPodUID(s.PodRef.UID)
@@ -134,6 +155,16 @@ func (a *metricDataAccumulator) containerStats(sPod *stats.PodStats, s *stats.Co
 
 	addEphemeralStorageMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerEphemeralStorageMetrics, s.Rootfs, metadata.AttributeFsTypeRootfs, currentTime)
 	addEphemeralStorageMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerEphemeralStorageMetrics, s.Logs, metadata.AttributeFsTypeLogs, currentTime)
+	// PSI — nil-safe; absent on cgroup v1 / Windows nodes.
+	if s.CPU != nil {
+		addPSIMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerCPUPressureMetrics, s.CPU.PSI, currentTime)
+	}
+	if s.Memory != nil {
+		addPSIMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerMemoryPressureMetrics, s.Memory.PSI, currentTime)
+	}
+	if s.IO != nil {
+		addPSIMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerIOPressureMetrics, s.IO.PSI, currentTime)
+	}
 
 	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
