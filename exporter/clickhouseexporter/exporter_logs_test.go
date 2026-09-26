@@ -68,6 +68,7 @@ func TestRenderCreateLogsTableSQL(t *testing.T) {
 		require.Contains(t, sql, "`test_db`.`otel_logs`")
 		require.NotContains(t, sql, "TimestampTime")
 		require.Contains(t, sql, "EventName")
+		require.Contains(t, sql, "INDEX idx_event_name EventName TYPE bloom_filter(0.01) GRANULARITY 1")
 		require.Contains(t, sql, "__otel_materialized_k8s.namespace.name")
 		require.Contains(t, sql, "__otel_materialized_deployment.environment.name")
 		require.Contains(t, sql, "toDateTime(Timestamp)")
@@ -86,6 +87,7 @@ func TestRenderCreateLogsTableSQL(t *testing.T) {
 		require.Contains(t, sql, "`test_db`.`otel_logs`")
 		require.NotContains(t, sql, "TimestampTime")
 		require.Contains(t, sql, "EventName")
+		require.NotContains(t, sql, "idx_event_name")
 		require.Contains(t, sql, "__otel_materialized_k8s.namespace.name")
 	})
 
