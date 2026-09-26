@@ -56,6 +56,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ControllerConfig: cfg,
+		ConnectDatabase:  "postgres",
 		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:5432",
 			Transport: confignet.TransportTypeTCP,

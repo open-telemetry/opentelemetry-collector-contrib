@@ -215,9 +215,9 @@ type dbRetrieval struct {
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
-	listClient, err := p.clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
+	listClient, err := p.clientFactory.getClient(ctx, p.config.ConnectDatabase)
 	if err != nil {
-		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+		p.logger.Error("Failed to initialize connection to configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(err))
 		return pmetric.NewMetrics(), err
 	}
 	defer listClient.Close()
@@ -227,7 +227,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	if len(databases) == 0 {
 		dbList, dbErr := listClient.listDatabases(ctx)
 		if dbErr != nil {
-			p.logger.Error("Failed to request list of databases from postgres", zap.Error(dbErr))
+			p.logger.Error("Failed to request list of databases from configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(dbErr))
 			return pmetric.NewMetrics(), dbErr
 		}
 		databases = dbList
@@ -287,9 +287,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 }
 
 func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQuery int64) (plog.Logs, error) {
-	dbClient, err := p.clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
+	dbClient, err := p.clientFactory.getClient(ctx, p.config.ConnectDatabase)
 	if err != nil {
-		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+		p.logger.Error("Failed to initialize connection to configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(err))
 		return plog.NewLogs(), err
 	}
 
@@ -411,9 +411,9 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger, collectionTime time.Time) {
 	timestamp := pcommon.NewTimestampFromTime(collectionTime)
 
-	defaultDbClient, err := clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
+	defaultDbClient, err := clientFactory.getClient(ctx, p.config.ConnectDatabase)
 	if err != nil {
-		logger.Error("failed to create db client for default postgresql database")
+		logger.Error("failed to create db client for configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(err))
 		mux.addPartial(err)
 		return
 	}

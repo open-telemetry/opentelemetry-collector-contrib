@@ -97,7 +97,14 @@ The following settings are optional:
 
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases. This list applies to metrics only; the query sample and top query collectors ignore it and are filtered solely by `exclude_databases`.
 
-- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the default `postgres` database for discovery and server-level queries, even if it is listed here.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the configured `connect_database` (default `postgres`) for discovery and server-level queries, even if it is listed here.
+
+- `connect_database` (default = `postgres`): The database the receiver connects to for discovery and server-level queries, including `pg_stat_statements`. Independent of `databases` — `pg_stat_statements` is tracked cluster-wide, so any database with the extension installed works as the connection target, regardless of which databases are being monitored. Use this if `pg_stat_statements` lives outside `postgres`, or if you connect through a dedicated monitoring-only database:
+  ```yaml
+  connect_database: "monitoring"   # extension lives here
+  databases:
+    - "mydb"                       # database being monitored
+  ```
 
 > [!NOTE]
 > Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:
@@ -165,12 +172,19 @@ We provide functionality to collect the most executed queries from PostgreSQL. I
 
 Along with those attributes, we will also report the query plan we gathered if it is possible. 
 
-By default, top query collection is disabled, also note, to use it, you will need 
-to create the extension to every database. Take the example from `testdata/integration/02-create-extension.sh`
+By default, top query collection is disabled, also note, to use it, you will need
+to create the extension in the database the receiver connects to (`connect_database`,
+default `postgres`) — `pg_stat_statements` is tracked cluster-wide, so it does not need to be
+created in every database. Take the example from `testdata/integration/02-create-extension.sh`
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 ```
+
+> [!NOTE]
+> This is different from [vector metrics](#vector-metrics) below, which query per-database
+> clients — `connect_database` has no effect there, and `pg_stat_statements` must be installed
+> in every scanned database for vector metrics to work.
 
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
