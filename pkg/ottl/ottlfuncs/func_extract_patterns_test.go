@@ -163,3 +163,69 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 		})
 	}
 }
+
+func Test_ExtractPatternsFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewExtractPatternsFactory[any]()
+		assert.Equal(t, "ExtractPatterns", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewExtractPatternsFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &extractPatternsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewExtractPatternsFactory[any]()
+		args := factory.CreateDefaultArguments()
+		extractPatternsArgs, ok := args.(*extractPatternsArguments[any])
+		require.True(t, ok)
+		extractPatternsArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		}
+		extractPatternsArgs.Pattern = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "(?P<key>\\w+)", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createExtractPatternsFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ExtractPatternsFactory args must be of type *extractPatternsArguments[K]")
+	})
+}
+
+func BenchmarkExtractPatterns(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "a=b c=d", nil
+		},
+	}
+	pattern, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `^a=(?P<a>\w+)\s+c=(?P<c>\w+)$`, nil
+		},
+	})
+	require.NoError(b, err)
+
+	exprFunc, err := extractPatterns[any](target, pattern)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -60,6 +60,7 @@ func newReceiver(cfg *Config, settings receiver.Settings, consumer xconsumer.Pro
 			return &internal.HTTPClientScraper{
 				ClientConfig: remoteCfg.ClientConfig,
 				Settings:     set.TelemetrySettings,
+				BuildInfo:    settings.BuildInfo,
 			}, nil
 		})
 		if err != nil {
@@ -72,8 +73,9 @@ func newReceiver(cfg *Config, settings receiver.Settings, consumer xconsumer.Pro
 		fileCfg := cfg.File.Get()
 		sub, err := newScraperController(settings, consumer, &fileCfg.ControllerConfig, func(set scraper.Settings) (xscraper.Profiles, error) {
 			return xscraper.NewProfiles((&internal.FileScraper{
-				Include: fileCfg.Include,
-				Logger:  set.Logger,
+				Include:   fileCfg.Include,
+				Logger:    set.Logger,
+				BuildInfo: settings.BuildInfo,
 			}).Scrape)
 		})
 		if err != nil {
@@ -88,6 +90,7 @@ func newReceiver(cfg *Config, settings receiver.Settings, consumer xconsumer.Pro
 			return &internal.SelfScraper{
 				BlockProfileFraction: selfCfg.BlockProfileFraction,
 				MutexProfileFraction: selfCfg.MutexProfileFraction,
+				BuildInfo:            settings.BuildInfo,
 			}, nil
 		})
 		if err != nil {

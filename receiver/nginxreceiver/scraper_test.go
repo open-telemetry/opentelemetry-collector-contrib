@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
@@ -27,8 +27,8 @@ func TestScraper(t *testing.T) {
 	defer nginxMock.Close()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = nginxMock.URL + "/status"
-	require.NoError(t, xconfmap.Validate(cfg))
+	cfg.ClientConfig.Endpoint = nginxMock.URL + "/status"
+	require.NoError(t, confmap.Validate(cfg))
 
 	scraper := newNginxScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 
@@ -56,10 +56,6 @@ func TestScraperError(t *testing.T) {
 	}))
 	t.Run("404", func(t *testing.T) {
 		clientConfig := confighttp.NewDefaultClientConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		clientConfig.MaxIdleConns = 0
-		clientConfig.IdleConnTimeout = 0
-		clientConfig.ForceAttemptHTTP2 = false
 		clientConfig.Endpoint = nginxMock.URL + "/badpath"
 		sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 			ClientConfig: clientConfig,
@@ -72,10 +68,6 @@ func TestScraperError(t *testing.T) {
 
 	t.Run("parse error", func(t *testing.T) {
 		clientConfig := confighttp.NewDefaultClientConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		clientConfig.MaxIdleConns = 0
-		clientConfig.IdleConnTimeout = 0
-		clientConfig.ForceAttemptHTTP2 = false
 		clientConfig.Endpoint = nginxMock.URL + "/status"
 		sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 			ClientConfig: clientConfig,
@@ -90,10 +82,6 @@ func TestScraperError(t *testing.T) {
 
 func TestScraperFailedStart(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "localhost:8080"
 	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{

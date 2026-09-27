@@ -27,6 +27,7 @@ Any other `name` is a [user-defined source](#user-defined-sources): the entry's 
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
+| `overwrite_schema_url` | bool | `false` | When `true`, replace an existing scope schema URL after normalization writes an attribute. |
 | `sources` | list of [source](#source) | _required_ | Ordered list of sources to normalize. At least one must be specified. Each span is processed by every source in the order given. |
 
 ### Source
@@ -56,7 +57,7 @@ The following are not modified:
 
 ### Schema URL
 
-When a mapping fires on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (`https://opentelemetry.io/schemas/1.40.0`). An existing `schema_url` is overwritten. `ResourceSpans.schema_url` is never modified.
+When a normalization writes an attribute on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (`https://opentelemetry.io/schemas/1.40.0`) if the scope does not already have a schema URL. By default, an existing `schema_url` is preserved because the scope may contain other attributes that still follow the original semantic conventions. Set `overwrite_schema_url: true` when the whole scope has already been normalized and the existing value should be replaced. A scope with no normalization writes is unchanged. `ResourceSpans.schema_url` is never modified.
 
 ### Type handling
 
@@ -79,6 +80,16 @@ Default configuration:
 ```yaml
 processors:
   gen_ai_normalizer:
+    sources:
+      - name: openinference
+```
+
+Overwrite an existing scope schema URL after normalization writes an attribute:
+
+```yaml
+processors:
+  gen_ai_normalizer:
+    overwrite_schema_url: true
     sources:
       - name: openinference
 ```
@@ -201,8 +212,16 @@ Supported OpenInference message fields:
 - `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.name`
 - `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.arguments`
 - `llm.{input,output}_messages.N.message.tool_call_id`
+- `llm.{input,output}_messages.N.message.contents.M.message_content.type`
+- `llm.{input,output}_messages.N.message.contents.M.message_content.text`
 
-**Not supported:** multimodal content arrays (`llm.{input,output}_messages.N.message.contents.M.message_content.*`). OpenInference's indexed content array format for images, audio, and other modalities is not reconstructed. Only the flat `message.content` string field is handled. Multimodal spans pass through with the original flattened attributes intact.
+##### Indexed content arrays
+
+Some instrumentors never set the flat `message.content` string. Provider APIs that model content as a list (AWS Bedrock's `converse` takes `content` as an array even for plain text) emit the indexed array form for every message.
+
+Text entries are reconstructed into `parts` in source order, one part per block. An entry counts as text when `message_content.type` is `text`, or when `message_content.text` is set and no type is declared. When both forms are present, the flat `message.content` string wins.
+
+**Still not supported:** non-text entries (`message_content.image`, audio, `reasoning`, other modalities). They carry their payload in fields the processor does not read and are skipped, so a message with only non-text entries still yields `"parts": []`.
 
 ##### Role inference
 
@@ -216,14 +235,14 @@ Roles are constrained to the GenAI semconv enum: `system`, `user`, `assistant`, 
 
 ##### GenAI semconv part types not produced
 
-The following part types are defined in the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json) and [output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json) but are not emitted by this processor:
+The following part types are defined in the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-input-messages.json) and [output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-output-messages.json) but are not emitted by this processor:
 
 | Part type | Applies to | Reason not produced |
 |-----------|------------|---------------------|
-| `blob` | input & output | Multimodal — OpenInference uses the `message.contents.M.message_content.*` indexed array, which is not reconstructed (see multimodal limitation above) |
-| `file` | input & output | Same multimodal limitation |
-| `uri` | input & output | Same multimodal limitation |
-| `reasoning` | input & output | OpenInference carries reasoning inside the `message.contents` indexed array (type `"reasoning"`), not as a top-level message field; blocked by the same multimodal limitation |
+| `blob` | input & output | Non-text entries in the `message.contents` indexed array are not reconstructed (see above) |
+| `file` | input & output | Same limitation |
+| `uri` | input & output | Same limitation |
+| `reasoning` | input & output | OpenInference carries reasoning inside the `message.contents` indexed array (type `"reasoning"`), not as a top-level message field; blocked by the same limitation |
 | `server_tool_call` (incl. nested `GenericServerToolCall`) | input & output | OpenInference does not model server-side tool calls (e.g. `code_interpreter`, `web_search`) as flattened span attributes |
 | `server_tool_call_response` (incl. nested `GenericServerToolCallResponse`) | input & output | Same — no OpenInference source attributes exist for server tool responses |
 | `compaction` | input & output | OpenInference does not emit compaction/context-window summary data |
@@ -232,7 +251,7 @@ The following part types are defined in the [GenAI input messages schema](https:
 
 ##### Output format
 
-Messages are serialized as a JSON array of objects. Input messages (`gen_ai.input.messages`) follow the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-input-messages.json); output messages (`gen_ai.output.messages`) follow the [GenAI output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-output-messages.json).
+Messages are serialized as a JSON array of objects. Input messages (`gen_ai.input.messages`) follow the [GenAI input messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-input-messages.json); output messages (`gen_ai.output.messages`) follow the [GenAI output messages schema](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-output-messages.json).
 
 Example `gen_ai.input.messages`:
 

@@ -51,9 +51,9 @@ func Test_Scrape_All(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Include = filepath.Join(tmpDir, "*.log")
-	cfg.Metrics.FileAtime.Enabled = true
-	cfg.Metrics.FileCtime.Enabled = true
-	cfg.Metrics.FileCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.FileAtime.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.FileCtime.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.FileCount.Enabled = true
 
 	s := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	metrics, err := s.scrape(t.Context())
@@ -104,10 +104,10 @@ func Test_Scrape_FileCount_IncludeAttribute(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Include = filepath.Join(tmpDir, "*.log")
 	// Isolate file.count by disabling the default per-file metrics.
-	cfg.Metrics.FileMtime.Enabled = false
-	cfg.Metrics.FileSize.Enabled = false
-	cfg.Metrics.FileCount.Enabled = true
-	cfg.Metrics.FileCount.EnabledAttributes = []metadata.FileCountMetricAttributeKey{
+	cfg.MetricsBuilderConfig.Metrics.FileMtime.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.FileSize.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.FileCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.FileCount.EnabledAttributes = []metadata.FileCountMetricAttributeKey{
 		metadata.FileCountMetricAttributeKeyFileInclude,
 	}
 

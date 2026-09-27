@@ -34,6 +34,7 @@ type fakeClient struct {
 	DaemonSets         map[string]*kube.DaemonSet
 	ReplicaSets        map[string]*kube.ReplicaSet
 	Jobs               map[string]*kube.Job
+	CronJobs           map[string]*kube.CronJob
 	StopCh             chan struct{}
 	stopOnce           sync.Once
 	stopWg             sync.WaitGroup
@@ -101,6 +102,11 @@ func (f *fakeClient) GetReplicaSet(replicaSetUID string) (*kube.ReplicaSet, bool
 
 func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
 	j, ok := f.Jobs[jobUID]
+	return j, ok
+}
+
+func (f *fakeClient) GetCronJob(cronJobUID string) (*kube.CronJob, bool) {
+	j, ok := f.CronJobs[cronJobUID]
 	return j, ok
 }
 

@@ -41,6 +41,8 @@ properties:
   precision:
     description: Precision is the timestamp precision for writing data to InfluxDB.
     type: string
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
@@ -57,4 +59,3 @@ properties:
     $ref: v_1_compatibility
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

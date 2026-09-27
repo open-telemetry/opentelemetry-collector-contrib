@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
@@ -22,7 +22,7 @@ var _ component.Config = (*Config)(nil)
 
 // Config contains the information necessary for enabling the Datadog Extension.
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 	// Define the site and API key (and whether to fail on invalid API key) in API.
 	API datadogconfig.APIConfig `mapstructure:"api"`
 	// If Hostname is empty extension will use available system APIs and cloud provider endpoints.

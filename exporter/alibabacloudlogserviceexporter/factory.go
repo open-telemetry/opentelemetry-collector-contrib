@@ -21,7 +21,8 @@ func NewFactory() exporter.Factory {
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.

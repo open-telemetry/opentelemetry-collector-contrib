@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
@@ -30,12 +30,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	qConfig := exporterhelper.NewDefaultQueueConfig()
 	qConfig.QueueSize = 1024000
-	qConfig.Batch = configoptional.Default(exporterhelper.BatchConfig{
-		FlushTimeout: 1 * time.Second,
-		Sizer:        exporterhelper.RequestSizerTypeItems,
-		MinSize:      1024,
-		MaxSize:      2048,
-	})
+	batchCfg := *qConfig.Batch.GetOrInsertDefault()
+	batchCfg.FlushTimeout = 1 * time.Second
+	batchCfg.Sizer = exporterhelper.RequestSizerTypeItems
+	batchCfg.MinSize = 1024
+	batchCfg.MaxSize = 2048
+	qConfig.Batch = configoptional.Default(batchCfg)
 	qs := configoptional.Default(qConfig)
 	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.Enabled = true
@@ -60,5 +60,5 @@ func TestCreateDefaultConfig(t *testing.T) {
 		QueueSettings: qs,
 	}, cfg)
 
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 }

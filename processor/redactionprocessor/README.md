@@ -87,7 +87,8 @@ processors:
       - ".*token.*"
       - ".*api_key.*"
     # blocked_values is a list of regular expressions for blocking values of
-    # allowed span attributes. Values that match are masked
+    # allowed span attributes. Values that match are masked. The patterns are
+    # applied in the order they are listed.
     blocked_values:
       - "4[0-9]{12}(?:[0-9]{3})?" ## Visa credit card number
       - "(5[1-5][0-9]{14})"       ## MasterCard number
@@ -138,6 +139,11 @@ If the value of an allowed key matches the regular expression for an allowed val
 part of the value is not masked even if it matches the regular expression for a blocked value.
 If the value matches the regular expression for a blocked value only, the matching
 part of the value is masked with a fixed length of asterisks.
+
+The `blocked_values` patterns are applied in the order they are listed in the
+configuration. When two patterns can match overlapping parts of the same value,
+the pattern listed first is applied first, which determines what the later
+pattern can still match.
 
 ### Precedence between `allowed_values` and `blocked_values`
 

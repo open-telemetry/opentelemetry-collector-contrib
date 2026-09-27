@@ -11,12 +11,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +35,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -58,17 +63,12 @@ func assertHecSuccessResponseWithAckID(t *testing.T, resp *http.Response, body a
 func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	emptyEndpointConfig := createDefaultConfig().(*Config)
-	emptyEndpointConfig.NetAddr.Endpoint = ""
+	emptyEndpointConfig.ServerConfig.NetAddr.Endpoint = ""
 	type args struct {
 		config       Config
 		logsConsumer consumer.Logs
 	}
 	happyPathServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	happyPathServerConfig.WriteTimeout = 0
-	happyPathServerConfig.ReadHeaderTimeout = 0
-	happyPathServerConfig.IdleTimeout = 0
-	happyPathServerConfig.KeepAlivesEnabled = false
 	happyPathServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:1234",
@@ -119,7 +119,7 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 
 func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
@@ -583,11 +583,177 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	}
 }
 
+// deadlineRecorder records SetWriteDeadline calls so tests can assert the deadline is extended.
+type deadlineRecorder struct {
+	*httptest.ResponseRecorder
+	deadlines []time.Time
+}
+
+func (d *deadlineRecorder) SetWriteDeadline(t time.Time) error {
+	d.deadlines = append(d.deadlines, t)
+	return nil
+}
+
+func Test_handleReq_extendsWriteDeadlineOnProgress(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	splunkMsg := buildSplunkHecMsg(float64(time.Now().UnixNano())/1e6, 5)
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+
+	rec := &deadlineRecorder{ResponseRecorder: httptest.NewRecorder()}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.NotEmpty(t, rec.deadlines, "expected the write deadline to be extended while the request body is read")
+	for _, d := range rec.deadlines {
+		assert.True(t, d.After(time.Now()), "extended write deadline should be in the future")
+	}
+}
+
+func Test_handleRawReq_extendsWriteDeadlineOnProgress(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	config.RawPath = "/foo"
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	rec := &deadlineRecorder{ResponseRecorder: httptest.NewRecorder()}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", strings.NewReader("foo\nbar\nbaz"))
+	rcv.handleRawReq(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.NotEmpty(t, rec.deadlines, "expected the write deadline to be extended while the raw request body is read")
+	for _, d := range rec.deadlines {
+		assert.True(t, d.After(time.Now()), "extended write deadline should be in the future")
+	}
+}
+
+func Test_handleReq_writeDeadlineDisabledWhenWriteTimeoutZero(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	config.ServerConfig.WriteTimeout = 0
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	splunkMsg := buildSplunkHecMsg(float64(time.Now().UnixNano())/1e6, 5)
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+
+	rec := &deadlineRecorder{ResponseRecorder: httptest.NewRecorder()}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.Empty(t, rec.deadlines, "write deadline must not be manipulated when WriteTimeout is disabled")
+}
+
+func Test_handleReq_logsWriteDeadlineError(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	core, observed := observer.New(zap.DebugLevel)
+	rcv.settings.Logger = zap.New(core)
+
+	splunkMsg := buildSplunkHecMsg(float64(time.Now().UnixNano())/1e6, 5)
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+
+	// A plain ResponseRecorder has no SetWriteDeadline, so the Unwrap chain fails and every call errors.
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.NotEmpty(t, observed.FilterMessageSnippet("write deadline").All(),
+		"expected a debug log when SetWriteDeadline fails so a broken Unwrap chain is diagnosable")
+}
+
+// recordingConn records SetWriteDeadline calls to prove the deadline reaches the real
+// connection through the confighttp/otelhttp Unwrap chain.
+type recordingConn struct {
+	net.Conn
+	writeDeadlines *atomic.Int64
+}
+
+func (c *recordingConn) SetWriteDeadline(t time.Time) error {
+	c.writeDeadlines.Add(1)
+	return c.Conn.SetWriteDeadline(t)
+}
+
+type recordingListener struct {
+	net.Listener
+	writeDeadlines *atomic.Int64
+}
+
+func (l *recordingListener) Accept() (net.Conn, error) {
+	conn, err := l.Listener.Accept()
+	if err != nil {
+		return conn, err
+	}
+	return &recordingConn{Conn: conn, writeDeadlines: l.writeDeadlines}, nil
+}
+
+func Test_writeDeadlineExtendedThroughRealServerChain(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	config.RawPath = "/foo"
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	// Same handler chain Start builds, wrapped with the real confighttp/otelhttp middleware via ToServer.
+	mx := mux.NewRouter()
+	mx.NewRoute().Path(config.RawPath).HandlerFunc(rcv.handleRawReq)
+	mx.NewRoute().HandlerFunc(rcv.handleReq)
+	server, err := config.ServerConfig.ToServer(
+		t.Context(),
+		componenttest.NewNopHost().GetExtensions(),
+		rcv.settings.TelemetrySettings,
+		mx,
+	)
+	require.NoError(t, err)
+
+	rawListener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	writeDeadlines := &atomic.Int64{}
+	ln := &recordingListener{Listener: rawListener, writeDeadlines: writeDeadlines}
+	go func() { _ = server.Serve(ln) }()
+	t.Cleanup(func() { _ = server.Close() })
+
+	// A large body forces many progress reads, so a working Unwrap chain drives
+	// SetWriteDeadline on the real conn far more than the server's single arming would.
+	var body strings.Builder
+	for range 20000 {
+		body.WriteString("some raw log line to fill the body with progress\n")
+	}
+	url := "http://" + rawListener.Addr().String() + "/foo"
+	resp, err := http.Post(url, "text/plain", strings.NewReader(body.String())) //nolint:gosec // G107: url targets a localhost test server
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	require.Eventually(t, func() bool {
+		return writeDeadlines.Load() > 5
+	}, 5*time.Second, 10*time.Millisecond,
+		"expected the write deadline to be extended on the real connection through ResponseController.Unwrap")
+}
+
 func Test_consumer_err(t *testing.T) {
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 5)
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
 	rcv.logsConsumer = consumertest.NewErr(errors.New("bad consumer"))
@@ -615,7 +781,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	splunkMsg := buildSplunkHecMetricsMsg("metric", currentTime, 13, 2)
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint\
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint\
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
 	rcv.metricsConsumer = consumertest.NewErr(errors.New("bad consumer"))
@@ -641,8 +807,8 @@ func Test_consumer_err_metrics(t *testing.T) {
 func Test_splunkhecReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = addr
-	cfg.TLS = configoptional.Some(configtls.ServerConfig{
+	cfg.ServerConfig.NetAddr.Endpoint = addr
+	cfg.ServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
@@ -724,6 +890,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	got := sink.AllLogs()
 	require.Len(t, got, 1)
+	clearObservedTimestamps(got[0])
 	assert.Equal(t, want, got[0])
 }
 
@@ -792,8 +959,8 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := createDefaultConfig().(*Config)
-			config.NetAddr.Endpoint = "localhost:0"
-			config.AccessTokenPassthrough = tt.passthrough
+			config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+			config.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.passthrough
 			accessTokensChan := make(chan string)
 
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -809,7 +976,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
 			var splunkhecMsg *translator.Event
@@ -900,7 +1067,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.NetAddr.Endpoint = "localhost:0"
+			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 
 			receivedSplunkLogs := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -917,7 +1084,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 			exporter, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 			assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
 			assert.NoError(t, err)
@@ -1015,7 +1182,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.NetAddr.Endpoint = "localhost:0"
+			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 
 			receivedSplunkMetrics := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -1032,7 +1199,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.SourceType = "defaultsourcetype"
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
-			exporterConfig.Endpoint = endServer.URL
+			exporterConfig.ClientConfig.Endpoint = endServer.URL
 
 			exporter, err := factory.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 			assert.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
@@ -1144,7 +1311,7 @@ func (badReqBody) Close() error {
 func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -1349,7 +1516,7 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 			name: "ack_extension_does_not_exist",
 			getConfig: func() *Config {
 				config := createDefaultConfig().(*Config)
-				config.Extension = &component.ID{}
+				config.Ack.Extension = &component.ID{}
 				return config
 			},
 			errorExpected: true,
@@ -1373,13 +1540,30 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 	}
 }
 
+func Test_splunkhecReceiver_ServerTimeoutsFromConfig(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	config.ServerConfig.WriteTimeout = 60 * time.Second
+	config.ServerConfig.ReadHeaderTimeout = 5 * time.Second
+
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	require.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, rcv.Shutdown(t.Context())) })
+
+	assert.Equal(t, 60*time.Second, rcv.server.WriteTimeout)
+	assert.Equal(t, 5*time.Second, rcv.server.ReadHeaderTimeout)
+}
+
 func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
-	config.Path = "/ack"
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.Ack.Path = "/ack"
 	id := component.MustNewID("ack_extension")
-	config.Extension = &id
+	config.Ack.Extension = &id
 
 	tests := []struct {
 		name                  string
@@ -1607,10 +1791,10 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
 	id := component.MustNewID("ack_extension")
-	config.Extension = &id
+	config.Ack.Extension = &id
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	currAckID := uint64(0)
@@ -1773,9 +1957,9 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 
 func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	id := component.MustNewID("ack_extension")
-	config.Extension = &id
+	config.Ack.Extension = &id
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 
@@ -2054,7 +2238,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
 	config.HecToOtelAttrs = translator.HecToOtelAttrs{
 		Source:     "com.source.foo",
@@ -2171,7 +2355,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 
 func BenchmarkHandleReq(b *testing.B) {
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0"
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	sink := new(consumertest.LogsSink)
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(b, err)
@@ -2206,7 +2390,7 @@ func BenchmarkHandleReq(b *testing.B) {
 func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	tests := []struct {
 		name           string

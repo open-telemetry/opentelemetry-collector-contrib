@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver/internal/metadata"
 )
@@ -25,22 +25,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	customNameServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	customNameServerConfig.WriteTimeout = 0
-	customNameServerConfig.ReadHeaderTimeout = 0
-	customNameServerConfig.IdleTimeout = 0
-	customNameServerConfig.KeepAlivesEnabled = false
 	customNameServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:8765",
 	}
 
 	parseStringsServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	parseStringsServerConfig.WriteTimeout = 0
-	parseStringsServerConfig.ReadHeaderTimeout = 0
-	parseStringsServerConfig.IdleTimeout = 0
-	parseStringsServerConfig.KeepAlivesEnabled = false
 	parseStringsServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  defaultHTTPEndpoint,
@@ -79,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

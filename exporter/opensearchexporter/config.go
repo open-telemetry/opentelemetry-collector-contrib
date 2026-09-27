@@ -29,11 +29,11 @@ const (
 
 // Config defines configuration for OpenSearch exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:"http"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	MappingsSettings          `mapstructure:"mapping"`
-	QueueConfig               configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	ClientConfig     confighttp.ClientConfig                                  `mapstructure:"http"`
+	BackOffConfig    configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	TimeoutSettings  exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	MappingsSettings MappingsSettings                                         `mapstructure:"mapping"`
+	QueueConfig      configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
@@ -55,6 +55,13 @@ type Config struct {
 	TracesIndexFallback   string `mapstructure:"traces_index_fallback"`
 	TracesIndexTimeFormat string `mapstructure:"traces_index_time_format"`
 
+	// MetricsIndex configures the index, index alias, or data stream name metrics should be indexed in.
+	// https://opensearch.org/docs/latest/im-plugin/index/
+	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
+	MetricsIndex           string `mapstructure:"metrics_index"`
+	MetricsIndexFallback   string `mapstructure:"metrics_index_fallback"`
+	MetricsIndexTimeFormat string `mapstructure:"metrics_index_time_format"`
+
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
 	BulkAction string `mapstructure:"bulk_action"`
@@ -65,14 +72,17 @@ type Config struct {
 }
 
 var (
-	errConfigNoEndpoint             = errors.New("endpoint must be specified")
-	errDatasetNoValue               = errors.New("dataset must be specified")
-	errNamespaceNoValue             = errors.New("namespace must be specified")
-	errBulkActionInvalid            = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid           = errors.New("mapping.mode is invalid")
-	errLogsIndexTimeFormatInvalid   = errors.New("logs_index_time_format contains unsupported or invalid tokens")
-	errTracesIndexTimeFormatInvalid = errors.New("traces_index_time_format contains unsupported or invalid tokens")
-	errOTelV1DatasetNamespaceUnused = errors.New(`dataset and namespace are not used by mapping.mode "otel-v1"; remove them or pick a different mode`)
+	errConfigNoEndpoint               = errors.New("endpoint must be specified")
+	errDatasetNoValue                 = errors.New("dataset must be specified")
+	errNamespaceNoValue               = errors.New("namespace must be specified")
+	errBulkActionInvalid              = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid             = errors.New("mapping.mode is invalid")
+	errLogsIndexTimeFormatInvalid     = errors.New("logs_index_time_format contains unsupported or invalid tokens")
+	errTracesIndexTimeFormatInvalid   = errors.New("traces_index_time_format contains unsupported or invalid tokens")
+	errMetricsIndexTimeFormatInvalid  = errors.New("metrics_index_time_format contains unsupported or invalid tokens")
+	errOTelV1DatasetNamespaceUnused   = errors.New(`dataset and namespace are not used by mapping.mode "otel-v1"; remove them or pick a different mode`)
+	errMetricsMappingModeUnsupported  = errors.New(`metrics are only supported by mapping.mode "ss4o" and "otel-v1"`)
+	errManageIndexTemplateInvalidMode = errors.New("mapping.manage_index_template is only supported with mapping.mode \"otel-v1\"")
 )
 
 type MappingsSettings struct {
@@ -102,6 +112,10 @@ type MappingsSettings struct {
 	//     https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/otel-v1-apm-span-index-standard-template.json
 	//     https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/logs-otel-v1-index-standard-template.json
 	Mode string `mapstructure:"mode"`
+
+	// ManageIndexTemplate controls whether the exporter creates index templates on startup.
+	// Only supported when Mode is "otel-v1". Validation will reject this option with other modes.
+	ManageIndexTemplate bool `mapstructure:"manage_index_template"`
 
 	// Additional field mappings.
 	Fields map[string]string `mapstructure:"fields"`
@@ -167,11 +181,11 @@ var mappingModes = func() map[string]MappingMode {
 // Validate validates the opensearch server configuration.
 func (cfg *Config) Validate() error {
 	var multiErr []error
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		multiErr = append(multiErr, errConfigNoEndpoint)
 	}
 
-	if cfg.Mode == MappingOTelV1.String() {
+	if cfg.MappingsSettings.Mode == MappingOTelV1.String() {
 		// otel-v1 emits Data Prepper-style index names (otel-v1-apm-span,
 		// otel-v1-logs); dataset/namespace would be silently dropped, so reject
 		// any user-supplied (i.e. non-default) values up front instead of
@@ -205,12 +219,23 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	// Validate MetricsIndexTimeFormat if set
+	if cfg.MetricsIndexTimeFormat != "" {
+		if err := validateTimeFormat(cfg.MetricsIndexTimeFormat); err != nil {
+			multiErr = append(multiErr, errMetricsIndexTimeFormatInvalid)
+		}
+	}
+
 	if cfg.BulkAction != "create" && cfg.BulkAction != "index" {
 		return errBulkActionInvalid
 	}
 
-	if _, ok := mappingModes[cfg.Mode]; !ok {
+	if _, ok := mappingModes[cfg.MappingsSettings.Mode]; !ok {
 		multiErr = append(multiErr, errMappingModeInvalid)
+	}
+
+	if cfg.MappingsSettings.ManageIndexTemplate && cfg.MappingsSettings.Mode != MappingOTelV1.String() {
+		multiErr = append(multiErr, errManageIndexTemplateInvalidMode)
 	}
 
 	return errors.Join(multiErr...)

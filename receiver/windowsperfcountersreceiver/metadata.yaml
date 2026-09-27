@@ -1,5 +1,6 @@
 display_name: Windows Performance Counters Receiver
-type: windowsperfcounters
+type: windows_perf_counters
+deprecated_type: windowsperfcounters
 
 description: |
   This receiver, for Windows only, captures the configured system, application, or

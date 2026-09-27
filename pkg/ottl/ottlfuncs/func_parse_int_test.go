@@ -153,3 +153,65 @@ func Test_ParseInt(t *testing.T) {
 		})
 	}
 }
+
+func Test_ParseIntFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewParseIntFactory[any]()
+		assert.Equal(t, "ParseInt", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewParseIntFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &parseIntArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Base"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewParseIntFactory[any]()
+		args := factory.CreateDefaultArguments()
+		parseIntArgs, ok := args.(*parseIntArguments[any])
+		require.True(t, ok)
+		parseIntArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "42", nil
+			},
+		}
+		parseIntArgs.Base = ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(10), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createParseIntFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ParseIntFactory args must be of type *parseIntArguments[K]")
+	})
+}
+
+func BenchmarkParseInt(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "123456789", nil
+		},
+	}
+	base := &ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(10), nil
+		},
+	}
+	exprFunc := parseIntFunc[any](target, base)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

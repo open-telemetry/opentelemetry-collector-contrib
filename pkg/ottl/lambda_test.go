@@ -10,8 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 type stubBoolExpr[K any] struct {
@@ -202,8 +200,8 @@ func TestLambdaExpression_Eval(t *testing.T) {
 					identifier: &basePath[any]{
 						name: "a",
 						keys: []Key[any]{
-							&baseKey[any]{s: ottltest.Strp("name")},
-							&baseKey[any]{i: ottltest.Intp(1)},
+							&baseKey[any]{s: new("name")},
+							&baseKey[any]{i: new(int64(1))},
 						},
 					},
 				},
@@ -405,6 +403,25 @@ func TestLambdaActivation_SetArg(t *testing.T) {
 
 	err = lb.SetArg(1, "x")
 	require.EqualError(t, err, "argument index 1 out of range (len=1)")
+}
+
+func TestLambdaActivation_IsArgBound(t *testing.T) {
+	expr := newLambdaExpression[any](
+		makeLocalIdentifiers("acc", "_", "v"),
+		nil,
+		nil,
+	)
+	require.NoError(t, expr.ValidateArity(3))
+
+	lb, err := expr.Activate(t.Context())
+	require.NoError(t, err)
+
+	assert.True(t, lb.IsArgBound(0), "named formal acc")
+	assert.False(t, lb.IsArgBound(1), "blank formal")
+	assert.True(t, lb.IsArgBound(2), "named formal v")
+
+	assert.Panics(t, func() { lb.IsArgBound(-1) })
+	assert.Panics(t, func() { lb.IsArgBound(3) })
 }
 
 func TestLambdaActivation_StaleArg(t *testing.T) {

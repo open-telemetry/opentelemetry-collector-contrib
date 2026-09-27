@@ -116,3 +116,18 @@ processors:
         action: upsert
         from_context: auth.claims.tenant_id
 ```
+
+## Ignoring Issuer Validation
+
+By default, the OIDC extension verifies that the `iss` claim in each incoming JWT matches the `issuer_url` of a configured provider.
+
+To disable this validation, set `ignore_issuer: true` in the provider configuration. This option is only supported when exactly one provider is configured.
+
+```yaml
+extensions:
+  oidc:
+    providers:
+      - issuer_url: http://localhost:8080/auth/realms/opentelemetry
+        audience: account
+        ignore_issuer: true
+```

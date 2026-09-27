@@ -47,3 +47,80 @@ The full list of settings exposed for this receiver are documented in [config.go
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+## Metric and Attribute Name Migration
+
+The receiver's metric and attribute names are being migrated to a new, more
+consistent naming scheme (tracked in
+[#47327](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47327)).
+Because this component is in beta, the change is being rolled out gradually,
+behind feature gates, so that existing dashboards, alerts, OTTL statements and
+routing rules keep working while you migrate.
+
+### Rollout
+
+Two feature gates control the migration:
+
+| Feature gate | Default | Effect when enabled |
+| --- | --- | --- |
+| `receiver.apache.enableNewFormatMetrics` | disabled | Emit the new metric/attribute names. On its own, the new names are emitted **alongside** the original ones. |
+| `receiver.apache.disableOldFormatMetrics` | disabled | Stop emitting the original metric/attribute names. Requires `receiver.apache.enableNewFormatMetrics` to also be enabled. |
+
+This gives three phases you can move through at your own pace:
+
+1. **Default (both gates disabled):** only the original names are emitted. A
+   warning is logged at startup pointing to this guide.
+2. **Transition (`enableNewFormatMetrics` only):** both the original and the new
+   names are emitted at the same time, so you can update your dashboards, alerts,
+   OTTL statements and routing to the new names without gaps.
+3. **New only (both gates enabled):** only the new names are emitted.
+
+Enable a gate with the `--feature-gates` flag, for example:
+
+```shell
+otelcol --feature-gates=receiver.apache.enableNewFormatMetrics
+# once everything has been migrated to the new names:
+otelcol --feature-gates=receiver.apache.enableNewFormatMetrics,receiver.apache.disableOldFormatMetrics
+```
+
+The gates start at `alpha` (disabled by default). Following the
+[collector's stability guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md),
+the new names will later become the default (`beta`), and eventually the old
+names and gates will be removed (`stable`).
+
+### What changed
+
+Renamed metrics:
+
+| Original name | New name |
+| --- | --- |
+| `apache.current_connections` | `apache.connection.active` |
+| `apache.connections.async` | `apache.connection.status` |
+| `apache.requests` | `apache.request.count` |
+| `apache.scoreboard` | `apache.worker.status` |
+| `apache.workers` | split into `apache.worker.active` (busy) and `apache.worker.idle` (idle) |
+
+Renamed attributes:
+
+| Metric | Original attribute | New attribute |
+| --- | --- | --- |
+| `apache.connection.status` (was `apache.connections.async`) | `connection_state` | `apache.connection.state` |
+| `apache.worker.status` (was `apache.scoreboard`) | `state` | `apache.worker.state` |
+| `apache.cpu.time` | `level` | `apache.process.level` |
+| `apache.cpu.time` | `mode` | `cpu.mode` |
+
+> [!NOTE]
+> The `apache.cpu.time` metric keeps its name; only its `level` and `mode`
+> attribute keys are renamed. The original `apache.workers` metric (busy/idle
+> counts) is replaced by the separate `apache.worker.active` and
+> `apache.worker.idle` metrics, which have no state attribute.
+
+### What to update
+
+Before enabling `receiver.apache.disableOldFormatMetrics`, review anything that
+references the original names, including:
+
+- Dashboards and visualizations.
+- Alerting and recording rules.
+- OTTL statements (e.g. in the `transform` or `filter` processors).
+- Routing and pipeline configuration that matches on metric or attribute names.

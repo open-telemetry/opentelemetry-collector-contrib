@@ -19,7 +19,7 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	require.Equal(t, 3*time.Minute, cfg.(*Config).CollectionInterval)
+	require.Equal(t, 3*time.Minute, cfg.(*Config).ControllerConfig.CollectionInterval)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -52,7 +52,7 @@ func TestTimeConstraints(t *testing.T) {
 				now := time.Now()
 				tc := recv.timeConstraints(now)
 				require.NotNil(t, tc)
-				require.Equal(t, tc.start, now.Add(cfg.CollectionInterval*-1).UTC().Format(time.RFC3339))
+				require.Equal(t, tc.start, now.Add(cfg.ControllerConfig.CollectionInterval*-1).UTC().Format(time.RFC3339))
 			},
 		},
 		{
@@ -64,7 +64,7 @@ func TestTimeConstraints(t *testing.T) {
 				recv := mongodbatlasreceiver{
 					cfg: cfg,
 					// set last run to 1 collection ago
-					lastRun: now.Add(cfg.CollectionInterval * -1),
+					lastRun: now.Add(cfg.ControllerConfig.CollectionInterval * -1),
 				}
 				tc := recv.timeConstraints(now)
 				require.NotNil(t, tc)

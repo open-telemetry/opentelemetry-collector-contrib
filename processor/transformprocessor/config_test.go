@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -179,9 +178,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
 			errors: []error{
-				errors.New("unexpected token \"where\""),
-				errors.New("unexpected token \"attributes\""),
-				errors.New("unexpected token \"none\""),
+				errors.New("invalid syntax at 1:18 near `where attr`"),
+				errors.New("invalid syntax at 1:18 near `attributes`"),
+				errors.New("invalid syntax at 1:18 near `none"),
 			},
 		},
 		{
@@ -336,6 +335,35 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "shared_cache"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["copy"], resource.attributes["name"])`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				ProfileStatements: []common.ContextStatements{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {
@@ -350,7 +378,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				err = xconfmap.Validate(cfg)
+				err = confmap.Validate(cfg)
 				assert.Error(t, err)
 
 				if len(tt.errors) > 0 {
@@ -359,7 +387,7 @@ func TestLoadConfig(t *testing.T) {
 					}
 				}
 			} else {
-				require.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, confmap.Validate(cfg))
 				assert.EqualExportedValues(t, tt.expected, cfg)
 				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}

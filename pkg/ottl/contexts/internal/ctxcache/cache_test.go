@@ -12,7 +12,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_PathExpressionParser(t *testing.T) {
@@ -55,7 +54,7 @@ func Test_PathExpressionParser(t *testing.T) {
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -108,12 +107,25 @@ func Test_PathExpressionParser(t *testing.T) {
 		require.NotEqual(t, cache, val)
 	})
 
+	t.Run("modify entire cache nil clears", func(t *testing.T) {
+		path := &pathtest.Path[testContext]{
+			N: "cache",
+		}
+
+		getter, err := parser(path)
+		require.NoError(t, err)
+
+		err = getter.Set(t.Context(), ctx, nil)
+		require.NoError(t, err)
+		assert.Equal(t, 0, ctx.cache.Len())
+	})
+
 	t.Run("modify specific cache key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -134,7 +146,7 @@ func Test_PathExpressionParser(t *testing.T) {
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("key3"),
+					S: new("key3"),
 				},
 			},
 		}
@@ -150,6 +162,27 @@ func Test_PathExpressionParser(t *testing.T) {
 		assert.Equal(t, "value3", v.Str())
 	})
 
+	t.Run("modify specific cache key nil does not error", func(t *testing.T) {
+		path := &pathtest.Path[testContext]{
+			N: "cache",
+			KeySlice: []ottl.Key[testContext]{
+				&pathtest.Key[testContext]{
+					S: new("key1"),
+				},
+			},
+		}
+
+		getter, err := parser(path)
+		require.NoError(t, err)
+
+		err = getter.Set(t.Context(), ctx, nil)
+		require.NoError(t, err)
+
+		v, ok := ctx.cache.Get("key1")
+		assert.True(t, ok)
+		assert.Equal(t, pcommon.ValueTypeEmpty, v.Type())
+	})
+
 	t.Run("access nested key", func(t *testing.T) {
 		nestedMap := pcommon.NewMap()
 		nestedMap.PutStr("nested_key", "nested_value")
@@ -160,10 +193,10 @@ func Test_PathExpressionParser(t *testing.T) {
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("parent"),
+					S: new("parent"),
 				},
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("nested_key"),
+					S: new("nested_key"),
 				},
 			},
 		}

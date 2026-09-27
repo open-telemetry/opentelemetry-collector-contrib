@@ -33,13 +33,13 @@ func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter
 	model := &encodeModel{
 		dataset:   cfg.Dataset,
 		namespace: cfg.Namespace,
-		otelV1:    cfg.Mode == MappingOTelV1.String(),
+		otelV1:    cfg.MappingsSettings.Mode == MappingOTelV1.String(),
 	}
 
 	defaultPrefix := "ss4o_traces"
 	dataset := cfg.Dataset
 	namespace := cfg.Namespace
-	if cfg.Mode == MappingOTelV1.String() {
+	if cfg.MappingsSettings.Mode == MappingOTelV1.String() {
 		defaultPrefix = "otel-v1-apm-span"
 		dataset = ""
 		namespace = ""
@@ -69,6 +69,11 @@ func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) erro
 	}
 
 	s.client = client
+
+	if s.config.MappingsSettings.ManageIndexTemplate {
+		tm := newTemplateManager(client, s.telemetry.Logger)
+		tm.ensureTemplates(ctx)
+	}
 
 	return nil
 }

@@ -51,9 +51,15 @@ users:
 `
 	tmpfile, err := os.CreateTemp(t.TempDir(), "kubeconfig")
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(tmpfile.Name(), []byte(content), 0o600))
+	// os.CreateTemp returns an open file handle, but we only need the path.
+	// Grab the name and close the handle right away: on Windows an open handle
+	// prevents the file from being removed, which makes t.TempDir cleanup fail
+	// with "being used by another process".
+	configPath := tmpfile.Name()
+	require.NoError(t, tmpfile.Close())
+	require.NoError(t, os.WriteFile(configPath, []byte(content), 0o600))
 	// overwrite the default kube config path
-	kubeConfigPath = tmpfile.Name()
+	kubeConfigPath = configPath
 	return kubeConfigPath
 }
 

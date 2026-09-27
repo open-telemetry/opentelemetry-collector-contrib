@@ -4,14 +4,17 @@
 package objmodel
 
 import (
+	"bytes"
 	"math"
-	"strings"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/jsonwriter"
 )
 
 var dijkstra = time.Date(1930, 5, 11, 16, 33, 11, 123456789, time.UTC)
@@ -278,7 +281,7 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			var buf strings.Builder
+			var buf bytes.Buffer
 			m := pcommon.NewMap()
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
@@ -335,11 +338,17 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 			},
 			want: `{"a":{"b":{"c":{"str":"test"}},"i":1}}`,
 		},
+		"nesting deeper than 16 objects": {
+			attrs: map[string]any{
+				"a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t": "v",
+			},
+			want: `{"a":{"b":{"c":{"d":{"e":{"f":{"g":{"h":{"i":{"j":{"k":{"l":{"m":{"n":{"o":{"p":{"q":{"r":{"s":{"t":"v"}}}}}}}}}}}}}}}}}}}}`,
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			var buf strings.Builder
+			var buf bytes.Buffer
 			m := pcommon.NewMap()
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
@@ -367,6 +376,7 @@ func TestValue_Serialize(t *testing.T) {
 		"NaN is undefined":   {value: DoubleValue(math.NaN()), want: "null"},
 		"Inf is undefined":   {value: DoubleValue(math.Inf(0)), want: "null"},
 		"string value":       {value: StringValue("Hello World!"), want: `"Hello World!"`},
+		"html-safe string":   {value: StringValue("a&b<c>"), want: `"a\u0026b\u003cc\u003e"`},
 		"timestamp": {
 			value: TimestampValue(dijkstra),
 			want:  `"1930-05-11T16:33:11.123456789Z"`,
@@ -374,6 +384,10 @@ func TestValue_Serialize(t *testing.T) {
 		"array": {
 			value: ArrValue(BoolValue(true), IntValue(23)),
 			want:  `[true,23]`,
+		},
+		"array skips ignore": {
+			value: ArrValue(ignoreValue, IntValue(1), ignoreValue, IntValue(2), ignoreValue),
+			want:  `[1,2]`,
 		},
 		"object": {
 			value: func() Value {
@@ -391,10 +405,63 @@ func TestValue_Serialize(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			var buf strings.Builder
-			err := test.value.iterJSON(newJSONVisitor(&buf), false)
-			require.NoError(t, err)
+			var buf bytes.Buffer
+			w := jsonwriter.New(&buf)
+			test.value.writeJSON(w, false)
 			assert.Equal(t, test.want, buf.String())
+		})
+	}
+}
+
+func TestDocument_Reset(t *testing.T) {
+	var doc Document
+	doc.Grow(8)
+	doc.AddInt("a", 1)
+	doc.AddDynamicTemplate("a", "histogram")
+	capBefore := cap(doc.fields)
+
+	doc.Reset()
+
+	require.Empty(t, doc.fields)
+	require.Equal(t, capBefore, cap(doc.fields))
+	require.Empty(t, doc.dynamicTemplates)
+
+	doc.AddInt("b", 2)
+	require.Len(t, doc.fields, 1)
+	require.Equal(t, "b", doc.fields[0].key)
+	require.Equal(t, capBefore, cap(doc.fields))
+}
+
+func TestDocument_Grow(t *testing.T) {
+	cases := []struct {
+		name string
+		n    int
+		adds int
+	}{
+		{
+			name: "zero",
+			n:    0,
+			adds: 0,
+		},
+		{
+			name: "prealloc then fill",
+			n:    8,
+			adds: 8,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var doc Document
+			doc.Grow(tc.n)
+			require.GreaterOrEqual(t, cap(doc.fields), tc.n)
+			require.Empty(t, doc.fields)
+
+			for i := range tc.adds {
+				doc.AddInt(strconv.Itoa(i), int64(i))
+			}
+			require.Len(t, doc.fields, tc.adds)
+			require.GreaterOrEqual(t, cap(doc.fields), tc.n)
 		})
 	}
 }

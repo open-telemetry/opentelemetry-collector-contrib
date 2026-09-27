@@ -38,7 +38,7 @@ func BenchmarkLogs(b *testing.B) {
 
 func runBenchmarkLogs(b *testing.B) {
 	config := createDefaultConfig().(*Config)
-	config.ProtocolVersion = "2.3.0"
+	config.ClientConfig.ProtocolVersion = "2.3.0"
 
 	exp := newLogsExporter(*config, exportertest.NewNopSettings(metadata.Type))
 	b.Cleanup(func() { exp.Close(b.Context()) })
@@ -66,7 +66,7 @@ func BenchmarkMetrics(b *testing.B) {
 
 func runBenchmarkMetrics(b *testing.B) {
 	config := createDefaultConfig().(*Config)
-	config.ProtocolVersion = "2.3.0"
+	config.ClientConfig.ProtocolVersion = "2.3.0"
 
 	exp := newMetricsExporter(*config, exportertest.NewNopSettings(metadata.Type))
 	b.Cleanup(func() { exp.Close(b.Context()) })
@@ -94,7 +94,7 @@ func BenchmarkTraces(b *testing.B) {
 
 func runBenchmarkTraces(b *testing.B) {
 	config := createDefaultConfig().(*Config)
-	config.ProtocolVersion = "2.3.0"
+	config.ClientConfig.ProtocolVersion = "2.3.0"
 
 	exp := newTracesExporter(*config, exportertest.NewNopSettings(metadata.Type))
 	b.Cleanup(func() { exp.Close(b.Context()) })
@@ -122,7 +122,7 @@ func BenchmarkProfiles(b *testing.B) {
 
 func runBenchmarkProfiles(b *testing.B) {
 	config := createDefaultConfig().(*Config)
-	config.ProtocolVersion = "2.3.0"
+	config.ClientConfig.ProtocolVersion = "2.3.0"
 
 	exp := newProfilesExporter(*config, exportertest.NewNopSettings(metadata.Type))
 	b.Cleanup(func() { exp.Close(b.Context()) })

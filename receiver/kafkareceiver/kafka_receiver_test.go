@@ -385,6 +385,20 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 				),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 0,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_spans"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
+		metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 4, // offset of the final message
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_spans"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
 
 		// Shut down and check that the partition close metric is updated.
 		err = r.Shutdown(t.Context())
@@ -398,22 +412,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		assert.Len(t, logEntries, 2)
 		assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
 		assert.Equal(t, "failed to consume message, skipping due to message_marking config", logEntries[1].Message)
-
-		metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
-			Value: 4, // offset of the final message
-			Attributes: attribute.NewSet(
-				attribute.String("topic", "otlp_spans"),
-				attribute.Int64("partition", 0),
-			),
-		}}, metricdatatest.IgnoreTimestamp())
-
-		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
-			Value: 0,
-			Attributes: attribute.NewSet(
-				attribute.String("topic", "otlp_spans"),
-				attribute.Int64("partition", 0),
-			),
-		}}, metricdatatest.IgnoreTimestamp())
 	})
 }
 
@@ -751,8 +749,8 @@ func TestComponentStatus(t *testing.T) {
 		lis, err := net.Listen("tcp", "localhost:0")
 		require.NoError(t, err)
 		t.Cleanup(func() { assert.NoError(t, lis.Close()) })
-		brokers := receiverConfig.Brokers
-		receiverConfig.Brokers = []string{lis.Addr().String()}
+		brokers := receiverConfig.ClientConfig.Brokers
+		receiverConfig.ClientConfig.Brokers = []string{lis.Addr().String()}
 
 		f := NewFactory()
 		r, err := f.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
@@ -866,27 +864,42 @@ func newTracesConsumer(f consumer.ConsumeTracesFunc) consumer.Traces {
 // mustNewFakeCluster creates a new fake Kafka cluster with the given options,
 // and returns a kgo.Client for operating on the cluster, and a receiver config.
 func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config) {
-	cluster, clientConfig := kafkatest.NewCluster(tb, opts...)
-	kafkaClient := mustNewClient(tb, cluster)
+	return newFakeCluster(tb, opts, nil)
+}
+
+// mustNewMarkedFakeCluster is mustNewFakeCluster with AutoCommitMarks so tests
+// can inspect MarkedOffsets.
+func mustNewMarkedFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config) {
+	return newFakeCluster(tb, opts, []kgo.Opt{
+		kgo.ConsumerGroup(tb.Name()),
+		kgo.AutoCommitMarks(),
+		kgo.AutoCommitInterval(time.Hour),
+	})
+}
+
+func newFakeCluster(tb testing.TB, clusterOpts []kfake.Opt, extra []kgo.Opt) (*kgo.Client, *Config) {
+	cluster, clientConfig := kafkatest.NewCluster(tb, clusterOpts...)
+	kafkaClient := mustNewClient(tb, cluster, extra...)
 	tb.Cleanup(func() { deleteConsumerGroups(tb, kafkaClient) })
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = clientConfig
-	cfg.InitialOffset = "earliest"
-	cfg.MaxFetchWait = 10 * time.Millisecond
+	cfg.ConsumerConfig.InitialOffset = "earliest"
+	cfg.ConsumerConfig.MaxFetchWait = 10 * time.Millisecond
 	cfg.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled = true
 	return kafkaClient, cfg
 }
 
-func mustNewClient(tb testing.TB, cluster *kfake.Cluster) *kgo.Client {
-	client, err := kgo.NewClient(
+func mustNewClient(tb testing.TB, cluster *kfake.Cluster, extra ...kgo.Opt) *kgo.Client {
+	opts := []kgo.Opt{
 		kgo.SeedBrokers(cluster.ListenAddrs()...),
-
 		// Disable compression for greater determinism in tests
 		// relating to record sizes. This is important for tests
 		// that set minimum fetch size, for example.
 		kgo.ProducerBatchCompression(kgo.NoCompression()),
-	)
+	}
+	opts = append(opts, extra...)
+	client, err := kgo.NewClient(opts...)
 	require.NoError(tb, err)
 	tb.Cleanup(client.Close)
 	return client

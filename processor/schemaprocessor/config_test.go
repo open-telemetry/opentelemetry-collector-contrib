@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
@@ -88,7 +88,7 @@ func TestConfigurationValidation(t *testing.T) {
 			Targets: tc.target,
 		}
 
-		assert.ErrorIs(t, xconfmap.Validate(cfg), tc.expectError, tc.scenario)
+		assert.ErrorIs(t, confmap.Validate(cfg), tc.expectError, tc.scenario)
 	}
 }
 
@@ -144,7 +144,7 @@ func TestMigrationConfigValidation(t *testing.T) {
 			Migration: tc.migration,
 		}
 
-		assert.ErrorIs(t, xconfmap.Validate(cfg), tc.expectError, tc.scenario)
+		assert.ErrorIs(t, confmap.Validate(cfg), tc.expectError, tc.scenario)
 	}
 }
 
@@ -155,7 +155,7 @@ func TestConfigurationValidation_CacheFields(t *testing.T) {
 		Targets:       []string{"https://opentelemetry.io/schemas/1.9.0"},
 		CacheCooldown: -1 * time.Minute,
 	}
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cache_cooldown must not be negative")
 
@@ -163,7 +163,7 @@ func TestConfigurationValidation_CacheFields(t *testing.T) {
 		Targets:         []string{"https://opentelemetry.io/schemas/1.9.0"},
 		CacheRetryLimit: -1,
 	}
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cache_retry_limit must not be negative")
 }

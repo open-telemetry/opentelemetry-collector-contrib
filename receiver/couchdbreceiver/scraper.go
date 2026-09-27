@@ -52,7 +52,7 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	stats, err := c.client.GetStats(localNode)
 	if err != nil {
 		c.settings.Logger.Error("Failed to fetch couchdb stats",
-			zap.String("endpoint", c.config.Endpoint),
+			zap.String("endpoint", c.config.ClientConfig.Endpoint),
 			zap.Error(err),
 		)
 		return pmetric.NewMetrics(), err
@@ -72,6 +72,6 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errs)
 
 	rb := c.mb.NewResourceBuilder()
-	rb.SetCouchdbNodeName(c.config.Endpoint)
+	rb.SetCouchdbNodeName(c.config.ClientConfig.Endpoint)
 	return c.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }

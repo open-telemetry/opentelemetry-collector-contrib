@@ -33,7 +33,7 @@ func TestMatchValues(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:        "unamed subexps ignored",
+			name:        "unnamed subexps ignored",
 			value:       "some value",
 			regexStr:    `^(some) (?P<named>value)$`,
 			expected:    map[string]any{"named": "value"},

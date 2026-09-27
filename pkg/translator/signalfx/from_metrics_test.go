@@ -221,7 +221,8 @@ func Test_FromMetrics(t *testing.T) {
 						"k_r0": "v_r0",
 						"k_r1": "v_r1",
 					}, labelMap),
-					doubleVal),
+					doubleVal,
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -231,7 +232,8 @@ func Test_FromMetrics(t *testing.T) {
 						"k_r0": "v_r0",
 						"k_r1": "v_r1",
 					}, labelMap),
-					int64Val),
+					int64Val,
+				),
 			},
 		},
 		{
@@ -519,6 +521,16 @@ func Test_FromMetrics(t *testing.T) {
 			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
 		})
 	}
+}
+
+func TestDpsBuilderAppendPointUsesBackingArray(t *testing.T) {
+	builder := newDpsBuilder(2)
+
+	first := builder.appendPoint("first", &sfxMetricTypeGauge, 1, nil)
+	second := builder.appendPoint("second", &sfxMetricTypeGauge, 2, nil)
+
+	require.Same(t, &builder.baseOut[0], first)
+	require.Same(t, &builder.baseOut[1], second)
 }
 
 func sortDimensions(points []*sfxpb.DataPoint) {

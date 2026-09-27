@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
@@ -335,7 +335,7 @@ func TestLoadLogsConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, loaded.Unmarshal(cfg))
 			require.Equal(t, tc.expectedConfig, cfg)
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 		})
 	}
 }
@@ -453,7 +453,7 @@ func TestLoadMetricsConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, loaded.Unmarshal(cfg))
 			require.Equal(t, tc.expectedConfig, cfg)
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 		})
 	}
 }

@@ -65,34 +65,18 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 }
 
 func TestDefaultErrorModeWithFeatureGate(t *testing.T) {
-	tests := []struct {
-		name               string
-		featureGateEnabled bool
-		expectedErrorMode  ottl.ErrorMode
-	}{
-		{
-			name:               "feature gate disabled",
-			featureGateEnabled: false,
-			expectedErrorMode:  ottl.PropagateError,
-		},
-		{
-			name:               "feature gate enabled",
-			featureGateEnabled: true,
-			expectedErrorMode:  ottl.IgnoreError,
-		},
-	}
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			previousValue := metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.IsEnabled()
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), tt.featureGateEnabled))
-			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), previousValue))
-			}()
+	assert.Equal(t, ottl.IgnoreError, cfg.(*Config).ErrorMode)
 
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig().(*Config)
-			assert.Equal(t, tt.expectedErrorMode, cfg.ErrorMode)
-		})
-	}
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), true)
+	})
+
+	err := featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), false)
+	require.NoError(t, err)
+
+	cfg = factory.CreateDefaultConfig()
+	assert.Equal(t, ottl.PropagateError, cfg.(*Config).ErrorMode)
 }

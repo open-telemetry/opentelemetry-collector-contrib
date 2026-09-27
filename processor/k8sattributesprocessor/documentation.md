@@ -58,6 +58,30 @@ Number of pod associations' evaluations
 | pod_identifier | The source(s) used to identify the pod, formatted as 'from/name' (e.g., 'connection', 'resource_attribute/k8s.pod.ip'). Does not contain actual identifier values to avoid high cardinality. | Any Str | - |
 | otelcol.signal | The signal type the telemetry metric is associated with | Str: ``metrics``, ``traces``, ``logs``, ``profiles`` | - |
 
+### otelcol.k8s.watcher.cronjob.added
+
+Number of cronjob add events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.cronjob.deleted
+
+Number of cronjob delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.cronjob.updated
+
+Number of cronjob update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
 ### otelcol.k8s.watcher.job.added
 
 Number of job add events received
@@ -333,10 +357,10 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `processor.k8sattributes.DontEmitV0K8sConventions` | alpha | When enabled, semconv legacy attributes are disabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
-| `processor.k8sattributes.EmitV1K8sConventions` | alpha | When enabled, semconv stable attributes are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
+| `processor.k8sattributes.DontEmitV0K8sConventions` | beta | When enabled, semconv legacy attributes are disabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
+| `processor.k8sattributes.EmitV1K8sConventions` | beta | When enabled, semconv stable attributes are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
 | `processor.k8sattributes.ShareProcessorBetweenPipelines` | alpha | When enabled, processor instances with identical configuration are shared across different signal type pipelines, reducing duplicate Kubernetes API watchers. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/2450) |
-| `processor.k8sattributes.telemetry.disableOldFormatMetrics` | alpha | When enabled, old formatted internal telemetry metrics are disabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871) |
-| `processor.k8sattributes.telemetry.enableNewFormatMetrics` | alpha | When enabled, new formatted internal telemetry metrics are enabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871) |
+| `processor.k8sattributes.telemetry.disableOldFormatMetrics` | beta | When enabled, old formatted internal telemetry metrics are disabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871) |
+| `processor.k8sattributes.telemetry.enableNewFormatMetrics` | beta | When enabled, new formatted internal telemetry metrics are enabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

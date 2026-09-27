@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
@@ -44,6 +45,7 @@ func basicConfig(portNumber uint) *Config {
 			CollectionInterval:  1 * time.Millisecond,
 		},
 		isDirectDBConnectionEnabled: true,
+		MetricsBuilderConfig:        metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig: metadata.LogsBuilderConfig{
 			Events: metadata.EventsConfig{
 				DbServerQuerySample: metadata.EventConfig{
@@ -81,6 +83,94 @@ func setupContainer() (testcontainers.Container, error) {
 	)
 }
 
+func TestIndexPhysicalStatsScraper(t *testing.T) {
+	ci, err := setupContainer()
+	require.NoError(t, err)
+	require.NoError(t, ci.Start(t.Context()))
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), "1433")
+	require.NoError(t, err)
+
+	portNumber, err := strconv.Atoi(p.Port())
+	require.NoError(t, err)
+
+	cfg := basicConfig(uint(portNumber))
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexFragmentation.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexPageCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexPageUtilization.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexRecordCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexSize.Enabled = true
+
+	settings := receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.Must(zap.NewProduction()),
+		},
+	}
+
+	scrapers, provider := setupSQLServerScrapers(settings, cfg)
+	require.NotEmpty(t, scrapers)
+	require.NotNil(t, provider)
+
+	// Find the index physical stats scraper
+	var indexScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName) {
+			indexScraper = s
+			break
+		}
+	}
+	require.NotNil(t, indexScraper, "index physical stats scraper not found")
+	require.NoError(t, indexScraper.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, indexScraper.Shutdown(t.Context()))
+		// The receiver owns the shared pool; close it here in the test.
+		assert.NoError(t, provider.close())
+	}()
+
+	actualMetrics, err := indexScraper.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	// We expect at least 2 indexes from test_indexed_table (PK clustered + nonclustered)
+	// in the mydb database
+	require.Positive(t, actualMetrics.ResourceMetrics().Len(), "expected at least one resource metric")
+
+	// Collect all data points and verify attribute presence
+	foundMyDB := false
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		resourceAttrs := rm.Resource().Attributes()
+		dbNameVal, ok := resourceAttrs.Get("sqlserver.database.name")
+		if !ok {
+			continue
+		}
+		if dbNameVal.AsString() != "mydb" {
+			continue
+		}
+		foundMyDB = true
+
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				gauge := m.Gauge()
+				for l := 0; l < gauge.DataPoints().Len(); l++ {
+					dp := gauge.DataPoints().At(l)
+					attrs := dp.Attributes()
+					_, hasIndexID := attrs.Get("sqlserver.index.id")
+					_, hasObjectName := attrs.Get("sqlserver.object.name")
+					_, hasSchemaName := attrs.Get("sqlserver.schema.name")
+					assert.True(t, hasIndexID, "metric %s missing sqlserver.index.id", m.Name())
+					assert.True(t, hasObjectName, "metric %s missing sqlserver.object.name", m.Name())
+					assert.True(t, hasSchemaName, "metric %s missing sqlserver.schema.name", m.Name())
+				}
+			}
+		}
+	}
+
+	assert.True(t, foundMyDB, "expected metrics for 'mydb' database")
+}
+
 func TestEventsScraper(t *testing.T) {
 	ci, initErr := setupContainer()
 
@@ -102,7 +192,7 @@ func TestEventsScraper(t *testing.T) {
 			name:        "QuerySample",
 			clientQuery: "WAITFOR DELAY '00:01:00' SELECT * FROM dbo.test_table",
 			configModifyFunc: func(cfg *Config) *Config {
-				cfg.Events.DbServerQuerySample.Enabled = true
+				cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 				return cfg
 			},
 
@@ -146,7 +236,7 @@ func TestEventsScraper(t *testing.T) {
 			name:        "TopQuery",
 			clientQuery: "SELECT * FROM dbo.test_table",
 			configModifyFunc: func(cfg *Config) *Config {
-				cfg.Events.DbServerTopQuery.Enabled = true
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 				return cfg
 			},
 			validateFunc: func(t *testing.T, scraper *sqlServerScraperHelper, queryCount *atomic.Int32, finished *atomic.Bool) {
@@ -243,15 +333,87 @@ func TestEventsScraper(t *testing.T) {
 					Logger: zap.Must(zap.NewProduction()),
 				},
 			}
-			scrapers := setupSQLServerLogsScrapers(settings, cfg)
+			scrapers, provider := setupSQLServerLogsScrapers(settings, cfg)
 			assert.Len(t, scrapers, 1)
 			scraper := scrapers[0]
 			assert.NoError(t, scraper.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
 				assert.NoError(t, scraper.Shutdown(t.Context()))
+				// The receiver owns the shared pool; close it here in the test.
+				assert.NoError(t, provider.close())
 			}()
 
 			tc.validateFunc(t, scraper, &queriesCount, &finished)
 		})
 	}
+}
+
+// TestSharedConnectionPool verifies against a live SQL Server that all metric
+// scrapers of a receiver share a single connection pool: they reference the
+// same *sql.DB, the pool is sized from the scraper count, and the number of
+// connections opened to the database stays bounded by that single pool rather
+// than growing per scraper.
+func TestSharedConnectionPool(t *testing.T) {
+	ci, initErr := setupContainer()
+	require.NoError(t, initErr)
+	require.NoError(t, ci.Start(t.Context()))
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), "1433")
+	require.NoError(t, err)
+	portNumber, err := strconv.Atoi(p.Port())
+	require.NoError(t, err)
+
+	cfg := basicConfig(uint(portNumber))
+	// Enable metrics that map to several distinct queries so more than one
+	// metric scraper is created and pool sharing can be observed.
+	cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true  // database IO query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true // performance counter query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverOsWaitDuration.Enabled = true   // wait stats query
+
+	settings := receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.Must(zap.NewProduction()),
+		},
+	}
+
+	scrapers, provider := setupSQLServerScrapers(settings, cfg)
+	require.Greater(t, len(scrapers), 1, "expected more than one metric scraper to prove pool sharing")
+	require.NotNil(t, provider)
+
+	for _, s := range scrapers {
+		require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	}
+	defer func() {
+		for _, s := range scrapers {
+			assert.NoError(t, s.Shutdown(t.Context()))
+		}
+		// The receiver owns the shared pool; close it once at the end.
+		assert.NoError(t, provider.close())
+	}()
+
+	// Every scraper must reference the exact same shared pool.
+	shared := scrapers[0].db
+	require.NotNil(t, shared)
+	for _, s := range scrapers {
+		assert.Same(t, shared, s.db, "all scrapers must share the same *sql.DB pool")
+	}
+
+	// The shared pool is sized from the number of scrapers.
+	assert.Equal(t, len(scrapers), shared.Stats().MaxOpenConnections)
+
+	// Exercise every scraper so the shared pool actually opens connections to
+	// the database. Scrapes are best-effort: some queries may be rejected by
+	// the granted permissions, but they still open a connection first.
+	for _, s := range scrapers {
+		if _, scrapeErr := s.ScrapeMetrics(t.Context()); scrapeErr != nil {
+			t.Logf("scrape returned error (tolerated): %v", scrapeErr)
+		}
+	}
+
+	// A single shared pool bounds the open connections to its configured size.
+	// One independent pool per scraper would not share this limit.
+	assert.LessOrEqual(t, shared.Stats().OpenConnections, len(scrapers),
+		"open connections must be bounded by the single shared pool")
 }

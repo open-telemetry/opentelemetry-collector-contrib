@@ -16,7 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper/internal/metadata"
 )
 
-func mockGetNfsStats() (*NfsStats, error) {
+func mockGetNfsStats() (*nfsStats, error) {
 	nfsNetStats := &nfsNetStats{
 		netCount:           1000,
 		udpCount:           600,
@@ -48,7 +48,7 @@ func mockGetNfsStats() (*NfsStats, error) {
 		{nfsVersion: 4, nfsCallName: "COMMIT", nfsCallCount: 70},
 	}
 
-	return &NfsStats{
+	return &nfsStats{
 		nfsNetStats:         nfsNetStats,
 		nfsRPCStats:         nfsRPCStats,
 		nfsV3ProcedureStats: nfsV3ProcedureStats,

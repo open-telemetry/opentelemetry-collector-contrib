@@ -198,7 +198,9 @@ var (
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
 				"failed to collect metric mongodb.health: could not find key for metric",
 				"failed to collect metric mongodb.uptime: could not find key for metric",
-			}, "; "))
+			}, "; ",
+		),
+	)
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
 			[]string{
@@ -207,7 +209,9 @@ var (
 				"failed to fetch server status metrics: some server status error",
 				"failed to fetch index stats metrics: some index stats error",
 				"failed to fetch index stats metrics: some index stats error",
-			}, "; "))
+			}, "; ",
+		),
+	)
 
 	errCollectionNames = errors.New(
 		strings.Join(
@@ -216,7 +220,9 @@ var (
 				"failed to fetch database stats metrics: some database stats error",
 				"failed to fetch server status metrics: some server status error",
 				"failed to fetch collection names: some collection names error",
-			}, "; "))
+			}, "; ",
+		),
+	)
 )
 
 func TestScraperScrape(t *testing.T) {
@@ -386,10 +392,10 @@ func TestScraperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraperCfg := createDefaultConfig().(*Config)
 			// Enable any metrics set to `false` by default
-			scraperCfg.Metrics.MongodbOperationLatencyTime.Enabled = true
-			scraperCfg.Metrics.MongodbOperationReplCount.Enabled = true
-			scraperCfg.Metrics.MongodbUptime.Enabled = true
-			scraperCfg.Metrics.MongodbHealth.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationLatencyTime.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationReplCount.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbHealth.Enabled = true
 
 			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 
@@ -551,9 +557,9 @@ func TestReceiverMetricsDisabled(t *testing.T) {
 	scraperCfg := createDefaultConfig().(*Config)
 
 	// disable all metrics
-	v := reflect.ValueOf(&scraperCfg.Metrics).Elem()
-	for i := 0; i < v.NumField(); i++ {
-		v.Field(i).FieldByName("Enabled").SetBool(false)
+	v := reflect.ValueOf(&scraperCfg.MetricsBuilderConfig.Metrics).Elem()
+	for _, field := range v.Fields() {
+		field.FieldByName("Enabled").SetBool(false)
 	}
 
 	fc := &fakeClient{}
@@ -862,7 +868,7 @@ func TestScrapeLogs(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraperCfg := createDefaultConfig().(*Config)
-			scraperCfg.Events.DbServerQuerySample.Enabled = true
+			scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 			scraper.client = tc.setupMockClient(t)
 
@@ -998,7 +1004,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraperCfg := createDefaultConfig().(*Config)
-			scraperCfg.Events.DbServerQuerySample.Enabled = true
+			scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 			scraper.client = tc.setupPrimaryClient(t)
 
@@ -1195,7 +1201,7 @@ func TestExtractOperationID(t *testing.T) {
 
 func TestProcessCurrentOp(t *testing.T) {
 	scraperCfg := createDefaultConfig().(*Config)
-	scraperCfg.Events.DbServerQuerySample.Enabled = true
+	scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 
 	operations := []bson.M{
@@ -1246,7 +1252,7 @@ func TestProcessCurrentOp(t *testing.T) {
 
 func TestProcessCurrentOpCommandComment(t *testing.T) {
 	scraperCfg := createDefaultConfig().(*Config)
-	scraperCfg.Events.DbServerQuerySample.Enabled = true
+	scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 
 	operations := []bson.M{
@@ -1367,7 +1373,7 @@ func TestExtractCommandMetadata(t *testing.T) {
 
 func TestProcessCurrentOpContentionAttributes(t *testing.T) {
 	scraperCfg := createDefaultConfig().(*Config)
-	scraperCfg.Events.DbServerQuerySample.Enabled = true
+	scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 	latchTime := time.Date(2020, 3, 19, 23, 25, 58, 412_000_000, time.UTC)
 
@@ -1459,7 +1465,7 @@ func requireSliceAttribute(t *testing.T, attrs pcommon.Map, key string, expected
 
 func TestProcessCurrentOpMaxRowsPerQueryAppliesAfterSkipping(t *testing.T) {
 	scraperCfg := createDefaultConfig().(*Config)
-	scraperCfg.Events.DbServerQuerySample.Enabled = true
+	scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	scraperCfg.QuerySampleCollection.MaxRowsPerQuery = 2
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 
@@ -1622,8 +1628,8 @@ func TestDependentMetricsWhenDisabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scraperCfg := createDefaultConfig().(*Config)
 
-			tt.subject(&scraperCfg.Metrics)
-			tt.dependent(&scraperCfg.Metrics)
+			tt.subject(&scraperCfg.MetricsBuilderConfig.Metrics)
+			tt.dependent(&scraperCfg.MetricsBuilderConfig.Metrics)
 
 			// successful scrape config
 			fc := &fakeClient{}
@@ -1674,4 +1680,55 @@ func TestDependentMetricsWhenDisabled(t *testing.T) {
 				pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
+}
+
+func TestCollectIndexStatsSkipsViews(t *testing.T) {
+	fc := &fakeClient{}
+	viewErr := mongo.CommandError{Code: 40602, Message: "$indexStats is only valid as the first stage in a pipeline"}
+	fc.On("IndexStats", mock.Anything, "fakedatabase", "someview").Return([]bson.M{}, viewErr)
+	scraper := &mongodbScraper{logger: zap.NewNop(), client: fc}
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.collectIndexStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), "fakedatabase", "someview", errs)
+	require.NoError(t, errs.Combine())
+}
+
+func TestResourceAttributeDbSystemVersion(t *testing.T) {
+	// Test the setResourceAttributes function directly
+	// Test with enabled db.system.version
+	cfg := metadata.DefaultResourceAttributesConfig()
+	cfg.DbSystemVersion.Enabled = true
+	rb := metadata.NewResourceBuilder(cfg)
+
+	mongo50, err := version.NewVersion("5.0.0")
+	require.NoError(t, err)
+
+	setResourceAttributes(rb, "localhost", 27017, mongo50)
+	res := rb.Emit()
+
+	dbSystemVersion, ok := res.Attributes().Get("db.system.version")
+	require.True(t, ok, "db.system.version should be present when enabled")
+	require.Equal(t, "5.0.0", dbSystemVersion.Str())
+
+	// Test with disabled db.system.version
+	cfg2 := metadata.DefaultResourceAttributesConfig()
+	cfg2.DbSystemVersion.Enabled = false
+	rb2 := metadata.NewResourceBuilder(cfg2)
+
+	setResourceAttributes(rb2, "localhost", 27017, mongo50)
+	res2 := rb2.Emit()
+
+	_, ok = res2.Attributes().Get("db.system.version")
+	require.False(t, ok, "db.system.version should not be present when disabled")
+
+	// Test with unknown version
+	cfg3 := metadata.DefaultResourceAttributesConfig()
+	cfg3.DbSystemVersion.Enabled = true
+	rb3 := metadata.NewResourceBuilder(cfg3)
+
+	setResourceAttributes(rb3, "localhost", 27017, nil)
+	res3 := rb3.Emit()
+
+	_, ok = res3.Attributes().Get("db.system.version")
+	require.False(t, ok, "db.system.version should not be present when version is unknown")
 }

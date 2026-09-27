@@ -36,7 +36,7 @@ func NewDatadogDataSender() testbed.TraceDataSender {
 func (dd *datadogDataSender) Start() error {
 	factory := mockdatadogagentexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*mockdatadogagentexporter.Config)
-	cfg.Endpoint = fmt.Sprintf("http://%s:%v/v0.4/traces", testbed.DefaultHost, 8126)
+	cfg.ClientConfig.Endpoint = fmt.Sprintf("http://%s:%v/v0.4/traces", testbed.DefaultHost, 8126)
 
 	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()

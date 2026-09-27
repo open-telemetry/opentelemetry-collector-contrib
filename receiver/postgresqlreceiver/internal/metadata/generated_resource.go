@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetDbSystemVersion sets provided value as "db.system.version" attribute.
+func (rb *ResourceBuilder) SetDbSystemVersion(val string) {
+	if rb.config.DbSystemVersion.Enabled {
+		rb.res.Attributes().PutStr("db.system.version", val)
+	}
+}
+
 // SetPostgresqlDatabaseName sets provided value as "postgresql.database.name" attribute.
 func (rb *ResourceBuilder) SetPostgresqlDatabaseName(val string) {
 	if rb.config.PostgresqlDatabaseName.Enabled {
@@ -46,6 +53,20 @@ func (rb *ResourceBuilder) SetPostgresqlSchemaName(val string) {
 func (rb *ResourceBuilder) SetPostgresqlTableName(val string) {
 	if rb.config.PostgresqlTableName.Enabled {
 		rb.res.Attributes().PutStr("postgresql.table.name", val)
+	}
+}
+
+// SetServerAddress sets provided value as "server.address" attribute.
+func (rb *ResourceBuilder) SetServerAddress(val string) {
+	if rb.config.ServerAddress.Enabled {
+		rb.res.Attributes().PutStr("server.address", val)
+	}
+}
+
+// SetServerPort sets provided value as "server.port" attribute.
+func (rb *ResourceBuilder) SetServerPort(val int64) {
+	if rb.config.ServerPort.Enabled {
+		rb.res.Attributes().PutInt("server.port", val)
 	}
 }
 

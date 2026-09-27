@@ -29,7 +29,7 @@ func TestCreateExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.ProjectID = "test"
+	eCfg.GMPConfig.ProjectID = "test"
 
 	te, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)

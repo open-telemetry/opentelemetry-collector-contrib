@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -32,7 +32,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestValidateConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Error(t, xconfmap.Validate(cfg))
+	assert.Error(t, confmap.Validate(cfg))
 }
 
 func TestFactoryCreateTraces_InvalidActions(t *testing.T) {
@@ -40,14 +40,14 @@ func TestFactoryCreateTraces_InvalidActions(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	// Missing key
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "", Value: 123, Action: attraction.UPSERT},
 	}
 	ap, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 	// Invalid target type
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "http.status_code", ConvertedType: "array", Action: attraction.CONVERT},
 	}
 	ap2, err2 := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
@@ -59,7 +59,7 @@ func TestFactoryCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "a key", Action: attraction.DELETE},
 	}
 
@@ -67,7 +67,7 @@ func TestFactoryCreateTraces(t *testing.T) {
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Action: attraction.DELETE},
 	}
 	tp, err = factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
@@ -78,7 +78,7 @@ func TestFactoryCreateTraces(t *testing.T) {
 func TestFactory_CreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Actions = []attraction.ActionKeyValue{
+	cfg.(*Config).Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "fake_key", Action: attraction.INSERT, Value: "100"},
 	}
 
@@ -86,7 +86,7 @@ func TestFactory_CreateMetrics(t *testing.T) {
 	require.NotNil(t, mp)
 	require.NoError(t, err)
 
-	cfg.(*Config).Actions = []attraction.ActionKeyValue{
+	cfg.(*Config).Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "fake_key", Action: attraction.UPSERT},
 	}
 
@@ -101,7 +101,7 @@ func TestFactoryCreateLogs_InvalidActions(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	// Missing key
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "", Value: 123, Action: attraction.UPSERT},
 	}
 	ap, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
@@ -113,20 +113,22 @@ func TestFactoryCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "a key", Action: attraction.DELETE},
 	}
 
 	tp, err := factory.CreateLogs(
-		t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop(),
+	)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Action: attraction.DELETE},
 	}
 	tp, err = factory.CreateLogs(
-		t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+		t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop(),
+	)
 	assert.Nil(t, tp)
 	assert.Error(t, err)
 }
