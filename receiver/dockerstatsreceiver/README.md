@@ -75,6 +75,38 @@ receivers:
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
+## Semantic Convention Migration
+
+The receiver supports two feature gates for migrating to the latest container semantic conventions (v1.42.0):
+
+### `receiver.dockerstats.EmitV1ContainerConventions` (alpha)
+
+When enabled, the receiver emits the new semantic convention attributes:
+- `container.image.tags` (array) instead of deprecated `container.image.tag` (string)
+
+Enable with:
+```bash
+otelcol-contrib --feature-gates=+receiver.dockerstats.EmitV1ContainerConventions
+```
+
+### `receiver.dockerstats.DontEmitV0ContainerConventions` (alpha)
+
+When enabled (and `EmitV1ContainerConventions` is also enabled), the receiver stops emitting the deprecated `container.image.tag` attribute.
+
+Enable with:
+```bash
+otelcol-contrib --feature-gates=+receiver.dockerstats.EmitV1ContainerConventions,+receiver.dockerstats.DontEmitV0ContainerConventions
+```
+
+### Migration Path
+
+1. **Test new conventions**: Enable `EmitV1ContainerConventions` and verify your pipelines handle `container.image.tags`
+2. **Full migration**: Enable both gates to use only v1.42.0 conventions
+3. **Rollback**: Disable both gates to restore v1.21.0 behavior
+
+See [issue #31649](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649) for details.
+
+
 ## Docker Socket Permissions
 
 ### Requirements

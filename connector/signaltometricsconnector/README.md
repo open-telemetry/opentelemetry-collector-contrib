@@ -93,8 +93,8 @@ signal_to_metrics:
 The `error_mode` configuration option determines how the connector handles errors that occur while processing OTTL expressions:
 
 - `error_mode` (optional): Determines how errors returned from OTTL expressions are handled. Valid values are `propagate`, `ignore`, and `silent`.
-  - `ignore` (default): Errors are logged and the specific record that caused the error is skipped, but processing continues for the rest of the batch.
-  - `propagate`: Errors cause the entire batch to fail and be returned up the pipeline. This will result in the payload being dropped from the collector.
+  - `ignore` (default when feature gate enabled): Errors are logged and the specific record that caused the error is skipped, but processing continues for the rest of the batch.
+  - `propagate` (default when feature gate disabled): Errors cause the entire batch to fail and be returned up the pipeline. This will result in the payload being dropped from the collector.
   - `silent`: Errors are not logged and the specific record that caused the error is skipped, but processing continues for the rest of the batch.
 
 **Example with error handling:**
@@ -108,6 +108,33 @@ signaltometrics:
       sum:
         value: Int(AdjustedCount())
 ```
+
+### Resilient Error Mode
+
+The `connector.signaltometricsconnector.resilientErrorMode` feature gate (alpha, off by default) changes the default `error_mode` from `propagate` to `ignore`.
+
+When enabled, OTTL errors during metric generation are logged but don't drop valid telemetry. This prevents a single erroring condition/expression from discarding an entire batch of valid data.
+
+Explicit `error_mode: propagate` in the connector configuration overrides the feature gate default.
+
+#### Example Usage
+
+```yaml
+connectors:
+  signal_to_metrics:
+    # error_mode omitted - uses gate default (ignore when gate enabled)
+    spans:
+      - name: http.server.duration
+        sum:
+          value: Int(Seconds(end_time - start_time))
+```
+
+Enable with:
+```bash
+otelcol-contrib --feature-gates=+connector.signaltometricsconnector.resilientErrorMode
+```
+
+See [issue #48419](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48419) for details.
 
 ### Metrics types
 

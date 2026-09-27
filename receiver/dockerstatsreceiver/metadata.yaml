@@ -1,5 +1,6 @@
 display_name: Docker Stats Receiver
 type: docker_stats
+deprecated_type: dockerstats
 
 description: |
   The Docker Stats receiver queries the local Docker daemon's container stats API for
@@ -18,6 +19,20 @@ status:
   unsupported_platforms: [darwin, windows]
 
 sem_conv_version: 1.40.0
+
+feature_gates:
+  - id: receiver.dockerstats.DontEmitV0ContainerConventions
+    stage: alpha
+    description: "When enabled, the receiver no longer emits the deprecated semconv v1.21.0 attribute container.image.tag. Requires receiver.dockerstats.EmitV1ContainerConventions to also be enabled."
+    from_version: v0.161.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649
+    skip_strict_validation: true
+  - id: receiver.dockerstats.EmitV1ContainerConventions
+    stage: alpha
+    description: "When enabled, the receiver emits container.image.tags (semconv v1.42.0) instead of the deprecated container.image.tag (semconv v1.21.0). Also updates metric names and attributes to align with the latest container semantic conventions."
+    from_version: v0.161.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649
+    skip_strict_validation: true
 
 tests:
   goleak:

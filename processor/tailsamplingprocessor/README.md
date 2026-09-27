@@ -710,6 +710,36 @@ The invert sampling decisions (`InvertSampled` and `InvertNotSampled`) have been
 
 If you disable invert decisions, you can make use of a `drop` policy to explicitly not sample select traces or a `not` policy to sample based on the opposite of a sampling decision.
 
+### Resilient Error Mode
+
+The `processor.tailsamplingprocessor.resilientErrorMode` feature gate (alpha, off by default) changes the default `error_mode` for OTTL conditions from `propagate` to `ignore`.
+
+When enabled, OTTL errors in `ottl_condition` policies are logged but do not cause valid traces to be dropped. This prevents a single erroring condition from discarding an entire trace that might otherwise be sampled by other policies.
+
+Explicit `error_mode: propagate` in the policy configuration overrides the feature gate default.
+
+#### Example Usage
+
+```yaml
+processors:
+  tail_sampling:
+    policies:
+      - name: error-resilient-policy
+        type: ottl_condition
+        ottl_condition:
+          # error_mode omitted - uses gate default (ignore when gate enabled)
+          span: [
+            'attributes["http.status_code"] >= 500',
+          ]
+```
+
+Enable with:
+```bash
+otelcol-contrib --feature-gates=+processor.tailsamplingprocessor.resilientErrorMode
+```
+
+See [issue #48420](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420) for details.
+
 ### Policy Evaluation Errors
 
 ```

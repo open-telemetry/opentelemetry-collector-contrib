@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type parsedContextStatements struct {
@@ -27,9 +28,11 @@ type Processor struct {
 	contexts            []parsedContextStatements
 	logger              *zap.Logger
 	sharedCacheContexts []common.ContextID
+	emitTraceSpans      bool
+	tracer              trace.Tracer
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]) (*Processor, error) {
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, emitTraceSpans bool, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]) (*Processor, error) {
 	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(spanFunctions), common.WithSpanEventParser(spanEventFunctions), common.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
@@ -64,6 +67,8 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		contexts:            contexts,
 		logger:              settings.Logger,
 		sharedCacheContexts: sharedCacheContexts,
+		emitTraceSpans:      emitTraceSpans,
+		tracer:              settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"),
 	}, nil
 }
 

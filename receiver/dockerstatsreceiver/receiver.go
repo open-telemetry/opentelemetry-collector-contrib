@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 
+	dockercommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 )
 
 var (
@@ -199,6 +201,13 @@ func (r *metricsReceiver) recordContainerStats(
 	rb.SetContainerImageID(container.Image)
 	rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
 	resource := rb.Emit()
+
+	// Add container.image.tags attribute when the feature gate is enabled
+	if metadata.ReceiverDockerstatsEmitV1ContainerConventionsFeatureGate.IsEnabled() {
+		if imgRef, err := dockercommon.ParseImageName(container.Config.Image); err == nil {
+			resource.Attributes().PutEmptySlice(string(conventions.ContainerImageTagsKey)).AppendEmpty().SetStr(imgRef.Tag)
+		}
+	}
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {

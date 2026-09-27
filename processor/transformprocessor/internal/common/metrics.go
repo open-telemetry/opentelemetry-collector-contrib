@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -16,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
 type MetricsConsumer interface {
@@ -26,6 +29,8 @@ type MetricsConsumer interface {
 type metricStatements struct {
 	ottl.StatementSequence[*ottlmetric.TransformContext]
 	expr.BoolExpr[*ottlmetric.TransformContext]
+	emitTraceSpans bool
+	tracer         trace.Tracer
 }
 
 func (metricStatements) Context() ContextID {
@@ -46,7 +51,15 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 					return err
 				}
 				if condition {
-					err = m.Execute(ctx, tCtx)
+					if m.emitTraceSpans && m.tracer != nil {
+						_, span := m.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+							attribute.String("statement_type", "metric"),
+						))
+						err = m.Execute(ctx, tCtx)
+						span.End()
+					} else {
+						err = m.Execute(ctx, tCtx)
+					}
 					if err != nil {
 						tCtx.Close()
 						return err
@@ -62,6 +75,8 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 type dataPointStatements struct {
 	ottl.StatementSequence[*ottldatapoint.TransformContext]
 	expr.BoolExpr[*ottldatapoint.TransformContext]
+	emitTraceSpans bool
+	tracer         trace.Tracer
 }
 
 func (dataPointStatements) Context() ContextID {
@@ -108,7 +123,15 @@ func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, resourc
 			return err
 		}
 		if condition {
-			err = d.Execute(ctx, tCtx)
+			if d.emitTraceSpans && d.tracer != nil {
+				_, span := d.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+					attribute.String("statement_type", "datapoint"),
+				))
+				err = d.Execute(ctx, tCtx)
+				span.End()
+			} else {
+				err = d.Execute(ctx, tCtx)
+			}
 			if err != nil {
 				tCtx.Close()
 				return err
@@ -128,7 +151,15 @@ func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, reso
 			return err
 		}
 		if condition {
-			err := d.Execute(ctx, tCtx)
+			if d.emitTraceSpans && d.tracer != nil {
+				_, span := d.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+					attribute.String("statement_type", "datapoint"),
+				))
+				err = d.Execute(ctx, tCtx)
+				span.End()
+			} else {
+				err = d.Execute(ctx, tCtx)
+			}
 			if err != nil {
 				tCtx.Close()
 				return err
@@ -148,7 +179,15 @@ func (d dataPointStatements) handleExponentialHistogramDataPoints(ctx context.Co
 			return err
 		}
 		if condition {
-			err = d.Execute(ctx, tCtx)
+			if d.emitTraceSpans && d.tracer != nil {
+				_, span := d.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+					attribute.String("statement_type", "datapoint"),
+				))
+				err = d.Execute(ctx, tCtx)
+				span.End()
+			} else {
+				err = d.Execute(ctx, tCtx)
+			}
 			if err != nil {
 				tCtx.Close()
 				return err
@@ -168,7 +207,15 @@ func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, resour
 			return err
 		}
 		if condition {
-			err = d.Execute(ctx, tCtx)
+			if d.emitTraceSpans && d.tracer != nil {
+				_, span := d.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+					attribute.String("statement_type", "datapoint"),
+				))
+				err = d.Execute(ctx, tCtx)
+				span.End()
+			} else {
+				err = d.Execute(ctx, tCtx)
+			}
 			if err != nil {
 				tCtx.Close()
 				return err
@@ -182,6 +229,8 @@ func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, resour
 type exemplarStatements struct {
 	ottl.StatementSequence[*ottlexemplar.TransformContext]
 	expr.BoolExpr[*ottlexemplar.TransformContext]
+	emitTraceSpans bool
+	tracer         trace.Tracer
 }
 
 func (exemplarStatements) Context() ContextID {
@@ -257,7 +306,15 @@ func (e exemplarStatements) executeExemplar(ctx context.Context, tCtx *ottlexemp
 		return err
 	}
 	if condition {
-		err = e.Execute(ctx, tCtx)
+		if e.emitTraceSpans && e.tracer != nil {
+			_, span := e.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+				attribute.String("statement_type", "exemplar"),
+			))
+			err = e.Execute(ctx, tCtx)
+			span.End()
+		} else {
+			err = e.Execute(ctx, tCtx)
+		}
 		if err != nil {
 			tCtx.Close()
 			return err
@@ -342,7 +399,15 @@ func convertMetricStatements(pc *ottl.ParserCollection[MetricsConsumer], stateme
 		return nil, errGlobalBoolExpr
 	}
 	mStatements := ottlmetric.NewStatementSequence(parsedStatements, pc.Settings(), ottlmetric.WithStatementSequenceErrorMode(errorMode))
-	return metricStatements{mStatements, globalExpr}, nil
+	
+	// Check if tracing is enabled via feature gate
+	emitTraceSpans := metadata.ProcessorTransformEmitOttlSpansFeatureGate.IsEnabled()
+	var tracer trace.Tracer
+	if emitTraceSpans {
+		tracer = pc.Settings().TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor")
+	}
+	
+	return metricStatements{mStatements, globalExpr, emitTraceSpans, tracer}, nil
 }
 
 func convertDataPointStatements(pc *ottl.ParserCollection[MetricsConsumer], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[*ottldatapoint.TransformContext]) (MetricsConsumer, error) {
@@ -363,7 +428,15 @@ func convertDataPointStatements(pc *ottl.ParserCollection[MetricsConsumer], stat
 		return nil, errGlobalBoolExpr
 	}
 	dpStatements := ottldatapoint.NewStatementSequence(parsedStatements, pc.Settings(), ottldatapoint.WithStatementSequenceErrorMode(errorMode))
-	return dataPointStatements{dpStatements, globalExpr}, nil
+	
+	// Check if tracing is enabled via feature gate
+	emitTraceSpans := metadata.ProcessorTransformEmitOttlSpansFeatureGate.IsEnabled()
+	var tracer trace.Tracer
+	if emitTraceSpans {
+		tracer = pc.Settings().TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor")
+	}
+	
+	return dataPointStatements{dpStatements, globalExpr, emitTraceSpans, tracer}, nil
 }
 
 func convertExemplarStatements(pc *ottl.ParserCollection[MetricsConsumer], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[*ottlexemplar.TransformContext]) (MetricsConsumer, error) {
@@ -384,7 +457,15 @@ func convertExemplarStatements(pc *ottl.ParserCollection[MetricsConsumer], state
 		return nil, errGlobalBoolExpr
 	}
 	eStatements := ottlexemplar.NewStatementSequence(parsedStatements, pc.Settings(), ottlexemplar.WithStatementSequenceErrorMode(errorMode))
-	return exemplarStatements{eStatements, globalExpr}, nil
+	
+	// Check if tracing is enabled via feature gate
+	emitTraceSpans := metadata.ProcessorTransformEmitOttlSpansFeatureGate.IsEnabled()
+	var tracer trace.Tracer
+	if emitTraceSpans {
+		tracer = pc.Settings().TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor")
+	}
+	
+	return exemplarStatements{eStatements, globalExpr, emitTraceSpans, tracer}, nil
 }
 
 func (mpc *MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (MetricsConsumer, error) {

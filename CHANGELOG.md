@@ -89,7 +89,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   and map it to the Datadog `image_tag` container tag.
   They now also recognize the newer `container.image.tags` convention.
   For now, only the first element of the array attribute will be extracted.
-  
+
 - `extension/opamp`: Add an opt-in `reports_raw_config` setting to additionally report the raw, unexpanded configuration alongside the effective configuration (#44341)
   When `reports_raw_config` is enabled (default: false, and requires the
   `reports_effective_config` capability), the extension reports the raw
@@ -98,6 +98,18 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   fully expanded effective configuration is unchanged and remains under the
   `""` (empty) key. This is disabled by default because raw configuration files
   may contain secrets written directly into them. Values sourced from provider
+
+- `receiver/dockerstats`: Add feature gates `receiver.dockerstats.EmitV1ContainerConventions` and `receiver.dockerstats.DontEmitV0ContainerConventions` for semantic convention migration to v1.42.0 (#31649)
+  When `EmitV1ContainerConventions` is enabled, the receiver emits `container.image.tags` (semconv v1.42.0) instead of the deprecated `container.image.tag` (semconv v1.21.0). Enable `DontEmitV0ContainerConventions` to stop emitting the deprecated attribute.
+
+- `processor/transform`: Add feature gate `processor.transform.emitOttlSpans` and config option `emit_trace_spans` for opt-in OTTL statement execution tracing (#33433)
+  When enabled, the processor emits trace spans showing statement type (span, spanevent, metric, datapoint, exemplar, log, profile), execution status, and timing. Zero overhead when disabled.
+
+- `processor/tailsampling`: Add feature gate `processor.tailsamplingprocessor.resilientErrorMode` to change default `error_mode` from `propagate` to `ignore` for OTTL conditions (#48420)
+  When enabled, OTTL errors are logged but don't cause valid traces to be dropped. Explicit `error_mode: propagate` in config overrides the gate.
+
+- `connector/signaltometrics`: Add feature gate `connector.signaltometricsconnector.resilientErrorMode` to change default `error_mode` from `propagate` to `ignore` (#48419)
+  When enabled, OTTL errors during metric generation are logged but don't drop valid telemetry. Explicit `error_mode: propagate` in config overrides the gate.
   references such as `${env:TOKEN}` retain their unexpanded form in the raw
   configuration, so they are not exposed, and fields using types meant for
   opaque information (such as `configopaque.String`, commonly used for password

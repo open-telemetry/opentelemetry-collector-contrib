@@ -36,6 +36,11 @@ type Config struct {
 	// The default value is `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
+	// EmitTraceSpans enables tracing of OTTL statement execution for debugging purposes.
+	// When enabled, spans are emitted showing which statements were executed, matched, or errored.
+	// This feature is controlled by the 'processor.transform.emit_ottl_spans' feature gate.
+	EmitTraceSpans bool `mapstructure:"emit_trace_spans"`
+
 	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
 	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
 	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`

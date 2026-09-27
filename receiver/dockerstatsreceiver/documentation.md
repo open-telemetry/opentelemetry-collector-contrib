@@ -787,3 +787,14 @@ Time elapsed since container start time.
 | container.image.name | The name of the docker image in use by the container. | Any Str | true | - | - |
 | container.name | The name of the container. | Any Str | true | - | - |
 | container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true | - | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.dockerstats.DontEmitV0ContainerConventions` | alpha | When enabled, the receiver no longer emits the deprecated semconv v1.21.0 attribute container.image.tag. Requires receiver.dockerstats.EmitV1ContainerConventions to also be enabled. | v0.161.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649) |
+| `receiver.dockerstats.EmitV1ContainerConventions` | alpha | When enabled, the receiver emits container.image.tags (semconv v1.42.0) instead of the deprecated container.image.tag (semconv v1.21.0). Also updates metric names and attributes to align with the latest container semantic conventions. | v0.161.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

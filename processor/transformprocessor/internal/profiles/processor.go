@@ -25,10 +25,11 @@ type parsedContextStatements struct {
 type Processor struct {
 	contexts            []parsedContextStatements
 	logger              *zap.Logger
+	emitTraceSpans      bool
 	sharedCacheContexts []common.ContextID
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, profileFunctions map[string]ottl.Factory[*ottlprofile.TransformContext]) (*Processor, error) {
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, emitTraceSpans bool, settings component.TelemetrySettings, profileFunctions map[string]ottl.Factory[*ottlprofile.TransformContext]) (*Processor, error) {
 	pc, err := common.NewProfileParserCollection(settings, common.WithProfileParser(profileFunctions), common.WithProfileErrorMode(errorMode))
 	if err != nil {
 		return nil, err
@@ -62,6 +63,7 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 	return &Processor{
 		contexts:            contexts,
 		logger:              settings.Logger,
+		emitTraceSpans:      emitTraceSpans,
 		sharedCacheContexts: sharedCacheContexts,
 	}, nil
 }
