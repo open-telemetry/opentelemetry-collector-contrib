@@ -106,7 +106,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 0, 0, 2) // expect all counts in the overflow bucket
+				dp.BucketCounts().Append(0, 0, 0, 0, 0, 2) // expect all counts in the overflow bucket
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
@@ -133,7 +133,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(2, 0, 0, 0, 0) // expect all counts in the 1st bucket
+				dp.BucketCounts().Append(2, 0, 0, 0, 0, 0) // expect all counts in the 1st bucket
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
@@ -158,7 +158,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(1, 0, 0, 1, 0)
+				dp.BucketCounts().Append(0, 1, 0, 0, 1, 0)
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
@@ -183,7 +183,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(1, 0, 0, 1, 0)
+				dp.BucketCounts().Append(0, 1, 0, 0, 1, 0)
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
@@ -216,7 +216,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 0, 0, 2)
+				dp.BucketCounts().Append(0, 0, 0, 0, 0, 2)
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
@@ -318,7 +318,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 0, 0, 44) // expect all counts in the overflow bucket
+				dp.BucketCounts().Append(0, 0, 0, 0, 0, 44) // expect all counts in the overflow bucket
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
@@ -345,7 +345,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(44, 0, 0, 0, 0) // expect all counts in the 1st bucket
+				dp.BucketCounts().Append(44, 0, 0, 0, 0, 0) // expect all counts in the 1st bucket
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
@@ -370,7 +370,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 0, 10, 0, 0, 0, 0, 22, 12)
+				dp.BucketCounts().Append(0, 0, 0, 0, 10, 0, 0, 0, 0, 22, 12)
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
@@ -381,6 +381,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			input: func() pmetric.Metric {
 				m := defaultTestMetric()
 				m.ExponentialHistogram().DataPoints().At(0).SetZeroCount(5)
+				m.ExponentialHistogram().DataPoints().At(0).SetCount(49)
 				return m
 			},
 			arg:          []float64{0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0},
@@ -389,7 +390,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				metric.SetName("test-metric")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
-				dp.SetCount(44)
+				dp.SetCount(49)
 				dp.SetSum(999)
 				dp.SetMax(245)
 				dp.SetMin(40)
@@ -399,7 +400,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(5, 0, 0, 0, 10, 0, 0, 0, 0, 22, 12)
+				dp.BucketCounts().Append(5, 0, 0, 0, 0, 10, 0, 0, 0, 0, 22, 12)
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
@@ -501,7 +502,7 @@ func TestUniform_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 0, 0, 44) // expect all counts in the overflow bucket
+				dp.BucketCounts().Append(0, 0, 0, 0, 0, 44) // expect all counts in the overflow bucket
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
@@ -528,7 +529,7 @@ func TestUniform_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(44, 0, 0, 0, 0) // expect all counts in the 1st bucket
+				dp.BucketCounts().Append(44, 0, 0, 0, 0, 0) // expect all counts in the 1st bucket
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
@@ -553,7 +554,7 @@ func TestUniform_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 0, 3, 3, 2, 8, 6, 5, 17)
+				dp.BucketCounts().Append(0, 0, 0, 3, 3, 3, 4, 3, 3, 4, 21)
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
@@ -631,7 +632,7 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 0, 0, 44) // expect all counts in the overflow bucket
+				dp.BucketCounts().Append(0, 0, 0, 0, 0, 44) // expect all counts in the overflow bucket
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
@@ -658,7 +659,7 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(44, 0, 0, 0, 0) // expect all counts in the 1st bucket
+				dp.BucketCounts().Append(44, 0, 0, 0, 0, 0) // expect all counts in the 1st bucket
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
@@ -683,7 +684,7 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 3, 3, 2, 7, 5, 4, 4, 16)
+				dp.BucketCounts().Append(0, 0, 0, 3, 3, 3, 3, 4, 3, 4, 21)
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
@@ -758,6 +759,120 @@ func Test_convertExponentialHistToExplicitHist_validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := convertExponentialHistToExplicitHist("random", tt.sliceExplicitBoundsArgs)
 			assert.ErrorContains(t, err, "explicit bounds cannot be empty")
+		})
+	}
+}
+
+func TestConvertExponentialHistToExplicitHistPreservesDataPoint(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test")
+	metric.SetDescription("description")
+	metric.SetUnit("ms")
+	exponential := metric.SetEmptyExponentialHistogram()
+	exponential.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	source := exponential.DataPoints().AppendEmpty()
+	source.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(100, 0)))
+	source.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(200, 0)))
+	source.SetCount(16)
+	source.SetScale(0)
+	source.SetZeroThreshold(1)
+	source.SetZeroCount(8)
+	source.SetMin(-2)
+	source.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+	source.Attributes().PutStr("key", "value")
+	source.Negative().BucketCounts().FromRaw([]uint64{4})
+	source.Positive().BucketCounts().FromRaw([]uint64{4})
+	source.Exemplars().AppendEmpty().SetDoubleValue(1.5)
+
+	ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	defer ctx.Close()
+	exprFunc, err := convertExponentialHistToExplicitHist("uniform", []float64{-2, -1, 0, 1, 2})
+	require.NoError(t, err)
+	_, err = exprFunc(t.Context(), ctx)
+	require.NoError(t, err)
+
+	assert.Equal(t, "description", metric.Description())
+	assert.Equal(t, "ms", metric.Unit())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Histogram().AggregationTemporality())
+	destination := metric.Histogram().DataPoints().At(0)
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.Unix(100, 0)), destination.StartTimestamp())
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.Unix(200, 0)), destination.Timestamp())
+	assert.Equal(t, []uint64{0, 4, 4, 4, 4, 0}, destination.BucketCounts().AsRaw())
+	assert.Equal(t, pmetric.DefaultDataPointFlags.WithNoRecordedValue(true), destination.Flags())
+	assert.False(t, destination.HasSum())
+	assert.Equal(t, -2.0, destination.Min())
+	assert.False(t, destination.HasMax())
+	value, ok := destination.Attributes().Get("key")
+	require.True(t, ok)
+	assert.Equal(t, "value", value.Str())
+	require.Equal(t, 1, destination.Exemplars().Len())
+	assert.Equal(t, 1.5, destination.Exemplars().At(0).DoubleValue())
+}
+
+func TestConvertExponentialHistToExplicitHistIsAtomicOnError(t *testing.T) {
+	metric := pmetric.NewMetric()
+	dps := metric.SetEmptyExponentialHistogram().DataPoints()
+	valid := dps.AppendEmpty()
+	valid.SetCount(1)
+	valid.SetScale(0)
+	valid.Positive().BucketCounts().FromRaw([]uint64{1})
+	valid.Attributes().PutStr("key", "value")
+	invalid := dps.AppendEmpty()
+	invalid.SetCount(2)
+	invalid.SetScale(0)
+	invalid.Positive().BucketCounts().FromRaw([]uint64{1})
+	expected := pmetric.NewMetric()
+	metric.CopyTo(expected)
+
+	ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	defer ctx.Close()
+	exprFunc, err := convertExponentialHistToExplicitHist("random", []float64{1})
+	require.NoError(t, err)
+	_, err = exprFunc(t.Context(), ctx)
+
+	require.ErrorContains(t, err, "source histogram count 2 does not match bucket count 1")
+	assert.Equal(t, expected, metric)
+}
+
+func BenchmarkConvertExponentialHistToExplicitHist(b *testing.B) {
+	bounds := []float64{0, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 25, 50, 100}
+	template := pmetric.NewMetric()
+	dp := template.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+	dp.SetScale(4)
+	dp.SetZeroCount(10)
+	dp.Positive().SetOffset(-80)
+	var count uint64 = 10
+	for i := range 160 {
+		bucketCount := uint64(i%7 + 1)
+		dp.Positive().BucketCounts().Append(bucketCount)
+		count += bucketCount
+	}
+	dp.SetCount(count)
+	dp.Attributes().PutStr("service.name", "benchmark")
+
+	for _, distribution := range []string{"upper", "midpoint", "uniform", "random"} {
+		b.Run(distribution, func(b *testing.B) {
+			expr, err := convertExponentialHistToExplicitHist(distribution, bounds)
+			if err != nil {
+				b.Fatal(err)
+			}
+			metric := pmetric.NewMetric()
+			resourceMetrics := pmetric.NewResourceMetrics()
+			scopeMetrics := pmetric.NewScopeMetrics()
+			transformContext := ottlmetric.NewTransformContext(resourceMetrics, scopeMetrics, metric)
+			b.Cleanup(transformContext.Close)
+			b.ReportAllocs()
+			for b.Loop() {
+				template.CopyTo(metric)
+				_, err = expr(b.Context(), transformContext)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+			if got := metric.Histogram().DataPoints().At(0).Count(); got != count {
+				b.Fatalf("converted count = %d, want %d", got, count)
+			}
+			b.ReportMetric(float64(dp.Positive().BucketCounts().Len()), "source-buckets/op")
 		})
 	}
 }

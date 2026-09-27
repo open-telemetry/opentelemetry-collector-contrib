@@ -290,7 +290,5 @@
     "github.com/DataDog/datadog-api-client-go"
   ],
   "prConcurrentLimit": 200,
-  "suppressNotifications": [
-    "prEditedNotification"
-  ]
+  "prHourlyLimit": 5
 }

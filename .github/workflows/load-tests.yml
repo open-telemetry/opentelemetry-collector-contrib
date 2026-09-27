@@ -7,6 +7,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "27 0,12 * * *" # Run at 00:27 and 12:27 UTC every day.
+  pull_request:
+    types: [ opened, synchronize, reopened, labeled, unlabeled ]
+    branches:
+      - main
 
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
@@ -25,7 +29,7 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
-    if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' }}
+    if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' && (contains(github.event.pull_request.labels.*.name, 'Run Load Tests') || github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
@@ -37,6 +41,7 @@ jobs:
           go-version: oldstable
       - run: make genoteltestbedcol
       - run: make oteltestbedcol
+      - run: GOOS=linux GOARCH=arm64 make oteltestbedcol
       - name: Upload Testbed Binaries
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -48,11 +53,11 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   loadtest:
-    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     needs: [setup-environment]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
+    runs-on: "${{ matrix.runner }}"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -78,13 +83,14 @@ jobs:
       - name: Loadtest
         run: make -C testbed run-tests
         env:
+          RUN_TYPE: "${{ matrix.type == 'linux-arm64' && 'linux_arm64' || '' }}"
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename
         if: ${{ failure() || success() }}
         id: filename
         env:
           MATRIX_TEST: ${{ matrix.test }}
-        run: echo "name=$(echo "${MATRIX_TEST}" | sed -e 's/|/_/g')" >> "$GITHUB_OUTPUT"
+        run: echo "name=${MATRIX_TEST//|/_}" >> "$GITHUB_OUTPUT"
       - name: Create Test Result Archive
         if: ${{ failure() || success() }}
         continue-on-error: true
@@ -110,7 +116,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   update-benchmarks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [loadtest]
     permissions:
       # deployments permission to deploy GitHub pages website
@@ -128,7 +134,7 @@ jobs:
           merge-multiple: true
           path: results
       - run: jq -s 'map(.[])' results/*.json > output.json
-      - uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
+      - uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
         with:
           tool: "customSmallerIsBetter"
           output-file-path: output.json
@@ -145,8 +151,8 @@ jobs:
       - setup-environment
       - loadtest
       - update-benchmarks
-    if: always()
-    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@03559ef555db0eae5d85c3c6347d1530243e7aa7 # v0.13.0
+    if: always() && github.event_name != 'pull_request'
+    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@68c7b2f0ef9cd9c1e2b71d3018f63127be189578 # v0.14.0
     with:
       success: >-
         ${{

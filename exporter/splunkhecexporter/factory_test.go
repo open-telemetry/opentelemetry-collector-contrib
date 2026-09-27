@@ -117,10 +117,9 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 
 	config.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	config.QueueSettings.Get().Sizer = exporterhelper.RequestSizerTypeItems
-	config.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
-		FlushTimeout: 200 * time.Millisecond,
-		MinSize:      8192,
-	})
+	batch := config.QueueSettings.Get().Batch.GetOrInsertDefault()
+	batch.FlushTimeout = 200 * time.Millisecond
+	batch.MinSize = 8192
 
 	me, err = createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
@@ -148,13 +147,11 @@ func TestHecQueueSettings(t *testing.T) {
 
 	someBatch := func(keys []string) exporterhelper.QueueBatchConfig {
 		cfg := exporterhelper.NewDefaultQueueConfig()
-		batch := exporterhelper.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      8192,
-		}
+		batch := cfg.Batch.GetOrInsertDefault()
+		batch.FlushTimeout = 200 * time.Millisecond
+		batch.Sizer = exporterhelper.RequestSizerTypeItems
+		batch.MinSize = 8192
 		batch.Partition.MetadataKeys = keys
-		cfg.Batch = configoptional.Some(batch)
 		return cfg
 	}
 

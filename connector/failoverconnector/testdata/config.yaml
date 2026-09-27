@@ -26,3 +26,18 @@ failover/invalid:
     - [ traces/first ]
     - [ traces/second ]
   retry_interval: 0m
+
+failover/condition:
+  priority_levels:
+    - [ traces/first ]
+    - [ traces/second ]
+  retry_interval: 5m
+  condition:
+    error:
+      contains: "network failure"
+
+failover/emptycondition:
+  priority_levels:
+    - [ traces/first ]
+    - [ traces/second ]
+  condition: {}

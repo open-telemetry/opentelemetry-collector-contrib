@@ -94,14 +94,14 @@ func Test_IsDoubleFactory(t *testing.T) {
 		factory := NewIsDoubleFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IsDoubleArguments[any]{}, args)
+		assert.IsType(t, &isDoubleArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewIsDoubleFactory[any]()
 		args := factory.CreateDefaultArguments()
-		isDoubleArgs, ok := args.(*IsDoubleArguments[any])
+		isDoubleArgs, ok := args.(*isDoubleArguments[any])
 		require.True(t, ok)
 		isDoubleArgs.Target = &ottl.StandardFloatGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -116,6 +116,19 @@ func Test_IsDoubleFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createIsDoubleFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "IsDoubleFactory args must be of type *IsDoubleArguments[K]")
+		assert.ErrorContains(t, err, "IsDoubleFactory args must be of type *isDoubleArguments[K]")
 	})
+}
+
+func BenchmarkIsDouble(b *testing.B) {
+	exprFunc := isDouble[any](&ottl.StandardFloatGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return float64(2.7), nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

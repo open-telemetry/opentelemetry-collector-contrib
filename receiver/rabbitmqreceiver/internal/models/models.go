@@ -3,6 +3,11 @@
 
 package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 
+// ClusterName represents the RabbitMQ cluster name API response.
+type ClusterName struct {
+	Name string `json:"name"`
+}
+
 // Queue represents a queue in the API response
 type Queue struct {
 	// Identifiers

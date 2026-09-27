@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/signing
+
+note: Fix int64 precision loss in canonical payload — timestamps and integer attributes are now serialized as quoted decimal strings instead of IEEE-754 doubles, preventing distinct records from producing identical signatures.
+
+issues: [50881]
+
+subtext:
+
+change_logs: []

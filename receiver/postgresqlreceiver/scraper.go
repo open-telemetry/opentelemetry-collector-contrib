@@ -39,7 +39,8 @@ const (
 	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
 
-	defaultServiceName = "unknown_service:postgresql"
+	defaultServiceName  = "unknown_service:postgresql"
+	versionQueryTimeout = 5 * time.Second
 )
 
 // otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation,
@@ -65,7 +66,9 @@ type postgreSQLScraper struct {
 	queryPlanCache         *expirable.LRU[string, string]
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
+	serverEndpoint         serverEndpoint
 	lastExecutionTimestamp time.Time
+	dbVersion              string
 }
 
 type errsMux struct {
@@ -123,6 +126,7 @@ func newPostgreSQLScraper(
 	} else {
 		serviceInstanceID = getInstanceID(config.AddrConfig.Endpoint, settings.Logger)
 	}
+	endpoint := newServerEndpoint(config, settings.Logger)
 	mbConfig := metricsBuilderConfigForFeatureGate(config.MetricsBuilderConfig, useOTelSemconv)
 	return &postgreSQLScraper{
 		logger:             settings.Logger,
@@ -136,6 +140,7 @@ func newPostgreSQLScraper(
 		queryPlanCache:     queryPlanCache,
 		separateSchemaAttr: separateSchemaAttr,
 		serviceInstanceID:  serviceInstanceID,
+		serverEndpoint:     endpoint,
 		useOTelSemconv:     useOTelSemconv,
 	}, nil
 }
@@ -217,6 +222,8 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	defer listClient.Close()
 
+	p.ensureDBVersion(ctx, listClient)
+
 	if len(databases) == 0 {
 		dbList, dbErr := listClient.listDatabases(ctx)
 		if dbErr != nil {
@@ -285,6 +292,8 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return plog.NewLogs(), err
 	}
+
+	p.ensureDBVersion(ctx, dbClient)
 
 	var errs errsMux
 
@@ -378,6 +387,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 			attrString(atts, string(semconv.UserNameKey)),
 			attrString(atts, dbAttributePrefix+querySampleColumnState),
 			attrInt64(atts, dbAttributePrefix+querySampleColumnPID),
+			attrString(atts, dbAttributePrefix+querySampleColumnBackendStart),
 			attrString(atts, dbAttributePrefix+querySampleColumnApplicationName),
 			attrString(atts, string(semconv.NetworkPeerAddressKey)),
 			attrInt64(atts, string(semconv.NetworkPeerPortKey)),
@@ -409,6 +419,8 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	}
 
 	defer defaultDbClient.Close()
+
+	p.ensureDBVersion(ctx, defaultDbClient)
 
 	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
 	if err != nil {
@@ -464,6 +476,17 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		database, _ := row[string(semconv.DBNamespaceKey)].(string)
+		rolname, _ := row[dbAttributePrefix+"rolname"].(string)
+		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel).
+		// Include database and role to separate their independent counter streams.
+		// NUL cannot occur in PostgreSQL identifiers.
+		//
+		// Note: the SQL template does not select toplevel, so this key does not
+		// distinguish it. With pg_stat_statements.track=all, top-level and nested
+		// statements sharing the same database, role, and queryid can still collide.
+		cacheKeyPrefix := database + "\x00" + rolname + "\x00" + queryID.(string) + "\x00"
+
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]
@@ -472,14 +495,15 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			} else {
 				valInAtts = _val.(float64)
 			}
-			valInCache, exist := p.cache.Get(queryID.(string) + columnName)
+			cacheKey := cacheKeyPrefix + columnName
+			valInCache, exist := p.cache.Get(cacheKey)
 			valDelta := valInAtts
 			if exist {
 				valDelta = valInAtts - valInCache
 			}
 			finalValue := float64(0)
 			if valDelta > 0 {
-				p.cache.Add(queryID.(string)+columnName, valInAtts)
+				p.cache.Add(cacheKey, valInAtts)
 				finalValue = valDelta
 			}
 			if info.finalConverter != nil {
@@ -507,9 +531,11 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
+		rolname := item.Value[dbAttributePrefix+"rolname"].(string)
+		planCacheKey := database + "\x00" + rolname + "\x00" + queryID
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
-		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
+		plan, ok := p.queryPlanCache.Get(planCacheKey)
 		if !ok && explained < maxExplainEachInterval {
 			dbClient, err := clientFactory.getClient(ctx, database)
 			if err == nil {
@@ -519,7 +545,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 				}
 				// to avoid flood the error message. there are some internal queries meant to not be
 				// explained. we wait for the cache to expire and report the error again.
-				p.queryPlanCache.Add(queryID+"-plan", plan)
+				p.queryPlanCache.Add(planCacheKey, plan)
 				err = dbClient.Close()
 				if err != nil {
 					logger.Error("failed to close", zap.Error(err))
@@ -543,7 +569,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
 			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
-			item.Value[dbAttributePrefix+"rolname"].(string),
+			rolname,
 			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,
@@ -552,10 +578,11 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	}
 }
 
-// start resolves the credential provider (if a db_auth block is
-// configured) from the host extension map — only available now, at Start — and
-// injects it into the client factory so connections are built with it.
-func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error {
+// start resolves the credential provider (if a db_auth block is configured)
+// from the host extension map — only available now, at Start — and injects
+// it into the client factory. It also detects the server version once at
+// startup so it can be stamped on every emitted resource as db.system.version.
+func (p *postgreSQLScraper) start(ctx context.Context, host component.Host) error {
 	provider, err := p.config.resolveCredentialProvider(host.GetExtensions())
 	if err != nil {
 		return err
@@ -563,6 +590,22 @@ func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error 
 	if provider != nil {
 		p.clientFactory.setCredentialProvider(provider)
 	}
+
+	if p.metricsVersionEnabled() || p.logsVersionEnabled() {
+		vctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+		defer cancel()
+		if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
+			p.logger.Warn("failed to connect for version detection. db.system.version will not be set", zap.Error(err))
+		} else {
+			defer c.Close()
+			if v, err := c.getVersion(vctx); err != nil {
+				p.logger.Warn("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
+			} else {
+				p.dbVersion = v
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -571,6 +614,24 @@ func (p *postgreSQLScraper) shutdown(_ context.Context) error {
 		p.clientFactory.close()
 	}
 	return nil
+}
+
+func (p *postgreSQLScraper) metricsVersionEnabled() bool {
+	return p.config.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled
+}
+
+func (p *postgreSQLScraper) logsVersionEnabled() bool {
+	return p.config.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled
+}
+
+func (p *postgreSQLScraper) ensureDBVersion(ctx context.Context, c client) {
+	if p.dbVersion == "" && (p.metricsVersionEnabled() || p.logsVersionEnabled()) {
+		if v, err := c.getVersion(ctx); err == nil {
+			p.dbVersion = v
+		} else {
+			p.logger.Debug("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
+		}
+	}
 }
 
 func (p *postgreSQLScraper) backendsMetricsEnabled() bool {
@@ -1266,19 +1327,54 @@ func (*postgreSQLScraper) retrieveBackends(
 	r.Unlock()
 }
 
-// setupSemconvResourceBuilder sets service defaults, server.address, server.port, and UUID v5 service.instance.id.
-func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+// setServerResourceAttributes sets the attributes that identify the monitored server. They describe
+// the scraped endpoint rather than how telemetry is grouped into resources, so both resource models
+// emit them.
+func (p *postgreSQLScraper) setServerResourceAttributes(rb *metadata.ResourceBuilder) {
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-	if address, port, err := serverEndpointAttributes(p.config); err == nil {
-		rb.SetServerAddress(address)
-		rb.SetServerPort(port)
-	}
 	rb.SetServiceInstanceID(p.serviceInstanceID)
+	if p.serverEndpoint.resolved {
+		rb.SetServerAddress(p.serverEndpoint.address)
+		rb.SetServerPort(p.serverEndpoint.port)
+	}
+	if p.dbVersion != "" {
+		rb.SetDbSystemVersion(p.dbVersion)
+	}
+}
+
+// serverEndpoint is the resolved network location of the monitored server. An unresolved endpoint
+// leaves both attributes unset rather than reporting empty values.
+type serverEndpoint struct {
+	address  string
+	port     int64
+	resolved bool
+}
+
+// newServerEndpoint resolves the endpoint at scraper construction rather than per resource, since
+// the endpoint is immutable configuration and resolving it per resource would repeat an os.Hostname
+// call for every database, table and index emitted in a scrape. The host goes through the same
+// resolveLoopbackHost helper that service.instance.id uses, so the two cannot disagree about a
+// given endpoint, and both are fixed for the lifetime of the scraper.
+func newServerEndpoint(config *Config, logger *zap.Logger) serverEndpoint {
+	address, port, err := serverEndpointAttributes(config, logger)
+	if err != nil {
+		logger.Warn("Failed to parse endpoint; server.address and server.port will not be reported",
+			zap.String("endpoint", config.AddrConfig.Endpoint),
+			zap.Error(err))
+		return serverEndpoint{}
+	}
+	return serverEndpoint{address: address, port: port, resolved: true}
+}
+
+// setupSemconvResourceBuilder sets the single per-server resource used in semantic conventions mode,
+// where service.instance.id is a UUID v5.
+func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+	p.setServerResourceAttributes(rb)
 	return rb
 }
 
-func serverEndpointAttributes(config *Config) (string, int64, error) {
+func serverEndpointAttributes(config *Config, logger *zap.Logger) (string, int64, error) {
 	host, portString, err := net.SplitHostPort(config.AddrConfig.Endpoint)
 	if err != nil {
 		return "", 0, err
@@ -1288,16 +1384,35 @@ func serverEndpointAttributes(config *Config) (string, int64, error) {
 		return "", 0, err
 	}
 	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
-		host = path.Join("/", host, ".s.PGSQL."+portString)
+		return path.Join("/", host, ".s.PGSQL."+portString), port, nil
 	}
-	return host, port, nil
+	return resolveLoopbackHost(host, logger), port, nil
 }
 
-// setupLegacyResourceBuilder sets legacy per-entity resource attributes and host:port service.instance.id.
+// resolveLoopbackHost returns the name of the machine running the collector when host
+// is a loopback address. A loopback endpoint is only reachable when the database is
+// co-located with the collector, so the collector's host name identifies the instance,
+// whereas "localhost" would be reported identically by every monitored host.
+func resolveLoopbackHost(host string, logger *zap.Logger) string {
+	parsedIP := net.ParseIP(host)
+	if !strings.EqualFold(host, "localhost") && (parsedIP == nil || !parsedIP.IsLoopback()) {
+		return host
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		logger.Warn("Failed to resolve the collector host name; reporting the configured loopback address instead",
+			zap.String("host", host),
+			zap.Error(err))
+		return host
+	}
+	return hostname
+}
+
+// setupLegacyResourceBuilder adds the legacy per-entity resource attributes on top of the server
+// attributes, with a host:port service.instance.id.
 func (p *postgreSQLScraper) setupLegacyResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
-	rb.SetServiceInstanceID(p.serviceInstanceID)
-	rb.SetServiceName(defaultServiceName)
-	rb.SetServiceNamespace("")
+	p.setServerResourceAttributes(rb)
 	if database != "" {
 		rb.SetPostgresqlDatabaseName(database)
 	}
@@ -1326,7 +1441,7 @@ func (p *postgreSQLScraper) setupLogsResourceBuilder(rb *metadata.ResourceBuilde
 func resolveServiceInstanceSeed(config *Config, logger *zap.Logger) string {
 	endpoint := config.AddrConfig.Endpoint
 	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
-		address, _, err := serverEndpointAttributes(config)
+		address, _, err := serverEndpointAttributes(config, logger)
 		if err != nil {
 			logger.Warn("Failed to parse Unix endpoint for service.instance.id; using raw endpoint in UUID seed",
 				zap.String("endpoint", endpoint),
@@ -1352,19 +1467,13 @@ func resolveServiceInstanceSeed(config *Config, logger *zap.Logger) string {
 		return endpoint
 	}
 
-	parsedIP := net.ParseIP(host)
-	if !strings.EqualFold(host, "localhost") && (parsedIP == nil || !parsedIP.IsLoopback()) {
+	// Returning the endpoint untouched when nothing was resolved keeps already
+	// published UUIDs stable instead of round-tripping them through JoinHostPort.
+	resolved := resolveLoopbackHost(host, logger)
+	if resolved == host {
 		return endpoint
 	}
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers on different machines",
-			zap.String("endpoint", endpoint),
-			zap.Error(err))
-		return endpoint
-	}
-	return net.JoinHostPort(hostname, port)
+	return net.JoinHostPort(resolved, port)
 }
 
 func getInstanceID(instanceString string, logger *zap.Logger) string {
@@ -1375,13 +1484,5 @@ func getInstanceID(instanceString string, logger *zap.Logger) string {
 		return fallback
 	}
 
-	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
-		localhost, hostNameErr := os.Hostname()
-		if hostNameErr != nil {
-			logger.Warn("Failed getting localhost machine name to construct service.instance.id.")
-		} else {
-			host = localhost
-		}
-	}
-	return host + ":" + port
+	return resolveLoopbackHost(host, logger) + ":" + port
 }
