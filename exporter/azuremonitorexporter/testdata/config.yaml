@@ -12,6 +12,12 @@ azure_monitor/2:
   maxbatchinterval: 10s
   # shutdown channel timeout
   shutdown_timeout: 2s
+  telemetry_mappings:
+    traces:
+      http:
+        success:
+          server_policy: otel
+          additional_success_status_codes: [404, 409]
 
   sending_queue:
     # queue_size is the maximum number of items that can be queued before dropping data

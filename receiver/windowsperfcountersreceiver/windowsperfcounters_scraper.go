@@ -58,9 +58,14 @@ func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher,
 	var watchers []perfCounterMetricWatcher
 
 	for _, objCfg := range s.cfg.PerfCounters {
+		aggregationName, includeAggregationInstance := objCfg.aggregationSettings()
+		options := []winperfcounters.WatcherOption{winperfcounters.WithLogger(s.settings.Logger), winperfcounters.WithAggregationName(aggregationName)}
+		if includeAggregationInstance {
+			options = append(options, winperfcounters.WithIncludeAggregationInstance())
+		}
 		for _, instance := range instancesFromConfig(objCfg) {
 			for _, counterCfg := range objCfg.Counters {
-				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name, winperfcounters.WithLogger(s.settings.Logger))
+				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name, options...)
 				if err != nil {
 					errs = multierr.Append(errs, err)
 					continue

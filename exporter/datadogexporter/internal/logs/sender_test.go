@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,11 +29,11 @@ func TestSubmitLogs(t *testing.T) {
 		{
 			name: "same-tags",
 			payload: []datadogV2.HTTPLogItem{{
-				Ddsource: datadog.PtrString("golang"),
-				Ddtags:   datadog.PtrString("tag1:true"),
-				Hostname: datadog.PtrString("hostname"),
+				Ddsource: new("golang"),
+				Ddtags:   new("tag1:true"),
+				Hostname: new("hostname"),
 				Message:  "log 1",
-				Service:  datadog.PtrString("server"),
+				Service:  new("server"),
 				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
@@ -43,11 +42,11 @@ func TestSubmitLogs(t *testing.T) {
 					"service":  "server",
 				},
 			}, {
-				Ddsource: datadog.PtrString("golang"),
-				Ddtags:   datadog.PtrString("tag1:true"),
-				Hostname: datadog.PtrString("hostname"),
+				Ddsource: new("golang"),
+				Ddtags:   new("tag1:true"),
+				Hostname: new("hostname"),
 				Message:  "log 2",
-				Service:  datadog.PtrString("server"),
+				Service:  new("server"),
 				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
@@ -70,11 +69,11 @@ func TestSubmitLogs(t *testing.T) {
 		{
 			name: "different-tags",
 			payload: []datadogV2.HTTPLogItem{{
-				Ddsource: datadog.PtrString("golang"),
-				Ddtags:   datadog.PtrString("tag1:true"),
-				Hostname: datadog.PtrString("hostname"),
+				Ddsource: new("golang"),
+				Ddtags:   new("tag1:true"),
+				Hostname: new("hostname"),
 				Message:  "log 1",
-				Service:  datadog.PtrString("server"),
+				Service:  new("server"),
 				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
@@ -83,11 +82,11 @@ func TestSubmitLogs(t *testing.T) {
 					"service":  "server",
 				},
 			}, {
-				Ddsource: datadog.PtrString("golang"),
-				Ddtags:   datadog.PtrString("tag2:true"),
-				Hostname: datadog.PtrString("hostname"),
+				Ddsource: new("golang"),
+				Ddtags:   new("tag2:true"),
+				Hostname: new("hostname"),
 				Message:  "log 2",
-				Service:  datadog.PtrString("server"),
+				Service:  new("server"),
 				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
@@ -113,11 +112,11 @@ func TestSubmitLogs(t *testing.T) {
 		{
 			name: "two-batches",
 			payload: []datadogV2.HTTPLogItem{{
-				Ddsource: datadog.PtrString("golang"),
-				Ddtags:   datadog.PtrString("tag1:true"),
-				Hostname: datadog.PtrString("hostname"),
+				Ddsource: new("golang"),
+				Ddtags:   new("tag1:true"),
+				Hostname: new("hostname"),
 				Message:  "log 1",
-				Service:  datadog.PtrString("server"),
+				Service:  new("server"),
 				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
@@ -126,11 +125,11 @@ func TestSubmitLogs(t *testing.T) {
 					"service":  "server",
 				},
 			}, {
-				Ddsource: datadog.PtrString("golang"),
-				Ddtags:   datadog.PtrString("tag1:true"),
-				Hostname: datadog.PtrString("hostname"),
+				Ddsource: new("golang"),
+				Ddtags:   new("tag1:true"),
+				Hostname: new("hostname"),
 				Message:  "log 2",
-				Service:  datadog.PtrString("server"),
+				Service:  new("server"),
 				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
@@ -139,11 +138,11 @@ func TestSubmitLogs(t *testing.T) {
 					"service":  "server",
 				},
 			}, {
-				Ddsource: datadog.PtrString("golang"),
-				Ddtags:   datadog.PtrString("tag2:true"),
-				Hostname: datadog.PtrString("hostname"),
+				Ddsource: new("golang"),
+				Ddtags:   new("tag2:true"),
+				Hostname: new("hostname"),
 				Message:  "log 3",
-				Service:  datadog.PtrString("server"),
+				Service:  new("server"),
 				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
@@ -152,11 +151,11 @@ func TestSubmitLogs(t *testing.T) {
 					"service":  "server",
 				},
 			}, {
-				Ddsource: datadog.PtrString("golang"),
-				Ddtags:   datadog.PtrString("tag2:true"),
-				Hostname: datadog.PtrString("hostname"),
+				Ddsource: new("golang"),
+				Ddtags:   new("tag2:true"),
+				Hostname: new("hostname"),
 				Message:  "log 4",
-				Service:  datadog.PtrString("server"),
+				Service:  new("server"),
 				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
@@ -192,9 +191,6 @@ func TestSubmitLogs(t *testing.T) {
 			})
 			defer server.Close()
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0
-			clientConfig.IdleConnTimeout = 0
 			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Timeout = time.Second * 10
 			clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}

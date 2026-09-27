@@ -16,16 +16,24 @@ then
     exit 1
 fi
 
-if ! [[ ${CURRENT_STABLE} =~ $PATTERN ]]
+# The stable versions are optional: while the stable-base module set has no modules there is
+# nothing to bump, so a release can be prepared with the beta versions alone.
+STABLE_RELEASE=false
+if [[ -n ${CURRENT_STABLE} ]] || [[ -n ${CANDIDATE_STABLE} ]]
 then
-    echo "CURRENT_STABLE should follow a semver format and not be led by a v"
-    exit 1
-fi
+    STABLE_RELEASE=true
 
-if ! [[ ${CANDIDATE_STABLE} =~ $PATTERN ]]
-then
-    echo "CANDIDATE_STABLE should follow a semver format and not be led by a v"
-    exit 1
+    if ! [[ ${CURRENT_STABLE} =~ $PATTERN ]]
+    then
+        echo "CURRENT_STABLE should follow a semver format and not be led by a v"
+        exit 1
+    fi
+
+    if ! [[ ${CANDIDATE_STABLE} =~ $PATTERN ]]
+    then
+        echo "CANDIDATE_STABLE should follow a semver format and not be led by a v"
+        exit 1
+    fi
 fi
 
 # Expand CURRENT_BETA to escape . character by using [.]
@@ -46,18 +54,31 @@ make update-core-module-list
 git add internal/buildscripts/modules
 git commit -m "update core modules list" --allow-empty
 
-make chlog-update VERSION="v${CANDIDATE_BETA}"
+RELEASE_VERSION=v${CANDIDATE_STABLE}/v${CANDIDATE_BETA}
+if [ "${CANDIDATE_STABLE}" == "" ]; then
+    RELEASE_VERSION="v${CANDIDATE_BETA}"
+fi
+if [ "${CANDIDATE_BETA}" == "" ]; then
+    RELEASE_VERSION="v${CANDIDATE_STABLE}"
+fi
+
+make chlog-update VERSION="${RELEASE_VERSION}"
 git add --all
-git commit -m "changelog update ${CANDIDATE_BETA}"
+git commit -m "changelog update ${RELEASE_VERSION}"
 
 sed -i.bak "s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g" versions.yaml
-sed -i.bak "s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g" versions.yaml
+if [[ ${STABLE_RELEASE} == "true" ]]
+then
+    sed -i.bak "s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g" versions.yaml
+fi
 find . -name "*.bak" -type f -delete
 git add versions.yaml
-git commit -m "update version.yaml ${CANDIDATE_BETA} ${CANDIDATE_STABLE}"
+git commit -m "update version.yaml ${CANDIDATE_BETA}${CANDIDATE_STABLE:+ ${CANDIDATE_STABLE}}"
 
 sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/oteltestbedcol/builder-config.yaml
 sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/otelcontribcol/builder-config.yaml
+sed -i.bak "s/v${CURRENT_STABLE_ESCAPED}/v${CANDIDATE_STABLE}/g" ./cmd/oteltestbedcol/builder-config.yaml
+sed -i.bak "s/v${CURRENT_STABLE_ESCAPED}/v${CANDIDATE_STABLE}/g" ./cmd/otelcontribcol/builder-config.yaml
 sed -i.bak "s/${CURRENT_BETA_ESCAPED}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/otelcontribcol/builder-config.yaml
 sed -i.bak "s/${CURRENT_BETA_ESCAPED}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/oteltestbedcol/builder-config.yaml
 
@@ -65,11 +86,11 @@ find . -name "*.bak" -type f -delete
 make genotelcontribcol
 make genoteltestbedcol
 git add .
-git commit -m "builder config changes ${CANDIDATE_BETA}" || (echo "no builder config changes to commit")
+git commit -m "builder config changes ${CANDIDATE_STABLE}/${CANDIDATE_BETA}" || (echo "no builder config changes to commit")
 
 make multimod-prerelease
 git add .
-git commit -m "make multimod-prerelease changes ${CANDIDATE_BETA}" || (echo "no multimod changes to commit")
+git commit -m "make multimod-prerelease changes ${CANDIDATE_STABLE}/${CANDIDATE_BETA}" || (echo "no multimod changes to commit")
 
 pushd cmd/otelcontribcol
 go mod tidy
@@ -78,11 +99,18 @@ make otelcontribcol
 
 git push --set-upstream origin "${BRANCH}"
 
-gh pr create --head "$(git branch --show-current)" --title "[chore] Prepare release ${CANDIDATE_BETA}" --body "
+STABLE_SED_LINE=""
+if [[ ${STABLE_RELEASE} == "true" ]]
+then
+    STABLE_SED_LINE="
+- sed -i.bak s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g versions.yaml"
+fi
+
+gh pr create --head "$(git branch --show-current)" --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
 The following commands were run to prepare this release:
-- make chlog-update VERSION=v${CANDIDATE_BETA}
-- sed -i.bak s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g versions.yaml
-- sed -i.bak s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g versions.yaml
+- make chlog-update VERSION=v${RELEASE_VERSION}
+- sed -i.bak s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g versions.yaml${STABLE_SED_LINE}
+- sed -i.bak s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g versions.yaml${STABLE_SED_LINE}
 - make multimod-prerelease
 - make multimod-sync
 "

@@ -40,7 +40,7 @@ connector/roundrobinconnector/                                   @open-telemetry
 connector/routingconnector/                                      @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu @mwear
 connector/servicegraphconnector/                                 @open-telemetry/collector-contrib-approvers @mapno @JaredTan95
 connector/signaltometricsconnector/                              @open-telemetry/collector-contrib-approvers @ChrsMark @lahsivjar
-connector/slowsqlconnector/                                      @open-telemetry/collector-contrib-approvers @JaredTan95 @Frapschen @atoulme
+connector/slowsqlconnector/                                      @open-telemetry/collector-contrib-approvers @JaredTan95 @Frapschen
 connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen @iblancasa
 connector/sumconnector/                                          @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
 exporter/alertmanagerexporter/                                   @open-telemetry/collector-contrib-approvers @sokoide @mcube8
@@ -59,7 +59,7 @@ exporter/clickhouseexporter/                                     @open-telemetry
 exporter/coralogixexporter/                                      @open-telemetry/collector-contrib-approvers @povilasv @iblancasa @douglascamata
 exporter/datadogexporter/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @jade-guiton-dd @IbraheemA
 exporter/datasetexporter/                                        @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
-exporter/dorisexporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @joker-star-l
+exporter/dorisexporter/                                          @open-telemetry/collector-contrib-approvers @joker-star-l
 exporter/elasticsearchexporter/                                  @open-telemetry/collector-contrib-approvers @JaredTan95 @blakerouse @carsonip @lahsivjar
 exporter/faroexporter/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
 exporter/fileexporter/                                           @open-telemetry/collector-contrib-approvers @paulojmdias
@@ -67,17 +67,17 @@ exporter/googlecloudexporter/                                    @open-telemetry
 exporter/googlecloudpubsubexporter/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/googlecloudstorageexporter/                             @open-telemetry/collector-contrib-approvers @constanca-m @braydonk
 exporter/googlemanagedprometheusexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
-exporter/honeycombmarkerexporter/                                @open-telemetry/collector-contrib-approvers @VinozzZ @codeboten
+exporter/honeycombmarkerexporter/                                @open-telemetry/collector-contrib-approvers @VinozzZ
 exporter/influxdbexporter/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/kafkaexporter/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @paulojmdias
 exporter/loadbalancingexporter/                                  @open-telemetry/collector-contrib-approvers @rlankfo @iblancasa
 exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                                         @open-telemetry/collector-contrib-approvers @yotamloe
-exporter/mezmoexporter/                                          @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
-exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers @ps48
+exporter/natsexporter/                                           @open-telemetry/collector-contrib-approvers @suckatrash @kalebpace @ChrsMark
+exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers @ps48 @kylehounslow
 exporter/otelarrowexporter/                                      @open-telemetry/collector-contrib-approvers @jmacd @JakeDern
 exporter/prometheusexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @ArthurSens
-exporter/prometheusremotewriteexporter/                          @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil @dashpole @ArthurSens @ywwg
+exporter/prometheusremotewriteexporter/                          @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @ArthurSens @ywwg
 exporter/pulsarexporter/                                         @open-telemetry/collector-contrib-approvers @dao-jun
 exporter/rabbitmqexporter/                                       @open-telemetry/collector-contrib-approvers @atoulme
 exporter/sematextexporter/                                       @open-telemetry/collector-contrib-approvers @AkhigbeEromo
@@ -112,6 +112,7 @@ extension/encoding/otlpencodingextension/                        @open-telemetry
 extension/encoding/skywalkingencodingextension/                  @open-telemetry/collector-contrib-approvers @JaredTan95
 extension/encoding/textencodingextension/                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/                      @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
+extension/filetelemetrypolicyextension/                          @open-telemetry/collector-contrib-approvers @dashpole @jaronoff97 @mx-psi
 extension/googleclientauthextension/                             @open-telemetry/collector-contrib-approvers @dashpole @aabmass @braydonk @jsuereth @psx95 @ridwanmsharif
 extension/headerssetterextension/                                @open-telemetry/collector-contrib-approvers @VihasMakwana
 extension/healthcheckextension/                                  @open-telemetry/collector-contrib-approvers @evan-bradley @mwear
@@ -132,6 +133,7 @@ extension/opampcustommessages/                                   @open-telemetry
 extension/opampextension/                                        @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan @douglascamata @dpaasman00
 extension/pprofextension/                                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/remotetapextension/                                    @open-telemetry/collector-contrib-approvers @atoulme
+extension/sdnotifyextension/                                     @open-telemetry/collector-contrib-approvers @VihasMakwana @iypetrov
 extension/sigv4authextension/                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
 extension/solarwindsapmsettingsextension/                        @open-telemetry/collector-contrib-approvers @jerrytfleung @cheempz
 extension/storage/                                               @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @swiatekm @VihasMakwana
@@ -149,7 +151,7 @@ internal/datadog/e2e/                                            @open-telemetry
 internal/docker/                                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 internal/exp/metrics/                                            @open-telemetry/collector-contrib-approvers @RichieSams
 internal/filter/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-internal/grpcutil/                                               @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
+internal/grpcutil/                                               @open-telemetry/collector-contrib-approvers @jmacd @lquerel
 internal/healthcheck/                                            @open-telemetry/collector-contrib-approvers @evan-bradley
 internal/k8sconfig/                                              @open-telemetry/collector-contrib-approvers @dmitryax
 internal/k8sinventory/                                           @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark @krisztianfekete
@@ -173,11 +175,12 @@ pkg/expohisto/                                                   @open-telemetry
 pkg/golden/                                                      @open-telemetry/collector-contrib-approvers @atoulme
 pkg/kafka/configkafka/                                           @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @paulojmdias
 pkg/kafka/topic/                                                 @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
-pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
+pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
+pkg/ottl/contexts/xprofile/                                      @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers
-pkg/pdatautil/                                                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                         @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/sampling/                                                    @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
+pkg/semconvtest/                                                 @open-telemetry/collector-contrib-approvers @braydonk
 pkg/stanza/                                                      @open-telemetry/collector-contrib-approvers @andrzej-stencel @atoulme
 pkg/stanza/fileconsumer/                                         @open-telemetry/collector-contrib-approvers @andrzej-stencel @paulojmdias @VihasMakwana @braydonk
 pkg/stanza/operator/input/journald/                              @open-telemetry/collector-contrib-approvers @belimawr @namco1992
@@ -195,9 +198,10 @@ pkg/translator/signalfx/                                         @open-telemetry
 pkg/translator/skywalking/                                       @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/splunk/                                           @open-telemetry/collector-contrib-approvers @atoulme @dmitryax @crobert-1
 pkg/translator/zipkin/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
-pkg/winperfcounters/                                             @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @alxbl @pjanotti
+pkg/winperfcounters/                                             @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 pkg/xk8stest/                                                    @open-telemetry/collector-contrib-approvers @crobert-1
 pkg/xstreamencoding/                                             @open-telemetry/collector-contrib-approvers @Kavindu-Dodan
+processor/adaptivetailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @MikeGoldsmith @VinozzZ @jmacd
 processor/attributesprocessor/                                   @open-telemetry/collector-contrib-approvers @boostchicken
 processor/awsecsattributesprocessor/                             @open-telemetry/collector-contrib-approvers @povilasv @iblancasa @dmitryax
 processor/cardinalityguardianprocessor/                          @open-telemetry/collector-contrib-approvers @atoulme @YElayyat @jmacd
@@ -206,7 +210,6 @@ processor/cumulativetodeltaprocessor/                            @open-telemetry
 processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @RichieSams
 processor/deltatorateprocessor/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/drainprocessor/                                        @open-telemetry/collector-contrib-approvers @MikeGoldsmith @atoulme @martinjt
-processor/dynamicsamplingprocessor/                              @open-telemetry/collector-contrib-approvers @MikeGoldsmith @VinozzZ @jmacd
 processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/genainormalizerprocessor/                              @open-telemetry/collector-contrib-approvers @TylerHelmuth @kylehounslow
 processor/geoipprocessor/                                        @open-telemetry/collector-contrib-approvers @andrzej-stencel @michalpristas @rogercoll
@@ -220,7 +223,7 @@ processor/logstransformprocessor/                                @open-telemetry
 processor/lookupprocessor/                                       @open-telemetry/collector-contrib-approvers @jsvd @dehaansa @VihasMakwana
 processor/metricsgenerationprocessor/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @crobert-1
 processor/metricstarttimeprocessor/                              @open-telemetry/collector-contrib-approvers @dashpole @ridwanmsharif
-processor/metricstransformprocessor/                             @open-telemetry/collector-contrib-approvers @dmitryax
+processor/metricstransformprocessor/                             @open-telemetry/collector-contrib-approvers @dmitryax @himanshu130700
 processor/probabilisticsamplerprocessor/                         @open-telemetry/collector-contrib-approvers @jmacd
 processor/redactionprocessor/                                    @open-telemetry/collector-contrib-approvers @dmitryax @mx-psi @TylerHelmuth @iblancasa
 processor/remotetapprocessor/                                    @open-telemetry/collector-contrib-approvers @atoulme @jaronoff97
@@ -240,11 +243,14 @@ processor/resourcedetectionprocessor/internal/tencent/cvm/       @open-telemetry
 processor/resourcedetectionprocessor/internal/upcloud/           @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/vultr/             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourceprocessor/                                     @open-telemetry/collector-contrib-approvers @dmitryax
+processor/rollingspanlatencyprocessor/                           @open-telemetry/collector-contrib-approvers @atoulme @rnterbush @pavankrish123
 processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96 @dineshg13 @MikeGoldsmith
+processor/signingprocessor/                                      @open-telemetry/collector-contrib-approvers @hilmarf @jmacd
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/spanpruningprocessor/                                  @open-telemetry/collector-contrib-approvers @portertech @csmarchbanks
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @pankaj101A @jagan2221
 processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech @jmacd @csmarchbanks @carsonip
+processor/telemetrypolicyprocessor/                              @open-telemetry/collector-contrib-approvers @dashpole @jaronoff97 @mx-psi
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/transformprocessor/internal/logparsingfuncs/           @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @Dylan-M
 processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @schmikei @rnishtala-sumo
@@ -284,12 +290,12 @@ receiver/filelogreceiver/                                        @open-telemetry
 receiver/filestatsreceiver/                                      @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                                   @open-telemetry/collector-contrib-approvers @JonathanWamsley
 receiver/fluentforwardreceiver/                                  @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/githubreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @crobert-1 @TylerHelmuth
-receiver/gitlabreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @atoulme @niwoerner
-receiver/googlecloudmonitoringreceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth
+receiver/githubreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @crobert-1
+receiver/gitlabreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @niwoerner
+receiver/googlecloudmonitoringreceiver/                          @open-telemetry/collector-contrib-approvers @dashpole
 receiver/googlecloudpubsubpushreceiver/                          @open-telemetry/collector-contrib-approvers @constanca-m
 receiver/googlecloudpubsubreceiver/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
-receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @KiranmayiB @nsj07
+receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @nsj07
 receiver/haproxyreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                                    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
 receiver/hostmetricsreceiver/internal/scraper/cpuscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
@@ -304,9 +310,9 @@ receiver/hostmetricsreceiver/internal/scraper/processesscraper/  @open-telemetry
 receiver/hostmetricsreceiver/internal/scraper/processscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
 receiver/hostmetricsreceiver/internal/scraper/systemscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
 receiver/httpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @VenuEmmadi
-receiver/huaweicloudcesreceiver/                                 @open-telemetry/collector-contrib-approvers @heitorganzeli @narcis96
+receiver/huaweicloudcesreceiver/                                 @open-telemetry/collector-contrib-approvers @vyagh
 receiver/icmpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @atoulme @jkoronaAtCisco
-receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @ishleenk17 @Mrod1598 @pjanotti
+receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @ishleenk17 @pjanotti
 receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                         @open-telemetry/collector-contrib-approvers @yurishkuro
 receiver/journaldreceiver/                                       @open-telemetry/collector-contrib-approvers @belimawr @namco1992
@@ -316,12 +322,12 @@ receiver/k8sobjectsreceiver/                                     @open-telemetry
 receiver/kafkametricsreceiver/                                   @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkareceiver/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @paulojmdias
 receiver/kubeletstatsreceiver/                                   @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
-receiver/libhoneyreceiver/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @mterhar
+receiver/libhoneyreceiver/                                       @open-telemetry/collector-contrib-approvers @mterhar
 receiver/lokireceiver/                                           @open-telemetry/collector-contrib-approvers @mar4uk
 receiver/macosunifiedloggingreceiver/                            @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @atoulme
 receiver/memcachedreceiver/                                      @open-telemetry/collector-contrib-approvers @jsirianni
 receiver/mongodbatlasreceiver/                                   @open-telemetry/collector-contrib-approvers @justinianvoss22 @dyl10s @ishleenk17
-receiver/mongodbreceiver/                                        @open-telemetry/collector-contrib-approvers @justinianvoss22 @dyl10s @ishleenk17
+receiver/mongodbreceiver/                                        @open-telemetry/collector-contrib-approvers @justinianvoss22 @dyl10s @ishleenk17 @shrenikjain38 @ebrdarSplunk @XSAM @akshays-19 @sv-splunk @splunk-shanu
 receiver/mysqlreceiver/                                          @open-telemetry/collector-contrib-approvers @antonblock @ishleenk17 @ebrdarSplunk @XSAM @akshays-19 @sv-splunk @splunk-shanu
 receiver/namedpipereceiver/                                      @open-telemetry/collector-contrib-approvers @sinkingpoint
 receiver/netflowreceiver/                                        @open-telemetry/collector-contrib-approvers @evan-bradley @dlopes7
@@ -366,7 +372,6 @@ receiver/tlscheckreceiver/                                       @open-telemetry
 receiver/udplogreceiver/                                         @open-telemetry/collector-contrib-approvers @VihasMakwana
 receiver/vcenterreceiver/                                        @open-telemetry/collector-contrib-approvers @schmikei @ishleenk17
 receiver/vcrreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme @robertgustafsonsplunk @garrett-splunk
-receiver/wavefrontreceiver/                                      @open-telemetry/collector-contrib-approvers @samiura
 receiver/webhookeventreceiver/                                   @open-telemetry/collector-contrib-approvers @atoulme @shalper2
 receiver/windowseventlogreceiver/                                @open-telemetry/collector-contrib-approvers @mrsillydog @pjanotti
 receiver/windowsperfcountersreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti

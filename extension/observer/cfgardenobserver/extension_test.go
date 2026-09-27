@@ -17,8 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver/internal/metadata"
 )
 
-func strPtr(s string) *string { return &s }
-
 func TestContainerEndpoints(t *testing.T) {
 	handle := "14d91d46-6ebd-43a1-8e20-316d8e6a92a4"
 	ip := "1.2.3.4"
@@ -177,8 +175,8 @@ func TestIncludeAppLabels(t *testing.T) {
 	obs.apps[appID] = &resource.App{
 		Metadata: &resource.Metadata{
 			Labels: map[string]*string{
-				"app_label":  strPtr("app_value"),
-				"app_label2": strPtr("app_value2"),
+				"app_label":  new("app_value"),
+				"app_label2": new("app_value2"),
 			},
 		},
 	}
@@ -214,8 +212,8 @@ func TestContainerLabels(t *testing.T) {
 	app := &resource.App{
 		Metadata: &resource.Metadata{
 			Labels: map[string]*string{
-				"key":  strPtr("value"),
-				"key2": strPtr("value2"),
+				"key":  new("value"),
+				"key2": new("value2"),
 			},
 		},
 	}

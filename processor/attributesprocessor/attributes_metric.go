@@ -42,7 +42,7 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetr
 			for k := 0; k < metrics.Len(); k++ {
 				m := metrics.At(k)
 				if a.skipExpr != nil {
-					tCtx := ottlmetric.NewTransformContextPtr(rs, ils, m)
+					tCtx := ottlmetric.NewTransformContext(rs, ils, m)
 					skip, err := a.skipExpr.Eval(ctx, tCtx)
 					tCtx.Close()
 					if err != nil {

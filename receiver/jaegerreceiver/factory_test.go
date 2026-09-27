@@ -122,11 +122,6 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	thriftHTTPServerConfig.WriteTimeout = 0
-	thriftHTTPServerConfig.ReadHeaderTimeout = 0
-	thriftHTTPServerConfig.IdleTimeout = 0
-	thriftHTTPServerConfig.KeepAlivesEnabled = false
 	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  "0.0.0.0:14268",
 		Transport: confignet.TransportTypeTCP,

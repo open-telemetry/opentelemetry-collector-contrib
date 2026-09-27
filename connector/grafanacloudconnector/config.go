@@ -14,7 +14,9 @@ import (
 // Config defines the configuration options for the Grafana Cloud connector.
 type Config struct {
 	// HostIdentifiers defines the list of resource attributes used to derive
-	// a unique `grafana.host.id` value. In most cases, this should be [ "host.id" ]
+	// a unique `grafana.host.id` value. The first attribute present on a span's
+	// resource wins, so all telemetry sources reporting the same host must agree
+	// on which attribute they emit to avoid counting that host more than once.
 	HostIdentifiers      []string      `mapstructure:"host_identifiers"`
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 	// prevent unkeyed literal initialization

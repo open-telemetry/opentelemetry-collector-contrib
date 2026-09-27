@@ -9,16 +9,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 func Test_set(t *testing.T) {
-	input := pcommon.NewValueStr("original name")
-
 	target := &ottl.StandardGetSetter[pcommon.Value]{
 		Setter: func(_ context.Context, tCtx pcommon.Value, val any) error {
 			if val == nil {
@@ -49,7 +45,7 @@ func Test_set(t *testing.T) {
 			},
 		},
 		{
-			name:   "set nil value",
+			name:   "set nil",
 			setter: target,
 			getter: &ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
@@ -57,31 +53,24 @@ func Test_set(t *testing.T) {
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
-				if metadata.OttlSetAllowNilFeatureGate.IsEnabled() {
-					expectedValue.SetStr("nil was set")
-				} else {
-					expectedValue.SetStr("original name")
-				}
+				expectedValue.SetStr("nil was set")
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueStr(input.Str())
+			exprFunc := set(tt.setter, tt.getter)
+			input := pcommon.NewValueStr("original name")
 
-			fCtx := ottl.FunctionContext{
-				Set: componenttest.NewNopTelemetrySettings(),
-			}
-			exprFunc := set[pcommon.Value](tt.setter, tt.getter, fCtx)
-
-			result, err := exprFunc(nil, scenarioValue)
+			result, err := exprFunc(t.Context(), input)
 			require.NoError(t, err)
 			assert.Nil(t, result)
 
-			expected := pcommon.NewValueStr("")
+			expected := pcommon.NewValueStr("original name")
 			tt.want(expected)
 
-			assert.Equal(t, expected, scenarioValue)
+			assert.Equal(t, expected, input)
 		})
 	}
 }
@@ -101,18 +90,73 @@ func Test_set_get_nil(t *testing.T) {
 		},
 	}
 
-	fCtx := ottl.FunctionContext{
-		Set: componenttest.NewNopTelemetrySettings(),
-	}
-	exprFunc := set[any](setter, getter, fCtx)
+	exprFunc := set[any](setter, getter)
 
-	result, err := exprFunc(nil, nil)
+	result, err := exprFunc(t.Context(), nil)
 	require.NoError(t, err)
 	assert.Nil(t, result)
 
-	if metadata.OttlSetAllowNilFeatureGate.IsEnabled() {
-		assert.True(t, setterCalled, "setter should have been called with nil")
-	} else {
-		assert.False(t, setterCalled, "setter should not have been called")
+	assert.True(t, setterCalled, "setter should have been called with nil")
+}
+
+func Test_SetFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSetFactory[any]()
+		assert.Equal(t, "set", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSetFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &setArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Value"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSetFactory[any]()
+		args := factory.CreateDefaultArguments()
+		setArgs, ok := args.(*setArguments[any])
+		require.True(t, ok)
+		setArgs.Target = &ottl.StandardGetSetter[any]{
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		setArgs.Value = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createSetFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SetFactory args must be of type *setArguments[K]")
+	})
+}
+
+func BenchmarkSet(b *testing.B) {
+	target := &ottl.StandardGetSetter[any]{
+		Setter: func(context.Context, any, any) error {
+			return nil
+		},
+	}
+	getter := &ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "new value", nil
+		},
+	}
+	exprFunc := set[any](target, getter)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

@@ -43,6 +43,11 @@ For general information about all Collector repositories release procedures, see
    - `make push-tags MODSET=contrib-base`
    - `make push-tags MODSET=stable-base`
 
+   > **While `stable-base` has no modules:** leave `current-stable` and
+   > `candidate-stable` empty in the Prepare Release action and skip the
+   > `MODSET=stable-base` tag push. There is nothing to version until a component is
+   > promoted to stable.
+
    > **First-time bootstrap for `stable-base`:** The very first release of the
    > `stable-base` module set uses `current-stable=1.0.0` and
    > `candidate-stable=1.0.0` in the Prepare Release action (the sed is a no-op;

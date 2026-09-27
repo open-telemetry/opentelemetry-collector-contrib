@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2/checkpoints"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
@@ -281,7 +280,7 @@ func (h *hubWrapperAzeventhubImpl) getStartPos(
 	consumerGroup string,
 	partitionID string,
 ) azeventhubs.StartPosition {
-	startPos := azeventhubs.StartPosition{Latest: to.Ptr(true)}
+	startPos := azeventhubs.StartPosition{Latest: new(true)}
 	if applyOffset && h.config.Offset != "" {
 		startPos = azeventhubs.StartPosition{Offset: &h.config.Offset}
 	}

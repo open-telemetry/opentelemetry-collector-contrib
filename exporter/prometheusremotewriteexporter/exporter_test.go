@@ -48,6 +48,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
@@ -763,9 +764,7 @@ func Test_PushMetrics(t *testing.T) {
 
 					if tt.enableSendingRW2 {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV2MessageType
-						oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
-						testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)
-						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
+						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)()
 					} else {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 					}
@@ -949,6 +948,112 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func Test_validateAndSanitizeExternalLabels_TranslationStrategy(t *testing.T) {
+	tests := []struct {
+		name           string
+		strategy       translationStrategy
+		inputLabels    map[string]string
+		expectedLabels map[string]string
+	}{
+		{
+			name:     "NoTranslation preserves dots in external label keys",
+			strategy: noTranslation,
+			inputLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+			expectedLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+		},
+		{
+			name:     "NoUTF8EscapingWithSuffixes preserves dots in external label keys",
+			strategy: noUTF8EscapingWithSuffixes,
+			inputLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+			expectedLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+		},
+		{
+			name:     "UnderscoreEscapingWithSuffixes escapes dots to underscores",
+			strategy: underscoreEscapingWithSuffixes,
+			inputLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+			expectedLabels: map[string]string{
+				"app_kubernetes_io_name": "test-app",
+				"service_name":           "my-service",
+			},
+		},
+		{
+			name:     "UnderscoreEscapingWithoutSuffixes escapes dots to underscores",
+			strategy: underscoreEscapingWithoutSuffixes,
+			inputLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+			expectedLabels: map[string]string{
+				"app_kubernetes_io_name": "test-app",
+				"service_name":           "my-service",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.TranslationStrategy = tt.strategy
+			cfg.ExternalLabels = tt.inputLabels
+
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedLabels, newLabels)
+		})
+	}
+}
+
+func Test_validateAndSanitizeExternalLabels_DropSanitizationGate(t *testing.T) {
+	t.Run("gate enabled preserves multiple underscores and leading underscore", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, true)()
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.ExternalLabels = map[string]string{
+			"app__component": "backend",
+			"_custom_label":  "val",
+		}
+
+		newLabels, err := validateAndSanitizeExternalLabels(cfg)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{
+			"app__component": "backend",
+			"_custom_label":  "val",
+		}, newLabels)
+	})
+
+	t.Run("gate disabled collapses multiple underscores and sanitizes leading underscore", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, false)()
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.ExternalLabels = map[string]string{
+			"app__component": "backend",
+			"_custom_label":  "val",
+		}
+
+		newLabels, err := validateAndSanitizeExternalLabels(cfg)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{
+			"app_component":    "backend",
+			"key_custom_label": "val",
+		}, newLabels)
+	})
 }
 
 // Ensures that when we attach the Write-Ahead-Log(WAL) to the exporter,

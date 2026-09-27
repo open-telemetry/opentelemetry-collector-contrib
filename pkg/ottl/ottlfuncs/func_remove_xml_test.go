@@ -104,7 +104,7 @@ func Test_RemoveXML(t *testing.T) {
 			factory := NewRemoveXMLFactory[any]()
 			exprFunc, err := factory.CreateFunction(
 				ottl.FunctionContext{},
-				&RemoveXMLArguments[any]{
+				&removeXMLArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
 						Getter: func(context.Context, any) (any, error) {
 							return tt.document, nil
@@ -133,7 +133,7 @@ func TestCreateRemoveXMLFunc(t *testing.T) {
 
 	// Invalid XPath should error on function creation
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &RemoveXMLArguments[any]{
+		fCtx, &removeXMLArguments[any]{
 			XPath: "!",
 		},
 	)
@@ -142,7 +142,7 @@ func TestCreateRemoveXMLFunc(t *testing.T) {
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &RemoveXMLArguments[any]{
+		fCtx, &removeXMLArguments[any]{
 			Target: invalidXMLGetter(),
 			XPath:  "/",
 		},
@@ -158,5 +158,58 @@ func invalidXMLGetter() ottl.StandardStringGetter[any] {
 		Getter: func(context.Context, any) (any, error) {
 			return `<a>>>>>>>`, nil
 		},
+	}
+}
+
+func Test_RemoveXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewRemoveXMLFactory[any]()
+		assert.Equal(t, "RemoveXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewRemoveXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &removeXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "XPath"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewRemoveXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		removeArgs, ok := args.(*removeXMLArguments[any])
+		require.True(t, ok)
+		removeArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "<a>b</a>", nil
+			},
+		}
+		removeArgs.XPath = "/a"
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createRemoveXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "RemoveXML args must be of type *RemoveXMLAguments[K]")
+	})
+}
+
+func BenchmarkRemoveXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a><b/><b><c/></b></a>`, nil
+		},
+	}
+	exprFunc := removeXML[any](target, "/a/b")
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

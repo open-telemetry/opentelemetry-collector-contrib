@@ -39,7 +39,8 @@ const (
 	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
 
-	defaultServiceName = "unknown_service:postgresql"
+	defaultServiceName  = "unknown_service:postgresql"
+	versionQueryTimeout = 5 * time.Second
 )
 
 // otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation,
@@ -53,15 +54,21 @@ type postgreSQLScraper struct {
 	clientFactory postgreSQLClientFactory
 	mb            *metadata.MetricsBuilder
 	lb            *metadata.LogsBuilder
-	excludes      map[string]struct{}
-	cache         *lru.Cache[string, float64]
+	// excludedDatabases and excludes are the canonical exclusion config, built
+	// together at construction: the slice feeds the collection-query templates,
+	// the map answers membership checks. Read these, not config.ExcludeDatabases.
+	excludedDatabases []string
+	excludes          map[string]struct{}
+	cache             *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
 	separateSchemaAttr     bool
 	useOTelSemconv         bool
 	queryPlanCache         *expirable.LRU[string, string]
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
+	serverEndpoint         serverEndpoint
 	lastExecutionTimestamp time.Time
+	dbVersion              string
 }
 
 type errsMux struct {
@@ -94,8 +101,9 @@ func newPostgreSQLScraper(
 	cache *lru.Cache[string, float64],
 	queryPlanCache *expirable.LRU[string, string],
 ) (*postgreSQLScraper, error) {
-	excludes := make(map[string]struct{})
-	for _, db := range config.ExcludeDatabases {
+	excludedDatabases := config.ExcludeDatabases
+	excludes := make(map[string]struct{}, len(excludedDatabases))
+	for _, db := range excludedDatabases {
 		excludes[db] = struct{}{}
 	}
 	separateSchemaAttr := metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.IsEnabled()
@@ -118,6 +126,7 @@ func newPostgreSQLScraper(
 	} else {
 		serviceInstanceID = getInstanceID(config.AddrConfig.Endpoint, settings.Logger)
 	}
+	endpoint := newServerEndpoint(config, settings.Logger)
 	mbConfig := metricsBuilderConfigForFeatureGate(config.MetricsBuilderConfig, useOTelSemconv)
 	return &postgreSQLScraper{
 		logger:             settings.Logger,
@@ -125,11 +134,13 @@ func newPostgreSQLScraper(
 		clientFactory:      clientFactory,
 		mb:                 metadata.NewMetricsBuilder(mbConfig, settings),
 		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
+		excludedDatabases:  excludedDatabases,
 		excludes:           excludes,
 		cache:              cache,
 		queryPlanCache:     queryPlanCache,
 		separateSchemaAttr: separateSchemaAttr,
 		serviceInstanceID:  serviceInstanceID,
+		serverEndpoint:     endpoint,
 		useOTelSemconv:     useOTelSemconv,
 	}, nil
 }
@@ -138,6 +149,12 @@ var semconvModeMetricAttributeNames = [...]string{
 	string(semconv.DBNamespaceKey),
 	string(semconv.DBCollectionNameKey),
 	string(metadata.PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName),
+}
+
+// isExcluded reports whether the database is listed in exclude_databases.
+func (p *postgreSQLScraper) isExcluded(database string) bool {
+	_, excluded := p.excludes[database]
+	return excluded
 }
 
 func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, useOTelSemconv bool) metadata.MetricsBuilderConfig {
@@ -205,6 +222,8 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	defer listClient.Close()
 
+	p.ensureDBVersion(ctx, listClient)
+
 	if len(databases) == 0 {
 		dbList, dbErr := listClient.listDatabases(ctx)
 		if dbErr != nil {
@@ -215,7 +234,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	var filteredDatabases []string
 	for _, db := range databases {
-		if _, ok := p.excludes[db]; !ok {
+		if !p.isExcluded(db) {
 			filteredDatabases = append(filteredDatabases, db)
 		}
 	}
@@ -257,7 +276,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
-	p.collectSharedRelationLocks(ctx, now, listClient, &errs)
+	p.collectServerScopedLocks(ctx, now, listClient, &errs)
 
 	if p.useOTelSemconv {
 		rb := p.setupSemconvResourceBuilder(p.mb.NewResourceBuilder())
@@ -273,6 +292,8 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return plog.NewLogs(), err
 	}
+
+	p.ensureDBVersion(ctx, dbClient)
 
 	var errs errsMux
 
@@ -343,7 +364,7 @@ func attrFloat64(atts map[string]any, key string) float64 {
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, logger)
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, p.excludedDatabases, logger)
 	p.newestQueryTimestamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)
@@ -357,7 +378,8 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 				logCtx = ctx
 			}
 		}
-		p.lb.RecordDbServerQuerySampleEvent(logCtx,
+		p.lb.RecordDbServerQuerySampleEvent(
+			logCtx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
 			attrString(atts, string(semconv.DBNamespaceKey)),
@@ -365,6 +387,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 			attrString(atts, string(semconv.UserNameKey)),
 			attrString(atts, dbAttributePrefix+querySampleColumnState),
 			attrInt64(atts, dbAttributePrefix+querySampleColumnPID),
+			attrString(atts, dbAttributePrefix+querySampleColumnBackendStart),
 			attrString(atts, dbAttributePrefix+querySampleColumnApplicationName),
 			attrString(atts, string(semconv.NetworkPeerAddressKey)),
 			attrInt64(atts, string(semconv.NetworkPeerPortKey)),
@@ -397,7 +420,9 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 	defer defaultDbClient.Close()
 
-	rows, err := defaultDbClient.getTopQuery(ctx, limit, logger)
+	p.ensureDBVersion(ctx, defaultDbClient)
+
+	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
 	if err != nil {
 		logger.Error("failed to get top query", zap.Error(err))
 		mux.addPartial(err)
@@ -428,6 +453,12 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	pq := make(priorityqueue.PriorityQueue[map[string]any, float64], 0)
 
 	for i, row := range rows {
+		// The template filters excluded databases server side; this guards the EXPLAIN
+		// connection below in case a row slips through, before the row touches the cache.
+		if database, _ := row[string(semconv.DBNamespaceKey)].(string); p.isExcluded(database) {
+			continue
+		}
+
 		queryID := row[dbAttributePrefix+queryidColumnName]
 
 		if queryID == nil {
@@ -437,6 +468,25 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		// A dropped database can leave stats in pg_stat_statements with a NULL
+		// db.namespace; the template's WHERE/INNER JOIN filters these, but skip
+		// defensively so a regression cannot re-trigger the type-assertion panic.
+		if row[string(semconv.DBNamespaceKey)] == nil {
+			logger.Debug("skipping top query row with nil db.namespace (database may have been dropped)")
+			continue
+		}
+
+		database, _ := row[string(semconv.DBNamespaceKey)].(string)
+		rolname, _ := row[dbAttributePrefix+"rolname"].(string)
+		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel).
+		// Include database and role to separate their independent counter streams.
+		// NUL cannot occur in PostgreSQL identifiers.
+		//
+		// Note: the SQL template does not select toplevel, so this key does not
+		// distinguish it. With pg_stat_statements.track=all, top-level and nested
+		// statements sharing the same database, role, and queryid can still collide.
+		cacheKeyPrefix := database + "\x00" + rolname + "\x00" + queryID.(string) + "\x00"
+
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]
@@ -445,14 +495,15 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			} else {
 				valInAtts = _val.(float64)
 			}
-			valInCache, exist := p.cache.Get(queryID.(string) + columnName)
+			cacheKey := cacheKeyPrefix + columnName
+			valInCache, exist := p.cache.Get(cacheKey)
 			valDelta := valInAtts
 			if exist {
 				valDelta = valInAtts - valInCache
 			}
 			finalValue := float64(0)
 			if valDelta > 0 {
-				p.cache.Add(queryID.(string)+columnName, valInAtts)
+				p.cache.Add(cacheKey, valInAtts)
 				finalValue = valDelta
 			}
 			if info.finalConverter != nil {
@@ -479,11 +530,13 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		item := heap.Pop(&pq).(*priorityqueue.QueueItem[map[string]any, float64])
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
+		database := item.Value[string(semconv.DBNamespaceKey)].(string)
+		rolname := item.Value[dbAttributePrefix+"rolname"].(string)
+		planCacheKey := database + "\x00" + rolname + "\x00" + queryID
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
-		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
+		plan, ok := p.queryPlanCache.Get(planCacheKey)
 		if !ok && explained < maxExplainEachInterval {
-			database := item.Value[string(semconv.DBNamespaceKey)].(string)
 			dbClient, err := clientFactory.getClient(ctx, database)
 			if err == nil {
 				plan, err = dbClient.explainQuery(ctx, rawQuery, queryID, logger)
@@ -492,7 +545,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 				}
 				// to avoid flood the error message. there are some internal queries meant to not be
 				// explained. we wait for the cache to expire and report the error again.
-				p.queryPlanCache.Add(queryID+"-plan", plan)
+				p.queryPlanCache.Add(planCacheKey, plan)
 				err = dbClient.Close()
 				if err != nil {
 					logger.Error("failed to close", zap.Error(err))
@@ -505,7 +558,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			context.Background(),
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			item.Value[string(semconv.DBNamespaceKey)].(string),
+			database,
 			query,
 			item.Value[dbAttributePrefix+callsColumnName].(int64),
 			item.Value[dbAttributePrefix+rowsColumnName].(int64),
@@ -516,7 +569,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
 			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
-			item.Value[dbAttributePrefix+"rolname"].(string),
+			rolname,
 			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,
@@ -525,10 +578,11 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	}
 }
 
-// start resolves the credential provider (if a db_auth block is
-// configured) from the host extension map — only available now, at Start — and
-// injects it into the client factory so connections are built with it.
-func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error {
+// start resolves the credential provider (if a db_auth block is configured)
+// from the host extension map — only available now, at Start — and injects
+// it into the client factory. It also detects the server version once at
+// startup so it can be stamped on every emitted resource as db.system.version.
+func (p *postgreSQLScraper) start(ctx context.Context, host component.Host) error {
 	provider, err := p.config.resolveCredentialProvider(host.GetExtensions())
 	if err != nil {
 		return err
@@ -536,6 +590,22 @@ func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error 
 	if provider != nil {
 		p.clientFactory.setCredentialProvider(provider)
 	}
+
+	if p.metricsVersionEnabled() || p.logsVersionEnabled() {
+		vctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+		defer cancel()
+		if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
+			p.logger.Warn("failed to connect for version detection. db.system.version will not be set", zap.Error(err))
+		} else {
+			defer c.Close()
+			if v, err := c.getVersion(vctx); err != nil {
+				p.logger.Warn("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
+			} else {
+				p.dbVersion = v
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -544,6 +614,60 @@ func (p *postgreSQLScraper) shutdown(_ context.Context) error {
 		p.clientFactory.close()
 	}
 	return nil
+}
+
+func (p *postgreSQLScraper) metricsVersionEnabled() bool {
+	return p.config.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled
+}
+
+func (p *postgreSQLScraper) logsVersionEnabled() bool {
+	return p.config.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled
+}
+
+func (p *postgreSQLScraper) ensureDBVersion(ctx context.Context, c client) {
+	if p.dbVersion == "" && (p.metricsVersionEnabled() || p.logsVersionEnabled()) {
+		if v, err := c.getVersion(ctx); err == nil {
+			p.dbVersion = v
+		} else {
+			p.logger.Debug("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
+		}
+	}
+}
+
+func (p *postgreSQLScraper) backendsMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlBackends.Enabled
+}
+
+func (p *postgreSQLScraper) dbSizeMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlDbSize.Enabled
+}
+
+func (p *postgreSQLScraper) databaseStatsMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlCommits.Enabled ||
+		m.PostgresqlRollbacks.Enabled ||
+		m.PostgresqlDeadlocks.Enabled ||
+		m.PostgresqlTempFiles.Enabled ||
+		m.PostgresqlTempIo.Enabled ||
+		m.PostgresqlTupUpdated.Enabled ||
+		m.PostgresqlTupReturned.Enabled ||
+		m.PostgresqlTupFetched.Enabled ||
+		m.PostgresqlTupInserted.Enabled ||
+		m.PostgresqlTupDeleted.Enabled ||
+		m.PostgresqlBlksHit.Enabled ||
+		m.PostgresqlBlksRead.Enabled
+}
+
+// pg_stat_database_conflicts counters are only populated on standby servers, so
+// this is checked separately to avoid an unnecessary query on primaries.
+func (p *postgreSQLScraper) databaseConflictsMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled
+}
+
+// pg_stat_statements requires an extension that may not be installed, so this is
+// checked separately to avoid an unnecessary erroring query when it's absent.
+func (p *postgreSQLScraper) executionTimeMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryExecutionTime.Enabled
 }
 
 func (p *postgreSQLScraper) retrieveDBMetrics(
@@ -555,23 +679,27 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 ) {
 	wg := &sync.WaitGroup{}
 
-	wg.Add(3)
-	go p.retrieveBackends(ctx, wg, listClient, databases, r, errs)
-	go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
-	go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
+	if p.backendsMetricsEnabled() {
+		wg.Add(1)
+		go p.retrieveBackends(ctx, wg, listClient, databases, r, errs)
+	}
 
-	// pg_stat_database_conflicts is queried separately and only when the metric is
-	// enabled, since the counters are only populated on standby servers and would
-	// otherwise add an unnecessary query on every scrape.
-	if p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled {
+	if p.dbSizeMetricsEnabled() {
+		wg.Add(1)
+		go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
+	}
+
+	if p.databaseStatsMetricsEnabled() {
+		wg.Add(1)
+		go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
+	}
+
+	if p.databaseConflictsMetricsEnabled() {
 		wg.Add(1)
 		go p.retrieveDatabaseConflicts(ctx, wg, listClient, databases, r, errs)
 	}
 
-	// pg_stat_statements is queried separately and only when the metric is enabled, since it
-	// requires the pg_stat_statements extension and would otherwise add an unnecessary query
-	// (that errors when the extension is absent) on every scrape.
-	if p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryExecutionTime.Enabled {
+	if p.executionTimeMetricsEnabled() {
 		wg.Add(1)
 		go p.retrieveExecutionTime(ctx, wg, listClient, databases, r, errs)
 	}
@@ -626,15 +754,54 @@ func formatNamespace(database, schema string) string {
 	return database + "|" + schema
 }
 
+func (p *postgreSQLScraper) blocksReadMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlBlocksRead.Enabled
+}
+
+func (p *postgreSQLScraper) perTableFieldsMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlRows.Enabled ||
+		m.PostgresqlOperations.Enabled ||
+		m.PostgresqlTableSize.Enabled ||
+		m.PostgresqlTableVacuumCount.Enabled ||
+		m.PostgresqlSequentialScans.Enabled
+}
+
+// Also true whenever perTableFieldsMetricsEnabled is, since the full per-table
+// query already produces the count as a side effect.
+func (p *postgreSQLScraper) tableCountMetricsEnabled() bool {
+	return p.perTableFieldsMetricsEnabled() || p.config.MetricsBuilderConfig.Metrics.PostgresqlTableCount.Enabled
+}
+
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
-	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
-	if err != nil {
-		errs.addPartial(err)
+	var blockReads map[tableIdentifier]tableIOStats
+	if p.blocksReadMetricsEnabled() {
+		var err error
+		blockReads, err = dbClient.getBlocksReadByTable(ctx, db)
+		if err != nil {
+			errs.addPartial(err)
+		}
 	}
 
-	tableMetrics, err := dbClient.getDatabaseTableMetrics(ctx, db)
-	if err != nil {
-		errs.addPartial(err)
+	needsPerTableFields := p.perTableFieldsMetricsEnabled()
+	needsTableMetrics := p.tableCountMetricsEnabled()
+
+	var tableMetrics map[tableIdentifier]tableStats
+	switch {
+	case needsPerTableFields:
+		var err error
+		tableMetrics, err = dbClient.getDatabaseTableMetrics(ctx, db)
+		if err != nil {
+			errs.addPartial(err)
+		}
+		numTables = int64(len(tableMetrics))
+	case needsTableMetrics:
+		// table.count is the only enabled table metric — use the cheap count.
+		var err error
+		numTables, err = dbClient.getTableCount(ctx)
+		if err != nil {
+			errs.addPartial(err)
+		}
 	}
 
 	for tableKey, tm := range tableMetrics {
@@ -675,7 +842,12 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 		}
 	}
-	return int64(len(tableMetrics))
+	return numTables
+}
+
+func (p *postgreSQLScraper) indexMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlIndexScans.Enabled || m.PostgresqlIndexSize.Enabled
 }
 
 func (p *postgreSQLScraper) collectIndexes(
@@ -685,6 +857,10 @@ func (p *postgreSQLScraper) collectIndexes(
 	database string,
 	errs *errsMux,
 ) {
+	if !p.indexMetricsEnabled() {
+		return
+	}
+
 	idxStats, err := client.getIndexStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
@@ -708,6 +884,10 @@ func (p *postgreSQLScraper) collectIndexes(
 	}
 }
 
+func (p *postgreSQLScraper) functionCallsMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlFunctionCalls.Enabled
+}
+
 func (p *postgreSQLScraper) collectFunctions(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -715,6 +895,10 @@ func (p *postgreSQLScraper) collectFunctions(
 	database string,
 	errs *errsMux,
 ) {
+	if !p.functionCallsMetricsEnabled() {
+		return
+	}
+
 	funcStats, err := client.getFunctionStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
@@ -760,6 +944,17 @@ func (p *postgreSQLScraper) collectVectorStats(
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
+// vectorSearchMetricsEnabled reports whether any of the 3 metrics fed by
+// getVectorSearchStats are enabled. All 3 are opt-in and derived from the same
+// pg_stat_statements query, so the query is skipped entirely unless at least one
+// of them is enabled.
+func (p *postgreSQLScraper) vectorSearchMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlVectorSearchCalls.Enabled ||
+		m.PostgresqlVectorSearchDuration.Enabled ||
+		m.PostgresqlVectorSearchRowsReturned.Enabled
+}
+
 // recordVectorSearchStats records the vector search metrics into the metrics builder and reports
 // whether any datapoints were recorded. It does not emit a ResourceMetrics itself; collectVectorStats
 // performs the consolidated emit.
@@ -770,11 +965,7 @@ func (p *postgreSQLScraper) recordVectorSearchStats(
 	database string,
 	errs *errsMux,
 ) bool {
-	// All metrics are opt-in and derived from the same pg_stat_statements query, so skip
-	// the collection entirely unless at least one of them is enabled.
-	if !p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchCalls.Enabled &&
-		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchDuration.Enabled &&
-		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
+	if !p.vectorSearchMetricsEnabled() {
 		return false
 	}
 
@@ -802,6 +993,15 @@ func (p *postgreSQLScraper) recordVectorSearchStats(
 	return recorded
 }
 
+// vectorInsertMetricsEnabled reports whether either of the 2 metrics fed by
+// getVectorInsertStats is enabled. Both are opt-in and derived from the same
+// pg_stat_statements query, so the query is skipped entirely unless at least one
+// of them is enabled.
+func (p *postgreSQLScraper) vectorInsertMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlVectorInsertRows.Enabled || m.PostgresqlVectorInsertDuration.Enabled
+}
+
 // recordVectorInsertStats records the vector insert metrics into the metrics builder and reports
 // whether any datapoints were recorded. Like recordVectorSearchStats it does not emit a
 // ResourceMetrics itself; collectVectorStats performs the consolidated emit.
@@ -812,10 +1012,7 @@ func (p *postgreSQLScraper) recordVectorInsertStats(
 	database string,
 	errs *errsMux,
 ) bool {
-	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
-	// the collection entirely unless at least one of them is enabled.
-	if !p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertRows.Enabled &&
-		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertDuration.Enabled {
+	if !p.vectorInsertMetricsEnabled() {
 		return false
 	}
 
@@ -835,12 +1032,25 @@ func (p *postgreSQLScraper) recordVectorInsertStats(
 	return recorded
 }
 
+func (p *postgreSQLScraper) bgWriterMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlBgwriterBuffersAllocated.Enabled ||
+		m.PostgresqlBgwriterBuffersWrites.Enabled ||
+		m.PostgresqlBgwriterCheckpointCount.Enabled ||
+		m.PostgresqlBgwriterDuration.Enabled ||
+		m.PostgresqlBgwriterMaxwritten.Enabled
+}
+
 func (p *postgreSQLScraper) collectBGWriterStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
+	if !p.bgWriterMetricsEnabled() {
+		return
+	}
+
 	bgStats, err := client.getBGWriterStats(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -867,7 +1077,12 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
-// collectDatabaseLocks collects the locks on relations local to the connected database
+// Shared by collectDatabaseLocks and collectServerScopedLocks, which both feed this one metric.
+func (p *postgreSQLScraper) databaseLocksMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled
+}
+
+// collectDatabaseLocks collects the locks whose target belongs to the connected database
 func (p *postgreSQLScraper) collectDatabaseLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -875,6 +1090,10 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	database string,
 	errs *errsMux,
 ) {
+	if !p.databaseLocksMetricsEnabled() {
+		return
+	}
+
 	dbLocks, err := dbClient.getDatabaseLocks(ctx)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database locks", zap.String("database", database), zap.Error(err))
@@ -886,22 +1105,32 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	}
 }
 
-func (p *postgreSQLScraper) collectSharedRelationLocks(
+// collectServerScopedLocks collects the locks that belong to no single database:
+// locks on shared catalogs and locks whose target is a transaction ID.
+func (p *postgreSQLScraper) collectServerScopedLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
-	sharedLocks, err := client.getSharedRelationLocks(ctx)
+	if !p.databaseLocksMetricsEnabled() {
+		return
+	}
+
+	serverLocks, err := client.getServerScopedLocks(ctx)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching shared relation locks", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching server-scoped locks", zap.Error(err))
 		errs.addPartial(err)
 		return
 	}
-	// Shared relations (pg_locks.database = 0) are server-scoped, so db.namespace is empty.
-	for _, dbLock := range sharedLocks {
+	// These locks are not attributable to a database, so db.namespace is empty.
+	for _, dbLock := range serverLocks {
 		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, "")
 	}
+}
+
+func (p *postgreSQLScraper) maxConnectionsMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlConnectionMax.Enabled
 }
 
 func (p *postgreSQLScraper) collectMaxConnections(
@@ -910,6 +1139,10 @@ func (p *postgreSQLScraper) collectMaxConnections(
 	client client,
 	errs *errsMux,
 ) {
+	if !p.maxConnectionsMetricsEnabled() {
+		return
+	}
+
 	mc, err := client.getMaxConnections(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -918,12 +1151,24 @@ func (p *postgreSQLScraper) collectMaxConnections(
 	p.mb.RecordPostgresqlConnectionMaxDataPoint(now, mc)
 }
 
+// wal.delay/wal.lag naming depends on a feature gate; both are checked here.
+func (p *postgreSQLScraper) replicationMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlReplicationDataDelay.Enabled ||
+		m.PostgresqlWalDelay.Enabled ||
+		m.PostgresqlWalLag.Enabled
+}
+
 func (p *postgreSQLScraper) collectReplicationStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
+	if !p.replicationMetricsEnabled() {
+		return
+	}
+
 	rss, err := client.getReplicationStats(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -957,12 +1202,20 @@ func (p *postgreSQLScraper) collectReplicationStats(
 	}
 }
 
+func (p *postgreSQLScraper) walAgeMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlWalAge.Enabled
+}
+
 func (p *postgreSQLScraper) collectWalAge(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
+	if !p.walAgeMetricsEnabled() {
+		return
+	}
+
 	walAge, err := client.getLatestWalAgeSeconds(ctx)
 	if errors.Is(err, errNoLastArchive) {
 		// return no error as there is no last archive to derive the value from
@@ -1074,19 +1327,54 @@ func (*postgreSQLScraper) retrieveBackends(
 	r.Unlock()
 }
 
-// setupSemconvResourceBuilder sets service defaults, server.address, server.port, and UUID v5 service.instance.id.
-func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+// setServerResourceAttributes sets the attributes that identify the monitored server. They describe
+// the scraped endpoint rather than how telemetry is grouped into resources, so both resource models
+// emit them.
+func (p *postgreSQLScraper) setServerResourceAttributes(rb *metadata.ResourceBuilder) {
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-	if address, port, err := serverEndpointAttributes(p.config); err == nil {
-		rb.SetServerAddress(address)
-		rb.SetServerPort(port)
-	}
 	rb.SetServiceInstanceID(p.serviceInstanceID)
+	if p.serverEndpoint.resolved {
+		rb.SetServerAddress(p.serverEndpoint.address)
+		rb.SetServerPort(p.serverEndpoint.port)
+	}
+	if p.dbVersion != "" {
+		rb.SetDbSystemVersion(p.dbVersion)
+	}
+}
+
+// serverEndpoint is the resolved network location of the monitored server. An unresolved endpoint
+// leaves both attributes unset rather than reporting empty values.
+type serverEndpoint struct {
+	address  string
+	port     int64
+	resolved bool
+}
+
+// newServerEndpoint resolves the endpoint at scraper construction rather than per resource, since
+// the endpoint is immutable configuration and resolving it per resource would repeat an os.Hostname
+// call for every database, table and index emitted in a scrape. The host goes through the same
+// resolveLoopbackHost helper that service.instance.id uses, so the two cannot disagree about a
+// given endpoint, and both are fixed for the lifetime of the scraper.
+func newServerEndpoint(config *Config, logger *zap.Logger) serverEndpoint {
+	address, port, err := serverEndpointAttributes(config, logger)
+	if err != nil {
+		logger.Warn("Failed to parse endpoint; server.address and server.port will not be reported",
+			zap.String("endpoint", config.AddrConfig.Endpoint),
+			zap.Error(err))
+		return serverEndpoint{}
+	}
+	return serverEndpoint{address: address, port: port, resolved: true}
+}
+
+// setupSemconvResourceBuilder sets the single per-server resource used in semantic conventions mode,
+// where service.instance.id is a UUID v5.
+func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+	p.setServerResourceAttributes(rb)
 	return rb
 }
 
-func serverEndpointAttributes(config *Config) (string, int64, error) {
+func serverEndpointAttributes(config *Config, logger *zap.Logger) (string, int64, error) {
 	host, portString, err := net.SplitHostPort(config.AddrConfig.Endpoint)
 	if err != nil {
 		return "", 0, err
@@ -1096,16 +1384,35 @@ func serverEndpointAttributes(config *Config) (string, int64, error) {
 		return "", 0, err
 	}
 	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
-		host = path.Join("/", host, ".s.PGSQL."+portString)
+		return path.Join("/", host, ".s.PGSQL."+portString), port, nil
 	}
-	return host, port, nil
+	return resolveLoopbackHost(host, logger), port, nil
 }
 
-// setupLegacyResourceBuilder sets legacy per-entity resource attributes and host:port service.instance.id.
+// resolveLoopbackHost returns the name of the machine running the collector when host
+// is a loopback address. A loopback endpoint is only reachable when the database is
+// co-located with the collector, so the collector's host name identifies the instance,
+// whereas "localhost" would be reported identically by every monitored host.
+func resolveLoopbackHost(host string, logger *zap.Logger) string {
+	parsedIP := net.ParseIP(host)
+	if !strings.EqualFold(host, "localhost") && (parsedIP == nil || !parsedIP.IsLoopback()) {
+		return host
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		logger.Warn("Failed to resolve the collector host name; reporting the configured loopback address instead",
+			zap.String("host", host),
+			zap.Error(err))
+		return host
+	}
+	return hostname
+}
+
+// setupLegacyResourceBuilder adds the legacy per-entity resource attributes on top of the server
+// attributes, with a host:port service.instance.id.
 func (p *postgreSQLScraper) setupLegacyResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
-	rb.SetServiceInstanceID(p.serviceInstanceID)
-	rb.SetServiceName(defaultServiceName)
-	rb.SetServiceNamespace("")
+	p.setServerResourceAttributes(rb)
 	if database != "" {
 		rb.SetPostgresqlDatabaseName(database)
 	}
@@ -1134,7 +1441,7 @@ func (p *postgreSQLScraper) setupLogsResourceBuilder(rb *metadata.ResourceBuilde
 func resolveServiceInstanceSeed(config *Config, logger *zap.Logger) string {
 	endpoint := config.AddrConfig.Endpoint
 	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
-		address, _, err := serverEndpointAttributes(config)
+		address, _, err := serverEndpointAttributes(config, logger)
 		if err != nil {
 			logger.Warn("Failed to parse Unix endpoint for service.instance.id; using raw endpoint in UUID seed",
 				zap.String("endpoint", endpoint),
@@ -1160,19 +1467,13 @@ func resolveServiceInstanceSeed(config *Config, logger *zap.Logger) string {
 		return endpoint
 	}
 
-	parsedIP := net.ParseIP(host)
-	if !strings.EqualFold(host, "localhost") && (parsedIP == nil || !parsedIP.IsLoopback()) {
+	// Returning the endpoint untouched when nothing was resolved keeps already
+	// published UUIDs stable instead of round-tripping them through JoinHostPort.
+	resolved := resolveLoopbackHost(host, logger)
+	if resolved == host {
 		return endpoint
 	}
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers on different machines",
-			zap.String("endpoint", endpoint),
-			zap.Error(err))
-		return endpoint
-	}
-	return net.JoinHostPort(hostname, port)
+	return net.JoinHostPort(resolved, port)
 }
 
 func getInstanceID(instanceString string, logger *zap.Logger) string {
@@ -1183,13 +1484,5 @@ func getInstanceID(instanceString string, logger *zap.Logger) string {
 		return fallback
 	}
 
-	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
-		localhost, hostNameErr := os.Hostname()
-		if hostNameErr != nil {
-			logger.Warn("Failed getting localhost machine name to construct service.instance.id.")
-		} else {
-			host = localhost
-		}
-	}
-	return host + ":" + port
+	return resolveLoopbackHost(host, logger) + ":" + port
 }

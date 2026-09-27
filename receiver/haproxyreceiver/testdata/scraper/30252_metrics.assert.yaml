@@ -21,23 +21,23 @@ resources:
               monotonic: true
             - name: haproxy.connections.rate
               type: gauge
-              unit: '{connections}'
+              unit: '{connection}'
             - name: haproxy.requests.denied
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.errors
               type: sum
-              unit: '{errors}'
+              unit: '{error}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.rate
               type: gauge
-              unit: '{requests}'
+              unit: '{request}'
             - name: haproxy.requests.total
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
               datapoints:
@@ -55,15 +55,15 @@ resources:
                     status_code: other
             - name: haproxy.responses.denied
               type: sum
-              unit: '{responses}'
+              unit: '{response}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.sessions.count
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
             - name: haproxy.sessions.rate
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
     - attributes:
         haproxy.addr/exists: true
         haproxy.proxy_name: stats
@@ -84,23 +84,23 @@ resources:
               monotonic: true
             - name: haproxy.connections.rate
               type: gauge
-              unit: '{connections}'
+              unit: '{connection}'
             - name: haproxy.requests.denied
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.errors
               type: sum
-              unit: '{errors}'
+              unit: '{error}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.rate
               type: gauge
-              unit: '{requests}'
+              unit: '{request}'
             - name: haproxy.requests.total
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
               datapoints:
@@ -118,15 +118,15 @@ resources:
                     status_code: other
             - name: haproxy.responses.denied
               type: sum
-              unit: '{responses}'
+              unit: '{response}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.sessions.count
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
             - name: haproxy.sessions.rate
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
     - attributes:
         haproxy.addr/exists: true
         haproxy.proxy_name: webservers
@@ -147,32 +147,32 @@ resources:
               monotonic: true
             - name: haproxy.connections.errors
               type: sum
-              unit: '{errors}'
+              unit: '{error}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.retries
               type: sum
-              unit: '{retries}'
+              unit: '{retry}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.denied
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.queued
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.redispatched
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.total
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
               datapoints:
@@ -190,17 +190,17 @@ resources:
                     status_code: other
             - name: haproxy.responses.denied
               type: sum
-              unit: '{responses}'
+              unit: '{response}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.responses.errors
               type: sum
-              unit: '{errors}'
+              unit: '{error}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.server_selected.total
               type: sum
-              unit: '{selections}'
+              unit: '{selection}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.sessions.average
@@ -208,10 +208,10 @@ resources:
               unit: ms
             - name: haproxy.sessions.count
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
             - name: haproxy.sessions.rate
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
     - attributes:
         haproxy.addr/exists: true
         haproxy.proxy_name: webservers
@@ -232,27 +232,27 @@ resources:
               monotonic: true
             - name: haproxy.connections.errors
               type: sum
-              unit: '{errors}'
+              unit: '{error}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.retries
               type: sum
-              unit: '{retries}'
+              unit: '{retry}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.queued
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.redispatched
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.total
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
               datapoints:
@@ -270,17 +270,17 @@ resources:
                     status_code: other
             - name: haproxy.responses.denied
               type: sum
-              unit: '{responses}'
+              unit: '{response}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.responses.errors
               type: sum
-              unit: '{errors}'
+              unit: '{error}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.server_selected.total
               type: sum
-              unit: '{selections}'
+              unit: '{selection}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.sessions.average
@@ -288,10 +288,10 @@ resources:
               unit: ms
             - name: haproxy.sessions.count
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
             - name: haproxy.sessions.rate
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
     - attributes:
         haproxy.addr/exists: true
         haproxy.proxy_name: webservers
@@ -312,27 +312,27 @@ resources:
               monotonic: true
             - name: haproxy.connections.errors
               type: sum
-              unit: '{errors}'
+              unit: '{error}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.connections.retries
               type: sum
-              unit: '{retries}'
+              unit: '{retry}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.queued
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.redispatched
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.requests.total
               type: sum
-              unit: '{requests}'
+              unit: '{request}'
               temporality: cumulative
               monotonic: true
               datapoints:
@@ -350,17 +350,17 @@ resources:
                     status_code: other
             - name: haproxy.responses.denied
               type: sum
-              unit: '{responses}'
+              unit: '{response}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.responses.errors
               type: sum
-              unit: '{errors}'
+              unit: '{error}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.server_selected.total
               type: sum
-              unit: '{selections}'
+              unit: '{selection}'
               temporality: cumulative
               monotonic: true
             - name: haproxy.sessions.average
@@ -368,7 +368,7 @@ resources:
               unit: ms
             - name: haproxy.sessions.count
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'
             - name: haproxy.sessions.rate
               type: gauge
-              unit: '{sessions}'
+              unit: '{session}'

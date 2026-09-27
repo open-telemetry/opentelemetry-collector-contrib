@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -21,16 +22,15 @@ const (
 
 var MetricsInfo = metricsInfo{
 	DnscheckDuration: metricInfo{
-		Name:       "dnscheck.duration",
-		Attributes: []string{"dns.domain", "dns.record.type", "dns.server"},
+		Name: "dnscheck.duration",
 	},
 	DnscheckError: metricInfo{
 		Name:       "dnscheck.error",
-		Attributes: []string{"dns.domain", "dns.record.type", "dns.server", "error.message"},
+		Attributes: []string{"error.message"},
 	},
 	DnscheckStatus: metricInfo{
 		Name:       "dnscheck.status",
-		Attributes: []string{"dns.domain", "dns.rcode", "dns.record.type", "dns.resolved.all.ips", "dns.resolved.ip", "dns.server"},
+		Attributes: []string{"dns.rcode", "dns.resolved.all.ips", "dns.resolved.ip"},
 	},
 }
 
@@ -46,10 +46,9 @@ type metricInfo struct {
 }
 
 type metricDnscheckDuration struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        DnscheckDurationMetricConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   DnscheckDurationMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills dnscheck.duration metric with initial data.
@@ -58,55 +57,16 @@ func (m *metricDnscheckDuration) init() {
 	m.data.SetDescription("Round-trip duration of the DNS query.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricDnscheckDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dnsDomainAttributeValue string, dnsRecordTypeAttributeValue string, dnsServerAttributeValue string) {
+func (m *metricDnscheckDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, DnscheckDurationMetricAttributeKeyDNSDomain) {
-		dp.Attributes().PutStr("dns.domain", dnsDomainAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, DnscheckDurationMetricAttributeKeyDNSRecordType) {
-		dp.Attributes().PutStr("dns.record.type", dnsRecordTypeAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, DnscheckDurationMetricAttributeKeyDNSServer) {
-		dp.Attributes().PutStr("dns.server", dnsServerAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -119,11 +79,6 @@ func (m *metricDnscheckDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricDnscheckDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -159,7 +114,7 @@ func (m *metricDnscheckError) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricDnscheckError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dnsDomainAttributeValue string, dnsRecordTypeAttributeValue string, dnsServerAttributeValue string, errorMessageAttributeValue string) {
+func (m *metricDnscheckError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorMessageAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -167,15 +122,6 @@ func (m *metricDnscheckError) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, DnscheckErrorMetricAttributeKeyDNSDomain) {
-		dp.Attributes().PutStr("dns.domain", dnsDomainAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, DnscheckErrorMetricAttributeKeyDNSRecordType) {
-		dp.Attributes().PutStr("dns.record.type", dnsRecordTypeAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, DnscheckErrorMetricAttributeKeyDNSServer) {
-		dp.Attributes().PutStr("dns.server", dnsServerAttributeValue)
-	}
 	if slices.Contains(m.config.EnabledAttributes, DnscheckErrorMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
 	}
@@ -250,7 +196,7 @@ type metricDnscheckStatus struct {
 // init fills dnscheck.status metric with initial data.
 func (m *metricDnscheckStatus) init() {
 	m.data.SetName("dnscheck.status")
-	m.data.SetDescription("1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1. The dns.rcode attribute is present whenever a response was received from the server, including non-success responses such as NXDOMAIN, SERVFAIL, or REFUSED; it is absent only when no response was received at all (e.g. timeout or network unreachable).")
+	m.data.SetDescription("1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1 and the record type is A or AAAA.  The dns.rcode attribute is present whenever a response was received  from the server, including non-success responses such as NXDOMAIN,  SERVFAIL, or REFUSED; it is absent only when no response was received  at all (e.g. timeout or network unreachable).")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -259,7 +205,7 @@ func (m *metricDnscheckStatus) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricDnscheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dnsDomainAttributeValue string, dnsRcodeAttributeValue int64, dnsRecordTypeAttributeValue string, dnsResolvedAllIpsAttributeValue string, dnsResolvedIPAttributeValue string, dnsServerAttributeValue string) {
+func (m *metricDnscheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dnsRcodeAttributeValue int64, dnsResolvedAllIpsAttributeValue string, dnsResolvedIPAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -267,23 +213,14 @@ func (m *metricDnscheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, DnscheckStatusMetricAttributeKeyDNSDomain) {
-		dp.Attributes().PutStr("dns.domain", dnsDomainAttributeValue)
-	}
 	if slices.Contains(m.config.EnabledAttributes, DnscheckStatusMetricAttributeKeyDNSRcode) {
 		dp.Attributes().PutInt("dns.rcode", dnsRcodeAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, DnscheckStatusMetricAttributeKeyDNSRecordType) {
-		dp.Attributes().PutStr("dns.record.type", dnsRecordTypeAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps) {
 		dp.Attributes().PutStr("dns.resolved.all.ips", dnsResolvedAllIpsAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, DnscheckStatusMetricAttributeKeyDNSResolvedIP) {
 		dp.Attributes().PutStr("dns.resolved.ip", dnsResolvedIPAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, DnscheckStatusMetricAttributeKeyDNSServer) {
-		dp.Attributes().PutStr("dns.server", dnsServerAttributeValue)
 	}
 
 	var s string
@@ -349,14 +286,16 @@ func newMetricDnscheckStatus(cfg DnscheckStatusMetricConfig) metricDnscheckStatu
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                 MetricsBuilderConfig // config of the metrics builder.
-	startTime              pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity        int                  // maximum observed number of metrics per resource.
-	metricsBuffer          pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo              component.BuildInfo  // contains version information.
-	metricDnscheckDuration metricDnscheckDuration
-	metricDnscheckError    metricDnscheckError
-	metricDnscheckStatus   metricDnscheckStatus
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricDnscheckDuration         metricDnscheckDuration
+	metricDnscheckError            metricDnscheckError
+	metricDnscheckStatus           metricDnscheckStatus
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -378,19 +317,44 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                 mbc,
-		startTime:              pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:          pmetric.NewMetrics(),
-		buildInfo:              settings.BuildInfo,
-		metricDnscheckDuration: newMetricDnscheckDuration(mbc.Metrics.DnscheckDuration),
-		metricDnscheckError:    newMetricDnscheckError(mbc.Metrics.DnscheckError),
-		metricDnscheckStatus:   newMetricDnscheckStatus(mbc.Metrics.DnscheckStatus),
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricDnscheckDuration:         newMetricDnscheckDuration(mbc.Metrics.DnscheckDuration),
+		metricDnscheckError:            newMetricDnscheckError(mbc.Metrics.DnscheckError),
+		metricDnscheckStatus:           newMetricDnscheckStatus(mbc.Metrics.DnscheckStatus),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.DNSDomain.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["dns.domain"] = filter.CreateFilter(mbc.ResourceAttributes.DNSDomain.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.DNSDomain.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["dns.domain"] = filter.CreateFilter(mbc.ResourceAttributes.DNSDomain.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.DNSRecordType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["dns.record.type"] = filter.CreateFilter(mbc.ResourceAttributes.DNSRecordType.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.DNSRecordType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["dns.record.type"] = filter.CreateFilter(mbc.ResourceAttributes.DNSRecordType.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.DNSServer.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["dns.server"] = filter.CreateFilter(mbc.ResourceAttributes.DNSServer.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.DNSServer.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["dns.server"] = filter.CreateFilter(mbc.ResourceAttributes.DNSServer.MetricsExclude)
 	}
 
 	for _, op := range options {
 		op.apply(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -457,6 +421,16 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	for _, op := range options {
 		op.apply(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
 
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -475,18 +449,18 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordDnscheckDurationDataPoint adds a data point to dnscheck.duration metric.
-func (mb *MetricsBuilder) RecordDnscheckDurationDataPoint(ts pcommon.Timestamp, val int64, dnsDomainAttributeValue string, dnsRecordTypeAttributeValue string, dnsServerAttributeValue string) {
-	mb.metricDnscheckDuration.recordDataPoint(mb.startTime, ts, val, dnsDomainAttributeValue, dnsRecordTypeAttributeValue, dnsServerAttributeValue)
+func (mb *MetricsBuilder) RecordDnscheckDurationDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricDnscheckDuration.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordDnscheckErrorDataPoint adds a data point to dnscheck.error metric.
-func (mb *MetricsBuilder) RecordDnscheckErrorDataPoint(ts pcommon.Timestamp, val int64, dnsDomainAttributeValue string, dnsRecordTypeAttributeValue string, dnsServerAttributeValue string, errorMessageAttributeValue string) {
-	mb.metricDnscheckError.recordDataPoint(mb.startTime, ts, val, dnsDomainAttributeValue, dnsRecordTypeAttributeValue, dnsServerAttributeValue, errorMessageAttributeValue)
+func (mb *MetricsBuilder) RecordDnscheckErrorDataPoint(ts pcommon.Timestamp, val int64, errorMessageAttributeValue string) {
+	mb.metricDnscheckError.recordDataPoint(mb.startTime, ts, val, errorMessageAttributeValue)
 }
 
 // RecordDnscheckStatusDataPoint adds a data point to dnscheck.status metric.
-func (mb *MetricsBuilder) RecordDnscheckStatusDataPoint(ts pcommon.Timestamp, val int64, dnsDomainAttributeValue string, dnsRcodeAttributeValue int64, dnsRecordTypeAttributeValue string, dnsResolvedAllIpsAttributeValue string, dnsResolvedIPAttributeValue string, dnsServerAttributeValue string) {
-	mb.metricDnscheckStatus.recordDataPoint(mb.startTime, ts, val, dnsDomainAttributeValue, dnsRcodeAttributeValue, dnsRecordTypeAttributeValue, dnsResolvedAllIpsAttributeValue, dnsResolvedIPAttributeValue, dnsServerAttributeValue)
+func (mb *MetricsBuilder) RecordDnscheckStatusDataPoint(ts pcommon.Timestamp, val int64, dnsRcodeAttributeValue int64, dnsResolvedAllIpsAttributeValue string, dnsResolvedIPAttributeValue string) {
+	mb.metricDnscheckStatus.recordDataPoint(mb.startTime, ts, val, dnsRcodeAttributeValue, dnsResolvedAllIpsAttributeValue, dnsResolvedIPAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -84,7 +84,6 @@ func TestDelete(t *testing.T) {
 				UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 				Name:      "kube-proxy-csm88",
 				Namespace: "kube-system",
-				SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
 			},
 			Status: v1.PodStatus{
 				Phase: "Running",
@@ -95,7 +94,6 @@ func TestDelete(t *testing.T) {
 				UID:       "75ab40d2-552a-4c05-82c9-0ddcb3008657",
 				Name:      "coredns-7554568866-26jdf",
 				Namespace: "kube-system",
-				SelfLink:  "/api/v1/namespaces/kube-system/pods/coredns-7554568866-26jdf",
 			},
 			Status: v1.PodStatus{
 				Phase: "Running",
@@ -108,7 +106,6 @@ func TestDelete(t *testing.T) {
 			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 			Name:      "kube-proxy-csm88",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -134,7 +131,6 @@ func TestAdd(t *testing.T) {
 			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 			Name:      "kube-proxy-csm88",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -152,7 +148,6 @@ func TestUpdate(t *testing.T) {
 				UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 				Name:      "kube-proxy-csm88",
 				Namespace: "kube-system",
-				SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
 			},
 			Status: v1.PodStatus{
 				Phase: "Running",
@@ -164,7 +159,6 @@ func TestUpdate(t *testing.T) {
 			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 			Name:      "kube-proxy-csm88",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
 		},
 		Status: v1.PodStatus{
 			Phase: "Stopped",
@@ -190,7 +184,6 @@ func TestReplace(t *testing.T) {
 				UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 				Name:      "kube-proxy-csm88",
 				Namespace: "kube-system",
-				SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
 			},
 			Status: v1.PodStatus{
 				Phase: "Running",
@@ -201,7 +194,6 @@ func TestReplace(t *testing.T) {
 				UID:       "75ab40d2-552a-4c05-82c9-0ddcb3008657",
 				Name:      "coredns-7554568866-26jdf",
 				Namespace: "kube-system",
-				SelfLink:  "/api/v1/namespaces/kube-system/pods/coredns-7554568866-26jdf",
 			},
 			Status: v1.PodStatus{
 				Phase: "Running",

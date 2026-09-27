@@ -446,6 +446,30 @@ The number of replicated operations executed.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended | - |
 
+### mongodb.oplog.limit
+
+The maximum amount of storage the oplog is allowed to use.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### mongodb.oplog.usage
+
+The amount of storage the oplog is using.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### mongodb.oplog.window
+
+The time span between the oldest and the newest entry retained in the oplog.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
 ### mongodb.page_faults
 
 The number of page faults.
@@ -510,6 +534,65 @@ The number of replicated updates executed per second.
 | ---- | ----------- | ---------- | --------- |
 | {update}/s | Gauge | Double | Development |
 
+### mongodb.replica.status
+
+The current state of the scraped replica.
+
+A timeseries is produced for every possible state. The value is 1 for the state the instance is currently in, and 0 for all others.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.state | The state of a replica within the replica set. | Str: ``startup``, ``primary``, ``secondary``, ``recovering``, ``startup2``, ``unknown``, ``arbiter``, ``down``, ``rollback``, ``removed`` | Recommended | - |
+
+### mongodb.replica_set.headroom
+
+The time margin a replica set member has before it falls off the end of the oplog.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.name | The name of the replica, in host:port form. | Any Str | Recommended | - |
+
+### mongodb.replica_set.lag
+
+The time a replica set member is behind the primary.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.name | The name of the replica, in host:port form. | Any Str | Recommended | - |
+| mongodb.replica_set.lag.type | The replication progress that the lag is measured against. | Str: ``applied``, ``durable`` | Recommended | - |
+
+### mongodb.replica_set.member.count
+
+The number of members in the replica set.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {member} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.state | The state of a replica within the replica set. | Str: ``startup``, ``primary``, ``secondary``, ``recovering``, ``startup2``, ``unknown``, ``arbiter``, ``down``, ``rollback``, ``removed`` | Recommended | - |
+
 ### mongodb.updates.rate
 
 The number of updates executed per second.
@@ -525,6 +608,58 @@ The amount of time that the server has been running.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
+
+### mongodb.wt.concurrent_transaction.ticket.in_use
+
+The number of in-flight WiredTiger read/write concurrent-transaction tickets.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {ticket} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.wt.concurrent_transaction.ticket.type | The WiredTiger concurrent-transaction ticket type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mongodb.wt.fsync.count
+
+The total number of fsync I/Os issued by the WiredTiger storage engine.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {fsync} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.wt.log.operation.count
+
+The total number of WiredTiger journal operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.wt.log.operation.type | The WiredTiger journal operation type. | Str: ``write``, ``sync``, ``flush`` | Recommended | - |
+
+### mongodb.wt.log.sync.time
+
+The cumulative time spent syncing the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### mongodb.wt.log.write
+
+The total number of bytes written to the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### mongodb.wtcache.bytes.read
 
@@ -628,6 +763,7 @@ Note: when database profiling is disabled, the receiver falls back to MongoDB's 
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.version | The database version of the instance. Examples include "5.0.0", "6.0.4". | Any Str | false | - | - |
 | server.address | The address of the MongoDB host. | Any Str | true | - | - |
 | server.port | The port of the MongoDB host. | Any Int | false | - | - |
 | service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true | - | - |

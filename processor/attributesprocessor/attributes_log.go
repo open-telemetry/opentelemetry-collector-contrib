@@ -42,7 +42,7 @@ func (a *logAttributesProcessor) processLogs(ctx context.Context, ld plog.Logs) 
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
 				if a.skipExpr != nil {
-					lCtx := ottllog.NewTransformContextPtr(rs, ils, lr)
+					lCtx := ottllog.NewTransformContext(rs, ils, lr)
 					skip, err := a.skipExpr.Eval(ctx, lCtx)
 					lCtx.Close()
 					if err != nil {

@@ -1,7 +1,6 @@
 kafka: {}
 kafka/full:
   brokers: ["foo:123", "bar:456"]
-  resolve_canonical_bootstrap_servers_only: true
   client_id: vip
   protocol_version: 3.1.2
   rack_id: rack1
@@ -36,7 +35,6 @@ kafka/sasl_plain:
       mechanism: PLAIN
       username: abc
       password: def
-      version: 1
 kafka/legacy_auth_tls:
   auth:
     tls:
@@ -61,14 +59,6 @@ kafka/sasl_invalid_mechanism:
     sasl:
       mechanism: FANCY
 
-kafka/sasl_invalid_version:
-  auth:
-    sasl:
-      mechanism: PLAIN
-      username: abc
-      password: def
-      version: -1
-
 kafka/sasl_plain_username_required:
   auth:
     sasl:
@@ -81,11 +71,32 @@ kafka/sasl_plain_password_required:
       mechanism: PLAIN
       username: xyz
 
+kafka/invalid_metadata_retry_max:
+  metadata:
+    retry:
+      max: -1
+
+kafka/invalid_metadata_retry_backoff:
+  metadata:
+    retry:
+      backoff: -1s
+
+kafka/sasl_and_kerberos:
+  auth:
+    sasl:
+      mechanism: PLAIN
+      username: abc
+      password: def
+    kerberos:
+      service_name: kafka
+      realm: EXAMPLE.COM
+      username: kafka
+      password: kafka
+
 kafka/foo:
   brokers:
     - "foo:123"
     - "bar:456"
-  resolve_canonical_bootstrap_servers_only: true
   client_id: otel-collector
   auth:
     tls:
@@ -102,3 +113,8 @@ kafka/not_use_leader_epoch:
 
 kafka/conn_idle_timeout:
   conn_idle_timeout: 5m
+
+kafka/metadata_retry_backoff:
+  metadata:
+    retry:
+      backoff: 1s

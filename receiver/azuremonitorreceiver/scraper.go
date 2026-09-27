@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2"
@@ -54,6 +53,7 @@ const (
 	attributeName          = "name"
 	attributeResourceGroup = "resource_group"
 	attributeResourceType  = "type"
+	attributeTimeGrain     = "timegrain"
 	metadataPrefix         = "metadata_"
 	tagPrefix              = "tags_"
 	truncateTimeGrain      = time.Minute
@@ -359,7 +359,9 @@ func (s *azureScraper) loadResources(ctx context.Context, subscriptionID string)
 		s.settings.Logger.Debug("Collected Resource list from Azure", logFields...)
 		page++
 
-		for _, resource := range s.processResources(nextResult.Value) {
+		resources := filterResourcesByTags(nextResult.Value, s.cfg.ResourceTags)
+
+		for _, resource := range s.processResources(resources) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -502,7 +504,7 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 			continue
 		}
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
-			Metricnamespace: to.Ptr(configNamespace),
+			Metricnamespace: new(configNamespace),
 		}
 		s.collectMetricDefinitions(ctx, subscriptionID, resourceID, clientMetricsDefinitions, opts, nil)
 	}
@@ -672,6 +674,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 						name := tagPrefix + tagName
 						attributes[name] = value
 					}
+					attributes[attributeTimeGrain] = &compositeKey.timeGrain
 
 					var metricName string
 					if metric.Name != nil && metric.Name.Value != nil {
@@ -712,15 +715,15 @@ func newResourceMetricsValuesRequestOptions(
 	top int32,
 ) armmonitor.MetricsClientListOptions {
 	opts := armmonitor.MetricsClientListOptions{
-		Metricnames: to.Ptr(strings.Join(metrics[start:end], ",")),
-		Interval:    to.Ptr(timeGrain),
-		Timespan:    to.Ptr(timeGrain),
-		Aggregation: to.Ptr(aggregationsStr),
-		Top:         to.Ptr(top),
+		Metricnames: new(strings.Join(metrics[start:end], ",")),
+		Interval:    new(timeGrain),
+		Timespan:    new(timeGrain),
+		Aggregation: new(aggregationsStr),
+		Top:         new(top),
 		Filter:      buildDimensionsFilter(dimensionsStr),
 	}
 	if namespace != "" {
-		opts.Metricnamespace = to.Ptr(namespace)
+		opts.Metricnamespace = new(namespace)
 	}
 	return opts
 }

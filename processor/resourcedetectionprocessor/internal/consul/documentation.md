@@ -8,9 +8,9 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| cloud.region | The cloud.region | Any Str | true | - | - |
-| host.id | The host.id | Any Str | true | - | - |
-| host.name | The hostname | Any Str | true | - | - |
+| cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| host.id | The host.id | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
+| host.name | The hostname | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
 
 ## Feature Gates
 

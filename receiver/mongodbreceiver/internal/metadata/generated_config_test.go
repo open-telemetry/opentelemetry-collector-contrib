@@ -167,6 +167,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MongodbOperationTimeMetricAttributeKey{MongodbOperationTimeMetricAttributeKeyOperation},
 					},
+					MongodbOplogLimit: MongodbOplogLimitMetricConfig{
+						Enabled: true,
+					},
+					MongodbOplogUsage: MongodbOplogUsageMetricConfig{
+						Enabled: true,
+					},
+					MongodbOplogWindow: MongodbOplogWindowMetricConfig{
+						Enabled: true,
+					},
 					MongodbPageFaults: MongodbPageFaultsMetricConfig{
 						Enabled: true,
 					},
@@ -191,6 +200,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbReplUpdatesPerSec: MongodbReplUpdatesPerSecMetricConfig{
 						Enabled: true,
 					},
+					MongodbReplicaStatus: MongodbReplicaStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbReplicaStatusMetricAttributeKey{MongodbReplicaStatusMetricAttributeKeyMongodbReplicaState},
+					},
+					MongodbReplicaSetHeadroom: MongodbReplicaSetHeadroomMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbReplicaSetHeadroomMetricAttributeKey{MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaName},
+					},
+					MongodbReplicaSetLag: MongodbReplicaSetLagMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbReplicaSetLagMetricAttributeKey{MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaName, MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType},
+					},
+					MongodbReplicaSetMemberCount: MongodbReplicaSetMemberCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbReplicaSetMemberCountMetricAttributeKey{MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaState},
+					},
 					MongodbSessionCount: MongodbSessionCountMetricConfig{
 						Enabled: true,
 					},
@@ -205,11 +234,31 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbUptime: MongodbUptimeMetricConfig{
 						Enabled: true,
 					},
+					MongodbWtConcurrentTransactionTicketInUse: MongodbWtConcurrentTransactionTicketInUseMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey{MongodbWtConcurrentTransactionTicketInUseMetricAttributeKeyMongodbWtConcurrentTransactionTicketType},
+					},
+					MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{
+						Enabled: true,
+					},
+					MongodbWtLogOperationCount: MongodbWtLogOperationCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbWtLogOperationCountMetricAttributeKey{MongodbWtLogOperationCountMetricAttributeKeyMongodbWtLogOperationType},
+					},
+					MongodbWtLogSyncTime: MongodbWtLogSyncTimeMetricConfig{
+						Enabled: true,
+					},
+					MongodbWtLogWrite: MongodbWtLogWriteMetricConfig{
+						Enabled: true,
+					},
 					MongodbWtcacheBytesRead: MongodbWtcacheBytesReadMetricConfig{
 						Enabled: true,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					DbSystemVersion:   DbSystemVersionResourceAttributeConfig{Enabled: true},
 					ServerAddress:     ServerAddressResourceAttributeConfig{Enabled: true},
 					ServerPort:        ServerPortResourceAttributeConfig{Enabled: true},
 					ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{Enabled: true},
@@ -362,6 +411,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MongodbOperationTimeMetricAttributeKey{MongodbOperationTimeMetricAttributeKeyOperation},
 					},
+					MongodbOplogLimit: MongodbOplogLimitMetricConfig{
+						Enabled: false,
+					},
+					MongodbOplogUsage: MongodbOplogUsageMetricConfig{
+						Enabled: false,
+					},
+					MongodbOplogWindow: MongodbOplogWindowMetricConfig{
+						Enabled: false,
+					},
 					MongodbPageFaults: MongodbPageFaultsMetricConfig{
 						Enabled: false,
 					},
@@ -386,6 +444,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbReplUpdatesPerSec: MongodbReplUpdatesPerSecMetricConfig{
 						Enabled: false,
 					},
+					MongodbReplicaStatus: MongodbReplicaStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbReplicaStatusMetricAttributeKey{MongodbReplicaStatusMetricAttributeKeyMongodbReplicaState},
+					},
+					MongodbReplicaSetHeadroom: MongodbReplicaSetHeadroomMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbReplicaSetHeadroomMetricAttributeKey{MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaName},
+					},
+					MongodbReplicaSetLag: MongodbReplicaSetLagMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbReplicaSetLagMetricAttributeKey{MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaName, MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType},
+					},
+					MongodbReplicaSetMemberCount: MongodbReplicaSetMemberCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbReplicaSetMemberCountMetricAttributeKey{MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaState},
+					},
 					MongodbSessionCount: MongodbSessionCountMetricConfig{
 						Enabled: false,
 					},
@@ -400,11 +478,31 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbUptime: MongodbUptimeMetricConfig{
 						Enabled: false,
 					},
+					MongodbWtConcurrentTransactionTicketInUse: MongodbWtConcurrentTransactionTicketInUseMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey{MongodbWtConcurrentTransactionTicketInUseMetricAttributeKeyMongodbWtConcurrentTransactionTicketType},
+					},
+					MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{
+						Enabled: false,
+					},
+					MongodbWtLogOperationCount: MongodbWtLogOperationCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbWtLogOperationCountMetricAttributeKey{MongodbWtLogOperationCountMetricAttributeKeyMongodbWtLogOperationType},
+					},
+					MongodbWtLogSyncTime: MongodbWtLogSyncTimeMetricConfig{
+						Enabled: false,
+					},
+					MongodbWtLogWrite: MongodbWtLogWriteMetricConfig{
+						Enabled: false,
+					},
 					MongodbWtcacheBytesRead: MongodbWtcacheBytesReadMetricConfig{
 						Enabled: false,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					DbSystemVersion:   DbSystemVersionResourceAttributeConfig{Enabled: false},
 					ServerAddress:     ServerAddressResourceAttributeConfig{Enabled: false},
 					ServerPort:        ServerPortResourceAttributeConfig{Enabled: false},
 					ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{Enabled: false},
@@ -417,7 +515,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbOplogLimitMetricConfig{}, MongodbOplogUsageMetricConfig{}, MongodbOplogWindowMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbReplicaStatusMetricConfig{}, MongodbReplicaSetHeadroomMetricConfig{}, MongodbReplicaSetLagMetricConfig{}, MongodbReplicaSetMemberCountMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWtConcurrentTransactionTicketInUseMetricConfig{}, MongodbWtFsyncCountMetricConfig{}, MongodbWtLogOperationCountMetricConfig{}, MongodbWtLogSyncTimeMetricConfig{}, MongodbWtLogWriteMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -651,6 +749,54 @@ func TestMongodbOperationTimeMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
+func TestMongodbReplicaStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbReplicaStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbReplicaStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.replica.status doesn't have an attribute invalid, valid attributes: [mongodb.replica.state]")
+
+	cfg = DefaultMetricsConfig().MongodbReplicaStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbReplicaSetHeadroomMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbReplicaSetHeadroom
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbReplicaSetHeadroomMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.replica_set.headroom doesn't have an attribute invalid, valid attributes: [mongodb.replica.name]")
+
+	cfg = DefaultMetricsConfig().MongodbReplicaSetHeadroom
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbReplicaSetLagMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbReplicaSetLag
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbReplicaSetLagMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.replica_set.lag doesn't have an attribute invalid, valid attributes: [mongodb.replica.name, mongodb.replica_set.lag.type]")
+
+	cfg = DefaultMetricsConfig().MongodbReplicaSetLag
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbReplicaSetMemberCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbReplicaSetMemberCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbReplicaSetMemberCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.replica_set.member.count doesn't have an attribute invalid, valid attributes: [mongodb.replica.state]")
+
+	cfg = DefaultMetricsConfig().MongodbReplicaSetMemberCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func TestMongodbStorageSizeMetricsConfig_Validate(t *testing.T) {
 	cfg := DefaultMetricsConfig().MongodbStorageSize
 	require.NoError(t, cfg.Validate())
@@ -659,6 +805,30 @@ func TestMongodbStorageSizeMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric mongodb.storage.size doesn't have an attribute invalid, valid attributes: [db.namespace]")
 
 	cfg = DefaultMetricsConfig().MongodbStorageSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbWtConcurrentTransactionTicketInUseMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbWtConcurrentTransactionTicketInUse
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.wt.concurrent_transaction.ticket.in_use doesn't have an attribute invalid, valid attributes: [mongodb.wt.concurrent_transaction.ticket.type]")
+
+	cfg = DefaultMetricsConfig().MongodbWtConcurrentTransactionTicketInUse
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbWtLogOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbWtLogOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbWtLogOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.wt.log.operation.count doesn't have an attribute invalid, valid attributes: [mongodb.wt.log.operation.type]")
+
+	cfg = DefaultMetricsConfig().MongodbWtLogOperationCount
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -695,6 +865,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				DbSystemVersion:   DbSystemVersionResourceAttributeConfig{Enabled: true},
 				ServerAddress:     ServerAddressResourceAttributeConfig{Enabled: true},
 				ServerPort:        ServerPortResourceAttributeConfig{Enabled: true},
 				ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{Enabled: true},
@@ -705,6 +876,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				DbSystemVersion:   DbSystemVersionResourceAttributeConfig{Enabled: false},
 				ServerAddress:     ServerAddressResourceAttributeConfig{Enabled: false},
 				ServerPort:        ServerPortResourceAttributeConfig{Enabled: false},
 				ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{Enabled: false},
@@ -716,7 +888,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DbSystemVersionResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -724,6 +896,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 
 func TestResourceAttributesOverrideConfig(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	assert.NotNil(t, cfg.DbSystemVersion.OverrideValue, "override_value should be set for db.system.version")
 	assert.NotNil(t, cfg.ServerAddress.OverrideValue, "override_value should be set for server.address")
 	assert.NotNil(t, cfg.ServerPort.OverrideValue, "override_value should be set for server.port")
 	assert.NotNil(t, cfg.ServiceInstanceID.OverrideValue, "override_value should be set for service.instance.id")

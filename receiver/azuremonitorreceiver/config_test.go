@@ -67,6 +67,26 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "resource_tags"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.SubscriptionIDs = []string{"test"}
+				cfg.Credentials = defaultCredentials
+
+				value := "production"
+				cfg.ResourceTags = []ResourceTagFilter{
+					{
+						Name:  "environment",
+						Value: &value,
+					},
+					{
+						Name: "team",
+					},
+				}
+				return cfg
+			}(),
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "missing_subscription"),
 			expectedErr: errMissingSubscriptionIDs.Error(),
 		},
