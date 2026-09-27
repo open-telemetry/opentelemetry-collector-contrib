@@ -6,8 +6,8 @@ status:
     development: [ profiles ]
     beta: [ traces, metrics, logs ]
   codeowners:
-    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
-    emeritus: [anuraaga, kentquirk]
+    active: [TylerHelmuth, evan-bradley, edmocosta]
+    emeritus: [anuraaga, kentquirk, bogdandrutu]
     seeking_new: true
 
 feature_gates:

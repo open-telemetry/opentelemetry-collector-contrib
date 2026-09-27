@@ -59,6 +59,7 @@ components:
     - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
+    - exporter/nats
     - exporter/opensearch
     - exporter/otelarrow
     - exporter/prometheus
@@ -349,7 +350,6 @@ components:
     - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
-    - receiver/wavefront
     - receiver/webhook_event
     - receiver/windows_event_log
     - receiver/windows_perf_counters
