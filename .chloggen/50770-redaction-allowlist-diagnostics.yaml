@@ -7,7 +7,7 @@ change_type: bug_fix
 component: processor/redaction
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Keep every redaction summary attribute when data re-enters the processor
+note: Keep every redaction summary attribute intact when data re-enters the processor
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50770]
@@ -16,11 +16,21 @@ issues: [50770]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The auto-allowlist only covered five of the fourteen summary attributes the processor writes. When data passed
-  through a second redaction processor, `redaction.allowed.keys`, `redaction.allowed.count` and the seven
-  `redaction.body.*` attributes were treated as unknown keys, deleted, and reported in
-  `redaction.redacted.keys`. All summary attributes are now allowed through, so the summary accumulates
-  across chained processors as intended.
+  Only five of the fourteen summary attributes the processor writes survived a second redaction processor. When data
+  passed through one, `redaction.allowed.keys`, `redaction.allowed.count` and the seven `redaction.body.*` attributes
+  were treated as unknown keys, deleted, and reported in `redaction.redacted.keys`.
+
+  The processor now treats all fourteen as its own bookkeeping rather than as user data, so they are no longer deleted,
+  masked, obfuscated or counted as redacted, and the summary accumulates across chained processors as intended.
+  Previously a `blocked_key_patterns` or `blocked_values` rule matching one of these attributes replaced the summary
+  with a masked value, and with `redact_all_types` enabled it rewrote the `*.count` integers as strings, which made the
+  running totals read back as zero at the next hop.
+
+  Two behaviour changes come with this. Setting `summary` to `silent`, including by leaving it unset, now means the
+  processor claims no ownership of a summary it finds, so the ordinary allow list applies and a strict egress processor
+  can strip an upstream audit trail. And a key inside a log body named after a summary attribute is now redacted like
+  any other unknown key: the processor only ever writes its summary to the record attributes, so such a key in a body
+  carries user data.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

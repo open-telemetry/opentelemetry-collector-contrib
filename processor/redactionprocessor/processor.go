@@ -346,6 +346,21 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// - Only range through all attributes once
 	// - Don't mask any values if the whole attribute is slated for deletion
 	for k, value := range attributes.All() {
+		if isSummaryAttr(k) {
+			// Summary attributes describe the processor's own work, so they are
+			// never masked, obfuscated or counted as user data: doing so
+			// corrupts the summary, and under RedactAllTypes it rewrites the
+			// `*.count` integers as strings, silently resetting the running
+			// totals at the next hop. When the summary is enabled they pass
+			// through untouched and addMetaAttrs merges into them, so the
+			// summary accumulates across a chain of redaction processors.
+			// When it is silent the processor disowns them, so a strict egress
+			// processor can still strip an upstream audit trail.
+			if !s.summaryEnabled() && s.shouldRedactKey(k) {
+				redactedKeys = append(redactedKeys, k)
+			}
+			continue
+		}
 		if s.shouldIgnoreKey(k) {
 			ignoredKeys = append(ignoredKeys, k)
 			continue
@@ -603,42 +618,48 @@ const (
 	redactionBodyIgnoredCount  = "redaction.body.ignored.count"
 )
 
+// summaryAttrs holds every attribute the processor writes to describe its own
+// work. They are the processor's bookkeeping rather than user data, so they are
+// exempt from the redaction rules: see processAttrs.
+var summaryAttrs = map[string]struct{}{
+	redactionRedactedKeys:      {},
+	redactionRedactedCount:     {},
+	redactionMaskedKeys:        {},
+	redactionMaskedCount:       {},
+	redactionAllowedKeys:       {},
+	redactionAllowedCount:      {},
+	redactionIgnoredCount:      {},
+	redactionBodyRedactedKeys:  {},
+	redactionBodyRedactedCount: {},
+	redactionBodyMaskedKeys:    {},
+	redactionBodyMaskedCount:   {},
+	redactionBodyAllowedKeys:   {},
+	redactionBodyAllowedCount:  {},
+	redactionBodyIgnoredCount:  {},
+}
+
+// isSummaryAttr reports whether k is an attribute the processor writes to
+// summarize its own changes.
+func isSummaryAttr(k string) bool {
+	_, found := summaryAttrs[k]
+	return found
+}
+
+// summaryEnabled reports whether the processor emits summary attributes at all.
+// Any value other than debug or info, including the empty default, is silent.
+func (s *redaction) summaryEnabled() bool {
+	return s.config.Summary == debug || s.config.Summary == info
+}
+
 // makeAllowList sets up a lookup table of allowed span attribute keys
+//
+// The summary attributes the processor writes are deliberately absent: this
+// list is also consulted for keys inside a log body, where those names carry
+// user data rather than a summary. processAttrs exempts them instead, so they
+// survive re-entry without giving a body key a free pass.
 func makeAllowList(c *Config) map[string]string {
-	// redactionKeys are additional span attributes created by the processor to
-	// summarize the changes it made to a span. If the processor removes
-	// 2 attributes from a span (e.g. `birth_date`, `mothers_maiden_name`),
-	// then it will list them in the `redaction.redacted.keys` span attribute
-	// and set the `redaction.redacted.count` attribute to 2
-	//
-	// If the processor finds and masks values matching a blocked regex in 2
-	// span attributes (e.g. `notes`, `description`), then it will those
-	// attribute keys in `redaction.masked.keys` and set the
-	// `redaction.masked.count` to 2
-	//
-	// Every attribute the processor writes is listed here so that it survives
-	// re-entry: when data passes through a second redaction processor, these
-	// keys must be allowed through rather than treated as unknown attributes and
-	// deleted. addMetaAttrs merges into any values it finds, so the summary
-	// accumulates across the chain.
-	redactionKeys := []string{
-		redactionRedactedKeys, redactionRedactedCount,
-		redactionMaskedKeys, redactionMaskedCount,
-		redactionAllowedKeys, redactionAllowedCount,
-		redactionIgnoredCount,
-		redactionBodyRedactedKeys, redactionBodyRedactedCount,
-		redactionBodyMaskedKeys, redactionBodyMaskedCount,
-		redactionBodyAllowedKeys, redactionBodyAllowedCount,
-		redactionBodyIgnoredCount,
-	}
-	// allowList consists of the keys explicitly allowed by the configuration
-	// as well as of the new span attributes that the processor creates to
-	// summarize its changes
-	allowList := make(map[string]string, len(c.AllowedKeys)+len(redactionKeys))
+	allowList := make(map[string]string, len(c.AllowedKeys))
 	for _, key := range c.AllowedKeys {
-		allowList[key] = key
-	}
-	for _, key := range redactionKeys {
 		allowList[key] = key
 	}
 	return allowList
