@@ -164,3 +164,8 @@ when making the final approval decision.
 
 Marking the PR with the `ready to merge` label should only happen (by triagers/approvers/maintainers)
 once there is at least one approval from an approver, as per the description above. 
+
+Marking the PR with the `waiting-for-maintainers` label can be done (by triagers/code owners/approvers/maintainers)
+once the PR has been reviewed and approved by code owners, all review comments are addressed, CI is green,
+and it is only waiting on a review from an approver or maintainer. Use this label instead of pinging
+`@open-telemetry/collector-contrib-approvers`. Once an approver approves the PR, replace it with the `ready to merge` label.
