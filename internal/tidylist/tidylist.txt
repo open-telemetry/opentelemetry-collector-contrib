@@ -135,6 +135,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
@@ -343,7 +344,6 @@ receiver/tlscheckreceiver
 receiver/udplogreceiver
 receiver/vcenterreceiver
 receiver/vcrreceiver
-receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
