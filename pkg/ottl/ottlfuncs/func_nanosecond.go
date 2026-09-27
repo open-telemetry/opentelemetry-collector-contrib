@@ -14,6 +14,8 @@ type nanosecondArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewNanosecondFactory returns a factory for the Nanosecond OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#nanosecond
 func NewNanosecondFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Nanosecond", &nanosecondArguments[K]{}, createNanosecondFunction[K])
 }
@@ -25,15 +27,15 @@ func createNanosecondFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 		return nil, errors.New("NanosecondFactory args must be of type *nanosecondArguments[K]")
 	}
 
-	return Nanosecond(args.Time)
+	return nanosecond(args.Time), nil
 }
 
-func Nanosecond[K any](time ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func nanosecond[K any](time ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := time.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return int64(t.Nanosecond()), nil
-	}, nil
+	}
 }

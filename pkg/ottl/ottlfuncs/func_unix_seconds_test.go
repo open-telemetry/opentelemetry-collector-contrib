@@ -59,8 +59,7 @@ func Test_TimeUnixSeconds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := UnixSeconds(tt.time)
-			require.NoError(t, err)
+			exprFunc := unixSeconds(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := tt.expected.Unix()
@@ -107,12 +106,11 @@ func Test_UnixSecondsFactory(t *testing.T) {
 
 func BenchmarkUnixSeconds(b *testing.B) {
 	inputTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
-	exprFunc, err := UnixSeconds(&ottl.StandardTimeGetter[any]{
+	exprFunc := unixSeconds(&ottl.StandardTimeGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return inputTime, nil
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

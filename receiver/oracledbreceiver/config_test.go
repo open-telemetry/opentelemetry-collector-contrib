@@ -23,6 +23,12 @@ func procedureMetricsEnabledLogsConfig() metadata.LogsBuilderConfig {
 	return logsCfg
 }
 
+func queryPlanOnlyLogsConfig() metadata.LogsBuilderConfig {
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.Events.DbServerQueryPlan.Enabled = true
+	return logsCfg
+}
+
 // A deployment that never enables the event must not be held to bounds it does not use.
 func TestProcedureMetricsBoundsOnlyValidatedWhenEnabled(t *testing.T) {
 	cfg := &Config{
@@ -173,6 +179,16 @@ func TestValidateInvalidConfigs(t *testing.T) {
 				ProcedureMetrics:   ProcedureMetrics{MaxProcedureSampleCount: 10001, TopProcedureCount: 250},
 			},
 			expected: errMaxProcedureSampleCount,
+		},
+		{
+			name: "Query plan event without top query event",
+			config: &Config{
+				DataSource:         "oracle://otel:password@localhost:1521/XE",
+				ControllerConfig:   scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:  queryPlanOnlyLogsConfig(),
+				TopQueryCollection: TopQueryCollection{MaxQuerySampleCount: 1000, TopQueryCount: 200},
+			},
+			expected: errQueryPlanWithoutTopQuery,
 		},
 	}
 

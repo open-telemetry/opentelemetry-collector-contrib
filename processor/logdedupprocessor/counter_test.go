@@ -332,6 +332,82 @@ func Test_getLogKey(t *testing.T) {
 	}
 }
 
+func Test_getKeyValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		valueMap pcommon.Map
+		keyParts []string
+		expected string
+		ok       bool
+	}{
+		{
+			name: "gets value for existing key",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key", "value")
+				return m
+			}(),
+			keyParts: []string{"key"},
+			expected: "value",
+			ok:       true,
+		},
+		{
+			name: "returns false when key does not exist",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key", "value")
+				return m
+			}(),
+			keyParts: []string{"missing"},
+			ok:       false,
+		},
+		{
+			name: "gets nested value",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				nested := m.PutEmptyMap("parent")
+				nested.PutStr("child", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "child"},
+			expected: "value",
+			ok:       true,
+		},
+		{
+			name: "returns false when nested key does not exist",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				nested := m.PutEmptyMap("parent")
+				nested.PutStr("child", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "missing"},
+			ok:       false,
+		},
+		{
+			name: "returns false when intermediate value is not a map",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("parent", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "child"},
+			ok:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, ok := getKeyValue(tt.valueMap, tt.keyParts)
+
+			require.Equal(t, tt.ok, ok)
+			if tt.ok {
+				require.Equal(t, tt.expected, value.Str())
+			}
+		})
+	}
+}
+
 func generateTestLogRecord(t *testing.T, body string) plog.LogRecord {
 	t.Helper()
 	logRecord := plog.NewLogRecord()

@@ -16,6 +16,8 @@ type toSnakeCaseArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewToSnakeCaseFactory returns a factory for the ToSnakeCase OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#tosnakecase
 func NewToSnakeCaseFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ToSnakeCase", &toSnakeCaseArguments[K]{}, createToSnakeCaseFunction[K])
 }

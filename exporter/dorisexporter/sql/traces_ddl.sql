@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS %s
     resource_attributes   VARIANT,	
     scope_name            STRING,	
     scope_version         STRING,	
+    is_root               TINYINT,
     INDEX idx_service_name(service_name) USING INVERTED,	
     INDEX idx_timestamp(timestamp) USING INVERTED,
     INDEX idx_service_instance_id(service_instance_id) USING INVERTED,
@@ -35,10 +36,11 @@ CREATE TABLE IF NOT EXISTS %s
     INDEX idx_status_code(status_code) USING INVERTED,	
     INDEX idx_resource_attributes(resource_attributes) USING INVERTED,	
     INDEX idx_scope_name(scope_name) USING INVERTED,	
-    INDEX idx_scope_version(scope_version) USING INVERTED	
+    INDEX idx_scope_version(scope_version) USING INVERTED,	
+    INDEX idx_is_root(is_root) USING INVERTED
 )	
 ENGINE = OLAP	
 DUPLICATE KEY(service_name, timestamp)	
 PARTITION BY RANGE(timestamp) ()	
-DISTRIBUTED BY RANDOM BUCKETS AUTO	
+DISTRIBUTED BY RANDOM BUCKETS AUTO
 %s;

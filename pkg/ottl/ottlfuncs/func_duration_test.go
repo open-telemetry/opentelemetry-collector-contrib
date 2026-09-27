@@ -149,8 +149,7 @@ func Test_Duration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Duration(tt.duration)
-			require.NoError(t, err)
+			exprFunc := parseDuration(tt.duration)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -185,9 +184,8 @@ func Test_DurationError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Duration[any](tt.duration)
-			require.NoError(t, err)
-			_, err = exprFunc(t.Context(), nil)
+			exprFunc := parseDuration[any](tt.duration)
+			_, err := exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -230,12 +228,11 @@ func Test_DurationFactory(t *testing.T) {
 }
 
 func BenchmarkDuration(b *testing.B) {
-	exprFunc, err := Duration[any](&ottl.StandardStringGetter[any]{
+	exprFunc := parseDuration[any](&ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return "5h23m59s", nil
 		},
 	})
-	require.NoError(b, err)
 
 	ctx := b.Context()
 	b.ReportAllocs()

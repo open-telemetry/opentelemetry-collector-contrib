@@ -73,7 +73,7 @@ func Test_HasSuffix_Error(t *testing.T) {
 			return "test", nil
 		},
 	}
-	exprFunc := HasSuffix[any](target, suffix)
+	exprFunc := hasSuffix[any](target, suffix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -89,7 +89,7 @@ func Test_HasSuffix_Error_suffix(t *testing.T) {
 			return true, nil
 		},
 	}
-	exprFunc := HasSuffix[any](target, suffix)
+	exprFunc := hasSuffix[any](target, suffix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -142,7 +142,7 @@ func BenchmarkHasSuffix(b *testing.B) {
 	suffix := &ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) { return " world", nil },
 	}
-	exprFunc := HasSuffix[any](target, suffix)
+	exprFunc := hasSuffix[any](target, suffix)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {
