@@ -58,7 +58,13 @@ func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) 
 	eventCh := make(chan eventWithACK, eventChannelLength)
 	collector := newCollector(eventCh, next, defaultACKWaitTimeout, set.Logger, obsrecv, telemetryBuilder)
 
-	server := newServer(eventCh, defaultACKWaitTimeout, set.Logger, telemetryBuilder)
+	// The server enforces the limit only when refusing; queueing is done by
+	// LimitListener in Start.
+	refuseAbove := 0
+	if conf.RefuseOverLimit {
+		refuseAbove = conf.MaxConnections
+	}
+	server := newServer(eventCh, defaultACKWaitTimeout, refuseAbove, set.Logger, telemetryBuilder)
 
 	return &fluentReceiver{
 		collector: collector,
@@ -94,7 +100,7 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 
 	// Queue connections over the limit in the accept backlog until a slot
 	// frees, which bounds in-flight chunk acknowledgments under load.
-	if r.conf.MaxConnections > 0 {
+	if r.conf.MaxConnections > 0 && !r.conf.RefuseOverLimit {
 		listener = netutil.LimitListener(listener, r.conf.MaxConnections)
 	}
 

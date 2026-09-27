@@ -305,7 +305,7 @@ func TestEventAcknowledgmentEnqueueTimeoutClosesWithoutACK(t *testing.T) {
 	defer telemetryBuilder.Shutdown()
 
 	eventCh := make(chan eventWithACK)
-	srv := newServer(eventCh, 50*time.Millisecond, zap.NewNop(), telemetryBuilder)
+	srv := newServer(eventCh, 50*time.Millisecond, 0, zap.NewNop(), telemetryBuilder)
 	clientConn, serverConn := net.Pipe()
 	defer clientConn.Close()
 
@@ -372,6 +372,46 @@ func TestConnectionsBoundedByLimitListener(t *testing.T) {
 	require.NoError(t, secondConn.SetReadDeadline(time.Time{}))
 	resp := readACKResponse(t, secondConn)
 	require.Equal(t, "chunk-limited", resp["ack"])
+}
+
+func TestConnectionsOverLimitAreRefused(t *testing.T) {
+	set := receivertest.NewNopSettings(metadata.Type)
+	conf := &Config{ListenAddress: "127.0.0.1:0", MaxConnections: 1, RefuseOverLimit: true}
+
+	recv, err := newFluentReceiver(set, conf, new(consumertest.LogsSink))
+	require.NoError(t, err)
+	require.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, recv.Shutdown(t.Context())) }()
+
+	fr := recv.(*fluentReceiver)
+	dial := func() net.Conn {
+		conn, dialErr := net.Dial("tcp", fr.listener.Addr().String())
+		require.NoError(t, dialErr)
+		t.Cleanup(func() { _ = conn.Close() })
+		return conn
+	}
+
+	// The first connection takes the only slot.
+	firstConn := dial()
+	require.Eventually(t, func() bool { return connCount(fr.server) == 1 }, 5*time.Second, 10*time.Millisecond)
+
+	// The second is closed on accept, so the client sees an error rather than
+	// a connection that is never read.
+	secondConn := dial()
+	require.NoError(t, secondConn.SetReadDeadline(time.Now().Add(5*time.Second)))
+	_, err = secondConn.Read(make([]byte, 1))
+	require.Error(t, err)
+	require.False(t, isTimeout(err), "expected the refused connection to be closed, got: %v", err)
+	require.Equal(t, 1, connCount(fr.server))
+
+	// Once the slot frees, new connections are served again.
+	require.NoError(t, firstConn.Close())
+	require.Eventually(t, func() bool { return connCount(fr.server) == 0 }, 5*time.Second, 10*time.Millisecond)
+	thirdConn := dial()
+	_, err = thirdConn.Write(makeSampleEventWithChunk("chunk-after-refusal"))
+	require.NoError(t, err)
+	resp := readACKResponse(t, thirdConn)
+	require.Equal(t, "chunk-after-refusal", resp["ack"])
 }
 
 func connCount(s *server) int {
