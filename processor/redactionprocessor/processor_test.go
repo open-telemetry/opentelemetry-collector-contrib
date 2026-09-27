@@ -1379,7 +1379,7 @@ func TestDiagnosticAttrsSurviveReentry(t *testing.T) {
 				// Masking replaces the whole value, so a merged list that still
 				// carries every name it started with was left alone.
 				names := strings.Split(value.Str(), attrValuesSeparator)
-				for _, name := range strings.Split(before.Str(), attrValuesSeparator) {
+				for name := range strings.SplitSeq(before.Str(), attrValuesSeparator) {
 					assert.Containsf(t, names, name, "%s lost %q on re-entry", key, name)
 				}
 			}
@@ -1389,7 +1389,7 @@ func TestDiagnosticAttrsSurviveReentry(t *testing.T) {
 				if !strings.HasSuffix(key, ".keys") {
 					continue
 				}
-				for _, name := range strings.Split(value.Str(), attrValuesSeparator) {
+				for name := range strings.SplitSeq(value.Str(), attrValuesSeparator) {
 					assert.Falsef(t, isSummaryAttr(name), "%s was reported as user data in %s", name, key)
 				}
 			}
