@@ -25,11 +25,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadatatest"
 )
 
 func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc, receiver.Logs) {
@@ -375,7 +378,11 @@ func TestConnectionsBoundedByLimitListener(t *testing.T) {
 }
 
 func TestConnectionsOverLimitAreRefused(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
 	set := receivertest.NewNopSettings(metadata.Type)
+	set.TelemetrySettings = tel.NewTelemetrySettings()
 	conf := &Config{ListenAddress: "127.0.0.1:0", MaxConnections: 1, RefuseOverLimit: true}
 
 	recv, err := newFluentReceiver(set, conf, new(consumertest.LogsSink))
@@ -403,6 +410,9 @@ func TestConnectionsOverLimitAreRefused(t *testing.T) {
 	require.Error(t, err)
 	require.False(t, isTimeout(err), "expected the refused connection to be closed, got: %v", err)
 	require.Equal(t, 1, connCount(fr.server))
+	metadatatest.AssertEqualFluentRefusedConnections(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
 	// Once the slot frees, new connections are served again.
 	require.NoError(t, firstConn.Close())

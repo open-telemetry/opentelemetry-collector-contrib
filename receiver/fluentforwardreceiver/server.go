@@ -75,7 +75,7 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 		}
 
 		if !s.addConn(conn) {
-			s.refuseConn(conn)
+			s.refuseConn(ctx, conn)
 			continue
 		}
 
@@ -273,11 +273,12 @@ func (s *server) addConn(c net.Conn) bool {
 // refuseConn closes a connection over the limit. Linger 0 sends RST, so the
 // client fails its next write and reconnects instead of treating the socket as
 // live.
-func (s *server) refuseConn(conn net.Conn) {
+func (s *server) refuseConn(ctx context.Context, conn net.Conn) {
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
 		_ = tcpConn.SetLinger(0)
 	}
 	_ = conn.Close()
+	s.telemetryBuilder.FluentRefusedConnections.Add(ctx, 1)
 	s.logger.Debug("Refused connection over max_connections",
 		zap.String("remoteAddr", conn.RemoteAddr().String()),
 		zap.Int("max_connections", s.refuseAbove))

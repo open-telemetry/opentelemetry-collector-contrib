@@ -52,6 +52,7 @@ The following settings are optional:
   clients behind a load balancer, which would otherwise wait on a slot that may
   never free; a refused client reconnects, possibly to another instance.
   Requires `max_connections` to be greater than `0`.
+  Refusals are counted by `otelcol_fluent_refused_connections`.
 
 ## Data Conversion
 
