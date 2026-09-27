@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/azure_monitor
+note: Log the delay between Azure metric data point timestamps and collection time at debug level.
+issues: [51297]
+subtext:
+change_logs: [user]
