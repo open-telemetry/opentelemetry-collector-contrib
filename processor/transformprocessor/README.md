@@ -1117,6 +1117,30 @@ The feature is currently only available for log processing.
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
 
+### `processor.transform.emitOttlSpans`
+
+The `processor.transform.emitOttlSpans` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables optional tracing of OTTL statement execution for debugging. When enabled and the `emit_trace_spans` config option is set to `true`, the processor emits trace spans for each OTTL statement execution.
+
+Each span contains:
+- `statement_type` attribute: `span`, `spanevent`, `metric`, `datapoint`, `exemplar`, `log`, or `profile`
+- Execution timing and status (success/error)
+- Parent context linking to the transform processor operation
+
+This feature has zero overhead when disabled (default). When enabled, expect ~35-55% CPU overhead depending on statement complexity and telemetry volume.
+
+#### Example Usage
+  
+`config.yaml`:
+  
+  ```yaml
+  transform:
+    emit_trace_spans: true
+    trace_statements:
+      - set(span.attributes["test"], "value")
+  ```
+  
+  Run collector: `./otelcol --config config.yaml --feature-gates=+processor.transform.emitOttlSpans`
+
 ### `ottl.set.allowNil`
 
 The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/documentation.md) changes the behavior of the OTTL `set` function when a `nil` value is evaluated. When enabled, `set` will pass the `nil` value directly to the target. Depending on the target, this may result in an error or an empty value. See the [OTTL Documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) for full details and migration instructions.

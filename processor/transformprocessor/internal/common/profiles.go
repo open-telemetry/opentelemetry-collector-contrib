@@ -9,11 +9,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
 type ProfilesConsumer interface {
@@ -24,6 +27,8 @@ type ProfilesConsumer interface {
 type profileStatements struct {
 	ottl.StatementSequence[*ottlprofile.TransformContext]
 	expr.BoolExpr[*ottlprofile.TransformContext]
+	emitTraceSpans bool
+	tracer         trace.Tracer
 }
 
 func (profileStatements) Context() ContextID {
@@ -42,7 +47,15 @@ func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Prof
 					return err
 				}
 				if condition {
-					err := l.Execute(ctx, tCtx)
+					if l.emitTraceSpans && l.tracer != nil {
+						_, span := l.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+							attribute.String("statement_type", "profile"),
+						))
+						err = l.Execute(ctx, tCtx)
+						span.End()
+					} else {
+						err = l.Execute(ctx, tCtx)
+					}
 					if err != nil {
 						tCtx.Close()
 						return err
@@ -110,7 +123,15 @@ func convertProfileStatements(pc *ottl.ParserCollection[ProfilesConsumer], state
 		return nil, errGlobalBoolExpr
 	}
 	lStatements := ottlprofile.NewStatementSequence(parsedStatements, pc.Settings(), ottlprofile.WithStatementSequenceErrorMode(errorMode))
-	return profileStatements{lStatements, globalExpr}, nil
+	
+	// Check if tracing is enabled via feature gate
+	emitTraceSpans := metadata.ProcessorTransformEmitOttlSpansFeatureGate.IsEnabled()
+	var tracer trace.Tracer
+	if emitTraceSpans {
+		tracer = pc.Settings().TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor")
+	}
+	
+	return profileStatements{lStatements, globalExpr, emitTraceSpans, tracer}, nil
 }
 
 func (ppc *ProfileParserCollection) ParseContextStatements(contextStatements ContextStatements) (ProfilesConsumer, error) {

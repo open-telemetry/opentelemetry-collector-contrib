@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("docker_stats")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
+	Type           = component.MustNewType("docker_stats")
+	DeprecatedType = component.MustNewType("dockerstats")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 )
 
 const (

@@ -6,6 +6,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/moby/moby/api v1.56.0
 	github.com/moby/moby/client v0.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.161.0
@@ -20,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.67.1-0.20260925193547-a1d7ba17b3fe
 	go.opentelemetry.io/collector/consumer v1.67.1-0.20260925193547-a1d7ba17b3fe
 	go.opentelemetry.io/collector/consumer/consumertest v0.161.1-0.20260925193547-a1d7ba17b3fe
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260925193547-a1d7ba17b3fe
 	go.opentelemetry.io/collector/filter v0.161.1-0.20260925193547-a1d7ba17b3fe
 	go.opentelemetry.io/collector/pdata v1.67.1-0.20260925193547-a1d7ba17b3fe
 	go.opentelemetry.io/collector/pipeline v1.67.1-0.20260925193547-a1d7ba17b3fe
@@ -88,7 +90,6 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.67.1-0.20260925193547-a1d7ba17b3fe // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.161.1-0.20260925193547-a1d7ba17b3fe // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.161.1-0.20260925193547-a1d7ba17b3fe // indirect
-	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260925193547-a1d7ba17b3fe // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260925193547-a1d7ba17b3fe // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260925193547-a1d7ba17b3fe // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.161.1-0.20260925193547-a1d7ba17b3fe // indirect
@@ -111,6 +112,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 

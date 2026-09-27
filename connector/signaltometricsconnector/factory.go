@@ -38,8 +38,12 @@ func NewFactory() connector.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	errorMode := ottl.PropagateError
+	if metadata.ConnectorSignaltometricsconnectorResilientErrorModeFeatureGate.IsEnabled() {
+		errorMode = ottl.IgnoreError
+	}
 	return &config.Config{
-		ErrorMode: ottl.IgnoreError,
+		ErrorMode: errorMode,
 	}
 }
 

@@ -45,3 +45,11 @@ var ProcessorTailsamplingprocessorUsetracestateFeatureGate = featuregate.GlobalR
 	featuregate.WithRegisterReferenceURL("https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),
 )
+
+var ProcessorTailsamplingprocessorResilientErrorModeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.tailsamplingprocessor.resilientErrorMode",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, changes the default error_mode for OTTL conditions from 'propagate' to 'ignore'. This prevents OTTL errors from causing valid telemetry to be dropped. Users can still explicitly set error_mode: propagate in their configuration to retain the old behavior."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420"),
+	featuregate.WithRegisterFromVersion("v0.161.0"),
+)

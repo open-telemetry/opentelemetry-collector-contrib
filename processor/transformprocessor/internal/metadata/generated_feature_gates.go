@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ProcessorTransformEmitOttlSpansFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.transform.emitOttlSpans",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the transform processor emits trace spans for OTTL statement execution to aid debugging."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33433"),
+	featuregate.WithRegisterFromVersion("v0.161.0"),
+)
+
 var TransformFlattenLogsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"transform.flatten.logs",
 	featuregate.StageAlpha,

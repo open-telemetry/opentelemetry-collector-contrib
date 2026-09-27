@@ -45,6 +45,12 @@ exclusions:
       - name: spanmetrics.statusCodeConvention.useOtelPrefix
         validation:
           enabled: false
+
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+    feature_gates:
+      - name: connector.signaltometricsconnector.resilientErrorMode
+        validation:
+          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
     goleak:
       enabled: false
@@ -605,9 +611,15 @@ exclusions:
       - name: processor.tailsamplingprocessor.usetracestate
         validation:
           enabled: false
+      - name: processor.tailsamplingprocessor.resilientErrorMode
+        validation:
+          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
     feature_gates:
       - name: transform.flatten.logs
+        validation:
+          enabled: false
+      - name: processor.transform.emitOttlSpans
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver

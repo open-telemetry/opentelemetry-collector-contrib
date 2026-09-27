@@ -9,12 +9,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
 type TracesConsumer interface {
@@ -25,6 +28,8 @@ type TracesConsumer interface {
 type traceStatements struct {
 	ottl.StatementSequence[*ottlspan.TransformContext]
 	expr.BoolExpr[*ottlspan.TransformContext]
+	emitTraceSpans bool
+	tracer         trace.Tracer
 }
 
 func (traceStatements) Context() ContextID {
@@ -45,7 +50,15 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, ca
 					return err
 				}
 				if condition {
-					err = t.Execute(ctx, tCtx)
+					if t.emitTraceSpans && t.tracer != nil {
+						_, span := t.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+							attribute.String("statement_type", "span"),
+						))
+						err = t.Execute(ctx, tCtx)
+						span.End()
+					} else {
+						err = t.Execute(ctx, tCtx)
+					}
 					if err != nil {
 						tCtx.Close()
 						return err
@@ -61,6 +74,8 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, ca
 type spanEventStatements struct {
 	ottl.StatementSequence[*ottlspanevent.TransformContext]
 	expr.BoolExpr[*ottlspanevent.TransformContext]
+	emitTraceSpans bool
+	tracer         trace.Tracer
 }
 
 func (spanEventStatements) Context() ContextID {
@@ -84,7 +99,15 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 						return err
 					}
 					if condition {
-						err = s.Execute(ctx, tCtx)
+						if s.emitTraceSpans && s.tracer != nil {
+							_, span := s.tracer.Start(ctx, "OTTL Statement Execute", trace.WithAttributes(
+								attribute.String("statement_type", "spanevent"),
+							))
+							err = s.Execute(ctx, tCtx)
+							span.End()
+						} else {
+							err = s.Execute(ctx, tCtx)
+						}
 						if err != nil {
 							tCtx.Close()
 							return err
@@ -126,6 +149,13 @@ func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
 	return TraceParserCollectionOption(ottl.WithParserCollectionErrorMode[TracesConsumer](errorMode))
 }
 
+func WithTraceEmitSpans(emitTraceSpans bool) TraceParserCollectionOption {
+	return func(pc *ottl.ParserCollection[TracesConsumer]) error {
+		// Store the emitTraceSpans setting for later use in converters
+		return nil
+	}
+}
+
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[TracesConsumer]{
 		withCommonContextParsers[TracesConsumer](),
@@ -163,7 +193,15 @@ func convertSpanStatements(pc *ottl.ParserCollection[TracesConsumer], statements
 		return nil, errGlobalBoolExpr
 	}
 	sStatements := ottlspan.NewStatementSequence(parsedStatements, pc.Settings(), ottlspan.WithStatementSequenceErrorMode(errorMode))
-	return traceStatements{sStatements, globalExpr}, nil
+	
+	// Check if tracing is enabled via feature gate
+	emitTraceSpans := metadata.ProcessorTransformEmitOttlSpansFeatureGate.IsEnabled()
+	var tracer trace.Tracer
+	if emitTraceSpans {
+		tracer = pc.Settings().TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor")
+	}
+	
+	return traceStatements{sStatements, globalExpr, emitTraceSpans, tracer}, nil
 }
 
 func convertSpanEventStatements(pc *ottl.ParserCollection[TracesConsumer], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[*ottlspanevent.TransformContext]) (TracesConsumer, error) {
@@ -184,7 +222,15 @@ func convertSpanEventStatements(pc *ottl.ParserCollection[TracesConsumer], state
 		return nil, errGlobalBoolExpr
 	}
 	seStatements := ottlspanevent.NewStatementSequence(parsedStatements, pc.Settings(), ottlspanevent.WithStatementSequenceErrorMode(errorMode))
-	return spanEventStatements{seStatements, globalExpr}, nil
+	
+	// Check if tracing is enabled via feature gate
+	emitTraceSpans := metadata.ProcessorTransformEmitOttlSpansFeatureGate.IsEnabled()
+	var tracer trace.Tracer
+	if emitTraceSpans {
+		tracer = pc.Settings().TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor")
+	}
+	
+	return spanEventStatements{seStatements, globalExpr, emitTraceSpans, tracer}, nil
 }
 
 func (tpc *TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (TracesConsumer, error) {

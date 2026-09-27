@@ -17,6 +17,13 @@ status:
   codeowners:
     active: [ChrsMark, lahsivjar]
 
+feature_gates:
+  - id: "connector.signaltometricsconnector.resilientErrorMode"
+    description: "When enabled, changes the default error_mode for OTTL conditions from 'propagate' to 'ignore'. This prevents OTTL errors from causing valid telemetry to be dropped. Users can still explicitly set error_mode: propagate in their configuration to retain the old behavior."
+    stage: alpha
+    from_version: v0.161.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48419
+
 tests:
   config:
     spans:
