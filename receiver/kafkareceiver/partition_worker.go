@@ -9,7 +9,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/otel/attribute"
@@ -38,9 +37,6 @@ type pc struct {
 
 	ctx    context.Context
 	cancel context.CancelCauseFunc
-	// Not safe for concurrent use. handleMessage clones it when max_in_flight
-	// is above 1.
-	backOff *backoff.ExponentialBackOff
 
 	mailbox *partitionMailbox
 	// skipConsume holds offsets this worker already finished above a rewind
@@ -322,11 +318,12 @@ func (c *franzConsumer) maxInFlight() int {
 }
 
 // processRecordsConcurrent runs up to maxInFlight handleMessage calls at once
-// on one partition. It marks the successful prefix as records finish. An
-// unmarked failure is retried once in memory. If that retry fails, this worker
-// rewinds and skips Consume for offsets it already finished above the hole. It
-// returns that unmarked record, whether the error is permanent, and the last
-// record of the successful prefix.
+// on one partition. It marks the contiguous accepted prefix as records finish.
+// That prefix includes failures message marking skips. An unmarked failure is
+// retried once in memory. If that retry fails, this worker rewinds and skips
+// Consume for offsets it already finished above the hole. It returns that
+// unmarked record, whether the error is permanent, and the last record of the
+// accepted prefix.
 func (c *franzConsumer) processRecordsConcurrent(ctx context.Context, pc *pc, p kgo.FetchTopicPartition) (fatalRecord *kgo.Record, fatalIsPermanent bool, lastProcessed *kgo.Record) {
 	records := p.Records
 	sem := make(chan struct{}, c.maxInFlight())
@@ -397,9 +394,11 @@ func (c *franzConsumer) processRecordsConcurrent(ctx context.Context, pc *pc, p 
 			idx := pos + j
 			err := errs[idx]
 			if err != nil && !c.shouldMark(err) {
-				if c.config.ErrorBackOff.Enabled && !consumererror.IsPermanent(err) {
-					// One extra Consume, no new backoff. handleMessage already
-					// used the configured max_elapsed_time.
+				// One extra Consume, no new backoff. handleMessage already used
+				// the configured max_elapsed_time. Skip it when the partition
+				// context is cancelled: that error is shutdown, and another
+				// Consume would run on the cancelled context.
+				if c.config.ErrorBackOff.Enabled && !consumererror.IsPermanent(err) && pc.ctx.Err() == nil {
 					err = c.consumeMessage(pc.ctx, msg, pc.attrs)
 					if err == nil || c.shouldMark(err) {
 						errs[idx] = err

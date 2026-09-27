@@ -411,7 +411,6 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 	t.Run("pause does not remember", func(t *testing.T) {
 		consumer, _, partitionConsumer := newMaxInFlightConsumer(t, inFlight)
 		consumer.config.ErrorBackOff.Enabled = false
-		partitionConsumer.backOff = nil
 		entered := make(chan struct{}, 8)
 		releases := make([]chan struct{}, 5)
 		for i := range releases {
@@ -492,6 +491,21 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 	})
 }
 
+func TestProcessPartitionBatchCancelledSkipsExtraConsume(t *testing.T) {
+	consumer, _, partitionConsumer := newMaxInFlightConsumer(t, 2)
+	var calls atomic.Int64
+	consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set) error {
+		calls.Add(1)
+		return errors.New("boom")
+	}
+	partitionConsumer.cancel(context.Canceled)
+
+	result := consumer.processPartitionBatch(t.Context(), partitionConsumer, offsetBatch(1))
+	require.True(t, result.terminal)
+	require.Nil(t, result.rewindRecord)
+	require.Equal(t, int64(1), calls.Load())
+}
+
 // requireNoEntry fails if a Consume call arrives within a short wait.
 func requireNoEntry(t *testing.T, entered <-chan struct{}, msg string) {
 	t.Helper()
@@ -538,11 +552,10 @@ func newIndependentConsumer(
 	ctx, cancel := context.WithCancelCause(tb.Context())
 	tb.Cleanup(func() { cancel(nil) })
 	partitionConsumer := &pc{
-		ctx:     ctx,
-		cancel:  cancel,
-		attrs:   attribute.NewSet(),
-		logger:  zap.NewNop(),
-		backOff: newExponentialBackOff(cfg.ErrorBackOff),
+		ctx:    ctx,
+		cancel: cancel,
+		attrs:  attribute.NewSet(),
+		logger: zap.NewNop(),
 	}
 	consumer.assignments[topicPartition{topic: topic, partition: 0}] = partitionConsumer
 	return consumer, kafkaClient, partitionConsumer

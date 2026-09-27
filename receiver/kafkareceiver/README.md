@@ -122,6 +122,7 @@ The following settings can be optionally configured:
   - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
   - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
   - `max_in_flight` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
+    > **WARNING**: Unmarshal must be safe for concurrent calls. Independent workers and values above 1 call Unmarshal at the same time. Built-in `text` and `text_*` encodings are not concurrent-safe. Encoding extensions must be concurrent-safe too.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -158,7 +159,8 @@ Available only for traces:
 Available only for logs:
 
 - `raw`: the payload's bytes are inserted as the body of a log record.
-- `text`: the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
+- `text`: the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior. 
+> **WARNING**: `text` and `text_*` are not safe for concurrent Unmarshal (`partition_processing.independent` or `max_in_flight` above 1).
 - `json`: the payload is decoded as JSON and inserted as the body of a log record.
 - `azure_resource_logs` (Deprecated [v0.149.0]: use [`azureencodingextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/azureencodingextension)): the payload is converted from Azure Resource Logs format to OTel format.
 
@@ -311,7 +313,11 @@ Each partition has one worker and one mailbox. `max_buffered_batches` is how man
 
 `max_in_flight` (default 1) is how many unmarshal-plus-Consume calls one partition worker may run at once. The worker starts those calls only for records already in a fetched batch. An idle partition still has one worker. At 1, records stay in offset order inside the partition. Above 1, later records in the same fetch can reach Consume before earlier ones finish.
 
-When `max_in_flight` is above 1, the worker marks the contiguous successful prefix as soon as those records finish. Later records in the same fetch can still be in Consume. The worker always marks after processing, so `message_marking.after: false` does not mark before Consume. Kafka commits marks on the autocommit interval (default 1s). A crash re-fetches from the last committed offset, which can lag the marks.
+Unmarshal must be safe for concurrent calls. The receiver uses one unmarshaler for all workers. It cannot clone encoding extensions. Independent workers call Unmarshal at the same time across partitions. `max_in_flight` above 1 does the same inside a partition. 
+
+> **WARNING**: Built-in `text` and `text_*` encodings keep one decoder and are not concurrent-safe. Encoding extensions must be concurrent-safe as well.
+
+When `max_in_flight` is above 1, the worker marks the contiguous accepted prefix as soon as those records finish. Message marking can put a rejected record in that prefix. This happens when `after` is false, or when `on_error` or `on_permanent_error` is true. Later records in the same fetch can still be in Consume. The worker always marks after processing, so `message_marking.after: false` does not mark before Consume. Kafka commits marks on the autocommit interval (default 1s). A crash re-fetches from the last committed offset, which can lag the marks.
 
 Above 1, unmarked transient errors with `error_backoff` enabled retry that record once in memory. If the retry succeeds, later successes in that wave are not fetched again. If the retry fails and this worker rewinds, it skips Consume for offsets it already finished above the hole. A new owner after pause or rebalance does not skip those offsets. Later records from that fetch that already reached Consume can hit Consume again. While the failed call still runs, including backoff, other slots can start more records from the same fetch.
 

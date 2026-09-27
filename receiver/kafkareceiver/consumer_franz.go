@@ -539,7 +539,6 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 		for _, partition := range partitions {
 			c.telemetryBuilder.KafkaReceiverPartitionStart.Add(context.Background(), 1)
 			partitionConsumer := pc{
-				backOff: newExponentialBackOff(c.config.ErrorBackOff),
 				logger: c.settings.Logger.With(
 					zap.String("topic", topic),
 					zap.Int64("partition", int64(partition)),
@@ -681,14 +680,7 @@ func (c *franzConsumer) deleteStoppingAssignments(stopping map[topicPartition]*p
 
 // handleMessage is called on a per-partition basis.
 func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
-	backOff := pc.backOff
-	if backOff != nil && c.maxInFlight() > 1 {
-		// pc.backOff is not safe for concurrent use, so each call gets its own.
-		backOff = newExponentialBackOff(c.config.ErrorBackOff)
-	}
-	if backOff != nil {
-		defer backOff.Reset()
-	}
+	backOff := newExponentialBackOff(c.config.ErrorBackOff)
 
 	for {
 		err := c.consumeMessage(pc.ctx, record, pc.attrs)
