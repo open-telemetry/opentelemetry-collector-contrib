@@ -152,6 +152,10 @@ async function getIssuesData({octokit, context}) {
     "waiting-for-code-owners": {
       filterPrs: false,
       alias: "issuesCodeOwnerNeeded",
+    },
+    "waiting-for-maintainers": {
+      filterPrs: false,
+      alias: "issuesMaintainerNeeded",
     }
   };
 
@@ -192,6 +196,11 @@ async function getIssuesData({octokit, context}) {
     },
     issuesCodeOwnerNeeded: {
       title: "Issues and PRs that need code owner review",
+      count: 0,
+      data: []
+    },
+    issuesMaintainerNeeded: {
+      title: "PRs that need approver/maintainer review",
       count: 0,
       data: []
     }
@@ -244,7 +253,7 @@ function generateComponentsLookingForOwnersReportSection(lookingForOwners) {
 }
 
 function addChangesFromPreviousWeek(li, current, previous) {
-  return li += ` (${current - previous})`
+  return li += ` (${current - (previous ?? 0)})`
 }
 
 function generateReport({ issuesData, previousReport, componentData }) {

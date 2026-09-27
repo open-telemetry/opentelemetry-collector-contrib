@@ -2191,6 +2191,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 		if hasPlan {
 			s.lb.RecordDbServerQueryPlanEvent(ctx,
 				pcommon.NewTimestampFromTime(collectionTime),
+				dbSystemNameVal,
 				hit.sqlID,
 				hit.childNumber,
 				hit.childAddress,
@@ -2590,7 +2591,7 @@ func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.
 			continue
 		}
 
-		s.lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, row[sid], row[serial], row[event], row[waitClass], totalWaitsVal, totalTimeoutsVal, totalTimeWaitedSecsVal, row[dbNamespaceAttr])
+		s.lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, dbSystemNameVal, row[sid], row[serial], row[event], row[waitClass], totalWaitsVal, totalTimeoutsVal, totalTimeWaitedSecsVal, row[dbNamespaceAttr])
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
