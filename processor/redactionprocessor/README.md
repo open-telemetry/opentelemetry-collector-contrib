@@ -198,7 +198,11 @@ it took. Setting `summary: silent` suppresses all audit attributes.
 
 The processor treats these attributes as its own bookkeeping rather than as user
 data, so they are never redacted, masked or counted by a later redaction
-processor and the audit trail accumulates across a chain. Because `silent`
+processor. Across a chain of redaction processors, the redacted and masked
+outcomes add up, because a removed key and an already masked value cannot be
+observed again. The allowed and ignored outcomes describe the record as it
+currently stands, which every processor re-derives in full, so the last one to
+see the data reports them rather than adding to its predecessor. Because `silent`
 suppresses the audit trail, a processor configured with it claims no ownership
 of one it finds: the ordinary `allowed_keys` rules apply, so an egress processor
 can strip an upstream audit trail before the data leaves the collector.

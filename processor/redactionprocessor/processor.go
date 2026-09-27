@@ -235,10 +235,10 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 		}
 	}
 
-	s.addMetaAttrs(redactedKeys, attributes, redactionBodyRedactedKeys, redactionBodyRedactedCount)
-	s.addMetaAttrs(maskedKeys, attributes, redactionBodyMaskedKeys, redactionBodyMaskedCount)
-	s.addMetaAttrs(allowedKeys, attributes, redactionBodyAllowedKeys, redactionBodyAllowedCount)
-	s.addMetaAttrs(ignoredKeys, attributes, "", redactionBodyIgnoredCount)
+	s.addMetaAttrs(redactedKeys, attributes, redactionBodyRedactedKeys, redactionBodyRedactedCount, true)
+	s.addMetaAttrs(maskedKeys, attributes, redactionBodyMaskedKeys, redactionBodyMaskedCount, true)
+	s.addMetaAttrs(allowedKeys, attributes, redactionBodyAllowedKeys, redactionBodyAllowedCount, false)
+	s.addMetaAttrs(ignoredKeys, attributes, "", redactionBodyIgnoredCount, false)
 }
 
 func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, value pcommon.Value, redactedKeys, maskedKeys, allowedKeys, ignoredKeys *[]string) {
@@ -396,10 +396,10 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		attributes.Remove(k)
 	}
 	// Add diagnostic information to the span
-	s.addMetaAttrs(redactedKeys, attributes, redactionRedactedKeys, redactionRedactedCount)
-	s.addMetaAttrs(maskedKeys, attributes, redactionMaskedKeys, redactionMaskedCount)
-	s.addMetaAttrs(allowedKeys, attributes, redactionAllowedKeys, redactionAllowedCount)
-	s.addMetaAttrs(ignoredKeys, attributes, "", redactionIgnoredCount)
+	s.addMetaAttrs(redactedKeys, attributes, redactionRedactedKeys, redactionRedactedCount, true)
+	s.addMetaAttrs(maskedKeys, attributes, redactionMaskedKeys, redactionMaskedCount, true)
+	s.addMetaAttrs(allowedKeys, attributes, redactionAllowedKeys, redactionAllowedCount, false)
+	s.addMetaAttrs(ignoredKeys, attributes, "", redactionIgnoredCount, false)
 }
 
 //nolint:gosec
@@ -434,26 +434,48 @@ func hashStringHMAC(input string, key configopaque.String, newHash func() hash.H
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// addMetaAttrs adds diagnostic information about redacted or masked attribute keys
-func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map, valuesAttr, countAttr string) {
-	redactedCount := int64(len(redactedAttrs))
-	if redactedCount == 0 {
+// addMetaAttrs adds diagnostic information about the keys the processor acted
+// on.
+//
+// accumulate distinguishes the two kinds of outcome the processor reports.
+// Redacting a key or masking a value is an event a later pass cannot observe
+// again -- the key is gone, and the masked value no longer matches the pattern
+// that matched it -- so those outcomes add to whatever an upstream processor
+// recorded. Allowing or ignoring a key describes the record as it now stands,
+// and every pass re-derives that in full from the same surviving attributes, so
+// those outcomes replace the upstream value rather than doubling it.
+func (s *redaction) addMetaAttrs(keys []string, attributes pcommon.Map, valuesAttr, countAttr string, accumulate bool) {
+	count := int64(len(keys))
+	if count == 0 {
+		// An upstream value describes attributes this pass re-derived as an
+		// empty set, so it no longer holds. Nothing to do for an accumulating
+		// outcome, which only ever adds to what it finds.
+		if !accumulate && s.summaryEnabled() {
+			if valuesAttr != "" {
+				attributes.Remove(valuesAttr)
+			}
+			attributes.Remove(countAttr)
+		}
 		return
 	}
 
 	// Record summary as span attributes, empty string for ignored items
 	if s.config.Summary == debug && valuesAttr != "" {
-		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.Str() != "" {
-			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.Str(), attrValuesSeparator)...)
+		if accumulate {
+			if existingVal, found := attributes.Get(valuesAttr); found && existingVal.Str() != "" {
+				keys = append(keys, strings.Split(existingVal.Str(), attrValuesSeparator)...)
+			}
 		}
-		sort.Strings(redactedAttrs)
-		attributes.PutStr(valuesAttr, strings.Join(redactedAttrs, attrValuesSeparator))
+		sort.Strings(keys)
+		attributes.PutStr(valuesAttr, strings.Join(keys, attrValuesSeparator))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		if existingVal, found := attributes.Get(countAttr); found {
-			redactedCount += existingVal.Int()
+		if accumulate {
+			if existingVal, found := attributes.Get(countAttr); found {
+				count += existingVal.Int()
+			}
 		}
-		attributes.PutInt(countAttr, redactedCount)
+		attributes.PutInt(countAttr, count)
 	}
 }
 

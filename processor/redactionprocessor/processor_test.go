@@ -1135,6 +1135,107 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	assert.Equal(t, int64(2), val.Int())
 }
 
+// TestSummaryAcrossChainedProcessors validates how each outcome behaves when
+// data passes through more than one redaction processor. Redacting a key and
+// masking a value are events a later pass cannot observe again, so they add up
+// across the chain. Allowing and ignoring a key describe the record as it now
+// stands, and every pass re-derives those in full, so the later pass replaces
+// what it finds instead of counting the same attribute twice.
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50770
+func TestSummaryAcrossChainedProcessors(t *testing.T) {
+	t.Run("re-derived outcomes do not double", func(t *testing.T) {
+		for _, summary := range []string{debug, info} {
+			t.Run(summary, func(t *testing.T) {
+				config := &Config{
+					AllowedKeys:   []string{"email", "id"},
+					IgnoredKeys:   []string{"trace_id"},
+					AllowedValues: []string{`.+@mycompany\.com`},
+					Summary:       summary,
+				}
+				attrs := pcommon.NewMap()
+				attrs.PutStr("email", "someone@mycompany.com")
+				attrs.PutStr("id", "5")
+				attrs.PutStr("trace_id", "abc")
+				attrs.PutStr("unknown", "dropped")
+
+				// Three processors with the identical configuration, as a
+				// chained pipeline would apply them.
+				for pass := 1; pass <= 3; pass++ {
+					processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+					require.NoError(t, err)
+					processor.processAttrs(t.Context(), attrs)
+				}
+
+				// One attribute was allowed and one ignored, however many
+				// processors looked at them.
+				value, found := attrs.Get(redactionAllowedCount)
+				require.True(t, found)
+				assert.Equal(t, int64(1), value.Int(), "the same allowed attribute was counted once per pass")
+				value, found = attrs.Get(redactionIgnoredCount)
+				require.True(t, found)
+				assert.Equal(t, int64(1), value.Int(), "the same ignored attribute was counted once per pass")
+
+				if summary == debug {
+					value, found = attrs.Get(redactionAllowedKeys)
+					require.True(t, found)
+					assert.Equal(t, "email", value.Str(), "the same allowed attribute was listed once per pass")
+				}
+			})
+		}
+	})
+
+	t.Run("completed work accumulates", func(t *testing.T) {
+		attrs := pcommon.NewMap()
+		attrs.PutStr("keep", "1")
+		attrs.PutStr("first", "2")
+		attrs.PutStr("second", "3")
+
+		// Each processor redacts a different key, so the summary describes
+		// both by the time the data leaves the chain.
+		for _, allowed := range [][]string{{"keep", "first"}, {"keep"}} {
+			processor, err := newRedaction(t.Context(), &Config{AllowedKeys: allowed, Summary: debug}, zaptest.NewLogger(t))
+			require.NoError(t, err)
+			processor.processAttrs(t.Context(), attrs)
+		}
+
+		value, found := attrs.Get(redactionRedactedKeys)
+		require.True(t, found)
+		assert.Equal(t, "first,second", value.Str())
+		value, found = attrs.Get(redactionRedactedCount)
+		require.True(t, found)
+		assert.Equal(t, int64(2), value.Int())
+	})
+
+	t.Run("a pass that re-derives nothing clears the upstream value", func(t *testing.T) {
+		attrs := pcommon.NewMap()
+		attrs.PutStr("email", "someone@mycompany.com")
+
+		upstream, err := newRedaction(t.Context(), &Config{
+			AllowedKeys:   []string{"email"},
+			AllowedValues: []string{`.+@mycompany\.com`},
+			Summary:       debug,
+		}, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		upstream.processAttrs(t.Context(), attrs)
+		_, found := attrs.Get(redactionAllowedKeys)
+		require.True(t, found, "the upstream processor allowed nothing to report on")
+
+		// The same attribute, but this processor has no allowed_values, so it
+		// allows nothing. The upstream summary no longer describes the record.
+		downstream, err := newRedaction(t.Context(), &Config{
+			AllowedKeys: []string{"email"},
+			Summary:     debug,
+		}, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		downstream.processAttrs(t.Context(), attrs)
+
+		_, found = attrs.Get(redactionAllowedKeys)
+		assert.False(t, found, "a stale allowed key list survived a pass that allowed nothing")
+		_, found = attrs.Get(redactionAllowedCount)
+		assert.False(t, found, "a stale allowed count survived a pass that allowed nothing")
+	})
+}
+
 // summaryAttrPrefix is the prefix every attribute the processor writes about
 // its own work shares. The tests discover the summary attributes through it
 // rather than listing them, so an attribute added to the processor later is

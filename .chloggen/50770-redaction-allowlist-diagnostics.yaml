@@ -26,6 +26,13 @@ subtext: |
   with a masked value, and with `redact_all_types` enabled it rewrote the `*.count` integers as strings, which made the
   running totals read back as zero at the next hop.
 
+  Chaining two processors also reported the same attribute more than once: the allowed and ignored summaries
+  describe the record as it currently stands, which every processor re-derives in full, so merging them with an
+  upstream value counted one attribute twice. `redaction.allowed.keys` read `email,email` with
+  `redaction.allowed.count` of 2 for a single allowed attribute. Those two outcomes now replace the upstream
+  value, while the redacted and masked outcomes keep accumulating, because a removed key and an already masked
+  value cannot be detected again.
+
   Two behaviour changes come with this. Setting `summary` to `silent`, including by leaving it unset, now means the
   processor claims no ownership of a summary it finds, so the ordinary allow list applies and a strict egress processor
   can strip an upstream audit trail. And a key inside a log body named after a summary attribute is now redacted like
