@@ -182,80 +182,59 @@ jobs:
             false
           fi
 
-  openshift-test-matrix:
-    strategy:
-      fail-fast: false
-      matrix:
-        component:
-          - processor/resourcedetectionprocessor
+  # Runs the OpenShift detector e2e test on MicroShift (real OpenShift runtime:
+  # SCCs, CRI-O). Only runs when OpenShift-related paths change; not a required check.
+  openshift-test:
     runs-on: ubuntu-24.04
     needs: docker-build
-    # Non-blocking initially while we validate MicroShift stability in CI
-    continue-on-error: true
+    env:
+      KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: ./.github/actions/setup-go-tools
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            openshift:
+              - 'processor/resourcedetectionprocessor/internal/openshift/**'
+              - 'internal/metadataproviders/openshift/**'
+              - 'processor/resourcedetectionprocessor/testdata/e2e/openshift-cluster/**'
+              - 'processor/resourcedetectionprocessor/e2e_test.go'
+              - 'pkg/xk8stest/**'
+              - '.github/workflows/e2e-tests.yml'
+      - uses: $/.github/actions/setup-go-tools
+        if: steps.filter.outputs.openshift == 'true'
         with:
           go-version: oldstable
-      - name: Free disk space
-        run: ./.github/workflows/scripts/free-disk-space.sh
       - name: Enable KVM access for runner
+        if: steps.filter.outputs.openshift == 'true'
         run: sudo chmod 666 /dev/kvm
       - name: Start MicroShift via CRC
+        if: steps.filter.outputs.openshift == 'true'
         uses: crc-org/crc-github-action@466b8741bd91b9ee59f37db92b69f285cacada41 # v1.0.1
         with:
           preset: microshift
-      - name: Export KUBECONFIG for MicroShift
-        run: cp ~/.kube/config /tmp/kube-config-otelcol-e2e-testing
-      - name: Install Infrastructure CRD on MicroShift
-        env:
-          KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
-        run: |
-          SETUP_DIR=.github/workflows/configs/e2e-microshift-setup
-          oc apply -f "${SETUP_DIR}/infrastructure-crd.yaml"
-          oc wait --for=condition=Established crd/infrastructures.config.openshift.io --timeout=30s
-          oc apply -f "${SETUP_DIR}/infrastructure-cr.yaml"
-          oc patch infrastructure cluster --type=merge --subresource=status \
-            -p '{"status":{"infrastructureName":"microshift-ci-cluster","controlPlaneTopology":"SingleReplica","infrastructureTopology":"SingleReplica","platformStatus":{"type":"None"}}}'
-          oc get infrastructure cluster -o yaml
+      - name: Export KUBECONFIG
+        if: steps.filter.outputs.openshift == 'true'
+        run: cp ~/.kube/config "$KUBECONFIG"
       - name: Download artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        if: steps.filter.outputs.openshift == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: otelcontribcol
           path: /tmp
-      - name: Load Docker image into MicroShift
-        run: |
-          PODMAN_ENV=$(sg libvirt -c "crc podman-env")
-          eval "$PODMAN_ENV"
-          podman load < /tmp/otelcontribcol.tar
-      - name: Resolve host endpoint for CRC network
+      - name: Load image into MicroShift CRI-O storage
+        if: steps.filter.outputs.openshift == 'true'
         run: |
           CRC_IP=$(sg libvirt -c "crc ip")
-          HOST_ENDPOINT=$(ip route get "$CRC_IP" | grep -oP 'src \K[\d.]+')
-          echo "HOST_ENDPOINT=${HOST_ENDPOINT}" >> "$GITHUB_ENV"
-          echo "Host endpoint for CRC: ${HOST_ENDPOINT} (VM: ${CRC_IP})"
-      - name: Run OpenShift E2E tests
-        env:
-          KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
-          HOST_ENDPOINT: ${{ env.HOST_ENDPOINT }}
+          # CRI-O reads root podman storage; tag as docker.io/library to match what kind load produces.
+          ssh -i ~/.crc/machines/crc/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            core@"$CRC_IP" 'sudo podman load && sudo podman tag localhost/otelcontribcol:latest docker.io/library/otelcontribcol:latest' < /tmp/otelcontribcol.tar
+          echo "HOST_ENDPOINT=$(ip route get "$CRC_IP" | grep -oP 'src \K[\d.]+')" >> "$GITHUB_ENV"
+      - name: Run OpenShift e2e test
+        if: steps.filter.outputs.openshift == 'true'
         run: |
-          cd ${{ matrix.component }}
-          go test -v --tags=e2e -run TestE2EOpenShiftRealCluster
-      - run: ./.github/workflows/scripts/check-disk-space.sh
-
-  openshift-test:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-24.04
-    needs: [openshift-test-matrix]
-    steps:
-      - name: Print result
-        run: echo ${{ needs.openshift-test-matrix.result }}
-      - name: Interpret result
-        run: |
-          if [[ success == ${{ needs.openshift-test-matrix.result }} ]]
-          then
-            echo "All OpenShift matrix jobs passed!"
-          else
-            echo "One or more OpenShift matrix jobs failed."
-            false
-          fi
+          cd processor/resourcedetectionprocessor
+          go test -v --tags=e2e -run TestE2EOpenShiftInCluster

@@ -28,6 +28,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -1214,17 +1218,45 @@ func TestE2EOpenShiftDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
-// TestE2EOpenShiftRealCluster tests the OpenShift detector against a real
-// MicroShift or OpenShift cluster. The test is automatically skipped when
-// running against a plain Kubernetes cluster (e.g., kind) that does not
-// expose the config.openshift.io API group.
-func TestE2EOpenShiftRealCluster(t *testing.T) {
+// TestE2EOpenShiftInCluster tests the OpenShift detector against the real
+// kube-apiserver using the in-cluster defaults (service account token, CA and
+// KUBERNETES_SERVICE_HOST). It runs on kind and on MicroShift; neither serves
+// the config.openshift.io API group, so a minimal Infrastructure CRD is
+// installed. Set HOST_ENDPOINT when the cluster is not on the kind network.
+func TestE2EOpenShiftInCluster(t *testing.T) {
+	expectedFile := filepath.Join("testdata", "e2e", "openshift", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
-	skipIfNotOpenShift(t, k8sClient)
 
-	expectedFile := filepath.Join("testdata", "e2e", "openshift-real", "expected.yaml")
-	expected, err := golden.ReadMetrics(expectedFile)
+	infraDir := filepath.Join("testdata", "e2e", "openshift-cluster", "infra")
+	crdManifest, err := os.ReadFile(filepath.Join(infraDir, "infrastructure-crd.yaml"))
+	require.NoError(t, err)
+	crd, err := k8stest.CreateObject(k8sClient, crdManifest)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, k8stest.DeleteObject(k8sClient, crd))
+	}()
+
+	crManifest, err := os.ReadFile(filepath.Join(infraDir, "infrastructure-cr.yaml"))
+	require.NoError(t, err)
+	var cr *unstructured.Unstructured
+	// The CRD needs to be established and discovered before the CR can be created.
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		k8sClient.Mapper.Reset()
+		var createErr error
+		cr, createErr = k8stest.CreateObject(k8sClient, crManifest)
+		assert.NoError(tt, createErr)
+	}, 30*time.Second, 1*time.Second)
+	defer func() {
+		require.NoError(t, k8stest.DeleteObject(k8sClient, cr))
+	}()
+
+	infraGVR := schema.GroupVersionResource{Group: "config.openshift.io", Version: "v1", Resource: "infrastructures"}
+	status := []byte(`{"status":{"infrastructureName":"test-openshift-cluster","platformStatus":{"type":"AWS","aws":{"region":"us-east-1"}}}}`)
+	_, err = k8sClient.DynamicClient.Resource(infraGVR).Patch(t.Context(), cr.GetName(), types.MergePatchType, status, metav1.PatchOptions{}, "status")
 	require.NoError(t, err)
 
 	metricsConsumer := new(consumertest.MetricsSink)
@@ -1233,8 +1265,7 @@ func TestE2EOpenShiftRealCluster(t *testing.T) {
 	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
-	host := os.Getenv("HOST_ENDPOINT")
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift-real", "collector"), map[string]string{}, host)
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift-cluster", "collector"), map[string]string{}, os.Getenv("HOST_ENDPOINT"))
 
 	defer func() {
 		for _, obj := range collectorObjs {
@@ -1256,26 +1287,9 @@ func TestE2EOpenShiftRealCluster(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-			// Cluster name varies per real cluster instance
-			pmetrictest.IgnoreResourceAttributeValue("k8s.cluster.name"),
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)
-}
-
-// skipIfNotOpenShift skips the test if the cluster does not expose the
-// config.openshift.io API group, which indicates it is not an OpenShift
-// or MicroShift cluster.
-func skipIfNotOpenShift(t *testing.T, client *k8stest.K8sClient) {
-	t.Helper()
-	groups, err := client.DiscoveryClient.ServerGroups()
-	require.NoError(t, err)
-	for _, g := range groups.Groups {
-		if g.Name == "config.openshift.io" {
-			return
-		}
-	}
-	t.Skip("not an OpenShift cluster: config.openshift.io API group not found")
 }
 
 // TestE2EDynatraceDetector tests the Dynatrace detector by mounting a mock

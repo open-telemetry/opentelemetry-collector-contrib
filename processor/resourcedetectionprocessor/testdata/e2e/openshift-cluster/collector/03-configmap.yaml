@@ -18,11 +18,8 @@ data:
         detectors: [openshift]
         timeout: 10s
         override: false
-        openshift:
-          # No address or token overrides: uses in-cluster defaults
-          # (KUBERNETES_SERVICE_HOST and service account token)
-          tls:
-            insecure_skip_verify: true
+        # No openshift overrides: address, token and CA come from the
+        # in-cluster service account defaults.
     receivers:
       hostmetrics:
         collection_interval: 1s
