@@ -43,14 +43,15 @@ verify/k8s:
       hmac_key: hmac.key
       certificate: tls.crt
 
-# OpenBao / Vault key material (values are fields within the secret).
+# OpenBao / Vault key material (KVv2 via OpenBao API v2).
+# mount_path defaults to "secret"; secret_path is relative to that mount.
 verify/bao:
   key_source:
     type: bao
     bao:
       address: https://bao.example.com
       mount_path: secret
-      secret_path: secret/data/verify
+      secret_path: verify
       certificate: certificate
       hmac_key: hmac_key
 

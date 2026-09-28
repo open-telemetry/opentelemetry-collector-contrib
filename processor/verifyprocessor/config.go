@@ -25,6 +25,7 @@ const (
 	keySourceFile      = "file"
 	keySourceBao       = "bao"
 
+	defaultBaoMountPath        = "secret"
 	defaultDeadLetterKeyPrefix = "dead_letter/"
 )
 
@@ -50,52 +51,49 @@ type Config struct {
 
 type KeySourceConfig struct {
 	Type      string           `mapstructure:"type"`
-	K8sSecret *K8sSecretConfig `mapstructure:"k8s_secret"`
 	Env       *EnvKeyConfig    `mapstructure:"env"`
 	File      *FileKeyConfig   `mapstructure:"file"`
+	K8sSecret *K8sSecretConfig `mapstructure:"k8s_secret"`
 	Bao       *BaoKeyConfig    `mapstructure:"bao"`
 }
 
+// SecretConfig holds verification key material fields shared by providers.
+// Set Certificate and/or HMACKey (no private-key fields; verify only needs
+// public material / HMAC secrets).
+type SecretConfig struct {
+	Certificate string `mapstructure:"certificate"`
+	HMACKey     string `mapstructure:"hmac_key"`
+}
+
+// EnvKeyConfig configures inline key material whose values are resolved by the
+// confmap provider (e.g. via ${env:VAR_NAME} substitution in the collector
+// config). Each field holds the actual PEM text or HMAC secret, not an
+// env-var name.
+type EnvKeyConfig SecretConfig
+
+// FileKeyConfig configures file-based key material (local paths).
+type FileKeyConfig SecretConfig
+
 // K8sSecretConfig configures a Kubernetes Secret key source.
 // certificate and hmac_key are keys within the Secret data.
-// Both may be set when the collector should verify either algorithm.
 type K8sSecretConfig struct {
-	Name      string `mapstructure:"name"`
-	Namespace string `mapstructure:"namespace"`
-	CertKey   string `mapstructure:"certificate"`
-	HMACKey   string `mapstructure:"hmac_key"`
-}
-
-// EnvKeyConfig configures environment-variable key material.
-// certificate and hmac_key hold the PEM certificate and/or HMAC secret,
-// typically supplied via Collector confmap ${env:VAR} expansion.
-// Both may be set when the collector should verify either algorithm.
-type EnvKeyConfig struct {
-	CertEnvVar    string `mapstructure:"certificate"`
-	HMACKeyEnvVar string `mapstructure:"hmac_key"`
-}
-
-// FileKeyConfig configures file-based key material.
-// certificate and hmac_key are local file paths.
-// Both may be set when the collector should verify either algorithm.
-type FileKeyConfig struct {
-	CertFile    string `mapstructure:"certificate"`
-	HMACKeyFile string `mapstructure:"hmac_key"`
+	Name         string `mapstructure:"name"`
+	Namespace    string `mapstructure:"namespace"`
+	SecretConfig `mapstructure:",squash"`
 }
 
 // BaoKeyConfig configures the OpenBao (Vault-compatible) key material source.
 // Address and Token are optional: if omitted, the client reads BAO_ADDR and
 // BAO_TOKEN (or any other supported BAO_* environment variables) automatically.
-// MountPath is the KV secrets-engine mount (required for OpenBao API v2 / KVv2).
+// MountPath is the KV v2 engine mount point (default: "secret").
+// SecretPath is the path to the secret within that mount (e.g. "verify").
 // certificate and hmac_key are field names within the secret at SecretPath.
-// Both may be set when the collector should verify either algorithm.
 type BaoKeyConfig struct {
 	Address      string `mapstructure:"address"`
 	Token        string `mapstructure:"token"`
 	MountPath    string `mapstructure:"mount_path"`
 	SecretPath   string `mapstructure:"secret_path"`
-	CertField    string `mapstructure:"certificate"`
-	HMACKeyField string `mapstructure:"hmac_key"`
+	SecretConfig `mapstructure:",squash"`
 }
 
 type DeadLetterConfig struct {
@@ -167,31 +165,34 @@ func (c *Config) validateKeySource() error {
 		if c.KeySource.K8sSecret.Namespace == "" {
 			c.KeySource.K8sSecret.Namespace = "default"
 		}
-		if c.KeySource.K8sSecret.CertKey == "" && c.KeySource.K8sSecret.HMACKey == "" {
+		if c.KeySource.K8sSecret.Certificate == "" && c.KeySource.K8sSecret.HMACKey == "" {
 			return errKeySourceNeedsMaterial
 		}
 	case keySourceEnv:
 		if c.KeySource.Env == nil {
 			return errMissingKeySourceConfig
 		}
-		if c.KeySource.Env.CertEnvVar == "" && c.KeySource.Env.HMACKeyEnvVar == "" {
+		if c.KeySource.Env.Certificate == "" && c.KeySource.Env.HMACKey == "" {
 			return errKeySourceNeedsMaterial
 		}
 	case keySourceFile:
 		if c.KeySource.File == nil {
 			return errMissingKeySourceConfig
 		}
-		if c.KeySource.File.CertFile == "" && c.KeySource.File.HMACKeyFile == "" {
+		if c.KeySource.File.Certificate == "" && c.KeySource.File.HMACKey == "" {
 			return errKeySourceNeedsMaterial
 		}
 	case keySourceBao:
 		if c.KeySource.Bao == nil {
 			return errMissingKeySourceConfig
 		}
+		if c.KeySource.Bao.MountPath == "" {
+			c.KeySource.Bao.MountPath = defaultBaoMountPath
+		}
 		if c.KeySource.Bao.SecretPath == "" {
 			return errors.New("key_source.bao.secret_path is required")
 		}
-		if c.KeySource.Bao.CertField == "" && c.KeySource.Bao.HMACKeyField == "" {
+		if c.KeySource.Bao.Certificate == "" && c.KeySource.Bao.HMACKey == "" {
 			return errKeySourceNeedsMaterial
 		}
 	default:

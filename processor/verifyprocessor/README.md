@@ -72,12 +72,12 @@ processors:
       #   certificate: tls.crt
       #   # hmac_key:  hmac.key
 
-      # --- OpenBao / Vault provider — fields within the secret ---
+      # --- OpenBao / Vault provider (OpenBao API v2 / KVv2) ---
       # bao:
       #   address:     https://bao.example.com   # optional, falls back to BAO_ADDR
       #   token:       s.xxxx                    # optional, falls back to BAO_TOKEN
-      #   mount_path:  secret                    # KV secrets-engine mount (OpenBao API v2 / KVv2)
-      #   secret_path: secret/data/verify
+      #   mount_path:  secret                    # KV v2 mount point; default: "secret"
+      #   secret_path: verify                    # path within the mount (no "data/" prefix)
       #   certificate: certificate
       #   # hmac_key:  hmac_key
 
@@ -103,9 +103,28 @@ secret. Both may be set when the collector should verify either algorithm.
 | Provider | `certificate` / `hmac_key` mean | Description |
 | --- | --- | --- |
 | `file` | Local file paths | Reads a PEM certificate and/or a raw HMAC secret from disk. Supports plain PEM and base64-encoded PEM for certificates. |
-| `env` | Key material (usually via `${env:}`) | Uses the configured certificate/HMAC strings, typically filled by Collector confmap `${env:VAR}` expansion. |
+| `env` | Key material (usually via `${env:}`) | Holds resolved PEM / HMAC strings from Collector confmap `${env:VAR}` expansion (not env-var names). |
 | `k8s_secret` | Keys inside the Secret | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
-| `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine (`mount_path` + `secret_path`, OpenBao API v2 / KVv2). |
+| `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) KV v2 secrets engine via [`github.com/openbao/openbao/api/v2`](https://pkg.go.dev/github.com/openbao/openbao/api/v2) (`mount_path` default `secret`, `secret_path` relative to that mount). |
+
+> **Note on the `env` key source:** The `certificate` and `hmac_key` fields hold
+> the actual PEM text or HMAC secret, **not** environment variable names. The
+> collector's confmap layer expands `${env:VAR_NAME}` before the processor starts.
+> See [confmap environment variable substitution](https://opentelemetry.io/docs/specs/otel/configuration/data-model/#environment-variable-substitution).
+
+### OpenBao `key_source` (API v2)
+
+Same shape as [`signingprocessor`](../signingprocessor): OpenBao **`api/v2`** client
+and **KV version 2**.
+
+| Config field | Role | Example |
+| --- | --- | --- |
+| `mount_path` | KV secrets-engine mount (default `secret`) | `secret` |
+| `secret_path` | Path **inside** that mount (KVv2 helper adds `/data/` itself) | `verify` |
+| `certificate` / `hmac_key` | Field names in the secret data map | `certificate`, `hmac_key` |
+
+Equivalent logical read: mount `secret` + path `verify` → HTTP
+`.../v1/secret/data/verify`. Do not put `secret/data/...` in `secret_path`.
 
 ## Integrity attributes (from `signingprocessor`)
 
