@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -313,6 +312,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.SqlserverDatabaseName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["sqlserver.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverDatabaseName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.SqlserverDbEdition.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["sqlserver.db.edition"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverDbEdition.EventsInclude)
+	}
+	if lbc.ResourceAttributes.SqlserverDbEdition.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["sqlserver.db.edition"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverDbEdition.EventsExclude)
 	}
 	if lbc.ResourceAttributes.SqlserverInstanceName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["sqlserver.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.SqlserverInstanceName.EventsInclude)

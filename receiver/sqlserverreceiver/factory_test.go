@@ -4,7 +4,9 @@
 package sqlserverreceiver
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -401,6 +404,114 @@ func TestDBProviderCloseIsSafe(t *testing.T) {
 		db, err := provider.getDB()
 		require.ErrorIs(t, err, errDBProviderClosed)
 		require.Nil(t, db, "getDB must not open a pool after close")
+	})
+}
+
+func TestDBProviderDetectEdition(t *testing.T) {
+	t.Run("returns cached value on second call without re-querying", func(t *testing.T) {
+		calls := 0
+		orig := detectSQLServerEdition
+		t.Cleanup(func() { detectSQLServerEdition = orig })
+		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
+			calls++
+			v := "Enterprise"
+			return &v, nil
+		}
+
+		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+		db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+		require.NoError(t, err)
+		defer db.Close()
+		provider.db = db
+
+		v1, resolved1 := provider.detectEdition(t.Context(), zap.NewNop())
+		require.True(t, resolved1)
+		require.Equal(t, "Enterprise", v1)
+
+		v2, resolved2 := provider.detectEdition(t.Context(), zap.NewNop())
+		require.True(t, resolved2)
+		require.Equal(t, "Enterprise", v2)
+		require.Equal(t, 1, calls, "detectSQLServerEdition should only be called once")
+	})
+
+	t.Run("NULL EngineEdition latches so subsequent intervals do not retry", func(t *testing.T) {
+		orig := detectSQLServerEdition
+		t.Cleanup(func() { detectSQLServerEdition = orig })
+		nullStr := ""
+		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
+			return &nullStr, nil
+		}
+
+		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+		db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+		require.NoError(t, err)
+		defer db.Close()
+		provider.db = db
+
+		result, resolved := provider.detectEdition(t.Context(), zap.NewNop())
+		require.True(t, resolved)
+		require.Empty(t, result)
+		require.NotNil(t, provider.dbEdition)
+
+		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
+			t.Fatal("detectSQLServerEdition called again after NULL was latched")
+			return nil, nil
+		}
+		result, resolved = provider.detectEdition(t.Context(), zap.NewNop())
+		require.True(t, resolved)
+		require.Empty(t, result)
+	})
+
+	t.Run("transient error returns unresolved and retries next interval", func(t *testing.T) {
+		calls := 0
+		orig := detectSQLServerEdition
+		t.Cleanup(func() { detectSQLServerEdition = orig })
+		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
+			calls++
+			return nil, errors.New("connection refused")
+		}
+
+		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+		db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+		require.NoError(t, err)
+		defer db.Close()
+		provider.db = db
+
+		_, resolved1 := provider.detectEdition(t.Context(), zap.NewNop())
+		require.False(t, resolved1)
+		_, resolved2 := provider.detectEdition(t.Context(), zap.NewNop())
+		require.False(t, resolved2)
+		require.Equal(t, 2, calls, "should retry on transient errors")
+	})
+}
+
+func TestSetupSQLServerScrapersEditionWiring(t *testing.T) {
+	cfg := &Config{
+		Server:   "0.0.0.0",
+		Username: "sa",
+		Password: "password",
+		Port:     1433,
+	}
+	require.NoError(t, cfg.Validate())
+
+	t.Run("editionFunc is nil when edition disabled", func(t *testing.T) {
+		cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
+		cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverDbEdition.Enabled = false
+		scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		for _, s := range scrapers {
+			require.Nil(t, s.editionFunc, "editionFunc should be nil when edition is disabled")
+		}
+	})
+
+	t.Run("editionFunc is set when edition enabled", func(t *testing.T) {
+		cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
+		cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverDbEdition.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
+		scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		require.NotEmpty(t, scrapers)
+		for _, s := range scrapers {
+			require.NotNil(t, s.editionFunc, "editionFunc should be set when edition is enabled")
+		}
 	})
 }
 
