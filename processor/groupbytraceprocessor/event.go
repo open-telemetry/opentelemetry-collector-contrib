@@ -349,7 +349,17 @@ func (em *eventMachine) callOnError(e event) {
 func (em *eventMachine) handleEventWithObservability(typ eventType, do func() error) {
 	name := typ.String()
 	start := time.Now()
-	succeeded, err := doWithTimeout(time.Second, do)
+	var succeeded bool
+	var err error
+
+	// subtraceTick has a bounded completion time and is not meant to be called concurrently;
+	// long-running calls should complete instead of being cancelled.
+	if typ != subtraceTick {
+		succeeded, err = doWithTimeout(time.Second, do)
+	} else {
+		err = do()
+		succeeded = true
+	}
 	duration := time.Since(start)
 	em.telemetry.ProcessorGroupbytraceEventLatency.Record(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attribute.NewSet(attribute.String("event", name))))
 
