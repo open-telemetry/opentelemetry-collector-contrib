@@ -307,7 +307,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 	if len(invalidKeys) > 0 {
-		return fmt.Errorf("has invalid keys: %s", strings.Join(invalidKeys, ", "))
+		return fmt.Errorf("has invalid keys: %s, use sending_queue instead", strings.Join(invalidKeys, ", "))
 	}
 
 	if err := conf.Unmarshal(cfg); err != nil {

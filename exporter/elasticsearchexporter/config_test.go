@@ -443,7 +443,7 @@ func TestConfigRejectsRemovedBatchSettings(t *testing.T) {
 
 			cfg := createDefaultConfig()
 			err := confmap.NewFromStringMap(input).Unmarshal(cfg)
-			require.ErrorContains(t, err, "has invalid keys: "+name)
+			require.ErrorContains(t, err, "has invalid keys: "+name+", use sending_queue instead")
 		})
 	}
 }
