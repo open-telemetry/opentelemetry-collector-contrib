@@ -40,7 +40,7 @@ jobs:
           cache: false
       - name: Install dependencies
         working-directory: opentelemetry-collector-contrib
-        run: make -j2 gomoddownload
+        run: make -j8 gomoddownload
       - run: make genotelcontribcol
         working-directory: opentelemetry-collector-contrib
       - run: make otelcontribcol

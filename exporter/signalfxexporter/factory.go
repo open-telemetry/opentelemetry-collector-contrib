@@ -50,9 +50,11 @@ func createDefaultConfig() component.Config {
 	timeout := 10 * time.Second
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultHTTPTimeout
-	clientConfig.MaxIdleConns = maxConnCount        //nolint:staticcheck // SA1019: deprecated field still used for default config value; see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316
-	clientConfig.MaxIdleConnsPerHost = maxConnCount //nolint:staticcheck // SA1019: deprecated field still used for default config value; see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316
-	clientConfig.IdleConnTimeout = idleConnTimeout  //nolint:staticcheck // SA1019: deprecated field still used for default config value; see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316
+	clientConfig.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
+		MaxIdleConns:        maxConnCount,
+		MaxIdleConnsPerHost: maxConnCount,
+		IdleConnTimeout:     idleConnTimeout,
+	})
 	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
 	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
 

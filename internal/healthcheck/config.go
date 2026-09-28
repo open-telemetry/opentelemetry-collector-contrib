@@ -111,15 +111,10 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	// We conditionally initialize and then clear to preserve "user specified" vs "not specified".
 	if conf.IsSet(httpConfigKey) {
 		httpServerConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		httpServerConfig.WriteTimeout = 0
-		httpServerConfig.ReadHeaderTimeout = 0
-		httpServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 		httpServerConfig.NetAddr = confignet.AddrConfig{
 			Endpoint:  endpointForPort(DefaultHTTPPort),
 			Transport: confignet.TransportTypeTCP,
 		}
-		httpServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 		c.HTTPConfig = &httpserver.Config{
 			ServerConfig: httpServerConfig,
 			Status: httpserver.PathConfig{
@@ -164,25 +159,15 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 func NewDefaultConfig() component.Config {
 	legacyServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	legacyServerConfig.WriteTimeout = 0
-	legacyServerConfig.ReadHeaderTimeout = 0
-	legacyServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	legacyServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  endpointForPort(DefaultHTTPPort),
 		Transport: "tcp",
 	}
-	legacyServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 	httpServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	httpServerConfig.WriteTimeout = 0
-	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  endpointForPort(DefaultHTTPPort),
 		Transport: "tcp",
 	}
-	httpServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 	return &Config{
 		LegacyConfig: httpserver.LegacyConfig{
 			ServerConfig: legacyServerConfig,

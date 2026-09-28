@@ -103,13 +103,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorRollingSpanLatencyActiveBaselines, err = builder.meter.Int64ObservableGauge(
 		"otelcol_processor_rolling_span_latency_active_baselines",
 		metric.WithDescription("Current number of active per-key latency baselines tracked by the processor. [Development]"),
-		metric.WithUnit("{baselines}"),
+		metric.WithUnit("{baseline}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorRollingSpanLatencyDroppedKeysTotal, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_rolling_span_latency_dropped_keys_total",
 		metric.WithDescription("Number of new baseline keys dropped because max_baselines was reached. [Development]"),
-		metric.WithUnit("{keys}"),
+		metric.WithUnit("{key}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

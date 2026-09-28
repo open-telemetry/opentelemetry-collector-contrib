@@ -34,8 +34,6 @@ func TestLoadConfig(t *testing.T) {
 		config.ClientConfig.Endpoint = sampleEndpoint
 		config.BulkAction = defaultBulkAction
 	})
-	maxIdleConns := 100
-	idleConnTimeout := 90 * time.Second
 
 	tests := []struct {
 		id                   component.ID
@@ -65,8 +63,6 @@ func TestLoadConfig(t *testing.T) {
 					config.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
-					config.MaxIdleConns = maxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns
-					config.IdleConnTimeout = idleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout
 					config.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewID("sample_basic_auth")})
 				}),
 				BackOffConfig: configretry.BackOffConfig{

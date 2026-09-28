@@ -129,7 +129,7 @@ func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 		return source.Source{}, errors.New("instance ID is unavailable")
 	}
 
-	return source.Source{Kind: source.HostnameKind, Identifier: p.hostInfo.InstanceID}, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: p.hostInfo.InstanceID, SourceIdentifier: source.SourceIdentifier{Primary: p.hostInfo.InstanceID}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 }
 
 // instanceTags gets the EC2 tags for the current instance.

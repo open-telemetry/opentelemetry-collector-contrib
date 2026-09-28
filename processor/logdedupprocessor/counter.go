@@ -9,8 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
@@ -183,17 +183,17 @@ func (a *logCounter) Increment() {
 
 // getResourceKey creates a unique hash for the resource to use as a map key
 func getResourceKey(resource pcommon.Resource) uint64 {
-	return pdatautil.Hash64(
-		pdatautil.WithMap(resource.Attributes()),
+	return xhash.Hash64(
+		xhash.WithMap(resource.Attributes()),
 	)
 }
 
 // getScopeKey creates a unique hash for the scope to use as a map key
 func getScopeKey(scope pcommon.InstrumentationScope) uint64 {
-	return pdatautil.Hash64(
-		pdatautil.WithMap(scope.Attributes()),
-		pdatautil.WithString(scope.Name()),
-		pdatautil.WithString(scope.Version()),
+	return xhash.Hash64(
+		xhash.WithMap(scope.Attributes()),
+		xhash.WithString(scope.Name()),
+		xhash.WithString(scope.Version()),
 	)
 }
 
@@ -202,27 +202,27 @@ func getScopeKey(scope pcommon.InstrumentationScope) uint64 {
 // If no dedupFields are found in the log record, all fields are hashed.
 func getLogKey(logRecord plog.LogRecord, dedupFields []string) uint64 {
 	if len(dedupFields) > 0 {
-		var opts []pdatautil.HashOption
+		var opts []xhash.HashOption
 
 		for _, field := range dedupFields {
 			parts := splitField(field)
 			if m, ok := getMap(logRecord, parts[0]); ok {
 				if value, ok := getKeyValue(m, parts[1:]); ok {
-					opts = append(opts, pdatautil.WithString(value.AsString()))
+					opts = append(opts, xhash.WithString(value.AsString()))
 				}
 			}
 		}
 
 		if len(opts) > 0 {
-			return pdatautil.Hash64(opts...)
+			return xhash.Hash64(opts...)
 		}
 	}
 
-	return pdatautil.Hash64(
-		pdatautil.WithMap(logRecord.Attributes()),
-		pdatautil.WithValue(logRecord.Body()),
-		pdatautil.WithString(logRecord.SeverityNumber().String()),
-		pdatautil.WithString(logRecord.SeverityText()),
+	return xhash.Hash64(
+		xhash.WithMap(logRecord.Attributes()),
+		xhash.WithValue(logRecord.Body()),
+		xhash.WithString(logRecord.SeverityNumber().String()),
+		xhash.WithString(logRecord.SeverityText()),
 	)
 }
 
