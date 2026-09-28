@@ -23,7 +23,6 @@ type fileWriter struct {
 	exporter exportFunc
 
 	flushInterval time.Duration
-	flushTicker   *time.Ticker
 	stopTicker    chan struct{}
 	// Protected by mutex
 	refs    int  // number of active references to this writer
@@ -74,9 +73,8 @@ func (w *fileWriter) startFlusher() {
 	// Create the stop channel.
 	w.stopTicker = make(chan struct{})
 	// Start the ticker.
-	w.flushTicker = time.NewTicker(w.flushInterval)
+	ticker := time.NewTicker(w.flushInterval)
 	// use the local copies so the goroutine does not read these fields without the lock.
-	ticker := w.flushTicker
 	stop := w.stopTicker
 	go func() {
 		for {
@@ -154,7 +152,6 @@ func (w *fileWriter) stopFlusher() {
 	}
 	close(w.stopTicker)
 	w.stopTicker = nil
-	w.flushTicker = nil
 }
 
 func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
