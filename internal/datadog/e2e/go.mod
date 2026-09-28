@@ -330,6 +330,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.161.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.161.0 // indirect
@@ -624,6 +625,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/prob
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../../pkg/xk8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../kubelet
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest => ../../../pkg/semconvtest
 

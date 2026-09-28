@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.161.0
@@ -174,6 +175,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./../../internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../internal/kubelet
 
 retract (
 	v0.76.2

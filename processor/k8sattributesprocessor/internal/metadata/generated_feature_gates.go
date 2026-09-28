@@ -22,6 +22,14 @@ var ProcessorK8sattributesEmitV1K8sConventionsFeatureGate = featuregate.GlobalRe
 	featuregate.WithRegisterFromVersion("v0.145.0"),
 )
 
+var ProcessorK8sattributesEnableKubeletPodSourceFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.k8sattributes.EnableKubeletPodSource",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, k8sattributesprocessor can use kubelet /pods polling as the pod metadata source."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14475"),
+	featuregate.WithRegisterFromVersion("v0.157.0"),
+)
+
 var ProcessorK8sattributesShareProcessorBetweenPipelinesFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.k8sattributes.ShareProcessorBetweenPipelines",
 	featuregate.StageAlpha,

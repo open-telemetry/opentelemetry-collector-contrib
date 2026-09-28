@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: e2ek8sattribute-kubelet
+data:
+  relay: |
+    exporters:
+      otlp_grpc:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+      k8s_attributes:
+        auth_type: serviceAccount
+        wait_for_metadata: true
+        wait_for_metadata_timeout: 10s
+        filter:
+          node_from_env_var: K8S_NODE_NAME
+        kubelet:
+          enabled: true
+          endpoint: https://${env:K8S_NODE_IP}:10250
+          poll_interval: 1s
+          insecure_skip_verify: true
+        extract:
+          labels:
+          - from: pod
+            key: app
+            tag_name: k8s.labels.app
+          metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.namespace.name
+          - k8s.node.name
+          - k8s.pod.start_time
+        pod_association:
+        - sources:
+          - from: connection
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+    service:
+      extensions:
+      - health_check
+      pipelines:
+        logs:
+          exporters:
+          - otlp_grpc
+          processors:
+          - k8s_attributes
+          receivers:
+          - otlp
+        metrics:
+          exporters:
+          - otlp_grpc
+          processors:
+          - k8s_attributes
+          receivers:
+          - otlp
+        traces:
+          exporters:
+          - otlp_grpc
+          processors:
+          - k8s_attributes
+          receivers:
+          - otlp
