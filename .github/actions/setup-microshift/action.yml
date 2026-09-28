@@ -67,6 +67,6 @@ runs:
       env:
         IMAGE_TAR: ${{ inputs.image-tar }}
       run: |
-        # CRI-O reads root podman storage; tag as docker.io/library to match what `kind load` produces.
+        # CRI-O reads root podman storage.
         ssh -p 2222 -i ~/.crc/machines/crc/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null core@127.0.0.1 \
-          'sudo podman load && sudo podman tag localhost/otelcontribcol:latest docker.io/library/otelcontribcol:latest' < "$IMAGE_TAR"
+          sudo podman load < "$IMAGE_TAR"
