@@ -49,6 +49,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.161.0
 	github.com/twmb/murmur3 v1.2.0 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
@@ -56,7 +57,7 @@ require (
 	go.opentelemetry.io/collector/client v1.67.1-0.20260928015043-9857cff6c018 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.161.1-0.20260928015043-9857cff6c018 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.161.1-0.20260928015043-9857cff6c018 // indirect
-	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260928015043-9857cff6c018 // indirect
+	go.opentelemetry.io/collector/featuregate v1.67.1-0.20260928015043-9857cff6c018
 	go.opentelemetry.io/collector/internal/componentalias v0.161.1-0.20260928015043-9857cff6c018 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.1-0.20260928015043-9857cff6c018 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.161.1-0.20260928015043-9857cff6c018 // indirect
@@ -87,3 +88,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ..
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile => ../../pkg/ottl/contexts/xprofile
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl => ../../pkg/ottl/xottl

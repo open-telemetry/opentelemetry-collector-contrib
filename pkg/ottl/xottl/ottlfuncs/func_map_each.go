@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type mapEachArguments[K any] struct {
@@ -22,10 +22,9 @@ type mapEachArguments[K any] struct {
 }
 
 // NewMapEachFactory returns a factory for the MapEach OTTL function.
-// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#mapeach
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/xottl/ottlfuncs/README.md#mapeach
 //
-// Experimental: *NOTE* this API is subject to change or removal in the future. It
-// requires the ottl.functions.enableLambda feature gate to be enabled.
+// The function requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewMapEachFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("MapEach", &mapEachArguments[K]{}, createMapEachFunction[K], ottl.WithExperimental[K]())
 }
