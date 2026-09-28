@@ -14,5 +14,18 @@ status:
     active: [dmitryax, TylerHelmuth, ChrsMark, krisztianfekete]
     emeritus: [hvaghani221]
 
+feature_gates:
+  - id: receiver.k8sobjects.useInformerObserver
+    stage: alpha
+    from_version: v0.161.0
+    description: >-
+      When enabled, the receiver collects objects via a shared informer factory
+      (List+Watch backed by an in-memory cache) instead of the legacy per-object
+      pull/watch observers. Pull mode reads from the informer cache; watch mode
+      uses informer event handlers with automatic relist/reconnect. The `pull`
+      RBAC now also requires the `watch` verb, `resource_version` is ignored,
+      and `exclude_watch_type: [BOOKMARK, ERROR]` is a no-op.
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43602
+
 tests:
   config:

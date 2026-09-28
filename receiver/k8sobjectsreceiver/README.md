@@ -60,6 +60,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
   - `pull` mode will read all objects of this type use the list API at an interval.
   - `watch` mode will do setup a long connection using the watch API to just get updates.
 - `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
+- `cache_sync_timeout` (default = `10s`): maximum time the receiver waits for the initial object cache to populate on startup. If the cache does not sync within this timeout, startup fails. No-op unless the `receiver.k8s_objects.useInformerObserver` feature gate is enabled (see [documentation.md](./documentation.md)).
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `objects[*].interval`: per-resource pull interval override. When set, takes precedence over the top-level `interval`. Only applies to `pull` mode objects.
