@@ -4,10 +4,11 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
+	"cmp"
 	"encoding/hex"
 	"fmt"
 	"math"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/prometheus/common/model"
@@ -29,7 +30,7 @@ type metricFamily struct {
 	isMonotonic bool
 	groups      map[uint64]*metricGroup
 	name        string
-	metadata    *scrape.MetricMetadata
+	metadata    scrape.MetricMetadata
 	groupOrders []*metricGroup
 	logger      *zap.Logger
 }
@@ -53,7 +54,7 @@ type metricGroup struct {
 	hasValue       bool
 	hValue         *histogram.Histogram
 	fhValue        *histogram.FloatHistogram
-	complexValue   []*dataPoint
+	complexValue   []dataPoint
 	exemplars      pmetric.ExemplarSlice
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
@@ -96,8 +97,8 @@ func (mf *metricFamily) includesMetric(metricName string) bool {
 }
 
 func (mg *metricGroup) sortPoints() {
-	sort.Slice(mg.complexValue, func(i, j int) bool {
-		return mg.complexValue[i].boundary < mg.complexValue[j].boundary
+	slices.SortFunc(mg.complexValue, func(a, b dataPoint) int {
+		return cmp.Compare(a.boundary, b.boundary)
 	})
 }
 
@@ -115,19 +116,15 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 
 	mg.sortPoints()
 
-	var bounds []float64
-	var bucketCounts []uint64
+	var point pmetric.HistogramDataPoint
 
 	if mg.isNHCB {
+		var bucketCounts []uint64
 		var validBuckets bool
 		switch {
 		case mg.hValue != nil:
-			bounds = make([]float64, len(mg.hValue.CustomValues))
-			copy(bounds, mg.hValue.CustomValues)
 			bucketCounts, validBuckets = convertNHCBBDeltBuckets(mg.hValue)
 		case mg.fhValue != nil:
-			bounds = make([]float64, len(mg.fhValue.CustomValues))
-			copy(bounds, mg.fhValue.CustomValues)
 			bucketCounts, validBuckets = convertNHCBAbsoluteBuckets(mg.fhValue)
 		default:
 			validBuckets = true
@@ -138,6 +135,14 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 			logger.Debug("dropping NHCB datapoint with negative or NaN bucket counts", zap.Any("labels", mg.ls))
 			return
 		}
+		point = dest.AppendEmpty()
+		switch {
+		case mg.hValue != nil:
+			point.ExplicitBounds().FromRaw(mg.hValue.CustomValues)
+		case mg.fhValue != nil:
+			point.ExplicitBounds().FromRaw(mg.fhValue.CustomValues)
+		}
+		point.BucketCounts().FromRaw(bucketCounts)
 	} else {
 		bucketCount := len(mg.complexValue) + 1
 		// if the final bucket is +Inf, we ignore it
@@ -159,13 +164,16 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 			}
 		}
 
+		point = dest.AppendEmpty()
 		// for OTLP the bounds won't include +inf
-		bounds = make([]float64, bucketCount-1)
-		bucketCounts = make([]uint64, bucketCount)
+		explicitBounds := point.ExplicitBounds()
+		explicitBounds.EnsureCapacity(bucketCount - 1)
+		bucketCountsSlice := point.BucketCounts()
+		bucketCountsSlice.EnsureCapacity(bucketCount)
 		var adjustedCount float64
 
 		for i := 0; i < bucketCount-1; i++ {
-			bounds[i] = mg.complexValue[i].boundary
+			explicitBounds.Append(mg.complexValue[i].boundary)
 			adjustedCount = mg.complexValue[i].value
 
 			// Buckets still need to be sent to know to set them as stale,
@@ -176,7 +184,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 			} else if i != 0 {
 				adjustedCount -= mg.complexValue[i-1].value
 			}
-			bucketCounts[i] = uint64(adjustedCount)
+			bucketCountsSlice.Append(uint64(adjustedCount))
 		}
 
 		// Add the final bucket based on the total count
@@ -186,10 +194,8 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 		} else if bucketCount > 1 {
 			adjustedCount -= mg.complexValue[bucketCount-2].value
 		}
-		bucketCounts[bucketCount-1] = uint64(adjustedCount)
+		bucketCountsSlice.Append(uint64(adjustedCount))
 	}
-
-	point := dest.AppendEmpty()
 
 	if pointIsStale {
 		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -199,9 +205,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 			point.SetSum(mg.sum)
 		}
 	}
-
-	point.ExplicitBounds().FromRaw(bounds)
-	point.BucketCounts().FromRaw(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
@@ -412,6 +415,7 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	}
 
 	quantileValues := point.QuantileValues()
+	quantileValues.EnsureCapacity(len(mg.complexValue))
 	for _, p := range mg.complexValue {
 		quantile := quantileValues.AppendEmpty()
 		// Quantiles still need to be sent to know to set them as stale,
@@ -489,6 +493,16 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 			ls:        ls,
 			exemplars: pmetric.NewExemplarSlice(),
 		}
+		switch mf.mtype {
+		case pmetric.MetricTypeHistogram:
+			// Pre-allocate to 16 to accommodate the default OpenTelemetry ExplicitBucketHistogram
+			// boundaries (15 bounds + +Inf = 16 buckets) and Prometheus DefBuckets (11 bounds + +Inf = 12 buckets).
+			mg.complexValue = make([]dataPoint, 0, 16)
+		case pmetric.MetricTypeSummary:
+			// Pre-allocate to 5 to accommodate the 5 quantiles of Prometheus's default
+			// go_gc_duration_seconds summary (0, 0.25, 0.5, 0.75, 1).
+			mg.complexValue = make([]dataPoint, 0, 5)
+		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
 		mf.groupOrders = append(mf.groupOrders, mg)
@@ -519,7 +533,7 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			if err != nil {
 				return err
 			}
-			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
+			mg.complexValue = append(mg.complexValue, dataPoint{value: v, boundary: boundary})
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
@@ -611,7 +625,10 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 }
 
 func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes bool) {
-	metric := pmetric.NewMetric()
+	if len(mf.groupOrders) == 0 {
+		return
+	}
+	metric := metrics.AppendEmpty()
 	// Trims type and unit suffixes from metric name
 	name := mf.name
 	if trimSuffixes {
@@ -629,6 +646,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram := metric.SetEmptyHistogram()
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
+		hdpL.EnsureCapacity(len(mf.groupOrders))
 		for _, mg := range mf.groupOrders {
 			mg.toDistributionPoint(hdpL, mf.logger)
 		}
@@ -637,6 +655,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	case pmetric.MetricTypeSummary:
 		summary := metric.SetEmptySummary()
 		sdpL := summary.DataPoints()
+		sdpL.EnsureCapacity(len(mf.groupOrders))
 		for _, mg := range mf.groupOrders {
 			mg.toSummaryPoint(sdpL)
 		}
@@ -647,6 +666,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
+		sdpL.EnsureCapacity(len(mf.groupOrders))
 		for _, mg := range mf.groupOrders {
 			mg.toNumberDataPoint(sdpL)
 		}
@@ -656,6 +676,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram := metric.SetEmptyExponentialHistogram()
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
+		hdpL.EnsureCapacity(len(mf.groupOrders))
 		for _, mg := range mf.groupOrders {
 			mg.toExponentialHistogramDataPoints(hdpL)
 		}
@@ -664,6 +685,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	default: // Everything else should be set to a Gauge.
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
+		gdpL.EnsureCapacity(len(mf.groupOrders))
 		for _, mg := range mf.groupOrders {
 			mg.toNumberDataPoint(gdpL)
 		}
@@ -671,10 +693,10 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	}
 
 	if pointCount == 0 {
-		return
+		metrics.RemoveIf(func(m pmetric.Metric) bool {
+			return m == metric
+		})
 	}
-
-	metric.MoveTo(metrics.AppendEmpty())
 }
 
 func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {

@@ -722,6 +722,7 @@ top query
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.version | The database version of the instance. Examples include "13.18" and "17.2". | Any Str | false | - | - |
 | postgresql.database.name | The name of the database. | Any Str | true | - | - |
 | postgresql.index.name | The name of the index on a table. | Any Str | true | - | - |
 | postgresql.schema.name | The schema name. | Any Str | true | - | - |
