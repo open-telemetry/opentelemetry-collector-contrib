@@ -281,18 +281,14 @@ func TestFleetTracker_ConcurrentCallbacksSerialise(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		p.fleet.onMemberCount(2) // records 500, then blocks in the setter
-	}()
+	})
 	<-entered
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		p.fleet.onMemberCount(4) // would record 250
-	}()
+	})
 
 	// While the first callback is mid-apply, the second must not have applied
 	// anything: it is waiting on the fleet lock.
