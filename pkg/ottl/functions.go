@@ -15,6 +15,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
@@ -766,12 +767,12 @@ var errLambdaExpressionDisable = fmt.Errorf(
 	metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
 )
 
-func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[K], error) {
+func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*lambda.LambdaExpression[K], error) {
 	if !metadata.OttlFunctionsEnableLambdaFeatureGate.IsEnabled() {
 		return nil, errLambdaExpressionDisable
 	}
 
-	formals := make([]LocalIdentifierDecl, len(l.Params))
+	formals := make([]string, len(l.Params))
 	validFormals := make(localScopeFrame, len(l.Params))
 	for i, param := range l.Params {
 		name := param.Name()
@@ -781,10 +782,10 @@ func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[
 			}
 			validFormals[name] = struct{}{}
 		}
-		formals[i] = &param
+		formals[i] = name
 	}
 
-	var result *LambdaExpression[K]
+	var result *lambda.LambdaExpression[K]
 	err := p.withLocalScope(validFormals, func() error {
 		switch {
 		case l.Body.Expr != nil && l.Body.Value != nil:

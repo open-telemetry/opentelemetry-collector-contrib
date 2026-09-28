@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
@@ -2654,41 +2655,41 @@ func functionWithFunctionGetter(FunctionGetter[any]) (ExprFunc[any], error) {
 }
 
 type nonPointerLambdaArguments struct {
-	Expr LambdaExpression[any]
+	Expr lambda.LambdaExpression[any]
 }
 
-func functionWithNonPointerLambda(LambdaExpression[any]) (ExprFunc[any], error) {
+func functionWithNonPointerLambda(lambda.LambdaExpression[any]) (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return nil, nil
 	}, nil
 }
 
 type evalLambdaArguments[K any] struct {
-	Expr *LambdaExpression[K]
+	Expr *lambda.LambdaExpression[K]
 	Args []Getter[K]
 }
 
 //nolint:unparam // returning (ExprFunc[K], error) is required by this local test framework
-func evalLambdaFunction[K any](expr *LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
+func evalLambdaFunction[K any](expr *lambda.LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		if err := expr.ValidateArity(len(args)); err != nil {
 			return nil, err
 		}
-		lambda, err := expr.Activate(ctx)
+		activation, err := expr.Activate(ctx)
 		if err != nil {
 			return nil, err
 		}
-		defer lambda.Close()
+		defer activation.Close()
 		for i, getter := range args {
 			val, err := getter.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			if err := lambda.SetArg(i, val); err != nil {
+			if err := activation.SetArg(i, val); err != nil {
 				return nil, err
 			}
 		}
-		return lambda.Eval(tCtx)
+		return activation.Eval(tCtx)
 	}, nil
 }
 

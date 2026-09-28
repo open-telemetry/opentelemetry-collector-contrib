@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -3015,7 +3016,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 }
 
 type lambdaEvalArguments[K any] struct {
-	Expr   *ottl.LambdaExpression[K]
+	Expr   *lambda.LambdaExpression[K]
 	Params []ottl.Getter[K]
 }
 
@@ -3034,22 +3035,22 @@ func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		lambda, err := args.Expr.Activate(ctx)
+		activation, err := args.Expr.Activate(ctx)
 		if err != nil {
 			return nil, err
 		}
-		defer lambda.Close()
+		defer activation.Close()
 		for i, param := range args.Params {
 			val, err := param.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			err = lambda.SetArg(i, val)
+			err = activation.SetArg(i, val)
 			if err != nil {
 				return nil, err
 			}
 		}
-		return lambda.Eval(tCtx)
+		return activation.Eval(tCtx)
 	}, nil
 }
 

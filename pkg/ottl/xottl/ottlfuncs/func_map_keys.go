@@ -12,12 +12,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/xpdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type mapKeysArguments[K any] struct {
 	Source    ottl.PMapGetter[K]
-	KeyMapper *ottl.LambdaExpression[K]
+	KeyMapper *xottl.LambdaExpression[K]
 }
 
 // NewMapKeysFactory returns a factory for the MapKeys OTTL function.
@@ -36,7 +37,7 @@ func createMapKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	return mapKeys(args.Source, args.KeyMapper)
 }
 
-func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *ottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
+func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *xottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
 	err := keyMapper.ValidateArity(2)
 	if err != nil {
 		return nil, err
