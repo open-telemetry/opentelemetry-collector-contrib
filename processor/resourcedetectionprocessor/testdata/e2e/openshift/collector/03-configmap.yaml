@@ -14,9 +14,9 @@ data:
       health_check:
         endpoint: 0.0.0.0:13133
     processors:
-      resourcedetection:
+      resource_detection:
         detectors: [openshift]
-        timeout: 10s
+        timeout: 2s
         override: false
         # No openshift overrides: address, token and CA come from the
         # in-cluster service account defaults.
@@ -36,6 +36,6 @@ data:
           receivers:
             - hostmetrics
           processors:
-            - resourcedetection
+            - resource_detection
           exporters:
             - otlp
