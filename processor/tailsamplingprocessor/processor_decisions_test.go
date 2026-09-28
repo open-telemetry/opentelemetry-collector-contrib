@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
@@ -263,6 +264,76 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 		assert.FailNow(t, "Did not find expected attribute")
 	}
 	require.Equal(t, "mock-policy-1", policy.AsString())
+}
+
+// TestSamplingMultiplePoliciesWithDifferentThresholds_WithRecordPolicy verifies
+// that when multiple policies vote Sampled at different rates, the recorded
+// tailsampling.policy attribute names the policy whose threshold is actually
+// reported (the least-strict one), not simply whichever policy was evaluated
+// first.
+func TestSamplingMultiplePoliciesWithDifferentThresholds_WithRecordPolicy(t *testing.T) {
+	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+
+	controller := newTestTSPController()
+	nextConsumer := new(consumertest.TracesSink)
+
+	mpe1 := &mockPolicyEvaluator{}
+	mpe2 := &mockPolicyEvaluator{}
+
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
+	}
+
+	cfg := Config{
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		Options:          []Option{withTestController(controller), withPolicies(policies), withRecordPolicy(), withUseTracestate()},
+	}
+
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// mock-policy-1 is evaluated first but samples at a stricter rate (25%);
+	// mock-policy-2 samples at a less strict rate (50%). The effective
+	// threshold is the least-strict of the two, so mock-policy-2 -- not the
+	// first-evaluated mock-policy-1 -- should be the one attributed.
+	thc, err := pkgsampling.TValueToThreshold("c")
+	require.NoError(t, err)
+	th8, err := pkgsampling.TValueToThreshold("8")
+	require.NoError(t, err)
+	mpe1.SetDecision(samplingpolicy.Sampled)
+	mpe1.SetThreshold(thc)
+	mpe2.SetDecision(samplingpolicy.Sampled)
+	mpe2.SetThreshold(th8)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+
+	controller.waitForTick()
+	controller.waitForTick()
+
+	require.Equal(t, 1, nextConsumer.SpanCount())
+
+	span := nextConsumer.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	scope := nextConsumer.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Scope()
+
+	policyAttr, ok := scope.Attributes().Get("tailsampling.policy")
+	if !ok {
+		assert.FailNow(t, "Did not find expected attribute")
+	}
+	require.Equal(t, "mock-policy-2", policyAttr.AsString(), "attribution should follow the threshold-owning policy, not evaluation order")
+	require.Contains(t, span.TraceState().AsRaw(), "th:8", "tracestate should carry mock-policy-2's less-strict threshold")
 }
 
 func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
@@ -621,6 +692,166 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 		assert.FailNow(t, "Did not find expected attribute")
 	}
 	require.True(t, cacheAttr.Bool())
+}
+
+// TestLateArrivingSpanUsesDecisionCacheThreshold verifies that a late-arriving
+// span, resolved via the sampled decision cache, gets the same effective
+// tracestate threshold written as the spans that were present when the
+// original decision was made, rather than no threshold at all.
+func TestLateArrivingSpanUsesDecisionCacheThreshold(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	// Use this instead of the default no-op cache
+	c, err := cache.NewLRUDecisionCache(200)
+	require.NoError(t, err)
+
+	cfg := Config{
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait * 10,
+		NumTraces:        defaultNumTraces,
+		Options: []Option{
+			withTestController(controller),
+			withPolicies(policies),
+			WithSampledDecisionCache(c),
+			withUseTracestate(),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	traceID := uInt64ToTraceID(1)
+
+	// th:8 encodes a 50% sampling threshold.
+	th8, err := pkgsampling.TValueToThreshold("8")
+	require.NoError(t, err)
+	mpe.SetDecision(samplingpolicy.Sampled)
+	mpe.SetThreshold(th8)
+
+	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(uInt64ToSpanID(spanIndex))
+		return traces
+	}
+
+	// Generate and deliver first span; this drives the original decision.
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(1)))
+	controller.waitForTick()
+	controller.waitForTick()
+	require.Equal(t, 1, mpe.EvaluationCount())
+	require.Equal(t, 1, nextConsumer.SpanCount())
+
+	firstTracestate := nextConsumer.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceState().AsRaw()
+	require.Contains(t, firstTracestate, "th:8", "original decision should carry the 50%% threshold")
+
+	// New processor instance sharing the same decision cache, simulating a
+	// restart or a different shard picking up a late span for the trace.
+	p, err = newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	// Change what the policy would report, proving the cached decision (and
+	// its threshold) is reused rather than the policy being re-evaluated.
+	mpe.SetDecision(samplingpolicy.NotSampled)
+	mpe.SetThreshold(pkgsampling.NeverSampleThreshold)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(2)))
+	controller.waitForTick()
+
+	require.Equal(t, 1, mpe.EvaluationCount(), "policy should not be re-evaluated for the cached trace")
+	require.Equal(t, 2, nextConsumer.SpanCount())
+
+	lateTracestate := nextConsumer.AllTraces()[1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceState().AsRaw()
+	require.Contains(t, lateTracestate, "th:8", "late-arriving span should carry the same threshold as the original decision")
+}
+
+// TestLateArrivingSpanBeforeEvictionUsesEffectiveThreshold verifies that a
+// late-arriving span for a trace that already has a Sampled decision, but is
+// still resident in the processor's in-memory trace map (e.g. because no
+// decision cache is configured), gets the same effective tracestate
+// threshold written as the spans present at decision time.
+func TestLateArrivingSpanBeforeEvictionUsesEffectiveThreshold(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	controller := newTestTSPController()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	cfg := Config{
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait * 10,
+		NumTraces:        defaultNumTraces,
+		// No decision cache configured: the default no-op cache is used, so
+		// the trace stays in the in-memory map after its decision is made.
+		Options: []Option{
+			withTestController(controller),
+			withPolicies(policies),
+			withUseTracestate(),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func(p processor.Traces) {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}(p)
+
+	traceID := uInt64ToTraceID(1)
+
+	// th:8 encodes a 50% sampling threshold.
+	th8, err := pkgsampling.TValueToThreshold("8")
+	require.NoError(t, err)
+	mpe.SetDecision(samplingpolicy.Sampled)
+	mpe.SetThreshold(th8)
+
+	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(uInt64ToSpanID(spanIndex))
+		return traces
+	}
+
+	// Generate and deliver first span; this drives the original decision.
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(1)))
+	controller.waitForTick()
+	controller.waitForTick()
+	require.Equal(t, 1, mpe.EvaluationCount())
+	require.Equal(t, 1, nextConsumer.SpanCount())
+
+	firstTracestate := nextConsumer.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceState().AsRaw()
+	require.Contains(t, firstTracestate, "th:8", "original decision should carry the 50%% threshold")
+
+	// A second span for the same trace arrives before the trace is evicted
+	// from the in-memory map (there is no decision cache to short-circuit
+	// via processCachedTrace, so this exercises processTrace's late-span
+	// forwarding path directly).
+	require.NoError(t, p.ConsumeTraces(t.Context(), spanIndexToTraces(2)))
+	controller.waitForTick()
+
+	require.Equal(t, 1, mpe.EvaluationCount(), "policy should not be re-evaluated for the already-decided trace")
+	require.Equal(t, 2, nextConsumer.SpanCount())
+
+	lateTracestate := nextConsumer.AllTraces()[1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceState().AsRaw()
+	require.Contains(t, lateTracestate, "th:8", "late-arriving span should carry the same threshold as the original decision")
 }
 
 func TestLateArrivingSpanUsesDecisionCacheWhenDropped(t *testing.T) {

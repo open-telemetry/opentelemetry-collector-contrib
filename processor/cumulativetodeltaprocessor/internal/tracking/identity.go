@@ -9,8 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 type MetricIdentity struct {
@@ -37,7 +36,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteRune(A + int32(mi.MetricValueType))
 	if mi.Resource.Attributes().Len() > 0 {
 		b.WriteByte(SEP)
-		resourceHash := pdatautil.MapHash(mi.Resource.Attributes())
+		resourceHash := xhash.MapHash(mi.Resource.Attributes())
 		b.Write(resourceHash[:])
 	}
 
@@ -59,7 +58,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 
 	if mi.Attributes.Len() > 0 {
 		b.WriteByte(SEP)
-		attrsHash := pdatautil.MapHash(mi.Attributes)
+		attrsHash := xhash.MapHash(mi.Attributes)
 		b.Write(attrsHash[:])
 	}
 	b.WriteByte(SEP)

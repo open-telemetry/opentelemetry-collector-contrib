@@ -4,11 +4,15 @@
 package checkpoint
 
 import (
+	"context"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
@@ -231,6 +235,90 @@ func TestCheckpointerDelete(t *testing.T) {
 	assert.Empty(t, rv)
 }
 
+func TestDeleteCheckpointClearsPendingCheckpoint(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := New(client, zap.NewNop())
+
+	ctx := t.Context()
+
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "12345"))
+	require.NoError(t, checkpointer.DeleteCheckpoint(ctx, "default", "pods"))
+	require.NoError(t, checkpointer.Flush(ctx))
+
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Empty(t, rv)
+}
+
+func TestDeleteCheckpointWinsAgainstInFlightFlush(t *testing.T) {
+	client := newBlockingSetClient(
+		storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test"),
+	)
+	checkpointer := New(client, zap.NewNop())
+
+	ctx := t.Context()
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "12345"))
+
+	flushDone := make(chan error, 1)
+	go func() {
+		flushDone <- checkpointer.Flush(ctx)
+	}()
+	<-client.setStarted
+
+	deleteDone := make(chan error, 1)
+	go func() {
+		deleteDone <- checkpointer.DeleteCheckpoint(ctx, "default", "pods")
+	}()
+
+	key := checkpointer.checkpointKey("default", "pods")
+	require.Eventually(t, func() bool {
+		checkpointer.mu.Lock()
+		defer checkpointer.mu.Unlock()
+		return checkpointer.deleted[key]
+	}, time.Second, time.Millisecond)
+
+	client.releaseSet()
+	require.NoError(t, <-flushDone)
+	require.NoError(t, <-deleteDone)
+
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Empty(t, rv, "delete must win against an in-flight flush")
+}
+
+// TestDeleteSetsTombstoneClearedBySet verifies the tombstone lifecycle:
+// DeleteCheckpoint sets it (and clears pending), and a subsequent SetCheckpoint
+// clears it so the fresh resourceVersion is allowed to flush.
+func TestDeleteSetsTombstoneClearedBySet(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := New(client, zap.NewNop())
+
+	ctx := t.Context()
+	key := checkpointer.checkpointKey("default", "pods")
+
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, checkpointer.DeleteCheckpoint(ctx, "default", "pods"))
+
+	checkpointer.mu.Lock()
+	_, tombstoned := checkpointer.deleted[key]
+	_, stillPending := checkpointer.pending[key]
+	checkpointer.mu.Unlock()
+	assert.True(t, tombstoned, "DeleteCheckpoint should set a tombstone")
+	assert.False(t, stillPending, "DeleteCheckpoint should clear pending")
+
+	// A fresh resourceVersion marks the key alive again and clears the tombstone.
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "200"))
+	checkpointer.mu.Lock()
+	_, tombstoned = checkpointer.deleted[key]
+	checkpointer.mu.Unlock()
+	assert.False(t, tombstoned, "SetCheckpoint should clear the tombstone")
+
+	require.NoError(t, checkpointer.Flush(ctx))
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "200", rv, "post-delete SetCheckpoint value should flush")
+}
+
 func TestCheckpointerDeleteNonExistent(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := New(client, zap.NewNop())
@@ -413,4 +501,39 @@ func TestCheckpointerAlreadySeenUnparseableRV(t *testing.T) {
 	seen, err := cp.AlreadySeen("not-a-number", "default")
 	require.Error(t, err, "unparseable RV must surface a parse error")
 	assert.False(t, seen, "unparseable RV must not be marked seen")
+}
+
+type blockingSetClient struct {
+	storage.Client
+
+	setStarted chan struct{}
+	setRelease chan struct{}
+	startOnce  sync.Once
+	release    sync.Once
+}
+
+func newBlockingSetClient(client storage.Client) *blockingSetClient {
+	return &blockingSetClient{
+		Client:     client,
+		setStarted: make(chan struct{}),
+		setRelease: make(chan struct{}),
+	}
+}
+
+func (c *blockingSetClient) Set(ctx context.Context, key string, value []byte) error {
+	c.startOnce.Do(func() {
+		close(c.setStarted)
+	})
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-c.setRelease:
+		return c.Client.Set(ctx, key, value)
+	}
+}
+
+func (c *blockingSetClient) releaseSet() {
+	c.release.Do(func() {
+		close(c.setRelease)
+	})
 }

@@ -50,6 +50,8 @@ func newLambdaExpression[K any](formals []LocalIdentifierDecl, body Getter[K], b
 
 // Formals returns a copy of the lambda's formal parameters in declaration order (left to right).
 // Blank ("_") placeholders are included.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
 	return slices.Clone(l.formals)
 }
@@ -66,6 +68,8 @@ func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
 // marked as needing validation again, and [LambdaExpression.Activate] will
 // return an error until [LambdaExpression.ValidateArity] is called with a valid
 // arity.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 	if len(l.formals) != arity {
 		l.arityValidated.Store(false)
@@ -83,6 +87,8 @@ func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 // [LambdaExpression.ValidateArity] must be called successfully before Activate; otherwise Activate
 // returns an error. ValidateArity is meant to run once in the OTTL function factory, while Activate
 // runs inside the closure the factory returns.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K], error) {
 	if !l.arityValidated.Load() {
 		return nil, errors.New("lambda arity was not validated: ValidateArity must be called before Activate")
@@ -93,6 +99,8 @@ func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K
 }
 
 // LambdaActivation is a local activation of a [LambdaExpression] produced by [LambdaExpression.Activate].
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 type LambdaActivation[K any] struct {
 	expr       *LambdaExpression[K]
 	ctx        context.Context
@@ -101,6 +109,8 @@ type LambdaActivation[K any] struct {
 }
 
 // SetArg sets the i-th positional argument for the next [LambdaActivation.Eval] call.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaActivation[K]) SetArg(i int, v any) error {
 	if i < 0 || i >= len(l.argValues) {
 		return fmt.Errorf("argument index %d out of range (len=%d)", i, len(l.argValues))
@@ -115,6 +125,8 @@ func (l *LambdaActivation[K]) SetArg(i int, v any) error {
 // are discarded and do not need to be set. Because activations are reused across invocations,
 // skipping SetArg for a bound argument may produce stale values from a prior call.
 // Panics if i is out of range.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaActivation[K]) IsArgBound(i int) bool {
 	return !l.expr.formals[i].IsBlank()
 }
@@ -122,6 +134,8 @@ func (l *LambdaActivation[K]) IsArgBound(i int) bool {
 // Eval runs the lambda with positional arguments set via [LambdaActivation.SetArg].
 // The result type follows the lambda body (value or boolean sub-expression) evaluation and
 // may be nil if the body evaluates to nil.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaActivation[K]) Eval(tCtx K) (any, error) {
 	if v, ok := l.expr.getLiteralValue(); ok {
 		return v, nil
@@ -165,6 +179,8 @@ func (l *LambdaExpression[K]) getLiteralValue() (any, bool) {
 }
 
 // Close releases the activation's resources. Call it when the activation is no longer needed.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaActivation[K]) Close() {
 	l.ctx = nil
 	l.activation.parent = nil

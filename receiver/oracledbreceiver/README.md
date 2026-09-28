@@ -61,6 +61,37 @@ receivers:
 - `initial_delay` (default = `1s`): The initial time period this receiver waits before starting.
 - `timeout` (default = `0`): Timeout for each Oracle DB request. Disabled by default.
 
+## Resource attributes
+
+`server.address` and `server.port` identify the monitored Oracle instance and are emitted by default.
+When the receiver connects over loopback (for example `datasource: oracle://otel:password@localhost:51521/XE`
+or `endpoint: 127.0.0.1:51521`), `server.address` reports the host name of the machine running the
+collector, because the monitored instance is co-located with it and `localhost` would otherwise be
+shared by every monitored host. `server.port` defaults to `1521` when the connection string omits it.
+`service.instance.id` uses the same resolution and is reported as `server.address:server.port/service`.
+`host.name` is unaffected and keeps reporting the configured target.
+
+A `datasource` that is not in `oracle://user:password@host:port/service` form — a TNS descriptor, or
+an Easy Connect string without the `oracle://` prefix — carries no host the receiver can read. In
+that case `server.address` is omitted rather than guessed, `server.port` falls back to `1521`, and
+`service.instance.id` reports `unknown:1521`. Note that the driver does not currently connect with
+those forms either, so prefer the full `oracle://` datasource or the `endpoint` option, both of
+which always populate the server attributes.
+
+To stop emitting the server attributes, disable them individually:
+
+```yaml
+receivers:
+  oracledb:
+    resource_attributes:
+      server.address:
+        enabled: false
+      server.port:
+        enabled: false
+```
+
+See [documentation.md](./documentation.md) for the full list of resource attributes.
+
 ## Permissions
 
 ### Instance detection
@@ -139,9 +170,10 @@ upgrading without adding new grants continue to work unchanged.
 
 ### Events collection
 
-The following grants are required for event collection. All three event types
-(`db.server.query_sample`, `db.server.top_query`, `db.server.session.wait_sample`)
-are disabled by default and must be explicitly enabled in configuration.
+The following grants are required for event collection. All five event types
+(`db.server.query_sample`, `db.server.top_query`, `db.server.session.wait_sample`,
+`db.server.top_procedure`, `db.server.query_plan`) are disabled by default and must be explicitly
+enabled in configuration.
 
 #### All events (shared requirements)
 
@@ -185,6 +217,25 @@ GRANT SELECT ON DBA_PROCEDURES TO <username>;            -- Stored procedure met
 ALTER SYSTEM SET statistics_level = ALL;
 ```
 
+#### `db.server.query_plan`
+
+By default, `db.server.top_query` carries the query's execution plan in its `oracledb.query_plan`
+attribute. A plan is a JSON payload holding one entry per plan step, so it can dominate the record it
+travels on. Enabling `db.server.query_plan` isolates the plan on a record of its own, where it can be
+filtered, routed or dropped independently of the query statistics, and where an oversized plan does
+not take those statistics with it when a batcher splits by size.
+
+`db.server.top_query` is then emitted **without** its `oracledb.query_plan` attribute, and the plan
+itself is reported on `db.server.query_plan`, joined back to its cursor via `oracledb.sql_id` +
+`oracledb.child_number` + `oracledb.child_address`, with `oracledb.plan_hash_value` identifying the
+plan and `db.namespace` the database it came from. A cursor with no rows in
+`V$SQL_PLAN_STATISTICS_ALL` produces no `db.server.query_plan` record. Leaving
+`db.server.query_plan` disabled preserves the previous behavior exactly.
+
+`db.server.query_plan` is sourced from the same collection as `db.server.top_query` and only splits
+the plan out of it, so it needs no grants of its own, and enabling it without `db.server.top_query`
+is a configuration error.
+
 #### `db.server.session.wait_sample`
 
 Captures per-session wait event statistics from `V$SESSION_EVENT`:
@@ -192,6 +243,39 @@ Captures per-session wait event statistics from `V$SESSION_EVENT`:
 ```sql
 GRANT SELECT ON V_$SESSION_EVENT TO <username>;  -- Wait event names, counts, and durations
 ```
+
+#### `db.server.top_procedure`
+
+Captures aggregated performance metrics for stored procedures, derived by grouping `V$SQL` by
+`PROGRAM_ID` and joining to `DBA_PROCEDURES`. Correlates with `db.server.top_query` and
+`db.server.query_sample` via the `oracledb.procedure_id` attribute:
+
+```sql
+GRANT SELECT ON V_$SQL TO <username>;            -- Aggregated procedure execution/resource stats
+GRANT SELECT ON DBA_PROCEDURES TO <username>;    -- Stored procedure metadata (owner, name, type)
+```
+
+Cumulative counters are converted to per-scrape deltas. Rows are fetched up to
+`max_procedure_sample_count`, ranked in the collector by elapsed-time delta, and truncated to
+`top_procedure_count`. The fetch limit is deliberately larger than the reported set: ranking on
+deltas over a wider pool is what lets a procedure that is hot only in the current interval —
+newly deployed, a month-end batch, something that just started misbehaving — reach the report
+even though its lifetime totals are modest.
+
+A negative delta on any of the summed resource counters means a cursor aged out of the shared
+pool, so the row is discarded rather than emitted as a bogus value.
+
+> [!NOTE]
+> Oracle exposes no per-procedure cumulative execution counter, so
+> `oracledb.procedure_execution_count` is derived as the *minimum* statement execution count
+> across the procedure's cached statements. This is best effort: a newly loaded child cursor
+> starts at 1 and pulls the minimum down, and a statement in a branch that did not run holds it
+> flat. The receiver therefore treats this counter separately from the resource counters — it is
+> clamped to 0 instead of discarding the row. Resource counters (CPU, elapsed time, reads, writes, rows) are
+> summed across the procedure's statements and are not subject to this caveat.
+
+See "CDB-root connections and container-scoped dictionary views" below for how this event
+behaves on a CDB-root connection.
 
 ### CDB-root connections and container-scoped dictionary views
 
@@ -206,24 +290,28 @@ on `CON_ID` as well as the object id:
 | Event | Affected lookup | Using `DBA_*` from a CDB root |
 |---|---|---|
 | `db.server.top_query` | `CDB_PROCEDURES`, plus `CON_ID` in the `PROCEDURE_EXECUTIONS` grouping | wrong or empty `procedure_name`; execution counts merged across PDBs |
+| `db.server.top_procedure` | `CDB_PROCEDURES` | wrong or empty `procedure_name`; procedures merged across PDBs |
 | `db.server.query_sample` | `CDB_PROCEDURES`, `CDB_OBJECTS` | wrong or empty `procedure_name` and blocked-object owner/name |
 
-This requires container-wide `SELECT` on both views:
+`top_query` and `top_procedure` only need `CDB_PROCEDURES`; `query_sample` additionally needs
+`CDB_OBJECTS`. The two grants are probed independently at startup, so a CDB root with only
+`CDB_PROCEDURES` still gets container-qualified `top_query`/`top_procedure` results even while
+`query_sample` degrades to the `DBA_*` view:
 
 ```sql
 GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
-Users holding `SELECT_CATALOG_ROLE` inherit these and need no explicit grant. Non-CDB and
+Users holding `SELECT_CATALOG_ROLE` inherit both and need no explicit grant. Non-CDB and
 direct-PDB connections continue to use the `DBA_*` views and need nothing extra.
 
 > [!NOTE]
-> These grants are probed once at startup. If they are missing, the receiver logs a warning and
-> falls back to the `DBA_*` views, so events keep flowing with the container-attribution
-> limitation described above rather than failing with `ORA-00942`. This mirrors how per-PDB
-> metrics already degrade when their grants are absent — no upgrade requires new grants to keep
-> working.
+> Each grant is probed once at startup. If a grant is missing, the receiver logs a warning and
+> falls back to the `DBA_*` view for the event(s) that need it, so events keep flowing with the
+> container-attribution limitation described above rather than failing with `ORA-00942`. This
+> mirrors how per-PDB metrics already degrade when their grants are absent — no upgrade requires
+> new grants to keep working.
 
 #### Combined grant statement
 
@@ -242,6 +330,56 @@ GRANT SELECT ON DBA_PROCEDURES TO <username>;
 GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
+
+### AWS RDS Oracle grants
+
+Run the following as the master/admin user using `rdsadmin.rdsadmin_util.grant_sys_object` to grant permissions on the required views.
+The following grants cover all metrics and events collected by this receiver:
+
+```sql
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SYSMETRIC',      '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CON_SYSMETRIC',  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CONTAINERS',     '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SESSION',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SESSION_EVENT',  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SYSSTAT',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$CON_SYSSTAT',    '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$OSSTAT',         '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SGAINFO',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL',            '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL_PLAN',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$SQL_PLAN_STATISTICS_ALL', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PARAMETER',      '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$ROWCACHE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$RESOURCE_LIMIT', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$LOCK',           '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PROCESS',        '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$TRANSACTION',    '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$DATABASE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$INSTANCE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$DATAFILE',       '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('V_$PDBS',           '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_DATA_FILES',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_FREE_SPACE',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_RECYCLEBIN',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_TABLESPACES',              '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_TABLESPACE_USAGE_METRICS', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_PROCEDURES',               '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('DBA_OBJECTS',                  '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_TABLESPACE_USAGE_METRICS', '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_TABLESPACES',              '<username>', 'SELECT', false);
+EXEC rdsadmin.rdsadmin_util.grant_sys_object('CDB_SERVICES',                 '<username>', 'SELECT', false);
+GRANT CREATE SESSION TO <username>;
+```
+
+### Direct-PDB connections
+
+When the receiver connects directly to a PDB (including all AWS RDS Oracle deployments),
+`oracledb.transactions.limit` and `oracledb.dml_locks.limit` are derived from
+`v$parameter` instead of `v$resource_limit`, which is unavailable in PDB context.
+When Oracle auto-tunes these parameters, `v$parameter` reports the computed value
+(for example, `354` or `1416`) rather than `-1` (unlimited) as a root or standalone
+connection would. A direct-PDB deployment and a CDB-root deployment of the same instance can therefore report different values for these metrics.
 
 ## Enabling metrics.
 
@@ -280,6 +418,10 @@ receivers:
         enabled: true
       db.server.session.wait_sample:
         enabled: true
+      db.server.top_procedure:
+        enabled: true
+      db.server.query_plan:                      # reports the execution plan on its own event, off db.server.top_query
+        enabled: true
     top_query_collection:                        # this collection exports the most expensive queries as logs
       max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N
       top_query_count: 200                       # The maximum number of queries (N) for which the metrics would be reported
@@ -290,6 +432,10 @@ receivers:
       allowed_comment_keys: [application]        # keys to extract from leading SQL comments (see SQL Comment Extraction below)
     session_wait_event_collection:               # this collection exports per-session wait event statistics from v$session_event as logs
       max_rows_per_query: 100                    # the maximum number of session wait event rows to be reported                 
+    top_procedure_collection:                # this collection exports aggregated stored procedure performance metrics as logs
+      max_procedure_sample_count: 1000           # maximum number of rows fetched from db to rank the top N by delta
+      top_procedure_count: 250                   # The maximum number of procedures (N) for which the metrics would be reported
+      collection_interval: 60s                   # collection interval for procedure metrics collection specifically
 ```
 
 ## SQL Comment Extraction

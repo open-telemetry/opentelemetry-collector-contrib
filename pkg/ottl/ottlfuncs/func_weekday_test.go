@@ -86,8 +86,7 @@ func Test_Weekday(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Weekday(tt.time)
-			require.NoError(t, err)
+			exprFunc := weekday(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -101,8 +100,7 @@ func Test_Weekday_Error(t *testing.T) {
 			return "not a time", nil
 		},
 	}
-	exprFunc, err := Weekday(getter)
-	require.NoError(t, err)
+	exprFunc := weekday(getter)
 	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
@@ -118,14 +116,14 @@ func Test_WeekdayFactory(t *testing.T) {
 		factory := NewWeekdayFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &WeekdayArguments[any]{}, args)
+		assert.IsType(t, &weekdayArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewWeekdayFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*WeekdayArguments[any])
+		timeArgs, ok := args.(*weekdayArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -140,6 +138,22 @@ func Test_WeekdayFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createWeekdayFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "WeekdayFactory args must be of type *WeekdayArguments[K]")
+		assert.ErrorContains(t, err, "WeekdayFactory args must be of type *weekdayArguments[K]")
 	})
+}
+
+func BenchmarkWeekday(b *testing.B) {
+	inputTime := time.Date(2025, time.February, 24, 15, 4, 5, 0, time.UTC)
+	exprFunc := weekday(&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return inputTime, nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

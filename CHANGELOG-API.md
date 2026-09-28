@@ -7,6 +7,39 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.161.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Change `ConcatArguments.Vals` to use `ottl.SliceGetter`. (#27821, #38690)
+- `pkg/ottl`: Remove the deprecated `Base64Decode` converter. Use the `Decode` converter with the `base64` encoding instead. (#50875)
+- `pkg/ottl`: Rename `NewTransformContextPtr` to `NewTransformContext` in all OTTL contexts. (#50869)
+- `processor/filter`: Removing deprecated funcs (#50898)
+  Remove the deprecated *FunctionsNew aliases (WithResourceFunctionsNew, WithDataPointFunctionsNew, WithLogFunctionsNew,
+  WithMetricFunctionsNew, WithSpanEventFunctionsNew, WithSpanFunctionsNew, WithProfileFunctionsNew, DefaultLogFunctionsNew,
+  DefaultMetricFunctionsNew, DefaultDataPointFunctionsNew, DefaultSpanFunctionsNew, DefaultSpanEventFunctionsNew,
+  DefaultProfileFunctionsNew) in favour of their non-New equivalents, deprecated since v0.152.0.
+  
+- `processor/transform`: Remove deprecated options and "default functions" functions (#50899)
+
+### 💡 Enhancements 💡
+
+- `extension/datadog`: Migrate from NotifyConfig to NotifyConfigSnapshot (#50928)
+- `pkg/ottl`: Export the `SchemaURLItem` interface so it can be named by callers of the exported context API. (#50901)
+- `pkg/stanza`: Add optional server authenticator support to the `tcp_input` operator via a new `auth` configuration block. (#49339)
+  When `auth.authenticator` references a server auth extension, the `tcp_input` operator authenticates each
+  accepted connection before reading logs, closing the connection if authentication fails. The connection's
+  remote address is exposed to the authenticator through the `client.Info` in the context. This is also
+  available to receivers built on the operator, such as `tcplogreceiver` and `syslogreceiver`.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/batchperresourceattr`: keep Metadata from context in injectAttrMetadata (#50315)
+  Headers set via headers_setter on downstream exporters (e.g. splunkhecexporter) were being silently dropped whenever a batched resource had one of the injected attribute keys set.
+
+<!-- previous-version -->
+
 ## v0.160.0
 
 ### 🛑 Breaking changes 🛑

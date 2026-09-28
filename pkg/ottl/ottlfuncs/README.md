@@ -8,6 +8,18 @@ This document contains documentation for both types of OTTL functions:
 - [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+Profiles converters that fall outside of OTTL's stability guarantees are documented separately. See the [`xprofile` module](../contexts/xprofile/README.md) for the profiles converters, including `ProfileID`.
+
+Experimental converters that fall outside of OTTL's stability guarantees, including `All`, `Any`, `Filter`, `Find`, `MapEach`, `MapKeys`, `Reduce`, and `When`, are documented separately. See the [`xottl` module](../xottl/ottlfuncs/README.md) for the experimental converters.
+
+## Contents
+
+- [Design principles](#design-principles)
+- [Working with functions](#working-with-functions)
+- [Editors](#editors)
+- [Converters](#converters)
+- [Function stability](#function-stability)
+
 ## Design principles
 
 For the standard OTTL functions described in this document, we specify design principles to ensure they are always
@@ -462,14 +474,11 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 `set(target, value)`
 
-> [!NOTE]
-> The [`ottl.set.allowNil`](../documentation.md#feature-gates) feature gate changes the behavior of `set` when a `nil` value is passed. Prior to this gate, passing `nil` was a no-op. When enabled, `set` will pass the `nil` value directly to the target, which may result in an error or an empty value depending on the target's underlying type.
-
 The `set` function allows users to set a telemetry field using a value.
 
-`target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
+`target` is a path expression to a telemetry field. `value` is any value type, including `nil`.
 
-How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `ottl.ParseStatements`.
+How the underlying telemetry field is updated is decided by the path expression.
 
 Examples:
 
@@ -535,8 +544,6 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
-- [All](#all)
-- [Any](#any)
 - [Base64Encode](#base64encode)
 - [Bool](#bool)
 - [Decode](#decode)
@@ -552,8 +559,6 @@ Available Converters:
 - [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
-- [Filter](#filter)
-- [Find](#find)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -580,8 +585,6 @@ Available Converters:
 - [Len](#len)
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
-- [MapEach](#mapeach)
-- [MapKeys](#mapkeys)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -600,8 +603,6 @@ Available Converters:
 - [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
-- [ProfileID](#profileid)
-- [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
 - [Seconds](#seconds)
@@ -636,78 +637,9 @@ Available Converters:
 - [UUIDv7](#UUIDv7)
 - [Values](#values)
 - [Weekday](#weekday)
-- [When](#when)
 - [XXH3](#xxh3)
 - [XXH128](#xxh128)
 - [Year](#year)
-
-### All
-
-> [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
-
-`All(source, predicate)`
-
-The `All` converter returns `true` if `predicate` evaluates to `true` for every element in `source`.
-
-`source` is a path expression or another getter that resolves to a slice or map.
-
-`predicate` is a lambda expression with exactly two parameters and a boolean result. 
-The first parameter is the element index when evaluating a slice (`int64`), or the element 
-key when evaluating a map (`string`). The second parameter is the element value.
-Use `_` as a parameter name to ignore unused parameters.
-
-An empty slice or map returns `true`.
-
-If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
-
-Examples:
-
-Check that every slice element matches:
-
-- `All(log.attributes["tags"], (_, v) => v == "prod")`
-
-Check that every map key matches:
-
-- `All(log.attributes, (k, _) => HasPrefix(k, "http."))`
-
-Use in a condition:
-
-- `set(log.attributes["all_prod"], true) where All(log.attributes["tags"], (_, v) => v == "prod")`
-
-### Any
-
-> [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
-
-`Any(source, predicate)`
-
-The `Any` converter returns `true` if `predicate` evaluates to `true` for at least one element in `source`.
-
-`source` is a path expression or another getter that resolves to a slice or map.
-
-`predicate` is a lambda expression with exactly two parameters and a boolean result. 
-The first parameter is the element index when evaluating a slice (`int64`), or the element 
-key when evaluating a map (`string`). The second parameter is the element value.
-Use `_` as a parameter name to ignore unused parameters.
-
-An empty slice or map returns `false`.
-
-If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
-
-Examples:
-
-Check whether any slice element matches:
-
-- `Any(log.attributes["tags"], (_, v) => v == "prod")`
-
-Check whether any map key matches:
-
-- `Any(log.attributes, (k, _) => HasPrefix(k, "http."))`
-
-Use in a condition:
-
-- `set(log.attributes["has_prod"], true) where Any(log.attributes["tags"], (_, v) => v == "prod")`
 
 ### Base64Encode
 
@@ -1094,84 +1026,6 @@ Examples:
   - Return values: 
      - `user.name`: smith
      - `user.password`: pass123
-
-### Filter
-
-> [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
-
-`Filter(source, predicate)`
-
-The `Filter` converter returns a new `pcommon.Slice` or `pcommon.Map` containing only the elements for which
-`predicate` evaluates to `true`.
-
-`source` is a path expression or another getter that resolves to a slice or map.
-
-`predicate` is a lambda expression with exactly two parameters and a boolean result. The first parameter is
-the element index when filtering a slice (`int64`), or the element key when filtering a map (`string`). The
-second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
-
-If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
-
-Examples:
-
-Filter a slice by value:
-
-- `Filter(log.attributes["tags"], (_, v) => v == "prod")`
-
-Filter a map by key:
-
-- `Filter(log.attributes, (k, _) => HasPrefix(k, "http."))`
-
-Store the filtered result:
-
-- `set(log.attributes["prod_tags"], Filter(log.attributes["tags"], (_, v) => v == "prod"))`
-
-### Find
-
-> [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
-
-`Find(source, predicate, Optional[mapper])`
-
-The `Find` converter returns the value of the first element in `source` for which `predicate` evaluates to `true`. 
-If no element matches, it returns `nil`.
-
-`source` is a path expression or another getter that resolves to a slice or map.
-
-`predicate` is a lambda expression with exactly two parameters and a boolean result. 
-The first parameter is the element index when searching a slice (`int64`), or the element 
-key when searching a map (`string`). The second parameter is the element value.
-Use `_` as a parameter name to ignore unused parameters.
-
-`mapper` is an optional lambda expression with exactly two parameters. When provided, 
-it transforms the matched element before returning it. The first parameter is the found element 
-index or key, and the second parameter is the element value. When omitted, the matched value 
-is returned as-is.
-
-If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
-
-Examples:
-
-Find a slice element by value:
-
-- `Find(log.attributes["tags"], (_, v) => v == "prod")`
-
-Find a map element by key:
-
-- `Find(log.attributes, (k, _) => k == "http.method")`
-
-Find a map element key instead of value:
-
-- `Find(log.attributes, (_, v) => v == "prod", (k, _) => k)`
-
-Transform the found element:
-
-- `Find(log.attributes, (_, v) => v == "prod", (_, v) => String(v))`
-
-Store the found value:
-
-- `set(log.attributes["first_prod"], Find(log.attributes["tags"], (_, v) => v == "prod"))`
 
 ### FNV
 
@@ -1736,72 +1590,6 @@ Examples:
 
 - `IsValidLuhn("17893729974")`
 
-### MapEach
-
-> [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
-
-`MapEach(source, mapper)`
-
-The `MapEach` converter returns a new `pcommon.Slice` or `pcommon.Map` with each element value 
-transformed by `mapper`.
-
-`source` is a path expression or another getter that resolves to a slice or map.
-
-`mapper` is a lambda expression with exactly two parameters. The first parameter is the element
-index when mapping a slice (`int64`), or the element key when mapping a map (`string`). The
-second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
-
-If `source` is not a slice or map, it returns an error.
-
-Examples:
-
-Mapping slice values:
-
-- `MapEach(log.attributes["counts"], (_, v) => Int(v) * 2)`
-
-Stringify map values:
-
-- `MapEach(log.attributes, (_, v) => String(v))`
-
-Store the mapped result:
-
-- `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
-
-### MapKeys
-
-> [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
-
-`MapKeys(source, keyMapper)`
-
-The `MapKeys` converter returns a new `pcommon.Map` with each key transformed by `keyMapper`. Values are unchanged.
-
-`source` is a path expression or another getter that resolves to a map.
-
-`keyMapper` is a lambda expression with exactly two parameters that returns a `string`.
-The first parameter is the element key (`string`). The second parameter is the element value.
-Use `_` as a parameter name to ignore unused parameters.
-
-If `keyMapper` produces duplicate keys, only one value is retained and which one is unspecified. 
-Keys are processed in the order they appear in the `source` map, though this is not guaranteed.
-
-If `source` is not a map, or if `keyMapper` does not return a `string`, it returns an error.
-
-Examples:
-
-Prefix map keys:
-
-- `MapKeys(log.attributes, (k, _) => Concat(["http.", k], ""))`
-
-Derive keys from key and value:
-
-- `MapKeys(log.attributes, (k, v) => Concat([k, ":", String(v)], ""))`
-
-Store the result:
-
-- `set(log.attributes["prefixed"], MapKeys(log.attributes, (k, _) => Concat(["http.", k], "")))`
-
 ### MD5
 
 `MD5(value)`
@@ -2304,60 +2092,6 @@ Examples:
 - `ParseXML(log.attributes["xml"])`
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
-
-### ProfileID
-
-`ProfileID(bytes|string)`
-
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
-
-`bytes`  byte slice of exactly 16 bytes.
-`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
-
-Examples:
-
-- `ProfileID(0x00112233445566778899aabbccddeeff)`
-- `ProfileID("a389023abaa839283293ed323892389d")`
-
-### Reduce
-
-> [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
-
-`Reduce(source, seed, accumulator)`
-
-The `Reduce` converter folds `source` into a single value, starting from `seed` and applying `accumulator` to each element.
-
-`source` is a path expression or another getter that resolves to a slice or map.
-
-`seed` is the initial accumulator value.
-
-`accumulator` is a lambda expression with exactly three parameters. 
-The first parameter is the current accumulator value. 
-The second parameter is the element index when reducing a slice (`int64`), or the element 
-key when reducing a map (`string`). The third parameter is the element value.
-Use `_` as a parameter name to ignore unused parameters.
-
-An empty slice or map returns `seed` unchanged.
-
-For maps, element processing order follows map iteration and is not guaranteed to be stable. 
-This matters when `accumulator` is not commutative.
-
-If `source` is not a slice or map, it returns an error.
-
-Examples:
-
-Sum a slice of numbers:
-
-- `Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v))`
-
-Build a semicolon-separated key=value string:
-
-- `Reduce(log.attributes["labels"], "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], ""))`
-
-Store the result:
-
-- `set(log.attributes["total"], Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v)))`
 
 ### RemoveXML
 
@@ -3119,35 +2853,6 @@ Examples:
 
 - `Weekday(Now())`
 
-### When
-
-> [!IMPORTANT]
-> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
-
-`When(condition, trueValue, falseValue)`
-
-The `When` converter returns `trueValue` when `condition` evaluates to true, otherwise it returns `falseValue`.
-
-`condition` is a lambda expression with no parameters that returns a `boolean`.
-
-`trueValue` and `falseValue` are OTTL expressions or literal values.
-
-If `condition` does not return a `boolean`, it returns an error.
-
-Examples:
-
-Select a value based on a type check:
-
-- `When(() => IsMap(log.attributes), "map", "not map")`
-
-Select a value based on a comparison:
-
-- `When(() => attributes["int_value"] > 0, "positive", "negative")`
-
-Store the result:
-
-- `set(log.attributes["result"], When(() => IsMap(log.attributes), "yes", "no"))`
-
 ### XXH3
 
 `XXH3(value)`
@@ -3195,3 +2900,41 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
+
+## Function stability
+
+Once OTTL is `1.0`, the standard functions returned by `StandardFuncs` and `StandardConverters` are **frozen**.
+For the life of `1.x` no standard function will be removed and no existing signature will change in a
+backward-incompatible way.
+
+Because the standard set is frozen, new functions are introduced as experimental functions first, and become
+part of the frozen standard set only after they have proven stable.
+
+### Experimental functions
+
+New functions are introduced as experimental functions. While a function is experimental, it is **not covered by
+the stability guarantee**: its name, signature, and behavior may change in a backward-incompatible way, and the
+function may be removed entirely, in any `1.x` release without a major version bump. Experimental functions are
+not part of `StandardFuncs` or `StandardConverters`; they live in the `xottl` module and are documented in its
+[functions README](../xottl/ottlfuncs/README.md). Each component decides whether to make them available.
+
+### Promotion to standard
+
+Promotion moves the function out of the experimental set and into the frozen standard set. This is an additive,
+backward-compatible change and ships in a **minor** release (never a patch). Promotion also **freezes the
+function's signature**: the signature a function has at promotion is the signature it keeps for the life of
+`1.x`, so any desired signature change must be made while the function is still experimental.
+
+A function may be promoted only when all of the following hold:
+
+1. It has been available as an experimental function for at least two minor releases, giving users time to try
+   it and give feedback.
+2. It has complete tests that validate its behavior and complete documentation in this README.
+3. Its name, arguments, and behavior are settled — there are no open issues or pull requests proposing changes
+   to them.
+4. It adheres to the [design principles](#design-principles) for standard functions (no I/O, no infinite loops,
+   communicates only through parameters and results).
+5. There is demonstrated user demand for the function to be part of the standard set.
+6. It has sign-off from the OTTL code owners.
+
+A function that cannot meet these criteria stays experimental; there is no obligation to promote it.
