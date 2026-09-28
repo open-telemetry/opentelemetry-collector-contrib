@@ -7,7 +7,7 @@ note: Fix missing metrics when using direct SQL Server connection - `sqlserver.l
 issues: [51384]
 
 subtext: |
-  `sqlserver.lock.wait_time.avg` emits no data point on the first scrape, because it is derived from the
-  change in two counters between scrapes.
+  All of these except `sqlserver.transaction_log.growth.count` are derived from the change in their
+  underlying counters between scrapes, so they emit no data point on the first scrape.
 
 change_logs: [user]

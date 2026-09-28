@@ -65,6 +65,37 @@ type sqlServerScraperHelper struct {
 	prevLockWaitNum  int64
 	prevLockWaitBase int64
 	hasPrevLockWait  bool
+
+	// Previous sample of each cumulative counter that is reported as a per-second
+	// rate, keyed by counter name and instance.
+	prevRates map[string]rateSample
+}
+
+// rateSample is one observation of a cumulative counter.
+type rateSample struct {
+	value float64
+	at    time.Time
+}
+
+// rateFromCounter converts a cumulative performance counter into a per-second rate
+// using the previous sample. `sys.dm_os_performance_counters` reports these counters
+// as totals accumulated since the server started, unlike the Windows PDH path where
+// the rate is already calculated. Reports false until there is a previous sample to
+// measure against, and when the counter has been reset.
+func (s *sqlServerScraperHelper) rateFromCounter(key string, value float64, at time.Time) (float64, bool) {
+	if s.prevRates == nil {
+		s.prevRates = make(map[string]rateSample)
+	}
+	prev, ok := s.prevRates[key]
+	s.prevRates[key] = rateSample{value: value, at: at}
+	if !ok {
+		return 0, false
+	}
+	elapsed := at.Sub(prev.at).Seconds()
+	if elapsed <= 0 || value < prev.value {
+		return 0, false
+	}
+	return (value - prev.value) / elapsed, true
 }
 
 var (
@@ -670,7 +701,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	}
 
 	var errs []error
-	now := pcommon.NewTimestampFromTime(time.Now())
+	sampleTime := time.Now()
+	now := pcommon.NewTimestampFromTime(sampleTime)
 
 	// Track SQL compilation and recompilation rates so the derived
 	// sqlserver.recompilation.ratio metric can be emitted after the row loop.
@@ -1240,24 +1272,24 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageReadsPerSec)
 				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsRead)
+			} else if rate, ok := s.rateFromCounter(pageReadsPerSec+"|"+row[instanceKey], val.(float64), sampleTime); ok {
+				s.mb.RecordSqlserverPageOperationRateDataPoint(now, rate, metadata.AttributePageOperationsRead)
 			}
 		case pageWritesPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageWritesPerSec)
 				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsWrite)
+			} else if rate, ok := s.rateFromCounter(pageWritesPerSec+"|"+row[instanceKey], val.(float64), sampleTime); ok {
+				s.mb.RecordSqlserverPageOperationRateDataPoint(now, rate, metadata.AttributePageOperationsWrite)
 			}
 		case lazyWritesPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lazyWritesPerSec)
 				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverPageLazyWriteRateDataPoint(now, val.(float64))
+			} else if rate, ok := s.rateFromCounter(lazyWritesPerSec+"|"+row[instanceKey], val.(float64), sampleTime); ok {
+				s.mb.RecordSqlserverPageLazyWriteRateDataPoint(now, rate)
 			}
 		case pagesAllocatedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1498,8 +1530,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, transactionsPerSec)
 				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverTransactionRateDataPoint(now, val.(float64))
+			} else if rate, ok := s.rateFromCounter(transactionsPerSec+"|"+row[instanceKey], val.(float64), sampleTime); ok {
+				s.mb.RecordSqlserverTransactionRateDataPoint(now, rate)
 			}
 		case logGrowths:
 			val, err := retrieveFloat(row, valueKey)

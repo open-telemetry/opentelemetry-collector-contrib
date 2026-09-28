@@ -2103,6 +2103,116 @@ func TestLockWaitTimeAvgDeltaRatio(t *testing.T) {
 		"expected delta numerator 1200 / delta base 2")
 }
 
+func TestRateFromCounter(t *testing.T) {
+	s := &sqlServerScraperHelper{}
+	t0 := time.Unix(1000, 0)
+
+	_, ok := s.rateFromCounter("k", 100, t0)
+	assert.False(t, ok, "the first sample only seeds, there is nothing to measure against")
+
+	rate, ok := s.rateFromCounter("k", 400, t0.Add(3*time.Second))
+	require.True(t, ok)
+	assert.InDelta(t, 100.0, rate, 0.001, "300 counted over 3 seconds")
+
+	_, ok = s.rateFromCounter("k", 10, t0.Add(6*time.Second))
+	assert.False(t, ok, "a counter reset must not report a negative or bogus rate")
+
+	rate, ok = s.rateFromCounter("k", 20, t0.Add(8*time.Second))
+	require.True(t, ok, "the reset sample re-seeds, so the next one reports again")
+	assert.InDelta(t, 5.0, rate, 0.001, "10 counted over 2 seconds")
+
+	_, ok = s.rateFromCounter("other", 999, t0.Add(8*time.Second))
+	assert.False(t, ok, "each series is tracked independently")
+
+	_, ok = s.rateFromCounter("z", 1, t0)
+	require.False(t, ok)
+	_, ok = s.rateFromCounter("z", 2, t0)
+	assert.False(t, ok, "two samples at the same instant cannot yield a rate")
+}
+
+// rateCounterClient returns the cumulative counters that back the per-second rate
+// metrics, advancing them on every call.
+type rateCounterClient struct {
+	calls *int
+}
+
+func (c rateCounterClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
+	*c.calls++
+	step := float64(*c.calls) * 1000
+	row := func(object, counter, instance string, v float64) sqlquery.StringMap {
+		return sqlquery.StringMap{
+			"measurement":   "sqlserver_performance",
+			"sql_instance":  "instance",
+			"computer_name": "computer",
+			"object":        object,
+			"counter":       counter,
+			"instance":      instance,
+			"value":         strconv.FormatFloat(v, 'f', -1, 64),
+			"counter_type":  "272696576",
+		}
+	}
+	return []sqlquery.StringMap{
+		row("SQLServer:Databases", "Transactions/sec", "mydb", step),
+		row("SQLServer:Buffer Manager", "Page reads/sec", "", step),
+		row("SQLServer:Buffer Manager", "Page writes/sec", "", step),
+		row("SQLServer:Buffer Manager", "Lazy writes/sec", "", step),
+	}, nil
+}
+
+func TestCumulativeCountersReportedAsRates(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	m := &cfg.MetricsBuilderConfig.Metrics
+	m.SqlserverTransactionRate.Enabled = true
+	m.SqlserverPageOperationRate.Enabled = true
+	m.SqlserverPageLazyWriteRate.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	t.Cleanup(func() { assert.NoError(t, provider.close()) })
+
+	var perf *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerPerformanceCounterQuery(cfg.InstanceName) {
+			perf = s
+			break
+		}
+	}
+	require.NotNil(t, perf)
+	require.NoError(t, perf.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, perf.Shutdown(t.Context())) }()
+
+	calls := 0
+	perf.client = rateCounterClient{calls: &calls}
+
+	// Nothing on the first scrape: a rate needs two samples.
+	first, err := perf.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	for _, name := range []string{
+		"sqlserver.transaction.rate",
+		"sqlserver.page.operation.rate",
+		"sqlserver.page.lazy_write.rate",
+	} {
+		assert.Zerof(t, countMetric(first, name), "%s must not report from a single sample", name)
+	}
+
+	time.Sleep(50 * time.Millisecond)
+
+	second, err := perf.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 1, countMetric(second, "sqlserver.transaction.rate"))
+	assert.Equal(t, 2, countMetric(second, "sqlserver.page.operation.rate"), "read and write")
+	assert.Equal(t, 1, countMetric(second, "sqlserver.page.lazy_write.rate"))
+
+	// This test covers the wiring; the arithmetic is asserted against a fixed clock in
+	// TestRateFromCounter, since the elapsed time between two scrapes here is not
+	// controllable.
+	assert.Positive(t, firstDoubleValue(t, second, "sqlserver.transaction.rate"))
+}
+
 func countMetric(md pmetric.Metrics, name string) int {
 	n := 0
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
