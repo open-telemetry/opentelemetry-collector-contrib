@@ -282,6 +282,18 @@ func TestIncrement(t *testing.T) {
 		require.NoError(t, mock.ExpectationsWereMet())
 	})
 
+	t.Run("existing key without expiration gets one", func(t *testing.T) {
+		client, mock := newClient(time.Minute)
+		mock.ExpectIncrBy("test_key", 5).SetVal(12)
+		mock.ExpectTTL("test_key").SetVal(-1)
+		mock.ExpectExpire("test_key", time.Minute).SetVal(true)
+
+		v, err := client.IncrementBy(t.Context(), "key", 5)
+		require.NoError(t, err)
+		require.Equal(t, int64(12), v)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
 	t.Run("negative delta", func(t *testing.T) {
 		client, mock := newClient(0)
 		mock.ExpectIncrBy("test_key", -3).SetVal(7)

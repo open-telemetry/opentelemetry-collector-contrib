@@ -154,7 +154,7 @@ func (rc redisClient) BatchIncrementBy(ctx context.Context, deltas map[string]in
 		out[k] = c.Val()
 	}
 
-	// TTL is -1 only for keys just created by INCRBY, avoids EXPIRE NX (Redis 7.0+).
+	// TTL is -1 for keys without expiry, usually just created by INCRBY. Avoids EXPIRE NX (Redis 7.0+).
 	var created []string
 	for k, c := range ttls {
 		if c.Val() == -1 {

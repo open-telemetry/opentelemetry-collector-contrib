@@ -53,7 +53,8 @@ if inc, ok := client.(incrementer); ok {
 ```
 
 - Counters are stored as decimal strings, so `Get` returns bytes such as `"42"`.
-- When `expiration` is set, the TTL is applied when a counter is created and is not refreshed by later increments.
+- When `expiration` is set, the TTL is applied to any counter that has none, normally only when it is created.
+  It is not refreshed by later increments.
 - Increments are atomic per key, not across keys. On error some increments may already be applied, so callers
   must not blindly retry. A failure to set the TTL is logged and does not fail the call.
 
