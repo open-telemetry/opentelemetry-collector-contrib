@@ -1991,7 +1991,7 @@ func TestQueryPlanEvents(t *testing.T) {
 				digest:             digest,
 				eventID:            int64(i + 1),
 				sessionStatus:      "running",
-				waitEvent:          "CPU",
+				waitType:           "CPU",
 			})
 		}
 		return samples
