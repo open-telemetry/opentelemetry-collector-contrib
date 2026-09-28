@@ -41,7 +41,7 @@ func concat[K any](vals *ottl.SliceGetter[K, ottl.StringLikeGetter[K]], delimite
 		}
 		first := true
 		var concatErr error
-		err = vals.Range(ctx, tCtx, func(rv ottl.StringLikeGetter[K]) bool {
+		_, err = vals.Range(ctx, tCtx, func(rv ottl.StringLikeGetter[K]) bool {
 			val, ok, getErr := rv.Get(ctx, tCtx)
 			if getErr != nil {
 				concatErr = getErr
