@@ -31,6 +31,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetHostName("host.name-val")
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
@@ -149,6 +150,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, 27.100000, "db.query.text-val", "db.namespace-val", 25, 29, 30, 30, "sqlserver.query_hash-val", "sqlserver.query_plan-val", "sqlserver.query_plan_hash-val", 20, 28.100000, 24, "db.system.name-val", 35, "sqlserver.procedure_id-val", "sqlserver.procedure_name-val", "sqlserver.query.last_started-val", "sqlserver.query.plan.creation_time-val")
 
 			rb := lb.NewResourceBuilder()
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetHostName("host.name-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
