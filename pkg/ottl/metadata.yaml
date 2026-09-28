@@ -25,7 +25,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49741
 
   - id: "pkg.ottl.functions.enableExperimental"
-    description: When enabled, the experimental functions from the xottl/ottlfuncs package are included in the functions returned by ottlfuncs.StandardFuncs and ottlfuncs.StandardConverters.
+    description: Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected.
     stage: alpha
     from_version: v0.162.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47305

@@ -9,10 +9,9 @@ extension/bearertokenauthextension
 extension/oauth2clientauthextension
 internal/common
 internal/coreinternal
-pkg/ottl/xottl
 pkg/ottl
-pkg/ottl/xottl
 pkg/ottl/contexts/xprofile
+pkg/ottl/xottl
 connector/routingconnector
 internal/pdatautil
 pkg/sampling

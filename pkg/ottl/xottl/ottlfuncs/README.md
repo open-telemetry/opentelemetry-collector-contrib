@@ -1,10 +1,9 @@
 # Experimental OTTL Functions
 
 The converters in this package are experimental. They are not covered by OTTL's stability guarantees, so their
-names, arguments, and behavior may change, and they may be removed, in any release. They are only included in the
-[standard functions](../../ottlfuncs/README.md) returned by `StandardFuncs` and `StandardConverters` when the
-[`pkg.ottl.functions.enableExperimental`](../../documentation.md#feature-gates) feature gate is enabled. Components can
-also make them available by merging `ExperimentalConverters` into their function set, for example with
+names, arguments, and behavior may change, and they may be removed, in any release. They are not part of the
+[standard functions](../../ottlfuncs/README.md) returned by `StandardFuncs` and `StandardConverters`. Components make
+them available by merging `ExperimentalConverters` into their function set, for example with
 `WithExperimentalConverters`.
 
 ## Converters

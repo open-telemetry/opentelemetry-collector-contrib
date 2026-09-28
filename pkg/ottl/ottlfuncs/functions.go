@@ -5,13 +5,9 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
-	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
 
-// StandardFuncs is a helper function to provide quick access to all functions (editors and converters) in this package.
-// When the pkg.ottl.functions.enableExperimental feature gate is enabled, the experimental functions from the
-// xottl/ottlfuncs package are included as well.
+// StandardFuncs is a helper function to provide quick access to all functions (editors and converters) in this package
 func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 	f := []ottl.Factory[K]{
 		// Editors
@@ -32,22 +28,13 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		NewTruncateAllFactory[K](),
 	}
 	f = append(f, converters[K]()...)
-	if metadata.PkgOttlFunctionsEnableExperimentalFeatureGate.IsEnabled() {
-		f = append(f, xottlfuncs.ExperimentalFuncs[K]()...)
-	}
 
 	return ottl.CreateFactoryMap(f...)
 }
 
-// StandardConverters is a helper function to provide quick access to all converters in this package.
-// When the pkg.ottl.functions.enableExperimental feature gate is enabled, the experimental converters from the
-// xottl/ottlfuncs package are included as well.
+// StandardConverters is a helper function to provide quick access to all converters in this package
 func StandardConverters[K any]() map[string]ottl.Factory[K] {
-	c := converters[K]()
-	if metadata.PkgOttlFunctionsEnableExperimentalFeatureGate.IsEnabled() {
-		c = append(c, xottlfuncs.ExperimentalConverters[K]()...)
-	}
-	return ottl.CreateFactoryMap(c...)
+	return ottl.CreateFactoryMap(converters[K]()...)
 }
 
 func converters[K any]() []ottl.Factory[K] {

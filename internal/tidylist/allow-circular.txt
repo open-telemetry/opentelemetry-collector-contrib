@@ -6,7 +6,3 @@
 receiver/otelarrowreceiver
 exporter/otelarrowexporter
 internal/otelarrow
-
-# pkg/ottl <-> pkg/ottl/xottl
-pkg/ottl
-pkg/ottl/xottl
