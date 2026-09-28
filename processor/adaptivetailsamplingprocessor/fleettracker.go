@@ -20,7 +20,9 @@ type FleetTracker interface {
 	// member count. The callback is invoked once with the current count when
 	// the subscription is established, and again on every change. Callbacks
 	// must not block. The returned cancel func unregisters the callback and
-	// must be safe to call once.
+	// must be safe to call once. Well-behaved implementations invoke
+	// callbacks serially with respect to each other, but the processor also
+	// tolerates concurrent delivery.
 	SubscribeMemberCount(callback func(count int)) (cancel func(), err error)
 }
 
