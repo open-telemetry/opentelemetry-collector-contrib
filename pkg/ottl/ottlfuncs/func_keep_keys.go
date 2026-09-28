@@ -30,15 +30,20 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, errors.New("KeepKeysFactory args must be of type *keepKeysArguments[K]")
 	}
 
-	return keepKeys(args.Target, &args.Keys), nil
+	return keepKeys(args.Target, &args.Keys)
 }
 
-func keepKeys[K any](target ottl.PMapGetSetter[K], keys *ottl.SliceGetter[K, ottl.StringGetter[K]]) ottl.ExprFunc[K] {
-	// Pre-build literal keys, but let nil reach the runtime check, this preserves the error for nil without treating it as an empty slice
+func keepKeys[K any](target ottl.PMapGetSetter[K], keys *ottl.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	var literalKeySet map[string]struct{}
+	// Len differenciates a literal nil slice from empty literal slice
+	staticLen, hasStaticLen := keys.Len()
 
-	if literalValues, allLiteral := ottl.GetLiteralValues[K, string](keys); allLiteral && literalValues != nil {
-		literalKeySet = make(map[string]struct{}, len(literalValues))
+	if literalValues, allLiteral := ottl.GetLiteralValues[K, string](keys); allLiteral {
+		if !hasStaticLen {
+			return nil, errors.New("keys cannot be nil")
+		}
+
+		literalKeySet = make(map[string]struct{}, staticLen)
 		for _, key := range literalValues {
 			literalKeySet[key] = struct{}{}
 		}
@@ -52,22 +57,26 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys *ottl.SliceGetter[K, ott
 
 		keySet := literalKeySet
 		if keySet == nil {
-			// Resolve dynamic or runtime-generated keys for the current transform context
-			resolvedKeys, err := keys.Get(ctx, tCtx)
+			keySet = make(map[string]struct{}, staticLen)
+
+			var keyErr error
+			nonNil, err := keys.Range(ctx, tCtx, func(key ottl.StringGetter[K]) bool {
+				k, err := key.Get(ctx, tCtx)
+				if err != nil {
+					keyErr = err
+					return false
+				}
+				keySet[k] = struct{}{}
+				return true
+			})
 			if err != nil {
 				return nil, err
 			}
-			if resolvedKeys == nil {
-				return nil, errors.New("keys cannot be nil")
+			if keyErr != nil {
+				return nil, keyErr
 			}
-
-			keySet = make(map[string]struct{}, len(resolvedKeys))
-			for _, key := range resolvedKeys {
-				k, err := key.Get(ctx, tCtx)
-				if err != nil {
-					return nil, err
-				}
-				keySet[k] = struct{}{}
+			if !nonNil {
+				return nil, errors.New("keys cannot be nil")
 			}
 		}
 
@@ -79,5 +88,5 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys *ottl.SliceGetter[K, ott
 			val.Clear()
 		}
 		return nil, target.Set(ctx, tCtx, val)
-	}
+	}, nil
 }
