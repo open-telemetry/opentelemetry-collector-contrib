@@ -1966,6 +1966,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		s.lb.RecordDbServerQueryPlanEvent(
 			context.Background(),
 			timestamp,
+			databaseNameVal,
+			dbSystemNameVal,
 			queryHashVal,
 			queryPlanVal.(string),
 			queryPlanHashVal,
