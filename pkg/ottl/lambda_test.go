@@ -22,41 +22,10 @@ func (s stubBoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 
 func (stubBoolExpr[K]) unexported() {}
 
-func TestLambdaExpression_Formals(t *testing.T) {
-	tests := []struct {
-		name    string
-		formals []LocalIdentifierDecl
-		want    []LocalIdentifierDecl
-	}{
-		{
-			name:    "named params",
-			formals: makeLocalIdentifiers("a", "b"),
-			want:    makeLocalIdentifiers("a", "b"),
-		},
-		{
-			name:    "blank and named params",
-			formals: makeLocalIdentifiers("_", "a"),
-			want:    makeLocalIdentifiers("_", "a"),
-		},
-		{
-			name:    "all blank params",
-			formals: makeLocalIdentifiers("_", "_", "_"),
-			want:    makeLocalIdentifiers("_", "_", "_"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			expr := &LambdaExpression[any]{formals: tt.formals}
-			assert.Equal(t, tt.want, expr.Formals())
-		})
-	}
-}
-
 func TestLambdaExpression_ValidateArity(t *testing.T) {
 	tests := []struct {
 		name    string
-		formals []LocalIdentifierDecl
+		formals []localIdentifierDecl
 		arity   int
 		wantErr string
 	}{
@@ -258,7 +227,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				ctx = t.Context()
 			}
 
-			require.NoError(t, tt.expr.ValidateArity(len(tt.expr.Formals())))
+			require.NoError(t, tt.expr.ValidateArity(len(tt.expr.formals)))
 			lb, err := tt.expr.Activate(ctx)
 			require.NoError(t, err)
 			defer lb.Close()

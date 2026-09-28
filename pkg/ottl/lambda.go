@@ -7,20 +7,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sync"
 	"sync/atomic"
 )
 
 // LambdaExpression is a parsed OTTL lambda expression. OTTL functions may accept it as an argument.
-// For each outer invocation, call [LambdaExpression.Activate] with the evaluation context and the
-// number of arguments to bind, so the [LambdaExpression.Formals] length must match it. Use
-// [LambdaActivation.SetArg] to bind positional arguments, [LambdaActivation.Eval] to run the body
-// (possibly multiple times with different arguments), and [LambdaActivation.Close] when finished.
+// Call [LambdaExpression.ValidateArity] once in the function factory with the number of arguments
+// to bind, then for each outer invocation call [LambdaExpression.Activate] with the evaluation
+// context. Use [LambdaActivation.SetArg] to bind positional arguments, [LambdaActivation.Eval] to
+// run the body (possibly multiple times with different arguments), and [LambdaActivation.Close]
+// when finished.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 type LambdaExpression[K any] struct {
-	formals        []LocalIdentifierDecl
+	formals        []localIdentifierDecl
 	body           Getter[K] // mutually exclusive with bodyExpr
 	bodyExpr       boolExpr[K]
 	activationPool *sync.Pool
@@ -28,7 +28,7 @@ type LambdaExpression[K any] struct {
 }
 
 // newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
-func newLambdaExpression[K any](formals []LocalIdentifierDecl, body Getter[K], bodyExpr boolExpr[K]) *LambdaExpression[K] {
+func newLambdaExpression[K any](formals []localIdentifierDecl, body Getter[K], bodyExpr boolExpr[K]) *LambdaExpression[K] {
 	v := &LambdaExpression[K]{
 		formals:  formals,
 		body:     body,
@@ -46,14 +46,6 @@ func newLambdaExpression[K any](formals []LocalIdentifierDecl, body Getter[K], b
 	}
 	v.arityValidated = &atomic.Bool{}
 	return v
-}
-
-// Formals returns a copy of the lambda's formal parameters in declaration order (left to right).
-// Blank ("_") placeholders are included.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
-	return slices.Clone(l.formals)
 }
 
 // ValidateArity checks that the number of arguments that will be passed to the
