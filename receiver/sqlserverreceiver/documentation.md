@@ -391,11 +391,13 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.database.backup_or_restore.rate
 
-Total number of backups/restores.
+Bytes per second read or written by backup and restore operations.
+
+The underlying `Backup/Restore Throughput/sec` performance counter is a `PERF_COUNTER_BULK_COUNT`, reporting cumulative bytes since instance start rather than a rate. The receiver derives the per-second rate from the change between consecutive scrapes, so no value is reported for the first scrape after startup or after a counter reset. This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {backups_or_restores}/s | Gauge | Double | Development |
+| By/s | Gauge | Double | Development |
 
 ### sqlserver.database.count
 

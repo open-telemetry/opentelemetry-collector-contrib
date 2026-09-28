@@ -932,8 +932,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["sqlserver.database.backup_or_restore.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total number of backups/restores.", mi.Description())
-					assert.Equal(t, "{backups_or_restores}/s", mi.Unit())
+					assert.Equal(t, "Bytes per second read or written by backup and restore operations.", mi.Description())
+					assert.Equal(t, "By/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
