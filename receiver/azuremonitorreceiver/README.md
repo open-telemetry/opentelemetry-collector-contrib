@@ -31,6 +31,7 @@ The following settings are optional:
 - `resource_tags` (default = none): Filter metrics based on Azure resource tags. Each entry specifies a tag `name` and optionally a `value`. When `value` is omitted, the resource only needs to have the specified tag.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
+- `time_grain_overrides` (default = `{}`): Override the query time grain for selected metrics, keyed by Azure metric namespace and programmatic metric name.
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
 - `cache_resources_definitions` (default = 86400): List of metrics definitions will be cached for the provided amount of time in seconds.
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
@@ -99,7 +100,19 @@ receivers:
         ActiveConnections: []         # metric ActiveConnections with all known aggregations (same effect than [*])
 ```
 
-Filtering resources by tags:
+### Overriding metric time grains
+
+By default, the receiver uses the first time grain reported by Azure for each metric. Use `time_grain_overrides` to request a different grain for a specific metric. The receiver applies the override in both ARM and Batch API modes. Values are case-insensitive and must be one of `PT1M`, `PT5M`, `PT15M`, `PT30M`, `PT1H`, `PT6H`, `PT12H`, or `P1D`; Azure still needs to accept that grain for the metric.
+
+```yaml
+receivers:
+  azure_monitor:
+    time_grain_overrides:
+      "Microsoft.ElasticSan/elasticSans":
+        ElasticSanProvisionedBase: PT30M
+```
+
+### Filtering resources by tags
 
 ```yaml
 receivers:
