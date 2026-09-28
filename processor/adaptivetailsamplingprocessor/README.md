@@ -580,7 +580,7 @@ Behaviour:
 - A non-positive reported count is ignored and the last good count is kept; each occurrence increments `processor_adaptive_tail_sampling_fleet_tracker_errors`.
 - The underlying sampler is never reconstructed when the goal changes, so its learned per-key state carries over.
 - `adaptive_percentage` and `probabilistic` samplers are unaffected; a target percentage already composes across instances without division.
-- One collector process counts as one fleet member regardless of how many pipelines or rules it runs.
+- One collector process counts as one fleet member regardless of how many pipelines or rules it runs. However, each pipeline running `adaptive_tail_sampling` has its own independent samplers, each targeting `goal_throughput / N`, so a collector with the processor configured in two pipelines emits a multiple of the configured budget. Run the fleet budget in one pipeline only.
 - Scoping the fleet (e.g. keeping dev, staging, and prod counted separately on a shared backend) is the extension's concern, not the processor's.
 - Division is sound under the standard `loadbalancing`-by-`traceID` deployment pattern: each instance sees an even share of trace-ID-hashed load, so the same fixed fraction of the fleet-wide budget is the right per-instance target for every instance.
 
@@ -588,6 +588,7 @@ Caveats:
 
 - During a rolling deploy, instances briefly disagree on N as they join or leave, so the fleet under-samples until the member count converges across the fleet.
 - The division is integer, so a goal that does not divide evenly under-delivers slightly (e.g. `goal_throughput: 10` across 4 instances yields an effective goal of `2`, not `2.5`, for a fleet total of `8`); see [honeycombio/dynsampler-go#112](https://github.com/honeycombio/dynsampler-go/issues/112).
+- When N is larger than `goal_throughput`, the per-instance goal floors at 1 span/s (it is never divided below 1), so the fleet emits up to N, more than the configured budget (e.g. `goal_throughput: 10` with `N: 40` emits up to 40 total).
 
 No `FleetTracker` extension ships in this repository yet; `FleetTracker` is the exported interface implementations are expected to satisfy (a `redis_fleet_tracker` extension backed by shared counters is proposed separately).
 

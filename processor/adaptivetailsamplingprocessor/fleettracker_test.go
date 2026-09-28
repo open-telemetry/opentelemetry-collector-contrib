@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -115,15 +116,19 @@ func TestFleetTracker_DivisionAndSetterCalled(t *testing.T) {
 	spy := &spyThroughputSampler{}
 	p.rules[0].sampler = spy
 
-	ft := &fakeFleetTracker{initialCount: 1}
+	// initialCount: 4 (rather than the fake tracker's default of 1) exercises
+	// the synchronous first-delivery path: the fake tracker's
+	// SubscribeMemberCount invokes the callback before returning, from
+	// within Start, so the goal must already be applied by the time Start
+	// returns.
+	ft := &fakeFleetTracker{initialCount: 4}
 	host := &fakeHost{exts: map[component.ID]component.Component{fleetTrackerID: ft}}
 	require.NoError(t, p.Start(t.Context(), host))
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 
 	ruleAttrs := attribute.NewSet(attribute.String("rule", "throughput"))
 
-	ft.push(4)
-	require.Len(t, spy.goals, 1)
+	require.Len(t, spy.goals, 1, "the initial fleet count must be applied synchronously before Start returns")
 	assert.Equal(t, 250, spy.goals[0])
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingFleetMemberCount(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 4}},
@@ -324,4 +329,79 @@ func TestFleetTracker_NoThroughputRules(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 
 	assert.Nil(t, ft.callback, "SubscribeMemberCount must not be called when no rule uses adaptive_throughput")
+}
+
+func TestFleetTracker_NilFleetTrackerIDNoWiring(t *testing.T) {
+	// FleetTrackerID left unset must skip fleet-tracker wiring entirely: no
+	// extension is resolved and the rule's sampler never receives a setter
+	// call across the whole lifecycle.
+	cfg := fleetThroughputConfig(nil, 1000)
+	p, err := newProcessor(processortest.NewNopSettings(metadata.Type), cfg, &consumertest.TracesSink{})
+	require.NoError(t, err)
+
+	spy := &spyThroughputSampler{}
+	p.rules[0].sampler = spy
+
+	require.NoError(t, p.Start(t.Context(), nil))
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	assert.Empty(t, spy.goals, "no fleet_tracker wiring means SetGoalThroughputPerSec must never be called")
+}
+
+// TestFleetTracker_RealSamplerAppliesDividedGoal exercises fleet division
+// against a real adaptive_throughput sampler rather than the spy used by the
+// other tests in this file. The sampler wrapper's inner goal value isn't
+// reachable from this package (internal/sampler exposes no accessor for it),
+// so the assertions here are observable-behavior-based instead: the
+// fleet_effective_goal_throughput gauge for the rule, and that the sampler
+// still samples/decides traces normally after its goal is divided.
+func TestFleetTracker_RealSamplerAppliesDividedGoal(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	core, recorded := observer.New(zap.WarnLevel)
+	settings := metadatatest.NewSettings(tt)
+	settings.Logger = zap.New(core)
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:   time.Hour,
+		DecisionDelay:  time.Millisecond,
+		NumTraces:      10,
+		FleetTrackerID: &fleetTrackerID,
+		Rules: []RuleConfig{
+			{Name: "throughput", Sampler: SamplerConfig{
+				Type:                      AdaptiveThroughput,
+				GoalThroughput:            1000,
+				InitialSamplingPercentage: new(100.0),
+				FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+			}},
+		},
+	}
+	p, err := newProcessor(settings, cfg, sink)
+	require.NoError(t, err)
+
+	ft := &fakeFleetTracker{initialCount: 4}
+	host := &fakeHost{exts: map[component.ID]component.Component{fleetTrackerID: ft}}
+	require.NoError(t, p.Start(t.Context(), host))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	// The rule's sampler does implement ThroughputGoalSetter, so the fix-4
+	// startup warning (for rules that don't) must be absent here.
+	assert.Zero(t, recorded.Len(), "no startup warning expected for a rule whose sampler implements ThroughputGoalSetter")
+
+	ruleAttrs := attribute.NewSet(attribute.String("rule", "throughput"))
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 250, Attributes: ruleAttrs}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	trace := newRootTrace(pcommon.TraceID([16]byte{0xF1}))
+	trace.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
+	require.NoError(t, p.ConsumeTraces(t.Context(), trace))
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond, "the sampler must still decide traces normally after its goal is divided")
 }
