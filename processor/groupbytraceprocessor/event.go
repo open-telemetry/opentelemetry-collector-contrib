@@ -94,6 +94,7 @@ type eventMachine struct {
 	close                     chan struct{}
 	metricsCollectionInterval time.Duration
 	shutdownTimeout           time.Duration
+	eventTimeout              time.Duration
 
 	logger          *zap.Logger
 	telemetry       *metadata.TelemetryBuilder
@@ -125,6 +126,7 @@ func newEventMachine(logger *zap.Logger, bufferSize, numWorkers, numTraces int, 
 		shutdownLock:              &sync.RWMutex{},
 		metricsCollectionInterval: time.Second,
 		shutdownTimeout:           10 * time.Second,
+		eventTimeout:              time.Second,
 	}
 	for i := range em.workers {
 		em.workers[i] = &eventMachineWorker{
@@ -355,7 +357,7 @@ func (em *eventMachine) handleEventWithObservability(typ eventType, do func() er
 	// subtraceTick has a bounded completion time and is not meant to be called concurrently;
 	// long-running calls should complete instead of being cancelled.
 	if typ != subtraceTick {
-		succeeded, err = doWithTimeout(time.Second, do)
+		succeeded, err = doWithTimeout(em.eventTimeout, do)
 	} else {
 		err = do()
 		succeeded = true
