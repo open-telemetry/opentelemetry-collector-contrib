@@ -122,11 +122,6 @@ func Test_keepKeys_parser_slice_arguments(t *testing.T) {
 			wantErrPart: "keys cannot be nil",
 		},
 		{
-			name:        "literal nil",
-			statement:   `keep_keys(attributes, nil)`,
-			wantErrPart: "keys cannot be nil",
-		},
-		{
 			name:      "scalar cache value",
 			statement: `keep_keys(attributes, cache["x"])`,
 			setupCache: func(cache pcommon.Map) {
@@ -156,6 +151,11 @@ func Test_keepKeys_parser_slice_arguments(t *testing.T) {
 			name:      "literal slice",
 			statement: `keep_keys(attributes, ["a", "b"])`,
 			wantKeys:  []string{"a", "b"},
+		},
+		{
+			name:      "empty literal slice",
+			statement: `keep_keys(attributes, [])`,
+			wantKeys:  []string{},
 		},
 	}
 
@@ -203,6 +203,19 @@ func Test_keepKeys_parser_slice_arguments(t *testing.T) {
 			assert.Equal(t, expected, attributes.AsRaw())
 		})
 	}
+}
+
+func Test_keepKeys_literal_nil_fails_during_parsing(t *testing.T) {
+	parser, err := ottllog.NewParser(
+		map[string]ottl.Factory[*ottllog.TransformContext]{
+			"keep_keys": NewKeepKeysFactory[*ottllog.TransformContext](),
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+	require.NoError(t, err)
+
+	_, err = parser.ParseStatement(`keep_keys(attributes, nil)`)
+	require.ErrorContains(t, err, "keys cannot be nil")
 }
 
 func Test_keepKeys_dynamic_key_error(t *testing.T) {
