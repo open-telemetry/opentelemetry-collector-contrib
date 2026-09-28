@@ -18,7 +18,7 @@ type eventDbServerQueryPlan struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbPlanHashValueAttributeValue string, dbNamespaceAttributeValue string, oracledbQueryPlanAttributeValue string) {
+func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbPlanHashValueAttributeValue string, dbNamespaceAttributeValue string, oracledbQueryPlanAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -30,6 +30,7 @@ func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcom
 		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
 		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
 	dp.Attributes().PutStr("oracledb.sql_id", oracledbSQLIDAttributeValue)
 	dp.Attributes().PutStr("oracledb.child_number", oracledbChildNumberAttributeValue)
 	dp.Attributes().PutStr("oracledb.child_address", oracledbChildAddressAttributeValue)
@@ -136,7 +137,7 @@ type eventDbServerSessionWaitSample struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitTimeoutsAttributeValue int64, oracledbWaitDurationAttributeValue float64, dbNamespaceAttributeValue string) {
+func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitTimeoutsAttributeValue int64, oracledbWaitDurationAttributeValue float64, dbNamespaceAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -148,6 +149,7 @@ func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timest
 		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
 		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
 	dp.Attributes().PutStr("oracledb.sid", oracledbSidAttributeValue)
 	dp.Attributes().PutStr("oracledb.serial", oracledbSerialAttributeValue)
 	dp.Attributes().PutStr("oracledb.event", oracledbEventAttributeValue)
@@ -483,8 +485,8 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.
-func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbPlanHashValueAttributeValue string, dbNamespaceAttributeValue string, oracledbQueryPlanAttributeValue string) {
-	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbChildAddressAttributeValue, oracledbPlanHashValueAttributeValue, dbNamespaceAttributeValue, oracledbQueryPlanAttributeValue)
+func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbPlanHashValueAttributeValue string, dbNamespaceAttributeValue string, oracledbQueryPlanAttributeValue string) {
+	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbChildAddressAttributeValue, oracledbPlanHashValueAttributeValue, dbNamespaceAttributeValue, oracledbQueryPlanAttributeValue)
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
@@ -493,8 +495,8 @@ func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, times
 }
 
 // RecordDbServerSessionWaitSampleEvent adds a log record of db.server.session.wait_sample event.
-func (lb *LogsBuilder) RecordDbServerSessionWaitSampleEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitTimeoutsAttributeValue int64, oracledbWaitDurationAttributeValue float64, dbNamespaceAttributeValue string) {
-	lb.eventDbServerSessionWaitSample.recordEvent(ctx, timestamp, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbEventAttributeValue, oracledbWaitClassAttributeValue, oracledbWaitCountAttributeValue, oracledbWaitTimeoutsAttributeValue, oracledbWaitDurationAttributeValue, dbNamespaceAttributeValue)
+func (lb *LogsBuilder) RecordDbServerSessionWaitSampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitTimeoutsAttributeValue int64, oracledbWaitDurationAttributeValue float64, dbNamespaceAttributeValue string) {
+	lb.eventDbServerSessionWaitSample.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbEventAttributeValue, oracledbWaitClassAttributeValue, oracledbWaitCountAttributeValue, oracledbWaitTimeoutsAttributeValue, oracledbWaitDurationAttributeValue, dbNamespaceAttributeValue)
 }
 
 // RecordDbServerTopProcedureEvent adds a log record of db.server.top_procedure event.

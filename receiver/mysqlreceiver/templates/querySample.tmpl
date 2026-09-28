@@ -32,7 +32,7 @@
             IF(thread.processlist_state = 'User sleep', 'User sleep',
             IF(wait.event_id = wait.end_event_id, 'CPU', wait.event_name)), 'CPU'
         )
-    ) AS wait_event,
+    ) AS wait_type,
     COALESCE(
         -- Tier 1: completed wait event — TIMER_WAIT is populated (exact, picosecond precision)
         wait.timer_wait / 1e12,
