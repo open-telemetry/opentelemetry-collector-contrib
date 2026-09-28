@@ -139,10 +139,13 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
+			lb.RecordDbServerQueryPlanEvent(ctx, timestamp, "db.system.name-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", "oracledb.plan_hash_value-val", "db.namespace-val", "oracledb.query_plan-val")
+
+			allEventsCount++
 			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "db.namespace-val", "oracle.db.service-val", "client.address-val", 11, "network.peer.address-val", 17, "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", 24.100000, 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "oracledb.osuser-val", 21.100000, "db.query.comment_tags-val", "oracledb.query.started-val", "oracledb.session.started-val", 25.100000, "oracledb.blocking.blocker.sid-val", "oracledb.blocking.blocker.root_sid-val", "oracledb.blocking.blocker.state-val", "oracledb.blocking.start_time-val", 31, "oracledb.blocking.lock.mode-val", "oracledb.blocking.lock.type-val", "oracledb.blocking.object.owner-val", "oracledb.blocking.object.name-val")
 
 			allEventsCount++
-			lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, "oracledb.sid-val", "oracledb.serial-val", "oracledb.event-val", "oracledb.wait_class-val", 19, 22, 22.100000, "db.namespace-val")
+			lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, "db.system.name-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.event-val", "oracledb.wait_class-val", 19, 22, 22.100000, "db.namespace-val")
 
 			allEventsCount++
 			lb.RecordDbServerTopProcedureEvent(ctx, timestamp, "db.system.name-val", "db.namespace-val", "db.server.name-val", "oracle.db.service-val", 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "oracledb.procedure.schema.name-val", 34, 17.100000, 21.100000, 20, 19, 22, 23, 28, 29, "oracledb.procedure.first_load_time-val", "oracledb.procedure.last_active_time-val")
@@ -184,6 +187,34 @@ func TestLogsBuilder(t *testing.T) {
 			validatedEvents := make(map[string]bool)
 			for i := 0; i < lrs.Len(); i++ {
 				switch lrs.At(i).EventName() {
+				case "db.server.query_plan":
+					assert.False(t, validatedEvents["db.server.query_plan"], "Found a duplicate in the events slice: db.server.query_plan")
+					validatedEvents["db.server.query_plan"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
+					attrVal, ok := lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.system.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.sql_id")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.sql_id-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.child_number")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.child_number-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.child_address")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.child_address-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.plan_hash_value")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.plan_hash_value-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.namespace")
+					assert.True(t, ok)
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.query_plan")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.query_plan-val", attrVal.Str())
 				case "db.server.query_sample":
 					assert.False(t, validatedEvents["db.server.query_sample"], "Found a duplicate in the events slice: db.server.query_sample")
 					validatedEvents["db.server.query_sample"] = true
@@ -324,7 +355,10 @@ func TestLogsBuilder(t *testing.T) {
 					assert.Equal(t, timestamp, lr.Timestamp())
 					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
 					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
-					attrVal, ok := lr.Attributes().Get("oracledb.sid")
+					attrVal, ok := lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.system.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.sid")
 					assert.True(t, ok)
 					assert.Equal(t, "oracledb.sid-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("oracledb.serial")

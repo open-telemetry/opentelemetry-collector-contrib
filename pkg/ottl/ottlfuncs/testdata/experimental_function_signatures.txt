@@ -1,0 +1,8 @@
+All(Source ottl.Getter[interface {}], Predicate *ottl.LambdaExpression[interface {}])
+Any(Source ottl.Getter[interface {}], Predicate *ottl.LambdaExpression[interface {}])
+Filter(Source ottl.Getter[interface {}], Predicate *ottl.LambdaExpression[interface {}])
+Find(Source ottl.Getter[interface {}], Predicate *ottl.LambdaExpression[interface {}], Mapper ottl.Optional[*ottl.LambdaExpression[interface {}]])
+MapEach(Source ottl.Getter[interface {}], Mapper *ottl.LambdaExpression[interface {}])
+MapKeys(Source ottl.PMapGetter[interface {}], KeyMapper *ottl.LambdaExpression[interface {}])
+Reduce(Source ottl.Getter[interface {}], Seed ottl.Getter[interface {}], Accumulator *ottl.LambdaExpression[interface {}])
+When(Condition *ottl.LambdaExpression[interface {}], TrueValue ottl.Getter[interface {}], FalseValue ottl.Getter[interface {}])
