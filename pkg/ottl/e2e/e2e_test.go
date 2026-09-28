@@ -3190,22 +3190,17 @@ func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		lambda, err := args.Expr.Activate(ctx)
-		if err != nil {
-			return nil, err
-		}
+		lambda := args.Expr.Activate(ctx)
 		defer lambda.Close()
+		vals := make([]any, len(args.Params))
 		for i, param := range args.Params {
 			val, err := param.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			err = lambda.SetArg(i, val)
-			if err != nil {
-				return nil, err
-			}
+			vals[i] = val
 		}
-		return lambda.Eval(tCtx)
+		return lambda.Call(tCtx, vals...)
 	}, nil
 }
 

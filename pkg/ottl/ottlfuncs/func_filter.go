@@ -49,10 +49,7 @@ func filter[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K]) (
 			return nil, err
 		}
 
-		lb, err := predicate.Activate(ctx)
-		if err != nil {
-			return nil, err
-		}
+		lb := predicate.Activate(ctx)
 		defer lb.Close()
 
 		switch typedVal := sourceVal.(type) {

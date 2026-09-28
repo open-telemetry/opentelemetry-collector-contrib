@@ -493,6 +493,8 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			val, err = p.buildSliceArg(arg.Value, fieldType)
 		case fieldType.Kind() == reflect.Pointer:
 			val, err = p.buildArg(arg.Value, fieldType.Elem())
+		case fieldType == reflect.TypeFor[LambdaExpression[K]]():
+			err = errors.New("lambda expression arguments must be declared as *ottl.LambdaExpression")
 		default:
 			val, err = p.buildArg(arg.Value, fieldType)
 		}
@@ -703,7 +705,7 @@ func (p *parseContext[K]) buildArg(argVal value, argType reflect.Type) (any, err
 			return nil, errors.New("must be a bool")
 		}
 		return bool(*argVal.Bool), nil
-	case strings.HasPrefix(name, "LambdaExpression"):
+	case argType == reflect.TypeFor[LambdaExpression[K]]():
 		if argVal.Lambda == nil {
 			return nil, errors.New("must be a lambda expression")
 		}

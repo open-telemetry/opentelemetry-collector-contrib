@@ -54,10 +54,7 @@ func reduce[K any](source, seed ottl.Getter[K], accumulator *ottl.LambdaExpressi
 			return nil, err
 		}
 
-		lb, err := accumulator.Activate(ctx)
-		if err != nil {
-			return nil, err
-		}
+		lb := accumulator.Activate(ctx)
 		defer lb.Close()
 
 		switch typedVal := sourceVal.(type) {

@@ -50,10 +50,7 @@ func mapEach[K any](source ottl.Getter[K], mapper *ottl.LambdaExpression[K]) (ot
 			return nil, err
 		}
 
-		lb, err := mapper.Activate(ctx)
-		if err != nil {
-			return nil, err
-		}
+		lb := mapper.Activate(ctx)
 		defer lb.Close()
 
 		switch typedVal := sourceVal.(type) {
