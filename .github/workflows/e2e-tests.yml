@@ -182,13 +182,18 @@ jobs:
             false
           fi
 
-  # Runs the OpenShift detector e2e test on MicroShift (real OpenShift runtime:
-  # SCCs, CRI-O). Only runs when OpenShift-related paths change; not a required check.
+  # Runs component e2e tests on MicroShift (real OpenShift runtime: SCCs, CRI-O).
+  # Not a required check. To opt a component in, add a matrix entry with the
+  # component path and a `go test -run` regex (use "." for the whole suite).
   openshift-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: processor/resourcedetectionprocessor
+            tests: TestE2EOpenShiftInCluster
     runs-on: ubuntu-24.04
     needs: docker-build
-    env:
-      KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -198,43 +203,29 @@ jobs:
         with:
           filters: |
             openshift:
-              - 'processor/resourcedetectionprocessor/internal/openshift/**'
-              - 'internal/metadataproviders/openshift/**'
-              - 'processor/resourcedetectionprocessor/testdata/e2e/openshift-cluster/**'
-              - 'processor/resourcedetectionprocessor/e2e_test.go'
+              - '${{ matrix.component }}/**'
               - 'pkg/xk8stest/**'
+              - '.github/actions/setup-microshift/**'
               - '.github/workflows/e2e-tests.yml'
       - uses: $/.github/actions/setup-go-tools
         if: steps.filter.outputs.openshift == 'true'
         with:
           go-version: oldstable
-      - name: Enable KVM access for runner
-        if: steps.filter.outputs.openshift == 'true'
-        run: sudo chmod 666 /dev/kvm
-      - name: Start MicroShift via CRC
-        if: steps.filter.outputs.openshift == 'true'
-        uses: crc-org/crc-github-action@466b8741bd91b9ee59f37db92b69f285cacada41 # v1.0.1
-        with:
-          preset: microshift
-      - name: Export KUBECONFIG
-        if: steps.filter.outputs.openshift == 'true'
-        run: cp ~/.kube/config "$KUBECONFIG"
       - name: Download artifact
         if: steps.filter.outputs.openshift == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: otelcontribcol
           path: /tmp
-      - name: Load image into MicroShift CRI-O storage
+      - uses: $/.github/actions/setup-microshift
         if: steps.filter.outputs.openshift == 'true'
-        run: |
-          CRC_IP=$(sg libvirt -c "crc ip")
-          # CRI-O reads root podman storage; tag as docker.io/library to match what kind load produces.
-          ssh -i ~/.crc/machines/crc/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            core@"$CRC_IP" 'sudo podman load && sudo podman tag localhost/otelcontribcol:latest docker.io/library/otelcontribcol:latest' < /tmp/otelcontribcol.tar
-          echo "HOST_ENDPOINT=$(ip route get "$CRC_IP" | grep -oP 'src \K[\d.]+')" >> "$GITHUB_ENV"
-      - name: Run OpenShift e2e test
+        with:
+          image-tar: /tmp/otelcontribcol.tar
+      - name: Run e2e tests on MicroShift
         if: steps.filter.outputs.openshift == 'true'
+        env:
+          COMPONENT: ${{ matrix.component }}
+          TESTS: ${{ matrix.tests }}
         run: |
-          cd processor/resourcedetectionprocessor
-          go test -v --tags=e2e -run TestE2EOpenShiftInCluster
+          cd "$COMPONENT"
+          go test -v --tags=e2e -run "$TESTS"

@@ -1222,7 +1222,7 @@ func TestE2EOpenShiftDetector(t *testing.T) {
 // kube-apiserver using the in-cluster defaults (service account token, CA and
 // KUBERNETES_SERVICE_HOST). It runs on kind and on MicroShift; neither serves
 // the config.openshift.io API group, so a minimal Infrastructure CRD is
-// installed. Set HOST_ENDPOINT when the cluster is not on the kind network.
+// installed.
 func TestE2EOpenShiftInCluster(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "e2e", "openshift", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
@@ -1265,7 +1265,7 @@ func TestE2EOpenShiftInCluster(t *testing.T) {
 	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift-cluster", "collector"), map[string]string{}, os.Getenv("HOST_ENDPOINT"))
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift-cluster", "collector"), map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {

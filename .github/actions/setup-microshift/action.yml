@@ -1,0 +1,72 @@
+name: Setup MicroShift
+description: Start a MicroShift cluster via CRC, optionally load the otelcontribcol image, and export HOST_ENDPOINT for e2e tests.
+
+inputs:
+  crc-version:
+    description: CRC version. Pinned so the bundle cache key is stable; bump manually.
+    required: false
+    default: "2.64.0"
+  kubeconfig:
+    description: Where to write the cluster kubeconfig.
+    required: false
+    default: /tmp/kube-config-otelcol-e2e-testing
+  image-tar:
+    description: Optional `docker save` tarball of otelcontribcol:latest to load into the cluster.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Cache CRC binary and bundle
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.crc/cache
+          ~/crc-installer
+        key: crc-${{ inputs.crc-version }}-microshift-${{ runner.arch }}
+
+    - name: Install CRC and libvirt
+      shell: bash
+      env:
+        CRC_VERSION: ${{ inputs.crc-version }}
+      run: |
+        URL="https://mirror.openshift.com/pub/openshift-v4/clients/crc/${CRC_VERSION}/crc-linux-amd64.tar.xz"
+        mkdir -p ~/crc-installer
+        if [ ! -f ~/crc-installer/crc-linux.tar.xz ]; then
+          curl -fsSL -H user-agent:otelcol-e2e --max-time 300 "$URL" -o ~/crc-installer/crc-linux.tar.xz
+          echo "$(curl -fsSL "${URL}.sha256")  $HOME/crc-installer/crc-linux.tar.xz" | sha256sum -c
+        fi
+        tar -C /tmp -xf ~/crc-installer/crc-linux.tar.xz
+        sudo mv /tmp/crc-linux-*-amd64/crc /usr/local/bin/
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq qemu-kvm libvirt-daemon libvirt-daemon-system virtiofsd
+        sudo usermod -a -G libvirt "$USER"
+        sudo chmod 666 /dev/kvm
+
+    - name: Start MicroShift
+      shell: bash
+      env:
+        KUBECONFIG_PATH: ${{ inputs.kubeconfig }}
+      run: |
+        echo '{"auths":{"fake":{"auth":"Zm9vOmJhcgo="}}}' > ~/crc-pull-secret
+        crc config set consent-telemetry no
+        crc config set preset microshift
+        # user mode: VM ssh on 127.0.0.1:2222, host reachable from the VM at 192.168.127.254
+        crc config set network-mode user
+        crc config set pull-secret-file ~/crc-pull-secret
+        sg libvirt -c "crc setup"
+        sg libvirt -c "crc start"
+        cp ~/.kube/config "$KUBECONFIG_PATH"
+        kubectl --kubeconfig "$KUBECONFIG_PATH" wait --for=condition=Ready node --all --timeout=180s
+        echo "HOST_ENDPOINT=192.168.127.254" >> "$GITHUB_ENV"
+
+    - name: Load image into MicroShift
+      if: inputs.image-tar != ''
+      shell: bash
+      env:
+        IMAGE_TAR: ${{ inputs.image-tar }}
+      run: |
+        # CRI-O reads root podman storage; tag as docker.io/library to match what `kind load` produces.
+        ssh -p 2222 -i ~/.crc/machines/crc/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null core@127.0.0.1 \
+          'sudo podman load && sudo podman tag localhost/otelcontribcol:latest docker.io/library/otelcontribcol:latest' < "$IMAGE_TAR"
