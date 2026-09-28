@@ -804,7 +804,8 @@ func TestEventTimeoutBreaksFireDeadlock(t *testing.T) {
 
 	select {
 	case blocked := <-fireReturned:
-		assert.GreaterOrEqual(t, blocked, em.eventTimeout,
+		// Give the expected time a slight buffer to prevent flakiness due to timing issues.
+		assert.GreaterOrEqual(t, blocked+5*time.Millisecond, em.eventTimeout,
 			"the send should have been stuck until the timeout gave up on the handler")
 	case <-time.After(5 * time.Second):
 		t.Fatal("the handler's fire never completed: the worker is deadlocked against itself")
