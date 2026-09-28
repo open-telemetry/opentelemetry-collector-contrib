@@ -29,6 +29,34 @@ The extension requires read and write access to a Redis cluster.
   - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false.
   - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
 
+## Atomic counters
+
+Besides the standard storage client interface, the client provides atomic integer counters that can be
+shared across Collector instances:
+
+```go
+IncrementBy(ctx context.Context, key string, delta int64) (int64, error)
+BatchIncrementBy(ctx context.Context, deltas map[string]int64) (map[string]int64, error)
+```
+
+Both return the value after incrementing. A missing key counts as 0 and `delta` may be negative.
+Components discover the capability with a type assertion against an interface they define:
+
+```go
+type incrementer interface {
+	BatchIncrementBy(ctx context.Context, deltas map[string]int64) (map[string]int64, error)
+}
+
+if inc, ok := client.(incrementer); ok {
+	// use atomic counters
+}
+```
+
+- Counters are stored as decimal strings, so `Get` returns bytes such as `"42"`.
+- When `expiration` is set, the TTL is applied when a counter is created and is not refreshed by later increments.
+- Increments are atomic per key, not across keys. On error some increments may already be applied, so callers
+  must not blindly retry. A failure to set the TTL is logged and does not fail the call.
+
 ## Example
 
 ```yaml

@@ -381,6 +381,7 @@ func TestIncrementConcurrent(t *testing.T) {
 	require.NoError(t, err)
 	ttl, err = cleanup.client.TTL(ctx, "test_incr_counter").Result()
 	require.NoError(t, err)
+	require.Positive(t, ttl)
 	require.LessOrEqual(t, ttl, 5*time.Minute)
 }
 

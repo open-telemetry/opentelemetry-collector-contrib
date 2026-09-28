@@ -121,8 +121,7 @@ func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) erro
 	return err
 }
 
-// IncrementBy atomically adds delta to the integer stored at key and returns the new value.
-// A missing key is treated as 0. See BatchIncrementBy for error semantics.
+// IncrementBy atomically adds delta to key and returns the new value.
 func (rc redisClient) IncrementBy(ctx context.Context, key string, delta int64) (int64, error) {
 	res, err := rc.BatchIncrementBy(ctx, map[string]int64{key: delta})
 	if err != nil {
@@ -131,10 +130,8 @@ func (rc redisClient) IncrementBy(ctx context.Context, key string, delta int64) 
 	return res[key], nil
 }
 
-// BatchIncrementBy atomically adds each delta to its key in a single pipeline and returns
-// the new values. Increments are atomic per key, not across keys. If an error is returned,
-// some increments may already have been applied, so callers must not blindly retry.
-// When an expiration is configured, it is set only on keys that have no TTL yet.
+// BatchIncrementBy atomically adds each delta to its key and returns the new values.
+// On error some increments may already be applied, so it is not safe to retry.
 func (rc redisClient) BatchIncrementBy(ctx context.Context, deltas map[string]int64) (map[string]int64, error) {
 	out := make(map[string]int64, len(deltas))
 	if len(deltas) == 0 {
@@ -157,8 +154,7 @@ func (rc redisClient) BatchIncrementBy(ctx context.Context, deltas map[string]in
 		out[k] = c.Val()
 	}
 
-	// TTL returns -1 for a key without expiration, i.e. one just created by INCRBY.
-	// This avoids EXPIRE NX, which requires Redis 7.0+.
+	// TTL is -1 only for keys just created by INCRBY, avoids EXPIRE NX (Redis 7.0+).
 	var created []string
 	for k, c := range ttls {
 		if c.Val() == -1 {
@@ -171,7 +167,7 @@ func (rc redisClient) BatchIncrementBy(ctx context.Context, deltas map[string]in
 			ep.Expire(ctx, rc.prefix+k, rc.expiration)
 		}
 		if _, err := ep.Exec(ctx); err != nil {
-			// The increments succeeded; returning an error would invite a double-counting retry.
+			// Not returned, a retry would double count.
 			rc.logger.Warn("failed to set expiration on new counter keys",
 				zap.Int("keys", len(created)), zap.Error(err))
 		}
