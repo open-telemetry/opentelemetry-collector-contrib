@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
@@ -131,7 +131,7 @@ func (e *datadogExtension) NotifyConfigSnapshot(_ context.Context, configSnapsho
 
 	// Prepare the base payload
 	otelCollectorPayload := payload.PrepareOtelCollectorMetadata(
-		e.info.host.Identifier,
+		e.info.host.SourceIdentifier.Primary,
 		e.info.hostnameSource,
 		e.info.uuid,
 		e.info.build.Version, // This is the same version from buildInfo; it is possible we could want to set a different version here in the future
@@ -178,7 +178,7 @@ func (e *datadogExtension) NotifyConfigSnapshot(_ context.Context, configSnapsho
 		e.logger,
 		e.serializer,
 		e.configs.extension.HTTPConfig,
-		e.info.host.Identifier,
+		e.info.host.SourceIdentifier.Primary,
 		e.info.uuid,
 		otelCollectorPayload,
 		e.telemetrySettings,
@@ -265,7 +265,7 @@ func (e *datadogExtension) sendLivenessMetric(_ context.Context) error {
 	allTags = append(allTags, "hostname_source:"+e.info.hostnameSource)
 
 	// Create the liveness metric serie directly in agent format
-	serie := metrics.CreateLivenessSerie(e.info.host.Identifier, timestamp, allTags)
+	serie := metrics.CreateLivenessSerie(e.info.host.SourceIdentifier.Primary, timestamp, allTags)
 
 	// Send using the serializer (forwarder handles retries internally)
 	err := e.serializer.SendSeriesWithMetadata(ddMetrics.Series{serie})
@@ -275,7 +275,7 @@ func (e *datadogExtension) sendLivenessMetric(_ context.Context) error {
 	}
 
 	e.logger.Debug("Successfully sent extension liveness metric",
-		zap.String("hostname", e.info.host.Identifier),
+		zap.String("hostname", e.info.host.SourceIdentifier.Primary),
 		zap.String("hostname_source", e.info.hostnameSource))
 	return nil
 }
@@ -396,7 +396,7 @@ func newExtension(
 		// Hostname is already known from config; skip the source provider to avoid
 		// unnecessary cloud metadata probes (e.g. GCP metadata server on non-GCP hosts).
 		hostnameSource = "config"
-		host = source.Source{Kind: source.HostnameKind, Identifier: cfg.Hostname}
+		host = source.Source{Kind: source.HostnameKind, Identifier: cfg.Hostname, SourceIdentifier: source.SourceIdentifier{Primary: cfg.Hostname}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 	} else {
 		hostnameSource = "inferred"
 		var err error
@@ -409,7 +409,7 @@ func newExtension(
 	// Create agent components
 	configComponent := buildAgentConfig(cfg)
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
-	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
+	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.SourceIdentifier.Primary)
 
 	// Collect resource attributes from TelemetrySettings.Resource
 	// Format: map[string]string

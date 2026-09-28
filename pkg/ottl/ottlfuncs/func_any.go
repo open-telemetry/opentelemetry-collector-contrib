@@ -25,7 +25,7 @@ type anyArguments[K any] struct {
 // Experimental: *NOTE* this API is subject to change or removal in the future. It
 // requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewAnyFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Any", &anyArguments[K]{}, createAnyFunction[K])
+	return ottl.NewFactory("Any", &anyArguments[K]{}, createAnyFunction[K], ottl.WithExperimental[K]())
 }
 
 func createAnyFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {

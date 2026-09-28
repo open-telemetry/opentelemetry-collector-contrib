@@ -19,7 +19,7 @@ var _ source.Provider = (*HostProvider)(nil)
 type HostProvider string
 
 func (p HostProvider) Source(context.Context) (source.Source, error) {
-	return source.Source{Kind: source.HostnameKind, Identifier: string(p)}, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: string(p), SourceIdentifier: source.SourceIdentifier{Primary: string(p)}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 }
 
 var _ source.Provider = (*ErrorSourceProvider)(nil)
@@ -194,7 +194,7 @@ func TestChain(t *testing.T) {
 			if err != nil || testInstance.queryErr != "" {
 				assert.EqualError(t, err, testInstance.queryErr)
 			} else {
-				assert.Equal(t, testInstance.hostname, src.Identifier)
+				assert.Equal(t, testInstance.hostname, src.SourceIdentifier.Primary)
 				assert.Equal(t, testInstance.aliases, aliases)
 			}
 		})
