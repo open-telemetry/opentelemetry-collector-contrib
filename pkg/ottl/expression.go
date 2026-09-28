@@ -1208,11 +1208,7 @@ func (p *parseContext[K]) newGetter(val value) (Getter[K], error) {
 	}
 
 	if val.Lambda != nil {
-		lambExp, err := p.newLambdaExpression(val.Lambda)
-		if err != nil {
-			return nil, err
-		}
-		return newLiteral[K, any](lambExp), nil
+		return nil, errors.New("lambda expressions can only be passed to function arguments that accept them")
 	}
 
 	if eL := val.Literal; eL != nil {

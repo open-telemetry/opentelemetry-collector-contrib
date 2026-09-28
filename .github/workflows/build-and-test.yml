@@ -417,6 +417,9 @@ jobs:
   coverage:
     runs-on: ubuntu-slim
     needs: [unittest]
+    # this job only needs to run when "Run Unit Tests With JUnit and Coverage" runs, which only
+    # happens on pushes to main
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

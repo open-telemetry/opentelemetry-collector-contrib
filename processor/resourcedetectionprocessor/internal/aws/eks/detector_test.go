@@ -6,6 +6,8 @@ package eks
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -14,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -22,9 +25,10 @@ import (
 )
 
 type mockIMDSProvider struct {
-	meta     imds.InstanceIdentityDocument
-	hostname string
-	err      error
+	meta        imds.InstanceIdentityDocument
+	hostname    string
+	hostnameErr error
+	err         error
 }
 
 func (m *mockIMDSProvider) Get(_ context.Context) (imds.InstanceIdentityDocument, error) {
@@ -32,6 +36,9 @@ func (m *mockIMDSProvider) Get(_ context.Context) (imds.InstanceIdentityDocument
 }
 
 func (m *mockIMDSProvider) Hostname(_ context.Context) (string, error) {
+	if m.hostnameErr != nil {
+		return "", m.hostnameErr
+	}
 	return m.hostname, m.err
 }
 
@@ -189,6 +196,7 @@ func TestDetectFromIMDS(t *testing.T) {
 		imdsMeta              imds.InstanceIdentityDocument
 		apiMeta               apiprovider.InstanceMetadata
 		hostname              string
+		hostnameErr           error
 		apiErr                error
 		imdsErr               error
 		failOnMissingMetadata bool
@@ -235,6 +243,29 @@ func TestDetectFromIMDS(t *testing.T) {
 			hostname:      "hostname.ip-192-168-1-1.us-west-2.compute.internal",
 			imdsErr:       errors.New("fail"),
 			expectedError: false,
+		},
+		{
+			name: "Hostname Failure - fail_on_missing_metadata",
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-west-2",
+			},
+			hostnameErr:           errors.New("fail"),
+			failOnMissingMetadata: true,
+			expectedError:         true,
+			errMsg:                "fail",
+		},
+		{
+			name: "Hostname Failure - suppressed",
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-west-2",
+			},
+			hostnameErr:   errors.New("fail"),
+			expectedError: false,
+			expectedOutput: map[string]any{
+				"host.id": "i-123",
+			},
 		},
 		{
 			name: "API Failure - Partial Result",
@@ -315,7 +346,7 @@ func TestDetectFromIMDS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &detector{
 				logger:       zaptest.NewLogger(t),
-				imdsProvider: &mockIMDSProvider{meta: tt.imdsMeta, hostname: tt.hostname, err: tt.imdsErr},
+				imdsProvider: &mockIMDSProvider{meta: tt.imdsMeta, hostname: tt.hostname, hostnameErr: tt.hostnameErr, err: tt.imdsErr},
 				apiProvider:  &mockAPIProvider{apiMeta: tt.apiMeta, apiErr: tt.apiErr},
 				rb: metadata.NewResourceBuilder(metadata.ResourceAttributesConfig{
 					K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true},
@@ -641,4 +672,81 @@ func TestDetectFailOnMissingMetadata(t *testing.T) {
 		assert.ErrorContains(t, err, "eks metadata unavailable")
 		assert.ErrorContains(t, err, isEKSErr.Error())
 	})
+}
+
+func TestDetectNotEKSFailOnMissingMetadata(t *testing.T) {
+	t.Setenv(kubernetesServiceHostEnvVar, "")
+	cfg := CreateDefaultConfig()
+	det := &detector{
+		cfg:                   cfg,
+		logger:                zap.NewNop(),
+		apiProvider:           &mockAPIProvider{},
+		imdsProvider:          &mockIMDSProvider{},
+		ra:                    cfg.ResourceAttributes,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		utils:                 &mockDetectorUtils{},
+		failOnMissingMetadata: true,
+	}
+
+	res, schemaURL, err := det.Detect(t.Context())
+	require.EqualError(t, err, "eks metadata unavailable: not running on EKS")
+	assert.Empty(t, schemaURL)
+	assert.Equal(t, 0, res.Attributes().Len())
+}
+
+func TestNewDetectorOutsideCluster(t *testing.T) {
+	isolateAWSConfig(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.ErrorContains(t, err, "Could not load cluster config")
+	assert.Nil(t, d)
+}
+
+func TestIsIMDSAccessible(t *testing.T) {
+	tests := []struct {
+		name     string
+		status   int
+		expected bool
+	}{
+		{name: "accessible", status: http.StatusOK, expected: true},
+		{name: "not accessible", status: http.StatusNotFound, expected: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isolateAWSConfig(t)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Connection", "close")
+				if r.Method == http.MethodPut && r.URL.Path == "/latest/api/token" {
+					w.Header().Set("X-Aws-Ec2-Metadata-Token-Ttl-Seconds", "21600")
+					_, _ = w.Write([]byte("token"))
+					return
+				}
+				if r.URL.Path == "/latest/meta-data/instance-id" && tt.status == http.StatusOK {
+					_, _ = w.Write([]byte("i-123"))
+					return
+				}
+				w.WriteHeader(tt.status)
+			}))
+			t.Cleanup(srv.Close)
+			t.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", srv.URL)
+
+			utils := eksDetectorUtils{cfg: CreateDefaultConfig(), logger: zap.NewNop()}
+			assert.Equal(t, tt.expected, utils.isIMDSAccessible(t.Context()))
+		})
+	}
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	assert.Equal(t, Config{ResourceAttributes: metadata.DefaultResourceAttributesConfig()}, CreateDefaultConfig())
+}
+
+// isolateAWSConfig keeps the AWS SDK from reading the host's shared config and credentials.
+func isolateAWSConfig(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("AWS_CONFIG_FILE", dir+"/config")
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", dir+"/credentials")
+	t.Setenv("AWS_PROFILE", "")
+	t.Setenv("AWS_REGION", "us-east-1")
 }
