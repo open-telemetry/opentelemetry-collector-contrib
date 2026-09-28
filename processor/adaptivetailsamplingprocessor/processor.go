@@ -147,6 +147,20 @@ type adaptiveTailSamplingProcessor struct {
 	// default IsRootSpan(), letting the per-span check skip OTTL entirely.
 	rootSpanFastPath bool
 
+	// fleetMu guards fleetSize. Deliberately separate from mu: the fleet
+	// member count callback never touches the decision path.
+	fleetMu sync.Mutex
+	// fleetSize is the last good fleet member count reported by
+	// fleet_tracker, initialized to 1 in newProcessor.
+	fleetSize int
+	// fleetCancel unsubscribes from the fleet_tracker extension. Set in
+	// Start, invoked in Shutdown.
+	fleetCancel func()
+	// hasThroughputRules is true when at least one rule uses
+	// adaptive_throughput, computed once in newProcessor so Start does not
+	// need to rescan p.rules to decide whether to subscribe.
+	hasThroughputRules bool
+
 	wg sync.WaitGroup
 }
 
@@ -177,6 +191,20 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		return nil, err
 	}
 
+	hasThroughputRules := false
+	for _, r := range rules {
+		if r.goalThroughput > 0 {
+			hasThroughputRules = true
+			break
+		}
+	}
+	if cfg.FleetTrackerID != nil && !hasThroughputRules {
+		set.Logger.Warn(
+			"fleet_tracker is set but no rule uses adaptive_throughput; it has no effect",
+			zap.String("fleet_tracker", cfg.FleetTrackerID.String()),
+		)
+	}
+
 	p := &adaptiveTailSamplingProcessor{
 		logger:               set.Logger,
 		telemetry:            tb,
@@ -190,6 +218,8 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		rootSpanCondEvalErrs: tb.ProcessorAdaptiveTailSamplingOttlEvalErrors,
 		rootSpanCondAttrSet:  metric.WithAttributes(attribute.String("rule", rootSpanConditionRuleLabel)),
 		rootSpanFastPath:     cfg.effectiveRootSpanCondition() == defaultRootSpanCondition,
+		fleetSize:            1,
+		hasThroughputRules:   hasThroughputRules,
 	}
 
 	if err := registerSamplerMetricsCallbacks(tb, p.rules); err != nil {
@@ -365,14 +395,72 @@ func (*adaptiveTailSamplingProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-// Start initializes the embedded samplers.
-func (p *adaptiveTailSamplingProcessor) Start(context.Context, component.Host) error {
+// Start initializes the embedded samplers and, when fleet_tracker is
+// configured, subscribes to the fleet's live member count.
+func (p *adaptiveTailSamplingProcessor) Start(_ context.Context, host component.Host) error {
 	for _, r := range p.rules {
 		if err := r.sampler.Start(); err != nil {
 			return fmt.Errorf("rule %q sampler start: %w", r.name, err)
 		}
 	}
+
+	if p.cfg.FleetTrackerID == nil {
+		return nil
+	}
+	if !p.hasThroughputRules {
+		// Already warned in newProcessor; nothing to subscribe to.
+		return nil
+	}
+
+	ft, err := resolveFleetTracker(host, *p.cfg.FleetTrackerID)
+	if err != nil {
+		return err
+	}
+	// Subscribing after samplers start is required, since the callback calls
+	// setters on live samplers. The contract's immediate first delivery may
+	// fire synchronously before fleetCancel is assigned below, which is safe
+	// because the callback never reads fleetCancel.
+	cancel, err := ft.SubscribeMemberCount(p.onFleetMemberCount)
+	if err != nil {
+		return fmt.Errorf("fleet_tracker %q: subscribe: %w", *p.cfg.FleetTrackerID, err)
+	}
+	p.fleetCancel = cancel
 	return nil
+}
+
+// onFleetMemberCount applies a newly reported fleet member count to every
+// adaptive_throughput rule's sampler, dividing each rule's configured
+// goal_throughput by the count. Registered as the fleet_tracker subscription
+// callback; must not block.
+func (p *adaptiveTailSamplingProcessor) onFleetMemberCount(count int) {
+	ctx := context.Background()
+	if count <= 0 {
+		p.telemetry.ProcessorAdaptiveTailSamplingFleetTrackerErrors.Add(ctx, 1)
+		p.logger.Warn("fleet tracker reported a non-positive member count; keeping the last good count", zap.Int("member_count", count))
+		return // last good N kept implicitly: samplers retain their current goal
+	}
+
+	p.fleetMu.Lock()
+	if count == p.fleetSize {
+		p.fleetMu.Unlock()
+		return
+	}
+	p.fleetSize = count
+	p.fleetMu.Unlock()
+
+	p.telemetry.ProcessorAdaptiveTailSamplingFleetMemberCount.Record(ctx, int64(count))
+	for _, r := range p.rules {
+		if r.goalThroughput <= 0 {
+			continue
+		}
+		setter, ok := r.sampler.(sampler.ThroughputGoalSetter)
+		if !ok {
+			continue
+		}
+		goal := max(r.goalThroughput/count, 1)
+		setter.SetGoalThroughputPerSec(goal)
+		p.telemetry.ProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput.Record(ctx, int64(goal), r.ruleAttrSet)
+	}
 }
 
 // Shutdown cancels any pending decision timers, stops samplers, and waits for
@@ -406,6 +494,11 @@ func (p *adaptiveTailSamplingProcessor) Shutdown(ctx context.Context) error {
 	}
 	p.arrival = nil
 	p.mu.Unlock()
+
+	if p.fleetCancel != nil {
+		p.fleetCancel()
+		p.fleetCancel = nil
+	}
 
 	p.wg.Wait()
 
