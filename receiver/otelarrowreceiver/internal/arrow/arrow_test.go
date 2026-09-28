@@ -575,6 +575,7 @@ func TestReceiverLogs(t *testing.T) {
 }
 
 func TestReceiverMetrics(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48669")
 	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 	stdTesting := otelAssert.NewStdUnitTest(t)
