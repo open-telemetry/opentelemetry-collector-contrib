@@ -20,7 +20,7 @@ kafka/full:
       backoff: 5s
   conn_idle_timeout: 5m
 
-kafka/sasl_aws_msk_iam_oauthbearer_with_region:
+kafka/sasl_aws_msk_iam_oauthbearer_valid_region:
   auth:
     sasl:
       mechanism: AWS_MSK_IAM_OAUTHBEARER

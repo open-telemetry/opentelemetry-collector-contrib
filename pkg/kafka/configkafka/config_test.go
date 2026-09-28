@@ -59,7 +59,7 @@ func TestClientConfig(t *testing.T) {
 			},
 		},
 
-		"sasl_aws_msk_iam_oauthbearer_with_region": {
+		"sasl_aws_msk_iam_oauthbearer_valid_region": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()
 				cfg.Authentication.SASL = &SASLConfig{
