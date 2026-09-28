@@ -66,6 +66,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natsexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
@@ -345,7 +346,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcrreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
