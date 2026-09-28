@@ -4,6 +4,7 @@
 package cloudfoundryreceiver
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -15,6 +16,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
@@ -67,6 +72,81 @@ func TestDefaultValidLogsReceiver(t *testing.T) {
 	// Test shutdown
 	err = receiver.Shutdown(ctx)
 	require.NoError(t, err)
+}
+
+func TestStreamLogsReportsConversionErrorsAndPreservesValidRecords(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), time.Second)
+		defer cancel()
+		require.NoError(t, tel.Shutdown(shutdownCtx))
+	})
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.TelemetrySettings = tel.NewTelemetrySettings()
+	core, observedLogs := observer.New(zapcore.ErrorLevel)
+	settings.Logger = zap.New(core)
+
+	sink := new(consumertest.LogsSink)
+	cfg := *NewFactory().CreateDefaultConfig().(*Config)
+	rcvr, err := newCloudFoundryLogsReceiver(settings, cfg, sink)
+	require.NoError(t, err)
+
+	newEnvelope := func(logType loggregator_v2.Log_Type, payload string) *loggregator_v2.Envelope {
+		return &loggregator_v2.Envelope{
+			Message: &loggregator_v2.Envelope_Log{Log: &loggregator_v2.Log{
+				Type:    logType,
+				Payload: []byte(payload),
+			}},
+		}
+	}
+
+	batch := []*loggregator_v2.Envelope{
+		newEnvelope(loggregator_v2.Log_OUT, "before"),
+		newEnvelope(loggregator_v2.Log_Type(99), "unsupported"),
+		newEnvelope(loggregator_v2.Log_ERR, "after"),
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	calls := 0
+	stream := func() []*loggregator_v2.Envelope {
+		calls++
+		if calls == 1 {
+			return batch
+		}
+		cancel()
+		return nil
+	}
+
+	rcvr.streamLogs(ctx, stream, componenttest.NewNopHost())
+
+	conversionErrors := observedLogs.FilterMessage("Failed to convert Cloud Foundry log envelopes").All()
+	require.Len(t, conversionErrors, 1)
+	require.Contains(t, conversionErrors[0].ContextMap()["error"], "unsupported envelope log type: 99")
+
+	require.Equal(t, 2, sink.LogRecordCount())
+	logsBatches := sink.AllLogs()
+	require.Len(t, logsBatches, 1)
+	var bodies []string
+	var severities []plog.SeverityNumber
+	for i := 0; i < logsBatches[0].ResourceLogs().Len(); i++ {
+		resourceLogs := logsBatches[0].ResourceLogs().At(i)
+		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+			records := resourceLogs.ScopeLogs().At(j).LogRecords()
+			for k := 0; k < records.Len(); k++ {
+				bodies = append(bodies, records.At(k).Body().AsString())
+				severities = append(severities, records.At(k).SeverityNumber())
+			}
+		}
+	}
+	require.Equal(t, []string{"before", "after"}, bodies)
+	require.Equal(t, []plog.SeverityNumber{plog.SeverityNumberInfo, plog.SeverityNumberError}, severities)
+
+	accepted, err := tel.GetMetric("otelcol_receiver_accepted_log_records")
+	require.NoError(t, err)
+	acceptedSum, ok := accepted.Data.(metricdata.Sum[int64])
+	require.True(t, ok)
+	require.Len(t, acceptedSum.DataPoints, 1)
+	require.Equal(t, int64(2), acceptedSum.DataPoints[0].Value)
 }
 
 func TestSetupMetricsScope(t *testing.T) {
@@ -289,7 +369,7 @@ func TestBuildLogsWithResourceAttrs(t *testing.T) {
 		},
 	}
 
-	buildLogs(logs, envelope, observedTime)
+	require.NoError(t, buildLogs(logs, envelope, observedTime))
 
 	// check if the first log resource was created successfully
 	// we await single resource, with single scope and single log
@@ -324,7 +404,7 @@ func TestBuildLogsWithResourceAttrs(t *testing.T) {
 		},
 	}
 
-	buildLogs(logs, envelope, observedTime)
+	require.NoError(t, buildLogs(logs, envelope, observedTime))
 
 	// check that the first log resource contains a single scope, but 2 logs
 	require.Equal(t, 1, logs.ResourceLogs().Len())
@@ -361,7 +441,7 @@ func TestBuildLogsWithResourceAttrs(t *testing.T) {
 		},
 	}
 
-	buildLogs(logs, envelope, observedTime)
+	require.NoError(t, buildLogs(logs, envelope, observedTime))
 
 	// check that the new resource was created and exists next to the original one
 	require.Equal(t, 2, logs.ResourceLogs().Len())
@@ -400,7 +480,7 @@ func TestBuildLogs(t *testing.T) {
 		},
 	}
 
-	buildLogs(logs, envelope, observedTime)
+	require.NoError(t, buildLogs(logs, envelope, observedTime))
 
 	// check if the first log resource was created successfully
 	// we await single resource, with single scope and single log
@@ -434,7 +514,7 @@ func TestBuildLogs(t *testing.T) {
 		},
 	}
 
-	buildLogs(logs, envelope, observedTime)
+	require.NoError(t, buildLogs(logs, envelope, observedTime))
 
 	// check that another resource was created
 	require.Equal(t, 2, logs.ResourceLogs().Len())
