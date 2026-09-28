@@ -26,10 +26,11 @@ type subtraceID struct {
 // are kept separate rather than concatenated so that, for instance, the scope
 // named "lib@2" with no version can't collide with "lib" at version "2".
 type scopeKey struct {
-	name      string
-	version   string
-	attrHash  [16]byte
-	schemaURL string
+	name             string
+	version          string
+	attrHash         [16]byte
+	schemaURL        string
+	droppedAttrCount uint32
 }
 
 // resourceContext holds the resource a span was reported under, together with
@@ -87,10 +88,11 @@ func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope, sc
 		resourceContext: rctx,
 		scope:           sCopy,
 		scopeKey: scopeKey{
-			name:      sCopy.Name(),
-			version:   sCopy.Version(),
-			attrHash:  xhash.MapHash(sCopy.Attributes()),
-			schemaURL: schemaURL,
+			name:             sCopy.Name(),
+			version:          sCopy.Version(),
+			attrHash:         xhash.MapHash(sCopy.Attributes()),
+			schemaURL:        schemaURL,
+			droppedAttrCount: sCopy.DroppedAttributesCount(),
 		},
 	}
 }
@@ -294,23 +296,25 @@ func assemble(members []*bufferedSpan) ptrace.Traces {
 	td := ptrace.NewTraces()
 
 	type rsKey struct {
-		resource  [16]byte
-		schemaURL string
-		scope     scopeKey
+		resource     [16]byte
+		schemaURL    string
+		droppedAttrs uint32
+		scope        scopeKey
 	}
 	rsMap := map[rsKey]ptrace.ScopeSpans{}
 	type rsIndexKey struct {
-		resource  [16]byte
-		schemaURL string
+		resource     [16]byte
+		schemaURL    string
+		droppedAttrs uint32
 	}
 	rsIndex := map[rsIndexKey]ptrace.ResourceSpans{}
 
 	for _, bs := range members {
-		key := rsKey{resource: bs.resourceKey, schemaURL: bs.schemaURL, scope: bs.scopeKey}
+		key := rsKey{resource: bs.resourceKey, schemaURL: bs.schemaURL, droppedAttrs: bs.resource.DroppedAttributesCount(), scope: bs.scopeKey}
 
 		ss, found := rsMap[key]
 		if !found {
-			idxKey := rsIndexKey{resource: bs.resourceKey, schemaURL: bs.schemaURL}
+			idxKey := rsIndexKey{resource: bs.resourceKey, schemaURL: bs.schemaURL, droppedAttrs: bs.resource.DroppedAttributesCount()}
 			rs, ok := rsIndex[idxKey]
 			if !ok {
 				rs = td.ResourceSpans().AppendEmpty()
