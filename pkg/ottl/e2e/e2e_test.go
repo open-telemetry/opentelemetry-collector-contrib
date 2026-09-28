@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
@@ -3231,8 +3232,8 @@ func Test_e2e_clear_bytes_value(t *testing.T) {
 }
 
 type sliceGetterArguments[K any] struct {
-	Values       ottl.SliceGetter[K, ottl.StringLikeGetter[K]]
-	ScalarValues ottl.Optional[ottl.SliceGetter[K, string]]
+	Values       slicegetter.SliceGetter[K, ottl.StringLikeGetter[K]]
+	ScalarValues ottl.Optional[slicegetter.SliceGetter[K, string]]
 }
 
 func newSliceGetterFactory[K any]() ottl.Factory[K] {
@@ -3281,4 +3282,22 @@ func createSliceGetterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		}
 		return sl, nil
 	}, nil
+}
+
+func Test_e2e_dynamic_slice_arguments_feature_gate(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, false))
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	_, err = parser.ParseStatement(`set(attributes["test"], Concat(Split(attributes["flags"], "|"), ":"))`)
+	require.ErrorContains(t, err, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate.ID())
+
+	statement, err := parser.ParseStatement(`set(attributes["test"], Concat(["A", attributes["flags"]], ":"))`)
+	require.NoError(t, err)
+	tCtx := constructLogTransformContext()
+	_, _, err = statement.Execute(t.Context(), tCtx)
+	require.NoError(t, err)
+	got, ok := tCtx.GetLogRecord().Attributes().Get("test")
+	require.True(t, ok)
+	assert.Equal(t, "A:A|B|C", got.Str())
 }
