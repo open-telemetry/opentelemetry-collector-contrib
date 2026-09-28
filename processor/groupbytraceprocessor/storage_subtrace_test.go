@@ -288,6 +288,68 @@ func BenchmarkSubtraceBufferAndRelease(b *testing.B) {
 	}
 }
 
+func BenchmarkStorageCostByStrategy(b *testing.B) {
+	const (
+		serviceCount = 4
+		fanout       = 8 // tree shape
+	)
+
+	for _, spanCount := range []int{40, 400, 4000} {
+		traceID := makeTraceID(1)
+		batches := buildBenchTrace(traceID, serviceCount, spanCount, fanout)
+
+		b.Run(fmt.Sprintf("trace/%d", spanCount), func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				st := newMemoryStorage(nil)
+				for _, td := range batches {
+					if err := st.createOrAppend(traceID, td); err != nil {
+						b.Fatal(err)
+					}
+				}
+				if _, err := st.delete(traceID); err != nil {
+					b.Fatal(err)
+				}
+			}
+			b.ReportMetric(float64(spanCount), "spans/op")
+		})
+
+		b.Run(fmt.Sprintf("service/%d", spanCount), func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				st := newSubtraceMemoryStorage(nil)
+
+				var ids []subtraceID
+				for _, td := range batches {
+					rs := td.ResourceSpans().At(0)
+					rctx := newResourceContext(rs)
+					id := subtraceID{traceID: traceID, serviceID: rctx.serviceID}
+					ids = append(ids, id)
+
+					ss := rs.ScopeSpans().At(0)
+					sctx := newSpanContext(rctx, ss.Scope(), ss.SchemaUrl())
+					for k := range ss.Spans().Len() {
+						if err := st.insertSpan(id, sctx, ss.Spans().At(k), time.Now()); err != nil {
+							b.Fatal(err)
+						}
+					}
+				}
+
+				for _, id := range ids {
+					calls, err := st.deleteSubtrace(id)
+					if err != nil {
+						b.Fatal(err)
+					}
+					for _, call := range calls {
+						assemble(call)
+					}
+				}
+			}
+			b.ReportMetric(float64(spanCount), "spans/op")
+		})
+	}
+}
+
 // Services are released one at a time, usually the caller before the callee. A
 // span whose parent has already been released must still be recognized as an
 // entry span, or two calls into a service would collapse into one batch.

@@ -77,12 +77,13 @@ type spanContext struct {
 
 // newSpanContext deep-copies the scope and pairs it with an already-built
 // resourceContext, which it shares as-is with the other scopes under that
-// resource.
-func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope, schemaURL string) spanContext {
+// resource. The returned pointer is shared across all spans in the same
+// ScopeSpans so that each bufferedSpan does not carry a redundant copy.
+func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope, schemaURL string) *spanContext {
 	sCopy := pcommon.NewInstrumentationScope()
 	scope.CopyTo(sCopy)
 
-	return spanContext{
+	return &spanContext{
 		resourceContext: rctx,
 		scope:           sCopy,
 		scopeKey: scopeKey{
@@ -97,7 +98,7 @@ func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope, sc
 // bufferedSpan holds a deep copy of a single span together with the resource and
 // instrumentation scope it was reported under.
 type bufferedSpan struct {
-	spanContext
+	*spanContext
 	span ptrace.Span
 
 	// arrivedAt is when the batch carrying the span was received. Each call to a
@@ -108,9 +109,9 @@ type bufferedSpan struct {
 }
 
 // newBufferedSpan deep-copies the span so the caller can recycle its pdata
-// objects. The context is shared as-is with the other spans reported under it,
-// and arrivedAt with every other span in the same batch.
-func newBufferedSpan(ctx spanContext, span ptrace.Span, arrivedAt time.Time) *bufferedSpan {
+// objects. ctx is shared across all spans in the same ScopeSpans; arrivedAt
+// is shared across all spans in the same batch.
+func newBufferedSpan(ctx *spanContext, span ptrace.Span, arrivedAt time.Time) *bufferedSpan {
 	spCopy := ptrace.NewSpan()
 	span.CopyTo(spCopy)
 

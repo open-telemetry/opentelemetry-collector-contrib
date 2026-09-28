@@ -20,7 +20,7 @@ type subtraceStorage interface {
 	// stamping it with arrivedAt, the time the batch carrying it was received.
 	// Every submission is kept independently; duplicate span IDs, including
 	// the empty span ID, are all emitted as separate spans.
-	insertSpan(id subtraceID, ctx spanContext, span ptrace.Span, arrivedAt time.Time) error
+	insertSpan(id subtraceID, ctx *spanContext, span ptrace.Span, arrivedAt time.Time) error
 
 	// releaseDue removes and returns the service's calls whose first span arrived
 	// at or before cutoff, each as its own slice, together with the first arrival
@@ -122,7 +122,7 @@ func newSubtraceMemoryStorage(telemetry *metadata.TelemetryBuilder) *subtraceMem
 	}
 }
 
-func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx spanContext, span ptrace.Span, arrivedAt time.Time) error {
+func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx *spanContext, span ptrace.Span, arrivedAt time.Time) error {
 	bs := newBufferedSpan(ctx, span, arrivedAt)
 
 	s.Lock()
@@ -180,19 +180,38 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 
 	var due [][]*bufferedSpan
 	var nextArrival time.Time
-	for _, call := range splitCalls(spans, tb.spanIDs) {
-		first := firstArrival(call)
+
+	if countCallHeads(spans) <= 1 {
+		// Fast path: at most one call head means all spans belong to one call.
+		// Skip the splitCalls walk (and its callOf map allocation) entirely.
+		first := firstArrivalInMap(spans)
 		if first.After(cutoff) {
-			// This call started later than the one whose timer just fired, so it
-			// has time left on its own.
-			if nextArrival.IsZero() || first.Before(nextArrival) {
-				nextArrival = first
+			nextArrival = first
+		} else {
+			var all []*bufferedSpan
+			for _, bsList := range spans {
+				all = append(all, bsList...)
 			}
-			continue
+			due = append(due, all)
+			for spanID := range spans {
+				delete(spans, spanID)
+			}
 		}
-		due = append(due, call)
-		for _, bs := range call {
-			delete(spans, bs.span.SpanID())
+	} else {
+		for _, call := range splitCalls(spans, tb.spanIDs) {
+			first := firstArrival(call)
+			if first.After(cutoff) {
+				// This call started later than the one whose timer just fired, so it
+				// has time left on its own.
+				if nextArrival.IsZero() || first.Before(nextArrival) {
+					nextArrival = first
+				}
+				continue
+			}
+			due = append(due, call)
+			for _, bs := range call {
+				delete(spans, bs.span.SpanID())
+			}
 		}
 	}
 
@@ -214,6 +233,39 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 	}
 
 	return due, nextArrival, nil
+}
+
+// countCallHeads returns the number of spans in `spans` that head a call: spans
+// whose parent is not among the service's own spans, or that report a remote
+// parent context. This mirrors the entry-detection logic in splitCalls.
+func countCallHeads(spans map[pcommon.SpanID][]*bufferedSpan) int {
+	n := 0
+	for _, bsList := range spans {
+		bs := bsList[len(bsList)-1]
+		parent := bs.span.ParentSpanID()
+		if hasRemoteParent(bs) || parent.IsEmpty() {
+			n++
+			continue
+		}
+		if _, inService := spans[parent]; !inService {
+			n++
+		}
+	}
+	return n
+}
+
+// firstArrivalInMap returns the earliest arrivedAt across all buffered spans in
+// the map. Used by the single-call fast path in takeLocked.
+func firstArrivalInMap(spans map[pcommon.SpanID][]*bufferedSpan) time.Time {
+	var first time.Time
+	for _, bsList := range spans {
+		for _, bs := range bsList {
+			if first.IsZero() || bs.arrivedAt.Before(first) {
+				first = bs.arrivedAt
+			}
+		}
+	}
+	return first
 }
 
 func (s *subtraceMemoryStorage) subtraceIDs() []subtraceID {
