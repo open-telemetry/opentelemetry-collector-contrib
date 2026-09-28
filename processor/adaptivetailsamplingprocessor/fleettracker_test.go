@@ -5,6 +5,7 @@ package adaptivetailsamplingprocessor
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -73,7 +74,10 @@ func (notAFleetTracker) Shutdown(context.Context) error              { return ni
 // invocations, standing in for a real adaptive_throughput sampler so tests
 // can observe the fleet-division wiring without waiting on dynsampler-go's
 // internal timing.
+// Guarded by mu because the fleet_tracker contract permits concurrent
+// callback delivery, which TestFleetTracker_ConcurrentCallbacks exercises.
 type spyThroughputSampler struct {
+	mu         sync.Mutex
 	goals      []int
 	startCount int
 	stopCount  int
@@ -83,7 +87,34 @@ func (*spyThroughputSampler) GetSampleRate(string, int) int { return 1 }
 func (s *spyThroughputSampler) Start() error                { s.startCount++; return nil }
 func (s *spyThroughputSampler) Stop() error                 { s.stopCount++; return nil }
 func (s *spyThroughputSampler) SetGoalThroughputPerSec(goalPerSec int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.goals = append(s.goals, goalPerSec)
+}
+
+// recordedGoals returns a copy of the goals seen so far.
+func (s *spyThroughputSampler) recordedGoals() []int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]int(nil), s.goals...)
+}
+
+// blockingThroughputSampler records its goal and then blocks inside the first
+// SetGoalThroughputPerSec call, letting a test hold one fleet callback
+// mid-apply while another is delivered concurrently.
+type blockingThroughputSampler struct {
+	spyThroughputSampler
+	entered chan struct{}
+	release chan struct{}
+	once    sync.Once
+}
+
+func (s *blockingThroughputSampler) SetGoalThroughputPerSec(goalPerSec int) {
+	s.spyThroughputSampler.SetGoalThroughputPerSec(goalPerSec)
+	s.once.Do(func() {
+		close(s.entered)
+		<-s.release
+	})
 }
 
 func fleetThroughputConfig(fleetTrackerID *component.ID, goalThroughput int) *Config {
@@ -217,6 +248,63 @@ func TestFleetTracker_UnchangedCountIsNoOp(t *testing.T) {
 	ft.push(4)
 	ft.push(4)
 	assert.Len(t, spy.goals, 1, "an unchanged member count must not call the setter again")
+}
+
+// TestFleetTracker_ConcurrentCallbacksSerialise asserts that a callback holds
+// the fleet lock for its whole apply, so a second concurrent callback cannot
+// interleave. The FleetTracker contract tolerates concurrent delivery, and if
+// the lock spanned only the compare and store, two callbacks could store and
+// apply in opposite orders, leaving the stored count describing one goal while
+// the sampler held another. That divergence is permanent, because the compare
+// then skips every later apply of the stored count.
+//
+// The interleaving is forced rather than raced: the first callback blocks
+// inside the sampler's setter, and the second must make no progress until it
+// returns.
+func TestFleetTracker_ConcurrentCallbacksSerialise(t *testing.T) {
+	cfg := fleetThroughputConfig(&fleetTrackerID, 1000)
+	p, err := newProcessor(processortest.NewNopSettings(metadata.Type), cfg, &consumertest.TracesSink{})
+	require.NoError(t, err)
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	spy := &blockingThroughputSampler{
+		spyThroughputSampler: spyThroughputSampler{},
+		entered:              entered,
+		release:              release,
+	}
+	p.rules[0].sampler = spy
+
+	ft := &fakeFleetTracker{initialCount: 1}
+	host := &fakeHost{exts: map[component.ID]component.Component{fleetTrackerID: ft}}
+	require.NoError(t, p.Start(t.Context(), host))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		p.fleet.onMemberCount(2) // records 500, then blocks in the setter
+	}()
+	<-entered
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		p.fleet.onMemberCount(4) // would record 250
+	}()
+
+	// While the first callback is mid-apply, the second must not have applied
+	// anything: it is waiting on the fleet lock.
+	assert.Never(t, func() bool {
+		return len(spy.recordedGoals()) > 1
+	}, 100*time.Millisecond, 10*time.Millisecond,
+		"a second callback applied a goal while the first was still mid-apply")
+
+	close(release)
+	wg.Wait()
+
+	assert.Equal(t, []int{500, 250}, spy.recordedGoals())
 }
 
 func TestFleetTracker_NoSamplerReset(t *testing.T) {
