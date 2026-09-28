@@ -501,7 +501,7 @@ func TestAssemble_PreservesSpanPayload(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1_000), got.StartTimestamp())
 	assert.Equal(t, pcommon.Timestamp(2_000), got.EndTimestamp())
 	assert.Equal(t, "vendor=foo", got.TraceState().AsRaw())
-	assert.Equal(t, uint32(spanFlagsContextHasIsRemoteMask|spanFlagsContextIsRemoteMask), got.Flags())
+	assert.Equal(t, spanFlagsContextHasIsRemoteMask|spanFlagsContextIsRemoteMask, got.Flags())
 	assert.Equal(t, ptrace.StatusCodeError, got.Status().Code())
 	assert.Equal(t, "boom", got.Status().Message())
 	assert.Equal(t, map[string]any{
@@ -526,7 +526,7 @@ func TestAssemble_PreservesSpanPayload(t *testing.T) {
 	assert.Equal(t, "vendor=bar", gotLk.TraceState().AsRaw())
 	assert.Equal(t, map[string]any{"link.kind": "follows_from"}, gotLk.Attributes().AsRaw())
 	assert.Equal(t, uint32(1), gotLk.DroppedAttributesCount())
-	assert.Equal(t, uint32(spanFlagsContextHasIsRemoteMask), gotLk.Flags())
+	assert.Equal(t, spanFlagsContextHasIsRemoteMask, gotLk.Flags())
 }
 
 func TestAssemble_TakesOwnershipOfSpans(t *testing.T) {
