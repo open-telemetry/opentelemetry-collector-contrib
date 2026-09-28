@@ -4,15 +4,21 @@
 package redisstorageextension
 
 import (
+	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/go-redis/redismock/v9"
+	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -230,6 +236,152 @@ func TestRedisKey(t *testing.T) {
 
 		require.NoError(t, mock.ExpectationsWereMet())
 	})
+}
+
+func TestIncrement(t *testing.T) {
+	newClient := func(expiration time.Duration) (redisClient, redismock.ClientMock) {
+		mockedClient, mock := redismock.NewClientMock()
+		return redisClient{
+			client:     mockedClient,
+			prefix:     "test_",
+			expiration: expiration,
+			logger:     zap.NewNop(),
+		}, mock
+	}
+
+	t.Run("new key without expiration", func(t *testing.T) {
+		client, mock := newClient(0)
+		mock.ExpectIncrBy("test_key", 5).SetVal(5)
+
+		v, err := client.IncrementBy(t.Context(), "key", 5)
+		require.NoError(t, err)
+		require.Equal(t, int64(5), v)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("new key with expiration", func(t *testing.T) {
+		client, mock := newClient(time.Minute)
+		mock.ExpectIncrBy("test_key", 5).SetVal(5)
+		mock.ExpectTTL("test_key").SetVal(-1)
+		mock.ExpectExpire("test_key", time.Minute).SetVal(true)
+
+		v, err := client.IncrementBy(t.Context(), "key", 5)
+		require.NoError(t, err)
+		require.Equal(t, int64(5), v)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("existing key keeps its expiration", func(t *testing.T) {
+		client, mock := newClient(time.Minute)
+		mock.ExpectIncrBy("test_key", 5).SetVal(12)
+		mock.ExpectTTL("test_key").SetVal(30 * time.Second)
+
+		v, err := client.IncrementBy(t.Context(), "key", 5)
+		require.NoError(t, err)
+		require.Equal(t, int64(12), v)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("negative delta", func(t *testing.T) {
+		client, mock := newClient(0)
+		mock.ExpectIncrBy("test_key", -3).SetVal(7)
+
+		v, err := client.IncrementBy(t.Context(), "key", -3)
+		require.NoError(t, err)
+		require.Equal(t, int64(7), v)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("batch with multiple keys", func(t *testing.T) {
+		client, mock := newClient(time.Minute)
+		mock.MatchExpectationsInOrder(false)
+		mock.ExpectIncrBy("test_a", 1).SetVal(1)
+		mock.ExpectTTL("test_a").SetVal(-1)
+		mock.ExpectIncrBy("test_b", 2).SetVal(10)
+		mock.ExpectTTL("test_b").SetVal(30 * time.Second)
+		mock.ExpectExpire("test_a", time.Minute).SetVal(true)
+
+		res, err := client.BatchIncrementBy(t.Context(), map[string]int64{"a": 1, "b": 2})
+		require.NoError(t, err)
+		require.Equal(t, map[string]int64{"a": 1, "b": 10}, res)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("empty batch", func(t *testing.T) {
+		client, mock := newClient(time.Minute)
+
+		res, err := client.BatchIncrementBy(t.Context(), map[string]int64{})
+		require.NoError(t, err)
+		require.Empty(t, res)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("increment error", func(t *testing.T) {
+		client, mock := newClient(0)
+		mock.ExpectIncrBy("test_key", 1).SetErr(errors.New("WRONGTYPE"))
+
+		res, err := client.BatchIncrementBy(t.Context(), map[string]int64{"key": 1})
+		require.ErrorContains(t, err, "WRONGTYPE")
+		require.Nil(t, res)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("expire error is logged, not returned", func(t *testing.T) {
+		client, mock := newClient(time.Minute)
+		core, logs := observer.New(zap.WarnLevel)
+		client.logger = zap.New(core)
+		mock.ExpectIncrBy("test_key", 1).SetVal(1)
+		mock.ExpectTTL("test_key").SetVal(-1)
+		mock.ExpectExpire("test_key", time.Minute).SetErr(errors.New("boom"))
+
+		v, err := client.IncrementBy(t.Context(), "key", 1)
+		require.NoError(t, err)
+		require.Equal(t, int64(1), v)
+		require.Equal(t, 1, logs.FilterMessage("failed to set expiration on new counter keys").Len())
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
+func TestIncrementConcurrent(t *testing.T) {
+	t.Skip("Requires a Redis cluster to be present at localhost:6379")
+	ctx := t.Context()
+	const goroutines, increments = 10, 100
+
+	newClient := func() redisClient {
+		c := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+		t.Cleanup(func() { require.NoError(t, c.Close()) })
+		return redisClient{client: c, prefix: "test_incr_", expiration: time.Hour, logger: zap.NewNop()}
+	}
+	cleanup := newClient()
+	require.NoError(t, cleanup.Delete(ctx, "counter"))
+	t.Cleanup(func() { require.NoError(t, cleanup.Delete(ctx, "counter")) })
+
+	var wg sync.WaitGroup
+	for range goroutines {
+		c := newClient()
+		wg.Go(func() {
+			for range increments {
+				_, err := c.IncrementBy(ctx, "counter", 1)
+				assert.NoError(t, err)
+			}
+		})
+	}
+	wg.Wait()
+
+	v, err := cleanup.Get(ctx, "counter")
+	require.NoError(t, err)
+	require.Equal(t, []byte("1000"), v)
+
+	// TTL is set when the key is created and not refreshed by later increments.
+	ttl, err := cleanup.client.TTL(ctx, "test_incr_counter").Result()
+	require.NoError(t, err)
+	require.Positive(t, ttl)
+	require.NoError(t, cleanup.client.Expire(ctx, "test_incr_counter", 5*time.Minute).Err())
+	_, err = cleanup.IncrementBy(ctx, "counter", 1)
+	require.NoError(t, err)
+	ttl, err = cleanup.client.TTL(ctx, "test_incr_counter").Result()
+	require.NoError(t, err)
+	require.LessOrEqual(t, ttl, 5*time.Minute)
 }
 
 func TestGetPrefix(t *testing.T) {

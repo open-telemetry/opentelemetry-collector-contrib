@@ -60,6 +60,7 @@ type redisClient struct {
 	client     *redis.Client
 	prefix     string
 	expiration time.Duration
+	logger     *zap.Logger
 }
 
 var _ storage.Client = redisClient{}
@@ -120,6 +121,64 @@ func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) erro
 	return err
 }
 
+// IncrementBy atomically adds delta to the integer stored at key and returns the new value.
+// A missing key is treated as 0. See BatchIncrementBy for error semantics.
+func (rc redisClient) IncrementBy(ctx context.Context, key string, delta int64) (int64, error) {
+	res, err := rc.BatchIncrementBy(ctx, map[string]int64{key: delta})
+	if err != nil {
+		return 0, err
+	}
+	return res[key], nil
+}
+
+// BatchIncrementBy atomically adds each delta to its key in a single pipeline and returns
+// the new values. Increments are atomic per key, not across keys. If an error is returned,
+// some increments may already have been applied, so callers must not blindly retry.
+// When an expiration is configured, it is set only on keys that have no TTL yet.
+func (rc redisClient) BatchIncrementBy(ctx context.Context, deltas map[string]int64) (map[string]int64, error) {
+	out := make(map[string]int64, len(deltas))
+	if len(deltas) == 0 {
+		return out, nil
+	}
+
+	p := rc.client.Pipeline()
+	incrs := make(map[string]*redis.IntCmd, len(deltas))
+	ttls := make(map[string]*redis.DurationCmd, len(deltas))
+	for k, d := range deltas {
+		incrs[k] = p.IncrBy(ctx, rc.prefix+k, d)
+		if rc.expiration > 0 {
+			ttls[k] = p.TTL(ctx, rc.prefix+k)
+		}
+	}
+	if _, err := p.Exec(ctx); err != nil {
+		return nil, err
+	}
+	for k, c := range incrs {
+		out[k] = c.Val()
+	}
+
+	// TTL returns -1 for a key without expiration, i.e. one just created by INCRBY.
+	// This avoids EXPIRE NX, which requires Redis 7.0+.
+	var created []string
+	for k, c := range ttls {
+		if c.Val() == -1 {
+			created = append(created, k)
+		}
+	}
+	if len(created) > 0 {
+		ep := rc.client.Pipeline()
+		for _, k := range created {
+			ep.Expire(ctx, rc.prefix+k, rc.expiration)
+		}
+		if _, err := ep.Exec(ctx); err != nil {
+			// The increments succeeded; returning an error would invite a double-counting retry.
+			rc.logger.Warn("failed to set expiration on new counter keys",
+				zap.Int("keys", len(created)), zap.Error(err))
+		}
+	}
+	return out, nil
+}
+
 func (redisClient) Close(context.Context) error {
 	return nil
 }
@@ -130,6 +189,7 @@ func (rs *redisStorage) GetClient(_ context.Context, kind component.Kind, ent co
 		client:     rs.client,
 		prefix:     rs.getPrefix(ent, kindString(kind), name),
 		expiration: rs.cfg.Expiration,
+		logger:     rs.logger,
 	}, nil
 }
 
