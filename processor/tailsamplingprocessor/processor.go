@@ -66,7 +66,8 @@ type TraceData struct {
 // DecisionHook is called when a sampling decision is made for a trace. When
 // the processor is configured with num_shards greater than 1, hooks are
 // invoked concurrently from multiple shard goroutines and must be safe for
-// concurrent use.
+// concurrent use. td, including td.ReceivedBatches, is only valid for the
+// duration of the call.
 type DecisionHook func(ctx context.Context, id pcommon.TraceID, td *TraceData)
 
 type tailSamplingSpanProcessor struct {
@@ -814,6 +815,8 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		tsp.runBatchPolicies(ctx, notDropped)
 	}
 
+	// Forward all traces sampled in this tick with a single call.
+	sampled := ptrace.NewTraces()
 	for _, c := range notDropped {
 		c.trace.decisionTime = time.Now()
 		decision, policyName, threshold := tsp.makeDecision(ctx, numDropPolicies, c.id, c.data, metrics)
@@ -827,12 +830,16 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 
 		if decision == samplingpolicy.Sampled {
 			tsp.releaseSampledTrace(ctx, c.id, c.trace)
+			c.trace.ReceivedBatches.ResourceSpans().MoveAndAppendTo(sampled.ResourceSpans())
 		} else {
 			tsp.releaseNotSampledTrace(c.id, c.trace)
 		}
 
 		// Sampled or not, remove the batches
 		c.trace.ReceivedBatches = ptrace.NewTraces()
+	}
+	if sampled.ResourceSpans().Len() > 0 {
+		tsp.forwardSpans(ctx, sampled)
 	}
 
 	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, time.Since(startTime).Milliseconds())
@@ -1166,6 +1173,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				if decision == samplingpolicy.Sampled {
 					actualData.FinalThreshold = threshold
 					tsp.releaseSampledTrace(tsp.ctx, id, actualData)
+					tsp.forwardSpans(tsp.ctx, actualData.ReceivedBatches)
 				} else {
 					tsp.releaseNotSampledTrace(id, actualData)
 				}
@@ -1272,8 +1280,8 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	return true
 }
 
-// forwardSpans sends the trace data to the next consumer. it is different from
-// releaseSampledTrace in that it does not modify any tsp state.
+// forwardSpans sends the trace data to the next consumer. It does not modify
+// any tsp state.
 func (tsp *tailSamplingSpanProcessor) forwardSpans(ctx context.Context, td ptrace.Traces) {
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
@@ -1283,9 +1291,9 @@ func (tsp *tailSamplingSpanProcessor) forwardSpans(ctx context.Context, td ptrac
 	}
 }
 
-// releaseSampledTrace sends the trace data to the next consumer. It
-// additionally adds the trace ID to the cache of sampled trace IDs. If the
-// trace ID is cached, it deletes the spans from the internal map.
+// releaseSampledTrace adds the trace ID to the cache of sampled trace IDs. If
+// the trace ID is cached, it deletes the spans from the internal map. The
+// caller forwards td.ReceivedBatches to the next consumer.
 func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td *TraceData) {
 	for _, hook := range tsp.sampledHooks {
 		hook(ctx, id, td)
@@ -1294,7 +1302,6 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 		PolicyName: td.PolicyName,
 		Threshold:  td.FinalThreshold,
 	})
-	tsp.forwardSpans(ctx, td.ReceivedBatches)
 	_, ok := tsp.sampledIDCache.Get(id)
 	if ok {
 		tsp.dropTrace(id, time.Now())

@@ -238,19 +238,20 @@ func TestTraceIntegrity(t *testing.T) {
 	// Both policies should have been evaluated once
 	assert.Equal(t, 4, mpe1.EvaluationCount())
 
+	// All four traces are sampled in the same tick, so they are forwarded
+	// together, one ResourceSpans per trace.
 	consumed := nextConsumer.AllTraces()
-	require.Len(t, consumed, 4)
-	for _, trace := range consumed {
-		require.Equal(t, 1, trace.SpanCount())
-		require.Equal(t, 1, trace.ResourceSpans().Len())
-		require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().Len())
-		require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+	require.Len(t, consumed, 1)
+	require.Equal(t, 4, consumed[0].ResourceSpans().Len())
+	for _, rs := range consumed[0].ResourceSpans().All() {
+		require.Equal(t, 1, rs.ScopeSpans().Len())
+		require.Equal(t, 1, rs.ScopeSpans().At(0).Spans().Len())
 
-		span := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		span := rs.ScopeSpans().At(0).Spans().At(0)
 		if spanInfo, ok := spans[span.SpanID()]; ok {
 			require.Equal(t, spanInfo.span, span)
-			require.Equal(t, spanInfo.resource, trace.ResourceSpans().At(0).Resource())
-			require.Equal(t, spanInfo.scope, trace.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
+			require.Equal(t, spanInfo.resource, rs.Resource())
+			require.Equal(t, spanInfo.scope, rs.ScopeSpans().At(0).Scope())
 		} else {
 			require.Fail(t, "Span not found")
 		}
@@ -359,11 +360,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	controller.waitForTick()
 	controller.waitForTick()
 
-	allSampledTraces := nextConsumer.AllTraces()
-	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
-	for _, trace := range allSampledTraces {
-		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
-	}
+	sampledTraceIDs := spanIDsByTrace(nextConsumer.AllTraces())
 	require.Len(t, sampledTraceIDs, 128)
 	for _, expectedTrace := range traceIDs {
 		_, ok := sampledTraceIDs[expectedTrace]
@@ -427,11 +424,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	controller.waitForTick()
 	controller.waitForTick()
 
-	allSampledTraces := nextConsumer.AllTraces()
-	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
-	for _, trace := range allSampledTraces {
-		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
-	}
+	sampledTraceIDs := spanIDsByTrace(nextConsumer.AllTraces())
 	require.Len(t, sampledTraceIDs, 128)
 	for _, expectedTrace := range traceIDs {
 		_, ok := sampledTraceIDs[expectedTrace]
@@ -519,11 +512,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 	controller.waitForTick()
 	controller.waitForTick()
 
-	allSampledTraces := nextConsumer.AllTraces()
-	sampledTraceIDs := make(map[pcommon.TraceID]struct{})
-	for _, trace := range allSampledTraces {
-		sampledTraceIDs[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
-	}
+	sampledTraceIDs := spanIDsByTrace(nextConsumer.AllTraces())
 
 	require.Len(t, sampledTraceIDs, int(cfg.NumTraces))
 	for _, expectedTrace := range traceIDs[len(traceIDs)-int(cfg.NumTraces):] {
@@ -672,7 +661,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	controller.waitForTick() // the first tick always gets an empty batch
 	controller.waitForTick()
 
-	require.Len(t, msp.AllTraces(), 3, "There should be three batches, one for each trace")
+	require.Len(t, msp.AllTraces(), 1, "All traces sampled in a tick should be forwarded together")
 
 	expectedSpanIDs := make(map[int][]pcommon.SpanID)
 	expectedSpanIDs[0] = []pcommon.SpanID{
@@ -688,13 +677,10 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		uInt64ToSpanID(uint64(6)),
 	}
 
-	receivedTraces := msp.AllTraces()
+	received := spanIDsByTrace(msp.AllTraces())
 	for i, traceID := range traceIDs {
-		trace := findTrace(t, receivedTraces, traceID)
-		require.Equal(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
-
 		expected := expectedSpanIDs[i]
-		got := collectSpanIDs(trace)
+		got := received[traceID]
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
@@ -707,6 +693,51 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		require.Equal(t, expected, got)
 	}
+}
+
+func TestSampledTracesAreForwardedOncePerTick(t *testing.T) {
+	controller := newTestTSPController()
+	msp := new(consumertest.TracesSink)
+	mpe := &mockPolicyEvaluator{}
+	cfg := Config{
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		Options: []Option{
+			withPolicies([]*policy{
+				{name: "mock-policy", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy"))},
+			}),
+			withTestController(controller),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	mpe.SetDecision(samplingpolicy.Sampled)
+	traceIDs, batches := generateIDsAndBatches(3)
+	for _, batch := range batches {
+		require.NoError(t, p.ConsumeTraces(t.Context(), batch))
+	}
+	controller.waitForTick() // the first tick always gets an empty batch
+	controller.waitForTick()
+
+	require.Len(t, msp.AllTraces(), 1, "All traces sampled in a tick should be forwarded in one call")
+	assert.Equal(t, 6, msp.SpanCount())
+	assert.Len(t, spanIDsByTrace(msp.AllTraces()), len(traceIDs))
+
+	// A tick that samples nothing forwards nothing.
+	mpe.SetDecision(samplingpolicy.NotSampled)
+	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTracesWithID(uInt64ToTraceID(10))))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	require.Equal(t, len(traceIDs)+1, mpe.EvaluationCount(), "The last trace should have been evaluated")
+	assert.Len(t, msp.AllTraces(), 1)
 }
 
 func TestSetSamplingPolicy(t *testing.T) {
@@ -1109,34 +1140,19 @@ func TestDecisionHooks(t *testing.T) {
 	assert.Equal(t, int64(1), nonSampledCall.td.SpanCount)
 }
 
-func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
-	var spanIDs []pcommon.SpanID
-
-	for i := 0; i < trace.ResourceSpans().Len(); i++ {
-		ilss := trace.ResourceSpans().At(i).ScopeSpans()
-
-		for j := 0; j < ilss.Len(); j++ {
-			ils := ilss.At(j)
-
-			for k := 0; k < ils.Spans().Len(); k++ {
-				span := ils.Spans().At(k)
-				spanIDs = append(spanIDs, span.SpanID())
+// spanIDsByTrace returns the IDs of the received spans, grouped by trace ID.
+func spanIDsByTrace(received []ptrace.Traces) map[pcommon.TraceID][]pcommon.SpanID {
+	spanIDs := make(map[pcommon.TraceID][]pcommon.SpanID)
+	for _, td := range received {
+		for _, rs := range td.ResourceSpans().All() {
+			for _, ss := range rs.ScopeSpans().All() {
+				for _, span := range ss.Spans().All() {
+					spanIDs[span.TraceID()] = append(spanIDs[span.TraceID()], span.SpanID())
+				}
 			}
 		}
 	}
-
 	return spanIDs
-}
-
-func findTrace(t *testing.T, a []ptrace.Traces, traceID pcommon.TraceID) ptrace.Traces {
-	for _, batch := range a {
-		id := batch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-		if traceID == id {
-			return batch
-		}
-	}
-	t.Fatalf("Trace was not received. TraceId %s", traceID)
-	return ptrace.Traces{}
 }
 
 func generateIDsAndBatches(numIDs int) ([]pcommon.TraceID, []ptrace.Traces) {
@@ -1365,10 +1381,12 @@ func TestRateLimitingBatchThresholdOnTick(t *testing.T) {
 	controller.waitForTick()
 	controller.waitForTick()
 
-	sampled := make(map[pcommon.TraceID]ptrace.Traces)
-	for _, trace := range nextConsumer.AllTraces() {
-		span := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		sampled[span.TraceID()] = trace
+	sampled := make(map[pcommon.TraceID]ptrace.Span)
+	for _, td := range nextConsumer.AllTraces() {
+		for _, rs := range td.ResourceSpans().All() {
+			span := rs.ScopeSpans().At(0).Spans().At(0)
+			sampled[span.TraceID()] = span
+		}
 	}
 
 	require.Len(t, sampled, 2, "budget of 2 spans should keep 2 of 3 single-span traces")
@@ -1378,8 +1396,8 @@ func TestRateLimitingBatchThresholdOnTick(t *testing.T) {
 
 	// Kept traces must carry the effective threshold so downstream
 	// consumers can compute adjusted counts.
-	for id, trace := range sampled {
-		ts := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceState().AsRaw()
+	for id, span := range sampled {
+		ts := span.TraceState().AsRaw()
 		assert.Contains(t, ts, "th:", "kept trace %x should carry a threshold, got %q", id, ts)
 	}
 }
@@ -1448,10 +1466,7 @@ func TestRateLimitingBatchExcludesDroppedTraces(t *testing.T) {
 	controller.waitForTick()
 	controller.waitForTick()
 
-	sampled := make(map[pcommon.TraceID]struct{})
-	for _, trace := range nextConsumer.AllTraces() {
-		sampled[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
-	}
+	sampled := spanIDsByTrace(nextConsumer.AllTraces())
 
 	assert.NotContains(t, sampled, dropID, "trace matching a drop policy must be dropped")
 	assert.Contains(t, sampled, keepAID, "keeper should be sampled")
@@ -1827,8 +1842,7 @@ func TestDeleteQueueCleared(t *testing.T) {
 	controller.waitForTick()
 	controller.waitForTick()
 
-	allSampledTraces := nextConsumer.AllTraces()
-	assert.Len(t, allSampledTraces, 128)
+	assert.Len(t, spanIDsByTrace(nextConsumer.AllTraces()), 128)
 	// All traces should be flushed from the map.
 	assert.Empty(t, shard0(sp).idToTrace)
 	// All traces should be removed from the delete queue.
@@ -1879,9 +1893,9 @@ func TestRootReceivedBatcher(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Make sure about half of traces are sampled before a tick is called.
-	allSampledTraces := nextConsumer.AllTraces()
-	assert.Less(t, len(allSampledTraces), len(traceIDs)*6/10)
-	assert.Greater(t, len(allSampledTraces), len(traceIDs)*4/10)
+	sampledTraceIDs := spanIDsByTrace(nextConsumer.AllTraces())
+	assert.Less(t, len(sampledTraceIDs), len(traceIDs)*6/10)
+	assert.Greater(t, len(sampledTraceIDs), len(traceIDs)*4/10)
 }
 
 func TestExtension(t *testing.T) {
