@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/googlecloudspanner
+note: "Add table size per locality group metrics"
+issues: [51545]
+subtext: ""
+change_logs: [user]
