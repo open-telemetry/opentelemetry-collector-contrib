@@ -52,8 +52,10 @@ runs:
         echo '{"auths":{"fake":{"auth":"Zm9vOmJhcgo="}}}' > ~/crc-pull-secret
         crc config set consent-telemetry no
         crc config set preset microshift
-        # user mode: VM ssh on 127.0.0.1:2222, host reachable from the VM at 192.168.127.254
+        # user mode: VM ssh on 127.0.0.1:2222. host-network-access NATs 192.168.127.254
+        # (seen from the VM) to the runner's 127.0.0.1, so pods can reach the test's receivers.
         crc config set network-mode user
+        crc config set host-network-access true
         crc config set pull-secret-file ~/crc-pull-secret
         sg libvirt -c "crc setup"
         sg libvirt -c "crc start"
