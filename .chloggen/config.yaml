@@ -166,6 +166,7 @@ components:
     - pkg/otelarrow
     - pkg/ottl
     - pkg/ottl/contexts/xprofile
+    - pkg/ottl/xottl
     - pkg/pdatatest
     - pkg/prometheus
     - pkg/resourcetotelemetry
@@ -350,7 +351,6 @@ components:
     - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
-    - receiver/wavefront
     - receiver/webhook_event
     - receiver/windows_event_log
     - receiver/windows_perf_counters

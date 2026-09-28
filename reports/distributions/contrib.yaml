@@ -236,7 +236,6 @@ components:
         - tls_check
         - udp_log
         - vcenter
-        - wavefront
         - webhook_event
         - windows_event_log
         - windows_perf_counters

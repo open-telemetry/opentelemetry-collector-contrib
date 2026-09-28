@@ -179,6 +179,24 @@ func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition)
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
 	for _, msg := range p.Records {
+		// Stop before marking once the partition consumer is cancelled. The
+		// records left here are still committable, and lost() commits the marks,
+		// so marking one now drops it: nothing processed it and nothing
+		// redelivers it. Leaving them unmarked hands them to the next owner
+		// after a revocation, or to the next run after a shutdown.
+		//
+		// This also keeps the wait in lost() down to the in-flight record
+		// instead of the whole batch, and that wait has to fit in the re-balance
+		// timeout.
+		//
+		// break, not return, so processed records still get their After mark and
+		// lag telemetry below.
+		if pc.ctx.Err() != nil {
+			pc.logger.Debug("stopped processing records, leaving the rest of the batch unmarked",
+				zap.Int64("offset", msg.Offset),
+			)
+			break
+		}
 		if !c.config.MessageMarking.After {
 			c.markCommitRecords(pc, p.Topic, p.Partition, msg)
 		}
@@ -196,14 +214,13 @@ func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition)
 					zap.Int64("offset", msg.Offset),
 				)
 			}
-			// handleMessage only returns an error when After=true and
-			// the message should not be marked, so checking !shouldMark
-			// here is consistent with that contract.
-			isPermanent := consumererror.IsPermanent(err)
-			shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
-			if !shouldMark {
+			// handleMessage only returns an error when After=true and the
+			// message should not be marked, so asking again here is consistent
+			// with that contract. The backoff path is the exception: it returns
+			// the cancellation cause without consulting the config.
+			if !c.shouldMarkOnError(pc, err) {
 				fatalRecord = msg
-				fatalIsPermanent = isPermanent
+				fatalIsPermanent = consumererror.IsPermanent(err)
 				break
 			}
 		}

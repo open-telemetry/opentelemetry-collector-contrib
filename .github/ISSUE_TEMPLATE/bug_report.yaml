@@ -177,6 +177,7 @@ body:
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
+      - pkg/ottl/xottl
       - pkg/pdatatest
       - pkg/resourcetotelemetry
       - pkg/sampling
@@ -373,7 +374,6 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/vcr
-      - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
