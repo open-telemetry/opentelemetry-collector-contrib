@@ -57,19 +57,12 @@ func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], map
 			return nil, err
 		}
 
-		lb, err := predicate.Activate(ctx)
-		if err != nil {
-			return nil, err
-		}
+		lb := predicate.Activate(ctx)
 		defer lb.Close()
 
 		var valueMapper *ottl.LambdaActivation[K]
 		if !mapper.IsEmpty() {
-			m := mapper.Get()
-			valueMapper, err = m.Activate(ctx)
-			if err != nil {
-				return nil, err
-			}
+			valueMapper = mapper.Get().Activate(ctx)
 			defer valueMapper.Close()
 		}
 

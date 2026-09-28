@@ -7,158 +7,129 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sync"
-	"sync/atomic"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 // LambdaExpression is a parsed OTTL lambda expression. OTTL functions may accept it as an argument.
-// For each outer invocation, call [LambdaExpression.Activate] with the evaluation context and the
-// number of arguments to bind, so the [LambdaExpression.Formals] length must match it. Use
-// [LambdaActivation.SetArg] to bind positional arguments, [LambdaActivation.Eval] to run the body
-// (possibly multiple times with different arguments), and [LambdaActivation.Close] when finished.
+// Call [LambdaExpression.ValidateArity] once in the function factory with the number of arguments
+// the function passes to the lambda, then for each outer invocation call [LambdaExpression.Activate]
+// with the evaluation context. Use [LambdaActivation.Call] to run the body (possibly multiple times
+// with different arguments), and [LambdaActivation.Close] when finished.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 type LambdaExpression[K any] struct {
-	formals        []LocalIdentifierDecl
+	formals        []localIdentifierDecl
 	body           Getter[K] // mutually exclusive with bodyExpr
 	bodyExpr       boolExpr[K]
 	activationPool *sync.Pool
-	arityValidated *atomic.Bool
 }
 
 // newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
-func newLambdaExpression[K any](formals []LocalIdentifierDecl, body Getter[K], bodyExpr boolExpr[K]) *LambdaExpression[K] {
+func newLambdaExpression[K any](formals []localIdentifierDecl, body Getter[K], bodyExpr boolExpr[K]) *LambdaExpression[K] {
 	v := &LambdaExpression[K]{
 		formals:  formals,
 		body:     body,
 		bodyExpr: bodyExpr,
 	}
-	nonBlankFormals := countNonBlankIdentifiers(formals)
 	v.activationPool = &sync.Pool{
 		New: func() any {
-			return &LambdaActivation[K]{
-				expr:       v,
-				argValues:  make([]any, len(formals)),
-				activation: &localActivation{bindings: make(map[string]any, nonBlankFormals)},
-			}
+			return newLambdaActivationState(v)
 		},
 	}
-	v.arityValidated = &atomic.Bool{}
 	return v
 }
 
-// Formals returns a copy of the lambda's formal parameters in declaration order (left to right).
-// Blank ("_") placeholders are included.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
-	return slices.Clone(l.formals)
-}
-
-// ValidateArity checks that the number of arguments that will be passed to the
-// lambda matches the number of declared formals. If the counts differ, an error
-// is returned. This allows statically verifying arity: it should be run inside
-// the OTTL function factory, i.e. outside the closure the factory returns. It's
-// meant to verify the lambda passed by the user has the correct number of
-// formals before calling [LambdaExpression.Activate].
-//
-// While this is only intended to be called once, if it is called with an
-// invalid arity after being called with a valid arity, the lambda will be
-// marked as needing validation again, and [LambdaExpression.Activate] will
-// return an error until [LambdaExpression.ValidateArity] is called with a valid
-// arity.
+// ValidateArity returns an error if the lambda is not defined with exactly arity formals, including
+// blank ("_") ones. Call it in the OTTL function factory, i.e. outside the closure the factory
+// returns, so a lambda with the wrong number of formals is rejected when the statement is parsed
+// instead of when [LambdaActivation.Call] is evaluated.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 	if len(l.formals) != arity {
-		l.arityValidated.Store(false)
-		return fmt.Errorf("lambda should be defined with exactly %d formal(s), but has %d", arity, len(l.formals))
+		return lambdaArityError(arity, len(l.formals))
 	}
-	l.arityValidated.Store(true)
 	return nil
 }
 
-// Activate creates a [LambdaActivation] for a single outer function invocation, allocating
-// its own activation and argument storage, linking the resulting activation to the given ctx.
-// Call [LambdaActivation.SetArg] for every index in (0...arity) before each [LambdaActivation.Eval],
-// and then [LambdaActivation.Close] on the returned activation when it is no longer needed.
-//
-// [LambdaExpression.ValidateArity] must be called successfully before Activate; otherwise Activate
-// returns an error. ValidateArity is meant to run once in the OTTL function factory, while Activate
-// runs inside the closure the factory returns.
+func lambdaArityError(arity, formals int) error {
+	return fmt.Errorf("lambda should be defined with exactly %d formal(s), but has %d", arity, formals)
+}
+
+// Activate creates a [LambdaActivation] for a single outer function invocation. The lambda body is
+// evaluated with ctx, which also gives it access to the formals of enclosing lambdas. Call
+// [LambdaActivation.Close] on the returned activation when it is no longer needed.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K], error) {
-	if !l.arityValidated.Load() {
-		return nil, errors.New("lambda arity was not validated: ValidateArity must be called before Activate")
+func (l *LambdaExpression[K]) Activate(ctx context.Context) *LambdaActivation[K] {
+	var state *lambdaActivationState[K]
+	if l.activationPool != nil {
+		state = l.activationPool.Get().(*lambdaActivationState[K])
+	} else {
+		state = newLambdaActivationState(l)
 	}
-	v := l.activationPool.Get().(*LambdaActivation[K])
-	v.ctx = pushLocalActivation(ctx, v.activation)
-	return v, nil
+	state.ctx = pushLocalActivation(ctx, state.activation)
+	return &LambdaActivation[K]{state: state}
 }
 
 // LambdaActivation is a local activation of a [LambdaExpression] produced by [LambdaExpression.Activate].
+// It must not be used by multiple goroutines at the same time.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 type LambdaActivation[K any] struct {
+	state *lambdaActivationState[K]
+}
+
+// lambdaActivationState is pooled apart from LambdaActivation so a closed handle can't touch a reused state.
+type lambdaActivationState[K any] struct {
 	expr       *LambdaExpression[K]
 	ctx        context.Context
-	argValues  []any
 	activation *localActivation
 }
 
-// SetArg sets the i-th positional argument for the next [LambdaActivation.Eval] call.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func (l *LambdaActivation[K]) SetArg(i int, v any) error {
-	if i < 0 || i >= len(l.argValues) {
-		return fmt.Errorf("argument index %d out of range (len=%d)", i, len(l.argValues))
+func newLambdaActivationState[K any](expr *LambdaExpression[K]) *lambdaActivationState[K] {
+	return &lambdaActivationState[K]{
+		expr:       expr,
+		activation: &localActivation{bindings: make(map[string]any, countNonBlankIdentifiers(expr.formals))},
 	}
-	l.argValues[i] = v
-	return nil
 }
 
-// IsArgBound reports whether the i-th argument is bound to a named formal parameter in the
-// lambda, meaning it must be explicitly set via [LambdaActivation.SetArg] before calling
-// [LambdaActivation.Eval]. Arguments whose formal is declared as a blank identifier ("_")
-// are discarded and do not need to be set. Because activations are reused across invocations,
-// skipping SetArg for a bound argument may produce stale values from a prior call.
-// Panics if i is out of range.
+// Call binds args to the lambda's formals in declaration order and evaluates the body. The number
+// of args must match the number of formals; args for blank ("_") formals are discarded. Each arg is
+// converted to the value an OTTL path would produce, e.g. a pcommon.Value holding an int becomes an
+// int64. The result follows the lambda body (value or boolean sub-expression) evaluation and may be
+// nil if the body evaluates to nil.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func (l *LambdaActivation[K]) IsArgBound(i int) bool {
-	return !l.expr.formals[i].IsBlank()
-}
-
-// Eval runs the lambda with positional arguments set via [LambdaActivation.SetArg].
-// The result type follows the lambda body (value or boolean sub-expression) evaluation and
-// may be nil if the body evaluates to nil.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func (l *LambdaActivation[K]) Eval(tCtx K) (any, error) {
-	if v, ok := l.expr.getLiteralValue(); ok {
+func (a *LambdaActivation[K]) Call(tCtx K, args ...any) (any, error) {
+	state := a.state
+	if state == nil {
+		return nil, errors.New("lambda activation is closed")
+	}
+	formals := state.expr.formals
+	if len(args) != len(formals) {
+		return nil, lambdaArityError(len(args), len(formals))
+	}
+	if v, ok := state.expr.getLiteralValue(); ok {
 		return v, nil
 	}
-	l.bindArguments()
-	return l.evalBody(tCtx)
-}
-
-func (l *LambdaActivation[K]) bindArguments() {
-	for i, formal := range l.expr.formals {
+	for i, formal := range formals {
 		if formal.IsBlank() {
 			continue
 		}
-		l.activation.bindings[formal.Name()] = l.argValues[i]
+		state.activation.bindings[formal.Name()] = ottlcommon.NormalizeValue(args[i])
 	}
+	return state.expr.evalBody(state.ctx, tCtx)
 }
 
-func (l *LambdaActivation[K]) evalBody(tCtx K) (any, error) {
+func (l *LambdaExpression[K]) evalBody(ctx context.Context, tCtx K) (any, error) {
 	switch {
-	case l.expr.bodyExpr != nil:
-		return l.expr.bodyExpr.Eval(l.ctx, tCtx)
-	case l.expr.body != nil:
-		return l.expr.body.Get(l.ctx, tCtx)
+	case l.bodyExpr != nil:
+		return l.bodyExpr.Eval(ctx, tCtx)
+	case l.body != nil:
+		return l.body.Get(ctx, tCtx)
 	default:
 		return nil, errors.New("invalid lambda: no body")
 	}
@@ -178,15 +149,22 @@ func (l *LambdaExpression[K]) getLiteralValue() (any, bool) {
 	return nil, false
 }
 
-// Close releases the activation's resources. Call it when the activation is no longer needed.
+// Close releases the activation's resources. Calling Close more than once is a no-op, and
+// [LambdaActivation.Call] returns an error once the activation is closed.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func (l *LambdaActivation[K]) Close() {
-	l.ctx = nil
-	l.activation.parent = nil
-	clear(l.activation.bindings)
-	clear(l.argValues)
-	l.expr.activationPool.Put(l)
+func (a *LambdaActivation[K]) Close() {
+	state := a.state
+	if state == nil {
+		return
+	}
+	a.state = nil
+	state.ctx = nil
+	state.activation.parent = nil
+	clear(state.activation.bindings)
+	if pool := state.expr.activationPool; pool != nil {
+		pool.Put(state)
+	}
 }
 
 // NewTestingLambdaExpression creates a LambdaExpression with a value body for use in tests.

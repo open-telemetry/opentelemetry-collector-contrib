@@ -51,13 +51,10 @@ func whenFunction[K any](condition *ottl.LambdaExpression[K], trueValueGetter, f
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		lb, err := condition.Activate(ctx)
-		if err != nil {
-			return nil, err
-		}
+		lb := condition.Activate(ctx)
 		defer lb.Close()
 
-		match, err := funcutil.EvaluateLambdaActivation[K, bool](tCtx, lb)
+		match, err := funcutil.EvaluateFunction[K, bool](tCtx, lb)
 		if err != nil {
 			return nil, fmt.Errorf("error while evaluating lambda function: %w", err)
 		}

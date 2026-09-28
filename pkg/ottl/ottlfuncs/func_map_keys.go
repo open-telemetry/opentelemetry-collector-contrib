@@ -49,10 +49,7 @@ func mapKeys[K any](source ottl.PMapGetter[K], keyMapper *ottl.LambdaExpression[
 			return nil, err
 		}
 
-		lb, err := keyMapper.Activate(ctx)
-		if err != nil {
-			return nil, err
-		}
+		lb := keyMapper.Activate(ctx)
 		defer lb.Close()
 
 		var builder xpdata.MapBuilder

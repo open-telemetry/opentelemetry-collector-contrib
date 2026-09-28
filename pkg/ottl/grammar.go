@@ -252,13 +252,11 @@ func (lb *lambdaBody) accept(vis grammarVisitor) {
 
 type localIdentifierDecl string
 
-var _ LocalIdentifierDecl = (*localIdentifierDecl)(nil)
-
-func (n *localIdentifierDecl) Name() string {
-	return string(*n)
+func (n localIdentifierDecl) Name() string {
+	return string(n)
 }
 
-func (n *localIdentifierDecl) IsBlank() bool {
+func (n localIdentifierDecl) IsBlank() bool {
 	return n.Name() == "_"
 }
 

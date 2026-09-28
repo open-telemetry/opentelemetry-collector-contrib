@@ -20,6 +20,8 @@ import (
 )
 
 func Test_NewFunctionCall_invalid(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+
 	functions := CreateFactoryMap(
 		createFactory(
 			"testing_error",
@@ -106,8 +108,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	)
 
 	tests := []struct {
-		name string
-		inv  editor
+		name    string
+		inv     editor
+		wantErr string
 	}{
 		{
 			name: "unknown function",
@@ -594,7 +597,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "lambda expression argument that is not a pointer",
+			name:    "lambda expression argument that is not a pointer",
+			wantErr: "lambda expression arguments must be declared as *ottl.LambdaExpression",
 			inv: editor{
 				Function: "testing_non_pointer_lambda",
 				Arguments: []argument{
@@ -622,6 +626,9 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			_, err := p.newParseContext().newFunctionCall(tt.inv)
 			t.Log(err)
 			assert.Error(t, err)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+			}
 		})
 	}
 }
@@ -2674,21 +2681,17 @@ func evalLambdaFunction[K any](expr *LambdaExpression[any], args []Getter[K]) (E
 		if err := expr.ValidateArity(len(args)); err != nil {
 			return nil, err
 		}
-		lambda, err := expr.Activate(ctx)
-		if err != nil {
-			return nil, err
-		}
+		lambda := expr.Activate(ctx)
 		defer lambda.Close()
+		vals := make([]any, len(args))
 		for i, getter := range args {
 			val, err := getter.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			if err := lambda.SetArg(i, val); err != nil {
-				return nil, err
-			}
+			vals[i] = val
 		}
-		return lambda.Eval(tCtx)
+		return lambda.Call(tCtx, vals...)
 	}, nil
 }
 

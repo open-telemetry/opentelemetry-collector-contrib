@@ -9,16 +9,6 @@ import (
 	"slices"
 )
 
-// LocalIdentifierDecl represents a named or blank parameter in a local scope.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-type LocalIdentifierDecl interface {
-	// Name returns the identifier's name as a string.
-	Name() string
-	// IsBlank indicates whether the identifier is a blank ("_") placeholder.
-	IsBlank() bool
-}
-
 // localBindingsKey is a [context.Context] key used for storing the active *localActivation
 // in the context during evaluation.
 type localActivationKey struct{}
@@ -138,7 +128,7 @@ func (g *localIdentifierGetter[K]) Set(context.Context, K, any) error {
 	return fmt.Errorf("local identifier %q cannot be set", g.identifier.originalText)
 }
 
-func countNonBlankIdentifiers(params []LocalIdentifierDecl) int {
+func countNonBlankIdentifiers(params []localIdentifierDecl) int {
 	count := 0
 	for _, param := range params {
 		if !param.IsBlank() {
@@ -160,11 +150,10 @@ func resolveLocalIdentifierBinding(ctx context.Context, name string) (any, error
 	return v, nil
 }
 
-func makeLocalIdentifiers(args ...string) []LocalIdentifierDecl {
-	res := make([]LocalIdentifierDecl, len(args))
+func makeLocalIdentifiers(args ...string) []localIdentifierDecl {
+	res := make([]localIdentifierDecl, len(args))
 	for i, v := range args {
-		lid := localIdentifierDecl(v)
-		res[i] = &lid
+		res[i] = localIdentifierDecl(v)
 	}
 	return res
 }

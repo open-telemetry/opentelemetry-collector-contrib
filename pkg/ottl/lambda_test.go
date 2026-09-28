@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type stubBoolExpr[K any] struct {
@@ -22,41 +23,10 @@ func (s stubBoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 
 func (stubBoolExpr[K]) unexported() {}
 
-func TestLambdaExpression_Formals(t *testing.T) {
-	tests := []struct {
-		name    string
-		formals []LocalIdentifierDecl
-		want    []LocalIdentifierDecl
-	}{
-		{
-			name:    "named params",
-			formals: makeLocalIdentifiers("a", "b"),
-			want:    makeLocalIdentifiers("a", "b"),
-		},
-		{
-			name:    "blank and named params",
-			formals: makeLocalIdentifiers("_", "a"),
-			want:    makeLocalIdentifiers("_", "a"),
-		},
-		{
-			name:    "all blank params",
-			formals: makeLocalIdentifiers("_", "_", "_"),
-			want:    makeLocalIdentifiers("_", "_", "_"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			expr := &LambdaExpression[any]{formals: tt.formals}
-			assert.Equal(t, tt.want, expr.Formals())
-		})
-	}
-}
-
 func TestLambdaExpression_ValidateArity(t *testing.T) {
 	tests := []struct {
 		name    string
-		formals []LocalIdentifierDecl
+		formals []localIdentifierDecl
 		arity   int
 		wantErr string
 	}{
@@ -102,7 +72,7 @@ func TestLambdaExpression_ValidateArity(t *testing.T) {
 	}
 }
 
-func TestLambdaExpression_Eval(t *testing.T) {
+func TestLambdaActivation_Call(t *testing.T) {
 	tests := []struct {
 		name    string
 		expr    *LambdaExpression[any]
@@ -163,8 +133,32 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				},
 				nil,
 			),
-			params: []any{42},
-			want:   42,
+			params: []any{int64(42)},
+			want:   int64(42),
+		},
+		{
+			name: "pcommon.Value argument is normalized",
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				&localIdentifierGetter[any]{
+					identifier: &basePath[any]{name: "a"},
+				},
+				nil,
+			),
+			params: []any{pcommon.NewValueStr("value")},
+			want:   "value",
+		},
+		{
+			name: "int argument is normalized",
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				&localIdentifierGetter[any]{
+					identifier: &basePath[any]{name: "a"},
+				},
+				nil,
+			),
+			params: []any{7},
+			want:   int64(7),
 		},
 		{
 			name: "parent binding is available",
@@ -249,6 +243,26 @@ func TestLambdaExpression_Eval(t *testing.T) {
 			params: []any{"skip"},
 			want:   true,
 		},
+		{
+			name: "too few arguments",
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a", "b"),
+				newLiteral[any, any]("literal"),
+				nil,
+			),
+			params:  []any{"a"},
+			wantErr: "lambda should be defined with exactly 1 formal(s), but has 2",
+		},
+		{
+			name: "too many arguments",
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				newLiteral[any, any]("literal"),
+				nil,
+			),
+			params:  []any{"a", "b"},
+			wantErr: "lambda should be defined with exactly 2 formal(s), but has 1",
+		},
 	}
 
 	for _, tt := range tests {
@@ -258,17 +272,11 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				ctx = t.Context()
 			}
 
-			require.NoError(t, tt.expr.ValidateArity(len(tt.expr.Formals())))
-			lb, err := tt.expr.Activate(ctx)
-			require.NoError(t, err)
+			lb := tt.expr.Activate(ctx)
 			defer lb.Close()
-			for i, param := range tt.params {
-				require.NoError(t, lb.SetArg(i, param))
-			}
 
-			got, err := lb.Eval(nil)
+			got, err := lb.Call(nil, tt.params...)
 			if tt.wantErr != "" {
-				require.Error(t, err)
 				assert.EqualError(t, err, tt.wantErr)
 				return
 			}
@@ -286,172 +294,45 @@ func TestLambdaExpression_Activate(t *testing.T) {
 		},
 		nil,
 	)
-	require.NoError(t, expr.ValidateArity(1))
 
-	lb, err := expr.Activate(t.Context())
-	require.NoError(t, err)
+	lb := expr.Activate(t.Context())
+	defer lb.Close()
 
-	require.NoError(t, lb.SetArg(0, 1))
-	got, err := lb.Eval(nil)
+	got, err := lb.Call(nil, "first")
 	require.NoError(t, err)
-	assert.Equal(t, 1, got)
+	assert.Equal(t, "first", got)
 
-	require.NoError(t, lb.SetArg(0, 2))
-	got, err = lb.Eval(nil)
+	got, err = lb.Call(nil, "second")
 	require.NoError(t, err)
-	assert.Equal(t, 2, got)
+	assert.Equal(t, "second", got)
 
 	// Each Activate yields independent state, so overlapping activations of the same expression do not
 	// interfere with one another.
-	lb1, err := expr.Activate(t.Context())
-	require.NoError(t, err)
-	lb2, err := expr.Activate(t.Context())
-	require.NoError(t, err)
+	lb1 := expr.Activate(t.Context())
+	defer lb1.Close()
+	lb2 := expr.Activate(t.Context())
+	defer lb2.Close()
 
-	require.NoError(t, lb1.SetArg(0, "one"))
-	require.NoError(t, lb2.SetArg(0, "two"))
-
-	got1, err := lb1.Eval(nil)
+	got1, err := lb1.Call(nil, "one")
 	require.NoError(t, err)
 	assert.Equal(t, "one", got1)
 
-	got2, err := lb2.Eval(nil)
+	got2, err := lb2.Call(nil, "two")
 	require.NoError(t, err)
 	assert.Equal(t, "two", got2)
+
+	assert.Equal(t, "one", lb1.state.activation.bindings["a"])
 }
 
-func TestLambdaExpression_Activate_RequiresValidateArity(t *testing.T) {
-	newExpr := func() *LambdaExpression[any] {
-		return newLambdaExpression(
-			makeLocalIdentifiers("a"),
-			&localIdentifierGetter[any]{
-				identifier: &basePath[any]{name: "a"},
-			},
-			nil,
-		)
-	}
+func TestLambdaExpression_ZeroValue(t *testing.T) {
+	var expr LambdaExpression[any]
+	require.NoError(t, expr.ValidateArity(0))
 
-	t.Run("errors when ValidateArity was not called", func(t *testing.T) {
-		expr := newExpr()
+	lb := expr.Activate(t.Context())
+	defer lb.Close()
 
-		lb, err := expr.Activate(t.Context())
-		require.Error(t, err)
-		require.Nil(t, lb)
-	})
-
-	t.Run("errors when ValidateArity failed", func(t *testing.T) {
-		expr := newExpr()
-
-		require.Error(t, expr.ValidateArity(2))
-
-		lb, err := expr.Activate(t.Context())
-		require.Error(t, err)
-		require.Nil(t, lb)
-	})
-
-	t.Run("succeeds after ValidateArity passed", func(t *testing.T) {
-		expr := newExpr()
-
-		require.NoError(t, expr.ValidateArity(1))
-
-		lb, err := expr.Activate(t.Context())
-		require.NoError(t, err)
-		defer lb.Close()
-
-		require.NoError(t, lb.SetArg(0, "value"))
-		got, err := lb.Eval(nil)
-		require.NoError(t, err)
-		assert.Equal(t, "value", got)
-	})
-
-	t.Run("requires revalidation after a failed ValidateArity", func(t *testing.T) {
-		expr := newExpr()
-
-		require.NoError(t, expr.ValidateArity(1))
-		require.Error(t, expr.ValidateArity(2))
-
-		lb, err := expr.Activate(t.Context())
-		require.Error(t, err)
-		require.Nil(t, lb)
-
-		require.NoError(t, expr.ValidateArity(1))
-
-		lb, err = expr.Activate(t.Context())
-		require.NoError(t, err)
-		defer lb.Close()
-
-		require.NoError(t, lb.SetArg(0, "value"))
-		got, err := lb.Eval(nil)
-		require.NoError(t, err)
-		assert.Equal(t, "value", got)
-	})
-}
-
-func TestLambdaActivation_SetArg(t *testing.T) {
-	expr := newLambdaExpression[any](
-		makeLocalIdentifiers("a"),
-		nil,
-		nil,
-	)
-	require.NoError(t, expr.ValidateArity(1))
-
-	lb, err := expr.Activate(t.Context())
-	require.NoError(t, err)
-
-	err = lb.SetArg(-1, "x")
-	require.EqualError(t, err, "argument index -1 out of range (len=1)")
-
-	err = lb.SetArg(1, "x")
-	require.EqualError(t, err, "argument index 1 out of range (len=1)")
-}
-
-func TestLambdaActivation_IsArgBound(t *testing.T) {
-	expr := newLambdaExpression[any](
-		makeLocalIdentifiers("acc", "_", "v"),
-		nil,
-		nil,
-	)
-	require.NoError(t, expr.ValidateArity(3))
-
-	lb, err := expr.Activate(t.Context())
-	require.NoError(t, err)
-
-	assert.True(t, lb.IsArgBound(0), "named formal acc")
-	assert.False(t, lb.IsArgBound(1), "blank formal")
-	assert.True(t, lb.IsArgBound(2), "named formal v")
-
-	assert.Panics(t, func() { lb.IsArgBound(-1) })
-	assert.Panics(t, func() { lb.IsArgBound(3) })
-}
-
-func TestLambdaActivation_StaleArg(t *testing.T) {
-	expr := newLambdaExpression[any](
-		makeLocalIdentifiers("a", "b"),
-		&localIdentifierGetter[any]{
-			identifier: &basePath[any]{name: "b"},
-		},
-		nil,
-	)
-	require.NoError(t, expr.ValidateArity(2))
-
-	lb, err := expr.Activate(t.Context())
-	require.NoError(t, err)
-
-	require.NoError(t, lb.SetArg(0, "first-a"))
-	require.NoError(t, lb.SetArg(1, "first-b"))
-	got, err := lb.Eval(nil)
-	require.NoError(t, err)
-	assert.Equal(t, "first-b", got)
-
-	require.NoError(t, lb.SetArg(0, "second-a"))
-	got, err = lb.Eval(nil)
-	require.NoError(t, err)
-	assert.Equal(t, "first-b", got)
-
-	require.NoError(t, lb.SetArg(1, "second-b"))
-	got, err = lb.Eval(nil)
-	require.NoError(t, err)
-	assert.Equal(t, "second-b", got)
+	_, err := lb.Call(nil)
+	require.EqualError(t, err, "invalid lambda: no body")
 }
 
 func TestLambdaActivation_ParentChain(t *testing.T) {
@@ -471,20 +352,16 @@ func TestLambdaActivation_ParentChain(t *testing.T) {
 		},
 		nil,
 	)
-	require.NoError(t, outerExpr.ValidateArity(1))
-	require.NoError(t, innerExpr.ValidateArity(1))
 
-	outerLb, err := outerExpr.Activate(t.Context())
-	require.NoError(t, err)
-	require.NoError(t, outerLb.SetArg(0, "from-outer"))
-	_, err = outerLb.Eval(nil)
+	outerLb := outerExpr.Activate(t.Context())
+	defer outerLb.Close()
+	_, err := outerLb.Call(nil, "from-outer")
 	require.NoError(t, err)
 
-	innerLb, err := innerExpr.Activate(outerLb.ctx)
-	require.NoError(t, err)
-	require.NoError(t, innerLb.SetArg(0, "inner-val"))
+	innerLb := innerExpr.Activate(outerLb.state.ctx)
+	defer innerLb.Close()
 
-	got, err := innerLb.Eval(nil)
+	got, err := innerLb.Call(nil, "inner-val")
 	require.NoError(t, err)
 	assert.Equal(t, "from-outer", got)
 }
@@ -497,20 +374,29 @@ func TestLambdaActivation_Close(t *testing.T) {
 		},
 		nil,
 	)
-	require.NoError(t, expr.ValidateArity(2))
+	parentCtx := context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{}})
 
-	lb, err := expr.Activate(t.Context())
+	lb := expr.Activate(parentCtx)
+	got, err := lb.Call(nil, "a", "b")
 	require.NoError(t, err)
-	require.NoError(t, lb.SetArg(0, 1))
-	eval, err := lb.Eval(nil)
-	require.NoError(t, err)
-	assert.Equal(t, 1, eval)
+	assert.Equal(t, "a", got)
+
+	state := lb.state
+	require.NotNil(t, state.activation.parent)
 	lb.Close()
+	assert.Nil(t, state.ctx)
+	assert.Nil(t, state.activation.parent)
+	assert.Empty(t, state.activation.bindings)
 
-	lb2, err := expr.Activate(t.Context())
-	require.NoError(t, err)
-	require.NotNil(t, lb2.activation)
-	assert.Nil(t, lb2.activation.parent)
-	assert.Empty(t, lb2.activation.bindings)
-	assert.Equal(t, []any{nil, nil}, lb2.argValues)
+	_, err = lb.Call(nil, "a", "b")
+	require.EqualError(t, err, "lambda activation is closed")
+
+	// A second Close must not return the state to the pool again, otherwise two later
+	// activations would share it.
+	lb.Close()
+	lb1 := expr.Activate(t.Context())
+	defer lb1.Close()
+	lb2 := expr.Activate(t.Context())
+	defer lb2.Close()
+	assert.NotSame(t, lb1.state, lb2.state)
 }
