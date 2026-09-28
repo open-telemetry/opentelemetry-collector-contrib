@@ -29,6 +29,7 @@ spec:
               done
       containers:
         - name: ec2-metadata-mock
+          # Must match EC2_METADATA_MOCK_IMAGE in .github/workflows/e2e-tests.yml.
           image: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.13.0
           imagePullPolicy: IfNotPresent
           ports:

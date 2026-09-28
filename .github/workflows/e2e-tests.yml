@@ -20,6 +20,10 @@ env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+  # Preload into kind to avoid rate limits. Must match the image in:
+  # - processor/resourcedetectionprocessor/testdata/e2e/eks/collector/09-deployment.yaml
+  # - processor/resourcedetectionprocessor/testdata/e2e/ec2/collector/deployment.yaml
+  EC2_METADATA_MOCK_IMAGE: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.13.0
 jobs:
   collector-build:
     runs-on: ubuntu-24.04
@@ -88,9 +92,16 @@ jobs:
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol
+      - name: Pull EC2 metadata mock image
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 60
+          timeout_minutes: 5
+          command: docker pull "$EC2_METADATA_MOCK_IMAGE"
       - name: export image to tar
         run: |
-          docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
+          docker save otelcontribcol:latest "$EC2_METADATA_MOCK_IMAGE" > /tmp/otelcontribcol.tar
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -142,7 +153,7 @@ jobs:
           docker load --input /tmp/otelcontribcol.tar
       - name: Kind load image
         run: |
-          kind load docker-image otelcontribcol:latest --name kind
+          kind load docker-image otelcontribcol:latest "$EC2_METADATA_MOCK_IMAGE" --name kind
       - name: Run e2e tests
         run: |
           cd ${{ matrix.component }}
