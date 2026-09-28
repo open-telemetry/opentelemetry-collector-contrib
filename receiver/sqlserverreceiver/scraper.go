@@ -59,12 +59,23 @@ type sqlServerScraperHelper struct {
 	serviceInstanceID      string
 	serverAddress          string
 	serverPort             int64
+
+	// Previous values of cumulative performance counters, keyed by counter and perf-counter
+	// instance, along with the scrape they were read at. Used to derive per-second rates for
+	// PERF_COUNTER_BULK_COUNT counters, which report a running total rather than a rate.
+	perfCounterCache      *lru.Cache[string, int64]
+	lastPerfCounterScrape time.Time
 }
 
 var (
 	_ scraper.Metrics = (*sqlServerScraperHelper)(nil)
 	_ scraper.Logs    = (*sqlServerScraperHelper)(nil)
 )
+
+// perfCounterCacheSize bounds the previous-value cache used for rate derivation. Entries are
+// keyed by counter and database, so this accommodates a large number of databases while keeping
+// the cache from growing without limit as databases are created and dropped.
+const perfCounterCacheSize = 2048
 
 func newSQLServerScraper(id component.ID,
 	query string,
@@ -108,6 +119,7 @@ func newSQLServerScraper(id component.ID,
 		serviceInstanceID:      serviceInstanceID,
 		serverAddress:          serverAddress,
 		serverPort:             int64(serverPort),
+		perfCounterCache:       newCache(perfCounterCacheSize),
 	}
 }
 
@@ -546,6 +558,10 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Context) error {
 	const counterKey = "counter"
 	const valueKey = "value"
+	// Perf-counter instance column: the database name for SQLServer:Databases counters,
+	// or "Total" for the server-wide aggregate row.
+	const perfInstanceKey = "instance"
+	const perfInstanceTotal = "Total"
 	// Constants are the columns for metrics from query
 	const activeTempTables = "Active Temp Tables"
 	const autoParamAttemptsPerSec = "Auto-Param Attempts/sec"
@@ -655,7 +671,16 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	}
 
 	var errs []error
-	now := pcommon.NewTimestampFromTime(time.Now())
+	scrapeTime := time.Now()
+	now := pcommon.NewTimestampFromTime(scrapeTime)
+
+	// Elapsed time since the previous scrape, used to derive rates from cumulative counters.
+	// Zero on the first scrape, which suppresses those metrics until a baseline exists.
+	var perfCounterElapsed time.Duration
+	if !s.lastPerfCounterScrape.IsZero() {
+		perfCounterElapsed = scrapeTime.Sub(s.lastPerfCounterScrape)
+	}
+	s.lastPerfCounterScrape = scrapeTime
 
 	// Track SQL compilation and recompilation rates so the derived
 	// sqlserver.recompilation.ratio metric can be emitted after the row loop.
@@ -702,12 +727,23 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				s.mb.RecordSqlserverLatchWaitTimeAvgDataPoint(now, val.(float64)/1000.0)
 			}
 		case backupRestoreThroughputPerSec:
-			val, err := retrieveFloat(row, valueKey)
+			// This counter is reported once per database plus a "Total" aggregate row. Emitting
+			// both would double-count when summing across databases, so the aggregate is dropped
+			// and the database name is carried as a resource attribute instead.
+			if row[perfInstanceKey] == perfInstanceTotal {
+				continue
+			}
+			val, err := retrieveInt(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, backupRestoreThroughputPerSec)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverDatabaseBackupOrRestoreRateDataPoint(now, val.(float64))
+				database := row[perfInstanceKey]
+				rate, ok := s.perfCounterRate(backupRestoreThroughputPerSec+"-"+database, val.(int64), perfCounterElapsed)
+				if ok {
+					rb.SetSqlserverDatabaseName(database)
+					s.mb.RecordSqlserverDatabaseBackupOrRestoreRateDataPoint(now, rate)
+				}
 			}
 		case batchRequestRate:
 			val, err := retrieveFloat(row, valueKey)
@@ -1833,6 +1869,20 @@ func (s *sqlServerScraperHelper) retrieveValue(
 	}
 
 	return value
+}
+
+// perfCounterRate converts a cumulative PERF_COUNTER_BULK_COUNT reading into a per-second rate
+// using the change since the previous scrape. It reports false when no rate can be derived yet:
+// on the first scrape, when the elapsed time is not positive, or when the counter has gone
+// backwards because SQL Server restarted and reset it.
+func (s *sqlServerScraperHelper) perfCounterRate(key string, val int64, elapsed time.Duration) (float64, bool) {
+	previous, seen := s.perfCounterCache.Get(key)
+	s.perfCounterCache.Add(key, val)
+
+	if !seen || elapsed <= 0 || val < previous {
+		return 0, false
+	}
+	return float64(val-previous) / elapsed.Seconds(), true
 }
 
 // cacheAndDiff store row(in int) with query hash and query plan hash variables

@@ -2331,8 +2331,8 @@ type metricSqlserverDatabaseBackupOrRestoreRate struct {
 // init fills sqlserver.database.backup_or_restore.rate metric with initial data.
 func (m *metricSqlserverDatabaseBackupOrRestoreRate) init() {
 	m.data.SetName("sqlserver.database.backup_or_restore.rate")
-	m.data.SetDescription("Total number of backups/restores.")
-	m.data.SetUnit("{backups_or_restores}/s")
+	m.data.SetDescription("Bytes per second read or written by backup and restore operations.")
+	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 }
 
