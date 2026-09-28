@@ -47,12 +47,12 @@ func resourceContextFor(r pcommon.Resource) resourceContext {
 // IDs listed in elsewhere stand for spans buffered under a different service in
 // the same trace, which is what makes an entry span distinguishable from a span
 // whose parent never arrived.
-func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callInput) (map[pcommon.SpanID]*bufferedSpan, map[pcommon.SpanID]string) {
+func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callInput) (map[pcommon.SpanID][]*bufferedSpan, map[pcommon.SpanID]string) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", service)
 	ctx := newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope())
 
-	spans := map[pcommon.SpanID]*bufferedSpan{}
+	spans := map[pcommon.SpanID][]*bufferedSpan{}
 	traceSpanIDs := map[pcommon.SpanID]string{}
 	for _, in := range inputs {
 		s := ptrace.NewSpan()
@@ -61,7 +61,7 @@ func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callIn
 		if in.remote {
 			s.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
 		}
-		spans[in.id] = newBufferedSpan(ctx, s, time.Now())
+		spans[in.id] = append(spans[in.id], newBufferedSpan(ctx, s, time.Now()))
 		traceSpanIDs[in.id] = service
 	}
 	for _, id := range elsewhere {
@@ -230,7 +230,7 @@ func TestSplitCalls_CycleBesideRealCall(t *testing.T) {
 }
 
 func TestSplitCalls_Empty(t *testing.T) {
-	assert.Empty(t, splitCalls(map[pcommon.SpanID]*bufferedSpan{}, map[pcommon.SpanID]string{}))
+	assert.Empty(t, splitCalls(map[pcommon.SpanID][]*bufferedSpan{}, map[pcommon.SpanID]string{}))
 }
 
 // Every span goes into exactly one call, whatever the shape.
@@ -494,6 +494,31 @@ func TestSplitCalls_TwoDeepChainsStaySeparate(t *testing.T) {
 	for id, n := range seen {
 		assert.Equal(t, 1, n, "span %v appeared in %d calls", id, n)
 	}
+}
+
+// A span with an empty span ID must not be treated as the parent of legitimate
+// root spans (which also have an empty ParentSpanID), collapsing separate calls
+// into one unreachable batch.
+func TestSplitCalls_EmptySpanIDDoesNotCollapseGrouping(t *testing.T) {
+	rootA, childA, rootB := makeSpanID(1), makeSpanID(2), makeSpanID(3)
+	var empty pcommon.SpanID // all zeros — invalid/missing span ID
+
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: rootA},
+		callInput{id: childA, parent: rootA},
+		callInput{id: rootB},
+		callInput{id: empty},
+	)
+
+	// rootA+childA and rootB must each head their own call; the empty-ID span
+	// goes into its own call as well. Without the fix, all four collapse into one
+	// unreachable batch because every root's empty ParentSpanID resolves to the
+	// buffered empty-ID span, forming a cycle.
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{empty: true},
+		{rootB: true},
+		{rootA: true, childA: true},
+	}, callIDSets(splitCalls(spans, ids)))
 }
 
 // A chain that runs into a ring partway up belongs with the ring: no entry span

@@ -204,7 +204,7 @@ const (
 // spanToService maps every span ID buffered for the trace to the service holding
 // it, and is what tells "entered from another service" apart from "the parent
 // never arrived".
-func splitCalls(serviceSpans map[pcommon.SpanID]*bufferedSpan, spanToService map[pcommon.SpanID]string) [][]*bufferedSpan {
+func splitCalls(serviceSpans map[pcommon.SpanID][]*bufferedSpan, spanToService map[pcommon.SpanID]string) [][]*bufferedSpan {
 	callOf := make(map[pcommon.SpanID]int32, len(serviceSpans))
 	var calls [][]*bufferedSpan
 
@@ -230,13 +230,20 @@ func splitCalls(serviceSpans map[pcommon.SpanID]*bufferedSpan, spanToService map
 				break
 			}
 
-			bs := serviceSpans[cur]
+			// Use the most recently arrived copy to determine the call. For spans
+			// buffered only once this is just the single element.
+			bsList := serviceSpans[cur]
+			bs := bsList[len(bsList)-1]
 			parent := bs.span.ParentSpanID()
-			if _, sameService := serviceSpans[parent]; sameService && !hasRemoteParent(bs) {
-				callOf[cur] = callInProgress
-				path = append(path, cur)
-				cur = parent
-				continue
+			// Guard against a buffered empty-ID span acting as the parent of every
+			// legitimate root span (which also has an empty ParentSpanID).
+			if !parent.IsEmpty() {
+				if _, sameService := serviceSpans[parent]; sameService && !hasRemoteParent(bs) {
+					callOf[cur] = callInProgress
+					path = append(path, cur)
+					cur = parent
+					continue
+				}
 			}
 
 			// cur heads a call, either its own or the parentless one.
@@ -257,14 +264,14 @@ func splitCalls(serviceSpans map[pcommon.SpanID]*bufferedSpan, spanToService map
 	}
 
 	var parentless, unreachable []*bufferedSpan
-	for spanID, bs := range serviceSpans {
+	for spanID, bsList := range serviceSpans {
 		switch call := callOf[spanID]; call {
 		case callParentless:
-			parentless = append(parentless, bs)
+			parentless = append(parentless, bsList...)
 		case callUnreachable, callInProgress:
-			unreachable = append(unreachable, bs)
+			unreachable = append(unreachable, bsList...)
 		default:
-			calls[call] = append(calls[call], bs)
+			calls[call] = append(calls[call], bsList...)
 		}
 	}
 	if len(parentless) > 0 {

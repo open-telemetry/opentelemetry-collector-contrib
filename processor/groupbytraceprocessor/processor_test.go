@@ -1811,19 +1811,23 @@ func TestSubtrace_ResubmittedSpanIsReparented(t *testing.T) {
 	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
 		spanSpec{id: childID, parent: newParent})))
 
-	require.Eventually(t, func() bool { return sink.SpanCount() == 3 }, 5*time.Second, 5*time.Millisecond)
-	assert.Never(t, func() bool { return sink.SpanCount() != 3 }, 400*time.Millisecond, 10*time.Millisecond)
+	// Both submissions are kept: one copy travels with svc-a (its original parent),
+	// one copy travels with svc-b (its new parent), for 4 spans total.
+	require.Eventually(t, func() bool { return sink.SpanCount() == 4 }, 5*time.Second, 5*time.Millisecond)
+	assert.Never(t, func() bool { return sink.SpanCount() != 4 }, 400*time.Millisecond, 10*time.Millisecond)
 
-	// The child must travel with svc-b, which is where its parent now is.
+	var sawChildWithOld, sawChildWithNew bool
 	for _, b := range sink.AllTraces() {
 		ids := batchSpanIDs(b)
-		if ids[newParent] {
-			assert.True(t, ids[childID], "the resubmitted span should be released with its new parent")
+		if ids[childID] && ids[oldParent] {
+			sawChildWithOld = true
 		}
-		if ids[oldParent] {
-			assert.False(t, ids[childID], "the resubmitted span should have left its old parent's subtrace")
+		if ids[childID] && ids[newParent] {
+			sawChildWithNew = true
 		}
 	}
+	assert.True(t, sawChildWithOld, "original submission emitted with its first parent")
+	assert.True(t, sawChildWithNew, "resubmission emitted with its new parent")
 }
 
 // A service entered twice in one trace must be emitted as two batches, so that
@@ -2150,8 +2154,10 @@ func TestSubtrace_BatchSharesOneArrival(t *testing.T) {
 	st := worker.subSt.(*subtraceMemoryStorage)
 	arrivals := map[time.Time]int{}
 	for _, spans := range st.traces[traceID].services {
-		for _, bs := range spans {
-			arrivals[bs.arrivedAt]++
+		for _, bsList := range spans {
+			for _, bs := range bsList {
+				arrivals[bs.arrivedAt]++
+			}
 		}
 	}
 	assert.Len(t, arrivals, 1, "spans from one batch must share an arrival, or every call in the batch gets a waking of its own")

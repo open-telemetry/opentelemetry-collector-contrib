@@ -17,8 +17,9 @@ import (
 // when EmitStrategy == EmitStrategyService.
 type subtraceStorage interface {
 	// insertSpan deep-copies and buffers one span under the given subtrace,
-	// stamping it with arrivedAt, the time the batch carrying it was received. A
-	// span ID already held replaces the earlier copy, wherever it was held.
+	// stamping it with arrivedAt, the time the batch carrying it was received.
+	// Every submission is kept independently; duplicate span IDs, including
+	// the empty span ID, are all emitted as separate spans.
 	insertSpan(id subtraceID, ctx spanContext, span ptrace.Span, arrivedAt time.Time) error
 
 	// releaseDue removes and returns the service's calls whose first span arrived
@@ -47,11 +48,9 @@ var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
 // traceBuffer holds everything buffered for one trace: the spans grouped by
 // service, and every span ID the trace has carried.
 //
-// spanIDs serves two purposes. Its keys record which span IDs this trace has
-// been seen to contain, which is what lets a service-entry span be told apart
-// from a span whose parent never arrived. Its values name the service currently
-// holding each span, which keeps a span from being buffered under two services
-// at once if it is resubmitted under a different resource.
+// spanIDs records which span IDs this trace has been seen to contain, which is
+// what lets a service-entry span be told apart from a span whose parent never
+// arrived. Its values name one service that has held each span (the last seen).
 //
 // Entries deliberately outlive the spans themselves. Services are released one
 // at a time, usually the caller before the callee, and a span whose parent has
@@ -59,7 +58,7 @@ var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
 //
 // They do not outlive their usefulness, though: see forgetUnreferencedSpanIDs.
 type traceBuffer struct {
-	services map[string]map[pcommon.SpanID]*bufferedSpan
+	services map[string]map[pcommon.SpanID][]*bufferedSpan
 	spanIDs  map[pcommon.SpanID]string
 }
 
@@ -67,7 +66,9 @@ type traceBuffer struct {
 func (tb *traceBuffer) liveSpans() int {
 	n := 0
 	for _, spans := range tb.services {
-		n += len(spans)
+		for _, bsList := range spans {
+			n += len(bsList)
+		}
 	}
 	return n
 }
@@ -92,13 +93,15 @@ func (tb *traceBuffer) forgetUnreferencedSpanIDs() {
 		}
 	}
 	for _, spans := range tb.services {
-		for _, bs := range spans {
-			parent := bs.span.ParentSpanID()
-			if _, alreadyKept := kept[parent]; alreadyKept {
-				continue
-			}
-			if service, known := tb.spanIDs[parent]; known {
-				kept[parent] = service
+		for _, bsList := range spans {
+			for _, bs := range bsList {
+				parent := bs.span.ParentSpanID()
+				if _, alreadyKept := kept[parent]; alreadyKept {
+					continue
+				}
+				if service, known := tb.spanIDs[parent]; known {
+					kept[parent] = service
+				}
 			}
 		}
 	}
@@ -127,28 +130,19 @@ func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx spanContext, span 
 	tb, ok := s.traces[id.traceID]
 	if !ok {
 		tb = &traceBuffer{
-			services: make(map[string]map[pcommon.SpanID]*bufferedSpan),
+			services: make(map[string]map[pcommon.SpanID][]*bufferedSpan),
 			spanIDs:  make(map[pcommon.SpanID]string),
 		}
 		s.traces[id.traceID] = tb
 	}
 
 	spanID := bs.span.SpanID()
-	// A resubmission naming a different service would otherwise leave the span
-	// buffered under both, and so emitted twice.
-	if previous, held := tb.spanIDs[spanID]; held && previous != id.serviceID {
-		delete(tb.services[previous], spanID)
-		if len(tb.services[previous]) == 0 {
-			delete(tb.services, previous)
-		}
-	}
-
 	spans, ok := tb.services[id.serviceID]
 	if !ok {
-		spans = make(map[pcommon.SpanID]*bufferedSpan)
+		spans = make(map[pcommon.SpanID][]*bufferedSpan)
 		tb.services[id.serviceID] = spans
 	}
-	spans[spanID] = bs
+	spans[spanID] = append(spans[spanID], bs)
 	tb.spanIDs[spanID] = id.serviceID
 	return nil
 }

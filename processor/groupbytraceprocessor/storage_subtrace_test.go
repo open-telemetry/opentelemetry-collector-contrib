@@ -116,8 +116,8 @@ func TestSubtraceStorage_ServiceEnteredTwice(t *testing.T) {
 	}
 }
 
-// A span resubmitted under a different service must not end up buffered, and so
-// emitted, under both.
+// A span resubmitted under a different service is buffered under both; each
+// service emits its own copy.
 func TestSubtraceStorage_ResubmittedUnderDifferentService(t *testing.T) {
 	st := newTestSubtraceStorage()
 	tid := makeTraceID(1)
@@ -126,12 +126,18 @@ func TestSubtraceStorage_ResubmittedUnderDifferentService(t *testing.T) {
 	insertTestSpan(t, st, tid, spanID, pcommon.NewSpanIDEmpty(), "svc-a")
 	insertTestSpan(t, st, tid, spanID, pcommon.NewSpanIDEmpty(), "svc-b")
 
-	require.Equal(t, []subtraceID{subtraceIDFor(tid, "svc-b")}, st.subtraceIDs())
+	require.Len(t, st.subtraceIDs(), 2, "span buffered under both original and new service")
 
-	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
+	callsA, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
 	require.NoError(t, err)
-	require.Len(t, calls, 1)
-	assert.Equal(t, map[pcommon.SpanID]bool{spanID: true}, spanIDSet(calls[0]))
+	require.Len(t, callsA, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{spanID: true}, spanIDSet(callsA[0]))
+
+	callsB, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
+	require.NoError(t, err)
+	require.Len(t, callsB, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{spanID: true}, spanIDSet(callsB[0]))
+
 	assert.Empty(t, st.subtraceIDs())
 }
 
@@ -505,4 +511,38 @@ func TestSubtraceStorage_PruningKeepsReferencedParents(t *testing.T) {
 	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
 	require.NoError(t, err)
 	assert.Len(t, calls, 2)
+}
+
+// Spans with the empty span ID (all-zero bytes) are individually buffered and
+// all emitted, rather than silently collapsing onto the same map slot.
+func TestSubtraceStorage_EmptySpanIDsAllBuffered(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	var emptyID pcommon.SpanID
+
+	for range 5 {
+		insertTestSpan(t, st, tid, emptyID, pcommon.NewSpanIDEmpty(), "svc-a")
+	}
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	assert.Len(t, calls[0], 5, "all 5 empty-ID spans should be emitted, not deduplicated")
+}
+
+// A span submitted more than once under the same service produces one copy per
+// submission in the output; the later submission is not silently dropped.
+func TestSubtraceStorage_DuplicateSpanIDsAllBuffered(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	spanID := makeSpanID(1)
+
+	for range 3 {
+		insertTestSpan(t, st, tid, spanID, pcommon.NewSpanIDEmpty(), "svc-a")
+	}
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	assert.Len(t, calls[0], 3)
 }
