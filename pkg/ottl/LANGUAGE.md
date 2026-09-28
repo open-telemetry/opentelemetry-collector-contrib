@@ -275,9 +275,8 @@ Example Math Expressions
 > To use them, enable the [`ottl.functions.enableLambda`](documentation.md#feature-gates) feature gate.
 
 Lambda Expressions are anonymous/inline functions that can be passed to OTTL functions whose arguments
-accept `LambdaExpression`. They cannot be used anywhere else a Value is expected. Their syntax is a
-parenthesized list of parameters, followed by the lambda arrow (`=>`) and a single Value or OTTL
-expression.
+accept `LambdaExpression`. Their syntax is a parenthesized list of parameters, followed by the
+lambda arrow (`=>`) and a single Value or OTTL expression.
 
 ```
 (parameter1, parameter2) => body
