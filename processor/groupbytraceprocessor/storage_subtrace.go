@@ -16,11 +16,12 @@ import (
 // subtraceStorage buffers spans per (trace, service). It is used exclusively
 // when EmitStrategy == EmitStrategyService.
 type subtraceStorage interface {
-	// insertSpan deep-copies and buffers one span under the given subtrace,
-	// stamping it with arrivedAt, the time the batch carrying it was received.
-	// Every submission is kept independently; duplicate span IDs, including
-	// the empty span ID, are all emitted as separate spans.
-	insertSpan(id subtraceID, ctx *spanContext, span ptrace.Span, arrivedAt time.Time) error
+	// insertScopeSpans deep-copies all spans in ss and buffers them under the
+	// given subtrace, stamping each with arrivedAt, the time the batch carrying
+	// them was received. The copy is made before the lock is held so the caller
+	// can recycle its batch. Every span is kept independently; duplicate span
+	// IDs, including the empty span ID, are all emitted as separate spans.
+	insertScopeSpans(id subtraceID, ctx *spanContext, ss ptrace.ScopeSpans, arrivedAt time.Time) error
 
 	// releaseDue removes and returns the service's calls whose first span arrived
 	// at or before cutoff, each as its own slice, together with the first arrival
@@ -122,8 +123,13 @@ func newSubtraceMemoryStorage(telemetry *metadata.TelemetryBuilder) *subtraceMem
 	}
 }
 
-func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx *spanContext, span ptrace.Span, arrivedAt time.Time) error {
-	bs := newBufferedSpan(ctx, span, arrivedAt)
+func (s *subtraceMemoryStorage) insertScopeSpans(id subtraceID, ctx *spanContext, ss ptrace.ScopeSpans, arrivedAt time.Time) error {
+	if ss.Spans().Len() == 0 {
+		return nil
+	}
+
+	ssCopy := ptrace.NewScopeSpans()
+	ss.Spans().CopyTo(ssCopy.Spans())
 
 	s.Lock()
 	defer s.Unlock()
@@ -137,15 +143,20 @@ func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx *spanContext, span
 		s.traces[id.traceID] = tb
 	}
 
-	spanID := bs.span.SpanID()
 	spans, ok := tb.services[id.serviceID]
 	if !ok {
 		spans = make(map[pcommon.SpanID][]*bufferedSpan)
 		tb.services[id.serviceID] = spans
 		s.n++
 	}
-	spans[spanID] = append(spans[spanID], bs)
-	tb.spanIDs[spanID] = id.serviceID
+
+	for i := range ssCopy.Spans().Len() {
+		span := ssCopy.Spans().At(i)
+		spanID := span.SpanID()
+		bs := &bufferedSpan{spanContext: ctx, span: span, arrivedAt: arrivedAt}
+		spans[spanID] = append(spans[spanID], bs)
+		tb.spanIDs[spanID] = id.serviceID
+	}
 	return nil
 }
 
