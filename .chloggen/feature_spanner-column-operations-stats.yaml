@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add column operations stats metrics to the Google Cloud Spanner receiver
+issues: [51545]
