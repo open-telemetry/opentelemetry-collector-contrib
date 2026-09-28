@@ -4,7 +4,7 @@ status:
   class: pkg
   stability:
     development: [ profiles ]
-    beta: [ traces, metrics, logs ]
+    stable: [ traces, metrics, logs ]
   codeowners:
     active: [TylerHelmuth, evan-bradley, edmocosta]
     emeritus: [anuraaga, kentquirk, bogdandrutu]
@@ -16,10 +16,3 @@ feature_gates:
     stage: alpha
     from_version: v0.155.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48227
-
-  - id: "ottl.set.allowNil"
-    description: When enabled, the set function passes nil values directly to the target.
-    stage: stable
-    from_version: v0.158.0
-    to_version: v1.0.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49741
