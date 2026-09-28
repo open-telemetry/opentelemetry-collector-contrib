@@ -962,6 +962,8 @@ This provides insights into query performance and resource usage, helping users 
 | db.system.name | The database product of the instance. Examples include "mysql" and "mariadb". | Any Str | false | - | - |
 | db.system.version | The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB". | Any Str | false | - | - |
 | mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - | - |
+| server.address | The address of the monitored MySQL instance. A loopback endpoint (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. With a Unix socket transport this is the socket path. | Any Str | true | - | - |
+| server.port | The port of the monitored MySQL instance. Not reported with a Unix socket transport. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:mysql. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
