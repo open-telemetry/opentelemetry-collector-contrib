@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 func newTestSubtraceStorage() *subtraceMemoryStorage {
@@ -47,7 +48,8 @@ func insertTestSpan(t *testing.T, st *subtraceMemoryStorage, traceID pcommon.Tra
 func subtraceIDFor(traceID pcommon.TraceID, service string) subtraceID {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", service)
-	return subtraceID{traceID: traceID, serviceID: serviceIdentity(r)}
+	a := r.Attributes()
+	return subtraceID{traceID: traceID, serviceID: serviceIdentity(a, xhash.MapHash(a))}
 }
 
 func TestSubtraceStorage_BuffersPerService(t *testing.T) {

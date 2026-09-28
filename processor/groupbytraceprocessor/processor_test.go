@@ -2164,7 +2164,7 @@ func TestSubtrace_BatchSharesOneArrival(t *testing.T) {
 
 	require.Equal(t, 1, worker.deadlines.len())
 	require.Len(t, st.traces[traceID].services, 1)
-	var serviceID string
+	var serviceID [16]byte
 	for id := range st.traces[traceID].services {
 		serviceID = id
 	}

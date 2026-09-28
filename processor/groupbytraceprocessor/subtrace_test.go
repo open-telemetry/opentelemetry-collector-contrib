@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 // makeSpanID returns a SpanID whose first byte is the given value.
@@ -47,13 +48,18 @@ func resourceContextFor(r pcommon.Resource) resourceContext {
 // IDs listed in elsewhere stand for spans buffered under a different service in
 // the same trace, which is what makes an entry span distinguishable from a span
 // whose parent never arrived.
-func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callInput) (map[pcommon.SpanID][]*bufferedSpan, map[pcommon.SpanID]string) {
+func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callInput) (map[pcommon.SpanID][]*bufferedSpan, map[pcommon.SpanID][16]byte) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", service)
 	ctx := newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope())
 
+	// otherServiceID is a sentinel for spans that live in a different service.
+	// It only needs to be distinct from ctx.serviceID; splitCalls checks
+	// existence only, not the exact value.
+	otherServiceID := xhash.Hash(xhash.WithString("other-service"))
+
 	spans := map[pcommon.SpanID][]*bufferedSpan{}
-	traceSpanIDs := map[pcommon.SpanID]string{}
+	traceSpanIDs := map[pcommon.SpanID][16]byte{}
 	for _, in := range inputs {
 		s := ptrace.NewSpan()
 		s.SetSpanID(in.id)
@@ -62,10 +68,10 @@ func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callIn
 			s.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
 		}
 		spans[in.id] = append(spans[in.id], newBufferedSpan(ctx, s, time.Now()))
-		traceSpanIDs[in.id] = service
+		traceSpanIDs[in.id] = ctx.serviceID
 	}
 	for _, id := range elsewhere {
-		traceSpanIDs[id] = "other-service"
+		traceSpanIDs[id] = otherServiceID
 	}
 	return spans, traceSpanIDs
 }
@@ -230,7 +236,7 @@ func TestSplitCalls_CycleBesideRealCall(t *testing.T) {
 }
 
 func TestSplitCalls_Empty(t *testing.T) {
-	assert.Empty(t, splitCalls(map[pcommon.SpanID][]*bufferedSpan{}, map[pcommon.SpanID]string{}))
+	assert.Empty(t, splitCalls(map[pcommon.SpanID][]*bufferedSpan{}, map[pcommon.SpanID][16]byte{}))
 }
 
 // Every span goes into exactly one call, whatever the shape.
@@ -257,13 +263,14 @@ func TestSplitCalls_PartitionsEverySpan(t *testing.T) {
 	}
 }
 
-func serviceIDOf(t *testing.T, attrs map[string]string) string {
+func serviceIDOf(t *testing.T, attrs map[string]string) [16]byte {
 	t.Helper()
 	r := pcommon.NewResource()
 	for k, v := range attrs {
 		r.Attributes().PutStr(k, v)
 	}
-	return serviceIdentity(r)
+	a := r.Attributes()
+	return serviceIdentity(a, xhash.MapHash(a))
 }
 
 func TestServiceIdentity_IgnoresNonServiceAttributes(t *testing.T) {

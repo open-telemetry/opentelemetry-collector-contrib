@@ -361,7 +361,7 @@ func (sp *groupByTraceProcessor) onSubtraceTick(worker *eventMachineWorker) erro
 			// to, so reaching this means the two have come apart.
 			sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 1)
 			sp.logger.Debug("subtrace came due with no ring buffer entry",
-				zap.Stringer("traceID", id.traceID), zap.String("serviceID", id.serviceID))
+				zap.Stringer("traceID", id.traceID), zap.String("serviceID", fmt.Sprintf("%x", id.serviceID)))
 			continue
 		}
 
@@ -383,7 +383,7 @@ func (sp *groupByTraceProcessor) onSubtraceTick(worker *eventMachineWorker) erro
 		if len(due) == 0 {
 			// The spans are already gone, released by an earlier tick.
 			sp.logger.Debug("subtrace came due with no spans to release",
-				zap.Stringer("traceID", id.traceID), zap.String("serviceID", id.serviceID))
+				zap.Stringer("traceID", id.traceID), zap.String("serviceID", fmt.Sprintf("%x", id.serviceID)))
 			continue
 		}
 

@@ -4,7 +4,6 @@
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
-	"encoding/hex"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -20,7 +19,7 @@ import (
 // turn up before its parent, or its parent may never turn up at all.
 type subtraceID struct {
 	traceID   pcommon.TraceID
-	serviceID string
+	serviceID [16]byte
 }
 
 // scopeKey identifies an instrumentation scope for grouping purposes. The parts
@@ -29,7 +28,7 @@ type subtraceID struct {
 type scopeKey struct {
 	name     string
 	version  string
-	attrHash string
+	attrHash [16]byte
 }
 
 // resourceContext holds the resource a span was reported under, together with
@@ -45,8 +44,8 @@ type resourceContext struct {
 
 	// serviceID is what spans are grouped by; resourceKey is what assemble groups
 	// resources on when rebuilding a batch.
-	serviceID   string
-	resourceKey string
+	serviceID   [16]byte
+	resourceKey [16]byte
 }
 
 // newResourceContext deep-copies the resource so the result is self-contained
@@ -55,12 +54,13 @@ type resourceContext struct {
 func newResourceContext(rs ptrace.ResourceSpans) resourceContext {
 	rCopy := pcommon.NewResource()
 	rs.Resource().CopyTo(rCopy)
+	attrHash := xhash.MapHash(rCopy.Attributes())
 
 	return resourceContext{
 		resource:    rCopy,
 		schemaURL:   rs.SchemaUrl(),
-		serviceID:   serviceIdentity(rCopy),
-		resourceKey: hashMapAttrs(rCopy.Attributes()),
+		serviceID:   serviceIdentity(rCopy.Attributes(), attrHash),
+		resourceKey: attrHash,
 	}
 }
 
@@ -87,7 +87,7 @@ func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope) sp
 		scopeKey: scopeKey{
 			name:     sCopy.Name(),
 			version:  sCopy.Version(),
-			attrHash: hashMapAttrs(sCopy.Attributes()),
+			attrHash: xhash.MapHash(sCopy.Attributes()),
 		},
 	}
 }
@@ -144,15 +144,17 @@ func hasRemoteParent(bs *bufferedSpan) bool {
 	return flags&spanFlagsContextHasIsRemoteMask != 0 && flags&spanFlagsContextIsRemoteMask != 0
 }
 
-// serviceIdentity returns a string that uniquely identifies the service for a
-// given resource. It uses service.namespace, service.name, and
-// service.instance.id when present; otherwise it falls back to a hash of all
-// resource attributes.
-func serviceIdentity(r pcommon.Resource) string {
-	attrs := r.Attributes()
+// serviceIdentity returns a 128-bit key that uniquely identifies the service
+// for a given resource. It hashes service.namespace, service.name, and
+// service.instance.id when present; otherwise it falls back to attrHash, the
+// caller's pre-computed MapHash of all resource attributes. attrHash is passed
+// in so newResourceContext can share the hash it already computed for
+// resourceKey. Each string field is hashed separately to avoid delimiter
+// ambiguity between keys like {ns:"a|b", name:"c"} and {ns:"a", name:"b|c"}.
+func serviceIdentity(attrs pcommon.Map, attrHash [16]byte) [16]byte {
 	name, hasName := attrs.Get("service.name")
 	if !hasName {
-		return hashMapAttrs(attrs)
+		return attrHash
 	}
 	var namespace, id string
 	if v, ok := attrs.Get("service.namespace"); ok {
@@ -161,15 +163,7 @@ func serviceIdentity(r pcommon.Resource) string {
 	if v, ok := attrs.Get("service.instance.id"); ok {
 		id = v.AsString()
 	}
-	return namespace + "|" + name.AsString() + "|" + id
-}
-
-// hashMapAttrs returns a deterministic hash of an attribute map, used as a
-// fallback service identity when service.name is absent and as a grouping key
-// for resources and scopes.
-func hashMapAttrs(attrs pcommon.Map) string {
-	h := xhash.MapHash(attrs)
-	return hex.EncodeToString(h[:])
+	return xhash.Hash(xhash.WithString(namespace), xhash.WithString(name.AsString()), xhash.WithString(id))
 }
 
 // Sentinel call indices used while dividing a service's spans into calls.
@@ -204,7 +198,7 @@ const (
 // spanToService maps every span ID buffered for the trace to the service holding
 // it, and is what tells "entered from another service" apart from "the parent
 // never arrived".
-func splitCalls(serviceSpans map[pcommon.SpanID][]*bufferedSpan, spanToService map[pcommon.SpanID]string) [][]*bufferedSpan {
+func splitCalls(serviceSpans map[pcommon.SpanID][]*bufferedSpan, spanToService map[pcommon.SpanID][16]byte) [][]*bufferedSpan {
 	callOf := make(map[pcommon.SpanID]int32, len(serviceSpans))
 	var calls [][]*bufferedSpan
 
@@ -297,11 +291,11 @@ func assemble(members []*bufferedSpan) ptrace.Traces {
 	td := ptrace.NewTraces()
 
 	type rsKey struct {
-		resource string
+		resource [16]byte
 		scope    scopeKey
 	}
 	rsMap := map[rsKey]ptrace.ScopeSpans{}
-	rsIndex := map[string]ptrace.ResourceSpans{}
+	rsIndex := map[[16]byte]ptrace.ResourceSpans{}
 
 	for _, bs := range members {
 		key := rsKey{resource: bs.resourceKey, scope: bs.scopeKey}

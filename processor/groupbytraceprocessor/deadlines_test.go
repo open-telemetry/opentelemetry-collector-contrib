@@ -14,7 +14,7 @@ import (
 
 // deadlineID makes a distinguishable subtraceID for these tests.
 func deadlineID(n byte) subtraceID {
-	return subtraceID{traceID: makeTraceID(n), serviceID: "svc"}
+	return subtraceID{traceID: makeTraceID(n), serviceID: [16]byte{0x73, 0x76, 0x63}} // "svc"
 }
 
 func TestSubtraceDeadlines_PopsInDueOrder(t *testing.T) {

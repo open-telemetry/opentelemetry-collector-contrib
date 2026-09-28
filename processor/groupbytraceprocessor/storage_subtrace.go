@@ -58,8 +58,8 @@ var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
 //
 // They do not outlive their usefulness, though: see forgetUnreferencedSpanIDs.
 type traceBuffer struct {
-	services map[string]map[pcommon.SpanID][]*bufferedSpan
-	spanIDs  map[pcommon.SpanID]string
+	services map[[16]byte]map[pcommon.SpanID][]*bufferedSpan
+	spanIDs  map[pcommon.SpanID][16]byte
 }
 
 // liveSpans counts the spans the trace still holds, across every service.
@@ -86,7 +86,7 @@ func (tb *traceBuffer) liveSpans() int {
 // Without this a trace that always has some service buffered would accumulate
 // every span ID it ever carried.
 func (tb *traceBuffer) forgetUnreferencedSpanIDs() {
-	kept := make(map[pcommon.SpanID]string, len(tb.spanIDs))
+	kept := make(map[pcommon.SpanID][16]byte, len(tb.spanIDs))
 	for service, spans := range tb.services {
 		for spanID := range spans {
 			kept[spanID] = service
@@ -112,6 +112,7 @@ type subtraceMemoryStorage struct {
 	sync.RWMutex
 	traces    map[pcommon.TraceID]*traceBuffer
 	telemetry *metadata.TelemetryBuilder
+	n         int // number of (trace, service) pairs currently buffered
 }
 
 func newSubtraceMemoryStorage(telemetry *metadata.TelemetryBuilder) *subtraceMemoryStorage {
@@ -130,8 +131,8 @@ func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx spanContext, span 
 	tb, ok := s.traces[id.traceID]
 	if !ok {
 		tb = &traceBuffer{
-			services: make(map[string]map[pcommon.SpanID][]*bufferedSpan),
-			spanIDs:  make(map[pcommon.SpanID]string),
+			services: make(map[[16]byte]map[pcommon.SpanID][]*bufferedSpan),
+			spanIDs:  make(map[pcommon.SpanID][16]byte),
 		}
 		s.traces[id.traceID] = tb
 	}
@@ -141,6 +142,7 @@ func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx spanContext, span 
 	if !ok {
 		spans = make(map[pcommon.SpanID][]*bufferedSpan)
 		tb.services[id.serviceID] = spans
+		s.n++
 	}
 	spans[spanID] = append(spans[spanID], bs)
 	tb.spanIDs[spanID] = id.serviceID
@@ -196,6 +198,7 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 
 	if len(spans) == 0 {
 		delete(tb.services, id.serviceID)
+		s.n--
 		if len(tb.services) == 0 {
 			delete(s.traces, id.traceID)
 			return due, nextArrival, nil
@@ -230,11 +233,7 @@ func (s *subtraceMemoryStorage) subtraceIDs() []subtraceID {
 func (s *subtraceMemoryStorage) count() int {
 	s.RLock()
 	defer s.RUnlock()
-	n := 0
-	for _, tb := range s.traces {
-		n += len(tb.services)
-	}
-	return n
+	return s.n
 }
 
 func (*subtraceMemoryStorage) start() error    { return nil }
