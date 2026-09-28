@@ -32,8 +32,13 @@ func createIsInCIDRFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 
 func isInCIDR[K any](target ottl.StringGetter[K], networks *ottl.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	var literalNetworks []*net.IPNet
-	if literalValues, allLiteral := ottl.GetLiteralValues[K, string](networks); allLiteral && literalValues != nil {
-		literalNetworks = make([]*net.IPNet, 0, len(literalValues))
+	staticLen, hasStaticLen := networks.Len()
+	if literalValues, allLiteral := ottl.GetLiteralValues[K, string](networks); allLiteral {
+		if !hasStaticLen {
+			return nil, errors.New("networks cannot be nil")
+		}
+
+		literalNetworks = make([]*net.IPNet, 0, staticLen)
 		for _, literal := range literalValues {
 			_, subnet, err := net.ParseCIDR(literal)
 			if err != nil {
@@ -64,28 +69,35 @@ func isInCIDR[K any](target ottl.StringGetter[K], networks *ottl.SliceGetter[K, 
 		}
 
 		// Resolve a dynamic network list only after the target is a valid IP address.
-		networkGetters, err := networks.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
-		if networkGetters == nil {
-			return nil, errors.New("networks cannot be nil")
-		}
-
-		for _, network := range networkGetters {
+		matched := false
+		var networkErr error
+		nonNil, err := networks.Range(ctx, tCtx, func(network ottl.StringGetter[K]) bool {
 			networkValue, err := network.Get(ctx, tCtx)
 			if err != nil {
-				return nil, err
+				networkErr = err
+				return false
 			}
 
 			_, subnet, err := net.ParseCIDR(networkValue)
 			if err != nil {
-				return nil, err
+				networkErr = err
+				return false
 			}
 			if subnet.Contains(ip) {
-				return true, nil
+				matched = true
+				return false
 			}
+			return true
+		})
+		if err != nil {
+			return nil, err
 		}
-		return false, nil
+		if networkErr != nil {
+			return nil, networkErr
+		}
+		if !nonNil {
+			return nil, errors.New("networks cannot be nil")
+		}
+		return matched, nil
 	}, nil
 }

@@ -63,12 +63,6 @@ func Test_isInCIDR_parser_slice_arguments(t *testing.T) {
 			wantErrPart: "networks cannot be nil",
 		},
 		{
-			name:        "literal nil",
-			statement:   `set(attributes["result"], IsInCIDR(attributes["client.address"], nil))`,
-			target:      "192.0.2.1",
-			wantErrPart: "networks cannot be nil",
-		},
-		{
 			name:      "scalar cache value",
 			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
 			target:    "192.0.2.1",
@@ -78,7 +72,18 @@ func Test_isInCIDR_parser_slice_arguments(t *testing.T) {
 			wantErrPart: "expected a slice",
 		},
 		{
-			name:      "non-string after matching network",
+			name:      "non-string before matching network",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
+			target:    "192.0.2.1",
+			setupCache: func(cache pcommon.Map) {
+				networks := cache.PutEmptySlice("networks")
+				networks.AppendEmpty().SetInt(1)
+				networks.AppendEmpty().SetStr("192.0.2.0/24")
+			},
+			wantErrPart: "expected string",
+		},
+		{
+			name:      "matching network short-circuits later invalid element",
 			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
 			target:    "192.0.2.1",
 			setupCache: func(cache pcommon.Map) {
@@ -86,7 +91,7 @@ func Test_isInCIDR_parser_slice_arguments(t *testing.T) {
 				networks.AppendEmpty().SetStr("192.0.2.0/24")
 				networks.AppendEmpty().SetInt(1)
 			},
-			wantErrPart: "expected string",
+			want: true,
 		},
 		{
 			name:      "empty cache slice",
@@ -147,6 +152,20 @@ func Test_isInCIDR_parser_slice_arguments(t *testing.T) {
 			assert.Equal(t, tt.want, result.Bool())
 		})
 	}
+}
+
+func Test_isInCIDR_literal_nil_fails_during_parsing(t *testing.T) {
+	parser, err := ottllog.NewParser(
+		map[string]ottl.Factory[*ottllog.TransformContext]{
+			"IsInCIDR": NewIsInCIDRFactory[*ottllog.TransformContext](),
+			"set":      NewSetFactory[*ottllog.TransformContext](),
+		},
+		componenttest.NewNopTelemetrySettings(),
+	)
+	require.NoError(t, err)
+
+	_, err = parser.ParseStatement(`set(attributes["result"], IsInCIDR(attributes["client.address"], nil))`)
+	require.ErrorContains(t, err, "networks cannot be nil")
 }
 
 func Test_isInCIDR(t *testing.T) {
