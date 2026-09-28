@@ -28,10 +28,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -1170,17 +1166,26 @@ func TestE2EAzureContainerAppsDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
-// TestE2EOpenShiftDetector tests the OpenShift detector by deploying a metadata-server
-// sidecar that simulates the OpenShift API and verifying that the resource attributes
-// are correctly detected and attached to metrics.
+// TestE2EOpenShiftDetector tests the OpenShift detector against the real
+// kube-apiserver using the in-cluster defaults (service account token, CA and
+// KUBERNETES_SERVICE_HOST). It runs on kind and on MicroShift; neither serves
+// the config.openshift.io API group, so k8stest installs a minimal
+// Infrastructure CRD.
 func TestE2EOpenShiftDetector(t *testing.T) {
-	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "openshift", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
+
+	infraObjs := k8stest.CreateOpenShiftInfrastructure(t, k8sClient, map[string]any{
+		"infrastructureName": "test-openshift-cluster",
+		"platformStatus":     map[string]any{"type": "AWS", "aws": map[string]any{"region": "us-east-1"}},
+	})
+	defer func() {
+		require.NoError(t, k8stest.DeleteObjects(k8sClient, infraObjs))
+	}()
 
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
@@ -1189,83 +1194,6 @@ func TestE2EOpenShiftDetector(t *testing.T) {
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift", "collector"), map[string]string{}, "")
-
-	defer func() {
-		for _, obj := range collectorObjs {
-			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
-		}
-	}()
-
-	wantEntries := 10
-	waitForData(t, metricsConsumer, startEntries, wantEntries)
-
-	// Uncomment to regenerate golden file
-	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
-
-	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-			pmetrictest.IgnoreTimestamp(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreScopeVersion(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreMetricsOrder(),
-			pmetrictest.IgnoreScopeMetricsOrder(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-		),
-		)
-	}, 3*time.Minute, 1*time.Second)
-}
-
-// TestE2EOpenShiftInCluster tests the OpenShift detector against the real
-// kube-apiserver using the in-cluster defaults (service account token, CA and
-// KUBERNETES_SERVICE_HOST). It runs on kind and on MicroShift; neither serves
-// the config.openshift.io API group, so a minimal Infrastructure CRD is
-// installed.
-func TestE2EOpenShiftInCluster(t *testing.T) {
-	expectedFile := filepath.Join("testdata", "e2e", "openshift", "expected.yaml")
-	expected, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-
-	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
-	require.NoError(t, err)
-
-	infraDir := filepath.Join("testdata", "e2e", "openshift-cluster", "infra")
-	crdManifest, err := os.ReadFile(filepath.Join(infraDir, "infrastructure-crd.yaml"))
-	require.NoError(t, err)
-	crd, err := k8stest.CreateObject(k8sClient, crdManifest)
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, k8stest.DeleteObject(k8sClient, crd))
-	}()
-
-	crManifest, err := os.ReadFile(filepath.Join(infraDir, "infrastructure-cr.yaml"))
-	require.NoError(t, err)
-	var cr *unstructured.Unstructured
-	// The CRD needs to be established and discovered before the CR can be created.
-	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		k8sClient.Mapper.Reset()
-		var createErr error
-		cr, createErr = k8stest.CreateObject(k8sClient, crManifest)
-		assert.NoError(tt, createErr)
-	}, 30*time.Second, 1*time.Second)
-	defer func() {
-		require.NoError(t, k8stest.DeleteObject(k8sClient, cr))
-	}()
-
-	infraGVR := schema.GroupVersionResource{Group: "config.openshift.io", Version: "v1", Resource: "infrastructures"}
-	status := []byte(`{"status":{"infrastructureName":"test-openshift-cluster","platformStatus":{"type":"AWS","aws":{"region":"us-east-1"}}}}`)
-	_, err = k8sClient.DynamicClient.Resource(infraGVR).Patch(t.Context(), cr.GetName(), types.MergePatchType, status, metav1.PatchOptions{}, "status")
-	require.NoError(t, err)
-
-	metricsConsumer := new(consumertest.MetricsSink)
-	shutdownSink := startUpSink(t, metricsConsumer)
-	defer shutdownSink()
-	startEntries := len(metricsConsumer.AllMetrics())
-
-	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift-cluster", "collector"), map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {

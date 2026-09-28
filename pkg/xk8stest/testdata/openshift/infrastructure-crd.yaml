@@ -1,6 +1,6 @@
-# Minimal Infrastructure CRD. Plain Kubernetes does not ship the
-# config.openshift.io API group, so we install only the subset needed by the
-# OpenShift resource-detection processor.
+# Minimal config.openshift.io Infrastructure CRD for e2e tests on clusters that
+# don't serve it (kind, MicroShift). Installed by CreateOpenShiftInfrastructure.
+# Add status fields here as more OpenShift e2e tests need them.
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:

@@ -1,8 +1,0 @@
-# Seed Infrastructure resource. On a real OpenShift cluster this object is
-# managed by the cluster-infrastructure operator. The e2e test creates it and
-# patches its status subresource.
-apiVersion: config.openshift.io/v1
-kind: Infrastructure
-metadata:
-  name: cluster
-spec: {}

@@ -191,7 +191,7 @@ jobs:
       matrix:
         include:
           - component: processor/resourcedetectionprocessor
-            tests: TestE2EOpenShiftInCluster
+            tests: TestE2EOpenShiftDetector
     runs-on: ubuntu-24.04
     needs: docker-build
     steps:
