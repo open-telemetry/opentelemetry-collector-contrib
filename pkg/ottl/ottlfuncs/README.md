@@ -3204,6 +3204,10 @@ the stability guarantee**: its name, signature, and behavior may change in a bac
 function may be removed entirely, in any `1.x` release without a major version bump. Experimental functions are
 documented in this README alongside the standard functions and clearly marked as experimental.
 
+Experimental functions that live in the [`xottl/ottlfuncs`](../xottl/ottlfuncs) package are only included in
+`StandardFuncs` and `StandardConverters` when the [`pkg.ottl.functions.enableExperimental`](../documentation.md#feature-gates)
+feature gate is enabled.
+
 ### Promotion to standard
 
 Promotion moves the function out of the experimental set and into the frozen standard set. This is an additive,

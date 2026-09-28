@@ -13,6 +13,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
 	github.com/stretchr/testify v1.12.1
 	github.com/twmb/murmur3 v1.2.0
@@ -70,3 +71,5 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl => ./xottl

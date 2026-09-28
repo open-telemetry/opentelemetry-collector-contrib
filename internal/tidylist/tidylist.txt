@@ -9,7 +9,9 @@ extension/bearertokenauthextension
 extension/oauth2clientauthextension
 internal/common
 internal/coreinternal
+pkg/ottl/xottl
 pkg/ottl
+pkg/ottl/xottl
 pkg/ottl/contexts/xprofile
 connector/routingconnector
 internal/pdatautil
@@ -215,7 +217,6 @@ internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
-pkg/ottl/xottl
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki

@@ -22,3 +22,11 @@ var OttlSetAllowNilFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterFromVersion("v0.158.0"),
 	featuregate.WithRegisterToVersion("v1.0.0"),
 )
+
+var PkgOttlFunctionsEnableExperimentalFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.ottl.functions.enableExperimental",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the experimental functions from the xottl/ottlfuncs package are included in the functions returned by ottlfuncs.StandardFuncs and ottlfuncs.StandardConverters."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47305"),
+	featuregate.WithRegisterFromVersion("v0.162.0"),
+)
