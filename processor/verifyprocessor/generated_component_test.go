@@ -144,10 +144,10 @@ func newMdatagenNopHost() component.Host {
 	return &mdatagenNopHost{}
 }
 
-func (*mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (*mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }

@@ -67,8 +67,8 @@ type K8sSecretConfig struct {
 }
 
 // EnvKeyConfig configures environment-variable key material.
-// certificate and hmac_key are the names of environment variables that hold
-// the PEM certificate and/or HMAC secret.
+// certificate and hmac_key hold the PEM certificate and/or HMAC secret,
+// typically supplied via Collector confmap ${env:VAR} expansion.
 // Both may be set when the collector should verify either algorithm.
 type EnvKeyConfig struct {
 	CertEnvVar    string `mapstructure:"certificate"`
@@ -86,11 +86,13 @@ type FileKeyConfig struct {
 // BaoKeyConfig configures the OpenBao (Vault-compatible) key material source.
 // Address and Token are optional: if omitted, the client reads BAO_ADDR and
 // BAO_TOKEN (or any other supported BAO_* environment variables) automatically.
+// MountPath is the KV secrets-engine mount (required for OpenBao API v2 / KVv2).
 // certificate and hmac_key are field names within the secret at SecretPath.
 // Both may be set when the collector should verify either algorithm.
 type BaoKeyConfig struct {
 	Address      string `mapstructure:"address"`
 	Token        string `mapstructure:"token"`
+	MountPath    string `mapstructure:"mount_path"`
 	SecretPath   string `mapstructure:"secret_path"`
 	CertField    string `mapstructure:"certificate"`
 	HMACKeyField string `mapstructure:"hmac_key"`

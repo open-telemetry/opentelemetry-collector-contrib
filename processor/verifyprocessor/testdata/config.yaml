@@ -25,13 +25,13 @@ verify/hmac_and_cert:
       hmac_key: /etc/otelcol/hmac.key
       certificate: /etc/otelcol/cert.pem
 
-# Environment-variable key material (values are env-var names).
+# Environment-variable key material (via Collector confmap ${env:} expansion).
 verify/env:
   key_source:
     type: env
     env:
-      certificate: VERIFY_CERT_PEM
-      hmac_key: VERIFY_HMAC_KEY
+      certificate: ${env:VERIFY_CERT_PEM}
+      hmac_key: ${env:VERIFY_HMAC_KEY}
 
 # Kubernetes Secret key material (values are keys within the Secret).
 verify/k8s:
@@ -49,6 +49,7 @@ verify/bao:
     type: bao
     bao:
       address: https://bao.example.com
+      mount_path: secret
       secret_path: secret/data/verify
       certificate: certificate
       hmac_key: hmac_key

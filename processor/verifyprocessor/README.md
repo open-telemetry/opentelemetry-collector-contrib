@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [development]: logs   |
 | Distributions | [] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fverify%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fverify) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fverify%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fverify) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_verify)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_verify&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@MJarmo](https://www.github.com/MJarmo), [@hilmarf](https://www.github.com/hilmarf), [@jmacd](https://www.github.com/jmacd) |
 
@@ -49,7 +50,7 @@ processors:
     # Key material source (required). Exactly one sub-block must be provided.
     # Same providers as signingprocessor. Each provider uses shared YAML keys
     # certificate and/or hmac_key (no private-key fields). The meaning of each
-    # value depends on the provider (path, env-var name, secret key, or field).
+    # value depends on the provider (path, expanded secret, secret key, or field).
     key_source:
       # type selects the provider: file | env | k8s_secret | bao
       type: file
@@ -59,10 +60,10 @@ processors:
         certificate: /etc/otelcol/cert.pem
         # hmac_key: /etc/otelcol/hmac.key
 
-      # --- env provider — names of environment variables ---
+      # --- env provider — key material via Collector ${env:} expansion ---
       # env:
-      #   certificate: VERIFY_CERT_PEM   # env var holding PEM or base64-encoded PEM
-      #   hmac_key:    VERIFY_HMAC_KEY   # env var holding the HMAC secret
+      #   certificate: ${env:VERIFY_CERT_PEM}   # PEM or base64-encoded PEM
+      #   hmac_key:    ${env:VERIFY_HMAC_KEY}   # HMAC secret
 
       # --- Kubernetes Secret provider — keys within the Secret ---
       # k8s_secret:
@@ -75,6 +76,7 @@ processors:
       # bao:
       #   address:     https://bao.example.com   # optional, falls back to BAO_ADDR
       #   token:       s.xxxx                    # optional, falls back to BAO_TOKEN
+      #   mount_path:  secret                    # KV secrets-engine mount (OpenBao API v2 / KVv2)
       #   secret_path: secret/data/verify
       #   certificate: certificate
       #   # hmac_key:  hmac_key
@@ -101,9 +103,9 @@ secret. Both may be set when the collector should verify either algorithm.
 | Provider | `certificate` / `hmac_key` mean | Description |
 | --- | --- | --- |
 | `file` | Local file paths | Reads a PEM certificate and/or a raw HMAC secret from disk. Supports plain PEM and base64-encoded PEM for certificates. |
-| `env` | Environment variable names | Reads material from the named env vars (PEM / base64 PEM or raw HMAC secret). |
+| `env` | Key material (usually via `${env:}`) | Uses the configured certificate/HMAC strings, typically filled by Collector confmap `${env:VAR}` expansion. |
 | `k8s_secret` | Keys inside the Secret | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
-| `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine. |
+| `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine (`mount_path` + `secret_path`, OpenBao API v2 / KVv2). |
 
 ## Integrity attributes (from `signingprocessor`)
 
