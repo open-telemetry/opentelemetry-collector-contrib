@@ -30,6 +30,9 @@ type TelemetryBuilder struct {
 	ProcessorAdaptiveTailSamplingDecisionSampleRate            metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingDecisionTriggers              metric.Int64Counter
 	ProcessorAdaptiveTailSamplingFingerprintDuration           metric.Int64Histogram
+	ProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput  metric.Int64Gauge
+	ProcessorAdaptiveTailSamplingFleetMemberCount              metric.Int64Gauge
+	ProcessorAdaptiveTailSamplingFleetTrackerErrors            metric.Int64Counter
 	ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable metric.Int64Counter
 	ProcessorAdaptiveTailSamplingOttlEvalErrors                metric.Int64Counter
 	ProcessorAdaptiveTailSamplingSamplerBurstCount             metric.Int64ObservableCounter
@@ -142,6 +145,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_adaptive_tail_sampling_fingerprint_duration",
 		metric.WithDescription("Time spent extracting a rule's fingerprint per decision, in microseconds, labelled by rule. A relative signal for spotting expensive fingerprints (wide scopes such as any. on large traces); absolute values depend on host and load. [Development]"),
 		metric.WithUnit("us"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput, err = builder.meter.Int64Gauge(
+		"otelcol_processor_adaptive_tail_sampling_fleet_effective_goal_throughput",
+		metric.WithDescription("Effective per-instance spans-per-second goal applied to each adaptive_throughput rule's sampler, labelled by rule, i.e. max(goal_throughput / member count, 1). [Development]"),
+		metric.WithUnit("{spans}/s"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingFleetMemberCount, err = builder.meter.Int64Gauge(
+		"otelcol_processor_adaptive_tail_sampling_fleet_member_count",
+		metric.WithDescription("Current fleet member count reported by the fleet_tracker extension; the processor divides each rule's goal_throughput by this value. Not emitted when fleet_tracker is unset. [Development]"),
+		metric.WithUnit("{instances}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingFleetTrackerErrors, err = builder.meter.Int64Counter(
+		"otelcol_processor_adaptive_tail_sampling_fleet_tracker_errors",
+		metric.WithDescription("Number of non-positive member counts received from the fleet tracker; the last good count is kept. [Development]"),
+		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable, err = builder.meter.Int64Counter(
