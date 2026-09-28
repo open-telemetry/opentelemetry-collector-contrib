@@ -156,6 +156,7 @@ The following general labels are supported:
 | `os:windows`              | `os:windows`              |
 | `waiting for author`      | `waiting-for-author`      |
 | `waiting-for-code-owners` | `waiting-for-code-owners` |
+| `waiting-for-maintainers` | `waiting-for-maintainers` |
 | `bug`                     | `bug`                     |
 | `priority:p0`             | `priority:p0`             |
 | `priority:p1`             | `priority:p1`             |
@@ -201,7 +202,7 @@ Scope detection for the `build-and-test` workflow is handled by `.github/workflo
 bash .github/workflows/scripts/compute-ci-scope.sh
 ```
 
-The workflow honors a `ci:full` label on the pull request. Adding this label forces the full CI matrices regardless of what files changed; toggling it on or off on an open PR retriggers the workflow with the new scope.
+The workflow honors a `ci:full` label on the pull request. Adding this label forces the full CI matrices regardless of what files changed; toggling it on or off on an open PR takes effect on the next push, or after closing and reopening the PR.
 
 ## Portable Code
 

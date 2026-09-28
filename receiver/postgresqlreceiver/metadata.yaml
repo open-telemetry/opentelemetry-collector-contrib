@@ -49,6 +49,10 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347
 
 resource_attributes:
+  db.system.version:
+    description: The database version of the instance. Examples include "13.18" and "17.2".
+    enabled: false
+    type: string
   postgresql.database.name:
     description: The name of the database.
     enabled: true
