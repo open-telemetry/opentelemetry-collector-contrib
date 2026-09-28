@@ -755,6 +755,24 @@ func (c *franzConsumer) deleteStoppingAssignments(stopping map[topicPartition]*p
 	}
 }
 
+// shouldMarkOnError reports whether a record the pipeline rejected may still be
+// marked, following the message_marking on_error and on_permanent_error config.
+//
+// A cancelled partition consumer overrides both. A real rejection and a record
+// that was only cut short look the same here: errors from several exporters get
+// joined, so a permanent one can hide a cancellation. Not marking is the safe
+// side. The record comes back, and the next try marks it if the pipeline
+// rejects it again. That costs one extra delivery per cancellation.
+func (c *franzConsumer) shouldMarkOnError(pc *pc, err error) bool {
+	if pc.ctx.Err() != nil {
+		return false
+	}
+	if consumererror.IsPermanent(err) {
+		return c.config.MessageMarking.OnPermanentError
+	}
+	return c.config.MessageMarking.OnError
+}
+
 // handleMessage is called on a per-partition basis.
 func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 	if pc.backOff != nil {
@@ -794,10 +812,7 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 			)
 		}
 
-		isPermanent := consumererror.IsPermanent(err)
-		shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
-
-		if c.config.MessageMarking.After && !shouldMark {
+		if c.config.MessageMarking.After && !c.shouldMarkOnError(pc, err) {
 			// Only return an error if messages are marked after successful processing.
 			return err
 		}
