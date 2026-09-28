@@ -1,0 +1,93 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: azure.container_app.instance.id
+          value:
+            stringValue: test-container-app--abc123-7d9f8c5b6-xyz
+        - key: cloud.platform
+          value:
+            stringValue: azure.container_apps
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: service.name
+          value:
+            stringValue: test-container-app
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Number of available logical CPUs.
+            name: system.cpu.logical.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: false
+            unit: "{cpu}"
+          - description: Total seconds each logical CPU spent on each mode.
+            name: system.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 1.0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: idle
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: interrupt
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: nice
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: softirq
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: steal
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: wait
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper

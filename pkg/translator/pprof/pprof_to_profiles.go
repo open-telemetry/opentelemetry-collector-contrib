@@ -228,7 +228,8 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 			// Append a index to the attribute key, so that
 			// later src.Comments can be reconstructed correctly.
 			p.AttributeIndices().Append(lts.getIdxForAttribute(
-				string(semconv.PprofProfileCommentKey)+fmt.Sprintf(".%d", ci), c))
+				string(semconv.PprofProfileCommentKey)+fmt.Sprintf(".%d", ci), c,
+			))
 		}
 
 		// pprof.Profile.default_sample_type
@@ -376,7 +377,8 @@ func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
 	// pprof.Mapping.build_id
 	// Assume all build_ids are GNU build IDs
 	buildIDIdx := lts.getIdxForAttribute(
-		string(semconv.ProcessExecutableBuildIDGNUKey), m.BuildID)
+		string(semconv.ProcessExecutableBuildIDGNUKey), m.BuildID,
+	)
 	ids = append(ids, buildIDIdx)
 
 	// pprof.Mapping.has_*
@@ -684,7 +686,8 @@ func (lts *lookupTables) linesToString(lines []profile.Line) string {
 				line.Function.Name,
 				line.Function.SystemName,
 				line.Function.Filename,
-				line.Function.StartLine)
+				line.Function.StartLine,
+			)
 		}
 		parts = append(parts, fmt.Sprintf("%d:%d:%d", funcID, line.Line, line.Column))
 	}

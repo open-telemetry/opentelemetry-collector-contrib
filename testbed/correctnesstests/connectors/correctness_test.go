@@ -56,7 +56,8 @@ func testWithGoldenDataset(
 	dataProvider := testbed.NewGoldenDataProvider(
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
-		"")
+		"",
+	)
 	f, err := factories()
 	require.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(f)

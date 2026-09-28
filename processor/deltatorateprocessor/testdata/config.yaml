@@ -1,7 +1,7 @@
-deltatorate:
+delta_to_rate:
   metrics:
     - metric1
     - metric2
 
-deltatorate/missing_name:
+delta_to_rate/missing_name:
     metrics:

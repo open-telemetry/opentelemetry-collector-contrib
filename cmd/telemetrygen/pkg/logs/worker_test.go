@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/attribute"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.uber.org/zap"
 
@@ -199,7 +199,7 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 	for _, l := range m.logs {
 		assert.Equal(t, 2, l.AttributesLen(), "shouldn't have less than 2 attributes")
 
-		l.WalkAttributes(func(attr log.KeyValue) bool {
+		l.WalkAttributes(func(attr attribute.KeyValue) bool {
 			if attr.Key == telemetryAttrKeyOne {
 				assert.Equal(t, telemetryAttrValueOne, attr.Value.AsString())
 			}
@@ -227,7 +227,7 @@ func TestLogsWithMultipleTelemetryAttributes(t *testing.T) {
 	require.Len(t, m.logs, qty)
 	for _, l := range m.logs {
 		assert.Equal(t, 5, l.AttributesLen(), "it must have multiple attributes here")
-		l.WalkAttributes(func(attr log.KeyValue) bool {
+		l.WalkAttributes(func(attr attribute.KeyValue) bool {
 			if attr.Key == telemetryAttrKeyOne {
 				assert.Equal(t, telemetryAttrValueOne, attr.Value.AsString())
 			}
@@ -464,7 +464,7 @@ func TestLogsWithLoadSize(t *testing.T) {
 
 	// Check that load attributes exist and have the expected size
 	var load0Found, load1Found bool
-	logRecord.WalkAttributes(func(attr log.KeyValue) bool {
+	logRecord.WalkAttributes(func(attr attribute.KeyValue) bool {
 		if attr.Key == "load-0" {
 			load0Found = true
 			assert.Len(t, attr.Value.AsString(), config.CharactersPerMB, "load-0 should have 1MB of data")

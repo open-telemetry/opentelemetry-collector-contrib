@@ -154,10 +154,14 @@ func transformFuncReplicaSet(obj any) (any, error) {
 func createReplicaSetListWatch(client kubernetes.Interface, ns string) cache.ListerWatcher {
 	ctx := context.Background()
 	return &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).ListFunc is deprecated: use ListWithContext instead.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) { //nolint:staticcheck
 			return client.AppsV1().ReplicaSets(ns).List(ctx, opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) { //nolint:staticcheck
 			return client.AppsV1().ReplicaSets(ns).Watch(ctx, opts)
 		},
 	}

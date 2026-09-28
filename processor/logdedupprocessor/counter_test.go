@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
@@ -131,7 +131,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil)
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("one", "two")
-	expectedHash := pdatautil.MapHash(resource.Attributes())
+	expectedHash := xhash.MapHash(resource.Attributes())
 
 	scope := pcommon.NewInstrumentationScope()
 
@@ -145,7 +145,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	// Check resource
 	rl := exportedLogs.ResourceLogs().At(0)
 	actualAttrs := rl.Resource().Attributes()
-	actualHash := pdatautil.MapHash(actualAttrs)
+	actualHash := xhash.MapHash(actualAttrs)
 	require.Equal(t, expectedHash, actualHash)
 
 	require.Equal(t, 1, rl.ScopeLogs().Len())
@@ -280,12 +280,12 @@ func Test_getLogKey(t *testing.T) {
 				logRecord.Body().Map().PutStr("dedup_key", dedupValue)
 				logRecord.Attributes().PutStr("dedup_key", dedupValue)
 
-				expected := pdatautil.Hash64(
-					pdatautil.WithString(dedupValue),
+				expected := xhash.Hash64(
+					xhash.WithString(dedupValue),
 				)
-				expectedMulti := pdatautil.Hash64(
-					pdatautil.WithString(dedupValue),
-					pdatautil.WithString(dedupValue), //nolint:gocritic // Intentional: testing multi-key deduplication with same value
+				expectedMulti := xhash.Hash64(
+					xhash.WithString(dedupValue),
+					xhash.WithString(dedupValue), //nolint:gocritic // Intentional: testing multi-key deduplication with same value
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
@@ -299,11 +299,11 @@ func Test_getLogKey(t *testing.T) {
 				logRecord := plog.NewLogRecord()
 				logRecord.Attributes().PutStr("str", "attr str")
 
-				expected := pdatautil.Hash64(
-					pdatautil.WithMap(logRecord.Attributes()),
-					pdatautil.WithValue(logRecord.Body()),
-					pdatautil.WithString(logRecord.SeverityNumber().String()),
-					pdatautil.WithString(logRecord.SeverityText()),
+				expected := xhash.Hash64(
+					xhash.WithMap(logRecord.Attributes()),
+					xhash.WithValue(logRecord.Body()),
+					xhash.WithString(logRecord.SeverityNumber().String()),
+					xhash.WithString(logRecord.SeverityText()),
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
@@ -315,11 +315,11 @@ func Test_getLogKey(t *testing.T) {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStr("hello, this is a message body string")
 
-				expected := pdatautil.Hash64(
-					pdatautil.WithMap(logRecord.Attributes()),
-					pdatautil.WithValue(logRecord.Body()),
-					pdatautil.WithString(logRecord.SeverityNumber().String()),
-					pdatautil.WithString(logRecord.SeverityText()),
+				expected := xhash.Hash64(
+					xhash.WithMap(logRecord.Attributes()),
+					xhash.WithValue(logRecord.Body()),
+					xhash.WithString(logRecord.SeverityNumber().String()),
+					xhash.WithString(logRecord.SeverityText()),
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
@@ -329,6 +329,82 @@ func Test_getLogKey(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func Test_getKeyValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		valueMap pcommon.Map
+		keyParts []string
+		expected string
+		ok       bool
+	}{
+		{
+			name: "gets value for existing key",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key", "value")
+				return m
+			}(),
+			keyParts: []string{"key"},
+			expected: "value",
+			ok:       true,
+		},
+		{
+			name: "returns false when key does not exist",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key", "value")
+				return m
+			}(),
+			keyParts: []string{"missing"},
+			ok:       false,
+		},
+		{
+			name: "gets nested value",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				nested := m.PutEmptyMap("parent")
+				nested.PutStr("child", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "child"},
+			expected: "value",
+			ok:       true,
+		},
+		{
+			name: "returns false when nested key does not exist",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				nested := m.PutEmptyMap("parent")
+				nested.PutStr("child", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "missing"},
+			ok:       false,
+		},
+		{
+			name: "returns false when intermediate value is not a map",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("parent", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "child"},
+			ok:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, ok := getKeyValue(tt.valueMap, tt.keyParts)
+
+			require.Equal(t, tt.ok, ok)
+			if tt.ok {
+				require.Equal(t, tt.expected, value.Str())
+			}
+		})
 	}
 }
 

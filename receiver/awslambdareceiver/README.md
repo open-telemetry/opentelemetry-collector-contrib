@@ -244,12 +244,12 @@ The following receiver configuration parameters are supported.
 |:------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------|
 | `s3::encoding`          | Optional encoder to use for S3 event processing                                                                                                  |
 | `s3::encodings`         | Optional list of path-based encoders for multi-format S3 routing (see [Multi-Format S3 Configuration](#multi-format-s3-configuration-encodings)) |
-| `s3::access_key_id`     | Optional static AWS access key ID for S3 access                                                                                                  |
-| `s3::secret_access_key` | Optional static AWS secret access key for S3 access                                                                                              |
-| `s3::session_token`     | Optional static AWS session token for S3 access                                                                                                  |
+| `s3::access_key_id`     | Optional static AWS access key ID for S3 access. Applies only to S3 event handling.                                                              |
+| `s3::secret_access_key` | Optional static AWS secret access key for S3 access. Applies only to S3 event handling.                                                          |
+| `s3::session_token`     | Optional static AWS session token for S3 access. Applies only to S3 event handling.                                                              |
 | `cloudwatch::encoding`  | Optional encoder to use for CloudWatch event processing                                                                                          |
 | `custom::encoding`      | Optional encoder to use for custom event processing                                                                                              |
-| `failure_bucket_arn`    | Optional S3 bucket ARN holding failed Lambda records for replay                                                                                  | 
+| `failure_bucket_arn`    | Optional S3 bucket ARN holding failed Lambda records for replay. Bucket access utilize default credentials of the Lambda runtime environment     | 
 
 Consider following notes on default behaviors:
 

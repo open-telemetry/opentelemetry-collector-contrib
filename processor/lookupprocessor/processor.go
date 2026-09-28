@@ -116,7 +116,7 @@ func (p *logsLookupProcessor) processLogs(ctx context.Context, ld plog.Logs) (pl
 			sl := rl.ScopeLogs().At(j)
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				lr := sl.LogRecords().At(k)
-				tCtx := ottllog.NewTransformContextPtr(rl, sl, lr)
+				tCtx := ottllog.NewTransformContext(rl, sl, lr)
 				p.evalAndProcess(ctx, tCtx, lr.Attributes(), resourceAttrs)
 				tCtx.Close()
 			}
@@ -137,7 +137,7 @@ func (p *tracesLookupProcessor) processTraces(ctx context.Context, td ptrace.Tra
 			ss := rs.ScopeSpans().At(j)
 			for k := 0; k < ss.Spans().Len(); k++ {
 				span := ss.Spans().At(k)
-				tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+				tCtx := ottlspan.NewTransformContext(rs, ss, span)
 				p.evalAndProcess(ctx, tCtx, span.Attributes(), resourceAttrs)
 				tCtx.Close()
 			}
@@ -198,7 +198,7 @@ func processDataPoints[DP dataPointWithAttributes](
 ) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
+		tCtx := ottldatapoint.NewTransformContext(rm, sm, m, dp)
 		p.evalAndProcess(ctx, tCtx, dp.Attributes(), resourceAttrs)
 		tCtx.Close()
 	}

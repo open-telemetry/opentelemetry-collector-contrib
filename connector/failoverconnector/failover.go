@@ -27,6 +27,7 @@ type baseFailoverRouter[C any] struct {
 	errTryLock  *state.TryLock
 	notifyRetry chan struct{}
 	done        chan struct{}
+	conditions  Condition
 }
 
 // getCurrentConsumer returns the consumer for the current healthy level
@@ -47,6 +48,15 @@ func (f *baseFailoverRouter[C]) getConsumerAtIndex(idx int) C {
 // reportConsumerError ensures only one consumer is reporting an error at a time to avoid multiple failovers
 func (f *baseFailoverRouter[C]) reportConsumerError(idx int) {
 	f.errTryLock.TryExecute(f.pS.HandleError, idx)
+}
+
+// shouldFailoverOnError goes through the user defined condition
+// to check if given error should cause failover
+func (f *baseFailoverRouter[C]) shouldFailoverOnError(err error) bool {
+	if f.conditions != nil {
+		return f.conditions.ShouldFailover(err)
+	}
+	return true
 }
 
 func (f *baseFailoverRouter[C]) Shutdown() {
@@ -81,6 +91,7 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 		errTryLock:  state.NewTryLock(),
 		done:        done,
 		notifyRetry: notifyRetry,
+		conditions:  buildCondition(cfg.Condition.Get()),
 	}, nil
 }
 

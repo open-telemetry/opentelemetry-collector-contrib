@@ -43,11 +43,11 @@ func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 	r.stopping.Store(false)
 
 	var err error
-	if r.serverGRPC, err = r.cfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = r.cfg.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
+	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.ServerConfig.NetAddr.Endpoint))
 
 	schema, err := otelstef.MetricsWireSchema()
 	if err != nil {
@@ -55,7 +55,7 @@ func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	var gln net.Listener
-	if gln, err = r.cfg.NetAddr.Listen(context.Background()); err != nil {
+	if gln, err = r.cfg.ServerConfig.NetAddr.Listen(context.Background()); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func (r *stefReceiver) Shutdown(context.Context) error {
 	r.stopping.Store(true)
 
 	if r.serverGRPC != nil {
-		r.settings.Logger.Info("Stopping STEF/gRPC server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
+		r.settings.Logger.Info("Stopping STEF/gRPC server", zap.String("endpoint", r.cfg.ServerConfig.NetAddr.Endpoint))
 
 		// Give graceful stop a second to finish.
 		timer := time.AfterFunc(

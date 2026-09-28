@@ -46,7 +46,7 @@ func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Setti
 }
 
 func (e *logExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ToClient(ctx, host.GetExtensions(), e.settings)
+	client, err := e.config.ClientConfig.ToClient(ctx, host.GetExtensions(), e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
@@ -105,7 +105,7 @@ func (e *logExporter) shutdown(_ context.Context) error {
 }
 
 func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option {
-	authHeader, _ := config.Headers.Get("Authorization")
+	authHeader, _ := config.ClientConfig.Headers.Get("Authorization")
 	authParams := utils.AuthParams{
 		AccessID:    config.APIToken.AccessID,
 		AccessKey:   string(config.APIToken.AccessKey),
@@ -116,7 +116,7 @@ func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option 
 		lmsdklogs.WithLogBatchingDisabled(),
 		lmsdklogs.WithAuthentication(authParams),
 		lmsdklogs.WithHTTPClient(client),
-		lmsdklogs.WithEndpoint(config.Endpoint),
+		lmsdklogs.WithEndpoint(config.ClientConfig.Endpoint),
 	}
 
 	if config.Logs.ResourceMappingOperation != "" {

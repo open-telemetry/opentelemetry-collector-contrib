@@ -82,11 +82,12 @@ properties:
     $ref: marshaler_type
   resource_attrs_to_s3:
     $ref: resource_attrs_to_s_3
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   s3uploader:
     $ref: s_3_uploader_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
 allOf:
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

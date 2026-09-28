@@ -55,7 +55,7 @@ func (entry *Entry) AddAttribute(key, value string) {
 	entry.Attributes[key] = value
 }
 
-// AddResourceKey wil add a key/value pair to the entry's resource.
+// AddResourceKey will add a key/value pair to the entry's resource.
 func (entry *Entry) AddResourceKey(key, value string) {
 	if entry.Resource == nil {
 		entry.Resource = make(map[string]any)

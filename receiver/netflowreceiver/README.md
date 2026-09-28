@@ -9,6 +9,7 @@ data and convert it to OpenTelemetry logs. The receiver is based on the
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
+| Unsupported Platforms | solaris |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fnetflow%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fnetflow) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fnetflow%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fnetflow) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_netflow)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_netflow&displayType=list) |
@@ -107,6 +108,31 @@ The log record will have the following attributes (with examples):
 * **flow.sampling_rate**: Int(0)
 * **flow.sampler_address**: Str(172.28.176.1)
 * **flow.tcp_flags**: Int(0)
+* **flow.in_if**: Int(5)
+* **flow.out_if**: Int(10)
+* **flow.ip_tos**: Int(46)
+* **flow.ip_ttl**: Int(64)
+* **flow.ip_flags**: Int(2)
+* **flow.fragment_id**: Int(0)
+* **flow.fragment_offset**: Int(0)
+* **flow.ipv6_flow_label**: Int(0)
+* **flow.icmp_type**: Int(0)
+* **flow.icmp_code**: Int(0)
+* **flow.src_mac**: Str(00:11:22:33:44:55)
+* **flow.dst_mac**: Str(aa:bb:cc:dd:ee:ff)
+* **flow.src_vlan**: Int(0)
+* **flow.dst_vlan**: Int(0)
+* **flow.vlan_id**: Int(0)
+* **flow.next_hop**: Str(10.0.0.1)
+* **flow.next_hop_as**: Int(0)
+* **flow.src_as**: Int(65000)
+* **flow.dst_as**: Int(65001)
+* **flow.bgp_next_hop**: Str(10.0.0.2)
+* **flow.src_net**: Int(24)
+* **flow.dst_net**: Int(32)
+* **flow.forwarding_status**: Int(0)
+* **flow.observation_domain_id**: Int(0)
+* **flow.observation_point_id**: Int(0)
 
 The log record timestamps will be:
 

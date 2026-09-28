@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -129,11 +130,11 @@ func (c *RecordPartitionerConfig) Unmarshal(conf *confmap.Conf) error {
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueBatchConfig          configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	configkafka.ClientConfig  `mapstructure:",squash"`
-	Producer                  configkafka.ProducerConfig `mapstructure:"producer"`
+	TimeoutSettings  exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig    configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ClientConfig     configkafka.ClientConfig                                 `mapstructure:",squash"`
+	Producer         configkafka.ProducerConfig                               `mapstructure:"producer"`
 
 	// Logs holds configuration about how logs should be sent to Kafka.
 	Logs SignalConfig `mapstructure:"logs"`
@@ -152,6 +153,9 @@ type Config struct {
 
 	// RecordHeaders sets static headers on every outgoing Kafka record.
 	RecordHeaders []kafkaclient.RecordHeader `mapstructure:"record_headers"`
+
+	// SignalHeader adds the "otelcol.signal" header to every outgoing Kafka record.
+	SignalHeader bool `mapstructure:"signal_header"`
 
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
@@ -205,6 +209,16 @@ func (c *Config) Validate() error {
 	}
 	if err := validateBatchPartitionerKeys(c); err != nil {
 		return err
+	}
+	if c.SignalHeader {
+		if slices.Contains(c.IncludeMetadataKeys, kafka.SignalHeaderKey) {
+			return fmt.Errorf("%q is reserved when signal_header is enabled", kafka.SignalHeaderKey)
+		}
+		for _, header := range c.RecordHeaders {
+			if header.Name == kafka.SignalHeaderKey {
+				return fmt.Errorf("%q is reserved when signal_header is enabled", kafka.SignalHeaderKey)
+			}
+		}
 	}
 	return nil
 }

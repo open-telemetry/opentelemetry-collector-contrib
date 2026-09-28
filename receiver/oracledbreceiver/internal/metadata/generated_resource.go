@@ -42,13 +42,6 @@ func (rb *ResourceBuilder) SetOracleDbOpenMode(val string) {
 	}
 }
 
-// SetOracleDbPdb sets provided value as "oracle.db.pdb" attribute.
-func (rb *ResourceBuilder) SetOracleDbPdb(val string) {
-	if rb.config.OracleDbPdb.Enabled {
-		rb.res.Attributes().PutStr("oracle.db.pdb", val)
-	}
-}
-
 // SetOracleDbRole sets provided value as "oracle.db.role" attribute.
 func (rb *ResourceBuilder) SetOracleDbRole(val string) {
 	if rb.config.OracleDbRole.Enabled {
@@ -67,6 +60,20 @@ func (rb *ResourceBuilder) SetOracleDbVersion(val string) {
 func (rb *ResourceBuilder) SetOracledbInstanceName(val string) {
 	if rb.config.OracledbInstanceName.Enabled {
 		rb.res.Attributes().PutStr("oracledb.instance.name", val)
+	}
+}
+
+// SetServerAddress sets provided value as "server.address" attribute.
+func (rb *ResourceBuilder) SetServerAddress(val string) {
+	if rb.config.ServerAddress.Enabled {
+		rb.res.Attributes().PutStr("server.address", val)
+	}
+}
+
+// SetServerPort sets provided value as "server.port" attribute.
+func (rb *ResourceBuilder) SetServerPort(val int64) {
+	if rb.config.ServerPort.Enabled {
+		rb.res.Attributes().PutInt("server.port", val)
 	}
 }
 

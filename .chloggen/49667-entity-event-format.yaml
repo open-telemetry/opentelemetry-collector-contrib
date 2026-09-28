@@ -1,5 +1,0 @@
-change_type: enhancement
-component: pkg/experimentalmetricmetadata
-note: Add feature-gated support for emitting entity events using the OpenTelemetry entity events specification log record format.
-issues: [49667]
-change_logs: [user]

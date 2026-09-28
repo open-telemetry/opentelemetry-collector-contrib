@@ -2,7 +2,7 @@
 # Load Balancing Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: metrics   |
+| Stability     | [alpha]: metrics   |
 |               | [beta]: traces, logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Floadbalancing%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Floadbalancing) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Floadbalancing%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Floadbalancing) |
@@ -10,7 +10,7 @@
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@rlankfo](https://www.github.com/rlankfo), [@iblancasa](https://www.github.com/iblancasa) \| Seeking more code owners! |
 | Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
@@ -103,6 +103,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1m` will be used.
   * `return_hostnames` will return hostnames instead of IPs. This is useful in certain situations like using istio in sidecar mode. To use this feature, the `service` must be a headless `Service`, pointing at a `StatefulSet`, and the `service` must be what is specified under `.spec.serviceName` in the `StatefulSet`.
   * **RBAC requirement:** the Collector pod must run with a service account that is allowed to `get`, `list`, and `watch` `discovery.k8s.io/v1` `EndpointSlice` objects in the target namespace; otherwise the resolver cache remains empty and the exporter logs `couldn't find the exporter for the endpoint ""`.
+  * The resolver excludes endpoints whose `EndpointSlice` `conditions.ready` is explicitly `false`. An endpoint with no `ready` condition set is treated as ready, per the `discovery.k8s.io/v1` API contract. On a Service configured with `publishNotReadyAddresses: true`, `conditions.ready` is always forced `true`, so this filtering does not apply. Set `publishNotReadyAddresses: true` on the Service to preserve the previous resolver behaviour and keep not-ready endpoints in the routing ring.
 * The `aws_cloud_map` node accepts the following properties:
   * `namespace` The CloudMap namespace where the service is register, e.g. `cloudmap`. If no `namespace` is specified, this will fail to start the Load Balancer exporter.
   * `service_name` The name of the service that you specified when you registered the instance, e.g. `otelcollectors`.  If no `service_name` is specified, this will fail to start the Load Balancer exporter.

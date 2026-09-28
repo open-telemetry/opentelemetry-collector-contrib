@@ -7,6 +7,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -173,5 +174,57 @@ func TestURLParser(t *testing.T) {
 				require.Equal(t, v, actualValue)
 			}
 		})
+	}
+}
+
+func Test_URLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewURLFactory[any]()
+		assert.Equal(t, "URL", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewURLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &uRLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"URI"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewURLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		urlArgs, ok := args.(*uRLArguments[any])
+		require.True(t, ok)
+		urlArgs.URI = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "https://example.com", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createURIFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "URLFactory args must be of type *uRLArguments[K]")
+	})
+}
+
+func BenchmarkURL(b *testing.B) {
+	source := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment", nil
+		},
+	}
+	exprFunc := url(source) //revive:disable-line:var-naming
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

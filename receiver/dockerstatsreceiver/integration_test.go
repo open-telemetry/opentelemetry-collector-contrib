@@ -29,7 +29,7 @@ import (
 func factory() (rcvr.Factory, *Config) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	config.CollectionInterval = 1 * time.Second
+	config.ControllerConfig.CollectionInterval = 1 * time.Second
 	return f, config
 }
 
@@ -138,7 +138,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	container := createNginxContainer(ctx, t)
 
 	f, config := factory()
-	config.ExcludedImages = append(config.ExcludedImages, "*nginx*")
+	config.Config.ExcludedImages = append(config.Config.ExcludedImages, "*nginx*")
 
 	consumer := new(consumertest.MetricsSink)
 	recv, err := f.CreateMetrics(ctx, params, config, consumer)

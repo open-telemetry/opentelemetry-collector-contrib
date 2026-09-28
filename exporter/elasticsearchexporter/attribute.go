@@ -14,6 +14,7 @@ const (
 	defaultDataStreamTypeMetrics            = "metrics"
 	defaultDataStreamTypeTraces             = "traces"
 	defaultDataStreamTypeProfiles           = "profiles"
+	defaultDataStreamTypeSynthetics         = "synthetics"
 )
 
 func getFromAttributes(name, defaultValue string, attributeMaps ...pcommon.Map) (string, bool) {

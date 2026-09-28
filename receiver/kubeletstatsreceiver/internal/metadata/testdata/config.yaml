@@ -48,6 +48,10 @@ all_set:
       enabled: true
     k8s.node.filesystem.capacity:
       enabled: true
+    k8s.node.filesystem.inode.count:
+      enabled: true
+    k8s.node.filesystem.inode.free:
+      enabled: true
     k8s.node.filesystem.usage:
       enabled: true
     k8s.node.memory.available:
@@ -214,6 +218,10 @@ reaggregate_set:
       enabled: true
     k8s.node.filesystem.capacity:
       enabled: true
+    k8s.node.filesystem.inode.count:
+      enabled: true
+    k8s.node.filesystem.inode.free:
+      enabled: true
     k8s.node.filesystem.usage:
       enabled: true
     k8s.node.memory.available:
@@ -379,6 +387,10 @@ none_set:
     k8s.node.filesystem.available:
       enabled: false
     k8s.node.filesystem.capacity:
+      enabled: false
+    k8s.node.filesystem.inode.count:
+      enabled: false
+    k8s.node.filesystem.inode.free:
       enabled: false
     k8s.node.filesystem.usage:
       enabled: false

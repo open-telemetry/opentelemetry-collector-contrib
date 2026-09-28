@@ -11,10 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func int64ptr(i int64) *int64 { return &i }
-
-func boolptr(v bool) *bool { return &v }
-
 func TestHandleRequestMetadata(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -29,7 +25,7 @@ func TestHandleRequestMetadata(t *testing.T) {
 				RemoteIP:                   "192.168.1.100",
 				BackendTargetProjectNumber: "projects/12345",
 				ProxyStatus:                "proxy_ok",
-				OverrideResponseCode:       int64ptr(200),
+				OverrideResponseCode:       new(int64(200)),
 				LoadBalancingScheme:        "EXTERNAL",
 				ErrorService:               "error-svc",
 				BackendNetworkName:         "default",
@@ -208,7 +204,7 @@ func TestHandleTLSInfo(t *testing.T) {
 		{
 			name: "all fields populated",
 			info: &tlsInfo{
-				EarlyDataRequest: boolptr(true),
+				EarlyDataRequest: new(true),
 				Protocol:         "TLSv1.3",
 				Cipher:           "TLS_AES_128_GCM_SHA256",
 			},
@@ -223,7 +219,7 @@ func TestHandleTLSInfo(t *testing.T) {
 		{
 			name: "early data request false",
 			info: &tlsInfo{
-				EarlyDataRequest: boolptr(false),
+				EarlyDataRequest: new(false),
 				Protocol:         "TLSv1.2",
 				Cipher:           "ECDHE-RSA-AES128-GCM-SHA256",
 			},
@@ -238,7 +234,7 @@ func TestHandleTLSInfo(t *testing.T) {
 		{
 			name: "empty protocol and cipher",
 			info: &tlsInfo{
-				EarlyDataRequest: boolptr(false),
+				EarlyDataRequest: new(false),
 			},
 			expected: map[string]any{
 				gcpLoadBalancingTLSInfo: map[string]any{
@@ -271,8 +267,8 @@ func TestHandleMtlsInfo(t *testing.T) {
 		{
 			name: "all fields populated",
 			info: &mtlsInfo{
-				ClientCertPresent:           boolptr(true),
-				ClientCertChainVerified:     boolptr(true),
+				ClientCertPresent:           new(true),
+				ClientCertChainVerified:     new(true),
 				ClientCertError:             "",
 				ClientCertSha256Fingerprint: "abc123",
 				ClientCertSerialNumber:      "12345",
@@ -307,8 +303,8 @@ func TestHandleMtlsInfo(t *testing.T) {
 		{
 			name: "cert present but not verified",
 			info: &mtlsInfo{
-				ClientCertPresent:       boolptr(true),
-				ClientCertChainVerified: boolptr(false),
+				ClientCertPresent:       new(true),
+				ClientCertChainVerified: new(false),
 				ClientCertError:         "cert not verified",
 			},
 			expected: map[string]any{
@@ -322,7 +318,7 @@ func TestHandleMtlsInfo(t *testing.T) {
 		{
 			name: "cert not present",
 			info: &mtlsInfo{
-				ClientCertPresent: boolptr(false),
+				ClientCertPresent: new(false),
 			},
 			expected: map[string]any{
 				gcpLoadBalancingMtlsInfo: map[string]any{
@@ -344,7 +340,7 @@ func TestHandleMtlsInfo(t *testing.T) {
 		{
 			name: "partial fields",
 			info: &mtlsInfo{
-				ClientCertPresent:      boolptr(true),
+				ClientCertPresent:      new(true),
 				ClientCertSerialNumber: "67890",
 				ClientCertSpiffeID:     "spiffe://test.com/app",
 			},

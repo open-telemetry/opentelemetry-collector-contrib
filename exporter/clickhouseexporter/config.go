@@ -28,9 +28,9 @@ type Config struct {
 	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
 	collectorVersion string
 
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	BackOffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`

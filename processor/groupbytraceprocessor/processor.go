@@ -92,7 +92,7 @@ func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
 	// start these metrics, as it might take a while for them to receive their first event
 	sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 0)
 	sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 0)
-	sp.telemetryBuilder.ProcessorGroupbytraceConfNumTraces.Record(context.Background(), (int64(sp.config.NumTraces)))
+	sp.telemetryBuilder.ProcessorGroupbytraceConfNumTraces.Record(context.Background(), int64(sp.config.NumTraces))
 	sp.eventMachine.startInBackground()
 	return sp.st.start()
 }

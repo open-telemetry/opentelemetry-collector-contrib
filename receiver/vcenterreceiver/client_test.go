@@ -16,14 +16,17 @@ import (
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/types"
+	vsantypes "github.com/vmware/govmomi/vsan/types"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap"
 )
 
 func TestDatacenters(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			vm:        vm,
 		}
@@ -38,6 +41,7 @@ func TestDatastores(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -58,6 +62,7 @@ func TestEmptyDatastores(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -75,6 +80,7 @@ func TestComputeResources(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -93,6 +99,7 @@ func TestComputeResourcesWithStandalone(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -110,6 +117,7 @@ func TestHostSystems(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -131,6 +139,7 @@ func TestEmptyHostSystems(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -148,6 +157,7 @@ func TestResourcePools(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -165,6 +175,7 @@ func TestVMs(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -184,6 +195,7 @@ func TestEmptyVMs(t *testing.T) {
 		finder := find.NewFinder(c)
 		vm := view.NewManager(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
@@ -203,6 +215,7 @@ func TestPerfMetricsQuery(t *testing.T) {
 		m := view.NewManager(c)
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			vm:        m,
 			pm:        pm,
@@ -218,6 +231,31 @@ func TestPerfMetricsQuery(t *testing.T) {
 	}, esx)
 }
 
+func TestPerfMetricsQuery_FallbackOnBatchError(t *testing.T) {
+	esx := simulator.ESX()
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		pm := performance.NewManager(c)
+		m := view.NewManager(c)
+		finder := find.NewFinder(c)
+		client := vcenterClient{
+			logger:    zap.NewNop(),
+			vimDriver: c,
+			vm:        m,
+			pm:        pm,
+			finder:    finder,
+		}
+		hs, err := finder.DefaultHostSystem(ctx)
+		require.NoError(t, err)
+
+		spec := types.PerfQuerySpec{Format: string(types.PerfFormatNormal), IntervalId: int32(20)}
+
+		metrics, err := client.PerfMetricsQuery(ctx, spec, []string{"invalid.metric.name"}, []types.ManagedObjectReference{hs.Reference()})
+		require.NoError(t, err)
+		require.NotNil(t, metrics)
+		require.Empty(t, metrics.resultsByRef)
+	}, esx)
+}
+
 func TestPerfMetricsQueryBatching(t *testing.T) {
 	vpx := simulator.VPX()
 	vpx.Host = 10
@@ -226,6 +264,7 @@ func TestPerfMetricsQueryBatching(t *testing.T) {
 		m := view.NewManager(c)
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			vm:        m,
 			pm:        pm,
@@ -260,6 +299,7 @@ func TestDatacenterInventoryListObjects(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -275,6 +315,7 @@ func TestResourcePoolInventoryListObjects(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -296,6 +337,7 @@ func TestVAppInventoryListObjects(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -313,6 +355,7 @@ func TestEmptyVAppInventoryListObjects(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			finder:    finder,
 		}
@@ -329,6 +372,7 @@ func TestSessionReestablish(t *testing.T) {
 		sm := session.NewManager(c)
 		pw, _ := simulator.DefaultLogin.Password()
 		client := vcenterClient{
+			logger:    zap.NewNop(),
 			vimDriver: c,
 			cfg: &Config{
 				Username: simulator.DefaultLogin.Username(),
@@ -354,4 +398,47 @@ func TestSessionReestablish(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, connected)
 	})
+}
+
+func TestConvertVSANResultToMetricResults(t *testing.T) {
+	client := vcenterClient{logger: zap.NewNop()}
+
+	tests := []struct {
+		name         string
+		result       vsantypes.VsanPerfEntityMetricCSV
+		expectedUUID string
+	}{
+		{
+			name: "empty SampleInfo is skipped without error",
+			result: vsantypes.VsanPerfEntityMetricCSV{
+				EntityRefId: "cluster-domclient:52e0c79c-1111-2222-3333-444455556666",
+				SampleInfo:  "",
+				Value: []vsantypes.VsanPerfMetricSeriesCSV{
+					{
+						MetricId: vsantypes.VsanPerfMetricId{Label: "iopsRead"},
+						Values:   "",
+					},
+				},
+			},
+			expectedUUID: "52e0c79c-1111-2222-3333-444455556666",
+		},
+		{
+			name: "whitespace-only SampleInfo is skipped without error",
+			result: vsantypes.VsanPerfEntityMetricCSV{
+				EntityRefId: "host-domclient:aaaabbbb-cccc-dddd-eeee-ffff00001111",
+				SampleInfo:  "  ",
+			},
+			expectedUUID: "aaaabbbb-cccc-dddd-eeee-ffff00001111",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metricResults, err := client.convertVSANResultToMetricResults(tt.result)
+			require.NoError(t, err)
+			require.NotNil(t, metricResults)
+			require.Equal(t, tt.expectedUUID, metricResults.UUID)
+			require.Empty(t, metricResults.MetricDetails)
+		})
+	}
 }

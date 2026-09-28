@@ -51,6 +51,7 @@ func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Re
 	rb.SetProcessExecutableName(m.executable.name)
 	rb.SetProcessExecutablePath(m.executable.path)
 	rb.SetProcessCgroup(m.executable.cgroup)
+	rb.SetProcessLinuxCgroup(m.executable.cgroup)
 	if m.command != nil {
 		rb.SetProcessCommand(m.command.command)
 		if m.command.commandLineSlice != nil {
@@ -108,7 +109,7 @@ func (p *gopsProcessHandles) Pid(index int) int32 {
 }
 
 func (p *gopsProcessHandles) At(index int) processHandle {
-	return &(p.handles[index])
+	return &p.handles[index]
 }
 
 func (p *gopsProcessHandles) Len() int {

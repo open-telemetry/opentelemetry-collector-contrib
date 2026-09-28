@@ -1,10 +1,10 @@
-spanpruning:
+span_pruning:
   group_by_attributes:
     - "db.operation"
   min_spans_to_aggregate: 5
   aggregation_attribute_prefix: "aggregation."
 
-spanpruning/custom:
+span_pruning/custom:
   group_by_attributes:
     - "db.operation"
     - "db.name"
@@ -17,7 +17,7 @@ spanpruning/custom:
     - "500ms"
     - "1s"
 
-spanpruning/attribute_loss:
+span_pruning/attribute_loss:
   group_by_attributes:
     - "db.operation"
   min_spans_to_aggregate: 4

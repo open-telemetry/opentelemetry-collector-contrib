@@ -226,7 +226,8 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	default:
 		logger.Warn(
 			"Unsupported metric type : ",
-			zap.Any("metric", md))
+			zap.Any("metric", md),
+		)
 		return nil
 	}
 }

@@ -74,7 +74,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 	}
 
 	transport := "http"
-	if cfg.TLS.HasValue() {
+	if cfg.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -95,7 +95,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 		obsrecv:             obsrecv,
 		gzipPool:            &sync.Pool{New: func() any { return new(gzip.Reader) }},
 		includeHeadersRegex: includeHeaderRegex,
-		maxRequestBodySize:  int(cfg.MaxRequestBodySize),
+		maxRequestBodySize:  int(cfg.ServerConfig.MaxRequestBodySize),
 	}
 
 	return er, nil
@@ -109,7 +109,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// create listener from config
-	ln, err := er.cfg.ToListener(ctx)
+	ln, err := er.cfg.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.ToServer(ctx, host.GetExtensions(), er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ServerConfig.ToServer(ctx, host.GetExtensions(), er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}

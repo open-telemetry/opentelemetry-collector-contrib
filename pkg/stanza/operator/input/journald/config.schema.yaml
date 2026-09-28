@@ -7,6 +7,8 @@ $defs:
         type: boolean
       convert_message_bytes:
         type: boolean
+      convert_to_semantic_conventions:
+        type: boolean
       directory:
         x-pointer: true
         type: string
@@ -22,6 +24,8 @@ $defs:
         type: array
         items:
           type: string
+      include_log_record_original:
+        type: boolean
       journalctl_path:
         type: string
       matches:

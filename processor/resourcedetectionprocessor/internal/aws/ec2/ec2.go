@@ -61,7 +61,7 @@ type Detector struct {
 	tagsFromIMDS          bool
 }
 
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	awsConfig, err := config.LoadDefaultConfig(context.Background())
 	awsConfig.Retryer = func() aws.Retryer {
@@ -84,7 +84,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		logger:                set.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		ec2ClientBuilder:      &ec2ClientBuilder{},
-		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 		tagsFromIMDS:          cfg.TagsFromIMDS,
 	}, nil
 }

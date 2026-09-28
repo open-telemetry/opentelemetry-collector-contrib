@@ -1,5 +1,0 @@
-change_type: deprecation
-component: processor/cumulative_to_delta
-note: Rename the 'cumulativetodelta' processor to 'cumulative_to_delta'. The old 'cumulativetodelta' type remains available as a deprecated alias.
-issues: [45339]
-change_logs: [user]

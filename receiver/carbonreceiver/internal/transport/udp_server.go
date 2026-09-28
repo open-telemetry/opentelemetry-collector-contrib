@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/protocol"
 )
 
 type udpServer struct {
@@ -66,9 +66,9 @@ func (u *udpServer) ListenAndServe(
 			u.reporter.OnDebugf(
 				"UDP Transport (%s) - ReadFrom error: %v",
 				u.packetConn.LocalAddr(),
-				err)
-			var netErr net.Error
-			if errors.As(err, &netErr) {
+				err,
+			)
+			if netErr, ok := errors.AsType[net.Error](err); ok {
 				if netErr.Timeout() {
 					continue
 				}

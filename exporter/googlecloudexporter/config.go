@@ -13,7 +13,7 @@ import (
 
 // Config defines configuration for Google Cloud exporter.
 type Config struct {
-	collector.Config `mapstructure:",squash"`
+	Config collector.Config `mapstructure:",squash"`
 
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.

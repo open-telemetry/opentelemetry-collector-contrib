@@ -73,3 +73,54 @@ func Test_IsString_Error(t *testing.T) {
 	_, ok := err.(ottl.TypeError)
 	assert.False(t, ok)
 }
+
+func Test_IsStringFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsStringFactory[any]()
+		assert.Equal(t, "IsString", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsStringFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &isStringArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsStringFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isStringArgs, ok := args.(*isStringArguments[any])
+		require.True(t, ok)
+		isStringArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsStringFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsStringFactory args must be of type *isStringArguments[K]")
+	})
+}
+
+func BenchmarkIsString(b *testing.B) {
+	exprFunc := isString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "a string", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

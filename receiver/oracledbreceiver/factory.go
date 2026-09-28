@@ -33,7 +33,8 @@ func NewFactory() receiver.Factory {
 		}, newDbClient), metadata.MetricsStability),
 		receiver.WithLogs(createLogsReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
 			return sql.Open("oracle", dataSourceName)
-		}, newDbClient), metadata.LogsStability))
+		}, newDbClient), metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -54,6 +55,11 @@ func createDefaultConfig() component.Config {
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
 			CollectionInterval:  time.Minute,
+		},
+		ProcedureMetrics: ProcedureMetrics{
+			MaxProcedureSampleCount: 1000,
+			TopProcedureCount:       250,
+			CollectionInterval:      time.Minute,
 		},
 	}
 }
@@ -118,16 +124,24 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 		}
 
 		// cacheSize is kept at 2 times MaxQuerySampleCount to keep queries of adjacent collections available for delta calculation.
-		cacheSize := sqlCfg.MaxQuerySampleCount * 2
+		cacheSize := sqlCfg.TopQueryCollection.MaxQuerySampleCount * 2
 		metricCache, err := lru.New[string, map[string]int64](int(cacheSize))
 		if err != nil {
 			settings.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
 			return nil, err
 		}
 
+		// 2 times the fetch limit, to keep procedures of adjacent collections available for delta calculation.
+		procedureCacheSize := sqlCfg.ProcedureMetrics.MaxProcedureSampleCount * 2
+		procedureMetricCache, err := lru.New[string, map[string]int64](int(procedureCacheSize))
+		if err != nil {
+			settings.Logger.Error("Failed to create procedure metrics LRU cache, skipping the current scraper", zap.Error(err))
+			return nil, err
+		}
+
 		mp, err := newLogsScraper(logsBuilder, sqlCfg.LogsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(getDataSource(*sqlCfg))
-		}, clientProviderFunc, instanceName, metricCache, sqlCfg.TopQueryCollection, sqlCfg.QuerySample, sqlCfg.SessionWaitEvent, hostName)
+		}, clientProviderFunc, instanceName, metricCache, sqlCfg.TopQueryCollection, sqlCfg.QuerySample, sqlCfg.SessionWaitEvent, hostName, procedureMetricCache, sqlCfg.ProcedureMetrics)
 		if err != nil {
 			return nil, err
 		}

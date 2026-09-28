@@ -16,20 +16,20 @@ import (
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/15020;
 // replace this with the generated equivalent once it lands.
 func validatePlatformEnabledMetrics(cfg *Config, logger *zap.Logger) {
-	if cfg.Metrics.ProcessContextSwitches.Enabled {
+	if cfg.MetricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled {
 		logger.Warn("process.context_switches is only supported on Linux; disabling metric on this platform")
-		cfg.Metrics.ProcessContextSwitches.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled = false
 	}
-	if cfg.Metrics.ProcessPagingFaults.Enabled {
+	if cfg.MetricsBuilderConfig.Metrics.ProcessPagingFaults.Enabled {
 		logger.Warn("process.paging.faults is only supported on Linux; disabling metric on this platform")
-		cfg.Metrics.ProcessPagingFaults.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.ProcessPagingFaults.Enabled = false
 	}
-	if cfg.Metrics.ProcessSignalsPending.Enabled {
+	if cfg.MetricsBuilderConfig.Metrics.ProcessSignalsPending.Enabled {
 		logger.Warn("process.signals_pending is only supported on Linux; disabling metric on this platform")
-		cfg.Metrics.ProcessSignalsPending.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.ProcessSignalsPending.Enabled = false
 	}
-	if cfg.Metrics.ProcessHandles.Enabled {
+	if cfg.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
 		logger.Warn("process.handles is only supported on Windows; disabling metric on this platform")
-		cfg.Metrics.ProcessHandles.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled = false
 	}
 }
