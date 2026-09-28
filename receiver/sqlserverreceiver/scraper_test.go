@@ -789,6 +789,20 @@ func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
 	queryPlanAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_plan")
 	assert.True(t, ok)
 	assert.NotEmpty(t, queryPlanAttr.Str())
+
+	// db.system.name and db.namespace identify the engine and the database on the other three log
+	// events, so a consumer filtering or routing on either must not lose plan records.
+	dbSystemNameAttr, ok := queryPlanRecord.Attributes().Get("db.system.name")
+	assert.True(t, ok)
+	assert.Equal(t, "microsoft.sql_server", dbSystemNameAttr.Str())
+
+	dbNamespaceOnQueryPlan, ok := queryPlanRecord.Attributes().Get("db.namespace")
+	require.True(t, ok)
+	dbNamespaceOnTopQuery, ok := topQueryRecord.Attributes().Get("db.namespace")
+	require.True(t, ok)
+	// Both records describe the same statement, so they have to agree on the database.
+	assert.Equal(t, dbNamespaceOnTopQuery.Str(), dbNamespaceOnQueryPlan.Str())
+	assert.NotEmpty(t, dbNamespaceOnQueryPlan.Str())
 }
 
 // TestQueryTextAndPlanQueryDbServerQueryPlanEventDisabled covers the default configuration, where
