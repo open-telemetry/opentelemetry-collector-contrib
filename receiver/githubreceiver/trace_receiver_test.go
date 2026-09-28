@@ -25,11 +25,6 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 
 	userServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	userServerConfig.WriteTimeout = 0
-	userServerConfig.ReadHeaderTimeout = 0
-	userServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	userServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	userServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",

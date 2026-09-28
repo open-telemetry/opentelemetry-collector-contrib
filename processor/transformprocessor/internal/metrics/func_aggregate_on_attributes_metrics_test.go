@@ -465,3 +465,22 @@ func getTestExponentialHistogramMetricMultiple() pmetric.Metric {
 
 	return metricInput
 }
+
+func BenchmarkAggregateOnAttributes(b *testing.B) {
+	expr, err := AggregateOnAttributes(aggregateutil.Sum, ottl.NewTestingOptional[[]string]([]string{"key1"}))
+	if err != nil {
+		b.Fatal(err)
+	}
+	template := getTestSumMetricMultipleAttributes()
+	metric := pmetric.NewMetric()
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		_, err = expr(b.Context(), transformContext)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

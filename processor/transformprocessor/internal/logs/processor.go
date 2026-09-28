@@ -5,9 +5,9 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -24,10 +24,10 @@ type parsedContextStatements struct {
 }
 
 type Processor struct {
-	contexts     []parsedContextStatements
-	logger       *zap.Logger
-	flatMode     bool
-	sharedCaches map[common.ContextID]*pcommon.Map
+	contexts            []parsedContextStatements
+	logger              *zap.Logger
+	flatMode            bool
+	sharedCacheContexts []common.ContextID
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
@@ -53,22 +53,19 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, errors
 	}
 
-	var sharedCaches map[common.ContextID]*pcommon.Map
+	var sharedCacheContexts []common.ContextID
 	for _, c := range contexts {
-		if c.sharedCache {
-			if sharedCaches == nil {
-				sharedCaches = map[common.ContextID]*pcommon.Map{}
-			}
-			m := pcommon.NewMap()
-			sharedCaches[c.Context()] = &m
+		if !c.sharedCache || slices.Contains(sharedCacheContexts, c.Context()) {
+			continue
 		}
+		sharedCacheContexts = append(sharedCacheContexts, c.Context())
 	}
 
 	return &Processor{
-		contexts:     contexts,
-		logger:       settings.Logger,
-		flatMode:     flatMode,
-		sharedCaches: sharedCaches,
+		contexts:            contexts,
+		logger:              settings.Logger,
+		flatMode:            flatMode,
+		sharedCacheContexts: sharedCacheContexts,
 	}, nil
 }
 
@@ -78,13 +75,16 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 		defer pdatautil.GroupByResourceLogs(ld.ResourceLogs())
 	}
 
+	sharedCaches := common.NewSharedCaches(p.sharedCacheContexts)
+
 	for _, c := range p.contexts {
-		cache := common.LoadContextCache(p.sharedCaches, c.Context(), c.sharedCache)
+		cache := common.LoadContextCache(sharedCaches, c.Context(), c.sharedCache)
 		err := c.ConsumeLogs(ctx, ld, cache)
 		if err != nil {
 			p.logger.Error("failed processing logs", zap.Error(err))
 			return ld, err
 		}
 	}
+
 	return ld, nil
 }
