@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type whenArguments[K any] struct {
@@ -19,10 +19,9 @@ type whenArguments[K any] struct {
 }
 
 // NewWhenFactory returns a factory for the When OTTL function.
-// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#when
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/xottl/ottlfuncs/README.md#when
 //
-// Experimental: *NOTE* this API is subject to change or removal in the future. It
-// requires the ottl.functions.enableLambda feature gate to be enabled.
+// The function requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewWhenFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("When", &whenArguments[K]{}, createWhenFunction[K], ottl.WithExperimental[K]())
 }
