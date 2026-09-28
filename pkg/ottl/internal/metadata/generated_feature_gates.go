@@ -27,6 +27,6 @@ var PkgOttlFunctionsEnableExperimentalFeatureGate = featuregate.GlobalRegistry()
 	"pkg.ottl.functions.enableExperimental",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47305"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927"),
 	featuregate.WithRegisterFromVersion("v0.162.0"),
 )

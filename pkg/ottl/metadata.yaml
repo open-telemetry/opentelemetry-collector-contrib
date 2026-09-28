@@ -28,4 +28,4 @@ feature_gates:
     description: Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected.
     stage: alpha
     from_version: v0.162.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47305
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927

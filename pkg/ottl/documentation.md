@@ -10,6 +10,6 @@ This component has the following feature gates:
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `ottl.functions.enableLambda` | alpha | Allow OTTL functions to take lambda arguments. When disabled, lambda arguments are rejected. | v0.155.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48227) |
 | `ottl.set.allowNil` | stable | When enabled, the set function passes nil values directly to the target. | v0.158.0 | v1.0.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49741) |
-| `pkg.ottl.functions.enableExperimental` | alpha | Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected. | v0.162.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47305) |
+| `pkg.ottl.functions.enableExperimental` | alpha | Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected. | v0.162.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
