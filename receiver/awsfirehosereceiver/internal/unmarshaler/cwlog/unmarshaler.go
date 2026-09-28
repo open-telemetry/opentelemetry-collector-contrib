@@ -4,15 +4,11 @@
 package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"sync"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -40,7 +36,6 @@ var (
 type Unmarshaler struct {
 	logger    *zap.Logger
 	buildInfo component.BuildInfo
-	gzipPool  sync.Pool
 }
 
 var _ plog.Unmarshaler = (*Unmarshaler)(nil)
@@ -52,28 +47,14 @@ func NewUnmarshaler(logger *zap.Logger, buildInfo component.BuildInfo) *Unmarsha
 
 // UnmarshalLogs deserializes the given record as CloudWatch Logs events
 // into a plog.Logs, grouping logs by owner (account ID), log group, and
-// log stream. Logs are assumed to be gzip-compressed as specified at
-// https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html.
-func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) {
-	var err error
-	r, ok := u.gzipPool.Get().(*gzip.Reader)
-	if !ok {
-		r, err = gzip.NewReader(bytes.NewReader(compressedRecord))
-	} else {
-		err = r.Reset(bytes.NewReader(compressedRecord))
-	}
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to decompress record: %w", err)
-	}
-	defer u.gzipPool.Put(r)
-
-	data, err := io.ReadAll(r)
-	if err != nil {
-		u.logger.Error("Error reading log data", zap.Error(err))
-		return plog.Logs{}, fmt.Errorf("error reading log data: %w", err)
-	}
-
-	cwLog, control, err := parseLog(data)
+// log stream.
+//
+// The record is expected to be decompressed already: CloudWatch Logs
+// subscription records arrive gzip-compressed as described at
+// https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html,
+// and the receiver decompresses them before unmarshaling.
+func (u *Unmarshaler) UnmarshalLogs(record []byte) (plog.Logs, error) {
+	cwLog, control, err := parseLog(record)
 	if err != nil {
 		u.logger.Error("Error unmarshalling log message", zap.Error(err))
 		return plog.Logs{}, fmt.Errorf("%w: %w", errInvalidRecords, err)
