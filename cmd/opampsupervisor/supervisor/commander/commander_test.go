@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -26,6 +27,8 @@ const passthroughTestModeEnv = "OTEL_SUPERVISOR_COMMANDER_TEST_MODE" // #nosec G
 // test waits for it so that the signal is not sent before the child has registered
 // its handler, which would instead terminate the process.
 const childReadyLine = "ignoring shutdown signals"
+
+const gracefulExitLine = "exiting after shutdown signal"
 
 // logAppendContinueFileEnv names the env var that tells the "log-append-after-truncate"
 // child where to look for the marker file signaling it to write its second line. Passed
@@ -52,6 +55,12 @@ func TestMain(m *testing.M) {
 		for {
 			<-ch
 		}
+	case "exit-on-interrupt":
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, os.Interrupt)
+		<-ch
+		_, _ = fmt.Fprintln(os.Stderr, gracefulExitLine)
+		os.Exit(0)
 	case "ignore-shutdown-signal":
 		// Ignore the graceful shutdown signal so Stop has to fall back to killing
 		// the process forcibly. The ready line lets the parent wait until the signal
@@ -336,5 +345,64 @@ func TestStopKillsUnresponsiveProcess(t *testing.T) {
 	}
 
 	require.NoError(t, cmdr.Stop(t.Context()))
+	require.False(t, cmdr.IsRunning())
+}
+
+func TestStopDelaysShutdownSignalForNewlyStartedAgent(t *testing.T) {
+	cmdr, err := NewCommander(
+		zap.NewNop(),
+		filepath.Join(t.TempDir(), "agent.log"),
+		config.Agent{
+			Executable:      os.Args[0],
+			PassthroughLogs: true,
+			Env: map[string]string{
+				passthroughTestModeEnv: "exit-on-interrupt",
+			},
+		},
+	)
+	require.NoError(t, err)
+	cmdr.minAgeForShutdownSignal = 2 * time.Second
+
+	var exitedGracefully atomic.Bool
+	cmdr.SetPassthroughLogHook(func(line string) {
+		if line == gracefulExitLine {
+			exitedGracefully.Store(true)
+		}
+	})
+
+	require.NoError(t, cmdr.Start(t.Context()))
+	require.NoError(t, cmdr.Stop(t.Context()))
+
+	require.GreaterOrEqual(t, time.Since(cmdr.startedAt), cmdr.minAgeForShutdownSignal)
+	require.True(t, exitedGracefully.Load(), "shutdown signal was sent before the agent registered its handler")
+	require.False(t, cmdr.IsRunning())
+}
+
+func TestStopReturnsWhenAgentExitsBeforeShutdownSignal(t *testing.T) {
+	cmdr, err := NewCommander(
+		zap.NewNop(),
+		filepath.Join(t.TempDir(), "agent.log"),
+		config.Agent{
+			Executable:      os.Args[0],
+			PassthroughLogs: true,
+			Env: map[string]string{
+				passthroughTestModeEnv: "passthrough",
+			},
+		},
+	)
+	require.NoError(t, err)
+	cmdr.minAgeForShutdownSignal = time.Minute
+
+	require.NoError(t, cmdr.Start(t.Context()))
+
+	stopDone := make(chan error, 1)
+	go func() { stopDone <- cmdr.Stop(t.Context()) }()
+
+	select {
+	case err := <-stopDone:
+		require.NoError(t, err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("Stop kept waiting to signal an agent that had already exited")
+	}
 	require.False(t, cmdr.IsRunning())
 }

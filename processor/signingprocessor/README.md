@@ -51,43 +51,51 @@ processors:
 
       # --- file provider ---
       file:
-        cert_file: /etc/otelcol/signing-cert.pem
-        key_file:  /etc/otelcol/signing-key.pem
+        certificate: /etc/otelcol/signing-cert.pem
+        private_key: /etc/otelcol/signing-key.pem
+
+      # --- file provider — HMAC-SHA256 ---
+      # file:
+      #   hmac_key: /etc/otelcol/hmac.key  # file content must be standard base64-encoded
 
       # --- env provider — asymmetric ---
       # env:
-      #   cert_env_var: SIGNING_CERT_PEM   # PEM or base64-encoded PEM
-      #   key_env_var:  SIGNING_KEY_PEM
+      #   certificate: ${env:SIGNING_CERT_PEM}   # PEM or base64-encoded PEM
+      #   private_key: ${env:SIGNING_KEY_PEM}
 
       # --- env provider — HMAC-SHA256 ---
       # env:
-      #   hmac_key_env_var: SIGNING_HMAC_KEY
+      #   hmac_key: ${env:SIGNING_HMAC_KEY}
 
       # --- Kubernetes Secret provider — asymmetric ---
       # k8s_secret:
-      #   name:      signing-secret
-      #   namespace: default              # optional, defaults to "default"
-      #   cert_key:  tls.crt
-      #   key_key:   tls.key
+      #   name:        signing-secret
+      #   namespace:   default              # optional, defaults to "default"
+      #   certificate: tls.crt
+      #   private_key: tls.key
 
       # --- Kubernetes Secret provider — HMAC-SHA256 ---
       # k8s_secret:
-      #   name:      signing-secret
+      #   name:     signing-secret
       #   namespace: default
-      #   hmac_key:  hmac.key
+      #   hmac_key: hmac.key                  # store the raw key bytes in the Secret data field
+      #                                       # (Kubernetes base64-encodes Secret data internally;
+      #                                       #  the processor receives decoded bytes directly)
 
       # --- OpenBao / Vault provider — asymmetric ---
       # bao:
       #   address:     https://bao.example.com   # optional, falls back to BAO_ADDR
       #   token:       s.xxxx                    # optional, falls back to BAO_TOKEN
-      #   secret_path: secret/data/signing
-      #   cert_field:  certificate
-      #   key_field:   private_key
+      #   mount_path:  secret                    # KV v2 mount point; default: "secret"
+      #   secret_path: signing                   # path within the mount
+      #   certificate: certificate
+      #   private_key: private_key
 
       # --- OpenBao / Vault provider — HMAC-SHA256 ---
       # bao:
-      #   secret_path:   secret/data/signing
-      #   hmac_key_field: hmac_key
+      #   mount_path:  secret
+      #   secret_path: signing
+      #   hmac_key:    hmac_key             # field value must be standard base64-encoded
 ```
 
 ## Key source providers
@@ -95,17 +103,26 @@ processors:
 | Provider | Description |
 | --- | --- |
 | `file` | Reads PEM-encoded certificate and private key (RSA, ECDSA, or Ed25519) from local files, or a raw HMAC secret. Supports plain PEM and base64-encoded PEM. |
-| `env` | Reads asymmetric key material (cert + private key) or an HMAC secret from environment variables. Useful for container deployments where secrets are injected via env. |
+| `env` | Holds key material resolved by the collector's confmap layer. Field values must be the actual PEM text or base64-encoded key, typically supplied via `${env:VAR_NAME}` substitution in the collector config. Useful for container deployments where secrets are injected via environment variables. |
 | `k8s_secret` | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
 | `bao` | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine. |
+
+> **Note on the `env` key source:** The `certificate`, `private_key`, and `hmac_key`
+> fields hold the actual PEM text or base64-encoded key material, **not** environment
+> variable names. The collector's confmap layer expands `${env:VAR_NAME}` references
+> before the processor starts, so the processor always receives resolved values. See
+> [confmap environment variable substitution](https://opentelemetry.io/docs/specs/otel/configuration/data-model/#environment-variable-substitution)
+> for details. Configs that previously passed bare variable names (e.g. `certificate:
+> SIGNING_CERT_PEM`) will fail at provider construction time.
 
 ## Output attributes
 
 ### Per log record
 
-| Attribute               | Type   | Description                                                                                                     |
-|-------------------------|--------|-----------------------------------------------------------------------------------------------------------------|
-| `audit.integrity.value` | string | Base64-encoded signature (or MAC for HMAC-SHA256) of the JCS-canonical payload, using the configured algorithm. |
+| Attribute                | Type   | Description                                                                                                     |
+|--------------------------|--------|-----------------------------------------------------------------------------------------------------------------|
+| `audit.integrity.value`  | string | Base64-encoded signature (or MAC for HMAC-SHA256) of the JCS-canonical payload, using the configured algorithm. |
+| `audit.integrity.signer` | string | Always `"collector"` — identifies that the Collector signing processor added the integrity value.               |
 
 ### Per Resource (set once per ResourceLogs block)
 
@@ -121,15 +138,15 @@ canonicalises it with RFC 8785 (JCS), and signs the result. All
 `audit.integrity.*` attributes are excluded so the signature can be verified
 before those attributes are removed.
 
-| Field                | JSON key             | Encoding                                       |
-|----------------------|----------------------|------------------------------------------------|
-| `EventName`          | `event_name`         | string; omitted if empty                       |
-| `Body` (string only) | `body`               | string; omitted if not a string value          |
-| `Timestamp`          | `timestamp`          | nanoseconds since Unix epoch as decimal string |
-| `ObservedTimestamp`  | `observed_timestamp` | nanoseconds since Unix epoch as decimal string |
-| `TraceID`            | `trace_id`           | lowercase hex string; omitted if all-zero      |
-| `SpanID`             | `span_id`            | lowercase hex string; omitted if all-zero      |
-| `Attributes`         | `attributes`         | object; see scalar encoding below              |
+| Field               | JSON key             | Encoding                                                                                |
+|---------------------|----------------------|-----------------------------------------------------------------------------------------|
+| `EventName`         | `event_name`         | string; omitted if empty                                                                |
+| `Body`              | `body`               | any non-empty value (type-tagged object, same encoding as attributes); omitted if empty |
+| `Timestamp`         | `timestamp`          | nanoseconds since Unix epoch as decimal string                                          |
+| `ObservedTimestamp` | `observed_timestamp` | nanoseconds since Unix epoch as decimal string                                          |
+| `TraceID`           | `trace_id`           | lowercase hex string; omitted if all-zero                                               |
+| `SpanID`            | `span_id`            | lowercase hex string; omitted if all-zero                                               |
+| `Attributes`        | `attributes`         | object; see scalar encoding below                                                       |
 
 ### Attribute scalar encoding
 
@@ -149,7 +166,10 @@ identical canonical JSON.
 | `map`     | JSON object (values encoded recursively; max nesting depth 128)   |
 
 Serialization fails with a hard error if the total pre-JCS JSON size exceeds
-2 MiB or the attribute nesting depth exceeds 128 levels.
+2 MiB, if the attribute nesting depth exceeds 128 levels, or if the event name,
+an attribute key, a map key, or a string value is not valid UTF-8. The check
+exists because `json.Marshal` would otherwise replace each invalid byte with
+U+FFFD, and two records differing only in such bytes would share a signature.
 
 ## Example pipeline
 
@@ -166,8 +186,8 @@ processors:
     key_source:
       type: file
       file:
-        cert_file: /etc/otelcol/cert.pem
-        key_file:  /etc/otelcol/key.pem
+        certificate: /etc/otelcol/cert.pem
+        private_key: /etc/otelcol/key.pem
 
 exporters:
   otlp:

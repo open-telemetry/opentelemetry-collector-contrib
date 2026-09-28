@@ -32,7 +32,7 @@ Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {locks} | Gauge | Int | Development |
+| {lock} | Gauge | Int | Development |
 
 ### oracledb.dml_locks.usage
 
@@ -40,7 +40,7 @@ Current count of active DML (Data Manipulation Language) locks.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {locks} | Gauge | Int | Development |
+| {lock} | Gauge | Int | Development |
 
 ### oracledb.enqueue_deadlocks
 
@@ -48,7 +48,7 @@ Total number of deadlocks between table or row locks in different sessions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {deadlocks} | Sum | Int | Cumulative | true | Development |
+| {deadlock} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -62,7 +62,7 @@ Maximum limit of active enqueue locks, -1 if unlimited.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {locks} | Gauge | Int | Development |
+| {lock} | Gauge | Int | Development |
 
 ### oracledb.enqueue_locks.usage
 
@@ -70,7 +70,7 @@ Current count of active enqueue locks.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {locks} | Gauge | Int | Development |
+| {lock} | Gauge | Int | Development |
 
 ### oracledb.enqueue_resources.limit
 
@@ -78,7 +78,7 @@ Maximum limit of active enqueue resources, -1 if unlimited.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {resources} | Gauge | Int | Development |
+| {resource} | Gauge | Int | Development |
 
 ### oracledb.enqueue_resources.usage
 
@@ -86,7 +86,7 @@ Current count of active enqueue resources.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {resources} | Gauge | Int | Development |
+| {resource} | Gauge | Int | Development |
 
 ### oracledb.exchange_deadlocks
 
@@ -94,7 +94,7 @@ Number of times that a process detected a potential deadlock when exchanging two
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {deadlocks} | Sum | Int | Cumulative | true | Development |
+| {deadlock} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -108,7 +108,7 @@ Total number of calls (user and recursive) that executed SQL statements
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {executions} | Sum | Int | Cumulative | true | Development |
+| {execution} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -122,7 +122,7 @@ Number of hard parses
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {parses} | Sum | Int | Cumulative | true | Development |
+| {parse} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -136,7 +136,7 @@ Number of logical reads
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {reads} | Sum | Int | Cumulative | true | Development |
+| {read} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -150,7 +150,7 @@ Total number of parse calls.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {parses} | Sum | Int | Cumulative | true | Development |
+| {parse} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -178,7 +178,7 @@ Number of physical reads
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {reads} | Sum | Int | Cumulative | true | Development |
+| {read} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -192,7 +192,7 @@ Maximum limit of active processes, -1 if unlimited.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {processes} | Gauge | Int | Development |
+| {process} | Gauge | Int | Development |
 
 ### oracledb.processes.usage
 
@@ -200,7 +200,7 @@ Current count of active processes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {processes} | Gauge | Int | Development |
+| {process} | Gauge | Int | Development |
 
 ### oracledb.sessions.limit
 
@@ -208,7 +208,7 @@ Maximum limit of active sessions, -1 if unlimited.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {sessions} | Gauge | Int | Development |
+| {session} | Gauge | Int | Development |
 
 ### oracledb.sessions.usage
 
@@ -216,7 +216,7 @@ Count of active sessions.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {sessions} | Gauge | Int | Development |
+| {session} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -262,7 +262,7 @@ Maximum limit of active transactions, -1 if unlimited.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {transactions} | Gauge | Int | Development |
+| {transaction} | Gauge | Int | Development |
 
 ### oracledb.transactions.usage
 
@@ -270,7 +270,7 @@ Current count of active transactions.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {transactions} | Gauge | Int | Development |
+| {transaction} | Gauge | Int | Development |
 
 ### oracledb.user_commits
 
@@ -278,7 +278,7 @@ Number of user commits. When a user commits a transaction, the redo generated th
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {commits} | Sum | Int | Cumulative | true | Development |
+| {commit} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -492,7 +492,7 @@ Number of times a consistent read was requested for a block from the buffer cach
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {gets} | Sum | Int | Cumulative | true | Development |
+| {get} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -622,7 +622,7 @@ Number of times a current block was requested from the buffer cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {gets} | Sum | Int | Cumulative | true | Development |
+| {get} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -636,7 +636,7 @@ Number of DDL statements that were executed in parallel
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {statements} | Sum | Int | Cumulative | true | Development |
+| {statement} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -650,7 +650,7 @@ Number of DML statements that were executed in parallel
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {statements} | Sum | Int | Cumulative | true | Development |
+| {statement} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -926,7 +926,7 @@ Number of times parallel execution was requested and the degree of parallelism w
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {executions} | Sum | Int | Cumulative | true | Development |
+| {execution} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -940,7 +940,7 @@ Number of times parallel execution was requested and the degree of parallelism w
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {executions} | Sum | Int | Cumulative | true | Development |
+| {execution} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -954,7 +954,7 @@ Number of times parallel execution was requested and the degree of parallelism w
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {executions} | Sum | Int | Cumulative | true | Development |
+| {execution} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -968,7 +968,7 @@ Number of times parallel execution was requested and the degree of parallelism w
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {executions} | Sum | Int | Cumulative | true | Development |
+| {execution} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -982,7 +982,7 @@ Number of times parallel execution was requested but execution was serial becaus
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {executions} | Sum | Int | Cumulative | true | Development |
+| {execution} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -996,7 +996,7 @@ Number of times parallel execution was executed at the requested degree of paral
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {executions} | Sum | Int | Cumulative | true | Development |
+| {execution} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1026,7 +1026,7 @@ Rate of parse operations per second broken down by result, as computed by Oracle
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {parses}/s | Gauge | Double | Development |
+| {parse}/s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -1063,7 +1063,7 @@ Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {writes} | Sum | Int | Cumulative | true | Development |
+| {write} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1077,7 +1077,7 @@ Number of physical I/O requests issued to storage. Sourced from v$sysstat names 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1154,7 +1154,7 @@ Number of read requests for application activity
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1168,7 +1168,7 @@ Number of reads directly from disk, bypassing the buffer cache
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {reads} | Sum | Int | Cumulative | true | Development |
+| {read} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1182,7 +1182,7 @@ Number of write requests for application activity
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1196,7 +1196,7 @@ Number of physical writes
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {writes} | Sum | Int | Cumulative | true | Development |
+| {write} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1210,7 +1210,7 @@ Number of writes directly to disk, bypassing the buffer cache
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {writes} | Sum | Int | Cumulative | true | Development |
+| {write} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1224,7 +1224,7 @@ Number of SELECT statements executed in parallel
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {queries} | Sum | Int | Cumulative | true | Development |
+| {query} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -1702,6 +1702,22 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+The execution plan for a query.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
+| oracledb.sql_id | The SQL ID of the query. | Any Str | - |
+| oracledb.child_number | The child number of the query. | Any Str | - |
+| oracledb.child_address | Address of the child cursor. | Any Str | - |
+| oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
+| oracledb.query_plan | The query execution plan used by the Oracle database. | Any Str | - |
+
 ### db.server.query_sample
 
 sample query
@@ -1761,6 +1777,7 @@ Per-session wait event statistics from v$session_event.
 
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | oracledb.sid | ID of the Oracle Server session. | Any Str | - |
 | oracledb.serial | Serial number associated with a session. | Any Str | - |
 | oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |
@@ -1811,7 +1828,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | db.namespace | The database name. | Any Str | - |
 | oracle.db.service | The Oracle service name associated with the database connection. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
-| oracledb.query_plan | The query execution plan used by the SQL Server. | Any Str | - |
+| oracledb.query_plan | The query execution plan used by the Oracle database. | Any Str | - |
 | oracledb.sql_id | The SQL ID of the query. | Any Str | - |
 | oracledb.child_number | The child number of the query. | Any Str | - |
 | oracledb.child_address | Address of the child cursor. | Any Str | - |

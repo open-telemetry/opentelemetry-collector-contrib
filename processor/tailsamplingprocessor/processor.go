@@ -287,21 +287,13 @@ func (tsp *tailSamplingSpanProcessor) SetMaximumTraceSizeBytes(size uint64) {
 // traceBatch contains all spans from a single batch for a single trace.
 type traceBatch struct {
 	id        pcommon.TraceID
-	rootSpan  *ptrace.Span
+	hasRoot   bool
 	rss       ptrace.ResourceSpans
 	spanCount int64
 }
 
 type newPolicyCmd struct {
 	policies []*policy
-}
-
-// spanAndScope a structure for holding information about span and its instrumentation scope.
-// required for preserving the instrumentation library information while sampling.
-// We use pointers there to fast find the span in the map.
-type spanAndScope struct {
-	span                 *ptrace.Span
-	instrumentationScope *pcommon.InstrumentationScope
 }
 
 var (
@@ -583,7 +575,7 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 				tsp.waitForSpace(tickChan)
 			}
 
-			tsp.processTrace(trace.id, trace.rss, trace.spanCount, trace.rootSpan != nil)
+			tsp.processTrace(trace.id, trace.rss, trace.spanCount, trace.hasRoot)
 		}
 	case cmd := <-tsp.newPolicyChan:
 		tsp.policies = cmd.policies
@@ -1025,24 +1017,61 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 	return samplingpolicy.Pending, "", pkgsampling.AlwaysSampleThreshold
 }
 
-func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
-	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
-	ilss := resourceSpans.ScopeSpans()
-	for j := 0; j < ilss.Len(); j++ {
-		scope := ilss.At(j)
-		spans := scope.Spans()
-		is := scope.Scope()
-		spansLen := spans.Len()
-		for k := range spansLen {
+// splitResourceSpansByTrace copies spans from rss into one ResourceSpans per
+// trace ID. MutatesData is false, so we can't move the source. We copy in one
+// pass instead of grouping into a slice first.
+//
+// We walk scopes in order and never go back, so lastScope is enough to open
+// dest scopes in first-seen order.
+func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
+	srcScopes := rss.ScopeSpans()
+	type builder struct {
+		rs        ptrace.ResourceSpans
+		destScope ptrace.ScopeSpans
+		lastScope int // Last opened source scope for a dest (-1 until the first span)
+		count     int64
+		hasRoot   bool
+	}
+	builders := make(map[pcommon.TraceID]*builder)
+
+	for j := 0; j < srcScopes.Len(); j++ {
+		srcScope := srcScopes.At(j)
+		spans := srcScope.Spans()
+		for k := 0; k < spans.Len(); k++ {
 			span := spans.At(k)
-			key := span.TraceID()
-			idToSpans[key] = append(idToSpans[key], spanAndScope{
-				span:                 &span,
-				instrumentationScope: &is,
-			})
+			id := span.TraceID()
+			b, ok := builders[id]
+			if !ok {
+				rs := ptrace.NewResourceSpans()
+				rss.Resource().CopyTo(rs.Resource())
+				b = &builder{rs: rs, lastScope: -1}
+				builders[id] = b
+			}
+			if b.lastScope != j {
+				dest := b.rs.ScopeSpans().AppendEmpty()
+				srcScope.Scope().CopyTo(dest.Scope())
+				b.destScope = dest
+				b.lastScope = j
+			}
+			destSpan := b.destScope.Spans().AppendEmpty()
+			span.CopyTo(destSpan)
+			b.count++
+			if destSpan.ParentSpanID().IsEmpty() {
+				b.hasRoot = true
+			}
 		}
 	}
-	return idToSpans
+
+	batches := make([]traceBatch, 0, len(builders))
+	for id, b := range builders {
+		batches = append(batches, traceBatch{
+			id:        id,
+			hasRoot:   b.hasRoot,
+			rss:       b.rs,
+			spanCount: b.count,
+		})
+	}
+	return batches
 }
 
 func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {
@@ -1302,31 +1331,4 @@ func appendAllTraces(dest, src ptrace.Traces) {
 	for i := 0; i < rs.Len(); i++ {
 		appendToTraces(dest, rs.At(i))
 	}
-}
-
-func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, *ptrace.Span) {
-	rs := ptrace.NewResourceSpans()
-	rss.Resource().CopyTo(rs.Resource())
-	var rootSpan *ptrace.Span
-
-	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
-	for _, spanAndScope := range spanAndScopes {
-		// If the scope of the spanAndScope is not in the map, add it to the map and the destination.
-		var sp ptrace.Span
-		if scope, ok := scopePointerToNewScope[spanAndScope.instrumentationScope]; !ok {
-			is := rs.ScopeSpans().AppendEmpty()
-			spanAndScope.instrumentationScope.CopyTo(is.Scope())
-			scopePointerToNewScope[spanAndScope.instrumentationScope] = &is
-
-			sp = is.Spans().AppendEmpty()
-		} else {
-			sp = scope.Spans().AppendEmpty()
-		}
-
-		spanAndScope.span.CopyTo(sp)
-		if sp.ParentSpanID().IsEmpty() {
-			rootSpan = &sp
-		}
-	}
-	return rs, rootSpan
 }
