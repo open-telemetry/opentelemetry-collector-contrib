@@ -41,7 +41,7 @@ func insertTestSpan(t *testing.T, st *subtraceMemoryStorage, traceID pcommon.Tra
 	sp.SetSpanID(spanID)
 	sp.SetParentSpanID(parentID)
 	id := subtraceID{traceID: traceID, serviceID: rctx.serviceID}
-	require.NoError(t, st.insertSpan(id, newSpanContext(rctx, pcommon.NewInstrumentationScope()), sp))
+	require.NoError(t, st.insertSpan(id, newSpanContext(rctx, pcommon.NewInstrumentationScope()), sp, time.Now()))
 }
 
 func subtraceIDFor(traceID pcommon.TraceID, service string) subtraceID {
@@ -258,7 +258,7 @@ func BenchmarkSubtraceBufferAndRelease(b *testing.B) {
 						ss := rs.ScopeSpans().At(0)
 						sctx := newSpanContext(rctx, ss.Scope())
 						for k := 0; k < ss.Spans().Len(); k++ {
-							if err := st.insertSpan(id, sctx, ss.Spans().At(k)); err != nil {
+							if err := st.insertSpan(id, sctx, ss.Spans().At(k), time.Now()); err != nil {
 								b.Fatal(err)
 							}
 						}

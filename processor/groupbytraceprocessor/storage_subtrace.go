@@ -16,9 +16,10 @@ import (
 // subtraceStorage buffers spans per (trace, service). It is used exclusively
 // when EmitStrategy == EmitStrategyService.
 type subtraceStorage interface {
-	// insertSpan deep-copies and buffers one span under the given subtrace. A
+	// insertSpan deep-copies and buffers one span under the given subtrace,
+	// stamping it with arrivedAt, the time the batch carrying it was received. A
 	// span ID already held replaces the earlier copy, wherever it was held.
-	insertSpan(subtraceID, spanContext, ptrace.Span) error
+	insertSpan(id subtraceID, ctx spanContext, span ptrace.Span, arrivedAt time.Time) error
 
 	// releaseDue removes and returns the service's calls whose first span arrived
 	// at or before cutoff, each as its own slice, together with the first arrival
@@ -117,8 +118,8 @@ func newSubtraceMemoryStorage(telemetry *metadata.TelemetryBuilder) *subtraceMem
 	}
 }
 
-func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx spanContext, span ptrace.Span) error {
-	bs := newBufferedSpan(ctx, span)
+func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx spanContext, span ptrace.Span, arrivedAt time.Time) error {
+	bs := newBufferedSpan(ctx, span, arrivedAt)
 
 	s.Lock()
 	defer s.Unlock()

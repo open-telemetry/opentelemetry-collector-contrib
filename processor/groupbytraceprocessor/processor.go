@@ -54,6 +54,13 @@ var _ processor.Traces = (*groupByTraceProcessor)(nil)
 
 const bufferSize = 10_000
 
+// releaseCoalesceFraction sets how closely a subtrace's successive releases may
+// follow one another, as a fraction of wait_duration: a subtrace is woken at
+// most once per wait_duration/releaseCoalesceFraction. It trades up to that much
+// release latency for a bound on how often a subtrace re-divides its spans into
+// calls. See nextSubtraceDeadline.
+const releaseCoalesceFraction = 10
+
 // newGroupByTraceProcessor returns a new processor.
 func newGroupByTraceProcessor(set processor.Settings, nextConsumer consumer.Traces, config Config) *groupByTraceProcessor {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -195,6 +202,11 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 	// Re-arming once at the end covers every change this turn made.
 	defer worker.armSubtraceTimer()
 
+	// Only read from the clock once per-batch instead of for every span,
+	// which helps keep deadlines for per-service calls aligned instead
+	// of potentially splitting them across deadline-check ticks.
+	arrivedAt := time.Now()
+
 	var errs error
 	for _, rs := range trace.td.ResourceSpans().All() {
 		rctx := newResourceContext(rs)
@@ -203,7 +215,7 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 		for _, ss := range rs.ScopeSpans().All() {
 			sctx := newSpanContext(rctx, ss.Scope())
 			for _, s := range ss.Spans().All() {
-				if err := worker.subSt.insertSpan(id, sctx, s); err != nil {
+				if err := worker.subSt.insertSpan(id, sctx, s, arrivedAt); err != nil {
 					return multierr.Append(errs, fmt.Errorf("couldn't insert span: %w", err))
 				}
 			}
@@ -218,7 +230,7 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 		if evicted, ok := worker.subtraceBuffer.put(id); ok {
 			errs = multierr.Append(errs, sp.evictSubtrace(evicted, worker))
 		}
-		worker.deadlines.set(id, time.Now().Add(sp.config.WaitDuration))
+		worker.deadlines.set(id, arrivedAt.Add(sp.config.WaitDuration))
 	}
 	return errs
 }
@@ -365,7 +377,7 @@ func (sp *groupByTraceProcessor) onSubtraceTick(worker *eventMachineWorker) erro
 		if nextArrival.IsZero() {
 			worker.subtraceBuffer.delete(id)
 		} else {
-			worker.deadlines.set(id, nextArrival.Add(sp.config.WaitDuration))
+			worker.deadlines.set(id, sp.nextSubtraceDeadline(now, nextArrival))
 		}
 
 		if len(due) == 0 {
@@ -378,6 +390,24 @@ func (sp *groupByTraceProcessor) onSubtraceTick(worker *eventMachineWorker) erro
 		sp.releaseCalls(due)
 	}
 	return errs
+}
+
+// nextSubtraceDeadline says when a subtrace that still holds undue calls should
+// next be woken, given the release that has just run at now.
+//
+// The answer is when the earliest call left comes due, but no sooner than
+// releaseCoalesceFraction of wait_duration after this release. Without that
+// floor a subtrace is woken once per distinct first arrival among the calls it
+// holds, and re-divides everything it still holds on each waking, so a trace
+// that enters one service many times over pays for that division once per
+// entry. The floor collapses the wakings that fall close together into one,
+// which releases the calls that came due during it as a group.
+func (sp *groupByTraceProcessor) nextSubtraceDeadline(now, nextArrival time.Time) time.Time {
+	due := nextArrival.Add(sp.config.WaitDuration)
+	if floor := now.Add(sp.config.WaitDuration / releaseCoalesceFraction); due.Before(floor) {
+		return floor
+	}
+	return due
 }
 
 // releaseCalls assembles and emits calls off the worker goroutine, where

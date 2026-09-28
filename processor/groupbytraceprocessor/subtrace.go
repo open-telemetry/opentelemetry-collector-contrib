@@ -98,19 +98,21 @@ type bufferedSpan struct {
 	spanContext
 	span ptrace.Span
 
-	// arrivedAt is when the span was buffered. Each call to a service waits out
-	// wait_duration from its own first span, so a trace that comes back to a
-	// service much later doesn't inherit the earlier visit's deadline.
+	// arrivedAt is when the batch carrying the span was received. Each call to a
+	// service waits out wait_duration from its own first span, so a trace that
+	// comes back to a service much later doesn't inherit the earlier visit's
+	// deadline.
 	arrivedAt time.Time
 }
 
 // newBufferedSpan deep-copies the span so the caller can recycle its pdata
-// objects. The context is shared as-is with the other spans reported under it.
-func newBufferedSpan(ctx spanContext, span ptrace.Span) *bufferedSpan {
+// objects. The context is shared as-is with the other spans reported under it,
+// and arrivedAt with every other span in the same batch.
+func newBufferedSpan(ctx spanContext, span ptrace.Span, arrivedAt time.Time) *bufferedSpan {
 	spCopy := ptrace.NewSpan()
 	span.CopyTo(spCopy)
 
-	return &bufferedSpan{spanContext: ctx, span: spCopy, arrivedAt: time.Now()}
+	return &bufferedSpan{spanContext: ctx, span: spCopy, arrivedAt: arrivedAt}
 }
 
 // firstArrival returns when the earliest of the given spans was buffered. A

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -2128,4 +2129,129 @@ func bufferedSubtraceIDs(sp *groupByTraceProcessor) []subtraceID {
 		ids = append(ids, w.subSt.subtraceIDs()...)
 	}
 	return ids
+}
+
+func TestSubtrace_BatchSharesOneArrival(t *testing.T) {
+	traceID := makeTraceID(90)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: time.Hour, EmitStrategy: EmitStrategyService}
+	p := newUnstartedSubtraceProcessor(t, cfg, consumertest.NewNop())
+	worker := p.eventMachine.workers[0]
+
+	specs := make([]spanSpec, 0, 20)
+	for i := range 10 {
+		entry, child := makeSpanID(byte(2*i+1)), makeSpanID(byte(2*i+2))
+		specs = append(specs,
+			spanSpec{id: entry, parent: makeSpanID(200), remote: true},
+			spanSpec{id: child, parent: entry})
+	}
+	td := buildSpecTrace(traceID, "svc", specs...)
+	require.NoError(t, p.onTraceReceived(tracesWithID{id: traceID, td: td}, worker))
+
+	st := worker.subSt.(*subtraceMemoryStorage)
+	arrivals := map[time.Time]int{}
+	for _, spans := range st.traces[traceID].services {
+		for _, bs := range spans {
+			arrivals[bs.arrivedAt]++
+		}
+	}
+	assert.Len(t, arrivals, 1, "spans from one batch must share an arrival, or every call in the batch gets a waking of its own")
+
+	require.Equal(t, 1, worker.deadlines.len())
+	require.Len(t, st.traces[traceID].services, 1)
+	var serviceID string
+	for id := range st.traces[traceID].services {
+		serviceID = id
+	}
+	calls, _, err := worker.subSt.releaseDue(subtraceID{traceID: traceID, serviceID: serviceID}, time.Now())
+	require.NoError(t, err)
+	assert.Len(t, calls, 10, "all ten calls should come due together")
+}
+
+func TestNextSubtraceDeadline(t *testing.T) {
+	const waitDuration = time.Second
+	floor := waitDuration / releaseCoalesceFraction
+	now := time.Now()
+	sp := &groupByTraceProcessor{config: Config{WaitDuration: waitDuration}}
+
+	for _, tt := range []struct {
+		name        string
+		nextArrival time.Time
+		want        time.Time
+	}{
+		{
+			// Calls that came in just behind the one just released would each be due
+			// almost immediately; they wait for the floor and go out together.
+			name:        "arrival just behind the released call",
+			nextArrival: now.Add(-waitDuration).Add(time.Millisecond),
+			want:        now.Add(floor),
+		},
+		{
+			name:        "arrival exactly one window back",
+			nextArrival: now.Add(-waitDuration),
+			want:        now.Add(floor),
+		},
+		{
+			// Far enough out that its own deadline is later than the floor, so the
+			// floor doesn't come into it.
+			name:        "arrival with most of its window left",
+			nextArrival: now.Add(-waitDuration / 2),
+			want:        now.Add(waitDuration / 2),
+		},
+		{
+			name:        "arrival in the batch just taken in",
+			nextArrival: now,
+			want:        now.Add(waitDuration),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sp.nextSubtraceDeadline(now, tt.nextArrival)
+			assert.Equal(t, tt.want, got)
+			assert.False(t, got.Before(tt.nextArrival.Add(waitDuration)),
+				"a call must never be released before its own wait_duration is up")
+			assert.False(t, got.After(tt.nextArrival.Add(waitDuration).Add(floor)),
+				"a call must not be delayed by more than the coalescing window")
+		})
+	}
+}
+
+// Calls arriving in their own batches a few milliseconds apart would each get a
+// waking of their own. Coalescing collapses the ones that fall close together,
+// so the number of divisions stays well under the number of calls, and every
+// call still goes out.
+func TestSubtrace_ReleasesAreCoalesced(t *testing.T) {
+	const (
+		waitDuration = 400 * time.Millisecond
+		numCalls     = 10
+	)
+	traceID := makeTraceID(91)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: waitDuration, EmitStrategy: EmitStrategyService}
+	p := newUnstartedSubtraceProcessor(t, cfg, sink)
+
+	var ticks atomic.Int64
+	tick := p.eventMachine.onSubtraceTick
+	p.eventMachine.onSubtraceTick = func(w *eventMachineWorker) error {
+		ticks.Add(1)
+		return tick(w)
+	}
+	require.NoError(t, p.Start(t.Context(), nil))
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	// One call per batch, spaced well inside the coalescing window.
+	for i := range numCalls {
+		entry, child := makeSpanID(byte(2*i+1)), makeSpanID(byte(2*i+2))
+		require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc",
+			spanSpec{id: entry, parent: makeSpanID(200), remote: true},
+			spanSpec{id: child, parent: entry})))
+		time.Sleep(waitDuration / 100)
+	}
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 2*numCalls
+	}, 10*time.Second, 5*time.Millisecond, "every call must still be released")
+	assert.Len(t, sink.AllTraces(), numCalls, "each call is still its own batch")
+	t.Logf("%d calls released over %d wakings", numCalls, ticks.Load())
+	assert.Less(t, ticks.Load(), int64(numCalls),
+		"the subtrace should have been woken fewer times than it holds calls")
 }

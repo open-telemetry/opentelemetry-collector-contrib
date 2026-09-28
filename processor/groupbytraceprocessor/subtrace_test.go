@@ -61,7 +61,7 @@ func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callIn
 		if in.remote {
 			s.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
 		}
-		spans[in.id] = newBufferedSpan(ctx, s)
+		spans[in.id] = newBufferedSpan(ctx, s, time.Now())
 		traceSpanIDs[in.id] = service
 	}
 	for _, id := range elsewhere {
@@ -297,7 +297,7 @@ func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(i))
 		s.SetTraceID(makeTraceID(1))
-		members = append(members, newBufferedSpan(ctx, s))
+		members = append(members, newBufferedSpan(ctx, s, time.Now()))
 	}
 
 	td := assemble(members)
@@ -312,7 +312,7 @@ func TestAssemble_SeparatesDistinctResources(t *testing.T) {
 		r.Attributes().PutStr("service.name", service)
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
-		return newBufferedSpan(newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope()), s)
+		return newBufferedSpan(newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope()), s, time.Now())
 	}
 
 	td := assemble([]*bufferedSpan{makeBS("svc-a", 1), makeBS("svc-b", 2)})
@@ -330,7 +330,7 @@ func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
 		sc.SetVersion(version)
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
-		return newBufferedSpan(newSpanContext(rctx, sc), s)
+		return newBufferedSpan(newSpanContext(rctx, sc), s, time.Now())
 	}
 
 	td := assemble([]*bufferedSpan{makeBS("lib@2", "", 1), makeBS("lib", "2", 2)})
@@ -381,7 +381,7 @@ func TestAssemble_PreservesSpanPayload(t *testing.T) {
 	lk.SetTraceID(makeTraceID(9))
 	lk.Attributes().PutStr("link.kind", "follows_from")
 
-	td := assemble([]*bufferedSpan{newBufferedSpan(newSpanContext(resourceContextFor(r), sc), s)})
+	td := assemble([]*bufferedSpan{newBufferedSpan(newSpanContext(resourceContextFor(r), sc), s, time.Now())})
 
 	require.Equal(t, 1, td.ResourceSpans().Len())
 	rs := td.ResourceSpans().At(0)
@@ -428,7 +428,7 @@ func TestAssemble_TakesOwnershipOfSpans(t *testing.T) {
 	s.SetSpanID(makeSpanID(1))
 	s.SetName("GET /api/checkout")
 	s.Attributes().PutStr("http.request.method", "GET")
-	bs := newBufferedSpan(ctx, s)
+	bs := newBufferedSpan(ctx, s, time.Now())
 
 	td := assemble([]*bufferedSpan{bs})
 	require.Equal(t, 1, td.SpanCount())
