@@ -51,7 +51,7 @@ func resourceContextFor(r pcommon.Resource) resourceContext {
 func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callInput) (map[pcommon.SpanID][]*bufferedSpan, map[pcommon.SpanID][16]byte) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", service)
-	ctx := newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope())
+	ctx := newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope(), "")
 
 	// otherServiceID is a sentinel for spans that live in a different service.
 	// It only needs to be distinct from ctx.serviceID; splitCalls checks
@@ -297,7 +297,7 @@ func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
 	r.Attributes().PutStr("service.name", "svc-a")
 	sc := pcommon.NewInstrumentationScope()
 	sc.SetName("lib")
-	ctx := newSpanContext(resourceContextFor(r), sc)
+	ctx := newSpanContext(resourceContextFor(r), sc, "")
 
 	var members []*bufferedSpan
 	for i := byte(1); i <= 3; i++ {
@@ -319,11 +319,43 @@ func TestAssemble_SeparatesDistinctResources(t *testing.T) {
 		r.Attributes().PutStr("service.name", service)
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
-		return newBufferedSpan(newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope()), s, time.Now())
+		return newBufferedSpan(newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope(), ""), s, time.Now())
 	}
 
 	td := assemble([]*bufferedSpan{makeBS("svc-a", 1), makeBS("svc-b", 2)})
 	assert.Equal(t, 2, td.ResourceSpans().Len())
+}
+
+func TestAssemble_SeparatesResourcesWithDistinctSchemaURL(t *testing.T) {
+	// Two ResourceSpans with identical attributes but different schema URLs must
+	// not merge into one.
+	makeBS := func(rsSchemaURL string, id byte) *bufferedSpan {
+		rs := ptrace.NewResourceSpans()
+		rs.Resource().Attributes().PutStr("service.name", "svc-a")
+		rs.SetSchemaUrl(rsSchemaURL)
+		s := ptrace.NewSpan()
+		s.SetSpanID(makeSpanID(id))
+		return newBufferedSpan(newSpanContext(newResourceContext(rs), pcommon.NewInstrumentationScope(), ""), s, time.Now())
+	}
+
+	td := assemble([]*bufferedSpan{makeBS("https://opentelemetry.io/schemas/1.24.0", 1), makeBS("https://opentelemetry.io/schemas/1.25.0", 2)})
+	assert.Equal(t, 2, td.ResourceSpans().Len())
+}
+
+func TestAssemble_PreservesScopeSchemaURL(t *testing.T) {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("service.name", "svc-a")
+	rctx := resourceContextFor(r)
+
+	sc := pcommon.NewInstrumentationScope()
+	sc.SetName("lib")
+	s := ptrace.NewSpan()
+	s.SetSpanID(makeSpanID(1))
+
+	td := assemble([]*bufferedSpan{newBufferedSpan(newSpanContext(rctx, sc, "https://opentelemetry.io/schemas/1.24.0"), s, time.Now())})
+	require.Equal(t, 1, td.ResourceSpans().Len())
+	require.Equal(t, 1, td.ResourceSpans().At(0).ScopeSpans().Len())
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.24.0", td.ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
 }
 
 func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
@@ -337,7 +369,7 @@ func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
 		sc.SetVersion(version)
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
-		return newBufferedSpan(newSpanContext(rctx, sc), s, time.Now())
+		return newBufferedSpan(newSpanContext(rctx, sc, ""), s, time.Now())
 	}
 
 	td := assemble([]*bufferedSpan{makeBS("lib@2", "", 1), makeBS("lib", "2", 2)})
@@ -388,7 +420,7 @@ func TestAssemble_PreservesSpanPayload(t *testing.T) {
 	lk.SetTraceID(makeTraceID(9))
 	lk.Attributes().PutStr("link.kind", "follows_from")
 
-	td := assemble([]*bufferedSpan{newBufferedSpan(newSpanContext(resourceContextFor(r), sc), s, time.Now())})
+	td := assemble([]*bufferedSpan{newBufferedSpan(newSpanContext(resourceContextFor(r), sc, ""), s, time.Now())})
 
 	require.Equal(t, 1, td.ResourceSpans().Len())
 	rs := td.ResourceSpans().At(0)
@@ -429,7 +461,7 @@ func TestAssemble_PreservesSpanPayload(t *testing.T) {
 func TestAssemble_TakesOwnershipOfSpans(t *testing.T) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", "svc-a")
-	ctx := newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope())
+	ctx := newSpanContext(resourceContextFor(r), pcommon.NewInstrumentationScope(), "")
 
 	s := ptrace.NewSpan()
 	s.SetSpanID(makeSpanID(1))

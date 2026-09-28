@@ -213,7 +213,7 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 		id := subtraceID{traceID: trace.id, serviceID: rctx.serviceID}
 
 		for _, ss := range rs.ScopeSpans().All() {
-			sctx := newSpanContext(rctx, ss.Scope())
+			sctx := newSpanContext(rctx, ss.Scope(), ss.SchemaUrl())
 			for _, s := range ss.Spans().All() {
 				if err := worker.subSt.insertSpan(id, sctx, s, arrivedAt); err != nil {
 					return multierr.Append(errs, fmt.Errorf("couldn't insert span: %w", err))

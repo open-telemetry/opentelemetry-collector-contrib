@@ -26,9 +26,10 @@ type subtraceID struct {
 // are kept separate rather than concatenated so that, for instance, the scope
 // named "lib@2" with no version can't collide with "lib" at version "2".
 type scopeKey struct {
-	name     string
-	version  string
-	attrHash [16]byte
+	name      string
+	version   string
+	attrHash  [16]byte
+	schemaURL string
 }
 
 // resourceContext holds the resource a span was reported under, together with
@@ -77,7 +78,7 @@ type spanContext struct {
 // newSpanContext deep-copies the scope and pairs it with an already-built
 // resourceContext, which it shares as-is with the other scopes under that
 // resource.
-func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope) spanContext {
+func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope, schemaURL string) spanContext {
 	sCopy := pcommon.NewInstrumentationScope()
 	scope.CopyTo(sCopy)
 
@@ -85,9 +86,10 @@ func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope) sp
 		resourceContext: rctx,
 		scope:           sCopy,
 		scopeKey: scopeKey{
-			name:     sCopy.Name(),
-			version:  sCopy.Version(),
-			attrHash: xhash.MapHash(sCopy.Attributes()),
+			name:      sCopy.Name(),
+			version:   sCopy.Version(),
+			attrHash:  xhash.MapHash(sCopy.Attributes()),
+			schemaURL: schemaURL,
 		},
 	}
 }
@@ -291,26 +293,33 @@ func assemble(members []*bufferedSpan) ptrace.Traces {
 	td := ptrace.NewTraces()
 
 	type rsKey struct {
-		resource [16]byte
-		scope    scopeKey
+		resource  [16]byte
+		schemaURL string
+		scope     scopeKey
 	}
 	rsMap := map[rsKey]ptrace.ScopeSpans{}
-	rsIndex := map[[16]byte]ptrace.ResourceSpans{}
+	type rsIndexKey struct {
+		resource  [16]byte
+		schemaURL string
+	}
+	rsIndex := map[rsIndexKey]ptrace.ResourceSpans{}
 
 	for _, bs := range members {
-		key := rsKey{resource: bs.resourceKey, scope: bs.scopeKey}
+		key := rsKey{resource: bs.resourceKey, schemaURL: bs.schemaURL, scope: bs.scopeKey}
 
 		ss, found := rsMap[key]
 		if !found {
-			rs, ok := rsIndex[bs.resourceKey]
+			idxKey := rsIndexKey{resource: bs.resourceKey, schemaURL: bs.schemaURL}
+			rs, ok := rsIndex[idxKey]
 			if !ok {
 				rs = td.ResourceSpans().AppendEmpty()
 				bs.resource.CopyTo(rs.Resource())
 				rs.SetSchemaUrl(bs.schemaURL)
-				rsIndex[bs.resourceKey] = rs
+				rsIndex[idxKey] = rs
 			}
 			ss = rs.ScopeSpans().AppendEmpty()
 			bs.scope.CopyTo(ss.Scope())
+			ss.SetSchemaUrl(bs.scopeKey.schemaURL)
 			rsMap[key] = ss
 		}
 
