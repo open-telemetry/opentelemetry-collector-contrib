@@ -586,7 +586,7 @@ func TestReceiverMetrics(t *testing.T) {
 
 	sendDone := make(chan struct{})
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
-		func(_ *arrowpb.BatchStatus) error {
+		func(_ *arrowpb.BatchStatus) error { //nolint:unparam // flagged only because t.Skip makes this unreachable
 			close(sendDone)
 			return nil
 		},
