@@ -7,10 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/metadata"
 )
@@ -35,7 +36,6 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorAdaptiveTailSamplingDecisionSampleRate.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingDecisionTriggers.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingFingerprintDuration.Record(context.Background(), 1)
-	tb.ProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingFleetMemberCount.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingFleetTrackerErrors.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable.Add(context.Background(), 1)
@@ -53,9 +53,6 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingFingerprintDuration(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingFleetMemberCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

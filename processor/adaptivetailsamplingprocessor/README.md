@@ -590,7 +590,7 @@ Caveats:
 - The division is integer, so a goal that does not divide evenly under-delivers slightly (e.g. `goal_throughput: 10` across 4 instances yields an effective goal of `2`, not `2.5`, for a fleet total of `8`); see [honeycombio/dynsampler-go#112](https://github.com/honeycombio/dynsampler-go/issues/112).
 - When N is larger than `goal_throughput`, the per-instance goal floors at 1 span/s (it is never divided below 1), so the fleet emits up to N, more than the configured budget (e.g. `goal_throughput: 10` with `N: 40` emits up to 40 total).
 
-No `FleetTracker` extension ships in this repository yet; `FleetTracker` is the exported interface implementations are expected to satisfy (a `redis_fleet_tracker` extension backed by shared counters is proposed separately).
+No `FleetTracker` extension ships in this repository yet; `FleetTracker` is the exported interface implementations are expected to satisfy (a `redis_fleet_tracker` extension that heartbeats fleet membership into Redis is maintained separately).
 
 ## Known limitations
 
@@ -727,8 +727,7 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_adaptive_tail_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer under pressure. Each still receives a decision per the eviction policy. |
 | `otelcol_processor_adaptive_tail_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 | `otelcol_processor_adaptive_tail_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |
-| `otelcol_processor_adaptive_tail_sampling_fleet_member_count` | Gauge |  | Current fleet member count reported by the `fleet_tracker` extension. Not emitted when `fleet_tracker` is unset. |
-| `otelcol_processor_adaptive_tail_sampling_fleet_effective_goal_throughput` | Gauge | `rule` | Effective per-instance spans-per-second goal applied to each `adaptive_throughput` rule's sampler, i.e. `max(goal_throughput / member count, 1)`. |
+| `otelcol_processor_adaptive_tail_sampling_fleet_member_count` | Gauge |  | Current fleet member count reported by the `fleet_tracker` extension. Not emitted when `fleet_tracker` is unset. The effective per-instance goal is derivable as `max(goal_throughput / member count, 1)`. |
 | `otelcol_processor_adaptive_tail_sampling_fleet_tracker_errors` | Counter |  | Non-positive member counts received from the fleet tracker; the last good count is kept. |
 
 The `rule` label carries the matched rule's name from the config. Values

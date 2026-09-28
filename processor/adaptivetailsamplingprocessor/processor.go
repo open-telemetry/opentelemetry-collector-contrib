@@ -147,30 +147,9 @@ type adaptiveTailSamplingProcessor struct {
 	// default IsRootSpan(), letting the per-span check skip OTTL entirely.
 	rootSpanFastPath bool
 
-	// fleetMu guards fleetSize, fleetBad, and fleetClamped. Deliberately
-	// separate from mu: the fleet member count callback never touches the
-	// decision path, so widening this mutex's scope to cover a whole
-	// callback's work never risks contending with it.
-	fleetMu sync.Mutex
-	// fleetSize is the last good fleet member count reported by
-	// fleet_tracker, initialized to 1 in newProcessor.
-	fleetSize int
-	// fleetBad tracks whether the most recent fleet_tracker callback reported
-	// a non-positive count, so the warning in onFleetMemberCount logs only on
-	// the transition into that state.
-	fleetBad bool
-	// fleetClamped tracks, per rule name, whether that rule's fleet-divided
-	// goal is currently clamped to the 1/s floor, so the over-delivery
-	// warning in onFleetMemberCount logs only on the transition into that
-	// state.
-	fleetClamped map[string]bool
-	// fleetCancel unsubscribes from the fleet_tracker extension. Set in
-	// Start, invoked in Shutdown.
-	fleetCancel func()
-	// hasThroughputRules is true when at least one rule uses
-	// adaptive_throughput, computed once in newProcessor so Start does not
-	// need to rescan p.rules to decide whether to subscribe.
-	hasThroughputRules bool
+	// fleet groups all fleet_tracker runtime state and the member count
+	// callback; see fleetState in fleettracker.go.
+	fleet fleetState
 
 	wg sync.WaitGroup
 }
@@ -229,8 +208,13 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		rootSpanCondEvalErrs: tb.ProcessorAdaptiveTailSamplingOttlEvalErrors,
 		rootSpanCondAttrSet:  metric.WithAttributes(attribute.String("rule", rootSpanConditionRuleLabel)),
 		rootSpanFastPath:     cfg.effectiveRootSpanCondition() == defaultRootSpanCondition,
-		fleetSize:            1,
-		hasThroughputRules:   hasThroughputRules,
+		fleet: fleetState{
+			logger:             set.Logger,
+			telemetry:          tb,
+			rules:              rules,
+			size:               1,
+			hasThroughputRules: hasThroughputRules,
+		},
 	}
 
 	if err := registerSamplerMetricsCallbacks(tb, p.rules); err != nil {
@@ -418,7 +402,7 @@ func (p *adaptiveTailSamplingProcessor) Start(_ context.Context, host component.
 	if p.cfg.FleetTrackerID == nil {
 		return nil
 	}
-	if !p.hasThroughputRules {
+	if !p.fleet.hasThroughputRules {
 		// Already warned in newProcessor; nothing to subscribe to.
 		return nil
 	}
@@ -444,89 +428,14 @@ func (p *adaptiveTailSamplingProcessor) Start(_ context.Context, host component.
 	}
 	// Subscribing after samplers start is required, since the callback calls
 	// setters on live samplers. The contract's immediate first delivery may
-	// fire synchronously before fleetCancel is assigned below, which is safe
-	// because the callback never reads fleetCancel.
-	cancel, err := ft.SubscribeMemberCount(p.onFleetMemberCount)
+	// fire synchronously before fleet.cancel is assigned below, which is safe
+	// because the callback never reads fleet.cancel.
+	cancel, err := ft.SubscribeMemberCount(p.fleet.onMemberCount)
 	if err != nil {
 		return fmt.Errorf("fleet_tracker %q: subscribe: %w", *p.cfg.FleetTrackerID, err)
 	}
-	p.fleetCancel = cancel
+	p.fleet.cancel = cancel
 	return nil
-}
-
-// onFleetMemberCount applies a newly reported fleet member count to every
-// adaptive_throughput rule's sampler, dividing each rule's configured
-// goal_throughput by the count. Registered as the fleet_tracker subscription
-// callback; must not block.
-//
-// fleetMu is held across the whole non-error path: the compare against the
-// stored fleetSize, the store, the rule loop's setter calls and gauge
-// records, and the member-count gauge record. This prevents two concurrent
-// callbacks from storing and applying their counts in opposite orders, which
-// would otherwise leave fleetSize at one value and the sampler goals at
-// another; the setter dedup below would then make that divergence
-// permanent.
-func (p *adaptiveTailSamplingProcessor) onFleetMemberCount(count int) {
-	ctx := context.Background()
-	if count <= 0 {
-		p.telemetry.ProcessorAdaptiveTailSamplingFleetTrackerErrors.Add(ctx, 1)
-		p.fleetMu.Lock()
-		firstBad := !p.fleetBad
-		p.fleetBad = true
-		p.fleetMu.Unlock()
-		if firstBad {
-			p.logger.Warn("fleet tracker reported a non-positive member count; keeping the last good count", zap.Int("member_count", count))
-		}
-		return // last good N kept implicitly: samplers retain their current goal
-	}
-
-	p.fleetMu.Lock()
-	defer p.fleetMu.Unlock()
-
-	if p.fleetBad {
-		p.fleetBad = false
-		p.logger.Debug("fleet tracker recovered with a positive member count", zap.Int("member_count", count))
-	}
-
-	// The setter dedup below only guards SetGoalThroughputPerSec; gauges are
-	// recorded on every callback regardless, so a fleet that reports the same
-	// N repeatedly (or only ever delivers its initial N) still emits
-	// fleet_member_count and fleet_effective_goal_throughput.
-	applyGoals := count != p.fleetSize
-	p.fleetSize = count
-
-	for _, r := range p.rules {
-		if r.goalThroughput <= 0 {
-			continue
-		}
-		goal := max(r.goalThroughput/count, 1)
-		clamped := r.goalThroughput/count < 1
-		if clamped && !p.fleetClamped[r.name] {
-			p.logger.Warn(
-				"adaptive_throughput rule's fleet-divided goal is clamped to 1/s; the fleet now emits more than the configured budget",
-				zap.String("rule", r.name), zap.Int("goal_throughput", r.goalThroughput), zap.Int("member_count", count),
-			)
-		}
-		if clamped {
-			if p.fleetClamped == nil {
-				p.fleetClamped = make(map[string]bool)
-			}
-			p.fleetClamped[r.name] = true
-		} else {
-			delete(p.fleetClamped, r.name)
-		}
-
-		if applyGoals {
-			// The !ok case (sampler does not implement ThroughputGoalSetter)
-			// is already warned once at Start; staying silent here avoids
-			// spamming that warning on every callback.
-			if setter, ok := r.sampler.(sampler.ThroughputGoalSetter); ok {
-				setter.SetGoalThroughputPerSec(goal)
-			}
-		}
-		p.telemetry.ProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput.Record(ctx, int64(goal), r.ruleAttrSet)
-	}
-	p.telemetry.ProcessorAdaptiveTailSamplingFleetMemberCount.Record(ctx, int64(count))
 }
 
 // Shutdown cancels any pending decision timers, stops samplers, and waits for
@@ -561,9 +470,9 @@ func (p *adaptiveTailSamplingProcessor) Shutdown(ctx context.Context) error {
 	p.arrival = nil
 	p.mu.Unlock()
 
-	if p.fleetCancel != nil {
-		p.fleetCancel()
-		p.fleetCancel = nil
+	if p.fleet.cancel != nil {
+		p.fleet.cancel()
+		p.fleet.cancel = nil
 	}
 
 	p.wg.Wait()

@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
@@ -126,15 +125,10 @@ func TestFleetTracker_DivisionAndSetterCalled(t *testing.T) {
 	require.NoError(t, p.Start(t.Context(), host))
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 
-	ruleAttrs := attribute.NewSet(attribute.String("rule", "throughput"))
-
 	require.Len(t, spy.goals, 1, "the initial fleet count must be applied synchronously before Start returns")
 	assert.Equal(t, 250, spy.goals[0])
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingFleetMemberCount(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 4}},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-	metadatatest.AssertEqualProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput(t, tt,
-		[]metricdata.DataPoint[int64]{{Value: 250, Attributes: ruleAttrs}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	ft.push(2)
@@ -166,8 +160,8 @@ func TestFleetTracker_Clamp(t *testing.T) {
 	ft.push(40)
 	require.Len(t, spy.goals, 1)
 	assert.Equal(t, 1, spy.goals[0])
-	metadatatest.AssertEqualProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput(t, tt,
-		[]metricdata.DataPoint[int64]{{Value: 1, Attributes: attribute.NewSet(attribute.String("rule", "throughput"))}},
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingFleetMemberCount(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 40}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
@@ -352,16 +346,16 @@ func TestFleetTracker_NilFleetTrackerIDNoWiring(t *testing.T) {
 // against a real adaptive_throughput sampler rather than the spy used by the
 // other tests in this file. The sampler wrapper's inner goal value isn't
 // reachable from this package (internal/sampler exposes no accessor for it),
-// so the assertions here are observable-behavior-based instead: the
-// fleet_effective_goal_throughput gauge for the rule, and that the sampler
-// still samples/decides traces normally after its goal is divided.
+// so the assertions here are observable-behavior-based instead: the debug log
+// emitted when a divided goal is applied through ThroughputGoalSetter, and
+// that the sampler still samples/decides traces normally afterwards.
 func TestFleetTracker_RealSamplerAppliesDividedGoal(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() {
 		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
 	})
 
-	core, recorded := observer.New(zap.WarnLevel)
+	core, recorded := observer.New(zap.DebugLevel)
 	settings := metadatatest.NewSettings(tt)
 	settings.Logger = zap.New(core)
 
@@ -388,13 +382,17 @@ func TestFleetTracker_RealSamplerAppliesDividedGoal(t *testing.T) {
 	require.NoError(t, p.Start(t.Context(), host))
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 
-	// The rule's sampler does implement ThroughputGoalSetter, so the fix-4
-	// startup warning (for rules that don't) must be absent here.
-	assert.Zero(t, recorded.Len(), "no startup warning expected for a rule whose sampler implements ThroughputGoalSetter")
+	// The rule's sampler does implement ThroughputGoalSetter, so the startup
+	// warning (for rules whose samplers don't) must be absent here.
+	assert.Empty(t, recorded.FilterLevelExact(zap.WarnLevel).All(), "no startup warning expected for a rule whose sampler implements ThroughputGoalSetter")
 
-	ruleAttrs := attribute.NewSet(attribute.String("rule", "throughput"))
-	metadatatest.AssertEqualProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput(t, tt,
-		[]metricdata.DataPoint[int64]{{Value: 250, Attributes: ruleAttrs}},
+	// The divided goal (1000 / 4) must have been applied through the real
+	// sampler's ThroughputGoalSetter, observable via the apply debug log.
+	applied := recorded.FilterMessage("applied fleet-divided goal").All()
+	require.Len(t, applied, 1)
+	assert.Equal(t, int64(250), applied[0].ContextMap()["goal_per_sec"])
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingFleetMemberCount(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 4}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	trace := newRootTrace(pcommon.TraceID([16]byte{0xF1}))

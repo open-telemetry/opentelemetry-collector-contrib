@@ -67,20 +67,6 @@ func AssertEqualProcessorAdaptiveTailSamplingFingerprintDuration(t *testing.T, t
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_adaptive_tail_sampling_fleet_effective_goal_throughput",
-		Description: "Effective per-instance spans-per-second goal applied to each adaptive_throughput rule's sampler, labelled by rule, i.e. max(goal_throughput / member count, 1). [Development]",
-		Unit:        "{spans}/s",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_fleet_effective_goal_throughput")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
 func AssertEqualProcessorAdaptiveTailSamplingFleetMemberCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_fleet_member_count",

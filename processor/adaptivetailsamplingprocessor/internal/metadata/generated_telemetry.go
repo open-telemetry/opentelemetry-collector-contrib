@@ -7,10 +7,11 @@ import (
 	"errors"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -30,7 +31,6 @@ type TelemetryBuilder struct {
 	ProcessorAdaptiveTailSamplingDecisionSampleRate            metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingDecisionTriggers              metric.Int64Counter
 	ProcessorAdaptiveTailSamplingFingerprintDuration           metric.Int64Histogram
-	ProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput  metric.Int64Gauge
 	ProcessorAdaptiveTailSamplingFleetMemberCount              metric.Int64Gauge
 	ProcessorAdaptiveTailSamplingFleetTrackerErrors            metric.Int64Counter
 	ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable metric.Int64Counter
@@ -145,12 +145,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_adaptive_tail_sampling_fingerprint_duration",
 		metric.WithDescription("Time spent extracting a rule's fingerprint per decision, in microseconds, labelled by rule. A relative signal for spotting expensive fingerprints (wide scopes such as any. on large traces); absolute values depend on host and load. [Development]"),
 		metric.WithUnit("us"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorAdaptiveTailSamplingFleetEffectiveGoalThroughput, err = builder.meter.Int64Gauge(
-		"otelcol_processor_adaptive_tail_sampling_fleet_effective_goal_throughput",
-		metric.WithDescription("Effective per-instance spans-per-second goal applied to each adaptive_throughput rule's sampler, labelled by rule, i.e. max(goal_throughput / member count, 1). [Development]"),
-		metric.WithUnit("{spans}/s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingFleetMemberCount, err = builder.meter.Int64Gauge(

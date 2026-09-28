@@ -30,14 +30,6 @@ Time spent extracting a rule's fingerprint per decision, in microseconds, labell
 | ---- | ----------- | ---------- | --------- |
 | us | Histogram | Int | Development |
 
-### otelcol_processor_adaptive_tail_sampling_fleet_effective_goal_throughput
-
-Effective per-instance spans-per-second goal applied to each adaptive_throughput rule's sampler, labelled by rule, i.e. max(goal_throughput / member count, 1).
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {spans}/s | Gauge | Int | Development |
-
 ### otelcol_processor_adaptive_tail_sampling_fleet_member_count
 
 Current fleet member count reported by the fleet_tracker extension; the processor divides each rule's goal_throughput by this value. Not emitted when fleet_tracker is unset.
