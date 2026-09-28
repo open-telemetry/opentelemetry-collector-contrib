@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,6 +21,8 @@ func newEvictionTestConfig(tmpDir string) *Config {
 	return &Config{
 		FormatType: formatTypeJSON,
 		Path:       tmpDir + "/*.log",
+		// Run the flusher so the stop path is exercised.
+		FlushInterval: time.Millisecond,
 		// No rotation, so the buffered writer is used. This is the default
 		// when rotation is not set.
 		Rotation: nil,

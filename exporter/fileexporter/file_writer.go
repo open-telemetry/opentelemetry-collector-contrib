@@ -27,7 +27,6 @@ type fileWriter struct {
 	// Protected by mutex
 	refs    int  // number of active references to this writer
 	evicted bool // true if the writer has been evicted from the LRU
-	closed  bool
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
@@ -131,27 +130,16 @@ func (w *fileWriter) evict() error {
 }
 
 // shutdown stops the flusher and closes the file. It is safe to call multiple times.
+// shutdown stops the flusher and closes the file.
 func (w *fileWriter) shutdown() error {
-	w.stopFlusher()
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
-	if w.closed {
-		return nil
+	if w.stopTicker != nil {
+		close(w.stopTicker)
+		w.stopTicker = nil
 	}
-	w.closed = true
 	// Close the file. This will flush any buffered data.
 	return w.file.Close()
-}
-
-// stopFlusher stops the flusher if it is running.
-func (w *fileWriter) stopFlusher() {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
-	if w.stopTicker == nil {
-		return
-	}
-	close(w.stopTicker)
-	w.stopTicker = nil
 }
 
 func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
