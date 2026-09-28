@@ -9,6 +9,8 @@ $defs:
         type: string
       password:
         $ref: go.opentelemetry.io/collector/config/configopaque.string
+      scrape_all_certs:
+        type: boolean
     allOf:
       - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
   file_format:

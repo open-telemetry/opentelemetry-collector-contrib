@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/zap"
 
@@ -39,8 +38,8 @@ type Server struct {
 }
 
 var (
-	_ component.Component                 = (*Server)(nil)
-	_ extensioncapabilities.ConfigWatcher = (*Server)(nil)
+	_ component.Component                         = (*Server)(nil)
+	_ extensioncapabilities.ConfigSnapshotWatcher = (*Server)(nil)
 )
 
 func NewServer(
@@ -130,9 +129,9 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
-func (s *Server) NotifyConfig(_ context.Context, conf *confmap.Conf) error {
-	confBytes, err := json.Marshal(conf.ToStringMap())
+// NotifyConfigSnapshot implements the extension.ConfigSnapshotWatcher interface.
+func (s *Server) NotifyConfigSnapshot(_ context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
+	confBytes, err := json.Marshal(configSnapshot.Effective().ToStringMap())
 	if err != nil {
 		s.telemetry.Logger.Warn("could not marshal config", zap.Error(err))
 		return err

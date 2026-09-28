@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogextension
 
@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 
@@ -54,12 +55,12 @@ func TestNewExtension(t *testing.T) {
 	set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
 
 	t.Run("success", func(t *testing.T) {
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 		require.NotNil(t, ext)
-		assert.Equal(t, "test-host", ext.info.host.Identifier)
+		assert.Equal(t, "test-host", ext.info.host.SourceIdentifier.Primary)
 		assert.Equal(t, "test-uuid", ext.info.uuid)
 		assert.NotNil(t, ext.GetSerializer(), "serializer should be initialized")
 	})
@@ -83,7 +84,7 @@ func TestNewExtension(t *testing.T) {
 		ext, err := newExtension(t.Context(), cfgWithHostname, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
 		assert.False(t, hostProvider.called, "source provider must not be called when hostname is set in config")
-		assert.Equal(t, "my-configured-host", ext.info.host.Identifier)
+		assert.Equal(t, "my-configured-host", ext.info.host.SourceIdentifier.Primary)
 		assert.Equal(t, "config", ext.info.hostnameSource)
 	})
 }
@@ -91,7 +92,7 @@ func TestNewExtension(t *testing.T) {
 func TestExtensionLifecycle(t *testing.T) {
 	t.Run("start/shutdown with serializer and http server", func(t *testing.T) {
 		set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -122,8 +123,8 @@ func TestExtensionLifecycle(t *testing.T) {
 		assert.True(t, mockSerializer.startCalled, "serializer.Start should be called")
 		assert.NotEmpty(t, ext.info.modules.Receiver, "module infos should be populated")
 
-		// NotifyConfig will create and start the http server
-		err = ext.NotifyConfig(t.Context(), confmap.New())
+		// NotifyConfigSnapshot will create and start the http server
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(confmap.New(), nil))
 		require.NoError(t, err)
 		require.NotNil(t, ext.httpServer, "httpServer should be created")
 
@@ -135,7 +136,7 @@ func TestExtensionLifecycle(t *testing.T) {
 
 	t.Run("start/shutdown without serializer", func(t *testing.T) {
 		set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		cfg := &Config{API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"}}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -150,7 +151,7 @@ func TestExtensionLifecycle(t *testing.T) {
 
 	t.Run("start without ModuleInfo host capability", func(t *testing.T) {
 		set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		cfg := &Config{API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"}}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -169,7 +170,7 @@ func TestNotifyConfig(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -196,7 +197,7 @@ func TestNotifyConfig(t *testing.T) {
 			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
 		}}
 
-		err = ext.NotifyConfig(t.Context(), conf)
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(conf, nil))
 		require.NoError(t, err)
 		assert.NotNil(t, ext.configs.collector)
 		assert.NotNil(t, ext.otelCollectorMetadata)
@@ -222,7 +223,7 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 		TelemetrySettings: tel,
 		BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 	}
-	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr = confignet.AddrConfig{
@@ -242,9 +243,8 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	ext.serializer = &mockSerializer{}
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
-	// Minimal config to trigger NotifyConfig
-	conf := confmap.NewFromStringMap(map[string]any{})
-	err = ext.NotifyConfig(t.Context(), conf)
+	// Minimal config to trigger NotifyConfigSnapshot
+	err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(nil, nil))
 	require.NoError(t, err)
 
 	// Expect map with keys and values (os.type is always injected as a fallback)
@@ -269,7 +269,7 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 		TelemetrySettings: tel,
 		BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 	}
-	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr = confignet.AddrConfig{
@@ -289,9 +289,8 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 	ext.serializer = &mockSerializer{}
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
-	// Minimal config to trigger NotifyConfig
-	conf := confmap.NewFromStringMap(map[string]any{})
-	err = ext.NotifyConfig(t.Context(), conf)
+	// Minimal config to trigger NotifyConfigSnapshot
+	err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(nil, nil))
 	require.NoError(t, err)
 
 	// Verify all resource attributes are collected (os.type is always injected as a fallback)
@@ -328,7 +327,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -357,7 +356,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		})
 
 		// This should trigger the error path when SendPayload fails
-		err = ext.NotifyConfig(t.Context(), conf)
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(conf, nil))
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "payload send failed")
 
@@ -370,7 +369,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -398,7 +397,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		})
 
 		// This should trigger warning but not fail
-		err = ext.NotifyConfig(t.Context(), conf)
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(conf, nil))
 		require.NoError(t, err) // Should not fail, just log warning
 
 		// Cleanup
@@ -410,7 +409,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -447,7 +446,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		}
 
 		// This should trigger warning but not fail
-		err = ext.NotifyConfig(t.Context(), conf)
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(conf, nil))
 		require.NoError(t, err) // Should not fail, just log warning
 
 		// Cleanup
@@ -496,7 +495,7 @@ func TestExtension_DeploymentTypeInPayload(t *testing.T) {
 				TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 				BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 			}
-			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 			uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 			serverConfig := confighttp.NewDefaultServerConfig()
 			serverConfig.NetAddr = confignet.AddrConfig{
@@ -521,9 +520,8 @@ func TestExtension_DeploymentTypeInPayload(t *testing.T) {
 			ext.serializer = &mockSerializer{}
 			require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
-			// Minimal config to trigger NotifyConfig
-			conf := confmap.NewFromStringMap(map[string]any{})
-			err = ext.NotifyConfig(t.Context(), conf)
+			// Minimal config to trigger NotifyConfigSnapshot
+			err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(nil, nil))
 			require.NoError(t, err)
 
 			// Verify the deployment type is set correctly in the payload
@@ -549,7 +547,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -579,8 +577,8 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
 		}}
 
-		// NotifyConfig should start the periodic payload sending
-		err = ext.NotifyConfig(t.Context(), conf)
+		// NotifyConfigSnapshot should start the periodic payload sending
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(conf, nil))
 		require.NoError(t, err)
 
 		// Verify periodic sending components are initialized
@@ -607,7 +605,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -638,8 +636,8 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
 		}}
 
-		// NotifyConfig will send the initial payload
-		err = ext.NotifyConfig(t.Context(), conf)
+		// NotifyConfigSnapshot will send the initial payload
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(conf, nil))
 		require.NoError(t, err)
 
 		initialCount := mockSerializer.GetSendCount()
@@ -667,7 +665,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -698,8 +696,8 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			component.MustNewType("otlp"): {BuilderRef: "gomod.example/otlp v1.0.0"},
 		}}
 
-		// NotifyConfig will succeed with the first payload
-		err = ext.NotifyConfig(t.Context(), conf)
+		// NotifyConfigSnapshot will succeed with the first payload
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(conf, nil))
 		require.NoError(t, err)
 
 		// Trigger manual payload send which should fail but not crash
@@ -729,12 +727,12 @@ func TestPeriodicPayloadSending(t *testing.T) {
 }
 
 func TestNotifyConfigConcurrentAccess(t *testing.T) {
-	t.Run("concurrent NotifyConfig calls are synchronized", func(t *testing.T) {
+	t.Run("concurrent NotifyConfigSnapshot calls are synchronized", func(t *testing.T) {
 		set := extension.Settings{
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -776,7 +774,7 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 			}),
 		}
 
-		// Run concurrent NotifyConfig calls
+		// Run concurrent NotifyConfigSnapshot calls
 		const numGoroutines = 10
 		var wg sync.WaitGroup
 		errors := make(chan error, numGoroutines)
@@ -786,7 +784,7 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 			go func(confIndex int) {
 				defer wg.Done()
 				conf := confs[confIndex%len(confs)]
-				if err := ext.NotifyConfig(t.Context(), conf); err != nil {
+				if err := ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(conf, nil)); err != nil {
 					// First call might succeed, subsequent calls will fail due to HTTP server already running
 					// But they should not race condition or panic
 					errors <- err
@@ -1024,7 +1022,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 		}
 
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname-configured"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname-configured", SourceIdentifier: source.SourceIdentifier{Primary: "test-hostname-configured"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -1101,7 +1099,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 		}
 
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "inferred-hostname"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "inferred-hostname", SourceIdentifier: source.SourceIdentifier{Primary: "inferred-hostname"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -1171,7 +1169,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			BuildInfo:         component.BuildInfo{Version: "test-version", Command: "test-collector"},
 		}
 
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname"}}
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname", SourceIdentifier: source.SourceIdentifier{Primary: "test-hostname"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -1185,8 +1183,8 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		err = ext.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
 
-		// Trigger NotifyConfig which starts periodic sending
-		err = ext.NotifyConfig(t.Context(), confmap.New())
+		// Trigger NotifyConfigSnapshot which starts periodic sending
+		err = ext.NotifyConfigSnapshot(t.Context(), extensioncapabilities.NewConfigSnapshot(nil, nil))
 		require.NoError(t, err)
 
 		// Wait a bit for the initial liveness metric to be sent

@@ -1,0 +1,34 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: pkg/ottl
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Move profiles support into a separate `pkg/ottl/contexts/xprofile` module so it is excluded from OTTL's stability guarantees.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [50906]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The `ottlprofile` and `ottlprofilesample` contexts moved to
+  `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile`,
+  and the `ProfileID` converter and `NewProfileIDFactory` moved from `ottlfuncs` into that
+  module's `ottlfuncs` package. `ProfileID` is no longer part of `StandardFuncs` and
+  `StandardConverters`. Importers must update their import paths, depend on the new module,
+  and merge the profiles converters (for example via
+  `xprofilefuncs.WithProfileConverters`) to keep `ProfileID` available.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [api]

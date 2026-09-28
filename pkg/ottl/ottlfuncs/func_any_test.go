@@ -145,14 +145,14 @@ func Test_AnyFactory(t *testing.T) {
 		factory := NewAnyFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &AnyArguments[any]{}, args)
+		assert.IsType(t, &anyArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Source", "Predicate"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewAnyFactory[any]()
 		args := factory.CreateDefaultArguments()
-		anyArgs, ok := args.(*AnyArguments[any])
+		anyArgs, ok := args.(*anyArguments[any])
 		require.True(t, ok)
 		anyArgs.Source = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -170,6 +170,31 @@ func Test_AnyFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createAnyFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "AnyFactory args must be of type *AnyArguments[K]")
+		assert.ErrorContains(t, err, "AnyFactory args must be of type *anyArguments[K]")
 	})
+}
+
+func BenchmarkAnyMatch(b *testing.B) {
+	source := func() ottl.Getter[any] {
+		s := pcommon.NewSlice()
+		require.NoError(b, s.FromRaw([]any{int64(1), int64(3), int64(5), int64(2)}))
+		return ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return s, nil
+			},
+		}
+	}()
+	predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		v := resolveBinding("v")
+		return v.(int64)%2 == 0, nil
+	})
+	exprFunc, err := anyMatch(source, predicate)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

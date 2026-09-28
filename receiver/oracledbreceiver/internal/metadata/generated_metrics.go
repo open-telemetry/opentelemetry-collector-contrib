@@ -2413,7 +2413,7 @@ type metricOracledbConsistentGets struct {
 func (m *metricOracledbConsistentGets) init() {
 	m.data.SetName("oracledb.consistent_gets")
 	m.data.SetDescription("Number of times a consistent read was requested for a block from the buffer cache.")
-	m.data.SetUnit("{gets}")
+	m.data.SetUnit("{get}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3333,7 +3333,7 @@ type metricOracledbDbBlockGets struct {
 func (m *metricOracledbDbBlockGets) init() {
 	m.data.SetName("oracledb.db_block_gets")
 	m.data.SetDescription("Number of times a current block was requested from the buffer cache.")
-	m.data.SetUnit("{gets}")
+	m.data.SetUnit("{get}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3424,7 +3424,7 @@ type metricOracledbDdlStatementsParallelized struct {
 func (m *metricOracledbDdlStatementsParallelized) init() {
 	m.data.SetName("oracledb.ddl_statements_parallelized")
 	m.data.SetDescription("Number of DDL statements that were executed in parallel")
-	m.data.SetUnit("{statements}")
+	m.data.SetUnit("{statement}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3514,7 +3514,7 @@ type metricOracledbDmlLocksLimit struct {
 func (m *metricOracledbDmlLocksLimit) init() {
 	m.data.SetName("oracledb.dml_locks.limit")
 	m.data.SetDescription("Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.")
-	m.data.SetUnit("{locks}")
+	m.data.SetUnit("{lock}")
 	m.data.SetEmptyGauge()
 }
 
@@ -3564,7 +3564,7 @@ type metricOracledbDmlLocksUsage struct {
 func (m *metricOracledbDmlLocksUsage) init() {
 	m.data.SetName("oracledb.dml_locks.usage")
 	m.data.SetDescription("Current count of active DML (Data Manipulation Language) locks.")
-	m.data.SetUnit("{locks}")
+	m.data.SetUnit("{lock}")
 	m.data.SetEmptyGauge()
 }
 
@@ -3615,7 +3615,7 @@ type metricOracledbDmlStatementsParallelized struct {
 func (m *metricOracledbDmlStatementsParallelized) init() {
 	m.data.SetName("oracledb.dml_statements_parallelized")
 	m.data.SetDescription("Number of DML statements that were executed in parallel")
-	m.data.SetUnit("{statements}")
+	m.data.SetUnit("{statement}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3975,7 +3975,7 @@ type metricOracledbEnqueueDeadlocks struct {
 func (m *metricOracledbEnqueueDeadlocks) init() {
 	m.data.SetName("oracledb.enqueue_deadlocks")
 	m.data.SetDescription("Total number of deadlocks between table or row locks in different sessions.")
-	m.data.SetUnit("{deadlocks}")
+	m.data.SetUnit("{deadlock}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4065,7 +4065,7 @@ type metricOracledbEnqueueLocksLimit struct {
 func (m *metricOracledbEnqueueLocksLimit) init() {
 	m.data.SetName("oracledb.enqueue_locks.limit")
 	m.data.SetDescription("Maximum limit of active enqueue locks, -1 if unlimited.")
-	m.data.SetUnit("{locks}")
+	m.data.SetUnit("{lock}")
 	m.data.SetEmptyGauge()
 }
 
@@ -4115,7 +4115,7 @@ type metricOracledbEnqueueLocksUsage struct {
 func (m *metricOracledbEnqueueLocksUsage) init() {
 	m.data.SetName("oracledb.enqueue_locks.usage")
 	m.data.SetDescription("Current count of active enqueue locks.")
-	m.data.SetUnit("{locks}")
+	m.data.SetUnit("{lock}")
 	m.data.SetEmptyGauge()
 }
 
@@ -4165,7 +4165,7 @@ type metricOracledbEnqueueResourcesLimit struct {
 func (m *metricOracledbEnqueueResourcesLimit) init() {
 	m.data.SetName("oracledb.enqueue_resources.limit")
 	m.data.SetDescription("Maximum limit of active enqueue resources, -1 if unlimited.")
-	m.data.SetUnit("{resources}")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 }
 
@@ -4215,7 +4215,7 @@ type metricOracledbEnqueueResourcesUsage struct {
 func (m *metricOracledbEnqueueResourcesUsage) init() {
 	m.data.SetName("oracledb.enqueue_resources.usage")
 	m.data.SetDescription("Current count of active enqueue resources.")
-	m.data.SetUnit("{resources}")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 }
 
@@ -4266,7 +4266,7 @@ type metricOracledbExchangeDeadlocks struct {
 func (m *metricOracledbExchangeDeadlocks) init() {
 	m.data.SetName("oracledb.exchange_deadlocks")
 	m.data.SetDescription("Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.")
-	m.data.SetUnit("{deadlocks}")
+	m.data.SetUnit("{deadlock}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4449,7 +4449,7 @@ type metricOracledbExecutions struct {
 func (m *metricOracledbExecutions) init() {
 	m.data.SetName("oracledb.executions")
 	m.data.SetDescription("Total number of calls (user and recursive) that executed SQL statements")
-	m.data.SetUnit("{executions}")
+	m.data.SetUnit("{execution}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4720,7 +4720,7 @@ type metricOracledbHardParses struct {
 func (m *metricOracledbHardParses) init() {
 	m.data.SetName("oracledb.hard_parses")
 	m.data.SetDescription("Number of hard parses")
-	m.data.SetUnit("{parses}")
+	m.data.SetUnit("{parse}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -5613,7 +5613,7 @@ type metricOracledbLogicalReads struct {
 func (m *metricOracledbLogicalReads) init() {
 	m.data.SetName("oracledb.logical_reads")
 	m.data.SetDescription("Number of logical reads")
-	m.data.SetUnit("{reads}")
+	m.data.SetUnit("{read}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -6025,7 +6025,7 @@ type metricOracledbParallelOperationsDowngraded1To25Pct struct {
 func (m *metricOracledbParallelOperationsDowngraded1To25Pct) init() {
 	m.data.SetName("oracledb.parallel_operations_downgraded_1_to_25_pct")
 	m.data.SetDescription("Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers")
-	m.data.SetUnit("{executions}")
+	m.data.SetUnit("{execution}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -6116,7 +6116,7 @@ type metricOracledbParallelOperationsDowngraded25To50Pct struct {
 func (m *metricOracledbParallelOperationsDowngraded25To50Pct) init() {
 	m.data.SetName("oracledb.parallel_operations_downgraded_25_to_50_pct")
 	m.data.SetDescription("Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers")
-	m.data.SetUnit("{executions}")
+	m.data.SetUnit("{execution}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -6207,7 +6207,7 @@ type metricOracledbParallelOperationsDowngraded50To75Pct struct {
 func (m *metricOracledbParallelOperationsDowngraded50To75Pct) init() {
 	m.data.SetName("oracledb.parallel_operations_downgraded_50_to_75_pct")
 	m.data.SetDescription("Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers")
-	m.data.SetUnit("{executions}")
+	m.data.SetUnit("{execution}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -6298,7 +6298,7 @@ type metricOracledbParallelOperationsDowngraded75To99Pct struct {
 func (m *metricOracledbParallelOperationsDowngraded75To99Pct) init() {
 	m.data.SetName("oracledb.parallel_operations_downgraded_75_to_99_pct")
 	m.data.SetDescription("Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers")
-	m.data.SetUnit("{executions}")
+	m.data.SetUnit("{execution}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -6389,7 +6389,7 @@ type metricOracledbParallelOperationsDowngradedToSerial struct {
 func (m *metricOracledbParallelOperationsDowngradedToSerial) init() {
 	m.data.SetName("oracledb.parallel_operations_downgraded_to_serial")
 	m.data.SetDescription("Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers")
-	m.data.SetUnit("{executions}")
+	m.data.SetUnit("{execution}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -6480,7 +6480,7 @@ type metricOracledbParallelOperationsNotDowngraded struct {
 func (m *metricOracledbParallelOperationsNotDowngraded) init() {
 	m.data.SetName("oracledb.parallel_operations_not_downgraded")
 	m.data.SetDescription("Number of times parallel execution was executed at the requested degree of parallelism")
-	m.data.SetUnit("{executions}")
+	m.data.SetUnit("{execution}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -6675,7 +6675,7 @@ type metricOracledbParseRate struct {
 func (m *metricOracledbParseRate) init() {
 	m.data.SetName("oracledb.parse.rate")
 	m.data.SetDescription("Rate of parse operations per second broken down by result, as computed by Oracle V$SYSMETRIC (e.g., Parse Failure Count Per Sec).")
-	m.data.SetUnit("{parses}/s")
+	m.data.SetUnit("{parse}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -6856,7 +6856,7 @@ type metricOracledbParseCalls struct {
 func (m *metricOracledbParseCalls) init() {
 	m.data.SetName("oracledb.parse_calls")
 	m.data.SetDescription("Total number of parse calls.")
-	m.data.SetUnit("{parses}")
+	m.data.SetUnit("{parse}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -7088,7 +7088,7 @@ type metricOracledbPhysicalIoCacheWrites struct {
 func (m *metricOracledbPhysicalIoCacheWrites) init() {
 	m.data.SetName("oracledb.physical_io.cache_writes")
 	m.data.SetDescription("Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.")
-	m.data.SetUnit("{writes}")
+	m.data.SetUnit("{write}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -7179,7 +7179,7 @@ type metricOracledbPhysicalIoRequests struct {
 func (m *metricOracledbPhysicalIoRequests) init() {
 	m.data.SetName("oracledb.physical_io.requests")
 	m.data.SetDescription("Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (disk.io.block_size=all) and physical read/write total multi block requests (disk.io.block_size=multi).")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -7649,7 +7649,7 @@ type metricOracledbPhysicalReadIoRequests struct {
 func (m *metricOracledbPhysicalReadIoRequests) init() {
 	m.data.SetName("oracledb.physical_read_io_requests")
 	m.data.SetDescription("Number of read requests for application activity")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -7740,7 +7740,7 @@ type metricOracledbPhysicalReads struct {
 func (m *metricOracledbPhysicalReads) init() {
 	m.data.SetName("oracledb.physical_reads")
 	m.data.SetDescription("Number of physical reads")
-	m.data.SetUnit("{reads}")
+	m.data.SetUnit("{read}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -7831,7 +7831,7 @@ type metricOracledbPhysicalReadsDirect struct {
 func (m *metricOracledbPhysicalReadsDirect) init() {
 	m.data.SetName("oracledb.physical_reads_direct")
 	m.data.SetDescription("Number of reads directly from disk, bypassing the buffer cache")
-	m.data.SetUnit("{reads}")
+	m.data.SetUnit("{read}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -7922,7 +7922,7 @@ type metricOracledbPhysicalWriteIoRequests struct {
 func (m *metricOracledbPhysicalWriteIoRequests) init() {
 	m.data.SetName("oracledb.physical_write_io_requests")
 	m.data.SetDescription("Number of write requests for application activity")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -8013,7 +8013,7 @@ type metricOracledbPhysicalWrites struct {
 func (m *metricOracledbPhysicalWrites) init() {
 	m.data.SetName("oracledb.physical_writes")
 	m.data.SetDescription("Number of physical writes")
-	m.data.SetUnit("{writes}")
+	m.data.SetUnit("{write}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -8104,7 +8104,7 @@ type metricOracledbPhysicalWritesDirect struct {
 func (m *metricOracledbPhysicalWritesDirect) init() {
 	m.data.SetName("oracledb.physical_writes_direct")
 	m.data.SetDescription("Number of writes directly to disk, bypassing the buffer cache")
-	m.data.SetUnit("{writes}")
+	m.data.SetUnit("{write}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -8194,7 +8194,7 @@ type metricOracledbProcessesLimit struct {
 func (m *metricOracledbProcessesLimit) init() {
 	m.data.SetName("oracledb.processes.limit")
 	m.data.SetDescription("Maximum limit of active processes, -1 if unlimited.")
-	m.data.SetUnit("{processes}")
+	m.data.SetUnit("{process}")
 	m.data.SetEmptyGauge()
 }
 
@@ -8244,7 +8244,7 @@ type metricOracledbProcessesUsage struct {
 func (m *metricOracledbProcessesUsage) init() {
 	m.data.SetName("oracledb.processes.usage")
 	m.data.SetDescription("Current count of active processes.")
-	m.data.SetUnit("{processes}")
+	m.data.SetUnit("{process}")
 	m.data.SetEmptyGauge()
 }
 
@@ -8295,7 +8295,7 @@ type metricOracledbQueriesParallelized struct {
 func (m *metricOracledbQueriesParallelized) init() {
 	m.data.SetName("oracledb.queries_parallelized")
 	m.data.SetDescription("Number of SELECT statements executed in parallel")
-	m.data.SetUnit("{queries}")
+	m.data.SetUnit("{query}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -9687,7 +9687,7 @@ type metricOracledbSessionsLimit struct {
 func (m *metricOracledbSessionsLimit) init() {
 	m.data.SetName("oracledb.sessions.limit")
 	m.data.SetDescription("Maximum limit of active sessions, -1 if unlimited.")
-	m.data.SetUnit("{sessions}")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 }
 
@@ -9738,7 +9738,7 @@ type metricOracledbSessionsUsage struct {
 func (m *metricOracledbSessionsUsage) init() {
 	m.data.SetName("oracledb.sessions.usage")
 	m.data.SetDescription("Count of active sessions.")
-	m.data.SetUnit("{sessions}")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -11467,7 +11467,7 @@ type metricOracledbTransactionsLimit struct {
 func (m *metricOracledbTransactionsLimit) init() {
 	m.data.SetName("oracledb.transactions.limit")
 	m.data.SetDescription("Maximum limit of active transactions, -1 if unlimited.")
-	m.data.SetUnit("{transactions}")
+	m.data.SetUnit("{transaction}")
 	m.data.SetEmptyGauge()
 }
 
@@ -11609,7 +11609,7 @@ type metricOracledbTransactionsUsage struct {
 func (m *metricOracledbTransactionsUsage) init() {
 	m.data.SetName("oracledb.transactions.usage")
 	m.data.SetDescription("Current count of active transactions.")
-	m.data.SetUnit("{transactions}")
+	m.data.SetUnit("{transaction}")
 	m.data.SetEmptyGauge()
 }
 
@@ -11660,7 +11660,7 @@ type metricOracledbUserCommits struct {
 func (m *metricOracledbUserCommits) init() {
 	m.data.SetName("oracledb.user_commits")
 	m.data.SetDescription("Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.")
-	m.data.SetUnit("{commits}")
+	m.data.SetUnit("{commit}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -12174,6 +12174,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.OracledbInstanceName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude)

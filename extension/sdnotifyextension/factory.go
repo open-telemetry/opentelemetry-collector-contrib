@@ -26,6 +26,10 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+func createExtension(
+	_ context.Context,
+	set extension.Settings,
+	cfg component.Config,
+) (extension.Extension, error) {
 	return newSDNotify(cfg.(*Config), set.Logger), nil
 }

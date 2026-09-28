@@ -53,8 +53,9 @@ type policy struct {
 // needed by any sampler implementations.
 type TraceData struct {
 	samplingpolicy.TraceData
-	FinalDecision samplingpolicy.Decision
-	PolicyName    string
+	FinalDecision  samplingpolicy.Decision
+	FinalThreshold pkgsampling.Threshold
+	PolicyName     string
 
 	arrivalTime   time.Time
 	decisionTime  time.Time
@@ -286,21 +287,13 @@ func (tsp *tailSamplingSpanProcessor) SetMaximumTraceSizeBytes(size uint64) {
 // traceBatch contains all spans from a single batch for a single trace.
 type traceBatch struct {
 	id        pcommon.TraceID
-	rootSpan  *ptrace.Span
+	hasRoot   bool
 	rss       ptrace.ResourceSpans
 	spanCount int64
 }
 
 type newPolicyCmd struct {
 	policies []*policy
-}
-
-// spanAndScope a structure for holding information about span and its instrumentation scope.
-// required for preserving the instrumentation library information while sampling.
-// We use pointers there to fast find the span in the map.
-type spanAndScope struct {
-	span                 *ptrace.Span
-	instrumentationScope *pcommon.InstrumentationScope
 }
 
 var (
@@ -582,7 +575,7 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 				tsp.waitForSpace(tickChan)
 			}
 
-			tsp.processTrace(trace.id, trace.rss, trace.spanCount, trace.rootSpan != nil)
+			tsp.processTrace(trace.id, trace.rss, trace.spanCount, trace.hasRoot)
 		}
 	case cmd := <-tsp.newPolicyChan:
 		tsp.policies = cmd.policies
@@ -612,6 +605,9 @@ func (tsp *tailSamplingSpanProcessor) processCachedTrace(traceID pcommon.TraceID
 				sampling.SetAttrOnScopeSpans(traceTd, "tailsampling.policy", metadata.PolicyName)
 			}
 			sampling.SetBoolAttrOnScopeSpans(traceTd, "tailsampling.cached_decision", true)
+		}
+		if tsp.useTracestate {
+			sampling.WriteEffectiveThreshold(tsp.ctx, traceTd, metadata.Threshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 		}
 		tsp.forwardSpans(tsp.ctx, traceTd)
 		tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
@@ -820,12 +816,13 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 
 	for _, c := range notDropped {
 		c.trace.decisionTime = time.Now()
-		decision, policyName := tsp.makeDecision(ctx, numDropPolicies, c.id, c.data, metrics)
+		decision, policyName, threshold := tsp.makeDecision(ctx, numDropPolicies, c.id, c.data, metrics)
 		globalTracesSampledByDecision[decision]++
 		// Keep release paths working with tail storage by attaching the
 		// retrieved batches back to trace state for this decision.
 		c.trace.ReceivedBatches = c.data.ReceivedBatches
 		c.trace.FinalDecision = decision
+		c.trace.FinalThreshold = threshold
 		c.trace.PolicyName = policyName
 
 		if decision == samplingpolicy.Sampled {
@@ -876,20 +873,13 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 
 // makeDecision evaluates tsp.policies[numDropPolicies:], skipping a
 // drop-policy prefix the caller already ruled out via evaluateDropPolicies.
-func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropPolicies int, id pcommon.TraceID, traceData *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string) {
+func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropPolicies int, id pcommon.TraceID, traceData *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string, pkgsampling.Threshold) {
 	finalDecision := samplingpolicy.NotSampled
-	samplingDecisions := map[samplingpolicy.Decision]*policy{
-		samplingpolicy.Error:      nil,
-		samplingpolicy.Sampled:    nil,
-		samplingpolicy.NotSampled: nil,
-		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-		samplingpolicy.InvertSampled: nil,
-		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-		samplingpolicy.InvertNotSampled: nil,
-		samplingpolicy.Dropped:          nil,
-	}
+	// Decision is a small closed integer set. Indexing by it keeps
+	// first-policy-wins as a nil check without allocating a map on every trace.
+	var samplingDecisions [samplingpolicy.NumDecisions]*policy
 
-	effectiveThreshold := pkgsampling.NeverSampleThreshold
+	threshold := pkgsampling.Threshold{}
 	haveThreshold := false
 
 	for i := numDropPolicies; i < len(tsp.policies); i++ {
@@ -909,15 +899,18 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 
 		metrics.addDecision(i, decision, traceData.SpanCount, int64(traceData.SizeBytes))
 
-		// We associate the first policy with the sampling decision to understand what policy sampled a span
+		// Keep track of which policy was used so that we can understand which
+		// policy sampled/dropped a span.
 		if samplingDecisions[decision] == nil {
 			samplingDecisions[decision] = p
 		}
 
 		if decision == samplingpolicy.Sampled {
-			if !haveThreshold || pkgsampling.ThresholdLessThan(th, effectiveThreshold) {
-				effectiveThreshold = th
+			if !haveThreshold || pkgsampling.ThresholdLessThan(th, threshold) {
+				threshold = th
 				haveThreshold = true
+				// Ensure we record the policy that will match the span's threshold.
+				samplingDecisions[samplingpolicy.Sampled] = p
 			}
 		}
 
@@ -954,8 +947,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 		sampling.SetAttrOnScopeSpans(traceData.ReceivedBatches, "tailsampling.policy", sampledPolicy.name)
 	}
 
-	if finalDecision == samplingpolicy.Sampled && haveThreshold && tsp.useTracestate {
-		sampling.WriteEffectiveThreshold(ctx, traceData.ReceivedBatches, effectiveThreshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
+	if finalDecision == samplingpolicy.Sampled && tsp.useTracestate {
+		sampling.WriteEffectiveThreshold(ctx, traceData.ReceivedBatches, threshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 	}
 
 	switch finalDecision {
@@ -967,12 +960,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 		metrics.decisionDropped++
 	}
 
-	return finalDecision, getPolicyName(sampledPolicy)
+	return finalDecision, getPolicyName(sampledPolicy), threshold
 }
 
 // makeDecisionOnSpanIngest is used by span-ingest mode. It only returns
 // terminal decisions at ingest time. All other outcomes remain pending.
-func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string) {
+func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string, pkgsampling.Threshold) {
 	ctx := context.Background()
 	// Track whether a drop policy didn't match this batch. A drop policy
 	// returning NotSampled means it didn't match these spans but could still
@@ -1000,7 +993,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 
 		if decision == samplingpolicy.Dropped {
 			metrics.decisionDropped++
-			return samplingpolicy.Dropped, p.name
+			return samplingpolicy.Dropped, p.name, pkgsampling.AlwaysSampleThreshold
 		}
 
 		if p.isDrop {
@@ -1018,30 +1011,67 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 			if tsp.useTracestate {
 				sampling.WriteEffectiveThreshold(ctx, trace.ReceivedBatches, th, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 			}
-			return samplingpolicy.Sampled, p.name
+			return samplingpolicy.Sampled, p.name, th
 		}
 	}
-	return samplingpolicy.Pending, ""
+	return samplingpolicy.Pending, "", pkgsampling.AlwaysSampleThreshold
 }
 
-func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
-	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
-	ilss := resourceSpans.ScopeSpans()
-	for j := 0; j < ilss.Len(); j++ {
-		scope := ilss.At(j)
-		spans := scope.Spans()
-		is := scope.Scope()
-		spansLen := spans.Len()
-		for k := range spansLen {
+// splitResourceSpansByTrace copies spans from rss into one ResourceSpans per
+// trace ID. MutatesData is false, so we can't move the source. We copy in one
+// pass instead of grouping into a slice first.
+//
+// We walk scopes in order and never go back, so lastScope is enough to open
+// dest scopes in first-seen order.
+func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
+	srcScopes := rss.ScopeSpans()
+	type builder struct {
+		rs        ptrace.ResourceSpans
+		destScope ptrace.ScopeSpans
+		lastScope int // Last opened source scope for a dest (-1 until the first span)
+		count     int64
+		hasRoot   bool
+	}
+	builders := make(map[pcommon.TraceID]*builder)
+
+	for j := 0; j < srcScopes.Len(); j++ {
+		srcScope := srcScopes.At(j)
+		spans := srcScope.Spans()
+		for k := 0; k < spans.Len(); k++ {
 			span := spans.At(k)
-			key := span.TraceID()
-			idToSpans[key] = append(idToSpans[key], spanAndScope{
-				span:                 &span,
-				instrumentationScope: &is,
-			})
+			id := span.TraceID()
+			b, ok := builders[id]
+			if !ok {
+				rs := ptrace.NewResourceSpans()
+				rss.Resource().CopyTo(rs.Resource())
+				b = &builder{rs: rs, lastScope: -1}
+				builders[id] = b
+			}
+			if b.lastScope != j {
+				dest := b.rs.ScopeSpans().AppendEmpty()
+				srcScope.Scope().CopyTo(dest.Scope())
+				b.destScope = dest
+				b.lastScope = j
+			}
+			destSpan := b.destScope.Spans().AppendEmpty()
+			span.CopyTo(destSpan)
+			b.count++
+			if destSpan.ParentSpanID().IsEmpty() {
+				b.hasRoot = true
+			}
 		}
 	}
-	return idToSpans
+
+	batches := make([]traceBatch, 0, len(builders))
+	for id, b := range builders {
+		batches = append(batches, traceBatch{
+			id:        id,
+			hasRoot:   b.hasRoot,
+			rss:       b.rs,
+			spanCount: b.count,
+		})
+	}
+	return batches
 }
 
 func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {
@@ -1081,8 +1111,14 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 
 	finalDecision := actualData.FinalDecision
 
-	marshaler := &ptrace.ProtoMarshaler{}
-	actualData.SizeBytes += uint64(marshaler.ResourceSpansSize(rss))
+	// ResourceSpansSize walks the proto tree. SizeBytes is only needed to drop
+	// oversized traces or to record count_bytes_sampled. That metric is behind
+	// an alpha feature gate (off by default) because proto-sizing every batch
+	// is expensive, so skip the walk unless a size limit or the gate is on.
+	if tsp.maxTraceSizeBytes > 0 || telemetry.IsMetricStatCountBytesSampledEnabled() {
+		var m ptrace.ProtoMarshaler
+		actualData.SizeBytes += uint64(m.ResourceSpansSize(rss))
+	}
 
 	if finalDecision == samplingpolicy.Unspecified &&
 		tsp.maxTraceSizeBytes > 0 &&
@@ -1108,7 +1144,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				ReceivedBatches: ptrace.NewTraces(),
 			}
 			appendToTraces(spanIngestTraceData.ReceivedBatches, rss)
-			decision, policyName := tsp.makeDecisionOnSpanIngest(id, &spanIngestTraceData, metrics)
+			decision, policyName, threshold := tsp.makeDecisionOnSpanIngest(id, &spanIngestTraceData, metrics)
 			tsp.recordImmediateDecisionMetrics(decision, metrics, time.Since(evaluationStart))
 
 			if decision == samplingpolicy.Sampled || decision == samplingpolicy.Dropped {
@@ -1128,6 +1164,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				actualData.FinalDecision = decision
 				actualData.PolicyName = policyName
 				if decision == samplingpolicy.Sampled {
+					actualData.FinalThreshold = threshold
 					tsp.releaseSampledTrace(tsp.ctx, id, actualData)
 				} else {
 					tsp.releaseNotSampledTrace(id, actualData)
@@ -1155,6 +1192,9 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	case samplingpolicy.Sampled:
 		traceTd := ptrace.NewTraces()
 		appendToTraces(traceTd, rss)
+		if tsp.useTracestate {
+			sampling.WriteEffectiveThreshold(tsp.ctx, traceTd, actualData.FinalThreshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
+		}
 		tsp.forwardSpans(tsp.ctx, traceTd)
 	case samplingpolicy.NotSampled:
 		// TODO: I don't think this is correct? If it isn't sampled shouldn't we just do nothing?
@@ -1250,7 +1290,10 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 	for _, hook := range tsp.sampledHooks {
 		hook(ctx, id, td)
 	}
-	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: td.PolicyName})
+	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{
+		PolicyName: td.PolicyName,
+		Threshold:  td.FinalThreshold,
+	})
 	tsp.forwardSpans(ctx, td.ReceivedBatches)
 	_, ok := tsp.sampledIDCache.Get(id)
 	if ok {
@@ -1288,31 +1331,4 @@ func appendAllTraces(dest, src ptrace.Traces) {
 	for i := 0; i < rs.Len(); i++ {
 		appendToTraces(dest, rs.At(i))
 	}
-}
-
-func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, *ptrace.Span) {
-	rs := ptrace.NewResourceSpans()
-	rss.Resource().CopyTo(rs.Resource())
-	var rootSpan *ptrace.Span
-
-	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
-	for _, spanAndScope := range spanAndScopes {
-		// If the scope of the spanAndScope is not in the map, add it to the map and the destination.
-		var sp ptrace.Span
-		if scope, ok := scopePointerToNewScope[spanAndScope.instrumentationScope]; !ok {
-			is := rs.ScopeSpans().AppendEmpty()
-			spanAndScope.instrumentationScope.CopyTo(is.Scope())
-			scopePointerToNewScope[spanAndScope.instrumentationScope] = &is
-
-			sp = is.Spans().AppendEmpty()
-		} else {
-			sp = scope.Spans().AppendEmpty()
-		}
-
-		spanAndScope.span.CopyTo(sp)
-		if sp.ParentSpanID().IsEmpty() {
-			rootSpan = &sp
-		}
-	}
-	return rs, rootSpan
 }

@@ -59,8 +59,7 @@ func Test_TimeUnixMilli(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := UnixMilli(tt.time)
-			require.NoError(t, err)
+			exprFunc := unixMilli(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := tt.expected.UnixMilli()
@@ -79,14 +78,14 @@ func Test_UnixMilliFactory(t *testing.T) {
 		factory := NewUnixMilliFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &UnixMilliArguments[any]{}, args)
+		assert.IsType(t, &unixMilliArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewUnixMilliFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*UnixMilliArguments[any])
+		timeArgs, ok := args.(*unixMilliArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -101,6 +100,22 @@ func Test_UnixMilliFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createUnixMilliFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "UnixMilliFactory args must be of type *UnixMilliArguments[K]")
+		assert.ErrorContains(t, err, "UnixMilliFactory args must be of type *unixMilliArguments[K]")
 	})
+}
+
+func BenchmarkUnixMilli(b *testing.B) {
+	inputTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local)
+	exprFunc := unixMilli(&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return inputTime, nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

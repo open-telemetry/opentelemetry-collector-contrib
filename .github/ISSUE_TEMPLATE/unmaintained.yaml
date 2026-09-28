@@ -72,7 +72,7 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/mezmo
+      - exporter/nats
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -111,6 +111,7 @@ body:
       - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/filetelemetrypolicy
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
@@ -174,8 +175,8 @@ body:
       - pkg/kafka/configkafka
       - pkg/kafka/topic
       - pkg/ottl
+      - pkg/ottl/contexts/xprofile
       - pkg/pdatatest
-      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
       - pkg/semconvtest
@@ -241,12 +242,14 @@ body:
       - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
+      - processor/rollingspanlatency
       - processor/schema
       - processor/signing
       - processor/span
       - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
+      - processor/telemetrypolicy
       - processor/transform
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
@@ -369,7 +372,6 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/vcr
-      - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters

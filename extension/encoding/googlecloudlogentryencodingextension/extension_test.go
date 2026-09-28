@@ -137,6 +137,32 @@ func TestUnmarshalLogs(t *testing.T) {
 	}
 }
 
+func TestUnmarshalLogsLargeMessage(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("testdata/log_entry.json")
+	require.NoError(t, err)
+
+	compacted := bytes.NewBuffer([]byte{})
+	err = gojson.Compact(compacted, data)
+	require.NoError(t, err)
+
+	log := compacted.Bytes()
+	padding := 128 * 1024
+	buff := bytes.NewBuffer([]byte{})
+	buff.Write(log[:len(log)-1])
+	buff.WriteString(`,"textPayload":"`)
+	for range padding {
+		buff.WriteByte('a')
+	}
+	buff.WriteString(`"}`)
+
+	extension := newTestExtension(t, Config{})
+	logs, err := extension.UnmarshalLogs(buff.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+}
+
 func TestPayloads(t *testing.T) {
 	t.Parallel()
 

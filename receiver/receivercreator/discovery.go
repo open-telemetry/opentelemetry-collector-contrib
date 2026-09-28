@@ -231,11 +231,12 @@ func createLogsConfig(
 ) userConfigMap {
 	scopeSuffix := containerName
 	logPath := fmt.Sprintf(defaultLogPathPattern, namespace, podName, podUID, containerName)
-	defaultConfMap["include"] = []string{logPath}
+	config := maps.Clone(defaultConfMap)
+	config["include"] = []string{logPath}
 
 	configStr, found := getHintAnnotation(annotations, otelLogsHints, configHint, scopeSuffix)
 	if !found || configStr == "" {
-		return defaultConfMap
+		return config
 	}
 
 	userConf := make(map[string]any)
@@ -249,10 +250,10 @@ func createLogsConfig(
 			logger.Warn("include setting cannot be set through annotation's hints")
 			continue
 		}
-		defaultConfMap[k] = v
+		config[k] = v
 	}
 
-	return defaultConfMap
+	return config
 }
 
 func getHintAnnotation(annotations map[string]string, hintBase, hintKey, suffix string) (string, bool) {

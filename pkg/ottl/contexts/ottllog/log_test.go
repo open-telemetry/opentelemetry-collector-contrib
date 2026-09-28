@@ -617,13 +617,13 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			rLogs, sLogs, log := createTelemetry(tt.bodyType)
 
-			tCtx := NewTransformContextPtr(rLogs, sLogs, log)
+			tCtx := NewTransformContext(rLogs, sLogs, log)
 			defer tCtx.Close()
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			newCtx := NewTransformContextPtr(rLogs, sLogs, log)
+			newCtx := NewTransformContext(rLogs, sLogs, log)
 			defer newCtx.Close()
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			require.NoError(t, err)
@@ -640,7 +640,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	rLogs, sLogs, log := createTelemetry("string")
-	ctx := NewTransformContextPtr(rLogs, sLogs, log)
+	ctx := NewTransformContext(rLogs, sLogs, log)
 	defer ctx.Close()
 
 	tests := []struct {
@@ -786,12 +786,12 @@ func Test_InvalidBodyIndexing(t *testing.T) {
 
 	rLogs, sLogs, log := createTelemetry("string")
 
-	tCtx := NewTransformContextPtr(rLogs, sLogs, log)
+	tCtx := NewTransformContext(rLogs, sLogs, log)
 	defer tCtx.Close()
 	_, err = accessor.Get(t.Context(), tCtx)
 	assert.Error(t, err)
 
-	newCtx := NewTransformContextPtr(rLogs, sLogs, log)
+	newCtx := NewTransformContext(rLogs, sLogs, log)
 	defer newCtx.Close()
 	err = accessor.Set(t.Context(), tCtx, nil)
 	assert.Error(t, err)
