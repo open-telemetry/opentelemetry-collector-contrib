@@ -10,7 +10,7 @@ status:
     alpha: [metrics, traces]
   distributions: [contrib]
   codeowners:
-    active: [adrielp, crobert-1, TylerHelmuth]
+    active: [adrielp, crobert-1]
     seeking_new: true
 
 feature_gates:
