@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetHostName(val string) {
 	}
 }
 
+// SetOracleDbEdition sets provided value as "oracle.db.edition" attribute.
+func (rb *ResourceBuilder) SetOracleDbEdition(val string) {
+	if rb.config.OracleDbEdition.Enabled {
+		rb.res.Attributes().PutStr("oracle.db.edition", val)
+	}
+}
+
 // SetOracleDbHostingType sets provided value as "oracle.db.hosting_type" attribute.
 func (rb *ResourceBuilder) SetOracleDbHostingType(val string) {
 	if rb.config.OracleDbHostingType.Enabled {
