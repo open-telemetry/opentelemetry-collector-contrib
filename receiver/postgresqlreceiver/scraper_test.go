@@ -1566,11 +1566,14 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
 				"select * from pg_stat_activity where id = 32", "114514", "roleB", "30", "22000", "23000")
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
-		mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
-		mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
-			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
-		mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
-		mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+		// The plan cache is keyed per role, so each role is explained separately.
+		for range 2 {
+			mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+			mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+				WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+			mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+			mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+		}
 
 		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 		require.NoError(t, err)
