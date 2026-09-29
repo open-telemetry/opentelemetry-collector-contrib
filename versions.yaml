@@ -3,12 +3,12 @@
 
 module-sets:
   stable-base:
-    version: v1.0.0
+    version: v1.1.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
 
   contrib-base:
-    version: v0.161.0
+    version: v0.162.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
