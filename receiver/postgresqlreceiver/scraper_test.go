@@ -1357,7 +1357,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	queryid := "114514"
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
-	cacheKeyPrefix := "postgres\x00master\x00" + queryid + "\x00"
+	cacheKeyPrefix := "postgres\x0016415\x00" + queryid + "\x00"
 	scraper.cache.Add(cacheKeyPrefix+totalExecTimeColumnName, 10)
 	scraper.cache.Add(cacheKeyPrefix+totalPlanTimeColumnName, 11)
 	scraper.cache.Add(cacheKeyPrefix+callsColumnName, 120)
@@ -1569,9 +1569,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
 				"select * from pg_stat_activity where id = 32", "114514", "16416", "roleB", "30", "22000", "23000")
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
-		// roleA and roleB share queryid 114514, so both EXPLAIN cycles issue the
-		// identical PREPARE otel_114514 text — the cache key is (database, rolname,
-		// queryid), so each role still needs its own cycle mocked.
+		// Same queryid, different rolname: each role still gets its own EXPLAIN cycle.
 		for range 2 {
 			mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
 			mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
@@ -1612,8 +1610,8 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 		assert.Equal(t, map[string]bool{"16415": true, "16416": true}, gotUserids)
 	})
 
-	// rolname is empty for a dropped role, so two dropped roles sharing a queryid and database
-	// would collide on rolname too; userid still tells them apart.
+	// Same queryid and database, both dropped roles (empty rolname): userid still
+	// tells them apart.
 	t.Run("two dropped roles sharing a queryid stay distinct via userid", func(t *testing.T) {
 		scraper, mock := newScraper(t, true, true)
 
@@ -1623,11 +1621,14 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
 				"select * from pg_stat_activity where id = 32", "114514", "16416", "", "30", "22000", "23000")
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
-		mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
-		mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
-			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
-		mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
-		mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+		// Different userid, so each still gets its own EXPLAIN cycle.
+		for range 2 {
+			mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+			mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+				WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+			mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+			mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+		}
 
 		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 		require.NoError(t, err)

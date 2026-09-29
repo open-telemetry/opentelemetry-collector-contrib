@@ -194,11 +194,10 @@ not take those statistics with it when a batcher splits by size.
 `db.server.top_query` is then emitted **without** its `postgresql.query_plan` attribute, and the plan
 itself is reported on `db.server.query_plan`, joined back to its query via `postgresql.queryid`,
 `db.namespace` and `postgresql.userid` — `queryid` alone can repeat across databases and across
-roles in the same database. `postgresql.userid` is the OID of the role that ran the statement, used
-here instead of `postgresql.rolname` because it stays stable even after that role is dropped;
-`rolname` is still reported on both events, but only as the human-readable name. A query with no
-plan available yet (not yet explained, or the `EXPLAIN` failed) produces no `db.server.query_plan`
-record. Leaving `db.server.query_plan` disabled preserves the previous behavior exactly.
+roles in the same database. `postgresql.rolname` is also reported on both events as a display name.
+A query with no plan available yet (not yet explained, or the `EXPLAIN` failed) produces no
+`db.server.query_plan` record. Leaving `db.server.query_plan` disabled preserves the previous
+behavior exactly.
 
 Known limitation of the join key: it doesn't distinguish `toplevel`, so a top-level statement and a
 nested one it calls can still collide (only with `pg_stat_statements.track = all`, not the default).
