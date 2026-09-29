@@ -129,7 +129,6 @@ func (w *fileWriter) evict() error {
 	return w.shutdown()
 }
 
-// shutdown stops the flusher and closes the file. It is safe to call multiple times.
 // shutdown stops the flusher and closes the file.
 func (w *fileWriter) shutdown() error {
 	w.mutex.Lock()
