@@ -232,6 +232,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.161.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.161.0 // indirect
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect
@@ -407,3 +408,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datad
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile => ../../pkg/ottl/contexts/xprofile
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl => ../../pkg/ottl/xottl

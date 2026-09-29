@@ -92,6 +92,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.161.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.161.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.30 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -233,3 +234,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling =
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile => ../../../../pkg/ottl/contexts/xprofile
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl => ../../../../pkg/ottl/xottl

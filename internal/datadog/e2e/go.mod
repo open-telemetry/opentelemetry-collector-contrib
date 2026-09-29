@@ -338,6 +338,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.161.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.161.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.161.0 // indirect
@@ -630,3 +631,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtes
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile => ../../../pkg/ottl/contexts/xprofile
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto => ../../../pkg/expohisto
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl => ../../../pkg/ottl/xottl

@@ -37,7 +37,8 @@ const (
 	databaseNameKey = "database_name"
 	instanceNameKey = "sql_instance"
 
-	defaultServiceName = "unknown_service:microsoft.sql_server"
+	defaultServiceName  = "unknown_service:microsoft.sql_server"
+	versionQueryTimeout = 5 * time.Second
 )
 
 type sqlServerScraperHelper struct {
@@ -59,6 +60,8 @@ type sqlServerScraperHelper struct {
 	serviceInstanceID      string
 	serverAddress          string
 	serverPort             int64
+	dbVersion              string
+	versionFunc            func(context.Context, *zap.Logger) (string, bool)
 }
 
 var (
@@ -68,7 +71,7 @@ var (
 
 func newSQLServerScraper(id component.ID,
 	query string,
-	telemetry sqlquery.TelemetryConfig,
+	telemetry sqlquery.TelemetryConfig, //nolint:unparam // Parameter is currently unused as callers always pass sqlquery.TelemetryConfig{}. cleanup in a follow-up PR.
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
 	params receiver.Settings,
@@ -115,7 +118,7 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 	return s.id
 }
 
-func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
+func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) error {
 	// The connection pool is owned by the receiver and shared across all
 	// scrapers. Fetch the shared pool (opened once by the provider) rather than
 	// opening a new one here.
@@ -129,7 +132,47 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 	return nil
 }
 
+// detectSQLServerVersion queries SERVERPROPERTY('ProductVersion').
+// Returns (*string, error):
+//   - (&"15.0", nil): success — non-nil pointer means resolved, latch it.
+//   - (&"", nil):     SERVERPROPERTY returned NULL — permanent empty, latch it.
+//   - (nil, err):     transient scan error — caller may retry.
+//   - (nil, nil):     db is nil, not yet connected — silently skip.
+//
+// Declared as a var so tests can stub it.
+var detectSQLServerVersion = func(ctx context.Context, db *sql.DB) (*string, error) {
+	if db == nil {
+		return nil, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+	defer cancel()
+
+	var version sql.NullString
+	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128))")
+	if err := row.Scan(&version); err != nil {
+		return nil, err
+	}
+	if !version.Valid {
+		v := ""
+		return &v, nil
+	}
+	return &version.String, nil
+}
+
+func (s *sqlServerScraperHelper) ensureDBVersion(ctx context.Context) {
+	if s.versionFunc != nil {
+		v, resolved := s.versionFunc(ctx, s.logger)
+		s.dbVersion = v
+		if resolved {
+			s.versionFunc = nil
+		}
+	}
+}
+
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	s.ensureDBVersion(ctx)
+
 	var err error
 
 	switch s.sqlQuery {
@@ -163,6 +206,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
+	s.ensureDBVersion(ctx)
+
 	var err error
 	var resources pcommon.Resource
 	var isQuerySample bool
@@ -396,6 +441,9 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceNamespace("")
 	rb.SetServerAddress(s.serverAddress)
 	rb.SetServerPort(s.serverPort)
+	if s.dbVersion != "" {
+		rb.SetDbSystemVersion(s.dbVersion)
+	}
 
 	return rb
 }

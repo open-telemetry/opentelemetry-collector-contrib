@@ -426,6 +426,10 @@ run-changed-tests:
 			echo "Failed to find the affected test directories."; \
 		else \
 			set -e; for dir in $$(echo $${AFFECTED_TEST_DIRS}); do \
+			if [ ! -d "$${dir}" ]; then \
+				echo "Skipping $${dir}: directory no longer exists."; \
+				continue; \
+			fi; \
 			(cd "$${dir}" && \
 				$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -count=3 ); \
 			done \

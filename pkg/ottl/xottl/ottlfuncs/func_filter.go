@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/xpdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type filterArguments[K any] struct {
@@ -21,10 +21,9 @@ type filterArguments[K any] struct {
 }
 
 // NewFilterFactory returns a factory for the Filter OTTL function.
-// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#filter
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/xottl/ottlfuncs/README.md#filter
 //
-// Experimental: *NOTE* this API is subject to change or removal in the future. It
-// requires the ottl.functions.enableLambda feature gate to be enabled.
+// The function requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewFilterFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Filter", &filterArguments[K]{}, createFilterFunction[K], ottl.WithExperimental[K]())
 }

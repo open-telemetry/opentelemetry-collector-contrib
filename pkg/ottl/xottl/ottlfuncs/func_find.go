@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs/internal/funcutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type findArguments[K any] struct {
@@ -22,10 +22,9 @@ type findArguments[K any] struct {
 }
 
 // NewFindFactory returns a factory for the Find OTTL function.
-// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#find
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/xottl/ottlfuncs/README.md#find
 //
-// Experimental: *NOTE* this API is subject to change or removal in the future. It
-// requires the ottl.functions.enableLambda feature gate to be enabled.
+// The function requires the ottl.functions.enableLambda feature gate to be enabled.
 func NewFindFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Find", &findArguments[K]{}, createFindFunction[K], ottl.WithExperimental[K]())
 }
