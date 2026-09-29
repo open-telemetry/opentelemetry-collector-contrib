@@ -44,6 +44,11 @@
   ],
   "packageRules": [
     {
+      "descriptionl: "Ensure source compatibility with Go version used by this project",
+      "matchManagers": ["gomod"],
+      "constraintsFiltering": "strict"
+    },
+    {
       "matchManagers": [
         "gomod"
       ],
