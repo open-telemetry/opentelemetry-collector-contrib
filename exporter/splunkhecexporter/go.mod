@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/goccy/go-json v0.10.6
+	github.com/goccy/go-json v0.11.1
 	github.com/google/pprof v0.0.0-20260604005048-7023385849c0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.162.0

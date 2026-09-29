@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/goccy/go-json v0.10.6
+	github.com/goccy/go-json v0.11.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger-idl v0.13.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0
