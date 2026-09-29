@@ -38,15 +38,11 @@ func ConvertEntries(entries []*entry.Entry, defaultScopeName, defaultScopeVersio
 
 			scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
 			sl = rl.ScopeLogs().AppendEmpty()
-			if metadata.PkgStanzaAddDefaultScopeNameFeatureGate.IsEnabled() {
-				if e.ScopeName != "" {
-					sl.Scope().SetName(e.ScopeName)
-				} else {
-					sl.Scope().SetName(defaultScopeName)
-					sl.Scope().SetVersion(defaultScopeVersion)
-				}
-			} else {
-				sl.Scope().SetName(e.ScopeName)
+			sl.Scope().SetName(e.ScopeName)
+			// Overwrite the scope name with a default one if feature gate is enabled and if scope name is absent.
+			if metadata.PkgStanzaAddDefaultScopeNameFeatureGate.IsEnabled() && e.ScopeName == "" {
+				sl.Scope().SetName(defaultScopeName)
+				sl.Scope().SetVersion(defaultScopeVersion)
 			}
 		} else {
 			rl = pLogs.ResourceLogs().At(resourceIdx)
@@ -54,15 +50,11 @@ func ConvertEntries(entries []*entry.Entry, defaultScopeName, defaultScopeVersio
 			if !ok {
 				scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
 				sl = rl.ScopeLogs().AppendEmpty()
-				if metadata.PkgStanzaAddDefaultScopeNameFeatureGate.IsEnabled() {
-					if e.ScopeName != "" {
-						sl.Scope().SetName(e.ScopeName)
-					} else {
-						sl.Scope().SetName(defaultScopeName)
-						sl.Scope().SetVersion(defaultScopeVersion)
-					}
-				} else {
-					sl.Scope().SetName(e.ScopeName)
+				sl.Scope().SetName(e.ScopeName)
+				// Overwrite the scope name with a default one if feature gate is enabled and if scope name is absent.
+				if metadata.PkgStanzaAddDefaultScopeNameFeatureGate.IsEnabled() && e.ScopeName == "" {
+					sl.Scope().SetName(defaultScopeName)
+					sl.Scope().SetVersion(defaultScopeVersion)
 				}
 			} else {
 				sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
