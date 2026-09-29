@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.67.1-0.20260928015043-9857cff6c018
 	go.opentelemetry.io/collector/receiver/receivertest v0.161.1-0.20260928015043-9857cff6c018
 	go.uber.org/goleak v1.3.0
-	k8s.io/client-go v0.37.0
+	k8s.io/client-go v0.37.1
 )
 
 require (
@@ -264,8 +264,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/api v0.37.0 // indirect
-	k8s.io/apimachinery v0.37.0 // indirect
+	k8s.io/api v0.37.1 // indirect
+	k8s.io/apimachinery v0.37.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
