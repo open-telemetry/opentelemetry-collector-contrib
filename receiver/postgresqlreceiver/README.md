@@ -201,6 +201,9 @@ behavior exactly.
 
 Known limitation of the join key: it doesn't distinguish `toplevel`, so a top-level statement and a
 nested one it calls can still collide (only with `pg_stat_statements.track = all`, not the default).
+`postgresql.userid` is an OID, so it can in principle be reused once the OID counter wraps around,
+and it is not preserved across a dump/restore. It is only meaningful within one running instance —
+the same is already true of `postgresql.queryid`.
 
 `db.server.query_plan` is sourced from the same collection as `db.server.top_query` and only splits
 the plan out of it, so it needs no grants of its own, and enabling it without `db.server.top_query`

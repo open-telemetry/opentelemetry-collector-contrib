@@ -1632,6 +1632,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 
 		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 		require.NoError(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
 
 		records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		var queryPlanRecords []plog.LogRecord
