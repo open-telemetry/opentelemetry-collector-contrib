@@ -164,6 +164,8 @@ type Config struct {
 	_ struct{}
 }
 
+var _ component.Config = (*Config)(nil)
+
 func (c *SignalConfig) Validate() error {
 	if c.Marshaler != "" && c.EncodingExtension != "" {
 		return errors.New("marshaler configured more than once")
@@ -221,30 +223,31 @@ func (c *NkeyUserFileConfig) Validate() error {
 
 func (c *AuthConfig) Validate() error {
 	var errs error
+	configured := 0
 	if c.Token != nil {
+		configured++
 		errs = multierr.Append(errs, c.Token.Validate())
 	}
 	if c.User != nil {
+		configured++
 		errs = multierr.Append(errs, c.User.Validate())
 	}
 	if c.Nkey != nil {
+		configured++
 		errs = multierr.Append(errs, c.Nkey.Validate())
 	}
 	if c.NkeyJWT != nil {
+		configured++
 		errs = multierr.Append(errs, c.NkeyJWT.Validate())
 	}
 	if c.NkeyUserFile != nil {
+		configured++
 		errs = multierr.Append(errs, c.NkeyUserFile.Validate())
 	}
 
-	nkeyConfigured := 0
-	for _, isSet := range []bool{c.Nkey != nil, c.NkeyJWT != nil, c.NkeyUserFile != nil} {
-		if isSet {
-			nkeyConfigured++
-		}
-	}
-	if nkeyConfigured > 1 {
-		errs = multierr.Append(errs, errors.New("NKey auth configured more than once"))
+	// At most one auth method may be configured.
+	if configured > 1 {
+		errs = multierr.Append(errs, errors.New("more than one auth method configured"))
 	}
 	return errs
 }
