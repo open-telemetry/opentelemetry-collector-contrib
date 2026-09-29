@@ -35,7 +35,7 @@ type fakeFleetTracker struct {
 	cancelCount  int
 }
 
-var _ FleetTracker = (*fakeFleetTracker)(nil)
+var _ fleetTracker = (*fakeFleetTracker)(nil)
 
 func (f *fakeFleetTracker) SubscribeMemberCount(callback func(count int)) (func(), error) {
 	f.callback = callback
@@ -252,7 +252,7 @@ func TestFleetTracker_UnchangedCountIsNoOp(t *testing.T) {
 
 // TestFleetTracker_ConcurrentCallbacksSerialise asserts that a callback holds
 // the fleet lock for its whole apply, so a second concurrent callback cannot
-// interleave. The FleetTracker contract tolerates concurrent delivery, and if
+// interleave. The fleet_tracker contract tolerates concurrent delivery, and if
 // the lock spanned only the compare and store, two callbacks could store and
 // apply in opposite orders, leaving the stored count describing one goal while
 // the sampler held another. That divergence is permanent, because the compare
@@ -348,7 +348,7 @@ func TestFleetTracker_ResolutionFailuresAtStart(t *testing.T) {
 		host := &fakeHost{exts: map[component.ID]component.Component{fleetTrackerID: notAFleetTracker{}}}
 		err = p.Start(t.Context(), host)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "does not implement FleetTracker")
+		assert.Contains(t, err.Error(), "does not implement SubscribeMemberCount")
 		require.NoError(t, p.Shutdown(t.Context()))
 	})
 

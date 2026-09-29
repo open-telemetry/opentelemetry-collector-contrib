@@ -100,7 +100,7 @@ processors:
     # IsRootSpan() when unset.
     # root_span_condition: 'IsRootSpan() or span.attributes["otelcol.adaptive_tail_sampling.root_span"] == true'
 
-    # Optional. Names an extension implementing FleetTracker. When set, every
+    # Optional. Names an extension that implements SubscribeMemberCount. When set, every
     # adaptive_throughput rule's goal_throughput is divided by the fleet's live
     # member count instead of applying per instance. See Fleet-wide throughput
     # budget below.
@@ -558,7 +558,7 @@ Each processor instance runs its samplers independently against the traffic it s
 
 ### Fleet-wide throughput budget (`fleet_tracker`)
 
-`fleet_tracker` names an extension that implements the processor's `FleetTracker` interface: a structural contract (the extension does not need to import this package) with a single method, `SubscribeMemberCount(callback func(count int)) (cancel func(), err error)`. The extension calls back with the fleet's live member count once on subscribe and again on every change; the processor divides each `adaptive_throughput` rule's configured `goal_throughput` by the latest count, so `goal_throughput` reads as a fleet-wide budget rather than a per-instance one:
+`fleet_tracker` names an extension that satisfies a structural contract, a single method `SubscribeMemberCount(callback func(count int)) (cancel func(), err error)`. The processor resolves it by method shape, so an extension does not import this package and there is no exported interface to depend on. The extension calls back with the fleet's live member count once on subscribe and again on every change; the processor divides each `adaptive_throughput` rule's configured `goal_throughput` by the latest count, so `goal_throughput` reads as a fleet-wide budget rather than a per-instance one:
 
 ```yaml
 processors:
@@ -590,7 +590,7 @@ Caveats:
 - The division is integer, so a goal that does not divide evenly under-delivers slightly (e.g. `goal_throughput: 10` across 4 instances yields an effective goal of `2`, not `2.5`, for a fleet total of `8`); see [honeycombio/dynsampler-go#112](https://github.com/honeycombio/dynsampler-go/issues/112).
 - When N is larger than `goal_throughput`, the per-instance goal floors at 1 span/s (it is never divided below 1), so the fleet emits up to N, more than the configured budget (e.g. `goal_throughput: 10` with `N: 40` emits up to 40 total).
 
-No `FleetTracker` extension ships in this repository yet; `FleetTracker` is the exported interface implementations are expected to satisfy (a `redis_fleet_tracker` extension that heartbeats fleet membership into Redis is maintained separately).
+No `fleet_tracker` extension ships in this repository yet. The method signature above is the whole contract an implementation has to satisfy (a `redis_fleet_tracker` extension that heartbeats fleet membership into Redis is maintained separately).
 
 ## Known limitations
 

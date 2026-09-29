@@ -16,12 +16,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor/internal/sampler"
 )
 
-// FleetTracker reports the live number of collector instances in this
+// fleetTracker reports the live number of collector instances in this
 // collector's fleet. The processor resolves the extension named by the
 // fleet_tracker setting against this interface structurally via
 // host.GetExtensions, so extension implementations do not need to import
-// this package; the method signature is the contract.
-type FleetTracker interface {
+// this package. The method signature below is the whole contract, and it is
+// deliberately unexported: nothing needs to import it to satisfy it. If a
+// compile-time assertion ever becomes worth offering, the interface can move
+// to its own small module in the style of pkg/sampling without changing any
+// implementation.
+type fleetTracker interface {
 	// SubscribeMemberCount registers callback to receive the fleet's live
 	// member count. The callback is invoked once with the current count when
 	// the subscription is established, and again on every change. Callbacks
@@ -140,8 +144,8 @@ func (f *fleetState) onMemberCount(count int) {
 }
 
 // resolveFleetTracker resolves the extension named by id against host, and
-// asserts it implements FleetTracker.
-func resolveFleetTracker(host component.Host, id component.ID) (FleetTracker, error) {
+// asserts it satisfies the fleet_tracker contract.
+func resolveFleetTracker(host component.Host, id component.ID) (fleetTracker, error) {
 	if host == nil {
 		return nil, errors.New("fleet_tracker configured but host is nil")
 	}
@@ -149,9 +153,9 @@ func resolveFleetTracker(host component.Host, id component.ID) (FleetTracker, er
 	if !ok {
 		return nil, fmt.Errorf("fleet_tracker extension %q not found", id)
 	}
-	tracker, ok := extension.(FleetTracker)
+	tracker, ok := extension.(fleetTracker)
 	if !ok {
-		return nil, fmt.Errorf("extension %q does not implement FleetTracker", id)
+		return nil, fmt.Errorf("extension %q does not implement SubscribeMemberCount, so it cannot be used as a fleet_tracker", id)
 	}
 	return tracker, nil
 }

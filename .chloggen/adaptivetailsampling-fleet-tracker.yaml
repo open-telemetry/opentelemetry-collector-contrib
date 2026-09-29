@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/adaptive_tail_sampling
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `fleet_tracker` to divide each `adaptive_throughput` rule's `goal_throughput` by the live fleet member count reported by a `FleetTracker` extension, making the goal a fleet-wide budget instead of a per-instance one.
+note: Add `fleet_tracker` to divide each `adaptive_throughput` rule's `goal_throughput` by the live fleet member count reported by a `fleet_tracker` extension, making the goal a fleet-wide budget instead of a per-instance one.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50577]
@@ -24,4 +24,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user, api]
+change_logs: [user]
