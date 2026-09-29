@@ -368,7 +368,12 @@ misspell-correction:
 
 .PHONY: moddownload
 moddownload:
-	$(GOCMD) mod download
+	@for i in 1 2 3; do \
+		$(GOCMD) mod download && exit 0; \
+		[ $$i -lt 3 ] && echo "go mod download failed (attempt $$i/3), retrying in $$((i*10))s..." && sleep $$((i*10)); \
+	done; \
+	echo "go mod download failed after 3 attempts"; \
+	exit 1
 
 .PHONY: gci
 gci:
@@ -421,6 +426,10 @@ run-changed-tests:
 			echo "Failed to find the affected test directories."; \
 		else \
 			set -e; for dir in $$(echo $${AFFECTED_TEST_DIRS}); do \
+			if [ ! -d "$${dir}" ]; then \
+				echo "Skipping $${dir}: directory no longer exists."; \
+				continue; \
+			fi; \
 			(cd "$${dir}" && \
 				$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -count=3 ); \
 			done \

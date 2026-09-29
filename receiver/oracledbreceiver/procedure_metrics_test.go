@@ -422,9 +422,9 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	assert.Equal(t, 1, logsCol1.ResourceLogs().At(0).ScopeLogs().Len(), "Collection should run when lastProcedureMetricsTimestamp is not available")
 	assert.False(t, scrpr.lastProcedureMetricsTimestamp.IsZero(), "A value should be set for lastProcedureMetricsTimestamp after a successful collection")
 
-	// calculateLookbackSeconds adds vsqlRefreshLag, so the gate opens 10s early: 30s elapsed
-	// reports 40s against a 60s interval and must still skip.
-	scrpr.lastProcedureMetricsTimestamp = scrpr.lastProcedureMetricsTimestamp.Add(-30 * time.Second)
+	// Elapsed time just under the interval, but within vsqlRefreshLag of it. The lag buffer
+	// must widen the SQL lookback only — it must not open the collection gate early.
+	scrpr.lastProcedureMetricsTimestamp = scrpr.lastProcedureMetricsTimestamp.Add(-55 * time.Second)
 	skippedFrom := scrpr.lastProcedureMetricsTimestamp
 	logsCol2, err := scrpr.scrapeLogs(t.Context())
 	require.NoError(t, err)
@@ -434,6 +434,15 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	// timestamp did not move: only a collection that actually ran advances it.
 	assert.Equal(t, skippedFrom, scrpr.lastProcedureMetricsTimestamp,
 		"a skipped scrape must not advance lastProcedureMetricsTimestamp")
+
+	// Gate must open once the configured interval has elapsed (not only on the
+	// IsZero() first-scrape shortcut). Timestamp advancing proves collection ran.
+	scrpr.lastProcedureMetricsTimestamp = time.Now().Add(-scrpr.procedureMetricsCfg.CollectionInterval)
+	beforeOpen := scrpr.lastProcedureMetricsTimestamp
+	_, err = scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+	assert.True(t, scrpr.lastProcedureMetricsTimestamp.After(beforeOpen),
+		"procedure_metrics collection must run after the collection interval has elapsed")
 }
 
 // A discarded interval is otherwise indistinguishable from "the procedure did not run", and one child
