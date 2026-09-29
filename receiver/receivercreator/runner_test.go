@@ -4,11 +4,16 @@
 package receivercreator
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -118,4 +123,102 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, map[string]any{endpointConfigKey: "an.endpoint"}, inheritedEndpointConfMap.ToStringMap())
 	require.Equal(t, "an.endpoint", inheritedEndpoint)
 	require.NoError(t, inheritedErr)
+}
+
+// erroringReceiver always fails to start, to exercise the
+// StatusRecoverableError path of reportSubReceiverStatus.
+type erroringReceiver struct{}
+
+func (*erroringReceiver) Start(context.Context, component.Host) error {
+	return errors.New("intentional start failure")
+}
+
+func (*erroringReceiver) Shutdown(context.Context) error {
+	return nil
+}
+
+type erroringFactory struct {
+	receiver.Factory
+}
+
+func (*erroringFactory) CreateDefaultConfig() component.Config {
+	return &nopWithEndpointConfig{}
+}
+
+func (*erroringFactory) CreateMetrics(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+	return &erroringReceiver{}, nil
+}
+
+// reportingMockHost gives componentstatus.ReportStatus a Report method to
+// find: mockHost embeds component.Host as an interface field, so it only
+// promotes that interface's own methods, not Report from whatever concrete
+// value happens to be stored in it.
+type reportingMockHost struct {
+	*mockHost
+	reporter *reportingHost
+}
+
+func (h *reportingMockHost) Report(ev *componentstatus.Event) {
+	h.reporter.Report(ev)
+}
+
+func newReportingMockHost(t *testing.T, onReport func(ev *componentstatus.Event)) *reportingMockHost {
+	reporter := &reportingHost{reportFunc: onReport}
+	return &reportingMockHost{mockHost: newMockHost(t, reporter), reporter: reporter}
+}
+
+func TestReceiverRunner_ReportsSubReceiverStatus(t *testing.T) {
+	t.Run("reports StatusOK with the subcomponent id on successful start", func(t *testing.T) {
+		var events []*componentstatus.Event
+		host := newReportingMockHost(t, func(ev *componentstatus.Event) { events = append(events, ev) })
+		run := &receiverRunner{
+			params:      receivertest.NewNopSettings(metadata.Type),
+			idNamespace: component.NewIDWithName(metadata.Type, "1"),
+			host:        host,
+		}
+		template, err := newReceiverTemplate("with_endpoint/1", nil)
+		require.NoError(t, err)
+
+		comp, err := run.start(template.receiverConfig, userConfigMap{
+			tmpSetEndpointConfigKey: struct{}{},
+			endpointConfigKey:       "localhost:12345",
+		}, &enhancingConsumer{metrics: consumertest.NewNop()})
+		require.NoError(t, err)
+		require.NotNil(t, comp)
+
+		require.Len(t, events, 1)
+		assert.Equal(t, componentstatus.StatusOK, events[0].Status())
+		subID, ok := events[0].Attributes().Get(subComponentIDAttr)
+		require.True(t, ok)
+		assert.Contains(t, subID.AsString(), run.idNamespace.String())
+		assert.Contains(t, subID.AsString(), "endpoint.id")
+	})
+
+	t.Run("reports StatusRecoverableError with the subcomponent id when start fails", func(t *testing.T) {
+		var events []*componentstatus.Event
+		host := newReportingMockHost(t, func(ev *componentstatus.Event) { events = append(events, ev) })
+		host.factories.Receivers[component.MustNewType("erroring")] = &erroringFactory{Factory: receivertest.NewNopFactory()}
+		run := &receiverRunner{
+			params:      receivertest.NewNopSettings(metadata.Type),
+			idNamespace: component.NewIDWithName(metadata.Type, "1"),
+			host:        host,
+		}
+		template, err := newReceiverTemplate("erroring/1", nil)
+		require.NoError(t, err)
+
+		comp, err := run.start(template.receiverConfig, userConfigMap{
+			tmpSetEndpointConfigKey: struct{}{},
+			endpointConfigKey:       "localhost:12345",
+		}, &enhancingConsumer{metrics: consumertest.NewNop()})
+		require.Error(t, err)
+		require.Nil(t, comp)
+
+		require.Len(t, events, 1)
+		assert.Equal(t, componentstatus.StatusRecoverableError, events[0].Status())
+		require.Error(t, events[0].Err())
+		subID, ok := events[0].Attributes().Get(subComponentIDAttr)
+		require.True(t, ok)
+		assert.Contains(t, subID.AsString(), run.idNamespace.String())
+		assert.Contains(t, subID.AsString(), "endpoint.id")
+	})
 }
