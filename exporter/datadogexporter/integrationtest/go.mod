@@ -137,7 +137,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.83.0 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.65.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.66.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.9.1 // indirect
 	github.com/DataDog/go-acl v1.0.1 // indirect
 	github.com/DataDog/go-sqllexer v0.2.4 // indirect
