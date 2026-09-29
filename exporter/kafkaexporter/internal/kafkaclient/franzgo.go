@@ -110,7 +110,8 @@ type FranzSyncProducer struct {
 	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
 
-	propagator propagation.TextMapPropagator
+	propagator       propagation.TextMapPropagator
+	propagatorFields []string
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
@@ -123,7 +124,8 @@ func NewFranzSyncProducer(client *kgo.Client,
 	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
 	propagator := otel.GetTextMapPropagator()
-	if len(propagator.Fields()) == 0 {
+	propagatorFields := propagator.Fields()
+	if len(propagatorFields) == 0 {
 		propagator = nil
 	}
 	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
@@ -135,33 +137,33 @@ func NewFranzSyncProducer(client *kgo.Client,
 	}
 
 	return &FranzSyncProducer{
-		client:          client,
-		clientCancel:    clientCancel,
-		metadataKeys:    metadataKeys,
-		recordHeaders:   headers,
-		maxMessageBytes: maxMessageBytes,
-		propagator:      propagator,
+		client:           client,
+		clientCancel:     clientCancel,
+		metadataKeys:     metadataKeys,
+		recordHeaders:    headers,
+		maxMessageBytes:  maxMessageBytes,
+		propagator:       propagator,
+		propagatorFields: propagatorFields,
 	}
 }
 
 // ExportData sends a batch of records to Kafka. It attaches configured
 // record headers, per-call metadata-derived headers, and trace context headers
-// to each record before producing. Trace context headers take precedence over
-// the configured and metadata-derived headers with the same key.
+// to each record before producing. When injecting trace context, it replaces
+// configured and metadata-derived headers for all propagator fields.
 func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Record) error {
 	metadataHeaders := metadataToHeaders(ctx, p.metadataKeys)
 	var traceHeaders kafka.HeaderCarrier
+	var excludedKeys []string
 	if p.propagator != nil && trace.SpanContextFromContext(ctx).IsValid() {
-		traceHeaders = traceContextToHeaders(ctx, p.propagator)
+		p.propagator.Inject(ctx, &traceHeaders)
+		excludedKeys = p.propagatorFields
 	}
-	// Only the headers the propagator injected are replaced: a configured or
-	// metadata header the propagator did not write survives untouched.
-	injectedKeys := traceHeaders.Keys()
 	var headers []kgo.RecordHeader
 	if n := len(p.recordHeaders) + len(metadataHeaders) + len(traceHeaders); n > 0 {
 		headers = make([]kgo.RecordHeader, 0, n)
-		headers = appendHeadersExcept(headers, p.recordHeaders, injectedKeys)
-		headers = appendHeadersExcept(headers, metadataHeaders, injectedKeys)
+		headers = appendHeadersExcept(headers, p.recordHeaders, excludedKeys)
+		headers = appendHeadersExcept(headers, metadataHeaders, excludedKeys)
 		headers = append(headers, traceHeaders...)
 	}
 	for _, r := range records {

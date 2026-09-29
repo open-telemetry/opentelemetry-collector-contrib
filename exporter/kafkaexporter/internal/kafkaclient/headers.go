@@ -9,9 +9,6 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/otel/propagation"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 // metadataToHeaders converts context metadata into a kgo.RecordHeader slice.
@@ -29,14 +26,6 @@ func metadataToHeaders(ctx context.Context, keys []string) []kgo.RecordHeader {
 			headers = append(headers, kgo.RecordHeader{Key: key, Value: []byte(v)})
 		}
 	}
-	return headers
-}
-
-// traceContextToHeaders converts the trace context in ctx into Kafka record
-// headers using propagator.
-func traceContextToHeaders(ctx context.Context, propagator propagation.TextMapPropagator) kafka.HeaderCarrier {
-	var headers kafka.HeaderCarrier
-	propagator.Inject(ctx, &headers)
 	return headers
 }
 

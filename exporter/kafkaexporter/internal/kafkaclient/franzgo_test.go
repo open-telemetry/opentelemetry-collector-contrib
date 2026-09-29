@@ -258,17 +258,10 @@ func TestExportData_PropagateTraceContext(t *testing.T) {
 
 	// Trace context headers from other sources, e.g. forwarded from an
 	// upstream Kafka record, belong to a different trace. They are kept
-	// unless the propagator injects a header with the same key.
+	// unless a valid span is injected.
 	upstreamHeaders := []kgo.RecordHeader{
 		{Key: "static-key", Value: []byte("static-value")},
 		{Key: "traceparent", Value: []byte("static-traceparent")},
-		{Key: "tracestate", Value: []byte("upstream=state")},
-		{Key: "metadata-key", Value: []byte("metadata-value")},
-	}
-	// propagation.TraceContext injects tracestate only when the span's trace
-	// state is non-empty, so the upstream tracestate survives without it.
-	traceparentOnlyHeaders := []kgo.RecordHeader{
-		{Key: "static-key", Value: []byte("static-value")},
 		{Key: "tracestate", Value: []byte("upstream=state")},
 		{Key: "metadata-key", Value: []byte("metadata-value")},
 	}
@@ -294,14 +287,14 @@ func TestExportData_PropagateTraceContext(t *testing.T) {
 		"with unsampled span": {
 			propagator:  propagation.TraceContext{},
 			spanContext: newSpanContext(0, ""),
-			expected: append(slices.Clone(traceparentOnlyHeaders),
+			expected: append(slices.Clone(nonTraceHeaders),
 				kgo.RecordHeader{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-00")},
 			),
 		},
 		"with sampled span": {
 			propagator:  propagation.TraceContext{},
 			spanContext: newSpanContext(trace.FlagsSampled, ""),
-			expected: append(slices.Clone(traceparentOnlyHeaders),
+			expected: append(slices.Clone(nonTraceHeaders),
 				kgo.RecordHeader{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01")},
 			),
 		},
