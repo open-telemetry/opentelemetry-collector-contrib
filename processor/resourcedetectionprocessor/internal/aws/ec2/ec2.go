@@ -100,12 +100,29 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	meta, err := d.metadataProvider.Get(ctx)
 	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting identity document: %w", err)
+		// This is probably not an actual EC2 instance, even though the initial d.metadataProvider.InstanceID(ctx) has succeeded.
+		// Some cloud providers (for example OpenStack Nova, see processor/resourcedetectionprocessor/internal/openstack/nova)
+		// provide a partial implementation of the AWS EC2 metadata endpoint, so
+		// http://169.254.169.254/latest/meta-data/instance-id works but
+		// http://169.254.169.254/latest/dynamic/instance-identity/document does not.
+		d.logger.Debug("EC2 instance identity document unavailable", zap.Error(err))
+		if d.failOnMissingMetadata || !isNotFound(err) {
+			// For failOnMissingMetadata==true, we want to return the error anyway. For failOnMissingMetadata==false: An HTTP 404
+			// indicates that the endpoint is not implemented, that is, that this is not an actual EC2 instance. For this case
+			// we return an empty resource and no error, to honor failOnMissingMetadata==false. Any other error might be
+			// transient, so it is returned here to be routed into detectWithRetry, instead of being silently ignored.
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting identity document: %w", err)
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
-	hostname, err := d.metadataProvider.Hostname(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
+	hostname, hostnameErr := d.metadataProvider.Hostname(ctx)
+	if hostnameErr != nil {
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", hostnameErr)
+		}
+		d.logger.Debug("EC2 hostname unavailable", zap.Error(hostnameErr))
+		// Continue without the hostname, the remaining attributes and the tags below are still worth reporting.
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
@@ -116,7 +133,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetHostID(meta.InstanceID)
 	d.rb.SetHostImageID(meta.ImageID)
 	d.rb.SetHostType(meta.InstanceType)
-	d.rb.SetHostName(hostname)
+	if hostnameErr == nil {
+		d.rb.SetHostName(hostname)
+	}
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
@@ -125,19 +144,19 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			// Use IMDS: no IAM permissions needed, requires InstanceMetadataTags=enabled on the instance
 			tags, err = fetchIMDSTags(ctx, d.metadataProvider, d.tagKeyRegexes)
 			if err != nil {
-				d.logger.Warn("failed to fetch tags from IMDS", zap.Error(err))
+				d.logger.Debug("failed to fetch tags from IMDS", zap.Error(err))
 			}
 		} else {
 			// Use EC2 DescribeTags API (default): requires ec2:DescribeTags IAM permission
 			httpClient := getClientConfig(ctx, d.logger)
 			ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
 			if err != nil {
-				d.logger.Warn("failed to build ec2 client", zap.Error(err))
+				d.logger.Debug("failed to build ec2 client", zap.Error(err))
 				return res, conventions.SchemaURL, nil
 			}
 			tags, err = fetchEC2Tags(ctx, ec2Client, meta.InstanceID, d.tagKeyRegexes)
 			if err != nil {
-				d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
+				d.logger.Debug("failed fetching ec2 instance tags", zap.Error(err))
 			}
 		}
 		for key, val := range tags {
@@ -145,6 +164,14 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	}
 	return res, conventions.SchemaURL, nil
+}
+
+// isNotFound reports whether err has been caused by an HTTP 404 response from the metadata endpoint.
+func isNotFound(err error) bool {
+	// The IMDS client reports non-2xx responses as *smithyhttp.ResponseError; matching on the status code accessor
+	// keeps this independent of which of the SDK's response error types is used.
+	var statusErr interface{ HTTPStatusCode() int }
+	return errors.As(err, &statusErr) && statusErr.HTTPStatusCode() == http.StatusNotFound
 }
 
 func getClientConfig(ctx context.Context, logger *zap.Logger) *http.Client {
