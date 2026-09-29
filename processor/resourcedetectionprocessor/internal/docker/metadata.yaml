@@ -1,14 +1,36 @@
 type: resourcedetectionprocessor/docker
-sem_conv_version: 1.40.0
+sem_conv_version: 1.43.0
 
 parent: resourcedetection
 
+feature_gates:
+  - id: processor.resourcedetection.docker.EmitSemconvContainerAttributes
+    stage: alpha
+    description: >-
+      When enabled, container.name is reported without the leading slash the Docker API returns,
+      and container.image.name reports the image name rather than the image ID. The image ID
+      remains available as container.image.id.
+    from_version: v0.161.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159
+
 resource_attributes:
+  container.image.id:
+    semantic_convention:
+      ref: container.md#container-image-id
+    description: The container image ID
+    type: string
+    enabled: false
   container.image.name:
     semantic_convention:
       ref: container.md#container-image-name
     description: The container image name
     type: string
+    enabled: false
+  container.image.tags:
+    semantic_convention:
+      ref: container.md#container-image-tags
+    description: The container image tags
+    type: slice
     enabled: false
   container.name:
     semantic_convention:

@@ -8,7 +8,19 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| container.image.name | The container image name | Any Str | false | [container.image.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/container.md#container-image-name) | - |
-| container.name | The container name | Any Str | false | [container.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/container.md#container-name) | - |
-| host.name | The host.name | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
-| os.type | The os.type | Any Str | true | [os.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/os.md#os-type) | - |
+| container.image.id | The container image ID | Any Str | false | [container.image.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/container.md#container-image-id) | - |
+| container.image.name | The container image name | Any Str | false | [container.image.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/container.md#container-image-name) | - |
+| container.image.tags | The container image tags | Any Slice | false | [container.image.tags](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/container.md#container-image-tags) | - |
+| container.name | The container name | Any Str | false | [container.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/container.md#container-name) | - |
+| host.name | The host.name | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-name) | - |
+| os.type | The os.type | Any Str | true | [os.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-type) | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.resourcedetection.docker.EmitSemconvContainerAttributes` | alpha | When enabled, container.name is reported without the leading slash the Docker API returns, and container.image.name reports the image name rather than the image ID. The image ID remains available as container.image.id. | v0.161.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
