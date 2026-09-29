@@ -24,7 +24,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace/log v0.83.0
 	github.com/DataDog/datadog-agent/pkg/util/log v0.83.0
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.83.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.65.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.66.0
 	github.com/DataDog/datadog-go/v5 v5.9.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.162.0
@@ -299,9 +299,9 @@ require (
 	google.golang.org/grpc v1.83.2 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.37.0 // indirect
-	k8s.io/apimachinery v0.37.0 // indirect
-	k8s.io/client-go v0.37.0 // indirect
+	k8s.io/api v0.37.1 // indirect
+	k8s.io/apimachinery v0.37.1 // indirect
+	k8s.io/client-go v0.37.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd // indirect
