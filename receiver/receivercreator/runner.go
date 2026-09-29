@@ -11,15 +11,23 @@ import (
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
+
+// subComponentIDAttr is the status event attribute used to identify a
+// dynamically created receiver that doesn't have its own node in the
+// service's component graph, and so never gets its own InstanceID. See
+// https://github.com/open-telemetry/opentelemetry-collector/issues/13210.
+const subComponentIDAttr = "otel.subcomponent.id"
 
 // runner starts and stops receiver instances.
 type runner interface {
@@ -121,10 +129,39 @@ func (run *receiverRunner) start(
 	}
 
 	if err = wr.Start(context.Background(), run.host); err != nil {
+		run.reportSubReceiverStatus(id, componentstatus.StatusRecoverableError, err)
 		return nil, fmt.Errorf("failed starting endpoint-derived receiver: %w", err)
 	}
 
+	run.reportSubReceiverStatus(id, componentstatus.StatusOK, nil)
+
 	return wr, nil
+}
+
+// reportSubReceiverStatus reports the status of a receiver started by
+// receiver_creator using a status event attribute, since the receiver never
+// becomes a node in the service's component graph and so never gets its own
+// InstanceID to report status through directly.
+//
+// Only StatusOK and StatusRecoverableError are reported here. The status FSM
+// tracks a single state per InstanceID, and every receiver started by this
+// receiver_creator instance shares its InstanceID, since none of them have
+// one of their own. StatusStopping/StatusStopped would leave that shared
+// state permanently at StatusStopped - a terminal state with no further
+// valid transitions - the first time any one of the dynamically started
+// receivers is torn down, silently breaking status reporting for
+// receiver_creator and every receiver it starts afterwards.
+// StatusPermanentError has the same problem: it can only transition to
+// StatusStopping. StatusRecoverableError can transition back to StatusOK,
+// so it's used for start failures instead.
+func (run *receiverRunner) reportSubReceiverStatus(id component.ID, status componentstatus.Status, err error) {
+	attrs := pcommon.NewMap()
+	attrs.PutStr(subComponentIDAttr, id.String())
+	opts := []componentstatus.EventBuilderOption{componentstatus.WithAttributes(attrs)}
+	if err != nil {
+		opts = append(opts, componentstatus.WithError(err))
+	}
+	componentstatus.ReportStatus(run.host, componentstatus.NewEvent(status, opts...))
 }
 
 // shutdown the given receiver.
