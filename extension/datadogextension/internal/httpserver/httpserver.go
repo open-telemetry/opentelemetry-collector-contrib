@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package httpserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 
@@ -53,7 +53,7 @@ type Server struct {
 }
 
 // NewServer creates a new HTTP server instance.
-// It should be called after NotifyConfig has received full configuration.
+// It should be called after NotifyConfigSnapshot has received full configuration.
 // TODO: support generic payloads
 func NewServer(
 	logger *zap.Logger,

@@ -383,6 +383,9 @@ var MetricsInfo = metricsInfo{
 	K8sStatefulsetDesiredPods: metricInfo{
 		Name: "k8s.statefulset.desired_pods",
 	},
+	K8sStatefulsetPodAvailable: metricInfo{
+		Name: "k8s.statefulset.pod.available",
+	},
 	K8sStatefulsetReadyPods: metricInfo{
 		Name: "k8s.statefulset.ready_pods",
 	},
@@ -455,6 +458,7 @@ type metricsInfo struct {
 	K8sServiceLoadBalancerIngressCount      metricInfo
 	K8sStatefulsetCurrentPods               metricInfo
 	K8sStatefulsetDesiredPods               metricInfo
+	K8sStatefulsetPodAvailable              metricInfo
 	K8sStatefulsetReadyPods                 metricInfo
 	K8sStatefulsetUpdatedPods               metricInfo
 	OpenshiftAppliedclusterquotaLimit       metricInfo
@@ -2891,6 +2895,58 @@ func newMetricK8sStatefulsetDesiredPods(cfg K8sStatefulsetDesiredPodsMetricConfi
 	return m
 }
 
+type metricK8sStatefulsetPodAvailable struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   K8sStatefulsetPodAvailableMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills k8s.statefulset.pod.available metric with initial data.
+func (m *metricK8sStatefulsetPodAvailable) init() {
+	m.data.SetName("k8s.statefulset.pod.available")
+	m.data.SetDescription("The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.")
+	m.data.SetUnit("{pod}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sStatefulsetPodAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sStatefulsetPodAvailable) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sStatefulsetPodAvailable) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sStatefulsetPodAvailable(cfg K8sStatefulsetPodAvailableMetricConfig) metricK8sStatefulsetPodAvailable {
+	m := metricK8sStatefulsetPodAvailable{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sStatefulsetReadyPods struct {
 	data     pmetric.Metric                      // data buffer for generated metric.
 	config   K8sStatefulsetReadyPodsMetricConfig // metric config provided by user.
@@ -3336,6 +3392,7 @@ type MetricsBuilder struct {
 	metricK8sServiceLoadBalancerIngressCount      metricK8sServiceLoadBalancerIngressCount
 	metricK8sStatefulsetCurrentPods               metricK8sStatefulsetCurrentPods
 	metricK8sStatefulsetDesiredPods               metricK8sStatefulsetDesiredPods
+	metricK8sStatefulsetPodAvailable              metricK8sStatefulsetPodAvailable
 	metricK8sStatefulsetReadyPods                 metricK8sStatefulsetReadyPods
 	metricK8sStatefulsetUpdatedPods               metricK8sStatefulsetUpdatedPods
 	metricOpenshiftAppliedclusterquotaLimit       metricOpenshiftAppliedclusterquotaLimit
@@ -3414,6 +3471,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sServiceLoadBalancerIngressCount:      newMetricK8sServiceLoadBalancerIngressCount(mbc.Metrics.K8sServiceLoadBalancerIngressCount),
 		metricK8sStatefulsetCurrentPods:               newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
 		metricK8sStatefulsetDesiredPods:               newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
+		metricK8sStatefulsetPodAvailable:              newMetricK8sStatefulsetPodAvailable(mbc.Metrics.K8sStatefulsetPodAvailable),
 		metricK8sStatefulsetReadyPods:                 newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
 		metricK8sStatefulsetUpdatedPods:               newMetricK8sStatefulsetUpdatedPods(mbc.Metrics.K8sStatefulsetUpdatedPods),
 		metricOpenshiftAppliedclusterquotaLimit:       newMetricOpenshiftAppliedclusterquotaLimit(mbc.Metrics.OpenshiftAppliedclusterquotaLimit),
@@ -3956,6 +4014,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sServiceLoadBalancerIngressCount.emit(ils.Metrics())
 	mb.metricK8sStatefulsetCurrentPods.emit(ils.Metrics())
 	mb.metricK8sStatefulsetDesiredPods.emit(ils.Metrics())
+	mb.metricK8sStatefulsetPodAvailable.emit(ils.Metrics())
 	mb.metricK8sStatefulsetReadyPods.emit(ils.Metrics())
 	mb.metricK8sStatefulsetUpdatedPods.emit(ils.Metrics())
 	mb.metricOpenshiftAppliedclusterquotaLimit.emit(ils.Metrics())
@@ -4320,6 +4379,13 @@ func (mb *MetricsBuilder) RecordK8sStatefulsetCurrentPodsDataPoint(ts pcommon.Ti
 // Deprecated: Use mb.ForK8sStatefulset(entity).RecordK8sStatefulsetDesiredPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sStatefulsetDesiredPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sStatefulsetDesiredPods.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sStatefulsetPodAvailableDataPoint adds a data point to k8s.statefulset.pod.available metric.
+//
+// Deprecated: Use mb.ForK8sStatefulset(entity).RecordK8sStatefulsetPodAvailableDataPoint(...) instead.
+func (mb *MetricsBuilder) RecordK8sStatefulsetPodAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sStatefulsetPodAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetReadyPodsDataPoint adds a data point to k8s.statefulset.ready_pods metric.

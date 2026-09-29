@@ -6068,17 +6068,25 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for oracledb events.
 type EventsConfig struct {
+	DbServerQueryPlan         EventConfig `mapstructure:"db.server.query_plan"`
 	DbServerQuerySample       EventConfig `mapstructure:"db.server.query_sample"`
 	DbServerSessionWaitSample EventConfig `mapstructure:"db.server.session.wait_sample"`
+	DbServerTopProcedure      EventConfig `mapstructure:"db.server.top_procedure"`
 	DbServerTopQuery          EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerQueryPlan: EventConfig{
+			Enabled: false,
+		},
 		DbServerQuerySample: EventConfig{
 			Enabled: false,
 		},
 		DbServerSessionWaitSample: EventConfig{
+			Enabled: false,
+		},
+		DbServerTopProcedure: EventConfig{
 			Enabled: false,
 		},
 		DbServerTopQuery: EventConfig{
@@ -6111,6 +6119,41 @@ type HostNameResourceAttributeConfig struct {
 }
 
 func (rac *HostNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracleDbEditionResourceAttributeConfig provides config for the oracle.db.edition resource attribute.
+type OracleDbEditionResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OracleDbEditionResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -6297,6 +6340,76 @@ func (rac *OracledbInstanceNameResourceAttributeConfig) Unmarshal(parser *confma
 	return nil
 }
 
+// ServerAddressResourceAttributeConfig provides config for the server.address resource attribute.
+type ServerAddressResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerAddressResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServerPortResourceAttributeConfig provides config for the server.port resource attribute.
+type ServerPortResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *int64 `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerPortResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ServiceInstanceIDResourceAttributeConfig provides config for the service.instance.id resource attribute.
 type ServiceInstanceIDResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -6405,11 +6518,14 @@ func (rac *ServiceNamespaceResourceAttributeConfig) Unmarshal(parser *confmap.Co
 // ResourceAttributesConfig provides config for oracledb resource attributes.
 type ResourceAttributesConfig struct {
 	HostName             HostNameResourceAttributeConfig             `mapstructure:"host.name"`
+	OracleDbEdition      OracleDbEditionResourceAttributeConfig      `mapstructure:"oracle.db.edition"`
 	OracleDbHostingType  OracleDbHostingTypeResourceAttributeConfig  `mapstructure:"oracle.db.hosting_type"`
 	OracleDbOpenMode     OracleDbOpenModeResourceAttributeConfig     `mapstructure:"oracle.db.open_mode"`
 	OracleDbRole         OracleDbRoleResourceAttributeConfig         `mapstructure:"oracle.db.role"`
 	OracleDbVersion      OracleDbVersionResourceAttributeConfig      `mapstructure:"oracle.db.version"`
 	OracledbInstanceName OracledbInstanceNameResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
+	ServerAddress        ServerAddressResourceAttributeConfig        `mapstructure:"server.address"`
+	ServerPort           ServerPortResourceAttributeConfig           `mapstructure:"server.port"`
 	ServiceInstanceID    ServiceInstanceIDResourceAttributeConfig    `mapstructure:"service.instance.id"`
 	ServiceName          ServiceNameResourceAttributeConfig          `mapstructure:"service.name"`
 	ServiceNamespace     ServiceNamespaceResourceAttributeConfig     `mapstructure:"service.namespace"`
@@ -6419,6 +6535,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		HostName: HostNameResourceAttributeConfig{
 			Enabled: true,
+		},
+		OracleDbEdition: OracleDbEditionResourceAttributeConfig{
+			Enabled: false,
 		},
 		OracleDbHostingType: OracleDbHostingTypeResourceAttributeConfig{
 			Enabled: true,
@@ -6433,6 +6552,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerAddress: ServerAddressResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerPort: ServerPortResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
@@ -6454,6 +6579,9 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	if rac.HostName.Enabled && rac.HostName.OverrideValue != nil {
 		res.Attributes().PutStr("host.name", *rac.HostName.OverrideValue)
 	}
+	if rac.OracleDbEdition.Enabled && rac.OracleDbEdition.OverrideValue != nil {
+		res.Attributes().PutStr("oracle.db.edition", *rac.OracleDbEdition.OverrideValue)
+	}
 	if rac.OracleDbHostingType.Enabled && rac.OracleDbHostingType.OverrideValue != nil {
 		res.Attributes().PutStr("oracle.db.hosting_type", *rac.OracleDbHostingType.OverrideValue)
 	}
@@ -6468,6 +6596,12 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	}
 	if rac.OracledbInstanceName.Enabled && rac.OracledbInstanceName.OverrideValue != nil {
 		res.Attributes().PutStr("oracledb.instance.name", *rac.OracledbInstanceName.OverrideValue)
+	}
+	if rac.ServerAddress.Enabled && rac.ServerAddress.OverrideValue != nil {
+		res.Attributes().PutStr("server.address", *rac.ServerAddress.OverrideValue)
+	}
+	if rac.ServerPort.Enabled && rac.ServerPort.OverrideValue != nil {
+		res.Attributes().PutInt("server.port", *rac.ServerPort.OverrideValue)
 	}
 	if rac.ServiceInstanceID.Enabled && rac.ServiceInstanceID.OverrideValue != nil {
 		res.Attributes().PutStr("service.instance.id", *rac.ServiceInstanceID.OverrideValue)
@@ -6491,11 +6625,6 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for oracledb logs builder.

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"gopkg.in/yaml.v3"
 )
 
 func TestAssertMetrics_RoundTrip(t *testing.T) {
@@ -540,6 +541,94 @@ func TestAssertMetrics_SingleEmptyDatapointShorthand(t *testing.T) {
 		"single empty-attribute datapoint should be compacted to no `datapoints:` key")
 
 	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_DoublePrecisionOperator(t *testing.T) {
+	m := buildSampleMetrics()
+	gauge := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	dp := gauge.Gauge().DataPoints().At(0)
+	dp.SetDoubleValue(1.23456)
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+              datapoints:
+                - attributes: {}
+                  double_value/precision3: 1.235
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Drift below the asserted precision is tolerated.
+	dp.SetDoubleValue(1.23549)
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Drift at the asserted precision is not.
+	dp.SetDoubleValue(1.24)
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "double_value mismatch at 3 decimal places")
+}
+
+func TestDatapointAssertion_PrecisionOperatorSchemaErrors(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		doc  string
+		want string
+	}{
+		{
+			name: "count is not a number",
+			doc:  "double_value/precisionX: 1.0",
+			want: "must end in a decimal place count",
+		},
+		{
+			name: "count is negative",
+			doc:  "double_value/precision-1: 1.0",
+			want: "out of range",
+		},
+		{
+			name: "count exceeds float64 precision",
+			doc:  "double_value/precision99: 1.0",
+			want: "out of range",
+		},
+		{
+			name: "conflicts with an exact double_value",
+			doc:  "double_value: 1.0\ndouble_value/precision2: 1.0",
+			want: "cannot specify both",
+		},
+		{
+			name: "more than one precision operator",
+			doc:  "double_value/precision2: 1.0\ndouble_value/precision3: 1.0",
+			want: "more than one precision operator",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var dp datapointAssertion
+			err := yaml.Unmarshal([]byte(tc.doc), &dp)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.want)
+		})
+	}
 }
 
 func buildSampleMetrics() pmetric.Metrics {

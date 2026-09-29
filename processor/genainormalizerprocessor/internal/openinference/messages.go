@@ -66,12 +66,26 @@ type toolCallFields struct {
 	arguments string
 }
 
+type contentFields struct {
+	typ  string
+	text string
+}
+
 type messageFields struct {
 	role       string
 	content    string
 	name       string
 	toolCallID string
 	toolCalls  map[int]*toolCallFields
+	contents   map[int]*contentFields
+}
+
+// pendingKey is a source attribute whose removal is decided after the whole
+// message has been read and the winning part source is known.
+type pendingKey struct {
+	key        string
+	kind       fieldKind
+	contentIdx int
 }
 
 // ReconstructMessages scans attrs for OpenInference flattened message attributes
@@ -92,7 +106,7 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 	}
 
 	messages := make(map[int]*messageFields)
-	var keysToRemove []string
+	pending := make(map[int][]pendingKey)
 
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		if !strings.HasPrefix(k, prefix) {
@@ -106,19 +120,34 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 
 		mf, exists := messages[idx]
 		if !exists {
-			mf = &messageFields{toolCalls: make(map[int]*toolCallFields)}
+			mf = &messageFields{
+				toolCalls: make(map[int]*toolCallFields),
+				contents:  make(map[int]*contentFields),
+			}
 			messages[idx] = mf
 		}
 
-		applyField(mf, fieldPath, v)
-		if removeOriginals {
-			keysToRemove = append(keysToRemove, k)
+		if kind, contentIdx, ok := applyField(mf, fieldPath, v); ok && removeOriginals {
+			pending[idx] = append(pending[idx], pendingKey{key: k, kind: kind, contentIdx: contentIdx})
 		}
 		return true
 	})
 
 	if len(messages) == 0 {
 		return false
+	}
+
+	// An attribute is removed only if the parts actually emitted for its message
+	// were built from it, so nothing is dropped without being represented.
+	var keysToRemove []string
+	for msgIdx, keys := range pending {
+		mf := messages[msgIdx]
+		src := selectPartSource(mf)
+		for _, pk := range keys {
+			if consumedBy(pk.kind, src) && (pk.kind != kindContents || isTextContent(mf.contents[pk.contentIdx])) {
+				keysToRemove = append(keysToRemove, pk.key)
+			}
+		}
 	}
 
 	result := buildMessages(messages, isOutput)
@@ -158,34 +187,145 @@ func parseIndexedField(s string) (int, string, bool) {
 	return idx, fieldPath, true
 }
 
-func applyField(mf *messageFields, fieldPath string, v pcommon.Value) {
+// fieldKind groups a flattened attribute by the part source that renders it.
+type fieldKind int
+
+const (
+	kindUnmapped fieldKind = iota
+	kindAlways             // role, name: rendered on every message
+	kindContent
+	kindToolCallID
+	kindToolCall
+	kindContents
+)
+
+// consumedBy reports whether a field of this kind is represented in parts built
+// from src. message.content is read both as a text part and as the response of a
+// tool_call_response.
+func consumedBy(kind fieldKind, src partSource) bool {
+	switch kind {
+	case kindAlways:
+		return true
+	case kindContent:
+		return src == sourceFlatContent || src == sourceToolCallResponse
+	case kindToolCallID:
+		return src == sourceToolCallResponse
+	case kindToolCall:
+		return src == sourceToolCalls
+	case kindContents:
+		return src == sourceContents
+	}
+	return false
+}
+
+// applyField folds one flattened attribute into mf and classifies it. The bool
+// reports whether the field was recognized at all; unrecognized fields keep
+// their source attributes.
+func applyField(mf *messageFields, fieldPath string, v pcommon.Value) (kind fieldKind, contentIdx int, ok bool) {
 	switch {
 	case fieldPath == "role":
 		mf.role = v.AsString()
-	case fieldPath == "content":
-		mf.content = v.AsString()
+		return kindAlways, 0, true
 	case fieldPath == "name":
 		mf.name = v.AsString()
+		return kindAlways, 0, true
+	case fieldPath == "content":
+		mf.content = v.AsString()
+		return kindContent, 0, true
 	case fieldPath == "tool_call_id":
 		mf.toolCallID = v.AsString()
+		return kindToolCallID, 0, true
 	case strings.HasPrefix(fieldPath, "tool_calls."):
-		parseToolCallField(mf, fieldPath[len("tool_calls."):], v)
+		return kindToolCall, 0, parseToolCallField(mf, fieldPath[len("tool_calls."):], v)
+	case strings.HasPrefix(fieldPath, "contents."):
+		idx, recognized := parseContentField(mf, fieldPath[len("contents."):], v)
+		return kindContents, idx, recognized
 	}
+	return kindUnmapped, 0, false
 }
 
-func parseToolCallField(mf *messageFields, s string, v pcommon.Value) {
-	before, after, ok := strings.Cut(s, ".")
+// parseContentField parses "M.message_content.field" from the indexed content
+// array into mf.contents[M]. It returns the content index and whether the field
+// was recognized. Unrecognized fields (image, audio, data, signature) are left
+// untouched so their source attributes survive.
+func parseContentField(mf *messageFields, s string, v pcommon.Value) (int, bool) {
+	before, rest, ok := strings.Cut(s, ".")
 	if !ok {
-		return
+		return 0, false
 	}
 	idx, err := strconv.Atoi(before)
 	if err != nil {
-		return
+		return 0, false
+	}
+	const mcPrefix = "message_content."
+	if !strings.HasPrefix(rest, mcPrefix) {
+		return 0, false
+	}
+	field := rest[len(mcPrefix):]
+
+	cf, exists := mf.contents[idx]
+	if !exists {
+		cf = &contentFields{}
+		mf.contents[idx] = cf
+	}
+
+	switch field {
+	case "type":
+		cf.typ = v.AsString()
+	case "text":
+		cf.text = v.AsString()
+	default:
+		return idx, false
+	}
+	return idx, true
+}
+
+// isTextContent reports whether a content entry is reconstructed as a text part.
+// An entry with text but no declared type counts as text, because
+// message_content.type is not set by every instrumentor.
+func isTextContent(cf *contentFields) bool {
+	return cf.text != "" && (cf.typ == "" || cf.typ == "text")
+}
+
+// textPartsFromContents builds text parts from the indexed content array,
+// preserving source order. Non-text entries (image, audio, reasoning, tool_use)
+// carry their payload in fields this function does not read and are skipped;
+// see the multimodal limitation in the README.
+func textPartsFromContents(mf *messageFields) []any {
+	indices := make([]int, 0, len(mf.contents))
+	for idx := range mf.contents {
+		indices = append(indices, idx)
+	}
+	sort.Ints(indices)
+
+	parts := make([]any, 0, len(indices))
+	for _, idx := range indices {
+		cf := mf.contents[idx]
+		if !isTextContent(cf) {
+			continue
+		}
+		parts = append(parts, textPart{Type: "text", Content: cf.text})
+	}
+	return parts
+}
+
+// parseToolCallField parses "M.tool_call.field" into mf.toolCalls[M] and reports
+// whether the field was recognized. Unrecognized fields (for instance
+// tool_call.reasoning_signature) are left untouched so their source attributes
+// survive.
+func parseToolCallField(mf *messageFields, s string, v pcommon.Value) bool {
+	before, after, ok := strings.Cut(s, ".")
+	if !ok {
+		return false
+	}
+	idx, err := strconv.Atoi(before)
+	if err != nil {
+		return false
 	}
 	rest := after
 	const tcPrefix = "tool_call."
 	if !strings.HasPrefix(rest, tcPrefix) {
-		return
+		return false
 	}
 	field := rest[len(tcPrefix):]
 
@@ -202,7 +342,10 @@ func parseToolCallField(mf *messageFields, s string, v pcommon.Value) {
 		tc.name = v.AsString()
 	case "function.arguments":
 		tc.arguments = v.AsString()
+	default:
+		return false
 	}
+	return true
 }
 
 func buildMessages(messages map[int]*messageFields, isOutput bool) []any {
@@ -229,8 +372,41 @@ func buildSingleMessage(mf *messageFields, isOutput bool) any {
 	return inputChatMessage{Role: role, Name: mf.name, Parts: parts}
 }
 
+// partSource identifies which group of fields a message's parts are built from.
+// buildParts renders it and reconstructPrefix decides removals from it, so the
+// precedence rules are stated once.
+type partSource int
+
+const (
+	sourceNone partSource = iota
+	sourceToolCallResponse
+	sourceToolCalls
+	sourceFlatContent
+	sourceContents
+)
+
+func selectPartSource(mf *messageFields) partSource {
+	switch {
+	case mf.toolCallID != "":
+		return sourceToolCallResponse
+	case len(mf.toolCalls) > 0:
+		return sourceToolCalls
+	case mf.content != "":
+		return sourceFlatContent
+	}
+	// The flat message.content string takes precedence over the indexed array
+	// when both are present: it is the field the GenAI schema maps onto directly.
+	for _, cf := range mf.contents {
+		if isTextContent(cf) {
+			return sourceContents
+		}
+	}
+	return sourceNone
+}
+
 func buildParts(mf *messageFields) []any {
-	if mf.toolCallID != "" {
+	switch selectPartSource(mf) {
+	case sourceToolCallResponse:
 		return []any{
 			toolCallResponsePart{
 				Type:     "tool_call_response",
@@ -238,9 +414,8 @@ func buildParts(mf *messageFields) []any {
 				Response: mf.content,
 			},
 		}
-	}
 
-	if len(mf.toolCalls) > 0 {
+	case sourceToolCalls:
 		tcIndices := make([]int, 0, len(mf.toolCalls))
 		for idx := range mf.toolCalls {
 			tcIndices = append(tcIndices, idx)
@@ -266,10 +441,12 @@ func buildParts(mf *messageFields) []any {
 			parts = append(parts, part)
 		}
 		return parts
-	}
 
-	if mf.content != "" {
+	case sourceFlatContent:
 		return []any{textPart{Type: "text", Content: mf.content}}
+
+	case sourceContents:
+		return textPartsFromContents(mf)
 	}
 	return []any{}
 }

@@ -255,7 +255,7 @@ func (p *spanPruningProcessor) traceMatchesConditions(ctx context.Context, spans
 	}
 
 	for _, si := range spans {
-		tCtx := ottlspan.NewTransformContextPtr(si.resourceSpans, si.scopeSpans, si.span)
+		tCtx := ottlspan.NewTransformContext(si.resourceSpans, si.scopeSpans, si.span)
 		matches, err := p.conditions.Eval(ctx, tCtx)
 		tCtx.Close()
 		if err != nil {

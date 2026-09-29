@@ -30,7 +30,7 @@ This component has the following feature gates:
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `filelog.allowFileDeletion` | beta | When enabled, allows usage of the `delete_after_read` setting. | v0.70.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314) |
 | `filelog.allowHeaderMetadataParsing` | beta | When enabled, allows usage of the `header` setting. | v0.73.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198) |
-| `filelog.mtimeSortType` | alpha | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
+| `filelog.mtimeSortType` | beta | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
 | `filelog.protobufCheckpointEncoding` | beta | Use protobuf encoding for checkpoint storage instead of JSON. | v0.148.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266) |
 | `filelog.requireExplicitTopN` | alpha | When enabled, requires `ordering_criteria.top_n` to be set explicitly when `ordering_criteria.sort_by` is configured. When disabled, an unset `top_n` falls back to the legacy default of 1. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444) |
 | `filelog.windows.caseInsensitive` | beta | On Windows, make matching patterns in include/exclude case insensitive. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777) |

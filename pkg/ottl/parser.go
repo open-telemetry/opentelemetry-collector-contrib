@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -138,12 +139,14 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 	parsedStatements := make([]*Statement[K], 0, len(statements))
 	var parseErrs []error
 
+	experimentalFuncs := map[string]struct{}{}
 	for _, statement := range statements {
-		ps, err := p.ParseStatement(statement)
+		ps, experimental, err := p.buildStatement(statement)
 		if err != nil {
 			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL statement %q: %w", statement, err))
 			continue
 		}
+		maps.Copy(experimentalFuncs, experimental)
 		parsedStatements = append(parsedStatements, ps)
 	}
 
@@ -151,6 +154,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 		return nil, errors.Join(parseErrs...)
 	}
 
+	p.warnExperimentalFuncs(experimentalFuncs)
 	return parsedStatements, nil
 }
 
@@ -158,26 +162,37 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 // Returns a Statement and a nil error on successful parsing.
 // If parsing fails, returns nil and an error.
 func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
-	parsed, err := parseStatement(statement)
+	stmt, experimentalFuncs, err := p.buildStatement(statement)
 	if err != nil {
 		return nil, err
+	}
+	p.warnExperimentalFuncs(experimentalFuncs)
+	return stmt, nil
+}
+
+// buildStatement parses a single statement and returns the Statement along with the set of
+// experimental function names it uses.
+func (p *Parser[K]) buildStatement(statement string) (*Statement[K], map[string]struct{}, error) {
+	parsed, err := parseStatement(statement)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	pc := p.newParseContext()
 	function, err := pc.newFunctionCall(parsed.Editor)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	expression, err := pc.newBoolExpr(parsed.WhereClause)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	return &Statement[K]{
 		function:          function,
 		condition:         expression,
 		origText:          statement,
 		telemetrySettings: p.telemetrySettings,
-	}, nil
+	}, pc.experimentalFuncs, nil
 }
 
 // ParseConditions parses string conditions into a Condition slice ready for execution.
@@ -187,12 +202,14 @@ func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error
 	parsedConditions := make([]*Condition[K], 0, len(conditions))
 	var parseErrs []error
 
+	experimentalFuncs := map[string]struct{}{}
 	for _, condition := range conditions {
-		ps, err := p.ParseCondition(condition)
+		ps, experimental, err := p.buildCondition(condition)
 		if err != nil {
 			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL condition %q: %w", condition, err))
 			continue
 		}
+		maps.Copy(experimentalFuncs, experimental)
 		parsedConditions = append(parsedConditions, ps)
 	}
 
@@ -200,6 +217,7 @@ func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error
 		return nil, errors.Join(parseErrs...)
 	}
 
+	p.warnExperimentalFuncs(experimentalFuncs)
 	return parsedConditions, nil
 }
 
@@ -207,19 +225,31 @@ func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error
 // Returns an Condition and a nil error on successful parsing.
 // If parsing fails, returns nil and an error.
 func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
-	parsed, err := parseCondition(condition)
+	cond, experimentalFuncs, err := p.buildCondition(condition)
 	if err != nil {
 		return nil, err
 	}
+	p.warnExperimentalFuncs(experimentalFuncs)
+	return cond, nil
+}
 
-	expression, err := p.newParseContext().newBoolExpr(parsed)
+// buildCondition parses a single condition and returns the Condition along with the set of
+// experimental function names it uses.
+func (p *Parser[K]) buildCondition(condition string) (*Condition[K], map[string]struct{}, error) {
+	parsed, err := parseCondition(condition)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	pc := p.newParseContext()
+	expression, err := pc.newBoolExpr(parsed)
+	if err != nil {
+		return nil, nil, err
 	}
 	return &Condition[K]{
 		condition: expression,
 		origText:  condition,
-	}, nil
+	}, pc.experimentalFuncs, nil
 }
 
 func (p *Parser[K]) prependContextToPaths(context, ottl string, ottlPathsGetter func(ottl string) ([]path, error)) (string, error) {
@@ -571,12 +601,14 @@ func (p *Parser[K]) ParseValueExpressions(expressions []string) ([]*ValueExpress
 	parsedValueExpressions := make([]*ValueExpression[K], 0, len(expressions))
 	var parseErrs []error
 
+	experimentalFuncs := map[string]struct{}{}
 	for _, expression := range expressions {
-		ps, err := p.ParseValueExpression(expression)
+		ps, experimental, err := p.buildValueExpression(expression)
 		if err != nil {
 			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL value expression %q: %w", expression, err))
 			continue
 		}
+		maps.Copy(experimentalFuncs, experimental)
 		parsedValueExpressions = append(parsedValueExpressions, ps)
 	}
 
@@ -584,19 +616,32 @@ func (p *Parser[K]) ParseValueExpressions(expressions []string) ([]*ValueExpress
 		return nil, errors.Join(parseErrs...)
 	}
 
+	p.warnExperimentalFuncs(experimentalFuncs)
 	return parsedValueExpressions, nil
 }
 
 // ParseValueExpression parses an expression string into a ValueExpression. The ValueExpression's Eval
 // method can then be used to extract the value from the context of the incoming signal.
 func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error) {
-	parsed, err := parseValueExpression(raw)
+	valueExpression, experimentalFuncs, err := p.buildValueExpression(raw)
 	if err != nil {
 		return nil, err
 	}
-	getter, err := p.newParseContext().newGetter(*parsed)
+	p.warnExperimentalFuncs(experimentalFuncs)
+	return valueExpression, nil
+}
+
+// buildValueExpression parses a single value expression and returns the ValueExpression along with
+// the set of experimental function names it uses.
+func (p *Parser[K]) buildValueExpression(raw string) (*ValueExpression[K], map[string]struct{}, error) {
+	parsed, err := parseValueExpression(raw)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	pc := p.newParseContext()
+	getter, err := pc.newGetter(*parsed)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return &ValueExpression[K]{
@@ -619,18 +664,45 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 				}
 			},
 		},
-	}, nil
+	}, pc.experimentalFuncs, nil
+}
+
+// warnExperimentalFuncs emits a single warning listing the experimental functions used by a parsed
+// configuration. It does nothing when no experimental functions were used.
+func (p *Parser[K]) warnExperimentalFuncs(funcs map[string]struct{}) {
+	if len(funcs) == 0 {
+		return
+	}
+	names := make([]string, 0, len(funcs))
+	for name := range funcs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	p.telemetrySettings.Logger.Warn(
+		"OTTL configuration uses experimental functions that are not covered by stability guarantees; their names, arguments, and behavior may change or be removed",
+		zap.Strings("functions", names),
+	)
 }
 
 // parseContext represents the context used during parsing operations. It is used to store
 // the current parser reference and lexical scopes for local identifiers (e.g. in lambda bodies).
 type parseContext[K any] struct {
 	*Parser[K]
-	localScopes localScopeStack
+	localScopes       localScopeStack
+	experimentalFuncs map[string]struct{}
 }
 
 func (p *Parser[K]) newParseContext() *parseContext[K] {
 	return &parseContext[K]{
-		Parser: p,
+		Parser:            p,
+		experimentalFuncs: make(map[string]struct{}),
+	}
+}
+
+// recordExperimentalFunc records the given Factory's function name when it is experimental so a
+// warning can be emitted after parsing completes.
+func (p *parseContext[K]) recordExperimentalFunc(f Factory[K]) {
+	if f.Experimental() {
+		p.experimentalFuncs[f.Name()] = struct{}{}
 	}
 }

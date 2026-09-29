@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_NewFunctionCall_invalid(t *testing.T) {
@@ -627,7 +627,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 
 	tests := []struct {
 		name      string
@@ -3538,13 +3538,13 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 	)
 
 	t.Run("enabled with lambda", func(t *testing.T) {
-		defer ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true)()
+		defer testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true)()
 		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
 		require.NoError(t, err)
 	})
 
 	t.Run("disabled with lambda", func(t *testing.T) {
-		defer ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false)()
 		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
 		require.ErrorContains(t, err, "lambda expression arguments require the `ottl.functions.enableLambda` feature gate to be enabled")
 	})

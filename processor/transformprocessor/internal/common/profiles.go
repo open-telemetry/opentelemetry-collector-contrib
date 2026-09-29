@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 )
 
 type ProfilesConsumer interface {
@@ -35,7 +35,7 @@ func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Prof
 	for _, rprofiles := range ld.ResourceProfiles().All() {
 		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
 			for _, profile := range sprofiles.Profiles().All() {
-				tCtx := ottlprofile.NewTransformContextPtr(rprofiles, sprofiles, profile, dic, ottlprofile.WithCache(cache))
+				tCtx := ottlprofile.NewTransformContext(rprofiles, sprofiles, profile, dic, ottlprofile.WithCache(cache))
 				condition, err := l.Eval(ctx, tCtx)
 				if err != nil {
 					tCtx.Close()
@@ -61,7 +61,7 @@ type ProfileParserCollectionOption ottl.ParserCollectionOption[ProfilesConsumer]
 
 func WithProfileParser(functions map[string]ottl.Factory[*ottlprofile.TransformContext]) ProfileParserCollectionOption {
 	return func(pc *ottl.ParserCollection[ProfilesConsumer]) error {
-		profileParser, err := ottlprofile.NewParser(functions, pc.Settings, ottlprofile.EnablePathContextNames())
+		profileParser, err := ottlprofile.NewParser(functions, pc.Settings(), ottlprofile.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func convertProfileStatements(pc *ottl.ParserCollection[ProfilesConsumer], state
 	if err != nil {
 		return nil, err
 	}
-	errorMode := pc.ErrorMode
+	errorMode := pc.ErrorMode()
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
@@ -105,11 +105,11 @@ func convertProfileStatements(pc *ottl.ParserCollection[ProfilesConsumer], state
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlprofile.EnablePathContextNames())
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForProfileWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardProfileFuncs(), parserOptions)
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForProfileWithOptions, contextStatements.Conditions, errorMode, pc.Settings(), filterottl.StandardProfileFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return nil, errGlobalBoolExpr
 	}
-	lStatements := ottlprofile.NewStatementSequence(parsedStatements, pc.Settings, ottlprofile.WithStatementSequenceErrorMode(errorMode))
+	lStatements := ottlprofile.NewStatementSequence(parsedStatements, pc.Settings(), ottlprofile.WithStatementSequenceErrorMode(errorMode))
 	return profileStatements{lStatements, globalExpr}, nil
 }
 

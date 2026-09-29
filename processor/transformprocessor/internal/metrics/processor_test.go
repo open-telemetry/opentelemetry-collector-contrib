@@ -6,6 +6,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -312,6 +313,29 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 			},
 		},
 		{
+			statements: []string{`extract_avg_metric() where name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				avgMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				avgMetric.SetEmptyGauge()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
+
+				avgMetric.SetDescription(histogramMetric.Description())
+				avgMetric.SetName(histogramMetric.Name() + "_avg")
+				avgMetric.SetUnit(histogramMetric.Unit())
+
+				avgDp := avgMetric.Gauge().DataPoints().AppendEmpty()
+				histogramDp.Attributes().CopyTo(avgDp.Attributes())
+				avgDp.SetDoubleValue(histogramDp.Sum() / float64(histogramDp.Count()))
+				avgDp.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Gauge datapoint
+			},
+		},
+		{
 			statements: []string{`copy_metric(name="http.request.status_code", unit="s") where name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				newMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
@@ -484,6 +508,29 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 				histogramDp1.Attributes().CopyTo(countDp1.Attributes())
 				countDp1.SetIntValue(int64(histogramDp1.Count()))
 				countDp1.SetStartTimestamp(StartTimestamp)
+			},
+		},
+		{
+			statements: []string{`extract_avg_metric() where metric.name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				avgMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				avgMetric.SetEmptyGauge()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
+
+				avgMetric.SetDescription(histogramMetric.Description())
+				avgMetric.SetName(histogramMetric.Name() + "_avg")
+				avgMetric.SetUnit(histogramMetric.Unit())
+
+				avgDp := avgMetric.Gauge().DataPoints().AppendEmpty()
+				histogramDp.Attributes().CopyTo(avgDp.Attributes())
+				avgDp.SetDoubleValue(histogramDp.Sum() / float64(histogramDp.Count()))
+				avgDp.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Gauge datapoint
 			},
 		},
 		{
@@ -2513,6 +2560,94 @@ func Test_ProcessMetrics_SharedCacheCrossContextAccess(t *testing.T) {
 			_, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.ErrorContains(t, err, tt.wantErr)
 		})
+	}
+}
+
+func Test_ProcessMetrics_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
+	statements := []common.ContextStatements{
+		{
+			Statements:  []string{`set(metric.cache["k"], "seen") where metric.name == "operationA"`},
+			SharedCache: true,
+		},
+		{
+			Statements:  []string{`set(metric.description, "cache-detected") where metric.cache["k"] != nil`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+	require.NoError(t, err)
+
+	// First call: operationA sets cache["k"]; all metrics in group 2 see it.
+	md1 := constructMetrics()
+	_, err = processor.ProcessMetrics(t.Context(), md1)
+	require.NoError(t, err)
+
+	assert.Equal(t, "cache-detected", md1.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Description(),
+		"operationA metric should have description changed after first call")
+
+	// Second call: no operationA metric, so cache["k"] should remain nil.
+	md2 := pmetric.NewMetrics()
+	rm := md2.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	fillMetricTwo(sm.Metrics().AppendEmpty())
+
+	_, err = processor.ProcessMetrics(t.Context(), md2)
+	require.NoError(t, err)
+
+	assert.Equal(t, "operationB description", md2.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Description(),
+		"shared cache should be cleared between ProcessMetrics calls")
+}
+
+func Test_ProcessMetrics_SharedCacheConcurrentCalls(t *testing.T) {
+	const numGoroutines = 10
+
+	statements := []common.ContextStatements{
+		{
+			Context:     common.Metric,
+			Statements:  []string{`set(cache["k"], "cached-value")`},
+			SharedCache: true,
+		},
+		{
+			Context:     common.Metric,
+			Statements:  []string{`set(description, cache["k"])`},
+			SharedCache: true,
+		},
+		{
+			Context:     common.Metric,
+			Statements:  []string{`delete_key(cache, "k")`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	metrics := make([]pmetric.Metrics, numGoroutines)
+	errs := make([]error, numGoroutines)
+
+	for i := range numGoroutines {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			md := constructMetrics()
+			_, callErr := processor.ProcessMetrics(t.Context(), md)
+			errs[idx] = callErr
+			metrics[idx] = md
+		}(i)
+	}
+	wg.Wait()
+
+	for i, md := range metrics {
+		require.NoError(t, errs[i], "goroutine %d returned an error", i)
+		for _, rm := range md.ResourceMetrics().All() {
+			for _, sm := range rm.ScopeMetrics().All() {
+				for _, m := range sm.Metrics().All() {
+					assert.Equal(t, "cached-value", m.Description(), "goroutine %d: metric %q description mismatch", i, m.Name())
+				}
+			}
+		}
 	}
 }
 

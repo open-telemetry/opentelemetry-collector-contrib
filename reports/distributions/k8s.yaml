@@ -18,6 +18,7 @@ components:
         - ack
         - basicauth
         - bearertokenauth
+        - cgroup_runtime
         - file_storage
         - headers_setter
         - health_check
