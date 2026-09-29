@@ -43,6 +43,9 @@ func createExtension(ctx context.Context, _ extension.Settings, cfg component.Co
 	if err != nil {
 		return nil, fmt.Errorf("aws_iam_db_auth: load AWS config: %w", err)
 	}
+	if c.AssumeRole.ARN != "" {
+		awsCfg.Credentials = assumeRoleCredentials(awsCfg, c.AssumeRole)
+	}
 	return &iamExtension{
 		awsConfig: awsCfg,
 	}, nil
