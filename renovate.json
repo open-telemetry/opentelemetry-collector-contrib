@@ -290,5 +290,8 @@
     "github.com/DataDog/datadog-api-client-go"
   ],
   "prConcurrentLimit": 200,
-  "prHourlyLimit": 5
+  "prHourlyLimit": 5,
+  "postUpdateOptions": [
+    "gomodTidyAll"
+  ]
 }
