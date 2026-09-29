@@ -3,6 +3,7 @@
 | Status        |           |
 | ------------- |-----------|
 | Distributions | [contrib] |
+| Warnings      | [Statefulness](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fspanmetrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fspanmetrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fspanmetrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fspanmetrics) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_spanmetrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_spanmetrics&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@Frapschen](https://www.github.com/Frapschen), [@iblancasa](https://www.github.com/iblancasa) \| Seeking more code owners! |
@@ -482,3 +483,7 @@ public class MyWebFrameworkServlet extends HttpServlet {
     ...
 }
 ```
+
+## Warnings
+
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The `spanmetricsconnector` aggregates spans into metrics over a rolling time window, keeping this aggregation state in memory on a single collector instance. For accurate metrics, all spans that should be aggregated together (e.g. sharing the same `resource_metrics_key_attributes`) must be routed to the same collector instance; splitting them across multiple instances produces incomplete or inconsistent metrics and can also violate the [Single Writer Principle](#known-limitation-the-single-writer-principle) described above.
