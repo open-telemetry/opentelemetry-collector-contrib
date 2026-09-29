@@ -84,11 +84,7 @@ properties:
   tenant_id:
     type: string
   time_grain_overrides:
-    type: object
-    additionalProperties:
-      type: object
-      additionalProperties:
-        type: string
+    $ref: metric_time_grain_overrides
   use_batch_api:
     type: boolean
 allOf:

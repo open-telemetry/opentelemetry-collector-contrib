@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: receiver/azuremonitorreceiver
+component: receiver/azure_monitor
 
 note: Add per-metric time grain overrides for Azure Monitor metric queries.
 

@@ -259,7 +259,7 @@ type Config struct {
 	ResourceTags                      []ResourceTagFilter            `mapstructure:"resource_tags"`
 	Services                          []string                       `mapstructure:"services"`
 	Metrics                           NestedListAlias                `mapstructure:"metrics"`
-	TimeGrainOverrides                MetricTimeGrainOverrides        `mapstructure:"time_grain_overrides"`
+	TimeGrainOverrides                MetricTimeGrainOverrides       `mapstructure:"time_grain_overrides"`
 	CacheResources                    float64                        `mapstructure:"cache_resources"`
 	CacheResourcesDefinitions         float64                        `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall     int                            `mapstructure:"maximum_number_of_metrics_in_a_call"`
