@@ -42,5 +42,5 @@ func GetLiteralValues[K, V any, G ottl.TypedGetter[K, V]](slice *SliceGetter[K, 
 // NewTestingSliceGetter creates a SliceGetter for use in tests. When literal is true the
 // values are stored as a literal list, otherwise they are resolved at runtime.
 func NewTestingSliceGetter[K, T any](literal bool, values []T) *SliceGetter[K, T] {
-	return slicegetter.NewTesting[K](literal, values)
+	return slicegetter.NewTestingSliceGetter[K](literal, values)
 }

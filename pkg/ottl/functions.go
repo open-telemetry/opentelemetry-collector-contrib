@@ -470,7 +470,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value, allowDynam
 			} else {
 				fieldAddr = field.Addr().Interface()
 			}
-			sliceItemType, ok := slicegetter.ItemType(fieldAddr)
+			sliceItemType, ok := slicegetter.ReflectTypeParam(fieldAddr)
 			if !ok {
 				return errors.New("slice getter type is not manageable by the OTTL parser. This is a bug in OTTL")
 			}
@@ -488,7 +488,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value, allowDynam
 				return err
 			}
 
-			err = slicegetter.Set(fieldAddr, gv)
+			err = slicegetter.SetReflectValue(fieldAddr, reflect.ValueOf(gv))
 			if err != nil {
 				return err
 			}
