@@ -72,8 +72,8 @@ require (
 	go.uber.org/zap v1.28.0
 	golang.org/x/text v0.42.0
 	google.golang.org/grpc v1.83.2
-	k8s.io/apimachinery v0.37.0
-	k8s.io/client-go v0.37.0
+	k8s.io/apimachinery v0.37.1
+	k8s.io/client-go v0.37.1
 )
 
 require (
@@ -88,24 +88,24 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.211 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.83.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.83.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/template v0.83.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.83.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.83.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.83.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.83.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.83.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.83.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.83.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.83.2 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.65.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.83.3 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.66.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.9.1 // indirect
 	github.com/DataDog/go-sqllexer v0.2.4 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
@@ -456,7 +456,7 @@ require (
 	gopkg.in/ini.v1 v1.67.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.37.0 // indirect
+	k8s.io/api v0.37.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
