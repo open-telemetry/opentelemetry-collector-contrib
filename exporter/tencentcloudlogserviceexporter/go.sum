@@ -63,6 +63,8 @@ github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWD
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.183 h1:G0vC876Y0PI/E0AaVxRiXsZbaBxv3EBmuK0PUNeFioM=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.183/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.186 h1:eOe2Qr6bxAbNFzoyXpNtLMiUb+UUE3fW4zuifl+fUsg=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.186/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/collector/client v1.68.0 h1:KYFToZyfSDQ7CTX5uaE922w4p0vj8KOZc9jXeza3c5g=
