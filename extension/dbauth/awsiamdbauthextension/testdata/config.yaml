@@ -1,0 +1,9 @@
+aws_iam_db_auth:
+  region: us-east-1
+aws_iam_db_auth/assume_role:
+  region: eu-central-1
+  assume_role:
+    arn: arn:aws:iam::123456789012:role/db-monitor
+    session_name: otel-collector
+    sts_region: us-east-1
+    external_id: my-external-id

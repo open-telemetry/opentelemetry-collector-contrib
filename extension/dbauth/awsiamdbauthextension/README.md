@@ -76,6 +76,21 @@ region references a separate declared instance (`aws_iam_db_auth/west` above).
 | Field    | Required | Description |
 | -------- | -------- | ----------- |
 | `region` | yes      | AWS region of the database. Required on the extension; a token cannot be minted without it, so it is validated at config load. |
+| `assume_role.arn` | no | Role to assume before minting tokens. RDS only accepts tokens signed by a principal in the database's account, so a collector reaching another account's database sets a role there. Empty keeps the default credential chain. |
+| `assume_role.session_name` | no | Role session name; the SDK generates one when empty. |
+| `assume_role.sts_region` | no | Region of the STS endpoint; defaults to `region`. |
+| `assume_role.external_id` | no | External ID, when the role's trust policy requires one. |
+
+Cross-account example, one instance per database account and region:
+
+```yaml
+extensions:
+  aws_iam_db_auth/prod:
+    region: eu-central-1
+    assume_role:
+      arn: arn:aws:iam::123456789012:role/db-monitor
+      session_name: otel-collector
+```
 
 The endpoint and database user are supplied by the consuming receiver in each
 request, from its own `endpoint` and `username`. The minted token is mutually
