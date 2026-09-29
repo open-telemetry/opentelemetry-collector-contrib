@@ -62,7 +62,7 @@ func (c *channelSet) shutdown() {
 		i++
 	}
 
-	for key := range keys {
+	for _, key := range keys {
 		close(c.chanmap[key])
 		delete(c.chanmap, key)
 	}
