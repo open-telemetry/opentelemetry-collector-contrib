@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.26.0
 
 require (
-	cloud.google.com/go/compute/metadata v0.9.1
+	cloud.google.com/go/compute/metadata v0.10.0
 	cloud.google.com/go/storage v1.68.0
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.20.1
