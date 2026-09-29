@@ -49,6 +49,10 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347
 
 resource_attributes:
+  db.system.version:
+    description: The database version of the instance. Examples include "13.18" and "17.2".
+    enabled: false
+    type: string
   postgresql.database.name:
     description: The name of the database.
     enabled: true
@@ -154,6 +158,9 @@ attributes:
     requirement_level: recommended
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
+    type: string
+  postgresql.backend.connection.start:
+    description: UTC timestamp (RFC3339) when this backend was started.
     type: string
   postgresql.blocking.lock.mode:
     description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
@@ -298,6 +305,7 @@ events:
     enabled: false
     description: The execution plan for a query.
     attributes:
+      - db.system.name
       - postgresql.queryid
       - db.namespace
       - postgresql.userid
@@ -314,6 +322,7 @@ events:
       - user.name
       - postgresql.state
       - postgresql.pid
+      - postgresql.backend.connection.start
       - postgresql.application_name
       - network.peer.address
       - network.peer.port

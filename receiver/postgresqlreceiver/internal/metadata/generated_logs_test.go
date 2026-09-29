@@ -31,6 +31,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
 	rb.SetPostgresqlIndexName("postgresql.index.name-val")
 	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
@@ -83,6 +84,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	assert.Equal(t, pcommon.ValueTypeStr, sl.LogRecords().At(1).Body().Type())
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
 }
+
 func TestLogsBuilder(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -137,15 +139,16 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQueryPlanEvent(ctx, timestamp, "postgresql.queryid-val", "db.namespace-val", "postgresql.userid-val", "postgresql.rolname-val", "postgresql.query_plan-val")
+			lb.RecordDbServerQueryPlanEvent(ctx, timestamp, AttributeDbSystemNamePostgresql, "postgresql.queryid-val", "db.namespace-val", "postgresql.userid-val", "postgresql.rolname-val", "postgresql.query_plan-val")
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNamePostgresql, "db.namespace-val", "db.query.text-val", "user.name-val", "postgresql.state-val", 14, "postgresql.application_name-val", "network.peer.address-val", 17, "postgresql.client_hostname-val", "postgresql.query_start-val", "postgresql.wait_event-val", "postgresql.wait_event_type-val", "postgresql.query_id-val", 26.100000, "postgresql.blocking.pids-val", "postgresql.blocking.start_time-val", 33, "postgresql.blocking.lock.mode-val", "postgresql.blocking.lock.type-val", "postgresql.blocking.lock.relation-val", "postgresql.blocking.transaction.start_time-val")
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNamePostgresql, "db.namespace-val", "db.query.text-val", "user.name-val", "postgresql.state-val", 14, "postgresql.backend.connection.start-val", "postgresql.application_name-val", "network.peer.address-val", 17, "postgresql.client_hostname-val", "postgresql.query_start-val", "postgresql.wait_event-val", "postgresql.wait_event_type-val", "postgresql.query_id-val", 26.100000, "postgresql.blocking.pids-val", "postgresql.blocking.start_time-val", 33, "postgresql.blocking.lock.mode-val", "postgresql.blocking.lock.type-val", "postgresql.blocking.lock.relation-val", "postgresql.blocking.transaction.start_time-val")
 
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNamePostgresql, "db.namespace-val", "db.query.text-val", 16, 15, 30, 26, 27, 30, 25, 28, "postgresql.queryid-val", "postgresql.userid-val", "postgresql.rolname-val", 26.100000, 26.100000, "postgresql.query_plan-val")
 
 			rb := lb.NewResourceBuilder()
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
@@ -184,7 +187,10 @@ func TestLogsBuilder(t *testing.T) {
 					assert.Equal(t, timestamp, lr.Timestamp())
 					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
 					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
-					attrVal, ok := lr.Attributes().Get("postgresql.queryid")
+					attrVal, ok := lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("postgresql.queryid")
 					assert.True(t, ok)
 					assert.Equal(t, "postgresql.queryid-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("db.namespace")
@@ -224,6 +230,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("postgresql.pid")
 					assert.True(t, ok)
 					assert.EqualValues(t, 14, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("postgresql.backend.connection.start")
+					assert.True(t, ok)
+					assert.Equal(t, "postgresql.backend.connection.start-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("postgresql.application_name")
 					assert.True(t, ok)
 					assert.Equal(t, "postgresql.application_name-val", attrVal.Str())

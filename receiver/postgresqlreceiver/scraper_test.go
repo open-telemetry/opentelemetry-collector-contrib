@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -703,6 +704,7 @@ var querySampleColumns = []string{
 	querySampleColumnClientHostname,
 	querySampleColumnClientPort,
 	querySampleColumnQueryStart,
+	querySampleColumnBackendStart,
 	querySampleColumnWaitEventType,
 	querySampleColumnWaitEvent,
 	querySampleColumnQueryID,
@@ -783,6 +785,7 @@ func TestScrapeQuerySample(t *testing.T) {
 		querySampleColumnClientHostname:       "otel",
 		querySampleColumnClientPort:           "114514",
 		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnBackendStart:         "2025-02-10T09:15:00Z",
 		querySampleColumnQueryID:              "123131231231",
 		querySampleColumnPID:                  "1450",
 		querySampleColumnApplicationName:      "receiver",
@@ -829,6 +832,7 @@ func TestScrapeQuerySampleSemconv(t *testing.T) {
 		querySampleColumnClientHostname:       "otel",
 		querySampleColumnClientPort:           "114514",
 		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnBackendStart:         "2025-02-10T09:15:00Z",
 		querySampleColumnQueryID:              "123131231231",
 		querySampleColumnPID:                  "1450",
 		querySampleColumnApplicationName:      "receiver",
@@ -1353,17 +1357,18 @@ func TestScrapeTopQueries(t *testing.T) {
 	queryid := "114514"
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
-	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)
-	scraper.cache.Add(queryid+totalPlanTimeColumnName, 11)
-	scraper.cache.Add(queryid+callsColumnName, 120)
-	scraper.cache.Add(queryid+rowsColumnName, 20)
+	cacheKeyPrefix := "postgres\x00master\x00" + queryid + "\x00"
+	scraper.cache.Add(cacheKeyPrefix+totalExecTimeColumnName, 10)
+	scraper.cache.Add(cacheKeyPrefix+totalPlanTimeColumnName, 11)
+	scraper.cache.Add(cacheKeyPrefix+callsColumnName, 120)
+	scraper.cache.Add(cacheKeyPrefix+rowsColumnName, 20)
 
-	scraper.cache.Add(queryid+sharedBlksDirtiedColumnName, 1110)
-	scraper.cache.Add(queryid+sharedBlksHitColumnName, 1110)
-	scraper.cache.Add(queryid+sharedBlksReadColumnName, 1110)
-	scraper.cache.Add(queryid+sharedBlksWrittenColumnName, 1110)
-	scraper.cache.Add(queryid+tempBlksReadColumnName, 1110)
-	scraper.cache.Add(queryid+tempBlksWrittenColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+sharedBlksDirtiedColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+sharedBlksHitColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+sharedBlksReadColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+sharedBlksWrittenColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+tempBlksReadColumnName, 1110)
+	scraper.cache.Add(cacheKeyPrefix+tempBlksWrittenColumnName, 1110)
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 		callsColumnName:             "123",
@@ -1398,13 +1403,13 @@ func TestScrapeTopQueries(t *testing.T) {
 
 	// Verify the cache has updated with latest counter
 
-	calls, callsExists := scraper.cache.Get(queryid + callsColumnName)
+	calls, callsExists := scraper.cache.Get(cacheKeyPrefix + callsColumnName)
 	assert.True(t, callsExists)
 	assert.Equal(t, float64(123), calls)
-	execTime, execTimeExists := scraper.cache.Get(queryid + totalExecTimeColumnName)
+	execTime, execTimeExists := scraper.cache.Get(cacheKeyPrefix + totalExecTimeColumnName)
 	assert.True(t, execTimeExists)
 	assert.Equal(t, float64(11), execTime)
-	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
+	planTime, planTimeExists := scraper.cache.Get(cacheKeyPrefix + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
 	assert.Equal(t, float64(12), planTime)
 }
@@ -1508,8 +1513,9 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 		assert.False(t, hasPlan, "postgresql.query_plan must be removed from db.server.top_query once db.server.query_plan is enabled")
 
 		queryPlan := records.At(byEventName["db.server.query_plan"])
-		assert.Equal(t, 5, queryPlan.Attributes().Len())
+		assert.Equal(t, 6, queryPlan.Attributes().Len())
 		for attribute, want := range map[string]string{
+			"db.system.name":        "postgresql",
 			"postgresql.queryid":    "114514",
 			"db.namespace":          "postgres",
 			"postgresql.userid":     "16415",
@@ -1563,11 +1569,16 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
 				"select * from pg_stat_activity where id = 32", "114514", "16416", "roleB", "30", "22000", "23000")
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
-		mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
-		mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
-			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
-		mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
-		mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+		// roleA and roleB share queryid 114514, so both EXPLAIN cycles issue the
+		// identical PREPARE otel_114514 text — the cache key is (database, rolname,
+		// queryid), so each role still needs its own cycle mocked.
+		for range 2 {
+			mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+			mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+				WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+			mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+			mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+		}
 
 		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
 		require.NoError(t, err)
@@ -2124,6 +2135,99 @@ func TestExplainQueryUsesContext(t *testing.T) {
 	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", logger)
 	require.Error(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestStart_VersionDetectionSuccess(t *testing.T) {
+	factory := new(mockClientFactory)
+	versionClient := new(mockClient)
+	versionClient.On("Close").Return(nil)
+	versionClient.On("getVersion").Return("14.5", nil)
+	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(versionClient, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	assert.Equal(t, "14.5", scraper.dbVersion)
+	factory.AssertExpectations(t)
+	versionClient.AssertExpectations(t)
+}
+
+func TestStart_VersionDetectionConnectFailure(t *testing.T) {
+	factory := new(mockClientFactory)
+	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).
+		Return((*mockClient)(nil), errors.New("connection refused"))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	core, logs := observer.New(zapcore.WarnLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	assert.Equal(t, "", scraper.dbVersion)
+	assert.Equal(t, 1, logs.FilterMessage("failed to connect for version detection. db.system.version will not be set").Len())
+}
+
+func TestStart_VersionDetectionQueryFailure(t *testing.T) {
+	factory := new(mockClientFactory)
+	versionClient := new(mockClient)
+	versionClient.On("Close").Return(nil)
+	versionClient.On("getVersion").Return("", errors.New("query failed"))
+	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(versionClient, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	core, logs := observer.New(zapcore.WarnLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	assert.Equal(t, "", scraper.dbVersion)
+	assert.Equal(t, 1, logs.FilterMessage("failed to detect PostgreSQL version. db.system.version will not be set").Len())
+	factory.AssertExpectations(t)
+	versionClient.AssertExpectations(t)
+}
+
+func TestSetServerResourceAttributes_VersionEmittedWhenEnabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	scraper := &postgreSQLScraper{
+		config:    cfg,
+		mb:        metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		dbVersion: "17.2",
+	}
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setServerResourceAttributes(rb)
+	res := rb.Emit()
+
+	version, ok := res.Attributes().Get("db.system.version")
+	require.True(t, ok)
+	assert.Equal(t, "17.2", version.Str())
+}
+
+func TestSetServerResourceAttributes_EmptyVersionOmitsAttribute(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	scraper := &postgreSQLScraper{
+		config:    cfg,
+		mb:        metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		dbVersion: "",
+	}
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setServerResourceAttributes(rb)
+	res := rb.Emit()
+
+	_, ok := res.Attributes().Get("db.system.version")
+	assert.False(t, ok)
 }
 
 type (

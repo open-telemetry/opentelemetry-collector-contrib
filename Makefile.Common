@@ -72,7 +72,7 @@ GO_TOOL = GOOS= GOARCH= $(GOCMD) tool -modfile=$(TOOLS_MOD_FILE)
 # which are stripped when passed to the MSYS2/Git Bash shell used by Make.
 # $(subst \,/,...) converts them to forward slashes so the shell can find the binary.
 MDATAGEN            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/mdatagen))
-ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/rhysd/actionlint/cmd/actionlint))
+ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL) -n actionlint.kjanat.dev/cmd/actionlint))
 ADDLICENSE          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/google/addlicense))
 MISSPELL            = $(subst \,/,$(shell $(GO_TOOL) -n github.com/client9/misspell/cmd/misspell -error))
 MISSPELL_CORRECTION = $(subst \,/,$(shell $(GO_TOOL) -n github.com/client9/misspell/cmd/misspell -w))
@@ -368,7 +368,12 @@ misspell-correction:
 
 .PHONY: moddownload
 moddownload:
-	$(GOCMD) mod download
+	@for i in 1 2 3; do \
+		$(GOCMD) mod download && exit 0; \
+		[ $$i -lt 3 ] && echo "go mod download failed (attempt $$i/3), retrying in $$((i*10))s..." && sleep $$((i*10)); \
+	done; \
+	echo "go mod download failed after 3 attempts"; \
+	exit 1
 
 .PHONY: gci
 gci:
@@ -421,6 +426,10 @@ run-changed-tests:
 			echo "Failed to find the affected test directories."; \
 		else \
 			set -e; for dir in $$(echo $${AFFECTED_TEST_DIRS}); do \
+			if [ ! -d "$${dir}" ]; then \
+				echo "Skipping $${dir}: directory no longer exists."; \
+				continue; \
+			fi; \
 			(cd "$${dir}" && \
 				$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -count=3 ); \
 			done \

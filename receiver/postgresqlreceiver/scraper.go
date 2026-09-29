@@ -39,7 +39,8 @@ const (
 	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
 
-	defaultServiceName = "unknown_service:postgresql"
+	defaultServiceName  = "unknown_service:postgresql"
+	versionQueryTimeout = 5 * time.Second
 )
 
 // otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation,
@@ -67,6 +68,7 @@ type postgreSQLScraper struct {
 	serviceInstanceID      string
 	serverEndpoint         serverEndpoint
 	lastExecutionTimestamp time.Time
+	dbVersion              string
 }
 
 type errsMux struct {
@@ -220,6 +222,8 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	defer listClient.Close()
 
+	p.ensureDBVersion(ctx, listClient)
+
 	if len(databases) == 0 {
 		dbList, dbErr := listClient.listDatabases(ctx)
 		if dbErr != nil {
@@ -288,6 +292,8 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return plog.NewLogs(), err
 	}
+
+	p.ensureDBVersion(ctx, dbClient)
 
 	var errs errsMux
 
@@ -406,6 +412,7 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 			attrString(atts, string(semconv.UserNameKey)),
 			attrString(atts, dbAttributePrefix+querySampleColumnState),
 			attrInt64(atts, dbAttributePrefix+querySampleColumnPID),
+			attrString(atts, dbAttributePrefix+querySampleColumnBackendStart),
 			attrString(atts, dbAttributePrefix+querySampleColumnApplicationName),
 			attrString(atts, string(semconv.NetworkPeerAddressKey)),
 			attrInt64(atts, string(semconv.NetworkPeerPortKey)),
@@ -437,6 +444,8 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	}
 
 	defer defaultDbClient.Close()
+
+	p.ensureDBVersion(ctx, defaultDbClient)
 
 	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
 	if err != nil {
@@ -492,6 +501,17 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		database, _ := row[string(semconv.DBNamespaceKey)].(string)
+		rolname, _ := row[dbAttributePrefix+"rolname"].(string)
+		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel).
+		// Include database and role to separate their independent counter streams.
+		// NUL cannot occur in PostgreSQL identifiers.
+		//
+		// Note: the SQL template does not select toplevel, so this key does not
+		// distinguish it. With pg_stat_statements.track=all, top-level and nested
+		// statements sharing the same database, role, and queryid can still collide.
+		cacheKeyPrefix := database + "\x00" + rolname + "\x00" + queryID.(string) + "\x00"
+
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]
@@ -500,14 +520,15 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			} else {
 				valInAtts = _val.(float64)
 			}
-			valInCache, exist := p.cache.Get(queryID.(string) + columnName)
+			cacheKey := cacheKeyPrefix + columnName
+			valInCache, exist := p.cache.Get(cacheKey)
 			valDelta := valInAtts
 			if exist {
 				valDelta = valInAtts - valInCache
 			}
 			finalValue := float64(0)
 			if valDelta > 0 {
-				p.cache.Add(queryID.(string)+columnName, valInAtts)
+				p.cache.Add(cacheKey, valInAtts)
 				finalValue = valDelta
 			}
 			if info.finalConverter != nil {
@@ -535,9 +556,11 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
+		rolname := item.Value[dbAttributePrefix+"rolname"].(string)
+		planCacheKey := database + "\x00" + rolname + "\x00" + queryID
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
-		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
+		plan, ok := p.queryPlanCache.Get(planCacheKey)
 		if !ok && explained < maxExplainEachInterval {
 			dbClient, err := clientFactory.getClient(ctx, database)
 			if err == nil {
@@ -547,7 +570,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 				}
 				// to avoid flood the error message. there are some internal queries meant to not be
 				// explained. we wait for the cache to expire and report the error again.
-				p.queryPlanCache.Add(queryID+"-plan", plan)
+				p.queryPlanCache.Add(planCacheKey, plan)
 				err = dbClient.Close()
 				if err != nil {
 					logger.Error("failed to close", zap.Error(err))
@@ -572,7 +595,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
 			item.Value[dbAttributePrefix+"userid"].(string),
-			item.Value[dbAttributePrefix+"rolname"].(string),
+			rolname,
 			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,
@@ -584,6 +607,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			p.lb.RecordDbServerQueryPlanEvent(
 				context.Background(),
 				timestamp,
+				metadata.AttributeDbSystemNamePostgresql,
 				queryID,
 				database,
 				item.Value[dbAttributePrefix+"userid"].(string),
@@ -595,10 +619,11 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	}
 }
 
-// start resolves the credential provider (if a db_auth block is
-// configured) from the host extension map — only available now, at Start — and
-// injects it into the client factory so connections are built with it.
-func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error {
+// start resolves the credential provider (if a db_auth block is configured)
+// from the host extension map — only available now, at Start — and injects
+// it into the client factory. It also detects the server version once at
+// startup so it can be stamped on every emitted resource as db.system.version.
+func (p *postgreSQLScraper) start(ctx context.Context, host component.Host) error {
 	provider, err := p.config.resolveCredentialProvider(host.GetExtensions())
 	if err != nil {
 		return err
@@ -606,6 +631,22 @@ func (p *postgreSQLScraper) start(_ context.Context, host component.Host) error 
 	if provider != nil {
 		p.clientFactory.setCredentialProvider(provider)
 	}
+
+	if p.metricsVersionEnabled() || p.logsVersionEnabled() {
+		vctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+		defer cancel()
+		if c, err := p.clientFactory.getClient(vctx, defaultPostgreSQLDatabase); err != nil {
+			p.logger.Warn("failed to connect for version detection. db.system.version will not be set", zap.Error(err))
+		} else {
+			defer c.Close()
+			if v, err := c.getVersion(vctx); err != nil {
+				p.logger.Warn("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
+			} else {
+				p.dbVersion = v
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -614,6 +655,24 @@ func (p *postgreSQLScraper) shutdown(_ context.Context) error {
 		p.clientFactory.close()
 	}
 	return nil
+}
+
+func (p *postgreSQLScraper) metricsVersionEnabled() bool {
+	return p.config.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled
+}
+
+func (p *postgreSQLScraper) logsVersionEnabled() bool {
+	return p.config.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled
+}
+
+func (p *postgreSQLScraper) ensureDBVersion(ctx context.Context, c client) {
+	if p.dbVersion == "" && (p.metricsVersionEnabled() || p.logsVersionEnabled()) {
+		if v, err := c.getVersion(ctx); err == nil {
+			p.dbVersion = v
+		} else {
+			p.logger.Debug("failed to detect PostgreSQL version. db.system.version will not be set", zap.Error(err))
+		}
+	}
 }
 
 func (p *postgreSQLScraper) backendsMetricsEnabled() bool {
@@ -1319,6 +1378,9 @@ func (p *postgreSQLScraper) setServerResourceAttributes(rb *metadata.ResourceBui
 	if p.serverEndpoint.resolved {
 		rb.SetServerAddress(p.serverEndpoint.address)
 		rb.SetServerPort(p.serverEndpoint.port)
+	}
+	if p.dbVersion != "" {
+		rb.SetDbSystemVersion(p.dbVersion)
 	}
 }
 

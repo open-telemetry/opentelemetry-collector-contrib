@@ -133,6 +133,8 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     postgresql.database.name:
       enabled: true
     postgresql.index.name:
@@ -285,6 +287,8 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     postgresql.database.name:
       enabled: true
     postgresql.index.name:
@@ -437,6 +441,8 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.version:
+      enabled: false
     postgresql.database.name:
       enabled: false
     postgresql.index.name:
@@ -457,6 +463,9 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      override_value: "override-db.system.version"
     postgresql.database.name:
       enabled: true
       override_value: "override-postgresql.database.name"
@@ -486,6 +495,12 @@ override_set:
       override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     postgresql.database.name:
       enabled: true
       metrics_include:
@@ -542,6 +557,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     postgresql.database.name:
       enabled: true
       metrics_exclude:

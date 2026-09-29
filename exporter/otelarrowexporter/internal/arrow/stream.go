@@ -46,9 +46,13 @@ type Stream struct {
 	tracer trace.Tracer
 
 	// client uses the exporter's grpc.ClientConn.  this is
-	// initially nil only set when ArrowStream() calls meaning the
-	// endpoint recognizes OTel-Arrow.
+	// initially nil and is set when ArrowStream() succeeds.
 	client AnyStreamClient
+
+	// arrowUnsupported indicates that the endpoint does not serve the
+	// OTel-Arrow stream service and used to decide whether to downgrade to
+	// OTLP or keep trying OTAP.
+	arrowUnsupported bool
 
 	// method the gRPC method name, used for additional instrumentation.
 	method string
@@ -96,7 +100,8 @@ type writeItem struct {
 	// uncompSize is computed by the appropriate sizer (in the
 	// caller's goroutine)
 	uncompSize int
-	// producerCtx is used for tracing purposes.
+	// producerCtx is used for tracing purposes and to unblock a
+	// stuck prioritizer.
 	producerCtx context.Context
 }
 
@@ -126,6 +131,13 @@ func (s *Stream) setBatchChannel(batchID int64, errCh chan<- error) {
 	defer s.workState.lock.Unlock()
 
 	s.workState.waiters[batchID] = errCh
+}
+
+// isUnsupported returns true when the error indicates that the
+// endpoint does not serve the OTel-Arrow stream service.
+func isUnsupported(err error) bool {
+	s, ok := status.FromError(err)
+	return ok && s.Code() == codes.Unimplemented
 }
 
 // logStreamError decides how to log an error.  `where` indicates the
@@ -160,25 +172,31 @@ func (s *Stream) logStreamError(where string, err error) {
 func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClientFunc, grpcOptions []grpc.CallOption) {
 	sc, method, err := streamClient(ctx, grpcOptions...)
 	if err != nil {
-		// Returning with stream.client == nil signals the
-		// lack of an Arrow stream endpoint.  When all the
-		// streams return with .client == nil, the ready
-		// channel will be closed, which causes downgrade.
+		// Unsupported errors will cause a downgrade to standard OTLP.
 		//
-		// Note: These are gRPC server internal errors and
-		// will cause downgrade to standard OTLP.  These
-		// cannot be simulated by connecting to a gRPC server
-		// that does not support the ArrowStream service, with
+		// Note: These cannot be simulated by connecting to a gRPC
+		// server that does not support the ArrowStream service, with
 		// or without the WaitForReady flag set.  In a real
 		// gRPC server the first Unimplemented code is
 		// generally delivered to the Recv() call below, so
 		// this code path is not taken for an ordinary downgrade.
+		if isUnsupported(err) {
+			s.arrowUnsupported = true
+			s.telemetry.Logger.Info("arrow is not supported",
+				zap.String("message", status.Convert(err).Message()),
+			)
+			return
+		}
+
+		// Any other error is transient (e.g., the connection failed).
+		// The stream will be restarted by the controller, which retains
+		// this stream's work state.
 		s.telemetry.Logger.Error("cannot start arrow stream", zap.Error(err))
 		return
 	}
-	// Setting .client != nil indicates that the endpoint was valid,
-	// streaming may start.  When this stream finishes, it will be
-	// restarted.
+
+	// The stream connected, streaming may start.  When this stream
+	// finishes, it will be restarted.
 	s.method = method
 	s.client = sc
 
@@ -195,7 +213,7 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 	})
 
 	// the result from read() is processed after cancel and wait,
-	// so we can set s.client = nil in case of a delayed Unimplemented.
+	// so we can set s.arrowUnsupported in case of a delayed Unimplemented.
 	// TODO: SA4023(related information): the lhs of the comparison is the 1st return value of this function call
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50420
 	err = s.read(ctx) //nolint:staticcheck
@@ -208,16 +226,12 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 	if err != nil { //nolint:staticcheck
 		// This branch is reached with an unimplemented status
 		// with or without the WaitForReady flag.
-		if status, ok := status.FromError(err); ok && status.Code() == codes.Unimplemented {
-			// This (client == nil) signals the controller to
-			// downgrade when all streams have returned in that
-			// status.
-			//
-			// This is a special case because we reset s.client,
-			// which sets up a downgrade after the streams return.
-			s.client = nil
+		if isUnsupported(err) {
+			// This signals the controller to downgrade when all
+			// streams have returned in that status.
+			s.arrowUnsupported = true
 			s.telemetry.Logger.Info("arrow is not supported",
-				zap.String("message", status.Message()),
+				zap.String("message", status.Convert(err).Message()),
 			)
 		} else {
 			// All other cases, use the standard log handler.
