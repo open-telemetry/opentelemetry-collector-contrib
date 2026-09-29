@@ -105,7 +105,8 @@ Telemetry data is compressed according to the `compression` setting.
 > [!NOTE]
 > An alpha feature gate `exporter.file.nativeCompression` is available that switches from
 > per-message compression to native file-level compression, producing standard `.zst` files
-> compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details.
+> compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details,
+> and [File Format](#file-format) for how records are framed.
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
@@ -113,9 +114,11 @@ Currently, `fileexporter` support the `zstd` compression algorithm, and we will 
 
 Telemetry data is encoded according to the `format` setting and then written to the file.
 
-When `format` is json and `compression` is none , telemetry data is written to file in JSON format. Each line in the file is a JSON object.
+When `format` is json and `compression` is none, each encoded object is written on its own line.
 
-Otherwise, when using `proto` format or any kind of encoding, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
+With the `exporter.file.nativeCompression` feature gate and `compression` set, `format: json` output and encodings that support stream decoding, such as `text_encoding`, are also written one object per line, so the decompressed file is plain text.
+
+Otherwise, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object. When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
 
 ## Group by attribute
 
