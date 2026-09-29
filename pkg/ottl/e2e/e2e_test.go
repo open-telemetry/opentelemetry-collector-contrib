@@ -3035,22 +3035,22 @@ func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		activation, err := args.Expr.Activate(ctx)
+		lambda, err := args.Expr.Activate(ctx)
 		if err != nil {
 			return nil, err
 		}
-		defer activation.Close()
+		defer lambda.Close()
 		for i, param := range args.Params {
 			val, err := param.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			err = activation.SetArg(i, val)
+			err = lambda.SetArg(i, val)
 			if err != nil {
 				return nil, err
 			}
 		}
-		return activation.Eval(tCtx)
+		return lambda.Eval(tCtx)
 	}, nil
 }
 

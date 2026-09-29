@@ -83,7 +83,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 			want:   "literal",
 		},
 		{
-			name: "boolean body",
+			name: "body expression",
 			expr: New([]string{"a"}, func(ctx context.Context, _ any) (any, error) {
 				v, err := ResolveBinding(ctx, "a")
 				return err == nil && v == "bound", nil
@@ -92,7 +92,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 			want:   true,
 		},
 		{
-			name: "body error",
+			name: "body expression error",
 			expr: New([]string{"a"}, func(context.Context, any) (any, error) {
 				return nil, errors.New("failed to evaluate")
 			}),
@@ -108,14 +108,14 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		{
 			name:   "parent binding is available",
 			expr:   New(nil, resolveBody("parent")),
-			ctx:    WithBindings(t.Context(), map[string]any{"parent": "value"}),
+			ctx:    context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"parent": "value"}}),
 			params: []any{},
 			want:   "value",
 		},
 		{
 			name:   "formal overrides parent binding",
 			expr:   New([]string{"a"}, resolveBody("a")),
-			ctx:    WithBindings(t.Context(), map[string]any{"a": "old"}),
+			ctx:    context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"a": "old"}}),
 			params: []any{"new"},
 			want:   "new",
 		},
@@ -134,7 +134,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		{
 			name: "blank parameter is omitted from bindings",
 			expr: New([]string{"_"}, func(ctx context.Context, _ any) (any, error) {
-				a, ok := ctx.Value(activationKey{}).(*activation)
+				a, ok := ctx.Value(localActivationKey{}).(*localActivation)
 				if !ok {
 					return false, errors.New("missing bindings")
 				}
@@ -395,7 +395,7 @@ func TestResolveBinding(t *testing.T) {
 		},
 		{
 			name: "bound value",
-			ctx: context.WithValue(t.Context(), activationKey{}, &activation{
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
 				bindings: map[string]any{"a": 1},
 			}),
 			binding: "a",
@@ -403,7 +403,7 @@ func TestResolveBinding(t *testing.T) {
 		},
 		{
 			name: "missing binding",
-			ctx: context.WithValue(t.Context(), activationKey{}, &activation{
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
 				bindings: map[string]any{"a": 1},
 			}),
 			binding: "missing",
@@ -411,8 +411,8 @@ func TestResolveBinding(t *testing.T) {
 		},
 		{
 			name: "inherits from parent activation",
-			ctx: context.WithValue(t.Context(), activationKey{}, &activation{
-				parent:   &activation{bindings: map[string]any{"outer": "parent-value"}},
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
+				parent:   &localActivation{bindings: map[string]any{"outer": "parent-value"}},
 				bindings: map[string]any{"inner": "child-value"},
 			}),
 			binding: "outer",
@@ -420,8 +420,8 @@ func TestResolveBinding(t *testing.T) {
 		},
 		{
 			name: "child shadows parent binding",
-			ctx: context.WithValue(t.Context(), activationKey{}, &activation{
-				parent:   &activation{bindings: map[string]any{"value": "parent"}},
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
+				parent:   &localActivation{bindings: map[string]any{"value": "parent"}},
 				bindings: map[string]any{"value": "child"},
 			}),
 			binding: "value",
@@ -429,7 +429,7 @@ func TestResolveBinding(t *testing.T) {
 		},
 		{
 			name: "explicit nil binding",
-			ctx: context.WithValue(t.Context(), activationKey{}, &activation{
+			ctx: context.WithValue(t.Context(), localActivationKey{}, &localActivation{
 				bindings: map[string]any{"a": nil},
 			}),
 			binding: "a",

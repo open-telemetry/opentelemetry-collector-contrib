@@ -14,11 +14,10 @@ import (
 const blankIdentifier = "_"
 
 // LambdaExpression is a parsed OTTL lambda expression. OTTL functions may accept it as an argument.
-// Call [LambdaExpression.ValidateArity] once in the function factory with the number of arguments
-// to bind, then for each outer invocation call [LambdaExpression.Activate] with the evaluation
-// context. Use [LambdaActivation.SetArg] to bind positional arguments, [LambdaActivation.Eval] to
-// run the body (possibly multiple times with different arguments), and [LambdaActivation.Close]
-// when finished.
+// For each outer invocation, call [LambdaExpression.Activate] with the evaluation context, after
+// validating the number of arguments to bind once with [LambdaExpression.ValidateArity]. Use
+// [LambdaActivation.SetArg] to bind positional arguments, [LambdaActivation.Eval] to run the body
+// (possibly multiple times with different arguments), and [LambdaActivation.Close] when finished.
 type LambdaExpression[K any] struct {
 	formals        []string
 	body           func(ctx context.Context, tCtx K) (any, error)
@@ -34,13 +33,13 @@ func New[K any](formals []string, body func(ctx context.Context, tCtx K) (any, e
 		formals: formals,
 		body:    body,
 	}
-	nonBlankFormals := countNonBlankFormals(formals)
+	nonBlankFormals := countNonBlankIdentifiers(formals)
 	v.activationPool = &sync.Pool{
 		New: func() any {
 			return &LambdaActivation[K]{
 				expr:       v,
 				argValues:  make([]any, len(formals)),
-				activation: &activation{bindings: make(map[string]any, nonBlankFormals)},
+				activation: &localActivation{bindings: make(map[string]any, nonBlankFormals)},
 			}
 		},
 	}
@@ -90,7 +89,7 @@ func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K
 		return nil, errors.New("lambda arity was not validated: ValidateArity must be called before Activate")
 	}
 	v := l.activationPool.Get().(*LambdaActivation[K])
-	v.ctx = pushActivation(ctx, v.activation)
+	v.ctx = pushLocalActivation(ctx, v.activation)
 	return v, nil
 }
 
@@ -99,7 +98,7 @@ type LambdaActivation[K any] struct {
 	expr       *LambdaExpression[K]
 	ctx        context.Context
 	argValues  []any
-	activation *activation
+	activation *localActivation
 }
 
 // SetArg sets the i-th positional argument for the next [LambdaActivation.Eval] call.
@@ -153,7 +152,7 @@ func (l *LambdaActivation[K]) Close() {
 	l.expr.activationPool.Put(l)
 }
 
-func countNonBlankFormals(formals []string) int {
+func countNonBlankIdentifiers(formals []string) int {
 	count := 0
 	for _, formal := range formals {
 		if formal != blankIdentifier {
