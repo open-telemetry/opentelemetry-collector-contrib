@@ -54,6 +54,7 @@ exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
+exporter/natsexporter exporter/nats
 exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
 exporter/prometheusexporter exporter/prometheus
@@ -157,6 +158,7 @@ pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
 pkg/ottl/contexts/xprofile pkg/ottl/contexts/xprofile
+pkg/ottl/xottl pkg/ottl/xottl
 pkg/pdatatest pkg/pdatatest
 pkg/resourcetotelemetry pkg/resourcetotelemetry
 pkg/sampling pkg/sampling
@@ -352,7 +354,6 @@ receiver/tlscheckreceiver receiver/tlscheck
 receiver/udplogreceiver receiver/udplog
 receiver/vcenterreceiver receiver/vcenter
 receiver/vcrreceiver receiver/vcr
-receiver/wavefrontreceiver receiver/wavefront
 receiver/webhookeventreceiver receiver/webhookevent
 receiver/windowseventlogreceiver receiver/windowseventlog
 receiver/windowsperfcountersreceiver receiver/windowsperfcounters

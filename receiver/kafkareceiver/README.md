@@ -102,13 +102,18 @@ The following settings can be optionally configured:
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
     - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. When
-    disabled, the client does not make the initial request to broker at the
-    startup.
+  - `full` (deprecated): No longer has any effect. Metadata is only fetched for
+    the topics the client consumes from.
   - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
   - `retry`
-    - `max` (default = 3): The number of retries to get metadata
-    - `backoff` (default = 250ms): How long to wait between metadata retries
+    - `max` (default = 20): The number of times to retry a retriable request.
+      Applies to consumer group and offset commit/fetch requests. It does not
+      apply to fetch requests, nor to the client's internal metadata refresh,
+      which caps itself at 3 retries.
+    - `backoff` (default = 250ms): The minimum time to wait before retrying a
+      request. Each successive retry doubles the wait, with jitter applied,
+      capped at `max(5s, backoff)`. Unlike `max`, this applies to every retry
+      path, including fetches.
 - `autocommit`
   - `enable`: (default = true) Whether or not to auto-commit updated offsets back to the broker
   - `interval`: (default = 1s) How frequently to commit updated offsets. Ineffective unless auto-commit is enabled
@@ -174,6 +179,10 @@ Additionally, all Kafka message headers are included in the request metadata.
 
 This metadata can then be used throughout the pipeline, for example to set attributes using the
 [attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md).
+
+### Trace context propagation
+
+The receiver extracts the trace context from record headers, using the propagators configured in `service::telemetry::traces::propagators`. The receiver span starts a new trace and links to the extracted trace context. Propagators are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted.
 
 ### Example configurations
 

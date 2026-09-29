@@ -27,6 +27,7 @@ var buildInfo = component.BuildInfo{
 
 func TestNewHTTPClient(t *testing.T) {
 	hcsEmpty := confighttp.NewDefaultClientConfig()
+	hcsEmpty.Keepalive = configoptional.None[confighttp.KeepaliveClientConfig]()
 	client1 := NewHTTPClient(hcsEmpty)
 	defaultTransport := &http.Transport{
 		MaxIdleConns:          100,
