@@ -235,7 +235,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			rm, sm, metric, dp, exemplar := createTelemetry()
 
-			tCtx := NewTransformContextPtr(rm, sm, metric, dp, exemplar)
+			tCtx := NewTransformContext(rm, sm, metric, dp, exemplar)
 			defer tCtx.Close()
 
 			got, err := accessor.Get(t.Context(), tCtx)
@@ -289,7 +289,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	exemplar := dp.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 
-	ctx := NewTransformContextPtr(rm, sm, metric, dp, exemplar)
+	ctx := NewTransformContext(rm, sm, metric, dp, exemplar)
 	defer ctx.Close()
 
 	tests := []struct {
@@ -403,7 +403,7 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 
 func TestMarshalLogObjectIncludesDataPoint(t *testing.T) {
 	rm, sm, metric, dp, exemplar := createTelemetry()
-	ctx := NewTransformContextPtr(rm, sm, metric, dp, exemplar)
+	ctx := NewTransformContext(rm, sm, metric, dp, exemplar)
 	defer ctx.Close()
 
 	encoder := zapcore.NewMapObjectEncoder()

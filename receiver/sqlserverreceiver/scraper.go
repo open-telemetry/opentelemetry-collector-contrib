@@ -37,7 +37,8 @@ const (
 	databaseNameKey = "database_name"
 	instanceNameKey = "sql_instance"
 
-	defaultServiceName = "unknown_service:microsoft.sql_server"
+	defaultServiceName  = "unknown_service:microsoft.sql_server"
+	versionQueryTimeout = 5 * time.Second
 )
 
 type sqlServerScraperHelper struct {
@@ -57,6 +58,10 @@ type sqlServerScraperHelper struct {
 	lastExecutionTimestamp time.Time
 	obfuscator             *obfuscator
 	serviceInstanceID      string
+	serverAddress          string
+	serverPort             int64
+	dbVersion              string
+	versionFunc            func(context.Context, *zap.Logger) (string, bool)
 }
 
 var (
@@ -66,7 +71,7 @@ var (
 
 func newSQLServerScraper(id component.ID,
 	query string,
-	telemetry sqlquery.TelemetryConfig,
+	telemetry sqlquery.TelemetryConfig, //nolint:unparam // Parameter is currently unused as callers always pass sqlquery.TelemetryConfig{}. cleanup in a follow-up PR.
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
 	params receiver.Settings,
@@ -78,6 +83,16 @@ func newSQLServerScraper(id component.ID,
 	if err != nil {
 		params.Logger.Warn("Failed to compute service.instance.id", zap.Error(err))
 		serviceInstanceID = "unknown:1433"
+	}
+
+	// Resolve the network location of the monitored instance for server.address and server.port.
+	serverAddress, serverPort, err := resolveServerEndpoint(cfg)
+	if err != nil {
+		params.Logger.Warn("Failed to resolve server.address and server.port, using the configured values", zap.Error(err))
+		serverAddress, serverPort = cfg.Server, int(cfg.Port)
+		if serverPort == 0 {
+			serverPort = defaultSQLServerPort
+		}
 	}
 
 	return &sqlServerScraperHelper{
@@ -94,6 +109,8 @@ func newSQLServerScraper(id component.ID,
 		lastExecutionTimestamp: time.Unix(0, 0),
 		obfuscator:             newObfuscator(params.Logger),
 		serviceInstanceID:      serviceInstanceID,
+		serverAddress:          serverAddress,
+		serverPort:             int64(serverPort),
 	}
 }
 
@@ -101,7 +118,7 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 	return s.id
 }
 
-func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
+func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) error {
 	// The connection pool is owned by the receiver and shared across all
 	// scrapers. Fetch the shared pool (opened once by the provider) rather than
 	// opening a new one here.
@@ -115,7 +132,47 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 	return nil
 }
 
+// detectSQLServerVersion queries SERVERPROPERTY('ProductVersion').
+// Returns (*string, error):
+//   - (&"15.0", nil): success — non-nil pointer means resolved, latch it.
+//   - (&"", nil):     SERVERPROPERTY returned NULL — permanent empty, latch it.
+//   - (nil, err):     transient scan error — caller may retry.
+//   - (nil, nil):     db is nil, not yet connected — silently skip.
+//
+// Declared as a var so tests can stub it.
+var detectSQLServerVersion = func(ctx context.Context, db *sql.DB) (*string, error) {
+	if db == nil {
+		return nil, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+	defer cancel()
+
+	var version sql.NullString
+	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128))")
+	if err := row.Scan(&version); err != nil {
+		return nil, err
+	}
+	if !version.Valid {
+		v := ""
+		return &v, nil
+	}
+	return &version.String, nil
+}
+
+func (s *sqlServerScraperHelper) ensureDBVersion(ctx context.Context) {
+	if s.versionFunc != nil {
+		v, resolved := s.versionFunc(ctx, s.logger)
+		s.dbVersion = v
+		if resolved {
+			s.versionFunc = nil
+		}
+	}
+}
+
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	s.ensureDBVersion(ctx)
+
 	var err error
 
 	switch s.sqlQuery {
@@ -149,6 +206,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
+	s.ensureDBVersion(ctx)
+
 	var err error
 	var resources pcommon.Resource
 	var isQuerySample bool
@@ -162,6 +221,12 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	case getSQLServerQuerySamplesQuery():
 		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
+	case getSQLServerTopProcedureQuery(s.config.InstanceName):
+		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopProcedureCollection.CollectionInterval.Seconds()) {
+			s.logger.Debug("Skipping the collection of top procedures because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			return plog.NewLogs(), nil
+		}
+		resources, err = s.recordDatabaseTopProcedure(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
 	}
@@ -170,8 +235,34 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	if isQuerySample {
 		sanitizeQuerySampleOptionalAttributes(logs)
 	}
+	if s.config.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled {
+		removeQueryPlanFromTopQuery(logs)
+	}
 
 	return logs, err
+}
+
+// removeQueryPlanFromTopQuery drops sqlserver.query_plan from db.server.top_query records, so the
+// plan is carried only by db.server.query_plan. An execution plan can be a large XML payload, and
+// keeping it out of db.server.top_query means an oversized plan cannot take the lightweight query
+// statistics down with it. mdatagen always sets every attribute declared for an event, so the
+// attribute has to be removed after the fact rather than skipped while recording.
+//
+// The event name must be checked: db.server.query_plan records sit in the same scope and have to
+// keep their sqlserver.query_plan.
+func removeQueryPlanFromTopQuery(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				if logRecord := logRecords.At(k); logRecord.EventName() == "db.server.top_query" {
+					logRecord.Attributes().Remove("sqlserver.query_plan")
+				}
+			}
+		}
+	}
 }
 
 func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
@@ -334,8 +425,6 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 	hostName := s.config.Server
-	serverAddress := s.config.Server
-	serverPort := int64(s.config.Port)
 
 	if s.config.DataSource != "" {
 		config, err := parseDataSource(s.config.DataSource)
@@ -343,11 +432,6 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
 			hostName = config.Host
-			serverAddress = config.Host
-			serverPort = int64(config.Port)
-			if serverPort == 0 {
-				serverPort = defaultSQLServerPort
-			}
 		}
 	}
 
@@ -355,8 +439,11 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
+	rb.SetServerAddress(s.serverAddress)
+	rb.SetServerPort(s.serverPort)
+	if s.dbVersion != "" {
+		rb.SetDbSystemVersion(s.dbVersion)
+	}
 
 	return rb
 }
@@ -1768,6 +1855,15 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			lastExecutionTimeVal,
 			planCreationTimeVal,
 		)
+		s.lb.RecordDbServerQueryPlanEvent(
+			context.Background(),
+			timestamp,
+			databaseNameVal,
+			dbSystemNameVal,
+			queryHashVal,
+			queryPlanVal.(string),
+			queryPlanHashVal,
+		)
 	}
 	return resources, errors.Join(errs...)
 }
@@ -2309,4 +2405,160 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 	}
 
 	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) procedureLookbackSeconds() int {
+	const schedulingBuffer = 10 * time.Second
+	if s.lastExecutionTimestamp.Equal(time.Unix(0, 0)) {
+		return int(s.config.TopProcedureCollection.CollectionInterval.Seconds())
+	}
+	return int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) + int(schedulingBuffer.Seconds())
+}
+
+func (s *sqlServerScraperHelper) recordDatabaseTopProcedure(ctx context.Context) (pcommon.Resource, error) {
+	const (
+		colDatabaseName     = "database_name"
+		colSchemaName       = "schema_name"
+		colProcedureName    = "procedure_name"
+		colProcedureID      = "procedure_id"
+		colDatabaseID       = "database_id"
+		colExecutionCount   = "execution_count"
+		colTotalWorkerTime  = "total_worker_time"
+		colTotalElapsedTime = "total_elapsed_time"
+		colTotalPhysReads   = "total_physical_reads"
+		colTotalLogReads    = "total_logical_reads"
+		colTotalLogWrites   = "total_logical_writes"
+		colTotalSpills      = "total_spills"
+		colMinElapsedTime   = "min_elapsed_time"
+		colMaxElapsedTime   = "max_elapsed_time"
+		colLastExecTime     = "last_execution_time"
+
+		dbSystemNameVal = "microsoft.sql_server"
+	)
+
+	// cacheAndDiff builds its key from the first three arguments. The database and
+	// procedure IDs together identify a procedure; the literal "0" opts out of the extra
+	// stored-procedure key prefix that the query-level events need.
+	const noProcedurePrefix = "0"
+
+	deltaColumns := []string{
+		colExecutionCount, colTotalWorkerTime, colTotalElapsedTime, colTotalPhysReads,
+		colTotalLogReads, colTotalLogWrites, colTotalSpills,
+	}
+
+	rows, err := s.client.QueryRows(ctx,
+		sql.Named("lookbackTime", -s.procedureLookbackSeconds()),
+		sql.Named("maxSampleCount", s.config.TopProcedureCollection.MaxProcedureSampleCount))
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return pcommon.NewResource(), fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
+		}
+		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	var errs []error
+
+	type procedureRow struct {
+		row    sqlquery.StringMap
+		deltas map[string]int64
+	}
+
+	// The query orders by cumulative elapsed time, which covers the whole period the plan
+	// has been cached rather than this interval, so it is only a prefilter. Rank the
+	// candidates by their elapsed-time delta instead so the procedures reported are the
+	// ones that were actually active since the last scrape.
+	candidates := make([]procedureRow, 0, len(rows))
+	for _, row := range rows {
+		procedureID := row[colProcedureID]
+		databaseID := row[colDatabaseID]
+
+		deltas := make(map[string]int64, len(deltaColumns))
+		seeded, parseFailed := false, false
+		for _, column := range deltaColumns {
+			value, err := retrieveInt(row, column)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to parse %s for procedure %s: %w", column, procedureID, err))
+				parseFailed = true
+				break
+			}
+			cached, delta := s.cacheAndDiff(databaseID, procedureID, noProcedurePrefix, column, value.(int64))
+			if !cached {
+				seeded = true
+			}
+			deltas[column] = delta
+		}
+
+		// An uncached counter means this is the first scrape for the procedure, so there is
+		// no prior value to diff against and the row only seeds the cache. A zero execution
+		// delta means the procedure has not run since the last scrape.
+		if parseFailed || seeded || deltas[colExecutionCount] == 0 {
+			continue
+		}
+
+		candidates = append(candidates, procedureRow{row: row, deltas: deltas})
+	}
+
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return candidates[i].deltas[colTotalElapsedTime] > candidates[j].deltas[colTotalElapsedTime]
+	})
+	if len(candidates) > int(s.config.TopProcedureCollection.TopProcedureCount) {
+		candidates = candidates[:s.config.TopProcedureCollection.TopProcedureCount]
+	}
+
+	var resources pcommon.Resource
+	var resourcesAdded bool
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
+	// Set even on a seeding scrape so the next run's delta window matches the interval.
+	s.lastExecutionTimestamp = now
+
+	for _, candidate := range candidates {
+		row, deltas := candidate.row, candidate.deltas
+		procedureID := row[colProcedureID]
+
+		// min/max elapsed time are lifetime values from the DMV rather than deltas, so a
+		// parse failure on them must not discard the row's delta counters.
+		minElapsedTime, err := retrieveInt(row, colMinElapsedTime)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for procedure %s: %w", colMinElapsedTime, procedureID, err))
+		}
+		maxElapsedTime, err := retrieveInt(row, colMaxElapsedTime)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for procedure %s: %w", colMaxElapsedTime, procedureID, err))
+		}
+
+		execCountDelta := deltas[colExecutionCount]
+		totalWorkerTimeSec := float64(deltas[colTotalWorkerTime]) / 1_000_000
+		totalElapsedTimeSec := float64(deltas[colTotalElapsedTime]) / 1_000_000
+
+		if !resourcesAdded {
+			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
+			resourcesAdded = true
+		}
+
+		s.lb.RecordDbServerTopProcedureEvent(
+			context.Background(),
+			timestamp,
+			dbSystemNameVal,
+			row[colDatabaseName],
+			procedureID,
+			row[colProcedureName],
+			row[colSchemaName],
+			execCountDelta,
+			totalWorkerTimeSec,
+			totalElapsedTimeSec,
+			deltas[colTotalLogReads],
+			deltas[colTotalLogWrites],
+			deltas[colTotalPhysReads],
+			deltas[colTotalSpills],
+			float64(maxElapsedTime.(int64))/1_000_000,
+			float64(minElapsedTime.(int64))/1_000_000,
+			row[colLastExecTime],
+		)
+	}
+
+	if !resourcesAdded {
+		resources = pcommon.NewResource()
+	}
+	return resources, errors.Join(errs...)
 }

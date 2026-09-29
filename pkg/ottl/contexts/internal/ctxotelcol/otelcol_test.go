@@ -10,13 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	featureMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 func TestContextClientMetadata(t *testing.T) {
@@ -558,17 +556,6 @@ func TestContextGrpcMetadata(t *testing.T) {
 		err = getter.Set(t.Context(), testContext{}, nil)
 		require.Error(t, err)
 	})
-}
-
-func Test_enableOTelColContextFeatureGate(t *testing.T) {
-	original := featureMetadata.OttlContextsEnableOTelColContextFeatureGate.IsEnabled()
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featureMetadata.OttlContextsEnableOTelColContextFeatureGate.ID(), original))
-	}()
-
-	require.NoError(t, featuregate.GlobalRegistry().Set(featureMetadata.OttlContextsEnableOTelColContextFeatureGate.ID(), false))
-	_, err := PathGetSetter(&pathtest.Path[testContext]{})
-	assert.Equal(t, errOTelColContextDisabled, err)
 }
 
 type testContext struct{}

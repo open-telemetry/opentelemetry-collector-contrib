@@ -443,7 +443,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			rs, ss, span, spanEvent := createTelemetry()
 
-			tCtx := NewTransformContextPtr(rs, ss, span, spanEvent, WithEventIndex(1))
+			tCtx := NewTransformContext(rs, ss, span, spanEvent, WithEventIndex(1))
 			defer tCtx.Close()
 
 			got, err := accessor.Get(t.Context(), tCtx)
@@ -479,7 +479,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	span := ss.Spans().AppendEmpty()
 	span.SetName("span")
 
-	ctx := NewTransformContextPtr(rs, ss, span, ptrace.NewSpanEvent())
+	ctx := NewTransformContext(rs, ss, span, ptrace.NewSpanEvent())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -585,9 +585,9 @@ func Test_setAndGetEventIndex(t *testing.T) {
 
 			var tCtx *TransformContext
 			if tt.setEventIndex {
-				tCtx = NewTransformContextPtr(rs, ss, span, spanEvent, WithEventIndex(tt.eventIndexValue))
+				tCtx = NewTransformContext(rs, ss, span, spanEvent, WithEventIndex(tt.eventIndexValue))
 			} else {
-				tCtx = NewTransformContextPtr(rs, ss, span, spanEvent)
+				tCtx = NewTransformContext(rs, ss, span, spanEvent)
 			}
 			defer tCtx.Close()
 

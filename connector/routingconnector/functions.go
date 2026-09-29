@@ -8,7 +8,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
 
 func createRouteFunction[K any](ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[K], error) {
@@ -19,7 +21,7 @@ func createRouteFunction[K any](ottl.FunctionContext, ottl.Arguments) (ottl.Expr
 
 func standardFunctions[K any]() map[string]ottl.Factory[K] {
 	// standard converters do not transform data, so we can safely use them
-	funcs := ottlfuncs.StandardConverters[K]()
+	funcs := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardConverters[K]()))
 
 	deleteKey := ottlfuncs.NewDeleteKeyFactory[K]()
 	funcs[deleteKey.Name()] = deleteKey

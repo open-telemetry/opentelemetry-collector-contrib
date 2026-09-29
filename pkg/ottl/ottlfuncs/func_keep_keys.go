@@ -12,20 +12,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type KeepKeysArguments[K any] struct {
+type keepKeysArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
 	Keys   []ottl.StringGetter[K]
 }
 
+// NewKeepKeysFactory returns a factory for the keep_keys OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#keep_keys
 func NewKeepKeysFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("keep_keys", &KeepKeysArguments[K]{}, createKeepKeysFunction[K])
+	return ottl.NewFactory("keep_keys", &keepKeysArguments[K]{}, createKeepKeysFunction[K])
 }
 
 func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*KeepKeysArguments[K])
+	args, ok := oArgs.(*keepKeysArguments[K])
 
 	if !ok {
-		return nil, errors.New("KeepKeysFactory args must be of type *KeepKeysArguments[K]")
+		return nil, errors.New("KeepKeysFactory args must be of type *keepKeysArguments[K]")
 	}
 
 	return keepKeys(args.Target, args.Keys), nil

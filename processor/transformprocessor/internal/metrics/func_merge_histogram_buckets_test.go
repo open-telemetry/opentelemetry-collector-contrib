@@ -231,7 +231,7 @@ func TestMergeHistogramBuckets(t *testing.T) {
 			dp.BucketCounts().FromRaw(tt.inputCounts)
 			dp.ExplicitBounds().FromRaw(tt.inputBounds)
 
-			ctx := ottldatapoint.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, dp)
+			ctx := ottldatapoint.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, dp)
 			defer ctx.Close()
 
 			result, err := exprFunc(t.Context(), ctx)
@@ -287,7 +287,7 @@ func TestMergeHistogramBucketsNonHistogramDataPoint(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 
-	ctx := ottldatapoint.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, dp)
+	ctx := ottldatapoint.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, dp)
 	defer ctx.Close()
 	result, err := exprFunc(t.Context(), ctx)
 
@@ -321,5 +321,34 @@ func floatLikeGetter(value any) ottl.FloatLikeGetter[*ottldatapoint.TransformCon
 		Getter: func(context.Context, *ottldatapoint.TransformContext) (any, error) {
 			return value, nil
 		},
+	}
+}
+
+func BenchmarkMergeHistogramBuckets(b *testing.B) {
+	template := pmetric.NewHistogramDataPoint()
+	template.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	template.SetCount(266)
+	template.SetSum(512.5)
+	template.BucketCounts().FromRaw([]uint64{80, 4, 6, 120, 3, 2, 40, 10, 1})
+	template.ExplicitBounds().FromRaw([]float64{0.1, 0.2, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0})
+
+	metric := pmetric.NewMetric()
+	metric.SetName("test_histogram")
+	dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+
+	transformContext := ottldatapoint.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, dp)
+	b.Cleanup(transformContext.Close)
+
+	exprFunc, err := mergeHistogramBuckets(floatLikeGetter(int64(5)), ottl.NewTestingOptional(mergeHistogramBucketsMethodLimitBuckets))
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(dp)
+		if _, err = exprFunc(b.Context(), transformContext); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
