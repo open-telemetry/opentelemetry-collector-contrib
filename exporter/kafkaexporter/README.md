@@ -143,7 +143,7 @@ service:
       propagators: [tracecontext]
 ```
 
-Headers are injected only when the export context has a valid span. An injected header replaces a `record_headers` or `include_metadata_keys` header with the same key; other headers are preserved.
+Headers are injected only when the export context has a valid span. In that case, existing `record_headers` or `include_metadata_keys` headers for all propagator fields are removed, even if the propagator does not inject a replacement value. Other headers are preserved.
 
 ### Shared signal topic
 
