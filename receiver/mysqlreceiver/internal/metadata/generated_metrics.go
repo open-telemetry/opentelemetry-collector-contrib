@@ -706,6 +706,32 @@ var MapAttributeMysqlMyisamKeyCacheOperationType = map[string]AttributeMysqlMyis
 	"write": AttributeMysqlMyisamKeyCacheOperationTypeWrite,
 }
 
+// AttributeMysqlQueryPlanSource specifies the value mysql.query_plan.source attribute.
+type AttributeMysqlQueryPlanSource int
+
+const (
+	_ AttributeMysqlQueryPlanSource = iota
+	AttributeMysqlQueryPlanSourceDbServerTopQuery
+	AttributeMysqlQueryPlanSourceDbServerQuerySample
+)
+
+// String returns the string representation of the AttributeMysqlQueryPlanSource.
+func (av AttributeMysqlQueryPlanSource) String() string {
+	switch av {
+	case AttributeMysqlQueryPlanSourceDbServerTopQuery:
+		return "db.server.top_query"
+	case AttributeMysqlQueryPlanSourceDbServerQuerySample:
+		return "db.server.query_sample"
+	}
+	return ""
+}
+
+// MapAttributeMysqlQueryPlanSource is a helper map of string to AttributeMysqlQueryPlanSource attribute value.
+var MapAttributeMysqlQueryPlanSource = map[string]AttributeMysqlQueryPlanSource{
+	"db.server.top_query":    AttributeMysqlQueryPlanSourceDbServerTopQuery,
+	"db.server.query_sample": AttributeMysqlQueryPlanSourceDbServerQuerySample,
+}
+
 // AttributeMysqlReplicaThreadType specifies the value mysql.replica.thread.type attribute.
 type AttributeMysqlReplicaThreadType int
 
@@ -7064,6 +7090,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude)

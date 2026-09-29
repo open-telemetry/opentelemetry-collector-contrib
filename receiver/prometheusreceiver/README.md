@@ -249,10 +249,10 @@ This receiver accepts exemplars coming in Prometheus format and converts it to O
 This receiver drops the `target_info` prometheus metric, if present, and uses attributes on
 that metric to populate the OpenTelemetry Resource.
 
-It drops `otel_scope_name` and `otel_scope_version` labels, if present, from metrics, and uses them to populate
-the OpenTelemetry Instrumentation Scope name and version. It drops the `otel_scope_info` metric,
-and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to populate Scope
-Attributes.
+It drops `otel_scope_name`, `otel_scope_version`, and `otel_scope_schema_url` labels, if present, from metrics, and uses
+them to populate the OpenTelemetry Instrumentation Scope name, version, and schema URL. Labels prefixed with
+`otel_scope_` are dropped from metrics and used to populate Scope Attributes. The `otel_scope_info` metric is not
+treated specially and is converted like any other metric.
 
 ### Resource Attribute Mapping
 

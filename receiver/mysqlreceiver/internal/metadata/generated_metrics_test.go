@@ -461,6 +461,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetDbSystemName("db.system.name-val")
 			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetServiceName("service.name-val")
 			rb.SetServiceNamespace("service.namespace-val")
