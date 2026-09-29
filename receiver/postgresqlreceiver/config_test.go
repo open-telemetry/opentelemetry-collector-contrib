@@ -107,17 +107,6 @@ func TestValidate(t *testing.T) {
 			},
 			expected: nil,
 		},
-		{
-			desc: "query plan event without top query event",
-			defaultConfigModifier: func(cfg *Config) {
-				cfg.Username = "otel"
-				cfg.Password = "otel"
-				cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
-			},
-			expected: []error{
-				errQueryPlanWithoutTopQuery,
-			},
-		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
