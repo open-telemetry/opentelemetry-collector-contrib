@@ -5,11 +5,11 @@ go 1.26.0
 require (
 	github.com/aws/smithy-go v1.28.2
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.162.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/component/componenttest v0.162.0

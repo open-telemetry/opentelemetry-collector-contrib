@@ -5,9 +5,9 @@ go 1.26.0
 require (
 	github.com/moby/moby/api v1.56.0
 	github.com/moby/moby/client v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.162.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	go.opentelemetry.io/collector/component v1.68.0

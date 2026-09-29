@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.47.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.5
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.7.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.162.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/component/componenttest v0.162.0

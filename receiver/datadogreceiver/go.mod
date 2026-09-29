@@ -13,13 +13,13 @@ require (
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.20.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.162.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tinylib/msgp v1.6.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1

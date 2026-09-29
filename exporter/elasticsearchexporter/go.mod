@@ -10,9 +10,9 @@ require (
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.20.0
 	github.com/lestrrat-go/strftime v1.2.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.162.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tidwall/gjson v1.19.0
 	go.opentelemetry.io/collector/client v1.68.0

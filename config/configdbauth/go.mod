@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/config/configdb
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.161.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.162.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.0
 	go.uber.org/goleak v1.3.0
