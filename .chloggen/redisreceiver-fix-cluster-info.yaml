@@ -10,7 +10,7 @@ component: receiver/redis
 note: Fix `redis.cluster.*` metrics never being populated. The receiver never actually issued the `CLUSTER INFO` command, so all `redis.cluster.*` metrics stayed empty even when enabled. Also corrected several `CLUSTER INFO` field names that didn't match real Redis output (`node_count`, `cluster_uptime`, `node_uptime`, `links_buffer_limit_exceeded.count`), and fixed `redis.cluster.state` always failing to parse because `cluster_state` is a string (`ok`/`fail`), not a number.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [38117]
+issues: [51425, 38117]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

@@ -28,15 +28,21 @@ func newRedisSvc(client client, logger *zap.Logger) *redisSvc {
 	}
 }
 
-// Calls the Redis INFO and CLUSTER INFO commands on the client and returns a merged `info` map.
-// CLUSTER INFO is fetched best-effort: if it fails (e.g. the command is restricted), the
-// metrics derived from INFO are still returned rather than failing the whole scrape.
+// Calls the Redis INFO command, and, if the server has cluster mode enabled, also CLUSTER INFO,
+// returning a merged `info` map. CLUSTER INFO errors on a standalone (non-cluster) server, so it's
+// only attempted when INFO's own cluster_enabled field says the server is actually a cluster node.
+// Even then, it's fetched best-effort: if it fails, the metrics derived from INFO are still
+// returned rather than failing the whole scrape.
 func (p *redisSvc) info() (info, error) {
 	str, err := p.client.retrieveInfo()
 	if err != nil {
 		return nil, err
 	}
 	attrs := p.parseAttrs(str)
+
+	if attrs["cluster_enabled"] != "1" {
+		return attrs, nil
+	}
 
 	if clusterStr, clusterErr := p.client.retrieveClusterInfo(); clusterErr == nil {
 		for k, v := range p.parseAttrs(clusterStr) {

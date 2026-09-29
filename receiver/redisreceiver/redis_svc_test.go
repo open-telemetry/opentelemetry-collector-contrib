@@ -25,3 +25,13 @@ func TestParser(t *testing.T) {
 	require.Len(t, info, 146)
 	require.Equal(t, "1.24", info["allocator_frag_ratio"]) // spot check
 }
+
+func TestParser_StandaloneSkipsClusterInfo(t *testing.T) {
+	client := &standaloneClient{}
+	s := newRedisSvc(client, zap.NewNop())
+	info, err := s.info()
+	require.NoError(t, err)
+	require.False(t, client.clusterInfoCalled, "CLUSTER INFO should not be attempted against a standalone server")
+	require.Len(t, info, 1)
+	require.Equal(t, "0", info["cluster_enabled"])
+}
