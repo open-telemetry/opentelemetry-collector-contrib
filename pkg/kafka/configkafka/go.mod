@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	github.com/twmb/franz-go v1.22.0
+	github.com/twmb/franz-go v1.22.1
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/config/configcompression v1.68.0
 	go.opentelemetry.io/collector/config/configtls v1.68.0
