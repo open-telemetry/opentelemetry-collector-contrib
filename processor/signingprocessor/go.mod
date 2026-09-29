@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/signi
 go 1.26.0
 
 require (
-	github.com/gowebpki/jcs v1.0.1
+	github.com/gowebpki/jcs v1.0.2
 	github.com/openbao/openbao/api/v2 v2.7.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.1-0.20260928015043-9857cff6c018
