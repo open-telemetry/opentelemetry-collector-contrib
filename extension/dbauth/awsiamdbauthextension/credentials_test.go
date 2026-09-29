@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
@@ -43,4 +44,28 @@ func TestCreateExtensionWithoutAssumeRoleKeepsDefaultChain(t *testing.T) {
 	if cache, ok := ext.(*iamExtension).awsConfig.Credentials.(*aws.CredentialsCache); ok {
 		require.False(t, cache.IsCredentialsProvider(&stscreds.AssumeRoleProvider{}))
 	}
+}
+
+func TestAssumeRoleOptionsSetsSessionNameAndExternalID(t *testing.T) {
+	opts := &stscreds.AssumeRoleOptions{}
+	assumeRoleOptions(AssumeRole{ARN: "arn:aws:iam::123456789012:role/reader", SessionName: "otel-collector", ExternalID: "my-external-id"})(opts)
+
+	assert.Equal(t, "otel-collector", opts.RoleSessionName)
+	require.NotNil(t, opts.ExternalID)
+	assert.Equal(t, "my-external-id", *opts.ExternalID)
+}
+
+func TestAssumeRoleOptionsWithoutOptionalFields(t *testing.T) {
+	opts := &stscreds.AssumeRoleOptions{}
+	assumeRoleOptions(AssumeRole{ARN: "arn:aws:iam::123456789012:role/reader"})(opts)
+
+	assert.Empty(t, opts.RoleSessionName)
+	assert.Nil(t, opts.ExternalID)
+}
+
+func TestSTSConfigRegion(t *testing.T) {
+	base := aws.Config{Region: "eu-central-1"}
+	assert.Equal(t, "eu-central-1", stsConfig(base, AssumeRole{}).Region)
+	assert.Equal(t, "us-east-1", stsConfig(base, AssumeRole{STSRegion: "us-east-1"}).Region)
+	assert.Equal(t, "eu-central-1", base.Region, "the base config must not change")
 }
