@@ -3842,6 +3842,40 @@ func BenchmarkConnectorConsumeTraces_EventsEnabled(b *testing.B) {
 	}
 }
 
+// Events path with a glob dimension matching overlapping event and resource attributes.
+func BenchmarkConnectorConsumeTraces_EventsEnabledGlob(b *testing.B) {
+	globEventsConfig := func() EventsConfig {
+		return EventsConfig{
+			Enabled:    true,
+			Dimensions: []Dimension{{Name: exceptionTypeAttrName}, {Glob: "custom.*"}},
+		}
+	}
+	conn, err := newConnectorImp(new("defaultNullValue"), disabledHistogramsConfig, disabledExemplarsConfig, globEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	require.NoError(b, err)
+
+	traces := buildEventsHeavyTrace(50, 5, 20)
+	rsAttrs := traces.ResourceSpans().At(0).Resource().Attributes()
+	for i := range 10 {
+		rsAttrs.PutStr(fmt.Sprintf("custom.%d", i), fmt.Sprintf("value-%d", i))
+	}
+	spans := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+	for i := 0; i < spans.Len(); i++ {
+		events := spans.At(i).Events()
+		for e := 0; e < events.Len(); e++ {
+			// Each event repeats a different resource attribute and adds one of its own.
+			events.At(e).Attributes().PutStr(fmt.Sprintf("custom.%d", e), fmt.Sprintf("value-%d", e))
+			events.At(e).Attributes().PutStr("custom.event", fmt.Sprintf("event-%d", e%2))
+		}
+	}
+	ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
+	}
+}
+
 // BenchmarkConnectorConsumeTraces_ResourceMetricsKeyAttributes measures createResourceKey
 // when a small key attribute list is configured on resources with many attributes.
 func BenchmarkConnectorConsumeTraces_ResourceMetricsKeyAttributes(b *testing.B) {
@@ -3911,4 +3945,64 @@ func buildResourceHeavyTrace(resourceCount, extraAttrCount int) ptrace.Traces {
 		s.SetSpanID([8]byte{byte(r), 2, 3, 4, 5, 6, 7, 8})
 	}
 	return traces
+}
+
+// Events that resolve to the same attributes must aggregate into one data point, even when they
+// repeat different resource attributes.
+func TestEventsGlobDimensionsAggregateAcrossOverlappingResourceAttributes(t *testing.T) {
+	eventsConfig := func() EventsConfig {
+		return EventsConfig{
+			Enabled:    true,
+			Dimensions: []Dimension{{Glob: "custom.*"}},
+		}
+	}
+	p, err := newConnectorImp(nil, disabledHistogramsConfig, disabledExemplarsConfig, eventsConfig, delta, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	require.NoError(t, err)
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "service-a")
+	rs.Resource().Attributes().PutStr("custom.a", "A")
+	rs.Resource().Attributes().PutStr("custom.b", "B")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("op")
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(sampleDuration)))
+	// Both events resolve to custom.a=A, custom.b=B.
+	span.Events().AppendEmpty().Attributes().PutStr("custom.a", "A")
+	span.Events().AppendEmpty().Attributes().PutStr("custom.b", "B")
+	// This one overrides custom.b, so it gets its own series.
+	span.Events().AppendEmpty().Attributes().PutStr("custom.b", "C")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
+	metrics := p.buildMetrics()
+
+	var eventsMetric pmetric.Metric
+	found := false
+	for i := 0; i < metrics.ResourceMetrics().Len() && !found; i++ {
+		sms := metrics.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < sms.Len() && !found; j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				if ms.At(k).Name() == "events" {
+					eventsMetric = ms.At(k)
+					found = true
+					break
+				}
+			}
+		}
+	}
+	require.True(t, found, "events metric not found")
+
+	dps := eventsMetric.Sum().DataPoints()
+	require.Equal(t, 2, dps.Len(), "expected one aggregated series for identical attributes plus one for the overriding event")
+	countsByAttrs := map[string]int64{}
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		a, _ := dp.Attributes().Get("custom.a")
+		b, _ := dp.Attributes().Get("custom.b")
+		countsByAttrs[a.AsString()+"/"+b.AsString()] = dp.IntValue()
+	}
+	assert.Equal(t, map[string]int64{"A/B": 2, "A/C": 1}, countsByAttrs)
 }

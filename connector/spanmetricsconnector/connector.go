@@ -641,7 +641,9 @@ func sortedKeys(attrs pcommon.Map) []string {
 
 // matchDimensions iterates over span, optional event, and resource attributes, applying
 // function f if the attribute matches any of dimension's name or glob expression.
-// Lookup order is span attributes, then event attributes (when provided), then resource attributes.
+// Precedence is span attributes, then event attributes (when provided), then resource attributes.
+// Glob matches are visited in sorted name order across the merged event and resource attribute
+// names so the resulting metric key is stable regardless of where each attribute came from.
 func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map, f func(string, pcommon.Value)) {
 	spanAttrs := span.Attributes()
 	for _, d := range dimensions.nameDimensions {
@@ -662,32 +664,50 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 			}
 		}
 	}
-	if eventAttrs != nil {
-		for _, n := range sortedKeys(*eventAttrs) {
+	if eventAttrs == nil {
+		for _, n := range sortedKeys(resourceAttrs) {
 			if _, ok := spanAttrs.Get(n); ok {
 				continue
 			}
 			for _, g := range dimensions.globDimensions {
 				if g.Match(n) {
-					v, _ := eventAttrs.Get(n)
+					v, _ := resourceAttrs.Get(n)
 					f(n, v)
 					break
 				}
 			}
 		}
+		return
 	}
-	for _, n := range sortedKeys(resourceAttrs) {
+
+	// Walk the sorted event and resource attribute names as a single merged, deduplicated
+	// sequence so the visiting order (and therefore the metric key) only depends on the final
+	// attribute set, not on which names the event happens to repeat from the resource.
+	// Event attributes take precedence over resource attributes for the same name.
+	eventKeys := sortedKeys(*eventAttrs)
+	resourceKeys := sortedKeys(resourceAttrs)
+	ei, ri := 0, 0
+	for ei < len(eventKeys) || ri < len(resourceKeys) {
+		var n string
+		var attrs pcommon.Map
+		switch {
+		case ri >= len(resourceKeys) || (ei < len(eventKeys) && eventKeys[ei] < resourceKeys[ri]):
+			n, attrs = eventKeys[ei], *eventAttrs
+			ei++
+		case ei >= len(eventKeys) || resourceKeys[ri] < eventKeys[ei]:
+			n, attrs = resourceKeys[ri], resourceAttrs
+			ri++
+		default: // same name in both: the event value wins.
+			n, attrs = eventKeys[ei], *eventAttrs
+			ei++
+			ri++
+		}
 		if _, ok := spanAttrs.Get(n); ok {
 			continue
 		}
-		if eventAttrs != nil {
-			if _, ok := eventAttrs.Get(n); ok {
-				continue
-			}
-		}
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
-				v, _ := resourceAttrs.Get(n)
+				v, _ := attrs.Get(n)
 				f(n, v)
 				break
 			}
