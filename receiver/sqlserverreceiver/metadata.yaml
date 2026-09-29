@@ -1,5 +1,6 @@
 display_name: Microsoft SQL Server Receiver
-type: sqlserver
+type: sql_server
+deprecated_type: sqlserver
 
 description: |
   The `sqlserver` receiver grabs metrics/logs about a Microsoft SQL Server instance. The receiver works by either using the
