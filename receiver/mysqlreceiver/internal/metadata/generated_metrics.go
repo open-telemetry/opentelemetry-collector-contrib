@@ -706,6 +706,32 @@ var MapAttributeMysqlMyisamKeyCacheOperationType = map[string]AttributeMysqlMyis
 	"write": AttributeMysqlMyisamKeyCacheOperationTypeWrite,
 }
 
+// AttributeMysqlQueryPlanSource specifies the value mysql.query_plan.source attribute.
+type AttributeMysqlQueryPlanSource int
+
+const (
+	_ AttributeMysqlQueryPlanSource = iota
+	AttributeMysqlQueryPlanSourceDbServerTopQuery
+	AttributeMysqlQueryPlanSourceDbServerQuerySample
+)
+
+// String returns the string representation of the AttributeMysqlQueryPlanSource.
+func (av AttributeMysqlQueryPlanSource) String() string {
+	switch av {
+	case AttributeMysqlQueryPlanSourceDbServerTopQuery:
+		return "db.server.top_query"
+	case AttributeMysqlQueryPlanSourceDbServerQuerySample:
+		return "db.server.query_sample"
+	}
+	return ""
+}
+
+// MapAttributeMysqlQueryPlanSource is a helper map of string to AttributeMysqlQueryPlanSource attribute value.
+var MapAttributeMysqlQueryPlanSource = map[string]AttributeMysqlQueryPlanSource{
+	"db.server.top_query":    AttributeMysqlQueryPlanSourceDbServerTopQuery,
+	"db.server.query_sample": AttributeMysqlQueryPlanSourceDbServerQuerySample,
+}
+
 // AttributeMysqlReplicaThreadType specifies the value mysql.replica.thread.type attribute.
 type AttributeMysqlReplicaThreadType int
 
