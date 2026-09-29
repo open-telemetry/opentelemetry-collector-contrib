@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -3407,67 +3408,56 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		rec.WaitItems(2) // 2 span documents are expected
 	})
 
-	t.Run("profiles", func(t *testing.T) {
+	t.Run("profiles/ecs", func(t *testing.T) {
 		testHost, rec := setupTestHost(t)
 		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn, func(cfg *Config) {
-			cfg.Mapping.AllowedModes = []string{"ecs"}
+			cfg.MetadataKeys = append(cfg.MetadataKeys, "x-elastic-mapping-mode")
 		})
 		require.NoError(t, exporter.Start(t.Context(), testHost))
 		defer func() {
 			require.NoError(t, exporter.Shutdown(t.Context()))
 		}()
 
+		ecsMetadata := client.NewMetadata(map[string][]string{
+			"key_1":                  {"val_1"},
+			"key_2":                  {"val_2"},
+			"X-Elastic-Mapping-Mode": {"ecs"},
+		})
+
 		sendProfiles := func() {
-			profiles := pprofile.NewProfiles()
-			dic := profiles.Dictionary()
-			resource := profiles.ResourceProfiles().AppendEmpty()
-			scope := resource.ScopeProfiles().AppendEmpty()
-			profile := scope.Profiles().AppendEmpty()
-
-			dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
-			st := profile.SampleType()
-			st.SetTypeStrindex(0)
-			st.SetUnitStrindex(1)
-			pt := profile.PeriodType()
-			pt.SetTypeStrindex(2)
-			pt.SetUnitStrindex(3)
-
-			a := dic.AttributeTable().AppendEmpty()
-			a.SetKeyStrindex(4)
-			dic.StringTable().Append("process.executable.build_id.htlhash")
-			a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
-			a = dic.AttributeTable().AppendEmpty()
-			a.SetKeyStrindex(5)
-			dic.StringTable().Append("profile.frame.type")
-			a.Value().SetStr("native")
-			a = dic.AttributeTable().AppendEmpty()
-			a.SetKeyStrindex(6)
-			dic.StringTable().Append("host.id")
-			a.Value().SetStr("localhost")
-
-			profile.AttributeIndices().Append(2)
-
-			sample := profile.Samples().AppendEmpty()
-			sample.TimestampsUnixNano().Append(0)
-
-			stack := dic.StackTable().AppendEmpty()
-			stack.LocationIndices().Append(0)
-
-			m := dic.MappingTable().AppendEmpty()
-			m.AttributeIndices().Append(0)
-
-			l := dic.LocationTable().AppendEmpty()
-			l.SetMappingIndex(0)
-			l.SetAddress(111)
-			l.AttributeIndices().Append(1)
-
-			ctx := client.NewContext(t.Context(), client.Info{Metadata: metadata})
-			mustSendProfilesWithCtx(ctx, t, exporter, profiles)
+			ctx := client.NewContext(t.Context(), client.Info{Metadata: ecsMetadata})
+			mustSendProfilesWithCtx(ctx, t, exporter, basicProfiles())
 		}
 
 		sendProfiles()
 		sendProfiles()
-		rec.WaitItems(5) // 5 profile documents are expected in total
+		rec.WaitItems(5) // 5 profile documents: StackTrace + Event + UnsymbolizedLeafFrame + UnsymbolizedExecutable (call 1) + Event (call 2)
+	})
+
+	t.Run("profiles/otel", func(t *testing.T) {
+		testHost, rec := setupTestHost(t)
+		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn, func(cfg *Config) {
+			cfg.MetadataKeys = append(cfg.MetadataKeys, "x-elastic-mapping-mode")
+		})
+		require.NoError(t, exporter.Start(t.Context(), testHost))
+		defer func() {
+			require.NoError(t, exporter.Shutdown(t.Context()))
+		}()
+
+		otelMetadata := client.NewMetadata(map[string][]string{
+			"key_1":                  {"val_1"},
+			"key_2":                  {"val_2"},
+			"X-Elastic-Mapping-Mode": {"otel"},
+		})
+
+		sendProfiles := func() {
+			ctx := client.NewContext(t.Context(), client.Info{Metadata: otelMetadata})
+			mustSendProfilesWithCtx(ctx, t, exporter, basicProfiles())
+		}
+
+		sendProfiles()
+		sendProfiles()
+		rec.WaitItems(4) // 4 profile documents: StackTrace + Event + Host (call 1) + Event (call 2); StackTrace and Host deduped by LRU
 	})
 }
 
@@ -3813,4 +3803,53 @@ func TestExporterTimeout_Independent(t *testing.T) {
 	assert.ErrorContains(t, err, "418")
 	assert.Equal(t, int32(successfulOnAttempt), count.Load())
 	assert.GreaterOrEqual(t, time.Since(start), timeout)
+}
+
+func TestExporterProfiles(t *testing.T) {
+	t.Run("downsampled events", func(t *testing.T) {
+		const numEvents = 1000
+
+		for _, tc := range []struct {
+			mode   string
+			suffix string
+		}{
+			{mode: "ecs", suffix: ""},
+			{mode: "otel", suffix: ".otel-default"},
+		} {
+			t.Run(tc.mode, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				profiles := basicProfiles()
+				profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Samples().At(0).Values().Append(numEvents)
+
+				exporter := newTestProfilesExporter(t, server.URL, func(cfg *Config) {
+					// Set wait_for_result to be true so that all documents are flushed when Consume* returns
+					cfg.QueueBatchConfig.Get().WaitForResult = true
+				})
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {tc.mode}})})
+				mustSendProfilesWithCtx(ctx, t, exporter, profiles)
+
+				docsPerIndex := make(map[string]int)
+				for _, item := range rec.Items() {
+					docsPerIndex[gjson.GetBytes(item.Action, "create._index").Str]++
+				}
+
+				assert.Equal(t, numEvents, docsPerIndex["profiling-events-all"+tc.suffix])
+				// Each event has p=0.2 to be copied into the first downsampled index, so with 1000 events
+				// the index is populated with overwhelming probability but never holds every event.
+				firstDownsampled := docsPerIndex["profiling-events-5pow01"+tc.suffix]
+				assert.Positive(t, firstDownsampled)
+				assert.Less(t, firstDownsampled, numEvents)
+				for index := range docsPerIndex {
+					if strings.HasPrefix(index, "profiling-events-5pow") {
+						assert.True(t, strings.HasSuffix(index, tc.suffix), "unexpected downsampled index %q", index)
+					}
+				}
+			})
+		}
+	})
 }

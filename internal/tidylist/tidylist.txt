@@ -11,6 +11,7 @@ internal/common
 internal/coreinternal
 pkg/ottl
 pkg/ottl/contexts/xprofile
+pkg/ottl/xottl
 connector/routingconnector
 internal/pdatautil
 pkg/sampling
@@ -45,6 +46,7 @@ pkg/translator/zipkin
 receiver/zipkinreceiver
 exporter/zipkinexporter
 extension/storage
+pkg/semconvtest
 pkg/stanza
 pkg/translator/jaeger
 receiver/carbonreceiver
@@ -134,6 +136,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
@@ -200,7 +203,6 @@ internal/aws/k8s
 internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
-pkg/semconvtest
 processor/k8sattributesprocessor
 processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
@@ -343,7 +345,6 @@ receiver/tlscheckreceiver
 receiver/udplogreceiver
 receiver/vcenterreceiver
 receiver/vcrreceiver
-receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
