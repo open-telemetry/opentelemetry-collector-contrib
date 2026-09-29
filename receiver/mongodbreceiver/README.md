@@ -295,6 +295,36 @@ receivers:
 
 The default Kerberos service name is `mongodb`. Users can authenticate with an explicit password or by storing authentication keys in keytab files initialized with the `kinit` utility.
 
+## Resource attributes
+
+`server.address` and `server.port` identify the monitored instance and are emitted by default. They
+describe the location each scraped node reports for itself, not the configured `hosts` entry, so a
+replica set emits a distinct pair per member. `server.port` falls back to `27017` when the node
+reports no port.
+
+When a node reports a loopback address (`localhost`, `127.0.0.1` or `::1`), `server.address` is the
+host name of the machine running the collector. Loopback is only reachable when the instance is
+co-located with the collector, so the collector host's name is the instance's real network identity;
+reported verbatim, every monitored host would emit the same address. Any other address is reported
+as given. If the collector host name cannot be determined, the loopback address is reported
+unchanged and a warning is logged.
+
+`service.instance.id` is a UUID v5 seeded from the same resolved address and port, so the two cannot
+name different machines. Deployments whose nodes report a loopback address will see this identifier
+change.
+
+To stop emitting the server attributes, disable them individually:
+
+```yaml
+receivers:
+  mongodb:
+    resource_attributes:
+      server.address:
+        enabled: false
+      server.port:
+        enabled: false
+```
+
 ## Metrics
 
 The following metrics are version-gated:
