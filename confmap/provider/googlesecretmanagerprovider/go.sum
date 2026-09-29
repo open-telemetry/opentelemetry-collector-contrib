@@ -8,8 +8,6 @@ cloud.google.com/go/compute/metadata v0.9.0 h1:pDUj4QMoPejqq20dK0Pg2N4yG9zIkYGdB
 cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCBSM6qQI1yTBdEb3C10=
 cloud.google.com/go/iam v1.12.0 h1:Aki3bX9aHUDKPHfnRJfDcTdVedvy6quGBQcTqx3DRXk=
 cloud.google.com/go/iam v1.12.0/go.mod h1:FEZ4lXpADAC2AIpQY7LANNjjwyQ2jK439CI2VaD+sLY=
-cloud.google.com/go/secretmanager v1.21.0 h1:e56QQaKWRyzBdUz40AeZaio/ZHAl268cFx3QFAAw9CY=
-cloud.google.com/go/secretmanager v1.21.0/go.mod h1:+nlV+GYqTD8DM+x7Kk3UF7ZPYgdYMowrkZxAmMXORQ8=
 cloud.google.com/go/secretmanager v1.22.0 h1:c9nPLiK4IZeT/zDyLjvNaBw1BHNkp0Ysybj1FfFIAPQ=
 cloud.google.com/go/secretmanager v1.22.0/go.mod h1:aDN9cW5x6Y8QVj32snakZv96vYyW7Nf1P+eqZGH8408=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
