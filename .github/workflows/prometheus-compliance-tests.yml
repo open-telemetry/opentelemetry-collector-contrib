@@ -23,6 +23,8 @@ env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+  # Distinct spellings of the same proxy joined by `|` make Go retry any fetch error. Keep in sync with Makefile.Common.
+  GOPROXY: "https://proxy.golang.org|https://proxy.golang.org/|https://proxy.golang.org:443,direct"
 
 jobs:
   prometheus-compliance-tests:
