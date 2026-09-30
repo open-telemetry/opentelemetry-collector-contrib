@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/signi
 go 1.26.0
 
 require (
-	github.com/gowebpki/jcs v1.0.1
+	github.com/gowebpki/jcs v1.0.2
 	github.com/openbao/openbao/api/v2 v2.7.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.0
@@ -15,9 +15,9 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.162.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	k8s.io/api v0.37.0
-	k8s.io/apimachinery v0.37.0
-	k8s.io/client-go v0.37.0
+	k8s.io/api v0.37.1
+	k8s.io/apimachinery v0.37.1
+	k8s.io/client-go v0.37.1
 )
 
 require (

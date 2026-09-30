@@ -1,0 +1,12 @@
+change_type: bug_fix
+
+component: receiver/sqlserver
+
+note: Fix direct-connection performance counter rate metrics to emit per-second rates instead of cumulative counter values.
+
+issues: [50772]
+
+subtext: |
+  The `sqlserver.page.buffer_cache.free_list.stalls.rate` metric value type changes from int to double so fractional rates can be represented.
+
+change_logs: [user]
