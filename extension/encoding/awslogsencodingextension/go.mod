@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encod
 go 1.26.0
 
 require (
-	github.com/aws/aws-lambda-go v1.55.0
+	github.com/aws/aws-lambda-go v1.55.1
 	github.com/goccy/go-json v0.10.6
 	github.com/klauspost/compress v1.20.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.162.0

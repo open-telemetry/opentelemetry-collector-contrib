@@ -22,7 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
@@ -2701,6 +2703,42 @@ func Test_ProcessSpanEvents(t *testing.T) {
 	}
 }
 
+func Test_e2e_shared_cache(t *testing.T) {
+	execute := func(tCtx *ottllog.TransformContext, statement string) {
+		statements, err := parseStatementWithAndWithoutPathContext(statement)
+		require.NoError(t, err)
+		for _, s := range statements {
+			_, _, err = s.Execute(t.Context(), tCtx)
+			require.NoError(t, err)
+		}
+	}
+
+	rLogs := plog.NewResourceLogs()
+	sLogs := rLogs.ScopeLogs().AppendEmpty()
+	first := sLogs.LogRecords().AppendEmpty()
+	first.Attributes().PutStr("name", "first")
+	second := sLogs.LogRecords().AppendEmpty()
+	third := sLogs.LogRecords().AppendEmpty()
+
+	cache := pcommon.NewMap()
+
+	firstCtx := ottllog.NewTransformContext(rLogs, sLogs, first, ottllog.WithCache(&cache))
+	execute(firstCtx, `set(cache["name"], attributes["name"])`)
+	firstCtx.Close()
+
+	secondCtx := ottllog.NewTransformContext(rLogs, sLogs, second, ottllog.WithCache(&cache))
+	execute(secondCtx, `set(attributes["name"], cache["name"])`)
+	secondCtx.Close()
+
+	thirdCtx := ottllog.NewTransformContext(rLogs, sLogs, third)
+	execute(thirdCtx, `set(attributes["name"], cache["name"]) where cache["name"] != nil`)
+	thirdCtx.Close()
+
+	assert.Equal(t, map[string]any{"name": "first"}, second.Attributes().AsRaw())
+	assert.Empty(t, third.Attributes().AsRaw())
+	assert.Equal(t, map[string]any{"name": "first"}, cache.AsRaw())
+}
+
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[*ottllog.TransformContext], error) {
 	settings := componenttest.NewNopTelemetrySettings()
 	functions := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
@@ -3015,7 +3053,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 }
 
 type lambdaEvalArguments[K any] struct {
-	Expr   *ottl.LambdaExpression[K]
+	Expr   *lambda.LambdaExpression[K]
 	Params []ottl.Getter[K]
 }
 
@@ -3075,8 +3113,8 @@ func Test_e2e_clear_bytes_value(t *testing.T) {
 }
 
 type sliceGetterArguments[K any] struct {
-	Values       ottl.SliceGetter[K, ottl.StringLikeGetter[K]]
-	ScalarValues ottl.Optional[ottl.SliceGetter[K, string]]
+	Values       slicegetter.SliceGetter[K, ottl.StringLikeGetter[K]]
+	ScalarValues ottl.Optional[slicegetter.SliceGetter[K, string]]
 }
 
 func newSliceGetterFactory[K any]() ottl.Factory[K] {
@@ -3125,4 +3163,22 @@ func createSliceGetterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		}
 		return sl, nil
 	}, nil
+}
+
+func Test_e2e_dynamic_slice_arguments_feature_gate(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, false))
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	_, err = parser.ParseStatement(`set(attributes["test"], Concat(Split(attributes["flags"], "|"), ":"))`)
+	require.ErrorContains(t, err, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate.ID())
+
+	statement, err := parser.ParseStatement(`set(attributes["test"], Concat(["A", attributes["flags"]], ":"))`)
+	require.NoError(t, err)
+	tCtx := constructLogTransformContext()
+	_, _, err = statement.Execute(t.Context(), tCtx)
+	require.NoError(t, err)
+	got, ok := tCtx.GetLogRecord().Attributes().Get("test")
+	require.True(t, ok)
+	assert.Equal(t, "A:A|B|C", got.Str())
 }
