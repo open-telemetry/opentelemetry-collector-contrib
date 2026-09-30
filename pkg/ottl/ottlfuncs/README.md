@@ -1404,7 +1404,7 @@ Examples:
 
 The `IsInCIDR` Converter returns true if the given target IP address falls within any of the specified network ranges.
 
-The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `networks` argument accepts an inline list of CIDR strings. The `networks` argument also accepts a path or expression that returns a string slice.
+The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `networks` argument accepts an inline list of CIDR strings. The `networks` argument also accepts a path or expression that returns a string slice. Dynamic paths and expressions require the [`pkg.ottl.functions.enableDynamicSliceArguments`](../README.md#pkgottlfunctionsenabledynamicslicearguments) feature gate. The gate allows dynamic slice arguments by default.
 
 Examples:
 
