@@ -122,8 +122,9 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	s.client = c
 
-	// Skip secondary host discovery if direct connection is enabled
-	if s.config.DirectConnection {
+	if reason := s.config.secondaryDiscoverySkipReason(); reason != "" {
+		s.logger.Info("skipping replica set secondary discovery, scraping only the configured host",
+			zap.String("reason", reason))
 		return nil
 	}
 
@@ -954,23 +955,16 @@ func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, erro
 
 	members, ok := result[replicaSetMembersKey].(bson.A)
 	if !ok {
-		return nil, fmt.Errorf("invalid members format: expected type primitive.A but got %T, value: %v", result["members"], result["members"])
+		return nil, fmt.Errorf("invalid members format: expected type bson.A but got %T, value: %v", result["members"], result["members"])
 	}
 
 	var hosts []string
 	for _, member := range members {
-		m, ok := member.(bson.M)
-		if !ok {
-			continue
-		}
-
-		state, ok := m["stateStr"].(string)
-		if !ok {
-			continue
-		}
-
-		name, ok := m["name"].(string)
-		if !ok {
+		// A member arrives as a bson.D, which is how the driver decodes an embedded document
+		// held in a bson.M, so read it through lookup rather than asserting a concrete type.
+		state := getValue[string](member, "stateStr")
+		name := getValue[string](member, "name")
+		if name == "" {
 			continue
 		}
 

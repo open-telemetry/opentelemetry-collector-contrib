@@ -13,6 +13,46 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type eventDbServerQueryPlan struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, mysqlQueryPlanHashAttributeValue string, dbNamespaceAttributeValue string, mysqlQueryPlanSourceAttributeValue string, mysqlQueryPlanAttributeValue string) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.query_plan")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("mysql.query_plan.hash", mysqlQueryPlanHashAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("mysql.query_plan.source", mysqlQueryPlanSourceAttributeValue)
+	dp.Attributes().PutStr("mysql.query_plan", mysqlQueryPlanAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerQueryPlan) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerQueryPlan(cfg EventConfig) eventDbServerQueryPlan {
+	e := eventDbServerQueryPlan{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 type eventDbServerQuerySample struct {
 	data   plog.LogRecordSlice // data buffer for generated log records.
 	config EventConfig         // event config provided by user.
@@ -73,7 +113,7 @@ type eventDbServerTopQuery struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbQueryTextAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventsStatementsSummaryByDigestDigestAttributeValue string, mysqlEventsStatementsSummaryByDigestCountStarAttributeValue int64, mysqlEventsStatementsSummaryByDigestSumTimerWaitAttributeValue float64) {
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, dbQueryTextAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventsStatementsSummaryByDigestDigestAttributeValue string, mysqlEventsStatementsSummaryByDigestCountStarAttributeValue int64, mysqlEventsStatementsSummaryByDigestSumTimerWaitAttributeValue float64) {
 	if !e.config.Enabled {
 		return
 	}
@@ -86,6 +126,7 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
 	}
 	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
 	dp.Attributes().PutStr("mysql.query_plan", mysqlQueryPlanAttributeValue)
 	dp.Attributes().PutStr("mysql.query_plan.hash", mysqlQueryPlanHashAttributeValue)
@@ -119,6 +160,7 @@ type LogsBuilder struct {
 	buildInfo                      component.BuildInfo // contains version information.
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
+	eventDbServerQueryPlan         eventDbServerQueryPlan
 	eventDbServerQuerySample       eventDbServerQuerySample
 	eventDbServerTopQuery          eventDbServerTopQuery
 }
@@ -134,6 +176,7 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		logsBuffer:                     plog.NewLogs(),
 		logRecordsBuffer:               plog.NewLogRecordSlice(),
 		buildInfo:                      settings.BuildInfo,
+		eventDbServerQueryPlan:         newEventDbServerQueryPlan(lbc.Events.DbServerQueryPlan),
 		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
 		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
@@ -230,6 +273,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils := rl.ScopeLogs().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
+	lb.eventDbServerQueryPlan.emit(ils.LogRecords())
 	lb.eventDbServerQuerySample.emit(ils.LogRecords())
 	lb.eventDbServerTopQuery.emit(ils.LogRecords())
 
@@ -268,12 +312,17 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	return logs
 }
 
+// RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.
+func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, mysqlQueryPlanHashAttributeValue string, dbNamespaceAttributeValue string, mysqlQueryPlanSourceAttributeValue AttributeMysqlQueryPlanSource, mysqlQueryPlanAttributeValue string) {
+	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), mysqlQueryPlanHashAttributeValue, dbNamespaceAttributeValue, mysqlQueryPlanSourceAttributeValue.String(), mysqlQueryPlanAttributeValue)
+}
+
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
 func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, mysqlThreadsThreadIDAttributeValue int64, userNameAttributeValue string, dbNamespaceAttributeValue string, mysqlThreadsProcesslistCommandAttributeValue string, mysqlThreadsProcesslistStateAttributeValue string, dbQueryTextAttributeValue string, mysqlEventsStatementsCurrentDigestAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventIDAttributeValue int64, mysqlWaitTypeAttributeValue string, mysqlSessionStatusAttributeValue string, mysqlSessionIDAttributeValue int64, mysqlEventsStatementsCurrentTimerWaitAttributeValue float64, mysqlEventsWaitsCurrentTimerWaitAttributeValue float64, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64) {
 	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), mysqlThreadsThreadIDAttributeValue, userNameAttributeValue, dbNamespaceAttributeValue, mysqlThreadsProcesslistCommandAttributeValue, mysqlThreadsProcesslistStateAttributeValue, dbQueryTextAttributeValue, mysqlEventsStatementsCurrentDigestAttributeValue, mysqlQueryPlanAttributeValue, mysqlQueryPlanHashAttributeValue, mysqlEventIDAttributeValue, mysqlWaitTypeAttributeValue, mysqlSessionStatusAttributeValue, mysqlSessionIDAttributeValue, mysqlEventsStatementsCurrentTimerWaitAttributeValue, mysqlEventsWaitsCurrentTimerWaitAttributeValue, clientAddressAttributeValue, clientPortAttributeValue, networkPeerAddressAttributeValue, networkPeerPortAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
-func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbQueryTextAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventsStatementsSummaryByDigestDigestAttributeValue string, mysqlEventsStatementsSummaryByDigestCountStarAttributeValue int64, mysqlEventsStatementsSummaryByDigestSumTimerWaitAttributeValue float64) {
-	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbQueryTextAttributeValue, mysqlQueryPlanAttributeValue, mysqlQueryPlanHashAttributeValue, mysqlEventsStatementsSummaryByDigestDigestAttributeValue, mysqlEventsStatementsSummaryByDigestCountStarAttributeValue, mysqlEventsStatementsSummaryByDigestSumTimerWaitAttributeValue)
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbQueryTextAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventsStatementsSummaryByDigestDigestAttributeValue string, mysqlEventsStatementsSummaryByDigestCountStarAttributeValue int64, mysqlEventsStatementsSummaryByDigestSumTimerWaitAttributeValue float64) {
+	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbQueryTextAttributeValue, mysqlQueryPlanAttributeValue, mysqlQueryPlanHashAttributeValue, mysqlEventsStatementsSummaryByDigestDigestAttributeValue, mysqlEventsStatementsSummaryByDigestCountStarAttributeValue, mysqlEventsStatementsSummaryByDigestSumTimerWaitAttributeValue)
 }

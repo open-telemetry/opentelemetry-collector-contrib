@@ -2725,9 +2725,6 @@ func Test_Parser_experimentalFunctionFeatureGate_legacy(t *testing.T) {
 		Target Setter[K]
 		Value  Getter[K]
 	}
-	type lambdaArguments[K any] struct {
-		Fn *LambdaExpression[K]
-	}
 
 	noop := func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
 		return func(context.Context, any) (any, error) {
@@ -2738,7 +2735,7 @@ func Test_Parser_experimentalFunctionFeatureGate_legacy(t *testing.T) {
 	p, err := NewParser(
 		CreateFactoryMap[any](
 			NewFactory("set", &mockSetArguments[any]{}, noop),
-			NewFactory("When", &lambdaArguments[any]{}, noop, WithExperimental[any]()),
+			NewFactory("When", &struct{}{}, noop, WithExperimental[any]()),
 			NewFactory("Find", &struct{}{}, noop, WithExperimental[any]()),
 			NewFactory("ProfileID", &struct{}{}, noop, WithExperimental[any]()),
 		),
@@ -2750,7 +2747,7 @@ func Test_Parser_experimentalFunctionFeatureGate_legacy(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, false)()
 
 	lambdaStatements := map[string]string{
-		"When": `set(name, When(() => true))`,
+		"When": `set(name, When())`,
 		"Find": `set(name, Find())`,
 	}
 	for name, statement := range lambdaStatements {
