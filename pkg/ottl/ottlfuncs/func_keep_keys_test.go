@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 func Test_keepKeys(t *testing.T) {
@@ -85,7 +86,7 @@ func Test_keepKeys(t *testing.T) {
 				}
 			}
 
-			sliceKeys := ottl.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](true, keys)
+			sliceKeys := slicegetter.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](true, keys)
 			exprFunc, err := keepKeys(target, sliceKeys)
 			require.NoError(t, err)
 
@@ -229,7 +230,7 @@ func Test_keepKeys_dynamic_key_error(t *testing.T) {
 	}
 
 	getErr := errors.New("get dynamic key")
-	keys := ottl.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](false, []ottl.StringGetter[pcommon.Map]{
+	keys := slicegetter.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](false, []ottl.StringGetter[pcommon.Map]{
 		ottl.StandardStringGetter[pcommon.Map]{
 			Getter: func(context.Context, pcommon.Map) (any, error) {
 				return nil, getErr
@@ -256,7 +257,7 @@ func Test_keepKeys_empty_dynamic_slice(t *testing.T) {
 			return nil
 		},
 	}
-	keys := ottl.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](false, []ottl.StringGetter[pcommon.Map]{})
+	keys := slicegetter.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](false, []ottl.StringGetter[pcommon.Map]{})
 
 	exprFunc, err := keepKeys(target, keys)
 	require.NoError(t, err)
@@ -276,7 +277,7 @@ func Test_keepKeys_bad_input(t *testing.T) {
 		},
 	}
 
-	keys := ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
+	keys := slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 		ottl.StandardStringGetter[any]{
 			Getter: func(_ context.Context, _ any) (any, error) {
 				return "anything", nil
@@ -301,7 +302,7 @@ func Test_keepKeys_get_nil(t *testing.T) {
 		},
 	}
 
-	keys := ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
+	keys := slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 		ottl.StandardStringGetter[any]{
 			Getter: func(_ context.Context, _ any) (any, error) {
 				return "anything", nil
@@ -339,7 +340,7 @@ func Test_KeepKeysFactory(t *testing.T) {
 				return pcommon.NewMap(), nil
 			},
 		}
-		keepKeysArgs.Keys = *ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
+		keepKeysArgs.Keys = *slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 			ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return "key", nil
@@ -393,7 +394,7 @@ func BenchmarkKeepKeys(b *testing.B) {
 		{name: "dynamic", isLiteral: false},
 	} {
 		b.Run(tt.name, func(b *testing.B) {
-			keys := ottl.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](tt.isLiteral, keyGetters)
+			keys := slicegetter.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](tt.isLiteral, keyGetters)
 			exprFunc, err := keepKeys(target, keys)
 			if err != nil {
 				b.Fatal(err)
