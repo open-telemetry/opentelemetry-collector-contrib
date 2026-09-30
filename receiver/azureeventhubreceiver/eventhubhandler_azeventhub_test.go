@@ -68,6 +68,7 @@ type mockAzeventHub struct {
 	partitionClient     *mockPartitionClient
 	newClientCount      atomic.Int32
 	newClientErr        error
+	newClientFailures   int32
 }
 
 func (a *mockAzeventHub) GetEventHubProperties(_ context.Context, _ *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
@@ -81,7 +82,7 @@ func (a *mockAzeventHub) GetPartitionProperties(_ context.Context, _ string, _ *
 func (a *mockAzeventHub) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (azPartitionClient, error) {
 	// Counted last so a test waiting on the count observes the fields written below.
 	defer a.newClientCount.Add(1)
-	if a.newClientCount.Load() > 0 && a.newClientErr != nil {
+	if n := a.newClientCount.Load() + 1; n > 1 && n <= 1+a.newClientFailures {
 		return nil, a.newClientErr
 	}
 	a.partitionID = partitionID
@@ -355,22 +356,23 @@ func TestReceive_RecreatesClientOnOwnershipLost(t *testing.T) {
 	assert.True(t, pc.closed.Load())
 }
 
-func TestReceive_RecreateFailureDoesNotPanic(t *testing.T) {
+func TestReceive_RetriesRecreationUntilItSucceeds(t *testing.T) {
 	pc := &mockPartitionClient{err: &azeventhubs.Error{Code: azeventhubs.ErrorCodeOwnershipLost}}
-	hub := &mockAzeventHub{partitionClient: pc, newClientErr: errors.New("recreate failed")}
+	hub := &mockAzeventHub{partitionClient: pc, newClientErr: errors.New("recreate failed"), newClientFailures: 2}
 	h := &hubWrapperAzeventhubImpl{
 		hub:    hub,
 		config: &Config{Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub", PollRate: 1},
 	}
 
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
 	listener, err := h.Receive(ctx, "p1", func(_ context.Context, _ *azureEvent) error { return nil }, false, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
-	<-listener.Done()
-	require.ErrorContains(t, listener.Err(), "recreate failed")
+	// initial client + 2 failed recreations + 1 successful one, which is then polled
+	require.Eventually(t, func() bool { return hub.newClientCount.Load() >= 4 && pc.callCount.Load() >= 2 }, 9*time.Second, 50*time.Millisecond)
+	require.NoError(t, listener.Err())
 }
 
 func TestReceive_RecreatedClientResumesFromLastSequenceNumber(t *testing.T) {

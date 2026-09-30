@@ -248,18 +248,20 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 						// so every further poll returns the same error. Drop the client and open a
 						// new one from the last checkpoint once the poll interval has elapsed.
 						pc.Close(ctx)
-						select {
-						case <-ctx.Done():
-							return
-						case <-time.After(time.Second * time.Duration(pollRate)):
+						for {
+							select {
+							case <-ctx.Done():
+								return
+							case <-time.After(time.Second * time.Duration(pollRate)):
+							}
+							// Never assign a nil client to pc: the deferred Close would panic.
+							newPC, err := newClient()
+							if err == nil {
+								pc = newPC
+								break
+							}
+							logger.Error("error recreating partition client, retrying", zap.Error(err))
 						}
-						// Never assign a nil client to pc: the deferred Close would panic.
-						newPC, err := newClient()
-						if err != nil {
-							w.setErr(err)
-							return
-						}
-						pc = newPC
 					}
 					continue
 				}
