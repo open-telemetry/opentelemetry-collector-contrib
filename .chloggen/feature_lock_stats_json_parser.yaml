@@ -1,4 +1,4 @@
 change_type: enhancement
 component: receiver/google_cloud_spanner
 note: Add SAMPLE_LOCK_REQUESTS_JSON_STRING to top minute lock stats
-issues: [00000]
+issues: [51637]
