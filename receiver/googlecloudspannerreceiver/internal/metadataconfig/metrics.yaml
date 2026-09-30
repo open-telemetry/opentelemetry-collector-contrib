@@ -35,7 +35,7 @@ metadata:
 # -------------------------------------------- Locks Stats -------------------------------------------------------------
 #
   - name: "top minute lock stats"
-    query: "SELECT INTERVAL_END, ROW_RANGE_START_KEY, SAMPLE_LOCK_REQUESTS, SUBSTR(SAMPLE_LOCK_REQUESTS_JSON_STRING, 1, 1024) AS TRUNCATED_SAMPLE_LOCK_REQUESTS, LOCK_WAIT_SECONDS FROM SPANNER_SYS.LOCK_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, LOCK_WAIT_SECONDS DESC"
+    query: "SELECT INTERVAL_END, ROW_RANGE_START_KEY, SAMPLE_LOCK_REQUESTS, SUBSTR(SAMPLE_LOCK_REQUESTS_JSON_STRING, 1, 100) AS TRUNCATED_SAMPLE_LOCK_REQUESTS, LOCK_WAIT_SECONDS FROM SPANNER_SYS.LOCK_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, LOCK_WAIT_SECONDS DESC"
     metric_name_prefix: "database/spanner/lock_stats/top/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: true
