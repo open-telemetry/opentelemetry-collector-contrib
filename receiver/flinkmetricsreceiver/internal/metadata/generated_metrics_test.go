@@ -172,6 +172,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecordIn)
 
 			rb := mb.NewResourceBuilder()
+			rb.SetFlinkJobID("flink.job.id-val")
 			rb.SetFlinkJobName("flink.job.name-val")
 			rb.SetFlinkResourceTypeJobmanager()
 			rb.SetFlinkSubtaskIndex("flink.subtask.index-val")

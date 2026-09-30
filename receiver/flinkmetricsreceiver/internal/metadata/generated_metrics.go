@@ -1934,6 +1934,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.FlinkJobID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["flink.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.FlinkJobID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["flink.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobID.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.FlinkJobName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["flink.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobName.MetricsInclude)
 	}
