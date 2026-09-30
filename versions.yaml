@@ -3,12 +3,12 @@
 
 module-sets:
   stable-base:
-    version: v1.0.0
+    version: v1.1.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
 
   contrib-base:
-    version: v0.161.0
+    version: v0.162.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -181,6 +181,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling
