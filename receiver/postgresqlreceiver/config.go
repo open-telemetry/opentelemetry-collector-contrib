@@ -32,6 +32,9 @@ const (
 	ErrPasswordAndDBAuth = "invalid config: set either 'password' or 'db_auth', not both"
 )
 
+// db.server.query_plan is collected as part of top query collection, so on its own it reports nothing.
+var errQueryPlanWithoutTopQuery = errors.New("`db.server.query_plan` requires `db.server.top_query` to be enabled")
+
 type TopQueryCollection struct {
 	MaxRowsPerQuery        int64         `mapstructure:"max_rows_per_query"`
 	TopNQuery              int64         `mapstructure:"top_n_query"`
@@ -114,6 +117,10 @@ func (cfg *Config) Validate() error {
 		}
 	default:
 		err = multierr.Append(err, errors.New(ErrTransportsSupported))
+	}
+
+	if cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled && !cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
+		err = multierr.Append(err, errQueryPlanWithoutTopQuery)
 	}
 
 	return err
