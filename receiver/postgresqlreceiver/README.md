@@ -184,6 +184,40 @@ This defines the cache's size for query plan.
 - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
 - `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 
+#### `db.server.query_plan`
+
+By default, `db.server.top_query` carries the query's execution plan in its `postgresql.query_plan`
+attribute. Enabling `db.server.query_plan` isolates the plan on a record of its own, where it can be
+filtered, routed or dropped independently of the query statistics, and where an oversized plan does
+not take those statistics with it when a batcher splits by size.
+
+`db.server.top_query` is then emitted **without** its `postgresql.query_plan` attribute, and the plan
+itself is reported on `db.server.query_plan`, joined back to its query via `postgresql.queryid`,
+`db.namespace` and `postgresql.rolname` — `queryid` alone can repeat across databases and across
+roles in the same database. A query with no plan available yet (not yet explained, or the `EXPLAIN`
+failed) produces no `db.server.query_plan` record. Leaving `db.server.query_plan` disabled preserves
+the previous behavior exactly.
+
+Known limitations of the join key:
+- It doesn't distinguish `toplevel`, so a top-level statement and a nested one it calls can still
+  collide (only with `pg_stat_statements.track = all`, not the default).
+- `postgresql.rolname` is empty once the role that ran the statement is dropped, so two rows from
+  different dropped roles can collide too (mainly with ephemeral roles or credential rotation).
+
+`db.server.query_plan` is sourced from the same collection as `db.server.top_query` and only splits
+the plan out of it, so it needs no grants of its own, and enabling it without `db.server.top_query`
+is a configuration error.
+
+```yaml
+receivers:
+  postgresql:
+    events:
+      db.server.top_query:
+        enabled: true
+      db.server.query_plan:                      # reports the execution plan on its own event, off db.server.top_query
+        enabled: true
+```
+
 ### Vector Metrics
 
 The receiver can report [pgvector](https://github.com/pgvector/pgvector) similarity-search and insert activity

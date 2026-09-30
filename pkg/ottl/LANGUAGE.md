@@ -88,7 +88,7 @@ The following types are supported for parameters in OTTL functions:
 - `DurationGetter`
 - `TimeGetter`
 - `FunctionGetter`
-- `LambdaExpression`
+- `LambdaExpression` (provided by the `xottl` module)
 - `Enum`
 - `string`
 - `float64`

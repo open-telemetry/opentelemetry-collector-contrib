@@ -124,6 +124,7 @@ components:
         - remotetap
         - resource
         - resource_detection
+        - rolling_span_latency
         - schema
         - span
         - span_pruning

@@ -28,5 +28,5 @@ var PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate = featuregate.GlobalR
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Allow slice arguments of stable OTTL functions, such as the values of Concat, to be paths or converters that resolve to a slice at runtime. When disabled, these arguments only accept list literals."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27821"),
-	featuregate.WithRegisterFromVersion("v0.162.0"),
+	featuregate.WithRegisterFromVersion("v0.163.0"),
 )

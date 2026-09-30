@@ -565,9 +565,14 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}
 	if s.db != nil {
+		versionSQL := instanceVersionSQL
+		if s.metricsBuilderConfig.ResourceAttributes.OracleDbEdition.Enabled ||
+			s.logsBuilderConfig.ResourceAttributes.OracleDbEdition.Enabled {
+			versionSQL = instanceVersionEditionSQL
+		}
 		s.instanceInfo = detectInstanceInfo(
 			ctx,
-			s.clientProviderFunc(s.db, instanceVersionSQL, s.logger),
+			s.clientProviderFunc(s.db, versionSQL, s.logger),
 			s.clientProviderFunc(s.db, instanceCDBSQL, s.logger),
 			s.clientProviderFunc(s.db, instanceConTypeSQL, s.logger),
 			s.clientProviderFunc(s.db, instanceConNameSQL, s.logger),
@@ -1958,10 +1963,10 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
-		lookbackTimeCounter := calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
-		if lookbackTimeCounter < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
+		if !collectionIntervalElapsed(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval) {
 			s.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
 		} else {
+			lookbackTimeCounter := calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
 			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
@@ -1986,10 +1991,10 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
 		currentCollectionTime := time.Now()
-		lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
-		if lookbackTimeCounter < int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
+		if !collectionIntervalElapsed(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval) {
 			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
 		} else {
+			lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
 			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if procedureCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, procedureCollectionErrors)
@@ -2692,6 +2697,9 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	if s.instanceInfo.dbVersion != "" {
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
 	}
+	if s.instanceInfo.dbEdition != "" {
+		rb.SetOracleDbEdition(s.instanceInfo.dbEdition)
+	}
 	if s.instanceInfo.databaseRole != "" {
 		rb.SetOracleDbRole(s.instanceInfo.databaseRole)
 	}
@@ -2767,6 +2775,15 @@ func constructInstanceID(host, port, service string) string {
 // vsqlRefreshLag is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
 // PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
 const vsqlRefreshLag = 10 * time.Second
+
+// collectionIntervalElapsed reports whether the configured collection
+// interval has elapsed since lastTimestamp.
+func collectionIntervalElapsed(lastTimestamp time.Time, collectionInterval time.Duration) bool {
+	if lastTimestamp.IsZero() {
+		return true
+	}
+	return time.Since(lastTimestamp) >= collectionInterval
+}
 
 // calculateLookbackSeconds reports how far back the query window should reach. The vsqlRefreshLag
 // buffer is included so rows whose V$SQL entry lagged the previous scrape are still picked up.
