@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -2701,6 +2702,42 @@ func Test_ProcessSpanEvents(t *testing.T) {
 	}
 }
 
+func Test_e2e_shared_cache(t *testing.T) {
+	execute := func(tCtx *ottllog.TransformContext, statement string) {
+		statements, err := parseStatementWithAndWithoutPathContext(statement)
+		require.NoError(t, err)
+		for _, s := range statements {
+			_, _, err = s.Execute(t.Context(), tCtx)
+			require.NoError(t, err)
+		}
+	}
+
+	rLogs := plog.NewResourceLogs()
+	sLogs := rLogs.ScopeLogs().AppendEmpty()
+	first := sLogs.LogRecords().AppendEmpty()
+	first.Attributes().PutStr("name", "first")
+	second := sLogs.LogRecords().AppendEmpty()
+	third := sLogs.LogRecords().AppendEmpty()
+
+	cache := pcommon.NewMap()
+
+	firstCtx := ottllog.NewTransformContext(rLogs, sLogs, first, ottllog.WithCache(&cache))
+	execute(firstCtx, `set(cache["name"], attributes["name"])`)
+	firstCtx.Close()
+
+	secondCtx := ottllog.NewTransformContext(rLogs, sLogs, second, ottllog.WithCache(&cache))
+	execute(secondCtx, `set(attributes["name"], cache["name"])`)
+	secondCtx.Close()
+
+	thirdCtx := ottllog.NewTransformContext(rLogs, sLogs, third)
+	execute(thirdCtx, `set(attributes["name"], cache["name"]) where cache["name"] != nil`)
+	thirdCtx.Close()
+
+	assert.Equal(t, map[string]any{"name": "first"}, second.Attributes().AsRaw())
+	assert.Empty(t, third.Attributes().AsRaw())
+	assert.Equal(t, map[string]any{"name": "first"}, cache.AsRaw())
+}
+
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[*ottllog.TransformContext], error) {
 	settings := componenttest.NewNopTelemetrySettings()
 	functions := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
@@ -3015,7 +3052,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 }
 
 type lambdaEvalArguments[K any] struct {
-	Expr   *ottl.LambdaExpression[K]
+	Expr   *lambda.LambdaExpression[K]
 	Params []ottl.Getter[K]
 }
 

@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
@@ -924,7 +925,7 @@ func mockParser(t *testing.T, options ...Option[any]) *Parser[any] {
 			}, nil
 		})
 
-	mockLambdaFactory := NewFactory("Lambda", &struct{ Expr *LambdaExpression[any] }{},
+	mockLambdaFactory := NewFactory("Lambda", &struct{ Expr *lambda.LambdaExpression[any] }{},
 		func(FunctionContext, Arguments) (ExprFunc[any], error) {
 			return nil, nil
 		})
