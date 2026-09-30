@@ -10,11 +10,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 type keepKeysArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
-	Keys   ottl.SliceGetter[K, ottl.StringGetter[K]]
+	Keys   slicegetter.SliceGetter[K, ottl.StringGetter[K]]
 }
 
 // NewKeepKeysFactory returns a factory for the keep_keys OTTL function.
@@ -33,12 +34,14 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return keepKeys(args.Target, &args.Keys)
 }
 
-func keepKeys[K any](target ottl.PMapGetSetter[K], keys *ottl.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
+func keepKeys[K any](target ottl.PMapGetSetter[K], keys *slicegetter.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	var literalKeySet map[string]struct{}
-	// Len differenciates a literal nil slice from empty literal slice
+	// Len differentiates a literal nil slice from an empty literal slice
 	staticLen, hasStaticLen := keys.Len()
 
-	if literalValues, allLiteral := ottl.GetLiteralValues[K, string](keys); allLiteral {
+	if literalValues, allLiteral := slicegetter.GetLiteralValues(keys, func(key ottl.StringGetter[K]) (string, bool) {
+		return ottl.GetLiteralValue[K, string](key)
+	}); allLiteral {
 		if !hasStaticLen {
 			return nil, errors.New("keys cannot be nil")
 		}
