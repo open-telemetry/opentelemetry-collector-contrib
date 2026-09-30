@@ -324,7 +324,7 @@ Examples:
 
 The `keep_keys` function removes all keys from the `pcommon.Map` that do not match one of the supplied keys.
 
-`target` is a path expression to a `pcommon.Map` type field. `keys` can be a list of strings or an expression or path that resolves to a slice. Each slice element must be a string.
+`target` is a path expression to a `pcommon.Map` type field. The `keys` argument accepts a list of strings or an expression/path that resolves to a slice. Each slice element must be a string. Passing an expression/path requires the [`pkg.ottl.functions.enableDynamicSliceArguments`](../README.md#pkgottlfunctionsenabledynamicslicearguments) feature gate. The gate allows dynamic slice arguments by default.
 
 The map will be changed to only contain the keys specified by the list of strings.
 
