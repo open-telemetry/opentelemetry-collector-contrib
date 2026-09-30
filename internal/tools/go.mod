@@ -290,7 +290,7 @@ require (
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
 	go.opentelemetry.io/collector/cmd/builder v0.162.0 // indirect
 	go.opentelemetry.io/collector/cmd/mdatagen v0.162.0 // indirect
-	go.opentelemetry.io/collector/cmd/schemagen v0.22.1-0.20260615181954-d04d642d0a3e // indirect
+	go.opentelemetry.io/collector/cmd/schemagen v0.162.0 // indirect
 	go.opentelemetry.io/collector/component v1.68.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.68.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.68.0 // indirect
