@@ -9,8 +9,29 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
+
+func Test_StandardFuncsIncludeExperimentalConverters(t *testing.T) {
+	assertHasExperimentalConverters(t, StandardSpanFuncs())
+	assertHasExperimentalConverters(t, StandardSpanEventFuncs())
+	assertHasExperimentalConverters(t, StandardMetricFuncs())
+	assertHasExperimentalConverters(t, StandardDataPointFuncs())
+	assertHasExperimentalConverters(t, StandardExemplarFuncs())
+	assertHasExperimentalConverters(t, StandardScopeFuncs())
+	assertHasExperimentalConverters(t, StandardLogFuncs())
+	assertHasExperimentalConverters(t, StandardProfileFuncs())
+	assertHasExperimentalConverters(t, StandardResourceFuncs())
+}
+
+func assertHasExperimentalConverters[K any](t *testing.T, funcs map[string]ottl.Factory[K]) {
+	t.Helper()
+	for _, f := range xottlfuncs.ExperimentalConverters[K]() {
+		assert.Contains(t, funcs, f.Name())
+	}
+}
 
 func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 	tests := []struct {
