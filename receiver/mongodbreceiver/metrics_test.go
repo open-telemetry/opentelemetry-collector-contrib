@@ -56,7 +56,6 @@ func sumIntByAttr(t *testing.T, m pmetric.Metric, attrKey string) map[string]int
 	return out
 }
 
-// newWTScraper builds a scraper with all five WiredTiger metrics enabled.
 // newAssertQueueScraper builds a scraper with the assert, global-lock queue and write-concern
 // metrics enabled.
 func newAssertQueueScraper(t *testing.T) *mongodbScraper {
@@ -164,6 +163,7 @@ func TestRecordWriteConcernWaitTime(t *testing.T) {
 	require.InDelta(t, 2.5, m.Sum().DataPoints().At(0).DoubleValue(), 1e-9)
 }
 
+// newWTScraper builds a scraper with all five WiredTiger metrics enabled.
 func newWTScraper(t *testing.T) *mongodbScraper {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
