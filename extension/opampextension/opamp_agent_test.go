@@ -1216,10 +1216,6 @@ func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRe
 	return nil
 }
 
-func (mockOpAMPClient) SetConnectionSettingsStatus(*protobufs.ConnectionSettingsStatus) error {
-	return nil
-}
-
 func (mockOpAMPClient) SetCustomCapabilities(*protobufs.CustomCapabilities) error {
 	return nil
 }
