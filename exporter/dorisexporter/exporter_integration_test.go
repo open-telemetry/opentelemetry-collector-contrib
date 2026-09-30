@@ -87,7 +87,7 @@ func dropDB(t *testing.T, conn *sql.DB, db string) {
 func waitForMVReady(t *testing.T, conn *sql.DB, db, baseTable, mvName string) {
 	deadline := time.Now().Add(60 * time.Second)
 	for time.Now().Before(deadline) {
-		rows, err := conn.QueryContext(t.Context(), fmt.Sprintf("SHOW ALTER TABLE ROLLUP FROM `%s` WHERE TableName = '%s'", db, baseTable))
+		rows, err := conn.QueryContext(t.Context(), fmt.Sprintf("SHOW ALTER TABLE ROLLUP FROM %#q WHERE TableName = '%s'", db, baseTable))
 		require.NoError(t, err)
 		foundFinished := false
 		foundAny := false
@@ -127,7 +127,7 @@ func waitForMVReady(t *testing.T, conn *sql.DB, db, baseTable, mvName string) {
 }
 
 func mvVisibleInDesc(t *testing.T, conn *sql.DB, db, baseTable, mvName string) bool {
-	rows, err := conn.QueryContext(t.Context(), fmt.Sprintf("DESC `%s`.`%s` ALL", db, baseTable))
+	rows, err := conn.QueryContext(t.Context(), fmt.Sprintf("DESC %#q.%#q ALL", db, baseTable))
 	require.NoError(t, err)
 	defer rows.Close()
 	cols, _ := rows.Columns()
@@ -166,7 +166,7 @@ func countRows(t *testing.T, conn *sql.DB, q string) int {
 }
 
 func assertTableExists(t *testing.T, conn *sql.DB, db, tbl string) {
-	rows, err := conn.QueryContext(t.Context(), fmt.Sprintf("SHOW TABLES FROM `%s` LIKE '%s'", db, tbl))
+	rows, err := conn.QueryContext(t.Context(), fmt.Sprintf("SHOW TABLES FROM %#q LIKE '%s'", db, tbl))
 	require.NoError(t, err)
 	defer rows.Close()
 	require.True(t, rows.Next(), "table %s.%s not found", db, tbl)
@@ -209,7 +209,7 @@ func TestDorisIntegrationMetrics(t *testing.T) {
 	}
 	for _, tbl := range metricsTables {
 		assertTableExists(t, root, db, tbl)
-		got := countRows(t, root, fmt.Sprintf("SHOW PARTITIONS FROM `%s`.`%s`", db, tbl))
+		got := countRows(t, root, fmt.Sprintf("SHOW PARTITIONS FROM %#q.%#q", db, tbl))
 		require.GreaterOrEqual(t, got, expectedPartitions,
 			"table %s should have >= %d partitions, got %d", tbl, expectedPartitions, got)
 		assertMVExists(t, root, db, tbl, "services")
@@ -240,7 +240,7 @@ func TestDorisIntegrationLogs(t *testing.T) {
 	require.Equal(t, 4, expectedPartitions)
 
 	assertTableExists(t, root, db, cfg.Table.Logs)
-	got := countRows(t, root, fmt.Sprintf("SHOW PARTITIONS FROM `%s`.`%s`", db, cfg.Table.Logs))
+	got := countRows(t, root, fmt.Sprintf("SHOW PARTITIONS FROM %#q.%#q", db, cfg.Table.Logs))
 	require.GreaterOrEqual(t, got, expectedPartitions)
 	assertMVExists(t, root, db, cfg.Table.Logs, "services")
 }
@@ -270,7 +270,7 @@ func TestDorisIntegrationTraces(t *testing.T) {
 
 	assertTableExists(t, root, db, cfg.Table.Traces)
 	assertTableExists(t, root, db, cfg.Table.Traces+"_graph")
-	got := countRows(t, root, fmt.Sprintf("SHOW PARTITIONS FROM `%s`.`%s`", db, cfg.Table.Traces))
+	got := countRows(t, root, fmt.Sprintf("SHOW PARTITIONS FROM %#q.%#q", db, cfg.Table.Traces))
 	require.GreaterOrEqual(t, got, expectedPartitions)
 	assertMVExists(t, root, db, cfg.Table.Traces, "summary")
 }
@@ -291,7 +291,7 @@ func TestDorisIntegrationWaitForPartitionsTimeout(t *testing.T) {
 	_, err := root.ExecContext(t.Context(), "CREATE DATABASE "+db)
 	require.NoError(t, err)
 	_, err = root.ExecContext(t.Context(), fmt.Sprintf(
-		"CREATE TABLE `%s`.`no_part` (id INT) DISTRIBUTED BY HASH(id) BUCKETS 1 PROPERTIES('replication_num'='1')", db,
+		"CREATE TABLE %#q.`no_part` (id INT) DISTRIBUTED BY HASH(id) BUCKETS 1 PROPERTIES('replication_num'='1')", db,
 	))
 	require.NoError(t, err)
 
@@ -333,7 +333,7 @@ func TestDorisIntegrationTracesEndToEnd(t *testing.T) {
 
 	// table shape
 	var tbl, createSQL string
-	require.NoError(t, root.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", db, cfg.Table.Traces)).Scan(&tbl, &createSQL))
+	require.NoError(t, root.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %#q.%#q", db, cfg.Table.Traces)).Scan(&tbl, &createSQL))
 	require.Contains(t, createSQL, "DISTRIBUTED BY RANDOM")
 	require.Contains(t, createSQL, "DUPLICATE KEY(`service_name`, `timestamp`)")
 	require.Contains(t, createSQL, "`is_root` tinyint")
@@ -346,7 +346,7 @@ func TestDorisIntegrationTracesEndToEnd(t *testing.T) {
 	var roots, children int
 	deadline := time.Now().Add(60 * time.Second)
 	for time.Now().Before(deadline) {
-		require.NoError(t, root.QueryRowContext(ctx, fmt.Sprintf("SELECT SUM(is_root = 1), SUM(is_root = 0) FROM `%s`.`%s`", db, cfg.Table.Traces)).Scan(&roots, &children))
+		require.NoError(t, root.QueryRowContext(ctx, fmt.Sprintf("SELECT SUM(is_root = 1), SUM(is_root = 0) FROM %#q.%#q", db, cfg.Table.Traces)).Scan(&roots, &children))
 		if roots+children == 3 {
 			break
 		}
@@ -360,7 +360,7 @@ func TestDorisIntegrationTracesEndToEnd(t *testing.T) {
 COUNT(*) AS span_count, SUM(CASE WHEN status_code='STATUS_CODE_ERROR' THEN 1 ELSE 0 END) AS error_count,
 MIN(CASE WHEN is_root=1 THEN CONCAT(DATE_FORMAT(timestamp,'%%Y%%m%%d%%H%%i%%s%%f'),'|',service_name,'|',span_name) END) AS first_root,
 MAX(duration) AS max_span_duration
-FROM `+"`%s`.`%s`"+` GROUP BY trace_id, date_trunc(timestamp,'day') HAVING MIN(timestamp) >= '2000-01-01' ORDER BY start_time DESC LIMIT 50`, db, cfg.Table.Traces)
+FROM `+"%#q.%#q"+` GROUP BY trace_id, date_trunc(timestamp,'day') HAVING MIN(timestamp) >= '2000-01-01' ORDER BY start_time DESC LIMIT 50`, db, cfg.Table.Traces)
 	rows, err := root.QueryContext(ctx, q)
 	require.NoError(t, err)
 	defer rows.Close()

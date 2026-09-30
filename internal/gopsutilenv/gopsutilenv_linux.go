@@ -34,7 +34,7 @@ func ValidateRootPath(rootPath string) error {
 	}
 
 	if globalRootPath != "" && rootPath != globalRootPath {
-		return fmt.Errorf("inconsistent root_path configuration detected among components: `%s` != `%s`", globalRootPath, rootPath)
+		return fmt.Errorf("inconsistent root_path configuration detected among components: %#q != %#q", globalRootPath, rootPath)
 	}
 	globalRootPath = rootPath
 

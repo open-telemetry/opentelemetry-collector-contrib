@@ -87,7 +87,7 @@ func generateMetricFromMatchingAttributes(metric1, metric2 pmetric.Metric, rule 
 		metric1DataPoints = metric1.Sum().DataPoints()
 		toDataPoints = to.Sum().DataPoints()
 	default:
-		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type `%s`", metric1.Name(), metricType.String()))
+		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type %#q", metric1.Name(), metricType.String()))
 		return pmetric.NewMetric()
 	}
 
@@ -99,7 +99,7 @@ func generateMetricFromMatchingAttributes(metric1, metric2 pmetric.Metric, rule 
 	case pmetric.MetricTypeSum:
 		metric2DataPoints = metric2.Sum().DataPoints()
 	default:
-		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type `%s`", metric2.Name(), metricType.String()))
+		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type %#q", metric2.Name(), metricType.String()))
 		return pmetric.NewMetric()
 	}
 
@@ -182,7 +182,7 @@ func generateMetricFromOperand(from pmetric.Metric, operand2 float64, operation 
 		to.SetEmptySum()
 		dataPoints = from.Sum().DataPoints()
 	default:
-		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type `%s`", from.Name(), metricType.String()))
+		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type %#q", from.Name(), metricType.String()))
 		return pmetric.NewMetric()
 	}
 

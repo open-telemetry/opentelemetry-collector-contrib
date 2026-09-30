@@ -762,7 +762,7 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 }
 
 var errLambdaExpressionDisable = fmt.Errorf(
-	"lambda expression arguments require the `%s` feature gate to be enabled",
+	"lambda expression arguments require the %#q feature gate to be enabled",
 	metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
 )
 
