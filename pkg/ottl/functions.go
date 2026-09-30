@@ -17,6 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 // PathExpressionParser is how a context provides OTTL access to all its Paths.
@@ -373,7 +374,8 @@ func (p *parseContext[K]) newFunctionCall(ed editor) (Expr[K], error) {
 
 		args = reflect.New(reflect.ValueOf(defaultArgs).Elem().Type()).Interface()
 
-		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
+		allowDynamicSlices := f.Experimental() || metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate.IsEnabled()
+		err := p.buildArgs(ed, reflect.ValueOf(args).Elem(), allowDynamicSlices)
 		if err != nil {
 			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to %q: %w", ed.Function, err)
 		}
@@ -387,7 +389,7 @@ func (p *parseContext[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, err
 }
 
-func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
+func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value, allowDynamicSlices bool) error {
 	requiredArgs := 0
 	seenNamed := false
 
@@ -463,12 +465,13 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			p.recordExperimentalFunc(f)
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case strings.HasPrefix(fieldType.Name(), "SliceGetter"):
-			var fieldAddr reflectTypedArg
+			var fieldAddr any
 			if isOptional {
-				fieldAddr, ok = optionalArg.addrReflectValue().(reflectTypedArg)
+				fieldAddr = optionalArg.addrReflectValue()
 			} else {
-				fieldAddr, ok = reflect.TypeAssert[reflectTypedArg](field.Addr())
+				fieldAddr = field.Addr().Interface()
 			}
+			sliceItemType, ok := slicegetter.ReflectTypeParam(fieldAddr)
 			if !ok {
 				return errors.New("slice getter type is not manageable by the OTTL parser. This is a bug in OTTL")
 			}
@@ -476,7 +479,8 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			var gv any
 			gv, err = buildSliceGetterValue[K](
 				arg.Value,
-				fieldAddr.reflectTypeParam(),
+				sliceItemType,
+				allowDynamicSlices,
 				p.buildSliceArg,
 				p.buildStandardGetSetter,
 				p.newGetter,
@@ -485,7 +489,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 				return err
 			}
 
-			err = fieldAddr.setReflectValue(reflect.ValueOf(gv))
+			err = slicegetter.SetReflectValue(fieldAddr, reflect.ValueOf(gv))
 			if err != nil {
 				return err
 			}

@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 func Test_NewFunctionCall_invalid(t *testing.T) {
@@ -2453,10 +2454,10 @@ func functionWithGetterSlice(getters []Getter[any]) (ExprFunc[any], error) {
 }
 
 type sliceGetterArguments struct {
-	Values SliceGetter[any, StringGetter[any]]
+	Values slicegetter.SliceGetter[any, StringGetter[any]]
 }
 
-func functionWithSliceGetter(values SliceGetter[any, StringGetter[any]]) (ExprFunc[any], error) {
+func functionWithSliceGetter(values slicegetter.SliceGetter[any, StringGetter[any]]) (ExprFunc[any], error) {
 	return func(ctx context.Context, tCtx any) (any, error) {
 		vals, err := values.Get(ctx, tCtx)
 		if err != nil {
@@ -2467,10 +2468,10 @@ func functionWithSliceGetter(values SliceGetter[any, StringGetter[any]]) (ExprFu
 }
 
 type optionalSliceGetterArguments struct {
-	Values Optional[SliceGetter[any, Getter[any]]]
+	Values Optional[slicegetter.SliceGetter[any, Getter[any]]]
 }
 
-func functionWithOptionalSliceGetter(values Optional[SliceGetter[any, Getter[any]]]) (ExprFunc[any], error) {
+func functionWithOptionalSliceGetter(values Optional[slicegetter.SliceGetter[any, Getter[any]]]) (ExprFunc[any], error) {
 	return func(ctx context.Context, tCtx any) (any, error) {
 		if values.IsEmpty() {
 			return 0, nil
@@ -3548,6 +3549,54 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 		defer testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false)()
 		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
 		require.ErrorContains(t, err, "lambda expression arguments require the `ottl.functions.enableLambda` feature gate to be enabled")
+	})
+}
+
+func Test_PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate(t *testing.T) {
+	stable := createFactory[any]("testing_slicegetter", &sliceGetterArguments{}, functionWithSliceGetter)
+	experimental := NewFactory(
+		"testing_experimental_slicegetter",
+		&sliceGetterArguments{},
+		stable.CreateFunction,
+		WithExperimental[any](),
+	)
+	p, err := NewParser(
+		CreateFactoryMap(stable, experimental),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	pathArg := func(function string) editor {
+		return editor{
+			Function: function,
+			Arguments: []argument{{Value: value{Literal: &mathExprLiteral{
+				Path: &path{Fields: []field{{Name: "name"}}},
+			}}}},
+		}
+	}
+	listArg := editor{
+		Function:  "testing_slicegetter",
+		Arguments: []argument{{Value: value{List: &list{Values: []value{{String: new("a")}}}}}},
+	}
+
+	t.Run("enabled", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, true)()
+		_, err := p.newParseContext().newFunctionCall(pathArg("testing_slicegetter"))
+		require.NoError(t, err)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, false)()
+		_, err := p.newParseContext().newFunctionCall(pathArg("testing_slicegetter"))
+		require.ErrorIs(t, err, errDynamicSliceArgumentsDisabled)
+
+		_, err = p.newParseContext().newFunctionCall(listArg)
+		require.NoError(t, err)
+
+		_, err = p.newParseContext().newFunctionCall(pathArg("testing_experimental_slicegetter"))
+		require.NoError(t, err)
 	})
 }
 
