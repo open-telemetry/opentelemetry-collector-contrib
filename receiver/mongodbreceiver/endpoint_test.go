@@ -72,6 +72,28 @@ func TestServerAddressAndPort(t *testing.T) {
 			expectedPort:    27017,
 		},
 		{
+			// MongoDB appends a non-default port to the host name without bracketing it, so an
+			// IPv6 host name on a non-default port arrives in this shape.
+			name:            "bare_ipv6_loopback_with_port",
+			serverStatus:    bson.M{"host": "::1:27018"},
+			expectedAddress: "::1",
+			expectedPort:    27018,
+		},
+		{
+			name:            "bare_ipv6_with_port",
+			serverStatus:    bson.M{"host": "2001:db8::1:27018"},
+			expectedAddress: "2001:db8::1",
+			expectedPort:    27018,
+		},
+		{
+			// Unbracketed, "::1:2701" is both a valid address and a plausible host and port. The
+			// address reading wins, because splitting is only attempted once parsing has failed.
+			name:            "bare_ipv6_that_is_itself_an_address",
+			serverStatus:    bson.M{"host": "::1:2701"},
+			expectedAddress: "::1:2701",
+			expectedPort:    defaultMongoDBPort,
+		},
+		{
 			name:         "missing_host",
 			serverStatus: bson.M{},
 			expectedErr:  errors.New("host field not found in server status"),
@@ -85,6 +107,16 @@ func TestServerAddressAndPort(t *testing.T) {
 			name:         "invalid_host_format",
 			serverStatus: bson.M{"host": "localhost:27018:extra"},
 			expectedErr:  errors.New("unexpected host format: localhost:27018:extra"),
+		},
+		{
+			name:         "ipv6_with_out_of_range_port",
+			serverStatus: bson.M{"host": "::1:99999"},
+			expectedErr:  errors.New("unexpected host format: ::1:99999"),
+		},
+		{
+			name:         "ipv6_with_non_numeric_trailing_segment",
+			serverStatus: bson.M{"host": "::1:lastbit"},
+			expectedErr:  errors.New("unexpected host format: ::1:lastbit"),
 		},
 	}
 	for _, tt := range tests {
@@ -149,6 +181,13 @@ func TestResolveServerAddress(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, hostname, address)
 		require.Equal(t, int64(27017), port)
+	})
+
+	t.Run("unbracketed IPv6 loopback with a port reports the collector host name", func(t *testing.T) {
+		address, port, err := s.resolveServerAddress(bson.M{"host": "::1:27018"})
+		require.NoError(t, err)
+		require.Equal(t, hostname, address)
+		require.Equal(t, int64(27018), port)
 	})
 
 	t.Run("remote host is reported verbatim", func(t *testing.T) {

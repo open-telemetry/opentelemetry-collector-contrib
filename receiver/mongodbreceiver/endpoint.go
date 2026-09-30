@@ -15,13 +15,20 @@ import (
 	"go.uber.org/zap"
 )
 
+// maxPort is the highest valid TCP port, used to reject a trailing number that cannot be one.
+const maxPort = 65535
+
 // serverAddressAndPort reports the network location the server gives for itself, which is what the
 // server.address and server.port resource attributes describe. Taking it from the server rather
 // than from the configured endpoint is what lets each replica set member emit its own resource.
 //
-// The value is a host with an optional port. An IPv6 literal may arrive bare or bracketed, so the
-// port is split off with net.SplitHostPort rather than by counting colons; a bare "::1" would
-// otherwise be read as a malformed host and abort the scrape before any resource is emitted.
+// The value is a host with an optional port. MongoDB appends ":<port>" only when the instance does
+// not listen on the default port, so an absent port states that the instance is on
+// defaultMongoDBPort rather than leaving it unknown.
+//
+// An IPv6 literal may arrive bare or bracketed, so the port is split off with net.SplitHostPort
+// rather than by counting colons; a bare "::1" would otherwise be read as a malformed host and
+// abort the scrape before any resource is emitted.
 func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
 	host, ok := serverStatus["host"].(string)
 	if !ok {
@@ -39,10 +46,39 @@ func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
 	// No port was separable, so the value is either a host on its own or an IPv6 literal whose
 	// colons SplitHostPort read as separators.
 	address := strings.Trim(host, "[]")
-	if strings.Contains(address, ":") && net.ParseIP(address) == nil {
-		return "", 0, fmt.Errorf("unexpected host format: %s", host)
+	if !strings.Contains(address, ":") || net.ParseIP(address) != nil {
+		return address, defaultMongoDBPort, nil
 	}
-	return address, defaultMongoDBPort, nil
+
+	// MongoDB joins the host name and a non-default port without bracketing, so a machine whose
+	// host name is an IPv6 literal yields an unbracketed "::1:27018". Reading the port off the end
+	// is only safe here because a value that is itself a valid address already returned above.
+	if ipv6Address, port, split := splitUnbracketedIPv6HostPort(address); split {
+		return ipv6Address, port, nil
+	}
+
+	return "", 0, fmt.Errorf("unexpected host format: %s", host)
+}
+
+// splitUnbracketedIPv6HostPort splits an "<ipv6>:<port>" written without brackets. It reports false
+// unless everything before the final colon is an address and everything after it is a port, so an
+// unrecognized value is rejected rather than guessed at.
+func splitUnbracketedIPv6HostPort(host string) (string, int64, bool) {
+	separator := strings.LastIndex(host, ":")
+	if separator < 0 {
+		return "", 0, false
+	}
+
+	address, portString := host[:separator], host[separator+1:]
+	if net.ParseIP(address) == nil {
+		return "", 0, false
+	}
+
+	port, err := strconv.ParseInt(portString, 10, 64)
+	if err != nil || port < 1 || port > maxPort {
+		return "", 0, false
+	}
+	return address, port, true
 }
 
 // isLoopbackHost reports whether host names the machine the collector runs on.

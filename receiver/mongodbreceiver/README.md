@@ -299,8 +299,9 @@ The default Kerberos service name is `mongodb`. Users can authenticate with an e
 
 `server.address` and `server.port` identify the monitored instance and are emitted by default. They
 describe the location each scraped node reports for itself, not the configured `hosts` entry, so a
-replica set emits a distinct pair per member. `server.port` falls back to `27017` when the node
-reports no port.
+replica set emits a distinct pair per member. A node reports its port only when it is not the
+default, so `server.port` is `27017` whenever no port is reported. Two instances on one machine
+listening on different ports are therefore still told apart.
 
 When a node reports a loopback address (`localhost`, `127.0.0.1` or `::1`), `server.address` is the
 host name of the machine running the collector. Loopback is only reachable when the instance is
