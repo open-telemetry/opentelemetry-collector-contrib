@@ -12,14 +12,19 @@ import (
 	"github.com/nats-io/nkeys"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
-// connect opens a NATS connection using the exporter configuration.
-func connect(ctx context.Context, cfg *Config) (*nats.Conn, error) {
+// connect opens a NATS connection using the exporter configuration. name labels
+// the connection on the server (connz), and logger records connection lifecycle
+// events (disconnect/reconnect/close).
+func connect(ctx context.Context, cfg *Config, name string, logger *zap.Logger) (*nats.Conn, error) {
 	var errs error
 	options := nats.GetDefaultOptions()
 	options.Url = cfg.Endpoint
+	options.Name = name
 	options.Pedantic = cfg.Pedantic
+	setConnHandlers(&options, logger)
 	errs = multierr.Append(errs, setTLSOption(ctx, &options, &cfg.TLS))
 	errs = multierr.Append(errs, setAuthOption(&options, &cfg.Auth))
 	if errs != nil {
@@ -27,6 +32,20 @@ func connect(ctx context.Context, cfg *Config) (*nats.Conn, error) {
 	}
 
 	return options.Connect()
+}
+
+// setConnHandlers logs NATS connection lifecycle events so disconnects and
+// reconnects are visible in the collector logs.
+func setConnHandlers(options *nats.Options, logger *zap.Logger) {
+	options.DisconnectedErrCB = func(_ *nats.Conn, err error) {
+		logger.Warn("NATS disconnected", zap.Error(err))
+	}
+	options.ReconnectedCB = func(c *nats.Conn) {
+		logger.Info("NATS reconnected", zap.String("url", c.ConnectedUrl()))
+	}
+	options.ClosedCB = func(_ *nats.Conn) {
+		logger.Info("NATS connection closed")
+	}
 }
 
 func setTLSOption(ctx context.Context, options *nats.Options, cfg *configtls.ClientConfig) error {

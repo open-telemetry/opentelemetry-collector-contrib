@@ -15,13 +15,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natsexporter/internal/grouper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natsexporter/internal/marshaler"
 )
 
-// natsExporter publishes telemetry to a NATS server. A single value serves any
-// of the three signals; the factory wires the matching push method per pipeline.
+// natsExporter publishes telemetry to a NATS server. A single instance is shared
+// across the logs, metrics, and traces pipelines (see the factory), so it holds
+// one NATS connection and the per-signal groupers and marshalers.
 type natsExporter struct {
 	config   *Config
 	settings exporter.Settings
@@ -37,6 +39,8 @@ type natsExporter struct {
 	tracesMarshaler  marshaler.Marshaler[ptrace.Traces]
 }
 
+var _ component.Component = (*natsExporter)(nil)
+
 func newExporter(set exporter.Settings, cfg *Config) *natsExporter {
 	return &natsExporter{
 		config:   cfg,
@@ -44,10 +48,10 @@ func newExporter(set exporter.Settings, cfg *Config) *natsExporter {
 	}
 }
 
-// start builds the per-signal groupers and marshalers from the configured
+// Start builds the per-signal groupers and marshalers from the configured
 // subjects, resolves the marshalers against the host (for encoding extensions),
-// and opens the NATS connection.
-func (e *natsExporter) start(ctx context.Context, host component.Host) error {
+// and opens the NATS connection. It runs once for the shared exporter.
+func (e *natsExporter) Start(ctx context.Context, host component.Host) error {
 	logsGrouper, err := grouper.NewLogsGrouper(e.config.Logs.Subject, e.settings.TelemetrySettings)
 	if err != nil {
 		return err
@@ -91,7 +95,7 @@ func (e *natsExporter) start(ctx context.Context, host component.Host) error {
 		return errs
 	}
 
-	pub, err := newPublisher(ctx, e.config)
+	pub, err := newPublisher(ctx, e.config, e.settings.ID.String(), e.settings.Logger)
 	if err != nil {
 		return err
 	}
@@ -100,7 +104,7 @@ func (e *natsExporter) start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *natsExporter) shutdown(_ context.Context) error {
+func (e *natsExporter) Shutdown(_ context.Context) error {
 	if e.publisher != nil {
 		e.publisher.close()
 	}
@@ -120,37 +124,27 @@ func (e *natsExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 }
 
 // publishSignal groups a signal by subject, marshals each group, and publishes
-// it. It is shared by the three push methods.
-//
-// Subject evaluation and marshaling failures are deterministic — they would
-// fail identically on retry — so they are reported as permanent errors and
-// dropped. Publish failures are transient and left retryable.
+// it using core NATS.
 func publishSignal[T any](ctx context.Context, pub publisher, g grouper.Grouper[T], m marshaler.Marshaler[T], data T) error {
-	var permanent, transient error
+	var errs error
 
 	groups, err := g.Group(ctx, data)
-	permanent = multierr.Append(permanent, err)
+	errs = multierr.Append(errs, err)
 
 	for _, group := range groups {
 		bytes, err := m.Marshal(group.Data)
 		if err != nil {
-			permanent = multierr.Append(permanent, err)
+			errs = multierr.Append(errs, err)
 			continue
 		}
 
 		if err := pub.publish(ctx, group.Subject, bytes); err != nil {
-			transient = multierr.Append(transient, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
-	// A transient publish failure retries the whole batch; when only
-	// deterministic failures remain, mark them permanent so they are dropped
-	// rather than retried forever.
-	if transient != nil {
-		return multierr.Append(transient, permanent)
-	}
-	if permanent != nil {
-		return consumererror.NewPermanent(permanent)
+	if errs != nil {
+		return consumererror.NewPermanent(errs)
 	}
 	return nil
 }
@@ -178,11 +172,11 @@ func (p *corePublisher) close() {
 // newPublisher connects to NATS and returns a core-NATS publisher. JetStream
 // publishing lands in a follow-up PR; until then a configured jetstream block is
 // rejected rather than silently downgraded to fire-and-forget delivery.
-func newPublisher(ctx context.Context, cfg *Config) (publisher, error) {
+func newPublisher(ctx context.Context, cfg *Config, name string, logger *zap.Logger) (publisher, error) {
 	if cfg.JetStream != nil {
 		return nil, errors.New("jetstream publishing is not yet implemented")
 	}
-	conn, err := connect(ctx, cfg)
+	conn, err := connect(ctx, cfg, name, logger)
 	if err != nil {
 		return nil, err
 	}
