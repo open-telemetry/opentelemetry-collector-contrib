@@ -15,6 +15,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
@@ -766,12 +767,12 @@ var errLambdaExpressionDisable = fmt.Errorf(
 	metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
 )
 
-func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[K], error) {
+func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*lambda.LambdaExpression[K], error) {
 	if !metadata.OttlFunctionsEnableLambdaFeatureGate.IsEnabled() {
 		return nil, errLambdaExpressionDisable
 	}
 
-	formals := make([]LocalIdentifierDecl, len(l.Params))
+	formals := make([]string, len(l.Params))
 	validFormals := make(localScopeFrame, len(l.Params))
 	for i, param := range l.Params {
 		name := param.Name()
@@ -781,10 +782,10 @@ func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[
 			}
 			validFormals[name] = struct{}{}
 		}
-		formals[i] = &param
+		formals[i] = name
 	}
 
-	var result *LambdaExpression[K]
+	var result *lambda.LambdaExpression[K]
 	err := p.withLocalScope(validFormals, func() error {
 		switch {
 		case l.Body.Expr != nil && l.Body.Value != nil:
@@ -811,6 +812,26 @@ func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[
 		return nil, err
 	}
 	return result, nil
+}
+
+// newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
+func newLambdaExpression[K any](formals []string, body Getter[K], bodyExpr boolExpr[K]) *lambda.LambdaExpression[K] {
+	switch {
+	case body != nil:
+		if literal, ok := GetLiteralValue(body); ok {
+			return lambda.NewLiteral[K](formals, literal)
+		}
+		return lambda.New(formals, body.Get)
+	case bodyExpr != nil:
+		if literal, ok := bodyExpr.(*literalBoolExpr[K]); ok {
+			return lambda.NewLiteral[K](formals, literal.getValue())
+		}
+		return lambda.New(formals, func(ctx context.Context, tCtx K) (any, error) {
+			return bodyExpr.Eval(ctx, tCtx)
+		})
+	default:
+		return lambda.New[K](formals, nil)
+	}
 }
 
 // reflectTypedArg is implemented by generic OTTL function argument types that expose
