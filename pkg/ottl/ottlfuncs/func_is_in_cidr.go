@@ -8,11 +8,12 @@ import (
 	"net"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 type isInCIDRArguments[K any] struct {
 	Target   ottl.StringGetter[K]
-	Networks ottl.SliceGetter[K, ottl.StringGetter[K]]
+	Networks slicegetter.SliceGetter[K, ottl.StringGetter[K]]
 }
 
 // NewIsInCIDRFactory returns a factory for the IsInCIDR OTTL function.
@@ -30,10 +31,12 @@ func createIsInCIDRFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return isInCIDR(args.Target, &args.Networks)
 }
 
-func isInCIDR[K any](target ottl.StringGetter[K], networks *ottl.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
+func isInCIDR[K any](target ottl.StringGetter[K], networks *slicegetter.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	var literalNetworks []*net.IPNet
 	staticLen, hasStaticLen := networks.Len()
-	if literalValues, allLiteral := ottl.GetLiteralValues[K, string](networks); allLiteral {
+	if literalValues, allLiteral := slicegetter.GetLiteralValues(networks, func(network ottl.StringGetter[K]) (string, bool) {
+		return ottl.GetLiteralValue[K, string](network)
+	}); allLiteral {
 		if !hasStaticLen {
 			return nil, errors.New("networks cannot be nil")
 		}
