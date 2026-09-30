@@ -20,9 +20,9 @@ import (
 )
 
 // psiData builds a PSIData with realistic values.
-func psiData(totalNs uint64, avg10, avg60, avg300 float64) stats.PSIData {
+func psiData(totalUs uint64, avg10, avg60, avg300 float64) stats.PSIData {
 	return stats.PSIData{
-		Total:  totalNs,
+		Total:  totalUs,
 		Avg10:  avg10,
 		Avg60:  avg60,
 		Avg300: avg300,
@@ -46,15 +46,15 @@ func nodeSummaryWithPSI() *stats.Summary {
 			StartTime: v1.Time{Time: now.Add(-time.Hour)},
 			CPU: &stats.CPUStats{
 				Time: v1.Time{Time: now},
-				PSI:  psiStats(60_000_000_000, 5_000_000_000),
+				PSI:  psiStats(60_000_000, 5_000_000),
 			},
 			Memory: &stats.MemoryStats{
 				Time: v1.Time{Time: now},
-				PSI:  psiStats(30_000_000_000, 1_000_000_000),
+				PSI:  psiStats(30_000_000, 1_000_000),
 			},
 			IO: &stats.IOStats{
 				Time: v1.Time{Time: now},
-				PSI:  psiStats(10_000_000_000, 500_000_000),
+				PSI:  psiStats(10_000_000, 500_000),
 			},
 		},
 	}
@@ -74,15 +74,15 @@ func podSummaryWithPSI() *stats.Summary {
 				StartTime: v1.Time{Time: now.Add(-30 * time.Minute)},
 				CPU: &stats.CPUStats{
 					Time: v1.Time{Time: now},
-					PSI:  psiStats(20_000_000_000, 2_000_000_000),
+					PSI:  psiStats(20_000_000, 2_000_000),
 				},
 				Memory: &stats.MemoryStats{
 					Time: v1.Time{Time: now},
-					PSI:  psiStats(15_000_000_000, 500_000_000),
+					PSI:  psiStats(15_000_000, 500_000),
 				},
 				IO: &stats.IOStats{
 					Time: v1.Time{Time: now},
-					PSI:  psiStats(5_000_000_000, 100_000_000),
+					PSI:  psiStats(5_000_000, 100_000),
 				},
 			},
 		},
@@ -107,15 +107,15 @@ func containerSummaryWithPSI() *stats.Summary {
 						StartTime: v1.Time{Time: now.Add(-20 * time.Minute)},
 						CPU: &stats.CPUStats{
 							Time: v1.Time{Time: now},
-							PSI:  psiStats(8_000_000_000, 800_000_000),
+							PSI:  psiStats(8_000_000, 800_000),
 						},
 						Memory: &stats.MemoryStats{
 							Time: v1.Time{Time: now},
-							PSI:  psiStats(4_000_000_000, 200_000_000),
+							PSI:  psiStats(4_000_000, 200_000),
 						},
 						IO: &stats.IOStats{
 							Time: v1.Time{Time: now},
-							PSI:  psiStats(2_000_000_000, 50_000_000),
+							PSI:  psiStats(2_000_000, 50_000),
 						},
 					},
 				},
@@ -510,7 +510,7 @@ func TestAddPSIMetricsWithIOStatsPSI(t *testing.T) {
 	currentTime := pcommon.NewTimestampFromTime(time.Now())
 
 	io := &stats.IOStats{
-		PSI: psiStats(7_000_000_000, 300_000_000),
+		PSI: psiStats(7_000_000, 300_000),
 	}
 
 	// Pass io.PSI directly; io is guaranteed non-nil above.
@@ -533,6 +533,29 @@ func TestAddPSIMetricsWithIOStatsPSI(t *testing.T) {
 	assert.Equal(t, 2, timeMetric.Sum().DataPoints().Len())
 	assertPSITimeValue(t, timeMetric, metadata.AttributePsiTypeSome, 7.0)
 	assertPSITimeValue(t, timeMetric, metadata.AttributePsiTypeFull, 0.3)
+}
+
+// TestAddPSIMetricsTotalIsMicroseconds pins the unit of PSIData.Total to the
+// cgroup pressure file's "total=" field, which the kubelet passes through as
+// microseconds despite its API doc comment saying nanoseconds.
+func TestAddPSIMetricsTotalIsMicroseconds(t *testing.T) {
+	cfg := enablePSIConfig()
+	mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
+
+	// Observed on a live node: Summary API io.psi.full.total=839878 alongside
+	// cAdvisor container_pressure_io_stalled_seconds_total ~0.84-0.9.
+	addPSIMetrics(mb, metadata.NodeIOPressureMetrics, psiStats(869_635, 839_878), pcommon.NewTimestampFromTime(time.Now()))
+
+	ms := mb.Emit().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < ms.Len(); i++ {
+		if ms.At(i).Name() == "k8s.node.io.pressure.time" {
+			assert.Equal(t, "s", ms.At(i).Unit())
+			assertPSITimeValue(t, ms.At(i), metadata.AttributePsiTypeSome, 0.869635)
+			assertPSITimeValue(t, ms.At(i), metadata.AttributePsiTypeFull, 0.839878)
+			return
+		}
+	}
+	t.Fatal("k8s.node.io.pressure.time not emitted")
 }
 
 // TestAddPSIMetricsNilIOStatsPSI verifies the inlined nil guard: when io is nil,

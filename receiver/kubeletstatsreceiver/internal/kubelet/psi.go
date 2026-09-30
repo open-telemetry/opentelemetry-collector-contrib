@@ -12,7 +12,9 @@ import (
 
 // addPSIMetrics records PSI avg and time data points for a single PSIStats value.
 // It is nil-safe: if psiStats is nil (e.g. on cgroup v1 or Windows nodes) it is a no-op.
-// PSIData.Total is in nanoseconds from the kubelet API; we convert to seconds (unit: s in metadata.yaml).
+// PSIData.Total is the cgroup pressure file's cumulative total in microseconds
+// (the kubelet API doc comment says nanoseconds, but the value is passed through
+// unconverted); we convert to seconds (unit: s in metadata.yaml).
 func addPSIMetrics(
 	mb *metadata.MetricsBuilder,
 	m metadata.PSIMetrics,
@@ -30,7 +32,7 @@ func addPSIMetrics(
 		{s.Full, metadata.AttributePsiTypeFull},
 	}
 	for _, entry := range entries {
-		m.Time(mb, currentTime, float64(entry.data.Total)/1e9, entry.psiType) // Convert nanoseconds → seconds
+		m.Time(mb, currentTime, float64(entry.data.Total)/1e6, entry.psiType) // microseconds → seconds
 		m.Avg(mb, currentTime, entry.data.Avg10, entry.psiType, metadata.AttributePsiWindow10s)
 		m.Avg(mb, currentTime, entry.data.Avg60, entry.psiType, metadata.AttributePsiWindow60s)
 		m.Avg(mb, currentTime, entry.data.Avg300, entry.psiType, metadata.AttributePsiWindow300s)
