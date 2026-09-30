@@ -1,7 +1,7 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: processor/redaction
@@ -33,11 +33,16 @@ subtext: |
   value, while the redacted and masked outcomes keep accumulating, because a removed key and an already masked
   value cannot be detected again.
 
-  Two behaviour changes come with this. Setting `summary` to `silent`, including by leaving it unset, now means the
-  processor claims no ownership of a summary it finds, so the ordinary allow list applies and a strict egress processor
-  can strip an upstream audit trail. And a key inside a log body named after a summary attribute is now redacted like
-  any other unknown key: the processor only ever writes its summary to the record attributes, so such a key in a body
-  carries user data.
+  Two behaviour changes come with this, both of which can affect an existing chained configuration.
+
+  A processor whose `summary` is not `debug` or `info` now claims no ownership of a summary it finds, so the ordinary
+  allow list decides whether it survives. This lets a strict egress processor strip an upstream audit trail, which it
+  could not do before. It also means a downstream processor with `allow_all_keys: false` now removes the five summary
+  attributes it previously kept unconditionally, unless they are named in `allowed_keys` or `allow_all_keys` is set.
+  `summary` is unset by default, which counts as silent, so a chained configuration that never sets it is affected.
+
+  A key inside a log body named after a summary attribute is now redacted like any other unknown key. The processor
+  only ever writes its summary to the record attributes, so such a key in a body carries user data.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
