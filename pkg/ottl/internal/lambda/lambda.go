@@ -1,38 +1,37 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+package lambda // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sync"
 	"sync/atomic"
 )
 
+const blankIdentifier = "_"
+
 // LambdaExpression is a parsed OTTL lambda expression. OTTL functions may accept it as an argument.
-// For each outer invocation, call [LambdaExpression.Activate] with the evaluation context and the
-// number of arguments to bind, so the [LambdaExpression.Formals] length must match it. Use
+// For each outer invocation, call [LambdaExpression.Activate] with the evaluation context, after
+// validating the number of arguments to bind once with [LambdaExpression.ValidateArity]. Use
 // [LambdaActivation.SetArg] to bind positional arguments, [LambdaActivation.Eval] to run the body
 // (possibly multiple times with different arguments), and [LambdaActivation.Close] when finished.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 type LambdaExpression[K any] struct {
-	formals        []LocalIdentifierDecl
-	body           Getter[K] // mutually exclusive with bodyExpr
-	bodyExpr       boolExpr[K]
+	formals        []string
+	body           func(ctx context.Context, tCtx K) (any, error)
+	literal        any
+	isLiteral      bool
 	activationPool *sync.Pool
 	arityValidated *atomic.Bool
 }
 
-// newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
-func newLambdaExpression[K any](formals []LocalIdentifierDecl, body Getter[K], bodyExpr boolExpr[K]) *LambdaExpression[K] {
+// New creates a LambdaExpression. Formals named "_" are blank placeholders that are never bound.
+func New[K any](formals []string, body func(ctx context.Context, tCtx K) (any, error)) *LambdaExpression[K] {
 	v := &LambdaExpression[K]{
-		formals:  formals,
-		body:     body,
-		bodyExpr: bodyExpr,
+		formals: formals,
+		body:    body,
 	}
 	nonBlankFormals := countNonBlankIdentifiers(formals)
 	v.activationPool = &sync.Pool{
@@ -48,12 +47,12 @@ func newLambdaExpression[K any](formals []LocalIdentifierDecl, body Getter[K], b
 	return v
 }
 
-// Formals returns a copy of the lambda's formal parameters in declaration order (left to right).
-// Blank ("_") placeholders are included.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
-	return slices.Clone(l.formals)
+// NewLiteral creates a LambdaExpression whose body is a constant, so evaluating it skips binding arguments.
+func NewLiteral[K any](formals []string, value any) *LambdaExpression[K] {
+	v := New[K](formals, nil)
+	v.literal = value
+	v.isLiteral = true
+	return v
 }
 
 // ValidateArity checks that the number of arguments that will be passed to the
@@ -68,8 +67,6 @@ func (l *LambdaExpression[K]) Formals() []LocalIdentifierDecl {
 // marked as needing validation again, and [LambdaExpression.Activate] will
 // return an error until [LambdaExpression.ValidateArity] is called with a valid
 // arity.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 	if len(l.formals) != arity {
 		l.arityValidated.Store(false)
@@ -87,8 +84,6 @@ func (l *LambdaExpression[K]) ValidateArity(arity int) error {
 // [LambdaExpression.ValidateArity] must be called successfully before Activate; otherwise Activate
 // returns an error. ValidateArity is meant to run once in the OTTL function factory, while Activate
 // runs inside the closure the factory returns.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K], error) {
 	if !l.arityValidated.Load() {
 		return nil, errors.New("lambda arity was not validated: ValidateArity must be called before Activate")
@@ -99,8 +94,6 @@ func (l *LambdaExpression[K]) Activate(ctx context.Context) (*LambdaActivation[K
 }
 
 // LambdaActivation is a local activation of a [LambdaExpression] produced by [LambdaExpression.Activate].
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 type LambdaActivation[K any] struct {
 	expr       *LambdaExpression[K]
 	ctx        context.Context
@@ -109,8 +102,6 @@ type LambdaActivation[K any] struct {
 }
 
 // SetArg sets the i-th positional argument for the next [LambdaActivation.Eval] call.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaActivation[K]) SetArg(i int, v any) error {
 	if i < 0 || i >= len(l.argValues) {
 		return fmt.Errorf("argument index %d out of range (len=%d)", i, len(l.argValues))
@@ -125,62 +116,34 @@ func (l *LambdaActivation[K]) SetArg(i int, v any) error {
 // are discarded and do not need to be set. Because activations are reused across invocations,
 // skipping SetArg for a bound argument may produce stale values from a prior call.
 // Panics if i is out of range.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaActivation[K]) IsArgBound(i int) bool {
-	return !l.expr.formals[i].IsBlank()
+	return l.expr.formals[i] != blankIdentifier
 }
 
 // Eval runs the lambda with positional arguments set via [LambdaActivation.SetArg].
 // The result type follows the lambda body (value or boolean sub-expression) evaluation and
 // may be nil if the body evaluates to nil.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaActivation[K]) Eval(tCtx K) (any, error) {
-	if v, ok := l.expr.getLiteralValue(); ok {
-		return v, nil
+	if l.expr.isLiteral {
+		return l.expr.literal, nil
+	}
+	if l.expr.body == nil {
+		return nil, errors.New("invalid lambda: no body")
 	}
 	l.bindArguments()
-	return l.evalBody(tCtx)
+	return l.expr.body(l.ctx, tCtx)
 }
 
 func (l *LambdaActivation[K]) bindArguments() {
 	for i, formal := range l.expr.formals {
-		if formal.IsBlank() {
+		if formal == blankIdentifier {
 			continue
 		}
-		l.activation.bindings[formal.Name()] = l.argValues[i]
+		l.activation.bindings[formal] = l.argValues[i]
 	}
-}
-
-func (l *LambdaActivation[K]) evalBody(tCtx K) (any, error) {
-	switch {
-	case l.expr.bodyExpr != nil:
-		return l.expr.bodyExpr.Eval(l.ctx, tCtx)
-	case l.expr.body != nil:
-		return l.expr.body.Get(l.ctx, tCtx)
-	default:
-		return nil, errors.New("invalid lambda: no body")
-	}
-}
-
-func (l *LambdaExpression[K]) getLiteralValue() (any, bool) {
-	if l.body != nil {
-		if literalValue, ok := GetLiteralValue(l.body); ok {
-			return literalValue, true
-		}
-	}
-	if l.bodyExpr != nil {
-		if litExp, ok := l.bodyExpr.(*literalBoolExpr[K]); ok {
-			return litExp.getValue(), true
-		}
-	}
-	return nil, false
 }
 
 // Close releases the activation's resources. Call it when the activation is no longer needed.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (l *LambdaActivation[K]) Close() {
 	l.ctx = nil
 	l.activation.parent = nil
@@ -189,25 +152,12 @@ func (l *LambdaActivation[K]) Close() {
 	l.expr.activationPool.Put(l)
 }
 
-// NewTestingLambdaExpression creates a LambdaExpression with a value body for use in tests.
-// eval is called with resolveBinding to resolve local identifier values from the active scope.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func NewTestingLambdaExpression[K any](
-	params []string,
-	eval func(ctx context.Context, tCtx K, resolveBinding func(string) any) (any, error),
-) *LambdaExpression[K] {
-	getter := exprGetter[K]{
-		expr: Expr[K]{exprFunc: func(ctx context.Context, tCtx K) (any, error) {
-			resolveBinding := func(name string) any {
-				v, err := resolveLocalIdentifierBinding(ctx, name)
-				if err != nil {
-					return nil
-				}
-				return v
-			}
-			return eval(ctx, tCtx, resolveBinding)
-		}},
+func countNonBlankIdentifiers(formals []string) int {
+	count := 0
+	for _, formal := range formals {
+		if formal != blankIdentifier {
+			count++
+		}
 	}
-	return newLambdaExpression(makeLocalIdentifiers(params...), &getter, nil)
+	return count
 }
