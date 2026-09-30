@@ -197,16 +197,25 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 		if err != nil {
 			return nil, err
 		}
+		// lastSeq is the sequence number of the last event handed to the handler.
+		// Only touched by the receive goroutine below.
+		var lastSeq *int64
 		newClient := func() (azPartitionClient, error) {
+			startPos := h.getStartPos(
+				applyOffset,
+				namespace,
+				pProps.EventHubName,
+				getConsumerGroup(h.config),
+				partitionID,
+			)
+			if lastSeq != nil {
+				// A recreated client must resume right after what we already delivered,
+				// not from the configured default, or events get skipped or duplicated.
+				startPos = azeventhubs.StartPosition{SequenceNumber: lastSeq}
+			}
 			return h.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
-				StartPosition: h.getStartPos(
-					applyOffset,
-					namespace,
-					pProps.EventHubName,
-					getConsumerGroup(h.config),
-					partitionID,
-				),
-				Prefetch: h.config.PrefetchCount,
+				StartPosition: startPos,
+				Prefetch:      h.config.PrefetchCount,
 			})
 		}
 		pc, err := newClient()
@@ -263,6 +272,8 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 
 				if len(events) > 0 {
 					lastEvent := events[len(events)-1]
+					seq := lastEvent.SequenceNumber
+					lastSeq = &seq
 
 					if h.storage != nil {
 						err := h.storage.Write(
