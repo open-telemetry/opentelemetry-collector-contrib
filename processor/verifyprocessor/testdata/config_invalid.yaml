@@ -31,15 +31,6 @@ verify/bad_failure_mode:
     file:
       hmac_key: /etc/otelcol/hmac.key
 
-# Hash chain enabled without storage.
-verify/hash_chain_missing_storage:
-  key_source:
-    type: file
-    file:
-      hmac_key: /etc/otelcol/hmac.key
-  hash_chain:
-    enabled: true
-
 # Dead letter enabled without storage.
 verify/dead_letter_missing_storage:
   key_source:

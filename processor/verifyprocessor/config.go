@@ -35,7 +35,6 @@ var (
 	errInvalidKeySourceType   = errors.New("key_source.type must be k8s_secret, env, file, or bao")
 	errMissingKeySourceConfig = errors.New("key_source config block is missing for the specified type")
 	errKeySourceNeedsMaterial = errors.New("key_source must provide a certificate and/or HMAC key for integrity verification")
-	errHashChainNeedsStorage  = errors.New("hash_chain.enabled requires hash_chain.storage")
 	errDeadLetterNeedsStorage = errors.New("dead_letter.enabled requires dead_letter.storage")
 	errInvalidDeadLetterMode  = errors.New("dead_letter.failure_modes entries must be strict or mark")
 )
@@ -45,7 +44,6 @@ type Config struct {
 	FailureMode         string           `mapstructure:"failure_mode"`
 	VerificationProfile string           `mapstructure:"verification_profile"`
 	KeySource           KeySourceConfig  `mapstructure:"key_source"`
-	HashChain           HashChainConfig  `mapstructure:"hash_chain"`
 	DeadLetter          DeadLetterConfig `mapstructure:"dead_letter"`
 }
 
@@ -112,11 +110,6 @@ type DeadLetterConfig struct {
 	TTL                   time.Duration `mapstructure:"ttl"`
 }
 
-type HashChainConfig struct {
-	Enabled   bool         `mapstructure:"enabled"`
-	StorageID component.ID `mapstructure:"storage"`
-}
-
 func createDefaultConfig() component.Config {
 	return &Config{
 		Mode:                defaultMode,
@@ -144,10 +137,6 @@ func (c *Config) Validate() error {
 
 	if err := c.validateKeySource(); err != nil {
 		return err
-	}
-
-	if c.HashChain.Enabled && c.HashChain.StorageID == (component.ID{}) {
-		return errHashChainNeedsStorage
 	}
 
 	return c.DeadLetter.validate()

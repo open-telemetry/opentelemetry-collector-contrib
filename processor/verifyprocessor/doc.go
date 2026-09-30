@@ -9,8 +9,8 @@
 //
 // For each log record it serializes the record to RFC 8785 (JCS) canonical
 // JSON and verifies audit.integrity.value using the configured HMAC key
-// and/or certificate public key. Optionally it validates hash-chain
-// continuity and can persist verification failures to a dead-letter store.
+// and/or certificate public key. Optionally it can persist verification
+// failures to a dead-letter store.
 //
 // Supported integrity algorithms mirror those produced by signingprocessor:
 // RS256, RS512, ES256, EdDSA, and HMAC-SHA256.

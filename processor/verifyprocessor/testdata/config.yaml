@@ -55,16 +55,6 @@ verify/bao:
       certificate: certificate
       hmac_key: hmac_key
 
-# Hash-chain continuity enabled (requires a storage extension).
-verify/hash_chain:
-  key_source:
-    type: file
-    file:
-      hmac_key: /etc/otelcol/hmac.key
-  hash_chain:
-    enabled: true
-    storage: file_storage
-
 # Dead-letter queue for verification failures.
 verify/dead_letter:
   failure_mode: mark
