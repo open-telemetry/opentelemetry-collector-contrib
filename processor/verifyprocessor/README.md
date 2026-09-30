@@ -49,7 +49,7 @@ processors:
 
     # Key material source (required). Exactly one sub-block must be provided.
     # Same providers as signingprocessor. Each provider uses shared YAML keys
-    # certificate and/or hmac_key (no private-key fields). The meaning of each
+    # certificate or hmac_key (no private-key fields). The meaning of each
     # value depends on the provider (path, expanded secret, secret key, or field).
     key_source:
       # type selects the provider: file | env | k8s_secret | bao
@@ -63,7 +63,7 @@ processors:
       # --- env provider — key material via Collector ${env:} expansion ---
       # env:
       #   certificate: ${env:VERIFY_CERT_PEM}   # PEM or base64-encoded PEM
-      #   hmac_key:    ${env:VERIFY_HMAC_KEY}   # HMAC secret
+      #   # hmac_key: ${env:VERIFY_HMAC_KEY}
 
       # --- Kubernetes Secret provider — keys within the Secret ---
       # k8s_secret:
@@ -91,13 +91,13 @@ processors:
 ## Key source providers
 
 Same provider set as [`signingprocessor`](../signingprocessor), but every
-provider uses the shared YAML keys `certificate` and/or `hmac_key` (private-key
-fields are omitted). Each provider must supply a certificate and/or an HMAC
-secret. Both may be set when the collector should verify either algorithm.
+provider uses the shared YAML keys `certificate` or `hmac_key` (private-key
+fields are omitted). For now each provider config should supply a single
+material — either a certificate or an HMAC secret.
 
 | Provider | `certificate` / `hmac_key` mean | Description |
 | --- | --- | --- |
-| `file` | Local file paths | Reads a PEM certificate and/or a raw HMAC secret from disk. Supports plain PEM and base64-encoded PEM for certificates. |
+| `file` | Local file paths | Reads a PEM certificate or a raw HMAC secret from disk. Supports plain PEM and base64-encoded PEM for certificates. |
 | `env` | Key material (usually via `${env:}`) | Holds resolved PEM / HMAC strings from Collector confmap `${env:VAR}` expansion (not env-var names). |
 | `k8s_secret` | Keys inside the Secret | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
 | `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) KV v2 secrets engine via [`github.com/openbao/openbao/api/v2`](https://pkg.go.dev/github.com/openbao/openbao/api/v2) (`mount_path` default `secret`, `secret_path` relative to that mount). |
@@ -150,7 +150,7 @@ without removing those attributes first.
 | Field                | JSON key             | Encoding                                       |
 |----------------------|----------------------|------------------------------------------------|
 | `EventName`          | `event_name`         | string; omitted if empty                       |
-| `Body` (string only) | `body`               | string; omitted if not a string value          |
+| `Body`               | `body`               | any non-empty value (type-tagged object, same encoding as attributes); omitted if empty |
 | `Timestamp`          | `timestamp`          | nanoseconds since Unix epoch as decimal string |
 | `ObservedTimestamp`  | `observed_timestamp` | nanoseconds since Unix epoch as decimal string |
 | `TraceID`            | `trace_id`           | lowercase hex string; omitted if all-zero      |

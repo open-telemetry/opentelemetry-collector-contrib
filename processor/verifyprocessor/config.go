@@ -34,7 +34,7 @@ var (
 	errInvalidFailureMode     = errors.New("failure_mode must be strict or mark")
 	errInvalidKeySourceType   = errors.New("key_source.type must be k8s_secret, env, file, or bao")
 	errMissingKeySourceConfig = errors.New("key_source config block is missing for the specified type")
-	errKeySourceNeedsMaterial = errors.New("key_source must provide a certificate and/or HMAC key for integrity verification")
+	errKeySourceNeedsMaterial = errors.New("key_source must provide a certificate or hmac_key")
 	errDeadLetterNeedsStorage = errors.New("dead_letter.enabled requires dead_letter.storage")
 	errInvalidDeadLetterMode  = errors.New("dead_letter.failure_modes entries must be strict or mark")
 )
@@ -56,8 +56,8 @@ type KeySourceConfig struct {
 }
 
 // SecretConfig holds verification key material fields shared by providers.
-// Set Certificate and/or HMACKey (no private-key fields; verify only needs
-// public material / HMAC secrets).
+// Set Certificate or HMACKey (no private-key fields; verify only needs
+// public material or an HMAC secret).
 type SecretConfig struct {
 	Certificate string `mapstructure:"certificate"`
 	HMACKey     string `mapstructure:"hmac_key"`
@@ -102,6 +102,7 @@ type DeadLetterConfig struct {
 	IncludeResource       *bool         `mapstructure:"include_resource"`
 	Reasons               []string      `mapstructure:"reasons"`
 	FailureModes          []string      `mapstructure:"failure_modes"`
+	// TODO: validate bounds when DLQ is implemented (e.g. >0 and an upper cap).
 	MaxEntrySizeBytes     int           `mapstructure:"max_entry_size_bytes"`
 	FailOnStorageError    *bool         `mapstructure:"fail_on_storage_error"`
 	PartitionByStream     bool          `mapstructure:"partition_by_stream"`
@@ -154,23 +155,17 @@ func (c *Config) validateKeySource() error {
 		if c.KeySource.K8sSecret.Namespace == "" {
 			c.KeySource.K8sSecret.Namespace = "default"
 		}
-		if c.KeySource.K8sSecret.Certificate == "" && c.KeySource.K8sSecret.HMACKey == "" {
-			return errKeySourceNeedsMaterial
-		}
+		return validateSecretMaterial(c.KeySource.K8sSecret.SecretConfig)
 	case keySourceEnv:
 		if c.KeySource.Env == nil {
 			return errMissingKeySourceConfig
 		}
-		if c.KeySource.Env.Certificate == "" && c.KeySource.Env.HMACKey == "" {
-			return errKeySourceNeedsMaterial
-		}
+		return validateSecretMaterial(SecretConfig(*c.KeySource.Env))
 	case keySourceFile:
 		if c.KeySource.File == nil {
 			return errMissingKeySourceConfig
 		}
-		if c.KeySource.File.Certificate == "" && c.KeySource.File.HMACKey == "" {
-			return errKeySourceNeedsMaterial
-		}
+		return validateSecretMaterial(SecretConfig(*c.KeySource.File))
 	case keySourceBao:
 		if c.KeySource.Bao == nil {
 			return errMissingKeySourceConfig
@@ -181,11 +176,15 @@ func (c *Config) validateKeySource() error {
 		if c.KeySource.Bao.SecretPath == "" {
 			return errors.New("key_source.bao.secret_path is required")
 		}
-		if c.KeySource.Bao.Certificate == "" && c.KeySource.Bao.HMACKey == "" {
-			return errKeySourceNeedsMaterial
-		}
+		return validateSecretMaterial(c.KeySource.Bao.SecretConfig)
 	default:
 		return errInvalidKeySourceType
+	}
+}
+
+func validateSecretMaterial(sc SecretConfig) error {
+	if sc.Certificate == "" && sc.HMACKey == "" {
+		return errKeySourceNeedsMaterial
 	}
 	return nil
 }

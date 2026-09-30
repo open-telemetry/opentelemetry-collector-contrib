@@ -17,21 +17,12 @@ verify/cert_mark:
     file:
       certificate: /etc/otelcol/cert.pem
 
-# Combined HMAC + certificate verification.
-verify/hmac_and_cert:
-  key_source:
-    type: file
-    file:
-      hmac_key: /etc/otelcol/hmac.key
-      certificate: /etc/otelcol/cert.pem
-
 # Environment-variable key material (via Collector confmap ${env:} expansion).
 verify/env:
   key_source:
     type: env
     env:
       certificate: ${env:VERIFY_CERT_PEM}
-      hmac_key: ${env:VERIFY_HMAC_KEY}
 
 # Kubernetes Secret key material (values are keys within the Secret).
 verify/k8s:
@@ -41,7 +32,6 @@ verify/k8s:
       name: verify-secret
       namespace: default
       hmac_key: hmac.key
-      certificate: tls.crt
 
 # OpenBao / Vault key material (KVv2 via OpenBao API v2).
 # mount_path defaults to "secret"; secret_path is relative to that mount.
@@ -53,7 +43,6 @@ verify/bao:
       mount_path: secret
       secret_path: verify
       certificate: certificate
-      hmac_key: hmac_key
 
 # Dead-letter queue for verification failures.
 verify/dead_letter:
