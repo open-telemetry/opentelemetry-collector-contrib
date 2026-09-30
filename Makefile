@@ -471,10 +471,20 @@ chlog-preview:
 chlog-update:
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
+# OCB's `go mod tidy` reads sum.golang.org directly, so GOPROXY fallbacks don't cover its transient errors.
+define gen-collector-sources
+	@for i in 1 2 3; do \
+		$(BUILDER) --skip-compilation --config cmd/$(1)/builder-config-replaced.yaml && exit 0; \
+		[ $$i -lt 3 ] && echo "builder failed for $(1) (attempt $$i/3), retrying in $$((i*10))s..." && sleep $$((i*10)); \
+	done; \
+	echo "builder failed for $(1) after 3 attempts"; \
+	exit 1
+endef
+
 .PHONY: genotelcontribcol
 genotelcontribcol:
 	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
+	$(call gen-collector-sources,otelcontribcol)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -491,7 +501,7 @@ otelcontribcollite: genotelcontribcol
 .PHONY: genoteltestbedcol
 genoteltestbedcol:
 	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
+	$(call gen-collector-sources,oteltestbedcol)
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
