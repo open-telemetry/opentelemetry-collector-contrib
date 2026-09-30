@@ -16,11 +16,9 @@ import (
 // subtraceStorage buffers spans per (trace, service). It is used exclusively
 // when EmitStrategy == EmitStrategyService.
 type subtraceStorage interface {
-	// insertScopeSpans deep-copies all spans in ss and buffers them under the
-	// given subtrace, stamping each with arrivedAt, the time the batch carrying
-	// them was received. The copy is made before the lock is held so the caller
-	// can recycle its batch. Every span is kept independently; duplicate span
-	// IDs, including the empty span ID, are all emitted as separate spans.
+	// insertScopeSpans buffers spans under the given subtrace, stamping each
+	// with arrivedAt. Duplicate span IDs, including the empty span ID, are all
+	// emitted as separate spans.
 	insertScopeSpans(id subtraceID, ctx *spanContext, ss ptrace.ScopeSpans, arrivedAt time.Time) error
 
 	// releaseDue removes and returns the service's calls whose first span arrived
@@ -49,33 +47,23 @@ var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
 // traceBuffer holds everything buffered for one trace: the spans grouped by
 // service, and every span ID the trace has carried.
 //
-// spanIDs records which span IDs this trace has been seen to contain, which is
-// what lets a service-entry span be told apart from a span whose parent never
-// arrived. Its values name one service that has held each span (the last seen).
-//
-// Entries deliberately outlive the spans themselves. Services are released one
-// at a time, usually the caller before the callee, and a span whose parent has
-// already gone would otherwise look parentless and lose its place.
-//
-// They do not outlive their usefulness, though: see forgetUnreferencedSpanIDs.
+// spanIDs lets a service-entry span be told apart from a span whose parent
+// never arrived. Entries outlive the spans themselves because services release
+// in caller-before-callee order; the callee's entries would look parentless
+// without the caller's IDs still present. See `forgetUnreferencedSpanIDs`.
 type traceBuffer struct {
 	services  map[[16]byte]map[pcommon.SpanID][]*bufferedSpan
 	spanIDs   map[pcommon.SpanID][16]byte
 	spanCount int
 }
 
-// forgetUnreferencedSpanIDs drops the record of span IDs that are neither
-// buffered any more nor named as a parent by something that is.
+// forgetUnreferencedSpanIDs drops records of span IDs that are neither
+// buffered nor named as a parent by something that is.
 //
-// A span's ID cannot simply be forgotten as the span is emitted: services are
-// released one at a time, usually the caller before the callee, and the callee's
-// entry spans are recognizable only because they point at spans the caller has
-// already taken with it. What can be forgotten is an ID nothing points at any
-// more, because the span is then far enough in the past that anything arriving
-// for it now is better treated as parentless.
-//
-// Without this a trace that always has some service buffered would accumulate
-// every span ID it ever carried.
+// IDs cannot be deleted at emission: services release in caller-before-callee
+// order, and the callee's entry spans are only recognizable as such because
+// they point at span IDs the caller took with it. Without this, a long-running
+// trace would accumulate every span ID it ever carried.
 func (tb *traceBuffer) forgetUnreferencedSpanIDs() {
 	kept := make(map[pcommon.SpanID][16]byte, len(tb.spanIDs))
 	for service, spans := range tb.services {
@@ -160,16 +148,13 @@ func (s *subtraceMemoryStorage) releaseDue(id subtraceID, cutoff time.Time) ([][
 func (s *subtraceMemoryStorage) deleteSubtrace(id subtraceID) ([][]*bufferedSpan, error) {
 	s.Lock()
 	defer s.Unlock()
-	// A cutoff no arrival can be after takes everything.
+	// Ensure everything is taken by setting the cutoff to be far in the future.
 	calls, _, err := s.takeLocked(id, time.Now().Add(time.Hour*1_000_000))
 	return calls, err
 }
 
 // takeLocked divides a service's spans into calls and removes the ones due at
 // cutoff, returning them along with the first arrival among those left.
-//
-// Dividing into calls under the same write lock as the removal is what keeps a
-// concurrent release from observing, and so emitting, the same spans twice.
 func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][]*bufferedSpan, time.Time, error) {
 	tb, ok := s.traces[id.traceID]
 	if !ok {
@@ -183,9 +168,11 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 	var due [][]*bufferedSpan
 	var nextArrival time.Time
 
+	// Fast path: skip splitting calls when all spans belong to a single call.
+	//
+	// Note that if some spans have cyclical lineage, the cycle will be included
+	// with the batch.
 	if countCallHeads(spans) <= 1 {
-		// Fast path: at most one call head means all spans belong to one call.
-		// Skip the splitCalls walk (and its callOf map allocation) entirely.
 		first := firstArrivalInMap(spans)
 		if first.After(cutoff) {
 			nextArrival = first
@@ -241,7 +228,7 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 
 // countCallHeads returns the number of spans in `spans` that head a call: spans
 // whose parent is not among the service's own spans, or that report a remote
-// parent context. This mirrors the entry-detection logic in splitCalls.
+// parent context.
 func countCallHeads(spans map[pcommon.SpanID][]*bufferedSpan) int {
 	n := 0
 	for _, bsList := range spans {
@@ -258,8 +245,6 @@ func countCallHeads(spans map[pcommon.SpanID][]*bufferedSpan) int {
 	return n
 }
 
-// firstArrivalInMap returns the earliest arrivedAt across all buffered spans in
-// the map. Used by the single-call fast path in takeLocked.
 func firstArrivalInMap(spans map[pcommon.SpanID][]*bufferedSpan) time.Time {
 	var first time.Time
 	for _, bsList := range spans {
@@ -285,7 +270,6 @@ func (s *subtraceMemoryStorage) subtraceIDs() []subtraceID {
 	return ids
 }
 
-// count returns the number of (trace, service) pairs currently buffered.
 func (s *subtraceMemoryStorage) count() int {
 	s.RLock()
 	defer s.RUnlock()

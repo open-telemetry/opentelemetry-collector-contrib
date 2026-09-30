@@ -219,9 +219,6 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 			}
 		}
 
-		// Which call each span belongs to is worked out when the subtrace is
-		// released, so buffering one is nothing more than recording where its spans
-		// go and when it next falls due.
 		if worker.subtraceBuffer.contains(id) {
 			continue // already waiting to be released
 		}
@@ -233,16 +230,9 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 	return errs
 }
 
-// evictSubtrace handles a subtrace pushed out of the ring buffer. Eviction is
-// there to bound how much the processor holds, and handing the spans to the
-// next consumer achieves that just as well as discarding them, so they go out
-// early rather than being lost. The eviction is still counted in
-// traces_evicted, so a non-zero count continues to mean wait_duration or
-// num_traces wants adjusting.
-//
-// It runs in the same turn as the put that displaced the subtrace, and drops
-// the deadline along with the ring buffer entry, so nothing is left behind to
-// come back for a subtrace the worker has let go of.
+// evictSubtrace handles a subtrace pushed out of the ring buffer. Eviction
+// bounds what the processor holds; the spans go to the next consumer rather
+// than being lost.
 func (sp *groupByTraceProcessor) evictSubtrace(id subtraceID, worker *eventMachineWorker) error {
 	sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
 	sp.logger.Info("subtrace evicted and released early: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
@@ -393,13 +383,9 @@ func (sp *groupByTraceProcessor) onSubtraceTick(worker *eventMachineWorker) erro
 // nextSubtraceDeadline says when a subtrace that still holds undue calls should
 // next be woken, given the release that has just run at now.
 //
-// The answer is when the earliest call left comes due, but no sooner than
-// releaseCoalesceFraction of wait_duration after this release. Without that
-// floor a subtrace is woken once per distinct first arrival among the calls it
-// holds, and re-divides everything it still holds on each waking, so a trace
-// that enters one service many times over pays for that division once per
-// entry. The floor collapses the wakings that fall close together into one,
-// which releases the calls that came due during it as a group.
+// Without the floor of releaseCoalesceFraction*wait_duration, a subtrace is
+// woken once per distinct first arrival it holds and re-divides all its spans
+// on each waking. The floor collapses near wakings into one batch.
 func (sp *groupByTraceProcessor) nextSubtraceDeadline(now, nextArrival time.Time) time.Time {
 	due := nextArrival.Add(sp.config.WaitDuration)
 	if floor := now.Add(sp.config.WaitDuration / releaseCoalesceFraction); due.Before(floor) {
@@ -408,14 +394,12 @@ func (sp *groupByTraceProcessor) nextSubtraceDeadline(now, nextArrival time.Time
 	return due
 }
 
-// releaseCalls assembles and emits calls off the worker goroutine, where
-// assembling a large subtrace won't hold up the events queued behind it. A
-// service entered more than once in a trace releases one batch per call.
+// releaseCalls assembles and emits calls off the worker goroutine, so a large
+// subtrace doesn't block the events queued behind it.
 //
-// The batches go straight to the next consumer rather than back through the
-// event machine. Storage hands its spans over as it returns them, so an event
-// dropped by a concurrent shutdown would lose them outright, and the drain in
-// Shutdown can no longer see them to make up for it.
+// Batches go straight to the next consumer: storage hands spans over on return,
+// so events dropped by a concurrent shutdown would lose them, and the drain in
+// Shutdown can no longer see them.
 func (sp *groupByTraceProcessor) releaseCalls(calls [][]*bufferedSpan) {
 	if len(calls) == 0 {
 		return

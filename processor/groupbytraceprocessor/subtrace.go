@@ -34,12 +34,8 @@ type scopeKey struct {
 }
 
 // resourceContext holds the resource a span was reported under, together with
-// the keys derived from it.
-//
-// Every span under one ResourceSpans shares all of this, so it is built once per
-// resource and shared by that resource's spans rather than being rebuilt for
-// each scope or each span. The copy must not be mutated afterwards: it backs
-// every bufferedSpan that shares it, and the derived keys would go stale.
+// the keys derived from it. The copy must not be mutated: it backs every
+// bufferedSpan that shares it, and the derived keys would go stale.
 type resourceContext struct {
 	resource  pcommon.Resource
 	schemaURL string
@@ -50,9 +46,7 @@ type resourceContext struct {
 	resourceKey [16]byte
 }
 
-// newResourceContext deep-copies the resource so the result is self-contained
-// and the caller can recycle its pdata objects, then derives the keys used to
-// group the spans reported under it.
+// newResourceContext deep-copies the resource so the caller may recycle its batch.
 func newResourceContext(rs ptrace.ResourceSpans) resourceContext {
 	rCopy := pcommon.NewResource()
 	rs.Resource().CopyTo(rCopy)
@@ -76,10 +70,8 @@ type spanContext struct {
 	scopeKey scopeKey
 }
 
-// newSpanContext deep-copies the scope and pairs it with an already-built
-// resourceContext, which it shares as-is with the other scopes under that
-// resource. The returned pointer is shared across all spans in the same
-// ScopeSpans so that each bufferedSpan does not carry a redundant copy.
+// newSpanContext deep-copies the scope; the resourceContext is shared as-is
+// across all scopes under the same resource, so the no-mutation rule applies.
 func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope, schemaURL string) *spanContext {
 	sCopy := pcommon.NewInstrumentationScope()
 	scope.CopyTo(sCopy)
@@ -111,8 +103,7 @@ type bufferedSpan struct {
 }
 
 // newBufferedSpan deep-copies the span so the caller can recycle its pdata
-// objects. ctx is shared across all spans in the same ScopeSpans; arrivedAt
-// is shared across all spans in the same batch.
+// objects.
 func newBufferedSpan(ctx *spanContext, span ptrace.Span, arrivedAt time.Time) *bufferedSpan {
 	spCopy := ptrace.NewSpan()
 	span.CopyTo(spCopy)
@@ -140,22 +131,11 @@ const (
 	spanFlagsContextIsRemoteMask uint32 = 0x00000200
 )
 
-// hasRemoteParent reports whether the span says its parent context arrived from
-// another process. That makes it a service-entry span even when the parent
-// carries the same service identity, which is what a service calling another
-// instance of itself looks like.
 func hasRemoteParent(bs *bufferedSpan) bool {
 	flags := bs.span.Flags()
 	return flags&spanFlagsContextHasIsRemoteMask != 0 && flags&spanFlagsContextIsRemoteMask != 0
 }
 
-// serviceIdentity returns a 128-bit key that uniquely identifies the service
-// for a given resource. It hashes service.namespace, service.name, and
-// service.instance.id when present; otherwise it falls back to attrHash, the
-// caller's pre-computed MapHash of all resource attributes. attrHash is passed
-// in so newResourceContext can share the hash it already computed for
-// resourceKey. Each string field is hashed separately to avoid delimiter
-// ambiguity between keys like {ns:"a|b", name:"c"} and {ns:"a", name:"b|c"}.
 func serviceIdentity(attrs pcommon.Map, attrHash [16]byte) [16]byte {
 	name, hasName := attrs.Get("service.name")
 	if !hasName {
@@ -171,7 +151,6 @@ func serviceIdentity(attrs pcommon.Map, attrHash [16]byte) [16]byte {
 	return xhash.Hash(xhash.WithString(namespace), xhash.WithString(name.AsString()), xhash.WithString(id))
 }
 
-// Sentinel call indices used while dividing a service's spans into calls.
 const (
 	// callInProgress marks a span whose call is currently being resolved. Meeting
 	// one means the walk has come back on itself.
@@ -189,10 +168,7 @@ const (
 //
 // A span heads a call when its parent is not among the service's own spans, or
 // when it reports that the parent context was remote. Every other span belongs
-// to the call of whichever such span it descends from, which is found by walking
-// up from it. Each step of that walk is recorded, so a span is only ever
-// resolved once however many descendants it has, and the whole pass costs one
-// visit per span.
+// to the call of whichever such span it descends from.
 //
 // Spans whose parent is nowhere in the trace get best-effort treatment: nothing
 // distinguishes one from another, so they leave together in a single call rather
@@ -229,8 +205,7 @@ func splitCalls(serviceSpans map[pcommon.SpanID][]*bufferedSpan, spanToService m
 				break
 			}
 
-			// Use the most recently arrived copy to determine the call. For spans
-			// buffered only once this is just the single element.
+			// Use the most recently arrived copy to determine the call.
 			bsList := serviceSpans[cur]
 			bs := bsList[len(bsList)-1]
 			parent := bs.span.ParentSpanID()
@@ -286,12 +261,11 @@ func splitCalls(serviceSpans map[pcommon.SpanID][]*bufferedSpan, spanToService m
 // assemble reconstructs a ptrace.Traces from a slice of bufferedSpans,
 // coalescing spans that share the same (Resource, Scope) pair.
 //
-// It takes ownership of the spans: each is moved into the result rather than
-// copied again, which halves the copying a span is put through on its way
-// through the processor. Callers pass spans that storage has already handed
-// over, and must not read them afterwards. The resource and scope are still
-// copied, because bufferedSpans that share a resource or scope share the same
-// pdata object and it may back other calls still buffered.
+// It takes ownership of the spans: each is moved rather than copied again,
+// halving the copies a span goes through. Callers must not read spans
+// afterwards. The resource and scope are still copied because bufferedSpans
+// sharing them point to the same pdata object, which may back other calls
+// still buffered.
 func assemble(members []*bufferedSpan) ptrace.Traces {
 	td := ptrace.NewTraces()
 

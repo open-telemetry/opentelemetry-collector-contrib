@@ -400,12 +400,7 @@ type eventMachineWorker struct {
 }
 
 // armSubtraceTimer points the worker's timer at the earliest deadline it holds.
-// Only a worker turn may call it.
-//
-// The timer's only job is to wake the worker: the event it fires says nothing
-// about which subtraces are due, so a wake-up that arrives early, late, or with
-// nothing left to do is harmless. That is what lets deadlines be added and
-// dropped freely without having to chase down a timer for each one.
+// Only a worker turn should call it.
 func (w *eventMachineWorker) armSubtraceTimer() {
 	next, held := w.deadlines.next()
 	if !held {

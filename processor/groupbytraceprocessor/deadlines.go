@@ -11,12 +11,9 @@ import (
 // subtraceDeadlines orders subtraces by when they next fall due for release. It
 // holds at most one deadline per subtrace.
 //
-// A worker owns its deadlines outright, and that is what keeps the scheduling
-// straight: a subtrace's deadline is added, moved and dropped in the same turn
-// as the ring buffer entry it belongs to, so there is no such thing as a
-// deadline for a subtrace the worker has stopped tracking. Waking the worker is
-// a separate matter, and a wake-up carries no claim about what is due — see
-// eventMachineWorker.armSubtraceTimer.
+// A worker owns its deadlines: a deadline's lifecycle matches the ring buffer
+// entry it belongs to, so there is never a deadline for a subtrace the worker
+// has stopped tracking.
 type subtraceDeadlines struct {
 	pq    deadlinePQ
 	index map[subtraceID]*deadlineEntry
