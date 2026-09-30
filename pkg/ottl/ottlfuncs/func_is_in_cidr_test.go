@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 func Test_isInCIDR_parser_slice_arguments(t *testing.T) {
@@ -223,7 +224,7 @@ func Test_isInCIDR(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) { return tt.target, nil },
-			}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, tt.networks))
+			}, slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, tt.networks))
 			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
@@ -276,7 +277,7 @@ func Test_isInCIDR_Error(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) { return tt.target, nil },
-			}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, tt.networks))
+			}, slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, tt.networks))
 			require.NoError(t, err)
 			_, err = exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
@@ -297,7 +298,7 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 	t.Run("single literal network", func(t *testing.T) {
 		exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "10.1.2.3", nil },
-		}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{literalOne}))
+		}, slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{literalOne}))
 		require.NoError(t, err)
 		result, err := exprFunc(nil, nil)
 		require.NoError(t, err)
@@ -307,7 +308,7 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 	t.Run("multiple literals networks", func(t *testing.T) {
 		exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "192.168.0.1", nil },
-		}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{literalOne, literalTwo}))
+		}, slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{literalOne, literalTwo}))
 		require.NoError(t, err)
 		result, err := exprFunc(nil, nil)
 		require.NoError(t, err)
@@ -322,7 +323,7 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 
 		_, err = isInCIDR[any](ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "192.0.0.1", nil },
-		}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{invalidLiteral}))
+		}, slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{invalidLiteral}))
 		assert.ErrorContains(t, err, "invalid CIDR address")
 	})
 }
@@ -351,7 +352,7 @@ func Test_IsInCIDRFactory(t *testing.T) {
 				return "192.168.1.1", nil
 			},
 		}
-		isInCIDRArgs.Networks = *ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
+		isInCIDRArgs.Networks = *slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 			&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return "192.168.1.0/24", nil
@@ -373,7 +374,7 @@ func Test_IsInCIDRFactory(t *testing.T) {
 func BenchmarkIsInCIDR(b *testing.B) {
 	exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) { return "192.0.2.1", nil },
-	}, ottl.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
+	}, slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
 		ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
 		},
