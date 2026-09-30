@@ -18,7 +18,7 @@ issues: [51463]
 subtext: |
   When another receiver with a higher epoch attached to the same partition and consumer group, the
   receiver logged `error receiving events` on every poll forever and never received data again.
-  The partition client is now closed and reopened from the last received sequence number after the poll interval.
+  The partition client is now closed and reopened from the last received sequence number with exponential backoff.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

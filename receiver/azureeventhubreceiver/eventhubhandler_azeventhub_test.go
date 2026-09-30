@@ -26,13 +26,13 @@ type mockPartitionClient struct {
 	eventData []*azeventhubs.ReceivedEventData
 	closed    atomic.Bool
 	err       error
-	errOnCall int32 // which ReceiveEvents call returns err; 0 means the first
+	errOnCall int32 // which ReceiveEvents call returns err; 0 means the first, negative means every call
 	callCount atomic.Int32
 }
 
 func (p *mockPartitionClient) ReceiveEvents(_ context.Context, maxBatchSize int, _ *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error) {
 	callCount := p.callCount.Add(1)
-	if p.err != nil && callCount == max(p.errOnCall, 1) {
+	if p.err != nil && (p.errOnCall < 0 || callCount == max(p.errOnCall, 1)) {
 		return nil, p.err
 	}
 
@@ -358,7 +358,7 @@ func TestReceive_RecreatesClientOnOwnershipLost(t *testing.T) {
 
 func TestReceive_RetriesRecreationUntilItSucceeds(t *testing.T) {
 	pc := &mockPartitionClient{err: &azeventhubs.Error{Code: azeventhubs.ErrorCodeOwnershipLost}}
-	hub := &mockAzeventHub{partitionClient: pc, newClientErr: errors.New("recreate failed"), newClientFailures: 2}
+	hub := &mockAzeventHub{partitionClient: pc, newClientErr: errors.New("recreate failed"), newClientFailures: 1}
 	h := &hubWrapperAzeventhubImpl{
 		hub:    hub,
 		config: &Config{Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub", PollRate: 1},
@@ -370,9 +370,31 @@ func TestReceive_RetriesRecreationUntilItSucceeds(t *testing.T) {
 	listener, err := h.Receive(ctx, "p1", func(_ context.Context, _ *azureEvent) error { return nil }, false, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
-	// initial client + 2 failed recreations + 1 successful one, which is then polled
-	require.Eventually(t, func() bool { return hub.newClientCount.Load() >= 4 && pc.callCount.Load() >= 2 }, 9*time.Second, 50*time.Millisecond)
+	// initial client + 1 failed recreation + 1 successful one, which is then polled
+	require.Eventually(t, func() bool { return hub.newClientCount.Load() >= 3 && pc.callCount.Load() >= 2 }, 9*time.Second, 50*time.Millisecond)
 	require.NoError(t, listener.Err())
+}
+
+func TestReceive_BacksOffWhileOwnershipStaysLost(t *testing.T) {
+	pc := &mockPartitionClient{err: &azeventhubs.Error{Code: azeventhubs.ErrorCodeOwnershipLost}, errOnCall: -1}
+	hub := &mockAzeventHub{partitionClient: pc}
+	h := &hubWrapperAzeventhubImpl{
+		hub:    hub,
+		config: &Config{Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub", PollRate: 1},
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	listener, err := h.Receive(ctx, "p1", func(_ context.Context, _ *azureEvent) error { return nil }, false, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	<-listener.Done()
+
+	// reconnects at ~1s and ~3s (1s, then 2s); the ~7s one is past the deadline.
+	// A flat 1s retry would have produced 5 reconnects in the same window.
+	n := hub.newClientCount.Load()
+	assert.GreaterOrEqual(t, n, int32(2))
+	assert.LessOrEqual(t, n, int32(3))
 }
 
 func TestReceive_RecreatedClientResumesFromLastSequenceNumber(t *testing.T) {

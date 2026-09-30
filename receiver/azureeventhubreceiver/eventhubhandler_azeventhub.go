@@ -47,6 +47,9 @@ func (c *checkpointSeqNumber) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// maxReconnectDelay caps the exponential backoff between partition client reconnects.
+const maxReconnectDelay = 5 * time.Minute
+
 type azPartitionClient interface {
 	Close(ctx context.Context) error
 	ReceiveEvents(ctx context.Context, maxBatchSize int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error)
@@ -232,12 +235,15 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 			defer func() { pc.Close(ctx) }()
 
 			maxPollEvents, pollRate := getPollConfig(h.config)
+			pollInterval := time.Second * time.Duration(pollRate)
+			// Doubles on every reconnect attempt, resets once a poll succeeds.
+			reconnectDelay := pollInterval
 			for {
 				if ctx.Err() != nil {
 					return
 				}
 
-				timeout, cancelTimeout := context.WithTimeout(ctx, time.Second*time.Duration(pollRate))
+				timeout, cancelTimeout := context.WithTimeout(ctx, pollInterval)
 				events, err := pc.ReceiveEvents(timeout, maxPollEvents, nil)
 				cancelTimeout()
 				if err != nil && !errors.Is(err, context.DeadlineExceeded) {
@@ -246,25 +252,27 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 					if errors.As(err, &ehErr) && ehErr.Code == azeventhubs.ErrorCodeOwnershipLost {
 						// The SDK treats a stolen link as fatal and leaves the detached link cached,
 						// so every further poll returns the same error. Drop the client and open a
-						// new one from the last checkpoint once the poll interval has elapsed.
+						// new one from the last received sequence number after backing off.
 						pc.Close(ctx)
 						for {
 							select {
 							case <-ctx.Done():
 								return
-							case <-time.After(time.Second * time.Duration(pollRate)):
+							case <-time.After(reconnectDelay):
 							}
+							reconnectDelay = min(reconnectDelay*2, maxReconnectDelay)
 							// Never assign a nil client to pc: the deferred Close would panic.
 							newPC, err := newClient()
 							if err == nil {
 								pc = newPC
 								break
 							}
-							logger.Error("error recreating partition client, retrying", zap.Error(err))
+							logger.Error("error recreating partition client, retrying", zap.Error(err), zap.Duration("retry_in", reconnectDelay))
 						}
 					}
 					continue
 				}
+				reconnectDelay = pollInterval
 
 				for _, ev := range events {
 					if err := handler(ctx, &azureEvent{
