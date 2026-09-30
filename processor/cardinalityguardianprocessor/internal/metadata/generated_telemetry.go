@@ -161,31 +161,31 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorCardinalityLabelsStripped, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_cardinality_labels.stripped",
 		metric.WithDescription("Total number of high-cardinality labels stripped or tagged. [Development]"),
-		metric.WithUnit("{labels}"),
+		metric.WithUnit("{label}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorCardinalitySavingsEstimated, err = builder.meter.Float64ObservableCounter(
 		"otelcol_processor_cardinality_savings.estimated",
 		metric.WithDescription("Cumulative estimated dollar value of time-series churn prevented by the processor. [Development]"),
-		metric.WithUnit("{dollars}"),
+		metric.WithUnit("{dollar}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorCardinalityTopOffenders, err = builder.meter.Int64ObservableGauge(
 		"otelcol_processor_cardinality_top.offenders",
 		metric.WithDescription("Cardinality delta of the top-N highest-growth (metric, label) pairs from the last epoch rotation. [Development]"),
-		metric.WithUnit("{pairs}"),
+		metric.WithUnit("{pair}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorCardinalityTrackersActive, err = builder.meter.Int64ObservableGauge(
 		"otelcol_processor_cardinality_trackers.active",
 		metric.WithDescription("Current number of active cardinality trackers across all shards. [Development]"),
-		metric.WithUnit("{trackers}"),
+		metric.WithUnit("{tracker}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorCardinalityTrackersRejected, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_cardinality_trackers.rejected",
 		metric.WithDescription("Number of new (metric, label) pairs ignored because max_tracker_count was reached. [Development]"),
-		metric.WithUnit("{trackers}"),
+		metric.WithUnit("{tracker}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
