@@ -33,7 +33,7 @@ var _ testbed.LogDataSender = (*FileLogK8sWriter)(nil)
 //
 // config is an Otelcol config appended to the receivers section after executing fmt.Sprintf on it.
 // This implies few things:
-//   - it should contain `%s` which will be replaced with the filename
+//   - it should contain %#q which will be replaced with the filename
 //   - all `%` should be represented as `%%`
 //   - indentation style matters. Spaces have to be used for indentation
 //     and it should start with two spaces indentation

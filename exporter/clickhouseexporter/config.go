@@ -318,5 +318,5 @@ func (cfg *Config) clusterString() string {
 		return ""
 	}
 	escaped := strings.ReplaceAll(cfg.ClusterName, "`", "``")
-	return fmt.Sprintf("ON CLUSTER `%s`", escaped)
+	return fmt.Sprintf("ON CLUSTER %#q", escaped)
 }
