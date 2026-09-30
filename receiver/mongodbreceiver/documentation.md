@@ -641,12 +641,10 @@ The amount of time that the server has been running.
 
 The cumulative time spent waiting for write concern acknowledgement.
 
-Read from serverStatus.metrics.getLastError.wtime.totalMillis, whose name is a legacy artifact
-of a command removed in MongoDB 5.1. The counter increments for write operations that specify
-a write concern greater than w:1, which includes the w:"majority" default applied to replica
-sets since MongoDB 5.0, so it accumulates under an ordinary replica set workload. It stays at
-zero on a standalone deployment, where there is no acknowledgement to wait for, and for writes
-that explicitly specify w:1.
+Increments for write operations that specify a write concern greater than w:1, which includes
+the w:"majority" default applied to replica sets since MongoDB 5.0. Accumulates under an
+ordinary replica set workload and stays at zero on a standalone deployment and for writes that
+specify w:1.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
