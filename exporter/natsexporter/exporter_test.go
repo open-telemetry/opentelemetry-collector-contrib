@@ -51,7 +51,7 @@ func TestExporter_CoreNATS(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	exp := newExporter(set, cfg)
 
-	require.NoError(t, exp.start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, exp.Start(ctx, componenttest.NewNopHost()))
 	require.NoError(t, exp.pushLogs(ctx, testdata.GenerateLogs(1)))
 
 	msg, err := sub.NextMsg(5 * time.Second)
@@ -59,7 +59,7 @@ func TestExporter_CoreNATS(t *testing.T) {
 	assert.Equal(t, "otel_logs", msg.Subject)
 	assert.NotEmpty(t, msg.Data)
 
-	require.NoError(t, exp.shutdown(ctx))
+	require.NoError(t, exp.Shutdown(ctx))
 }
 
 // TestExporter_PermanentError verifies that a deterministic subject-evaluation
@@ -79,8 +79,8 @@ func TestExporter_PermanentError(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	exp := newExporter(set, cfg)
 
-	require.NoError(t, exp.start(ctx, componenttest.NewNopHost()))
-	t.Cleanup(func() { _ = exp.shutdown(ctx) })
+	require.NoError(t, exp.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = exp.Shutdown(ctx) })
 
 	err := exp.pushLogs(ctx, testdata.GenerateLogs(1))
 	require.Error(t, err)
