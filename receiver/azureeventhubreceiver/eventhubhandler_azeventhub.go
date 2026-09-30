@@ -253,10 +253,13 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 							return
 						case <-time.After(time.Second * time.Duration(pollRate)):
 						}
-						if pc, err = newClient(); err != nil {
+						// Never assign a nil client to pc: the deferred Close would panic.
+						newPC, err := newClient()
+						if err != nil {
 							w.setErr(err)
 							return
 						}
+						pc = newPC
 					}
 					continue
 				}

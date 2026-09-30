@@ -67,6 +67,7 @@ type mockAzeventHub struct {
 	closed              bool
 	partitionClient     *mockPartitionClient
 	newClientCount      atomic.Int32
+	newClientErr        error
 }
 
 func (a *mockAzeventHub) GetEventHubProperties(_ context.Context, _ *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
@@ -80,6 +81,9 @@ func (a *mockAzeventHub) GetPartitionProperties(_ context.Context, _ string, _ *
 func (a *mockAzeventHub) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (azPartitionClient, error) {
 	// Counted last so a test waiting on the count observes the fields written below.
 	defer a.newClientCount.Add(1)
+	if a.newClientCount.Load() > 0 && a.newClientErr != nil {
+		return nil, a.newClientErr
+	}
 	a.partitionID = partitionID
 	if options != nil {
 		if options.StartPosition.Offset != nil {
@@ -349,6 +353,24 @@ func TestReceive_RecreatesClientOnOwnershipLost(t *testing.T) {
 	// first client is torn down after the ownership-lost error, a second one is opened and polled
 	require.Eventually(t, func() bool { return hub.newClientCount.Load() >= 2 && pc.callCount.Load() >= 2 }, 4*time.Second, 50*time.Millisecond)
 	assert.True(t, pc.closed.Load())
+}
+
+func TestReceive_RecreateFailureDoesNotPanic(t *testing.T) {
+	pc := &mockPartitionClient{err: &azeventhubs.Error{Code: azeventhubs.ErrorCodeOwnershipLost}}
+	hub := &mockAzeventHub{partitionClient: pc, newClientErr: errors.New("recreate failed")}
+	h := &hubWrapperAzeventhubImpl{
+		hub:    hub,
+		config: &Config{Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub", PollRate: 1},
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	listener, err := h.Receive(ctx, "p1", func(_ context.Context, _ *azureEvent) error { return nil }, false, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	<-listener.Done()
+	require.ErrorContains(t, listener.Err(), "recreate failed")
 }
 
 func TestReceive_RecreatedClientResumesFromLastSequenceNumber(t *testing.T) {
