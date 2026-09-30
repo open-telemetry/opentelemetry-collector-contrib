@@ -22,6 +22,8 @@ func NewFactory() connector.Factory {
 		createDefaultConfig,
 		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
 		connector.WithTracesToLogs(createTracesToLogsConnector, metadata.TracesToLogsStability),
+		connector.WithLogsToLogs(createLogsToLogsConnector, metadata.LogsToLogsStability),
+		connector.WithLogsToMetrics(createLogsToMetricsConnector, metadata.LogsToMetricsStability),
 	)
 }
 
@@ -44,4 +46,16 @@ func createTracesToLogsConnector(_ context.Context, params connector.Settings, c
 	lc := newLogsConnector(params.Logger, cfg)
 	lc.logsConsumer = nextConsumer
 	return lc, nil
+}
+
+func createLogsToLogsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Logs, error) {
+	lc := newLogsConnector(params.Logger, cfg)
+	lc.logsConsumer = nextConsumer
+	return lc, nil
+}
+
+func createLogsToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Logs, error) {
+	mc := newMetricsConnector(params.Logger, cfg)
+	mc.metricsConsumer = nextConsumer
+	return mc, nil
 }

@@ -138,10 +138,16 @@ func TestStochasticIncrement(t *testing.T) {
 		},
 	}
 
-	maxCount := uint64(6742351) // make up a number
+	// Integer weights must divide maxCount exactly, otherwise stochasticDiv has a
+	// non-zero remainder and may probabilistically round up, making the test flaky.
+	// 6742500 is a multiple of 300 (the LCM of 1, 3, 5 and 100), so every integer
+	// weight above yields a zero remainder and a deterministic result.
+	maxCount := uint64(6742500)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := stochasticDiv(maxCount, uint64(float64(maxCount)/tt.weight))
+			denominator := uint64(float64(maxCount) / tt.weight)
+			require.Zero(t, maxCount%denominator, "test data must divide exactly to be deterministic")
+			result := stochasticDiv(maxCount, denominator)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

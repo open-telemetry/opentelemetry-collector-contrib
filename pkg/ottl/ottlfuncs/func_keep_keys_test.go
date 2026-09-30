@@ -154,14 +154,14 @@ func Test_KeepKeysFactory(t *testing.T) {
 		factory := NewKeepKeysFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &KeepKeysArguments[any]{}, args)
+		assert.IsType(t, &keepKeysArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Keys"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewKeepKeysFactory[any]()
 		args := factory.CreateDefaultArguments()
-		keepKeysArgs, ok := args.(*KeepKeysArguments[any])
+		keepKeysArgs, ok := args.(*keepKeysArguments[any])
 		require.True(t, ok)
 		keepKeysArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -183,6 +183,45 @@ func Test_KeepKeysFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createKeepKeysFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "KeepKeysFactory args must be of type *KeepKeysArguments[K]")
+		assert.ErrorContains(t, err, "KeepKeysFactory args must be of type *keepKeysArguments[K]")
 	})
+}
+
+func BenchmarkKeepKeys(b *testing.B) {
+	input := pcommon.NewMap()
+	input.PutStr("test", "hello world")
+	input.PutInt("test2", 3)
+	input.PutBool("test3", true)
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			v, ok := m.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	keys := []ottl.StringGetter[pcommon.Map]{
+		ottl.StandardStringGetter[pcommon.Map]{
+			Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+				return "test", nil
+			},
+		},
+	}
+	exprFunc := keepKeys(target, keys)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		input.CopyTo(scenarioMap)
+		if _, err := exprFunc(ctx, scenarioMap); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

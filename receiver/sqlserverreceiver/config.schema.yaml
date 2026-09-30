@@ -27,6 +27,20 @@ $defs:
       max_rows_per_query:
         type: integer
         x-customType: uint64
+  top_procedure_collection:
+    description: TopProcedureCollection configures the collection of stored procedure statistics. Candidate rows are fetched up to MaxProcedureSampleCount, then the TopProcedureCount procedures with the largest elapsed-time delta over the interval are reported.
+    type: object
+    properties:
+      collection_interval:
+        description: CollectionInterval throttles the query and sets the window the deltas cover.
+        type: string
+        format: duration
+      max_procedure_sample_count:
+        type: integer
+        x-customType: uint
+      top_procedure_count:
+        type: integer
+        x-customType: uint
   top_query_collection:
     type: object
     properties:
@@ -64,6 +78,8 @@ properties:
     $ref: query_sample
   server:
     type: string
+  top_procedure_collection:
+    $ref: top_procedure_collection
   top_query_collection:
     description: EnableTopQueryCollection enables the collection of the top queries by the execution time. It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval. The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence we are reporting them as logs. The `N` is configured via `TopQueryCount`
     $ref: top_query_collection

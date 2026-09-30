@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
@@ -235,7 +236,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			rm, sm, metric, dp, exemplar := createTelemetry()
 
-			tCtx := NewTransformContextPtr(rm, sm, metric, dp, exemplar)
+			tCtx := NewTransformContext(rm, sm, metric, dp, exemplar)
 			defer tCtx.Close()
 
 			got, err := accessor.Get(t.Context(), tCtx)
@@ -289,7 +290,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	exemplar := dp.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 
-	ctx := NewTransformContextPtr(rm, sm, metric, dp, exemplar)
+	ctx := NewTransformContext(rm, sm, metric, dp, exemplar)
 	defer ctx.Close()
 
 	tests := []struct {
@@ -403,7 +404,7 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 
 func TestMarshalLogObjectIncludesDataPoint(t *testing.T) {
 	rm, sm, metric, dp, exemplar := createTelemetry()
-	ctx := NewTransformContextPtr(rm, sm, metric, dp, exemplar)
+	ctx := NewTransformContext(rm, sm, metric, dp, exemplar)
 	defer ctx.Close()
 
 	encoder := zapcore.NewMapObjectEncoder()
@@ -443,4 +444,21 @@ func createTelemetry() (pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.M
 	exemplar.FilteredAttributes().PutInt("int", 10)
 
 	return rm, sm, metric, dp, exemplar
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext: func(options ...TransformContextOption) *TransformContext {
+			return NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), pmetric.NewNumberDataPoint(), pmetric.NewExemplar(), options...)
+		},
+		WithCache: WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }

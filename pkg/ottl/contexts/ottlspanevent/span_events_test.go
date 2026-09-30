@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
@@ -443,7 +444,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			rs, ss, span, spanEvent := createTelemetry()
 
-			tCtx := NewTransformContextPtr(rs, ss, span, spanEvent, WithEventIndex(1))
+			tCtx := NewTransformContext(rs, ss, span, spanEvent, WithEventIndex(1))
 			defer tCtx.Close()
 
 			got, err := accessor.Get(t.Context(), tCtx)
@@ -479,7 +480,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	span := ss.Spans().AppendEmpty()
 	span.SetName("span")
 
-	ctx := NewTransformContextPtr(rs, ss, span, ptrace.NewSpanEvent())
+	ctx := NewTransformContext(rs, ss, span, ptrace.NewSpanEvent())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -585,9 +586,9 @@ func Test_setAndGetEventIndex(t *testing.T) {
 
 			var tCtx *TransformContext
 			if tt.setEventIndex {
-				tCtx = NewTransformContextPtr(rs, ss, span, spanEvent, WithEventIndex(tt.eventIndexValue))
+				tCtx = NewTransformContext(rs, ss, span, spanEvent, WithEventIndex(tt.eventIndexValue))
 			} else {
-				tCtx = NewTransformContextPtr(rs, ss, span, spanEvent)
+				tCtx = NewTransformContext(rs, ss, span, spanEvent)
 			}
 			defer tCtx.Close()
 
@@ -763,4 +764,21 @@ func Test_ParseEnum_False(t *testing.T) {
 			assert.Nil(t, actual)
 		})
 	}
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext: func(options ...TransformContextOption) *TransformContext {
+			return NewTransformContext(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), ptrace.NewSpan(), ptrace.NewSpanEvent(), options...)
+		},
+		WithCache: WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }

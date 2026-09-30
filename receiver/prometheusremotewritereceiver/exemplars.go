@@ -13,11 +13,11 @@ import (
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -68,7 +68,7 @@ func collectExemplars(
 			ScopeVersion: scopeVersion,
 			MetricName:   metadata.Name,
 			MetricType:   ts.Metadata.Type,
-			AttrsHash:    pdatautil.MapHash(extractAttributes(ls)),
+			AttrsHash:    xhash.MapHash(extractAttributes(ls)),
 		}
 
 		slice, ok := result[key.hash()]

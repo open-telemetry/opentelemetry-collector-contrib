@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -61,6 +62,11 @@ func createDefaultConfig() component.Config {
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       250,
 			CollectionInterval:  time.Minute,
+		},
+		TopProcedureCollection: TopProcedureCollection{
+			MaxProcedureSampleCount: 1000,
+			TopProcedureCount:       250,
+			CollectionInterval:      time.Minute,
 		},
 	}
 }
@@ -114,8 +120,14 @@ func setupLogQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
+	// db.server.query_plan is sourced from the same query as db.server.top_query and only splits the
+	// plan out of it, so it is collected as part of top query collection rather than on its own.
 	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
+	}
+
+	if cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		queries = append(queries, getSQLServerTopProcedureQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -171,12 +183,14 @@ type dbProvider struct {
 	pool        ConnectionPool
 	numScrapers int
 
-	mu       sync.Mutex
-	db       *sql.DB
-	openErr  error
-	opened   bool
-	closed   bool
-	closeErr error
+	mu                 sync.Mutex
+	db                 *sql.DB
+	openErr            error
+	opened             bool
+	closed             bool
+	closeErr           error
+	dbVersion          *string
+	versionErrReported bool
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -228,6 +242,47 @@ func (p *dbProvider) close() error {
 		p.closeErr = p.db.Close()
 	}
 	return p.closeErr
+}
+
+// detectVersion lazily queries SERVERPROPERTY('ProductVersion') and caches the
+// result. Returns (version, resolved): resolved=true means a definitive answer
+// was reached (success or confirmed NULL) and the caller should nil out its
+// versionFunc. resolved=false means a transient error; the caller should retry
+// next interval. The first error is logged at WARN; subsequent ones at DEBUG so
+// a permanent failure does not spam the log every interval. Safe for concurrent
+// use; all scrapers on this provider share the cached result.
+func (p *dbProvider) detectVersion(ctx context.Context, logger *zap.Logger) (string, bool) {
+	p.mu.Lock()
+	if p.dbVersion != nil {
+		v := *p.dbVersion
+		p.mu.Unlock()
+		return v, true
+	}
+	db := p.db
+	errReported := p.versionErrReported
+	p.mu.Unlock()
+
+	v, err := detectSQLServerVersion(ctx, db)
+	if v != nil {
+		if *v == "" {
+			logger.Warn("failed to detect SQL Server version: SERVERPROPERTY returned NULL; db.system.version will not be set")
+		}
+		p.mu.Lock()
+		p.dbVersion = v
+		p.mu.Unlock()
+		return *v, true
+	}
+	if err != nil {
+		if !errReported {
+			logger.Warn("failed to detect SQL Server version; db.system.version will not be set; will retry", zap.Error(err))
+			p.mu.Lock()
+			p.versionErrReported = true
+			p.mu.Unlock()
+		} else {
+			logger.Debug("failed to detect SQL Server version; retrying next interval", zap.Error(err))
+		}
+	}
+	return "", false
 }
 
 // setConnectionPoolSettings applies the configured pool settings, falling back
@@ -297,6 +352,10 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			cfg,
 			cache)
 
+		if isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.versionFunc = provider.detectVersion
+		}
+
 		scrapers = append(scrapers, sqlServerScraper)
 	}
 
@@ -339,6 +398,12 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			cache = newCache(1)
 		}
 
+		if query == getSQLServerTopProcedureQuery(cfg.InstanceName) {
+			// every candidate row caches 7 counters, and multiply by 2 so that a procedure
+			// dropping out of one scrape's sample still has its previous values on the next.
+			cache = newCache(int(cfg.TopProcedureCollection.MaxProcedureSampleCount * 7 * 2))
+		}
+
 		sqlServerScraper := newSQLServerScraper(id, query,
 			sqlquery.TelemetryConfig{},
 			provider.getDB,
@@ -346,6 +411,10 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			params,
 			cfg,
 			cache)
+
+		if isDbSystemVersionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.versionFunc = provider.detectVersion
+		}
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}
@@ -543,4 +612,11 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverDiskOperations.Enabled ||
 		metrics.SqlserverDiskIo.Enabled
+}
+
+func isDbSystemVersionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {
+	if resourceAttrs == nil {
+		return false
+	}
+	return resourceAttrs.DbSystemVersion.Enabled
 }
