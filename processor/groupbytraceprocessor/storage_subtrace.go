@@ -59,19 +59,9 @@ var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
 //
 // They do not outlive their usefulness, though: see forgetUnreferencedSpanIDs.
 type traceBuffer struct {
-	services map[[16]byte]map[pcommon.SpanID][]*bufferedSpan
-	spanIDs  map[pcommon.SpanID][16]byte
-}
-
-// liveSpans counts the spans the trace still holds, across every service.
-func (tb *traceBuffer) liveSpans() int {
-	n := 0
-	for _, spans := range tb.services {
-		for _, bsList := range spans {
-			n += len(bsList)
-		}
-	}
-	return n
+	services  map[[16]byte]map[pcommon.SpanID][]*bufferedSpan
+	spanIDs   map[pcommon.SpanID][16]byte
+	spanCount int
 }
 
 // forgetUnreferencedSpanIDs drops the record of span IDs that are neither
@@ -157,6 +147,7 @@ func (s *subtraceMemoryStorage) insertScopeSpans(id subtraceID, ctx *spanContext
 		spans[spanID] = append(spans[spanID], bs)
 		tb.spanIDs[spanID] = id.serviceID
 	}
+	tb.spanCount += ssCopy.Spans().Len()
 	return nil
 }
 
@@ -204,6 +195,7 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 				all = append(all, bsList...)
 			}
 			due = append(due, all)
+			tb.spanCount -= len(all)
 			for spanID := range spans {
 				delete(spans, spanID)
 			}
@@ -220,6 +212,7 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 				continue
 			}
 			due = append(due, call)
+			tb.spanCount -= len(call)
 			for _, bs := range call {
 				delete(spans, bs.span.SpanID())
 			}
@@ -239,7 +232,7 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 	// once at least half the record is spans that have come and gone. Running it
 	// on every release would scale that pass with the number of services a trace
 	// passes through. Retention is bounded either way, at twice what is buffered.
-	if live := tb.liveSpans(); len(tb.spanIDs) > 2*live {
+	if live := tb.spanCount; len(tb.spanIDs) > 2*live {
 		tb.forgetUnreferencedSpanIDs()
 	}
 

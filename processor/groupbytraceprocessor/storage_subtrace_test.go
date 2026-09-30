@@ -530,7 +530,7 @@ func TestSubtraceStorage_RetainedSpanIDsStayBounded(t *testing.T) {
 
 	st.RLock()
 	retained := len(st.traces[tid].spanIDs)
-	live := st.traces[tid].liveSpans()
+	live := st.traces[tid].spanCount
 	st.RUnlock()
 
 	assert.LessOrEqual(t, retained, 2*live+perRound,
