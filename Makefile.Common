@@ -20,6 +20,11 @@ GO_BUILD_LDFLAGS="-s -w"
 GO_COMPAT_VERSION=$(shell awk '/^go /{print $$2}' go.mod)
 GOTEST_TIMEOUT?= 900s
 GOCMD?= go
+# `|` between distinct spellings of one proxy makes Go retry any fetch error; keep in sync with setup-go-tools, prepare-release, prometheus-compliance-tests.
+ifeq ($(GITHUB_ACTIONS),true)
+export GOPROXY ?= https://proxy.golang.org|https://proxy.golang.org/|https://proxy.golang.org:443,direct
+endif
+
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
@@ -421,6 +426,10 @@ run-changed-tests:
 			echo "Failed to find the affected test directories."; \
 		else \
 			set -e; for dir in $$(echo $${AFFECTED_TEST_DIRS}); do \
+			if [ ! -d "$${dir}" ]; then \
+				echo "Skipping $${dir}: directory no longer exists."; \
+				continue; \
+			fi; \
 			(cd "$${dir}" && \
 				$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -count=3 ); \
 			done \
