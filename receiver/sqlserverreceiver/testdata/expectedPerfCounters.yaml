@@ -28,8 +28,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 1341
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.full_scan.rate
             unit: '{scans}/s'
         scope:
@@ -64,8 +64,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 179630
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.index.search.rate
             unit: '{searches}/s'
         scope:
@@ -100,8 +100,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.escalation.rate
             unit: '{escalation}/s'
         scope:
@@ -140,8 +140,8 @@ resourceMetrics:
                     - key: sqlserver.access.scan.type
                       value:
                         stringValue: range
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.access.scan.rate
             unit: '{scan}/s'
         scope:
@@ -180,8 +180,8 @@ resourceMetrics:
                     - key: sqlserver.access.scan.type
                       value:
                         stringValue: probe
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.access.scan.rate
             unit: '{scan}/s'
         scope:
@@ -220,8 +220,8 @@ resourceMetrics:
                     - key: sqlserver.access.scan.type
                       value:
                         stringValue: free_space
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.access.scan.rate
             unit: '{scan}/s'
         scope:
@@ -260,8 +260,8 @@ resourceMetrics:
                     - key: sqlserver.page.allocation.type
                       value:
                         stringValue: allocated
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.allocation.rate
             unit: '{page}/s'
         scope:
@@ -300,8 +300,8 @@ resourceMetrics:
                     - key: sqlserver.page.allocation.type
                       value:
                         stringValue: deallocated
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.allocation.rate
             unit: '{page}/s'
         scope:
@@ -340,8 +340,8 @@ resourceMetrics:
                     - key: sqlserver.page.allocation.type
                       value:
                         stringValue: mixed
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.allocation.rate
             unit: '{page}/s'
         scope:
@@ -380,8 +380,8 @@ resourceMetrics:
                     - key: sqlserver.page.compression.type
                       value:
                         stringValue: succeeded
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.compression.rate
             unit: '{page}/s'
         scope:
@@ -420,8 +420,8 @@ resourceMetrics:
                     - key: sqlserver.page.compression.type
                       value:
                         stringValue: attempted
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.compression.rate
             unit: '{page}/s'
         scope:
@@ -460,8 +460,8 @@ resourceMetrics:
                     - key: sqlserver.extent.operation.type
                       value:
                         stringValue: allocated
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.extent.operation.rate
             unit: '{extent}/s'
         scope:
@@ -500,8 +500,8 @@ resourceMetrics:
                     - key: sqlserver.extent.operation.type
                       value:
                         stringValue: deallocated
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.extent.operation.rate
             unit: '{extent}/s'
         scope:
@@ -536,8 +536,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 8
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.ghost_record.skipped.rate
             unit: '{record}/s'
         scope:
@@ -572,8 +572,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 4
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.scan_point.revalidation.rate
             unit: '{revalidate}/s'
         scope:
@@ -608,8 +608,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0.975
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.worktable.cache.hit_ratio
             unit: "1"
         scope:
@@ -648,8 +648,8 @@ resourceMetrics:
                     - key: replica.direction
                       value:
                         stringValue: receive
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.replica.data.rate
             unit: By/s
         scope:
@@ -688,8 +688,8 @@ resourceMetrics:
                     - key: replica.direction
                       value:
                         stringValue: transmit
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.replica.data.rate
             unit: By/s
         scope:
@@ -724,8 +724,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 100
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.buffer_cache.hit_ratio
             unit: '%'
         scope:
@@ -764,8 +764,8 @@ resourceMetrics:
                     - key: page.pool
                       value:
                         stringValue: database
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.page.count
             unit: '{page}'
         scope:
@@ -800,8 +800,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.buffer_cache.free_list.stalls.rate
             unit: '{stalls}/s'
         scope:
@@ -836,8 +836,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.lazy_write.rate
             unit: '{writes}/s'
         scope:
@@ -876,8 +876,8 @@ resourceMetrics:
                     - key: performance_counter.object_name
                       value:
                         stringValue: SQLServer:Buffer Manager
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.life_expectancy
             unit: s
         scope:
@@ -912,8 +912,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 389865
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.lookup.rate
             unit: '{lookups}/s'
         scope:
@@ -952,8 +952,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.operation.rate
             unit: '{operations}/s'
         scope:
@@ -992,8 +992,8 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.operation.rate
             unit: '{operations}/s'
         scope:
@@ -1028,8 +1028,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 347
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.read_ahead.rate
             unit: '{page}/s'
         scope:
@@ -1068,8 +1068,8 @@ resourceMetrics:
                     - key: page.pool
                       value:
                         stringValue: database
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.page.count
             unit: '{page}'
         scope:
@@ -1108,8 +1108,8 @@ resourceMetrics:
                     - key: performance_counter.object_name
                       value:
                         stringValue: SQLServer:Buffer Node
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.page.life_expectancy
             unit: s
         scope:
@@ -1144,8 +1144,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.transaction.mirror_write.rate
             unit: '{transactions}/s'
         scope:
@@ -1182,8 +1182,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: ms
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -1217,8 +1217,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "18256656"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.execution.errors
             unit: '{errors}'
         scope:
@@ -1262,8 +1262,8 @@ resourceMetrics:
                     - key: table.status
                       value:
                         stringValue: temporary
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: '{tables}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -1297,8 +1297,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 75
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.login.rate
             unit: '{logins}/s'
         scope:
@@ -1333,8 +1333,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 72
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.logout.rate
             unit: '{logouts}/s'
         scope:
@@ -1369,8 +1369,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.processes.blocked
             unit: '{processes}'
         scope:
@@ -1405,8 +1405,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "3"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.user.connection.count
             unit: '{connections}'
         scope:
@@ -1441,8 +1441,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0.162
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.latch.wait_time.avg
             unit: s
         scope:
@@ -1477,8 +1477,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 935
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.latch.wait.rate
             unit: '{wait}/s'
         scope:
@@ -1515,8 +1515,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 48.25
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: s
         scope:
@@ -1551,8 +1551,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "12"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.latch.superlatch.count
             unit: '{superlatch}'
         scope:
@@ -1591,8 +1591,8 @@ resourceMetrics:
                     - key: transition.direction
                       value:
                         stringValue: promotion
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.latch.superlatch.transition.rate
             unit: '{transition}/s'
         scope:
@@ -1631,8 +1631,8 @@ resourceMetrics:
                     - key: transition.direction
                       value:
                         stringValue: demotion
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.latch.superlatch.transition.rate
             unit: '{transition}/s'
         scope:
@@ -1671,8 +1671,8 @@ resourceMetrics:
                     - key: sqlserver.lock.timeout.type
                       value:
                         stringValue: nonzero
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.timeout.rate
             unit: '{timeout}/s'
         scope:
@@ -1711,8 +1711,8 @@ resourceMetrics:
                     - key: sqlserver.lock.timeout.type
                       value:
                         stringValue: all
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.timeout.rate
             unit: '{timeout}/s'
         scope:
@@ -1747,8 +1747,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 15
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.wait.rate
             unit: '{requests}/s'
         scope:
@@ -1783,8 +1783,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.deadlock.rate
             unit: '{deadlocks}/s'
         scope:
@@ -1821,8 +1821,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: '{grants}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -1860,8 +1860,8 @@ resourceMetrics:
                     - key: memory.pool
                       value:
                         stringValue: target
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.area
             unit: By
         scope:
@@ -1900,8 +1900,8 @@ resourceMetrics:
                     - key: memory.pool
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.area
             unit: By
         scope:
@@ -1938,8 +1938,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 24944
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -1973,8 +1973,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.resource_pool.disk.throttled.read.rate
             unit: '{reads}/s'
         scope:
@@ -2013,8 +2013,8 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.resource_pool.disk.operations
             unit: '{operations}/s'
         scope:
@@ -2049,8 +2049,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.resource_pool.disk.throttled.write.rate
             unit: '{writes}/s'
         scope:
@@ -2089,8 +2089,8 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.resource_pool.disk.operations
             unit: '{operations}/s'
         scope:
@@ -2129,8 +2129,8 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.resource_pool.disk.operations
             unit: '{operations}/s'
         scope:
@@ -2165,8 +2165,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.resource_pool.disk.throttled.write.rate
             unit: '{writes}/s'
         scope:
@@ -2205,8 +2205,8 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.resource_pool.disk.operations
             unit: '{operations}/s'
         scope:
@@ -2241,8 +2241,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.resource_pool.disk.throttled.read.rate
             unit: '{reads}/s'
         scope:
@@ -2279,8 +2279,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 234720
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -2318,8 +2318,8 @@ resourceMetrics:
                     - key: sqlserver.error.category
                       value:
                         stringValue: db_offline
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.error.rate
             unit: '{error}/s'
         scope:
@@ -2358,8 +2358,8 @@ resourceMetrics:
                     - key: sqlserver.error.category
                       value:
                         stringValue: info
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.error.rate
             unit: '{error}/s'
         scope:
@@ -2398,8 +2398,8 @@ resourceMetrics:
                     - key: sqlserver.error.category
                       value:
                         stringValue: kill_connection
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.error.rate
             unit: '{error}/s'
         scope:
@@ -2438,8 +2438,8 @@ resourceMetrics:
                     - key: sqlserver.error.category
                       value:
                         stringValue: user
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.error.rate
             unit: '{error}/s'
         scope:
@@ -2474,8 +2474,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 431
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.batch.request.rate
             unit: '{requests}/s'
         scope:
@@ -2510,8 +2510,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 264
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.batch.sql_compilation.rate
             unit: '{compilations}/s'
         scope:
@@ -2546,8 +2546,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 25
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.batch.sql_recompilation.rate
             unit: '{compilations}/s'
         scope:
@@ -2588,8 +2588,8 @@ resourceMetrics:
                     - key: tempdb.state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -2623,8 +2623,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.tempdb.version_store.size
             unit: kBy
         scope:
@@ -2661,8 +2661,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{wait}'
         scope:
@@ -2699,8 +2699,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "20"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{wait}'
         scope:
@@ -2739,8 +2739,8 @@ resourceMetrics:
                     - key: memory.pool
                       value:
                         stringValue: sql_cache
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.area
             unit: By
         scope:
@@ -2779,8 +2779,8 @@ resourceMetrics:
                     - key: memory.pool
                       value:
                         stringValue: optimizer
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.area
             unit: By
         scope:
@@ -2819,8 +2819,8 @@ resourceMetrics:
                     - key: memory.pool
                       value:
                         stringValue: connection
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.area
             unit: By
         scope:
@@ -2859,8 +2859,8 @@ resourceMetrics:
                     - key: memory.pool
                       value:
                         stringValue: granted_workspace
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.area
             unit: By
         scope:
@@ -2899,8 +2899,8 @@ resourceMetrics:
                     - key: memory.pool
                       value:
                         stringValue: max_workspace
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.area
             unit: By
         scope:
@@ -2939,8 +2939,8 @@ resourceMetrics:
                     - key: page.pool
                       value:
                         stringValue: cache
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.page.count
             unit: '{page}'
         scope:
@@ -2979,8 +2979,8 @@ resourceMetrics:
                     - key: page.pool
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.page.count
             unit: '{page}'
         scope:
@@ -3019,8 +3019,8 @@ resourceMetrics:
                     - key: page.pool
                       value:
                         stringValue: target
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.page.count
             unit: '{page}'
         scope:
@@ -3059,8 +3059,8 @@ resourceMetrics:
                     - key: page.pool
                       value:
                         stringValue: stolen
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.page.count
             unit: '{page}'
         scope:
@@ -3099,8 +3099,8 @@ resourceMetrics:
                     - key: page.pool
                       value:
                         stringValue: reserved
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.page.count
             unit: '{page}'
         scope:
@@ -3139,8 +3139,8 @@ resourceMetrics:
                     - key: page.pool
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.page.count
             unit: '{page}'
         scope:
@@ -3179,8 +3179,8 @@ resourceMetrics:
                     - key: cache.state
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.cache.object.count
             unit: '{object}'
         scope:
@@ -3219,8 +3219,8 @@ resourceMetrics:
                     - key: cache.state
                       value:
                         stringValue: in_use
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.memory.cache.object.count
             unit: '{object}'
         scope:
@@ -3259,8 +3259,8 @@ resourceMetrics:
                     - key: cursor.state
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.cursor.count
             unit: '{cursor}'
         scope:
@@ -3295,8 +3295,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 12
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.connection.reset.rate
             unit: '{connection}/s'
         scope:
@@ -3335,8 +3335,8 @@ resourceMetrics:
                     - key: cursor.state
                       value:
                         stringValue: cached
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.cursor.count
             unit: '{cursor}'
         scope:
@@ -3371,8 +3371,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "8"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.cursor.plan.count
             unit: '{plan}'
         scope:
@@ -3407,8 +3407,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "262144"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.cursor.memory.usage
             unit: By
         scope:
@@ -3443,8 +3443,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 42
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.cursor.request.rate
             unit: '{request}/s'
         scope:
@@ -3481,8 +3481,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 0.0015
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: s
         scope:
@@ -3521,8 +3521,8 @@ resourceMetrics:
                     - key: task.state
                       value:
                         stringValue: running
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.task.count
             unit: '{task}'
         scope:
@@ -3561,8 +3561,8 @@ resourceMetrics:
                     - key: task.state
                       value:
                         stringValue: limit_reached
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.task.count
             unit: '{task}'
         scope:
@@ -3597,8 +3597,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "10534912"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.memory
             unit: By
         scope:
@@ -3637,8 +3637,8 @@ resourceMetrics:
                     - key: sqlserver.lock.block.type
                       value:
                         stringValue: blocks
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.block.count
             unit: '{block}'
         scope:
@@ -3677,8 +3677,8 @@ resourceMetrics:
                     - key: task.result
                       value:
                         stringValue: started
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.task.rate
             unit: '{task}/s'
         scope:
@@ -3717,8 +3717,8 @@ resourceMetrics:
                     - key: task.result
                       value:
                         stringValue: aborted
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.task.rate
             unit: '{task}/s'
         scope:
@@ -3753,8 +3753,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 7
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.stored_procedure.invocation.rate
             unit: '{invocation}/s'
         scope:
@@ -3793,8 +3793,8 @@ resourceMetrics:
                     - key: sqlserver.lock.block.type
                       value:
                         stringValue: allocated
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.block.count
             unit: '{block}'
         scope:
@@ -3833,8 +3833,8 @@ resourceMetrics:
                     - key: sqlserver.lock.block.type
                       value:
                         stringValue: owner
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.block.count
             unit: '{block}'
         scope:
@@ -3873,8 +3873,8 @@ resourceMetrics:
                     - key: sqlserver.lock.block.type
                       value:
                         stringValue: owner_allocated
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.block.count
             unit: '{block}'
         scope:
@@ -3909,8 +3909,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 12345
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.request.rate
             unit: '{request}/s'
         scope:
@@ -3947,8 +3947,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 0.271
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: s
         scope:
@@ -3983,8 +3983,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 456
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.lock.wait_time.avg
             unit: ms
         scope:
@@ -4019,8 +4019,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 9.469696969696969
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.recompilation.ratio
             unit: '%'
         scope:
@@ -4058,8 +4058,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 458
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.transaction.rate
             unit: '{transactions}/s'
         scope:
@@ -4099,8 +4099,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "6"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{growths}'
         scope:
@@ -4138,8 +4138,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.backup_or_restore.rate
             unit: '{backups_or_restores}/s'
         scope:
@@ -4177,8 +4177,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.backup_or_restore.rate
             unit: '{backups_or_restores}/s'
         scope:
@@ -4218,8 +4218,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{growths}'
         scope:
@@ -4257,8 +4257,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 430
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.transaction.rate
             unit: '{transactions}/s'
         scope:
@@ -4296,8 +4296,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 158
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.transaction.rate
             unit: '{transactions}/s'
         scope:
@@ -4337,8 +4337,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{growths}'
         scope:
@@ -4376,8 +4376,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.backup_or_restore.rate
             unit: '{backups_or_restores}/s'
         scope:
@@ -4415,8 +4415,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.backup_or_restore.rate
             unit: '{backups_or_restores}/s'
         scope:
@@ -4456,8 +4456,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "6"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{growths}'
         scope:
@@ -4495,8 +4495,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 161
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.transaction.rate
             unit: '{transactions}/s'
         scope:
@@ -4534,8 +4534,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 447
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.transaction.rate
             unit: '{transactions}/s'
         scope:
@@ -4575,8 +4575,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{growths}'
         scope:
@@ -4614,8 +4614,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.backup_or_restore.rate
             unit: '{backups_or_restores}/s'
         scope:
@@ -4653,8 +4653,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.backup_or_restore.rate
             unit: '{backups_or_restores}/s'
         scope:
@@ -4694,8 +4694,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{growths}'
         scope:
@@ -4733,8 +4733,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 6
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.transaction.rate
             unit: '{transactions}/s'
         scope:
@@ -4772,8 +4772,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 506
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.transaction.rate
             unit: '{transactions}/s'
         scope:
@@ -4813,8 +4813,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{growths}'
         scope:
@@ -4852,8 +4852,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: sqlserver.database.backup_or_restore.rate
             unit: '{backups_or_restores}/s'
         scope:

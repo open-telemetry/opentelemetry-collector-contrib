@@ -643,6 +643,7 @@ func isPerformanceCounterRate(counterType, counterName string) bool {
 		"Guided plan executions/sec",
 		"Index Searches/sec",
 		"Latch Waits/sec",
+		"Lazy writes/sec",
 		"Lock Requests/sec",
 		"Lock Timeouts (timeout > 0)/sec",
 		"Lock Timeouts/sec",
@@ -656,6 +657,8 @@ func isPerformanceCounterRate(counterType, counterName string) bool {
 		"Page Compression Attempts/sec",
 		"Page Deallocations/sec",
 		"Page lookups/sec",
+		"Page reads/sec",
+		"Page writes/sec",
 		"Pages Allocated/sec",
 		"Pages Compressed/sec",
 		"Probe Scans/sec",
@@ -673,6 +676,7 @@ func isPerformanceCounterRate(counterType, counterName string) bool {
 		"Table Lock Escalations/sec",
 		"Tasks Aborted/sec",
 		"Tasks Started/sec",
+		"Transactions/sec",
 		"Unsafe Auto-Params/sec":
 		return true
 	default:

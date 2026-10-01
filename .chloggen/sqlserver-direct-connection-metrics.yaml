@@ -6,6 +6,8 @@ note: Fix missing metrics when using direct SQL Server connection - `sqlserver.l
 
 issues: [51384]
 
-subtext:
+subtext: |
+  `sqlserver.transaction.rate`, `sqlserver.page.operation.rate` and `sqlserver.page.lazy_write.rate` report no
+  data point on the first scrape, since a per-second rate is calculated from two samples.
 
 change_logs: [user]
