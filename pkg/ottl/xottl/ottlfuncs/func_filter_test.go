@@ -13,13 +13,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 )
 
 func Test_filter(t *testing.T) {
 	tests := []struct {
 		name      string
 		source    ottl.Getter[any]
-		predicate *ottl.LambdaExpression[any]
+		predicate *xottl.LambdaExpression[any]
 		want      any
 	}{
 		{
@@ -32,7 +33,7 @@ func Test_filter(t *testing.T) {
 					return m, nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				return strings.HasPrefix(k.(string), "keep"), nil
 			}),
@@ -48,7 +49,7 @@ func Test_filter(t *testing.T) {
 					return m, nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				v := resolveBinding("v")
 				return v.(string) == "keep", nil
 			}),
@@ -61,7 +62,7 @@ func Test_filter(t *testing.T) {
 					return pcommon.NewMap(), nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return true, nil
 			}),
 			want: map[string]any{},
@@ -77,7 +78,7 @@ func Test_filter(t *testing.T) {
 					},
 				}
 			}(),
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				v := resolveBinding("v")
 				return v.(string) == "keep", nil
 			}),
@@ -94,7 +95,7 @@ func Test_filter(t *testing.T) {
 					},
 				}
 			}(),
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				i := resolveBinding("i")
 				return i.(int64)%2 == 0, nil
 			}),
@@ -129,7 +130,7 @@ func Test_filter_error(t *testing.T) {
 					return "not a collection", nil
 				},
 			},
-			ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return true, nil
 			}),
 		)
@@ -147,7 +148,7 @@ func Test_filter_error(t *testing.T) {
 				return m, nil
 			},
 		}
-		predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		predicate := xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return 123, nil
 		})
 
@@ -167,7 +168,7 @@ func Test_filter_error(t *testing.T) {
 				return s, nil
 			},
 		}
-		predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		predicate := xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return 123, nil
 		})
 
@@ -204,7 +205,7 @@ func Test_FilterFactory(t *testing.T) {
 				return pcommon.NewMap(), nil
 			},
 		}
-		filterArgs.Predicate = ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		filterArgs.Predicate = xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return true, nil
 		})
 
@@ -230,7 +231,7 @@ func BenchmarkFilter(b *testing.B) {
 			return m, nil
 		},
 	}
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	predicate := xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		k := resolveBinding("k")
 		return strings.HasPrefix(k.(string), "keep"), nil
 	})
