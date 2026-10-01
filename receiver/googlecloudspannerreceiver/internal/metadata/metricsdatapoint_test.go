@@ -131,8 +131,6 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPII(t *testing.T) {
 	assert.Equal(t, metricsDataPoint.labelValues[1].Value(), "table2("+hashOf23+","+hashOfHello+")")
 }
 
-
-
 func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(t *testing.T) {
 	// We are checking that function HideLockStatsRowrangestartkeyPII() does not panic for invalid label values.
 	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType)
@@ -331,7 +329,7 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 		{
 			name:          "composite table key",
 			originalValue: "Messages(3,\"a\",1)",
-			expectedValue: "Messages(1309098117,2894955330,1803989619)", 
+			expectedValue: "Messages(1309098117,2894955330,1803989619)",
 		},
 		{
 			name:          "nested brackets key",
@@ -343,7 +341,7 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			originalValue: "Table(3,\"John, Doe\")",
 			expectedValue: "Table(1309098117,145129574)",
 		},
-        {
+		{
 			name:          "trailing plus",
 			originalValue: "Users(3+)",
 			expectedValue: "Users(1309098117+)",
@@ -388,13 +386,23 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			originalValue: "UsersTable(123",
 			expectedValue: "UsersTable(2791679065",
 		},
+		{
+			name:          "date of birth with hyphens",
+			originalValue: "UsersTable(\"1990-01-01\")",
+			expectedValue: "UsersTable(25106544)",
+		},
+		{
+			name:          "date of birth with slashes",
+			originalValue: "UsersTable(\"05/12/1985\")",
+			expectedValue: "UsersTable(1994209726)",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			splitStartMetadata, _ := NewLabelValueMetadata("split_start", "splitStartColumnName", StringValueType)
 			labelValue1 := stringLabelValue{metadata: splitStartMetadata, value: tc.originalValue}
-			
+
 			labelValues := []LabelValue{labelValue1}
 			metricsDataPoint := &MetricsDataPoint{
 				metricName:  "test_metric",
@@ -402,9 +410,9 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 				databaseID:  databaseID(),
 				labelValues: labelValues,
 			}
-			
+
 			metricsDataPoint.HideSplitStatsKeysPII()
-			
+
 			assert.Equal(t, tc.expectedValue, metricsDataPoint.labelValues[0].Value(), "Hashing failed for case %s", tc.name)
 		})
 	}
