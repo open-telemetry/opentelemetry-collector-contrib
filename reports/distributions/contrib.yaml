@@ -226,7 +226,7 @@ components:
         - splunk_enterprise
         - splunk_hec
         - sql_query
-        - sqlserver
+        - sql_server
         - ssh_check
         - statsd
         - stef
