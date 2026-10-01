@@ -59,43 +59,6 @@ type sqlServerScraperHelper struct {
 	serviceInstanceID      string
 	serverAddress          string
 	serverPort             int64
-
-	// Previous sample of the Average Wait Time (ms) numerator and its base counter.
-	// The shared LRU cache holds a single entry, so these are kept separately.
-	prevLockWaitNum  int64
-	prevLockWaitBase int64
-	hasPrevLockWait  bool
-
-	// Previous sample of each cumulative counter that is reported as a per-second
-	// rate, keyed by counter name and instance.
-	prevRates map[string]rateSample
-}
-
-// rateSample is one observation of a cumulative counter.
-type rateSample struct {
-	value float64
-	at    time.Time
-}
-
-// rateFromCounter converts a cumulative performance counter into a per-second rate
-// using the previous sample. `sys.dm_os_performance_counters` reports these counters
-// as totals accumulated since the server started, unlike the Windows PDH path where
-// the rate is already calculated. Reports false until there is a previous sample to
-// measure against, and when the counter has been reset.
-func (s *sqlServerScraperHelper) rateFromCounter(key string, value float64, at time.Time) (float64, bool) {
-	if s.prevRates == nil {
-		s.prevRates = make(map[string]rateSample)
-	}
-	prev, ok := s.prevRates[key]
-	s.prevRates[key] = rateSample{value: value, at: at}
-	if !ok {
-		return 0, false
-	}
-	elapsed := at.Sub(prev.at).Seconds()
-	if elapsed <= 0 || value < prev.value {
-		return 0, false
-	}
-	return (value - prev.value) / elapsed, true
 }
 
 var (
@@ -632,7 +595,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const pageWritesPerSec = "Page writes/sec"
 	const logGrowths = "Log Growths"
 	const lockWaitTimeAvgMS = "Average Wait Time (ms)"
-	const lockWaitTimeAvgBase = "Average Wait Time Base"
 	const memoryGrantsPending = "Memory Grants Pending"
 	const mixedPageAllocationsPerSec = "Mixed page allocations/sec"
 	const pageCompressionAttemptsPerSec = "Page Compression Attempts/sec"
@@ -701,8 +663,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	}
 
 	var errs []error
-	sampleTime := time.Now()
-	now := pcommon.NewTimestampFromTime(sampleTime)
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// Track SQL compilation and recompilation rates so the derived
 	// sqlserver.recompilation.ratio metric can be emitted after the row loop.
@@ -710,16 +671,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		compRate, recompRate float64
 		compSeen, recompSeen bool
 		recompRatioRow       sqlquery.StringMap
-	)
-
-	// Average Wait Time (ms) is a PERF_AVERAGE_BULK counter: its raw value is a
-	// cumulative sum of lock wait time, and the average per wait is only obtained by
-	// dividing its delta by the delta of its base counter. Collect both here and
-	// derive the metric after the row loop.
-	var (
-		lockWaitNum, lockWaitBase         int64
-		lockWaitNumSeen, lockWaitBaseSeen bool
-		lockWaitAvgRow                    sqlquery.StringMap
 	)
 
 	for i, row := range rows {
@@ -1123,21 +1074,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeAvgMS)
 				errs = append(errs, err)
 			} else {
-				lockWaitNum = int64(val.(float64))
-				lockWaitNumSeen = true
-				lockWaitAvgRow = row
-			}
-		case lockWaitTimeAvgBase:
-			val, err := retrieveFloat(row, valueKey)
-			if err != nil {
-				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeAvgBase)
-				errs = append(errs, err)
-			} else {
-				lockWaitBase = int64(val.(float64))
-				lockWaitBaseSeen = true
-				if lockWaitAvgRow == nil {
-					lockWaitAvgRow = row
-				}
+				s.mb.RecordSqlserverLockWaitTimeAvgDataPoint(now, val.(float64))
 			}
 		case lockWaits:
 			val, err := retrieveFloat(row, valueKey)
@@ -1272,24 +1209,24 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageReadsPerSec)
 				errs = append(errs, err)
-			} else if rate, ok := s.rateFromCounter(pageReadsPerSec+"|"+row[instanceKey], val.(float64), sampleTime); ok {
-				s.mb.RecordSqlserverPageOperationRateDataPoint(now, rate, metadata.AttributePageOperationsRead)
+			} else {
+				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsRead)
 			}
 		case pageWritesPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageWritesPerSec)
 				errs = append(errs, err)
-			} else if rate, ok := s.rateFromCounter(pageWritesPerSec+"|"+row[instanceKey], val.(float64), sampleTime); ok {
-				s.mb.RecordSqlserverPageOperationRateDataPoint(now, rate, metadata.AttributePageOperationsWrite)
+			} else {
+				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsWrite)
 			}
 		case lazyWritesPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lazyWritesPerSec)
 				errs = append(errs, err)
-			} else if rate, ok := s.rateFromCounter(lazyWritesPerSec+"|"+row[instanceKey], val.(float64), sampleTime); ok {
-				s.mb.RecordSqlserverPageLazyWriteRateDataPoint(now, rate)
+			} else {
+				s.mb.RecordSqlserverPageLazyWriteRateDataPoint(now, val.(float64))
 			}
 		case pagesAllocatedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1530,8 +1467,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, transactionsPerSec)
 				errs = append(errs, err)
-			} else if rate, ok := s.rateFromCounter(transactionsPerSec+"|"+row[instanceKey], val.(float64), sampleTime); ok {
-				s.mb.RecordSqlserverTransactionRateDataPoint(now, rate)
+			} else {
+				s.mb.RecordSqlserverTransactionRateDataPoint(now, val.(float64))
 			}
 		case logGrowths:
 			val, err := retrieveFloat(row, valueKey)
@@ -1593,28 +1530,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), recompRatioRow)
 		s.mb.RecordSqlserverRecompilationRatioDataPoint(now, recompRate/compRate*100)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-	}
-
-	// Derive sqlserver.lock.wait_time.avg as the wait time accrued since the last
-	// scrape divided by the number of waits in the same window, which is what the
-	// Windows PDH path reports for this counter. Nothing is emitted on the first
-	// scrape, when there is no previous sample to diff against, or in a window with
-	// no lock waits.
-	if lockWaitNumSeen && lockWaitBaseSeen {
-		if s.hasPrevLockWait {
-			numDelta := lockWaitNum - s.prevLockWaitNum
-			baseDelta := lockWaitBase - s.prevLockWaitBase
-			// Negative deltas mean the counters were reset, so skip this window and
-			// re-seed from the current sample.
-			if numDelta >= 0 && baseDelta > 0 {
-				rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), lockWaitAvgRow)
-				s.mb.RecordSqlserverLockWaitTimeAvgDataPoint(now, float64(numDelta)/float64(baseDelta))
-				s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-			}
-		}
-		s.prevLockWaitNum = lockWaitNum
-		s.prevLockWaitBase = lockWaitBase
-		s.hasPrevLockWait = true
 	}
 
 	return errors.Join(errs...)

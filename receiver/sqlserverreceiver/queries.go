@@ -282,7 +282,6 @@ SELECT DISTINCT
 				,'Lock Requests/sec'
 				,'Lock Wait Time (ms)'
 				,'Average Wait Time (ms)'
-				,'Average Wait Time Base'
 			)
 		)
 )
@@ -339,12 +338,7 @@ LEFT OUTER JOIN @PCounters AS pc1
 	AND pc.[instance_name] = pc1.[instance_name]
 	AND pc1.[counter_name] LIKE '%base'
 WHERE
-	(
-		pc.[counter_name] NOT LIKE '% base'
-		-- Average Wait Time (ms) is a PERF_AVERAGE_BULK counter whose raw value is a
-		-- cumulative sum, so its base is needed to derive the average per wait.
-		OR pc.[counter_name] = 'Average Wait Time Base'
-	)
+	pc.[counter_name] NOT LIKE '% base'
 {filter_instance_name}
 OPTION(RECOMPILE)
 `

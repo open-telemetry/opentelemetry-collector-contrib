@@ -6,8 +6,6 @@ note: Fix missing metrics when using direct SQL Server connection - `sqlserver.l
 
 issues: [51384]
 
-subtext: |
-  All of these except `sqlserver.transaction_log.growth.count` are derived from the change in their
-  underlying counters between scrapes, so they emit no data point on the first scrape.
+subtext:
 
 change_logs: [user]
