@@ -363,6 +363,21 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			originalValue: "Table()",
 			expectedValue: "Table()",
 		},
+		{
+			name:          "literal null",
+			originalValue: "null",
+			expectedValue: "1948470936",
+		},
+		{
+			name:          "null inside table",
+			originalValue: "Table(null)",
+			expectedValue: "Table(1948470936)",
+		},
+		{
+			name:          "multiple nulls and empty",
+			originalValue: "Table(null,,NULL)",
+			expectedValue: "Table(1948470936,,4214394880)",
+		},
 	}
 
 	for _, tc := range testCases {
