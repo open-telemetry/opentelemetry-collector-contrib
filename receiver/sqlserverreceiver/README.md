@@ -60,6 +60,9 @@ When configured to directly connect to the SQL Server instance, the user must ha
 
 ## Configuration
 
+> **Note:** This receiver was renamed from `sqlserver` to `sql_server` to match the snake_case naming convention.
+> The deprecated component type `sqlserver` is still accepted as an alias and will log a deprecation warning.
+
 The following is a generic configuration that can be used for the default logs and metrics scraped
 by the SQL Server receiver. A basic explanation on some of the fields has also been provided. For more
 information, please reference the following section.
