@@ -166,7 +166,8 @@ tidylist:
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
 		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION) && $(GOCMD) get toolchain@none) || exit $?; \
+		$(call retry,(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION))); \
+		(cd $$mod && $(GOCMD) get toolchain@none) || exit 1; \
 	done
 
 .PHONY: bump-go-version
@@ -492,10 +493,14 @@ chlog-preview:
 chlog-update:
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
+# OCB keeps an existing go.sum, so seeding it with the repo's verified sums leaves only collector-only modules for sum.golang.org to verify.
+seed-collector-go-sum = git ls-files -z '*go.sum' | xargs -0 cat | sort -u > cmd/$(1)/go.sum
+
 .PHONY: genotelcontribcol
 genotelcontribcol:
 	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
+	$(call seed-collector-go-sum,otelcontribcol)
+	@$(call retry,$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -512,7 +517,8 @@ otelcontribcollite: genotelcontribcol
 .PHONY: genoteltestbedcol
 genoteltestbedcol:
 	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
+	$(call seed-collector-go-sum,oteltestbedcol)
+	@$(call retry,$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml)
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -768,7 +774,7 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 
 .PHONY: generate-schemas
 generate-schemas:
-	@$(foreach dir,$(SCHEMA_DIRS), go run $(SCHEMAGEN_PKG) $(abspath $(dir)) -o $(abspath $(dir));)
+	@$(foreach dir,$(SCHEMA_DIRS), $(SCHEMAGEN) $(abspath $(dir)) -o $(abspath $(dir));)
 
 .PHONY: checks
 checks:
