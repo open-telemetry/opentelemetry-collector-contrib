@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.162.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/featuregate v1.68.0
-	go.opentelemetry.io/collector/pdata v1.68.0
+	go.opentelemetry.io/collector/featuregate v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/pdata v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/otel v1.46.0
 	go.uber.org/goleak v1.3.0
 )

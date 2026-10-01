@@ -7,13 +7,13 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.4.1
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.68.0
+	go.opentelemetry.io/collector/component v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/component/componenttest v0.162.0
-	go.opentelemetry.io/collector/confmap v1.68.0
-	go.opentelemetry.io/collector/consumer v1.68.0
+	go.opentelemetry.io/collector/confmap v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/consumer v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.0
-	go.opentelemetry.io/collector/pdata v1.68.0
-	go.opentelemetry.io/collector/receiver v1.68.0
+	go.opentelemetry.io/collector/pdata v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/receiver v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/receiver/receivertest v0.162.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.162.0
 	go.opentelemetry.io/collector/scraper v0.162.0
@@ -68,10 +68,10 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.162.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.162.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.68.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.68.1-0.20260930032829-78b98e74fdfd // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.162.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.68.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.68.1-0.20260930032829-78b98e74fdfd // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.162.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.162.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.44.0 // indirect

@@ -9,18 +9,18 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.162.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.68.0
+	go.opentelemetry.io/collector/component v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/component/componenttest v0.162.0
-	go.opentelemetry.io/collector/confmap v1.68.0
-	go.opentelemetry.io/collector/consumer v1.68.0
+	go.opentelemetry.io/collector/confmap v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/consumer v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.162.0
-	go.opentelemetry.io/collector/featuregate v1.68.0
-	go.opentelemetry.io/collector/pdata v1.68.0
+	go.opentelemetry.io/collector/featuregate v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/pdata v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0
-	go.opentelemetry.io/collector/pipeline v1.68.0
+	go.opentelemetry.io/collector/pipeline v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.162.0
-	go.opentelemetry.io/collector/processor v1.68.0
+	go.opentelemetry.io/collector/processor v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/processor/processorhelper v0.162.0
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.162.0
 	go.opentelemetry.io/collector/processor/processortest v0.162.0
@@ -68,7 +68,7 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.68.0 // indirect
+	go.opentelemetry.io/collector/client v1.68.1-0.20260930032829-78b98e74fdfd // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.162.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.162.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.162.0 // indirect
