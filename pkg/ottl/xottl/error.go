@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xottl
+package xottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 
 import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 

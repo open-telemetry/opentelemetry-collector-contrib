@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlerror
+package ottlerror // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 
 import (
 	"errors"
