@@ -110,38 +110,12 @@ func TestRecordQueryExecutorCollectionScans(t *testing.T) {
 	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.collection_scan.count")
 	require.Equal(t, pmetric.MetricTypeSum, m.Type())
 	byType := sumIntByAttr(t, m, "mongodb.query_executor.collection_scan.type")
-	// The fixture reports total 1200 and nonTailable 900, so tailable is the derived 300.
-	require.Equal(t, map[string]int64{
-		"non_tailable": 900,
-		"tailable":     300,
-	}, byType)
-	// The two values partition the server's total rather than overlapping it.
-	require.Equal(t, int64(1200), byType["non_tailable"]+byType["tailable"])
-}
-
-// TestRecordQueryExecutorCollectionScansUnderflow covers a collectionScans subdocument where the
-// non-tailable count exceeds the total, which would make the derived tailable count negative.
-func TestRecordQueryExecutorCollectionScansUnderflow(t *testing.T) {
-	s := newQueryExecutorScraper(t)
-	doc := bson.M{
-		"metrics": bson.M{
-			"queryExecutor": bson.M{
-				"collectionScans": bson.M{
-					"nonTailable": int64(1200),
-					"total":       int64(900),
-				},
-			},
-		},
-	}
-	errs := &scrapererror.ScrapeErrors{}
-	now := pcommon.NewTimestampFromTime(time.Now())
-
-	s.recordQueryExecutorCollectionScans(now, doc, errs)
-	require.ErrorContains(t, errs.Combine(), "collectionScans.nonTailable is greater than collectionScans.total")
-
-	// The non-tailable value is still recorded; only the derived tailable value is skipped.
-	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.collection_scan.count")
-	require.Equal(t, map[string]int64{"non_tailable": 1200}, sumIntByAttr(t, m, "mongodb.query_executor.collection_scan.type"))
+	// Only the server-reported non-tailable count is emitted. The fixture also reports
+	// collectionScans.total 1200, which must not turn into a second, derived data point: the two
+	// counters are updated independently, so a difference taken across them can move backwards and
+	// a monotonic sum promises that of every one of its streams.
+	require.Equal(t, map[string]int64{"non_tailable": 900}, byType)
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
 }
 
 // TestRecordQueryExecutorMissingSubdocument covers a server that does not report queryExecutor at
@@ -156,7 +130,7 @@ func TestRecordQueryExecutorMissingSubdocument(t *testing.T) {
 
 	var partial scrapererror.PartialScrapeError
 	require.ErrorAs(t, errs.Combine(), &partial)
-	// Two scanned data points and the non-tailable read that gates the collection-scan metric.
+	// Two scanned data points and the single non-tailable collection-scan read.
 	require.Equal(t, 3, partial.Failed)
 	require.Equal(t, 0, s.mb.Emit().MetricCount())
 }

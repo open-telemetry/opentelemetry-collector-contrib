@@ -210,7 +210,6 @@ attributes:
     type: string
     requirement_level: recommended
     enum:
-      - tailable
       - non_tailable
   mongodb.query_executor.scan.type:
     description: The type of data scanned by the query executor.

@@ -58,10 +58,6 @@ var queryExecutorScanMap = map[string]metadata.AttributeMongodbQueryExecutorScan
 	"scannedObjects": metadata.AttributeMongodbQueryExecutorScanTypeDocument,
 }
 
-// errTailableScansUnderflow reports a collectionScans subdocument where the non-tailable count
-// exceeds the total, which would make the derived tailable count negative.
-var errTailableScansUnderflow = errors.New("collectionScans.nonTailable is greater than collectionScans.total")
-
 const (
 	collectMetricError          = "failed to collect metric %s: %w"
 	collectMetricWithAttributes = "failed to collect metric %s with attribute(s) %s: %w"
@@ -1016,13 +1012,14 @@ func (s *mongodbScraper) recordQueryExecutorScanned(now pcommon.Timestamp, doc b
 	}
 }
 
-// recordQueryExecutorCollectionScans records collection scans split by cursor type. MongoDB reports
-// the total and the non-tailable subset, where the total includes the subset, so the tailable count
-// is derived from the two. The emitted values partition the total and can be summed.
+// recordQueryExecutorCollectionScans records the non-tailable collection scan count as the server
+// reports it. collectionScans.total is deliberately left unread: deriving a tailable count as
+// total - nonTailable is not safe, because the server increments the two counters in separate steps
+// and renders them with separate loads, so a scrape can observe them skewed and emit a stream that
+// moves backwards. A monotonic sum promises that of every one of its streams.
 func (s *mongodbScraper) recordQueryExecutorCollectionScans(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricName := "mongodb.query_executor.collection_scan.count"
 	nonTailableAttr := metadata.AttributeMongodbQueryExecutorCollectionScanTypeNonTailable
-	tailableAttr := metadata.AttributeMongodbQueryExecutorCollectionScanTypeTailable
 
 	nonTailable, err := collectMetric(doc, []string{"metrics", "queryExecutor", "collectionScans", "nonTailable"})
 	if err != nil {
@@ -1030,17 +1027,6 @@ func (s *mongodbScraper) recordQueryExecutorCollectionScans(now pcommon.Timestam
 		return
 	}
 	s.mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(now, nonTailable, nonTailableAttr)
-
-	total, err := collectMetric(doc, []string{"metrics", "queryExecutor", "collectionScans", "total"})
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, tailableAttr.String(), err))
-		return
-	}
-	if total < nonTailable {
-		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, tailableAttr.String(), errTailableScansUnderflow))
-		return
-	}
-	s.mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(now, total-nonTailable, tailableAttr)
 }
 
 func aggregateOperationTimeValues(document bson.M, collectionPathNames []string, operationMap map[string]metadata.AttributeOperation) (map[string]int64, error) {

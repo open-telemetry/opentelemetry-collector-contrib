@@ -213,15 +213,12 @@ type AttributeMongodbQueryExecutorCollectionScanType int
 
 const (
 	_ AttributeMongodbQueryExecutorCollectionScanType = iota
-	AttributeMongodbQueryExecutorCollectionScanTypeTailable
 	AttributeMongodbQueryExecutorCollectionScanTypeNonTailable
 )
 
 // String returns the string representation of the AttributeMongodbQueryExecutorCollectionScanType.
 func (av AttributeMongodbQueryExecutorCollectionScanType) String() string {
 	switch av {
-	case AttributeMongodbQueryExecutorCollectionScanTypeTailable:
-		return "tailable"
 	case AttributeMongodbQueryExecutorCollectionScanTypeNonTailable:
 		return "non_tailable"
 	}
@@ -230,7 +227,6 @@ func (av AttributeMongodbQueryExecutorCollectionScanType) String() string {
 
 // MapAttributeMongodbQueryExecutorCollectionScanType is a helper map of string to AttributeMongodbQueryExecutorCollectionScanType attribute value.
 var MapAttributeMongodbQueryExecutorCollectionScanType = map[string]AttributeMongodbQueryExecutorCollectionScanType{
-	"tailable":     AttributeMongodbQueryExecutorCollectionScanTypeTailable,
 	"non_tailable": AttributeMongodbQueryExecutorCollectionScanTypeNonTailable,
 }
 

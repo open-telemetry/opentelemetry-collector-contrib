@@ -279,7 +279,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbQueriesRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(ts, 1, AttributeMongodbQueryExecutorCollectionScanTypeTailable)
+			mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(ts, 1, AttributeMongodbQueryExecutorCollectionScanTypeNonTailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(ts, 3, AttributeMongodbQueryExecutorCollectionScanTypeNonTailable)
 			}
@@ -1609,7 +1609,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, int64(1), dp.IntValue())
 						mongodbQueryExecutorCollectionScanTypeAttrVal, ok := dp.Attributes().Get("mongodb.query_executor.collection_scan.type")
 						assert.True(t, ok)
-						assert.Equal(t, "tailable", mongodbQueryExecutorCollectionScanTypeAttrVal.Str())
+						assert.Equal(t, "non_tailable", mongodbQueryExecutorCollectionScanTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["mongodb.query_executor.collection_scan.count"], "Found a duplicate in the metrics slice: mongodb.query_executor.collection_scan.count")
 						validatedMetrics["mongodb.query_executor.collection_scan.count"] = true

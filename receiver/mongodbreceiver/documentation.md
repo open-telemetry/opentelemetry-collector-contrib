@@ -498,7 +498,7 @@ The number of queries that performed a collection scan.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| mongodb.query_executor.collection_scan.type | The type of cursor that performed the collection scan. | Str: ``tailable``, ``non_tailable`` | Recommended | - |
+| mongodb.query_executor.collection_scan.type | The type of cursor that performed the collection scan. | Str: ``non_tailable`` | Recommended | - |
 
 ### mongodb.query_executor.scanned.count
 
