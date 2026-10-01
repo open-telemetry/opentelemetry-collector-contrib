@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add top minute split stats metrics and a generic `hide_pii_values` config to the Google Cloud Spanner receiver
+issues: [51026]
+subtext: ""
+change_logs: []

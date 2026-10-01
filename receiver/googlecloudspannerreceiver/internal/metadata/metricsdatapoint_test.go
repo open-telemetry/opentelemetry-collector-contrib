@@ -131,6 +131,8 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPII(t *testing.T) {
 	assert.Equal(t, metricsDataPoint.labelValues[1].Value(), "table2("+hashOf23+","+hashOfHello+")")
 }
 
+
+
 func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(t *testing.T) {
 	// We are checking that function HideLockStatsRowrangestartkeyPII() does not panic for invalid label values.
 	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType)
@@ -292,5 +294,78 @@ func metricsDataPointForTests() *MetricsDataPoint {
 		databaseID:  databaseID,
 		labelValues: labelValues,
 		metricValue: allPossibleMetricValues(metricDataType)[0],
+	}
+}
+
+func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
+	testCases := []struct {
+		name          string
+		originalValue string
+		expectedValue string
+	}{
+		{
+			name:          "flat string",
+			originalValue: "test_db_user_123",
+			expectedValue: "3335628364",
+		},
+		{
+			name:          "boundary begin",
+			originalValue: "<begin>",
+			expectedValue: "<begin>",
+		},
+		{
+			name:          "boundary end",
+			originalValue: "<end>",
+			expectedValue: "<end>",
+		},
+		{
+			name:          "boundary infinity",
+			originalValue: "<infinity>",
+			expectedValue: "<infinity>",
+		},
+		{
+			name:          "simple table key",
+			originalValue: "Users(3)",
+			expectedValue: "Users(1309098117)",
+		},
+		{
+			name:          "composite table key",
+			originalValue: "Messages(3,\"a\",1)",
+			expectedValue: "Messages(1309098117,2894955330,1803989619)", 
+		},
+		{
+			name:          "nested brackets key",
+			originalValue: "Table(abs(sne, 1, abs(kjijr,niji), abd(kkgri,iroff), abd()))",
+			expectedValue: "Table(abs(1632148666,3777658373, abs(2845264162,2510639534), abd(2404161734,453098280), abd()))", 
+		},
+		{
+			name:          "quoted comma key",
+			originalValue: "Table(3,\"John, Doe\")",
+			expectedValue: "Table(1309098117,145129574)",
+		},
+        {
+			name:          "trailing plus",
+			originalValue: "Users(3+)",
+			expectedValue: "Users(1309098117+)",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			splitStartMetadata, _ := NewLabelValueMetadata("split_start", "splitStartColumnName", StringValueType)
+			labelValue1 := stringLabelValue{metadata: splitStartMetadata, value: tc.originalValue}
+			
+			labelValues := []LabelValue{labelValue1}
+			metricsDataPoint := &MetricsDataPoint{
+				metricName:  "test_metric",
+				timestamp:   time.Now().UTC(),
+				databaseID:  databaseID(),
+				labelValues: labelValues,
+			}
+			
+			metricsDataPoint.HideSplitStatsKeysPII()
+			
+			assert.Equal(t, tc.expectedValue, metricsDataPoint.labelValues[0].Value(), "Hashing failed for case %s", tc.name)
+		})
 	}
 }
