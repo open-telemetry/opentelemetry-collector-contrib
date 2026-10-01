@@ -42,6 +42,10 @@ const (
 	perfCounterCounterType   = "272696320"
 	perfCounterBulkCountType = "272696576"
 
+	// Windows performance counter type whose value accumulates a total that only
+	// becomes an average once divided by a companion base counter.
+	perfCounterAverageBulkType = "1073874176"
+
 	defaultServiceName  = "unknown_service:microsoft.sql_server"
 	versionQueryTimeout = 5 * time.Second
 )
@@ -613,6 +617,49 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 
 // Some SQL Server rate counter types are also used by counters that this receiver
 // exports as cumulative sums, so counter type alone cannot determine whether to calculate a rate.
+// averageBulkBaseCounters pairs each PERF_AVERAGE_BULK counter with the base counter
+// holding the denominator of its average.
+var averageBulkBaseCounters = map[string]string{
+	"Average Wait Time (ms)": "Average Wait Time Base",
+}
+
+func isPerformanceCounterAverageBulk(counterType, counterName string) bool {
+	if counterType != perfCounterAverageBulkType {
+		return false
+	}
+	_, ok := averageBulkBaseCounters[counterName]
+	return ok
+}
+
+// isPerformanceCounterAverageBulkBase reports whether a counter is the base of a
+// PERF_AVERAGE_BULK counter. Those rows carry a denominator rather than a value worth
+// reporting, so they are read for the average and otherwise ignored.
+func isPerformanceCounterAverageBulkBase(counterName string) bool {
+	for _, base := range averageBulkBaseCounters {
+		if counterName == base {
+			return true
+		}
+	}
+	return false
+}
+
+// averageBulkBaseValues indexes the base counters in a result set so each
+// PERF_AVERAGE_BULK row can find its denominator, which arrives as a separate row.
+func averageBulkBaseValues(rows []sqlquery.StringMap) map[performanceCounterKey]int64 {
+	bases := make(map[performanceCounterKey]int64)
+	for _, row := range rows {
+		if !isPerformanceCounterAverageBulkBase(row["counter"]) {
+			continue
+		}
+		val, err := retrieveInt(row, "raw_value")
+		if err != nil {
+			continue
+		}
+		bases[performanceCounterKeyFromRow(row)] = val.(int64)
+	}
+	return bases
+}
+
 func isPerformanceCounterRate(counterType, counterName string) bool {
 	switch counterType {
 	case perfCounterCounterType, perfCounterBulkCountType:
@@ -690,6 +737,52 @@ func performanceCounterKeyFromRow(row sqlquery.StringMap) performanceCounterKey 
 		counter:  row["counter"],
 		instance: row["instance"],
 	}
+}
+
+// calculatePerformanceCounterAverage converts a PERF_AVERAGE_BULK counter into the
+// average over the interval since the previous scrape. The raw value accumulates a
+// total rather than holding an average, so the average is the change in that total
+// divided by the change in its base counter, which counts what went into it. Dividing
+// by elapsed time instead, as the rate counters do, would not give an average.
+func (s *sqlServerScraperHelper) calculatePerformanceCounterAverage(
+	row sqlquery.StringMap,
+	bases map[performanceCounterKey]int64,
+	now time.Time,
+) (float64, bool, error) {
+	val, err := retrieveInt(row, "raw_value")
+	if err != nil {
+		return 0, false, err
+	}
+	current := val.(int64)
+
+	numeratorKey := performanceCounterKeyFromRow(row)
+	baseKey := numeratorKey
+	baseKey.counter = averageBulkBaseCounters[numeratorKey.counter]
+
+	currentBase, found := bases[baseKey]
+	if !found {
+		return 0, false, nil
+	}
+
+	previous, haveNumerator := s.performanceCounterSamples[numeratorKey]
+	previousBase, haveBase := s.performanceCounterSamples[baseKey]
+
+	s.performanceCounterSamples[numeratorKey] = performanceCounterSample{value: current, timestamp: now}
+	s.performanceCounterSamples[baseKey] = performanceCounterSample{value: currentBase, timestamp: now}
+
+	// The first sample establishes a baseline, and a counter reset re-seeds instead of
+	// reporting a value derived from a drop.
+	if !haveNumerator || !haveBase || current < previous.value || currentBase < previousBase.value {
+		return 0, false, nil
+	}
+
+	// No base movement means nothing was measured in this interval.
+	baseDelta := currentBase - previousBase.value
+	if baseDelta <= 0 {
+		return 0, false, nil
+	}
+
+	return float64(current-previous.value) / float64(baseDelta), true, nil
 }
 
 func (s *sqlServerScraperHelper) calculatePerformanceCounterRate(
@@ -866,9 +959,29 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	)
 
 	seenPerformanceCounterKeys := make(map[performanceCounterKey]struct{})
+	averageBases := averageBulkBaseValues(rows)
 
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		if isPerformanceCounterAverageBulk(row["counter_type"], row[counterKey]) {
+			average, emit, err := s.calculatePerformanceCounterAverage(row, averageBases, scrapeTime)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to calculate performance counter average for row %d: %w", i, err))
+				continue
+			}
+
+			numeratorKey := performanceCounterKeyFromRow(row)
+			baseKey := numeratorKey
+			baseKey.counter = averageBulkBaseCounters[numeratorKey.counter]
+			seenPerformanceCounterKeys[numeratorKey] = struct{}{}
+			seenPerformanceCounterKeys[baseKey] = struct{}{}
+
+			if !emit {
+				continue
+			}
+			row[valueKey] = strconv.FormatFloat(average, 'f', -1, 64)
+		}
 
 		if isPerformanceCounterRate(row["counter_type"], row[counterKey]) {
 			rate, emit, err := s.calculatePerformanceCounterRate(row, scrapeTime)

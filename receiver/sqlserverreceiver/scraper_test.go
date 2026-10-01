@@ -337,7 +337,9 @@ func TestSuccessfulScrape(t *testing.T) {
 
 							if queryCall == 0 {
 								for _, row := range rows {
-									if isPerformanceCounterRate(row["counter_type"], row["counter"]) {
+									if isPerformanceCounterRate(row["counter_type"], row["counter"]) ||
+										isPerformanceCounterAverageBulk(row["counter_type"], row["counter"]) ||
+										isPerformanceCounterAverageBulkBase(row["counter"]) {
 										row["value"] = "0"
 										row["raw_value"] = "0"
 									}

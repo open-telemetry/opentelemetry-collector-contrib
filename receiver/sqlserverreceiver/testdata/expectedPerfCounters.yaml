@@ -3982,7 +3982,7 @@ resourceMetrics:
           - description: Average wait time for all lock requests that had to wait.
             gauge:
               dataPoints:
-                - asDouble: 456
+                - asDouble: 32.57142857142857
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: sqlserver.lock.wait_time.avg
