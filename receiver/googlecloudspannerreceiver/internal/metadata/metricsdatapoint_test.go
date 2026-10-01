@@ -335,8 +335,8 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 		},
 		{
 			name:          "nested brackets key",
-			originalValue: "Table(abs(sne, 1, abs(kjijr,niji), abd(kkgri,iroff), abd()))",
-			expectedValue: "Table(abs(1632148666,3777658373, abs(2845264162,2510639534), abd(2404161734,453098280), abd()))", 
+			originalValue: "UsersTable(Accounts(12345, \"bob\"), Settings(true, \"US\"))",
+			expectedValue: "UsersTable(Accounts(1502889754,2388175350), Settings(3049169947,3244586957))",
 		},
 		{
 			name:          "quoted comma key",
@@ -354,9 +354,9 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			expectedValue: "Table(1624458470)",
 		},
 		{
-			name:          "email address",
-			originalValue: "Table(sneha@gmail.com)",
-			expectedValue: "Table(1529565511)",
+			name:          "complex index",
+			originalValue: "UserEmailIndex(\"alice@gmail.com\", 987654)",
+			expectedValue: "UserEmailIndex(2147054059,1145901250)",
 		},
 		{
 			name:          "empty brackets",
@@ -364,19 +364,29 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			expectedValue: "Table()",
 		},
 		{
-			name:          "literal null",
-			originalValue: "null",
-			expectedValue: "1948470936",
+			name:          "trailing backslash",
+			originalValue: "UsersTable(abc\\)",
+			expectedValue: "UsersTable(3879977533",
 		},
 		{
-			name:          "null inside table",
-			originalValue: "Table(null)",
-			expectedValue: "Table(1948470936)",
+			name:          "unclosed quotes",
+			originalValue: "UsersTable(\"abc)",
+			expectedValue: "UsersTable(1304451591",
 		},
 		{
-			name:          "multiple nulls and empty",
-			originalValue: "Table(null,,NULL)",
-			expectedValue: "Table(1948470936,,4214394880)",
+			name:          "emoji unicode",
+			originalValue: "UsersTable(bob😊)",
+			expectedValue: "UsersTable(2856295094)",
+		},
+		{
+			name:          "missing table name",
+			originalValue: "(123)",
+			expectedValue: "(2791679065)",
+		},
+		{
+			name:          "missing closing bracket",
+			originalValue: "UsersTable(123",
+			expectedValue: "UsersTable(2791679065",
 		},
 	}
 
