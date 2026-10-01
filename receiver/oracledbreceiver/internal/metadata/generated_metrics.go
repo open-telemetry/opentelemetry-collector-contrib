@@ -12145,6 +12145,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.OracleDbEdition.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["oracle.db.edition"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbEdition.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OracleDbEdition.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["oracle.db.edition"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbEdition.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.OracleDbHostingType.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbHostingType.MetricsInclude)
 	}
