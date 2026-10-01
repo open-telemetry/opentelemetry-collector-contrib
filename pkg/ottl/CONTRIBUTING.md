@@ -45,7 +45,7 @@ All new functions must be added via a new file.  Function files must start with 
 - Be added to `ExperimentalConverters` in `xottl/ottlfuncs/functions.go` if it is a Converter.
 - Be documented in the [experimental functions README](./xottl/ottlfuncs/README.md), including a note that it is experimental and requires the [`pkg.ottl.functions.enableExperimental`](./documentation.md#feature-gates) feature gate.
 
-Unit tests must be added for all new functions.  Unit test files must start with `func_` and end in `_test`.  Unit tests must be placed in the same directory as the function.  Functions that are not specific to a pipeline should be tested independently of any specific pipeline. Functions that are specific to a pipeline should be tests against that pipeline. End-to-end tests must be added in the `xottl/e2e` directory and must enable the `pkg.ottl.functions.enableExperimental` feature gate, for example with `testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true)`.
+Unit tests must be added for all new functions.  Unit test files must start with `func_` and end in `_test`.  Unit tests must be placed in the same directory as the function. Functions that are not specific to a context should be tested independently of any specific context. Functions that are specific to a context, such as `IsRootSpan`, should be tested against that context. End-to-end tests must be added in the `xottl/e2e` directory and must enable the `pkg.ottl.functions.enableExperimental` feature gate, for example with `testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true)`.
 
 #### Naming and Parameter Guidelines
 
