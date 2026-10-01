@@ -199,32 +199,28 @@ func (lb *loadBalancer) startMissingExporters(ctx context.Context, endpoints []s
 	for _, endpoint := range endpoints {
 		endpoint = endpointWithPort(endpoint)
 
-		_, exists := existing[endpoint]
-		if !exists {
-			_, exists = added[endpoint]
+		if _, ok := existing[endpoint]; ok {
+			continue
+		}
+		if _, ok := added[endpoint]; ok {
+			continue
 		}
 
-		if !exists {
-			exp, err := lb.componentFactory(ctx, endpoint)
-			if err != nil {
-				lb.logger.Error("failed to create new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
-				continue
-			}
-
-			we := newWrappedExporter(exp, endpoint)
-			if err = we.Start(ctx, lb.host); err != nil {
-				lb.logger.Error("failed to start new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
-				continue
-			}
-			added[endpoint] = we
+		exp, err := lb.componentFactory(ctx, endpoint)
+		if err != nil {
+			lb.logger.Error("failed to create new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
+			continue
 		}
+
+		we := newWrappedExporter(exp, endpoint)
+		if err = we.Start(ctx, lb.host); err != nil {
+			lb.logger.Error("failed to start new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
+			continue
+		}
+		added[endpoint] = we
 	}
 
 	return added
-}
-
-func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []string) {
-	maps.Copy(lb.exporters, lb.startMissingExporters(ctx, endpoints, lb.exporters))
 }
 
 func endpointWithPort(endpoint string) string {

@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/load_balancing
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Stop holding the routing lock while new backend exporters are created and started
+note: Stop holding the routing lock while new backend exporters are created and started. Shutdown can still block on a hanging exporter.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [8843]
@@ -15,11 +15,6 @@ issues: [8843]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Backend changes now create and start the missing exporters outside of the lock that guards
-  the ring and the exporter map, and only take that lock for the short commit that installs
-  them. A slow exporter creation or startup no longer blocks data from being routed through
-  the already resolved backends.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

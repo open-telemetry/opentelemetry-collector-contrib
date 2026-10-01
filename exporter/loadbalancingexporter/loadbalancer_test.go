@@ -6,6 +6,7 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
+	"maps"
 	"net"
 	"sync"
 	"testing"
@@ -275,6 +276,17 @@ func TestOnBackendChanges_SlowStartDoesNotBlockDataPath(t *testing.T) {
 	p.onBackendChanges([]string{"endpoint-1"})
 	require.Len(t, p.exporters, 1)
 
+	// find a key that moves to endpoint-2 once the new ring is installed
+	var key []byte
+	newRing := newHashRing([]string{"endpoint-1", "endpoint-2"})
+	for i := range 256 {
+		if candidate := []byte{byte(i), 0, 0, 0}; newRing.endpointFor(candidate) == "endpoint-2" {
+			key = candidate
+			break
+		}
+	}
+	require.NotNil(t, key)
+
 	// test
 	done := make(chan struct{})
 	go func() {
@@ -291,7 +303,7 @@ func TestOnBackendChanges_SlowStartDoesNotBlockDataPath(t *testing.T) {
 	}
 	result := make(chan lookup, 1)
 	go func() {
-		_, endpoint, lookupErr := p.exporterAndEndpoint([]byte{128, 128, 0, 0})
+		_, endpoint, lookupErr := p.exporterAndEndpoint(key)
 		result <- lookup{endpoint: endpoint, err: lookupErr}
 	}()
 
@@ -304,7 +316,6 @@ func TestOnBackendChanges_SlowStartDoesNotBlockDataPath(t *testing.T) {
 		require.Fail(t, "exporterAndEndpoint blocked while the new exporter was being started")
 	}
 
-	// test
 	closeRelease()
 
 	select {
@@ -316,6 +327,14 @@ func TestOnBackendChanges_SlowStartDoesNotBlockDataPath(t *testing.T) {
 	// verify
 	assert.Len(t, p.exporters, 2)
 	assert.Len(t, p.ring.items, 2*defaultWeight)
+	_, endpoint, err := p.exporterAndEndpoint(key)
+	require.NoError(t, err)
+	assert.Equal(t, "endpoint-2", endpoint)
+}
+
+// addMissingExporters synchronously creates and installs an exporter for every missing endpoint.
+func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []string) {
+	maps.Copy(lb.exporters, lb.startMissingExporters(ctx, endpoints, lb.exporters))
 }
 
 func TestRemoveExtraExporters(t *testing.T) {
