@@ -20,6 +20,7 @@ tool (
 	go.opentelemetry.io/build-tools/multimod
 	go.opentelemetry.io/collector/cmd/builder
 	go.opentelemetry.io/collector/cmd/mdatagen
+	go.opentelemetry.io/collector/cmd/schemagen
 	golang.org/x/tools/cmd/goimports
 	golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize
 	golang.org/x/vuln/cmd/govulncheck
@@ -156,6 +157,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
+	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/iimos/ucum v0.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/go-yaml v0.0.0-20251001235044-fca9a0999f15 // indirect
@@ -288,6 +290,7 @@ require (
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
 	go.opentelemetry.io/collector/cmd/builder v0.162.0 // indirect
 	go.opentelemetry.io/collector/cmd/mdatagen v0.162.0 // indirect
+	go.opentelemetry.io/collector/cmd/schemagen v0.162.0 // indirect
 	go.opentelemetry.io/collector/component v1.68.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.68.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.68.0 // indirect
