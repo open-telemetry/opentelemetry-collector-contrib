@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -137,7 +138,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, "Only \"POST\" method is supported", body)
+				assert.Equal(t, map[string]any{"text": `Only "POST" method is supported`, "code": float64(6)}, body)
 			},
 		},
 		{
@@ -377,7 +378,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusUnsupportedMediaType, status)
-				assert.Equal(t, `"Content-Encoding" must be "gzip" or empty`, body)
+				assert.Equal(t, map[string]any{"text": `"Content-Encoding" must be "gzip" or empty`, "code": float64(6)}, body)
 			},
 		},
 		{
@@ -543,7 +544,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, `Error on gzip body`, body)
+				assert.Equal(t, map[string]any{"text": `Error on gzip body`, "code": float64(6)}, body)
 			},
 		},
 	}
@@ -749,14 +750,14 @@ func Test_writeDeadlineExtendedThroughRealServerChain(t *testing.T) {
 		"expected the write deadline to be extended on the real connection through ResponseController.Unwrap")
 }
 
-func Test_consumer_err(t *testing.T) {
+func Test_consumer_err_permanent(t *testing.T) {
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 5)
 	config := createDefaultConfig().(*Config)
 	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
-	rcv.logsConsumer = consumertest.NewErr(errors.New("bad consumer"))
+	rcv.logsConsumer = consumertest.NewErr(consumererror.NewPermanent(errors.New("poison batch")))
 
 	w := httptest.NewRecorder()
 	msgBytes, err := json.Marshal(splunkMsg)
@@ -769,14 +770,14 @@ func Test_consumer_err(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
-	var bodyStr string
-	assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+	var body map[string]any
+	assert.NoError(t, json.Unmarshal(respBytes, &body))
 
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-	assert.Equal(t, "Internal Server Error", bodyStr)
+	assert.Equal(t, map[string]any{"text": "Internal server error", "code": float64(8)}, body)
 }
 
-func Test_consumer_err_metrics(t *testing.T) {
+func Test_consumer_err_metrics_permanent(t *testing.T) {
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMetricsMsg("metric", currentTime, 13, 2)
 	assert.True(t, splunkMsg.IsMetric())
@@ -784,7 +785,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint\
 	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
-	rcv.metricsConsumer = consumertest.NewErr(errors.New("bad consumer"))
+	rcv.metricsConsumer = consumertest.NewErr(consumererror.NewPermanent(errors.New("poison batch")))
 
 	w := httptest.NewRecorder()
 	msgBytes, err := json.Marshal(splunkMsg)
@@ -797,11 +798,66 @@ func Test_consumer_err_metrics(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
-	var bodyStr string
-	assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+	var body map[string]any
+	assert.NoError(t, json.Unmarshal(respBytes, &body))
 
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-	assert.Equal(t, "Internal Server Error", bodyStr)
+	assert.Equal(t, map[string]any{"text": "Internal server error", "code": float64(8)}, body)
+}
+
+func Test_handleReq_unsupportedMetricEvent(t *testing.T) {
+	currentTime := float64(time.Now().UnixNano()) / 1e6
+	splunkMsg := buildSplunkHecMetricsMsg("metric", currentTime, 13, 2)
+	assert.True(t, splunkMsg.IsMetric())
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	assert.NoError(t, err)
+	// No metrics consumer wired, so a metric event is unsupported.
+
+	w := httptest.NewRecorder()
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+	respBytes, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	var body map[string]any
+	assert.NoError(t, json.Unmarshal(respBytes, &body))
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, map[string]any{"text": "Unsupported metric event", "code": float64(6)}, body)
+}
+
+func Test_handleReq_unsupportedLogEvent(t *testing.T) {
+	currentTime := float64(time.Now().UnixNano()) / 1e6
+	splunkMsg := buildSplunkHecMsg(currentTime, 5)
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	assert.NoError(t, err)
+	// No logs consumer wired, so a log event is unsupported.
+
+	w := httptest.NewRecorder()
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+	respBytes, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	var body map[string]any
+	assert.NoError(t, json.Unmarshal(respBytes, &body))
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, map[string]any{"text": "Unsupported log event", "code": float64(6)}, body)
 }
 
 func Test_splunkhecReceiver_TLS(t *testing.T) {
@@ -1328,7 +1384,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, `Only "POST" method is supported`, body)
+				assert.Equal(t, map[string]any{"text": `Only "POST" method is supported`, "code": float64(6)}, body)
 			},
 		},
 		{
@@ -1353,7 +1409,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusUnsupportedMediaType, status)
-				assert.Equal(t, `"Content-Encoding" must be "gzip" or empty`, body)
+				assert.Equal(t, map[string]any{"text": `"Content-Encoding" must be "gzip" or empty`, "code": float64(6)}, body)
 			},
 		},
 		{
@@ -1425,7 +1481,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, `Error on gzip body`, body)
+				assert.Equal(t, map[string]any{"text": `Error on gzip body`, "code": float64(6)}, body)
 			},
 		},
 		{
@@ -1580,7 +1636,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, "Only \"POST\" method is supported", body)
+				assert.Equal(t, map[string]any{"text": `Only "POST" method is supported`, "code": float64(6)}, body)
 			},
 		},
 		{
