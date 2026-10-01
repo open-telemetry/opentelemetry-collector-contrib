@@ -8,7 +8,8 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [pcwiese, hgaol]
+    active: [hgaol]
+    emeritus: [pcwiese]
 
 tests:
   config:

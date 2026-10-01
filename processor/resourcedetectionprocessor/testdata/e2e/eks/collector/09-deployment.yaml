@@ -16,6 +16,29 @@ spec:
       serviceAccountName: {{ .Name }}-sa
       automountServiceAccountToken: false
       initContainers:
+        - name: imds
+          image: python:3.13-alpine
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          command:
+            - python3
+            - /scripts/server.py
+          env:
+            - name: PORT
+              value: "1338"
+          ports:
+            - containerPort: 1338
+              name: metadata
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 1338
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 10
+          volumeMounts:
+            - name: imds-script
+              mountPath: /scripts
         - name: wait-for-api
           image: curlimages/curl:8.6.0
           imagePullPolicy: IfNotPresent
@@ -28,12 +51,6 @@ spec:
                 sleep 1;
               done
       containers:
-        - name: ec2-metadata-mock
-          image: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.13.0
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 1338
-              name: metadata
         - name: otelcol
           image: otelcontribcol:latest
           imagePullPolicy: Never
@@ -93,5 +110,8 @@ spec:
                 path: namespace
               - key: ca.crt
                 path: ca.crt
+        - name: imds-script
+          configMap:
+            name: {{ .Name }}-imds-config
         - name: collector-tmp
           emptyDir: {}

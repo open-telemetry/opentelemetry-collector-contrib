@@ -85,7 +85,7 @@ func TestProvider(t *testing.T) {
 			src, err := provider.Source(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, source.HostnameKind, src.Kind)
-			assert.Equal(t, testInstance.hostname, src.Identifier)
+			assert.Equal(t, testInstance.hostname, src.SourceIdentifier.Primary)
 		})
 	}
 }
