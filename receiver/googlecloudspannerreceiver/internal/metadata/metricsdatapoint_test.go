@@ -348,6 +348,21 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			originalValue: "Users(3+)",
 			expectedValue: "Users(1309098117+)",
 		},
+		{
+			name:          "escaped quotes",
+			originalValue: "Table(\"O\\\"Connor\")",
+			expectedValue: "Table(1624458470)",
+		},
+		{
+			name:          "email address",
+			originalValue: "Table(sneha@gmail.com)",
+			expectedValue: "Table(1529565511)",
+		},
+		{
+			name:          "empty brackets",
+			originalValue: "Table()",
+			expectedValue: "Table()",
+		},
 	}
 
 	for _, tc := range testCases {
