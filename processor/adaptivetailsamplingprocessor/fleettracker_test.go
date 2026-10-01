@@ -27,7 +27,7 @@ import (
 
 var fleetTrackerID = component.MustNewID("fake_fleet_tracker")
 
-// fakeFleetTracker implements FleetTracker plus the no-op lifecycle methods
+// fakeFleetTracker satisfies the fleet tracker contract plus the no-op lifecycle methods
 // needed to sit in a component.Host's extension map.
 type fakeFleetTracker struct {
 	initialCount int
@@ -63,7 +63,7 @@ func (h *fakeHost) GetExtensions() map[component.ID]component.Component {
 	return h.exts
 }
 
-// notAFleetTracker is a component that does not implement FleetTracker, used
+// notAFleetTracker is a component without SubscribeMemberCount, used
 // to exercise the "does not implement" resolution error.
 type notAFleetTracker struct{}
 

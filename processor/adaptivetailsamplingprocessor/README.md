@@ -100,10 +100,10 @@ processors:
     # IsRootSpan() when unset.
     # root_span_condition: 'IsRootSpan() or span.attributes["otelcol.adaptive_tail_sampling.root_span"] == true'
 
-    # Optional. Names an extension that implements SubscribeMemberCount. When set, every
-    # adaptive_throughput rule's goal_throughput is divided by the fleet's live
-    # member count instead of applying per instance. See Fleet-wide throughput
-    # budget below.
+    # Optional. Divides every adaptive_throughput rule's goal_throughput by the
+    # fleet's live member count, so the goal is a fleet-wide budget rather than a
+    # per-instance one. Names the extension that reports that count. See
+    # Fleet-wide throughput budget below.
     # fleet_tracker: redis_fleet_tracker
 ```
 
