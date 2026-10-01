@@ -545,4 +545,5 @@ metrics:
     attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
 
 tests:
+  goleak:
   config:
