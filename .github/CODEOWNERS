@@ -267,7 +267,7 @@ receiver/awsfirehosereceiver/                                    @open-telemetry
 receiver/awslambdareceiver/                                      @open-telemetry/collector-contrib-approvers @MichaelKatsoulis @Kavindu-Dodan @pjanotti
 receiver/awss3receiver/                                          @open-telemetry/collector-contrib-approvers @atoulme @adcharre
 receiver/awsxrayreceiver/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
-receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi @dyl10s
+receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dyl10s
 receiver/azureeventhubreceiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @cparkins @dyl10s
 receiver/azurefunctionsreceiver/                                 @open-telemetry/collector-contrib-approvers @jmacd @MichaelKatsoulis @constanca-m
 receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @celian-garcia @ishleenk17
