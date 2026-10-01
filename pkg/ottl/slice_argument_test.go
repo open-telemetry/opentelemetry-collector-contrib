@@ -9,46 +9,38 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
-func TestSliceGetter_setReflectValue(t *testing.T) {
+func TestSliceGetter_set(t *testing.T) {
 	t.Run("literal slice", func(t *testing.T) {
-		var sg SliceGetter[any, string]
-		err := sg.setReflectValue(reflect.ValueOf([]string{"a", "b"}))
-		require.NoError(t, err)
-		require.Equal(t, []string{"a", "b"}, sg.typedValues)
-		require.Nil(t, sg.runtimeSlice)
-	})
-
-	t.Run("literal runtime source folds to literal slice", func(t *testing.T) {
-		var sg SliceGetter[any, string]
-		src := newTestRuntimeSliceSource[any, string](newLiteral[any, any]([]string{"x", "y"}))
-		err := sg.setReflectValue(reflect.ValueOf(*src))
-		require.NoError(t, err)
-		require.Equal(t, []string{"x", "y"}, sg.typedValues)
-		require.Nil(t, sg.runtimeSlice)
-	})
-
-	t.Run("non-literal runtime source stays runtime", func(t *testing.T) {
-		var sg SliceGetter[any, StringGetter[any]]
-		src := newTestRuntimeSliceSource[any, StringGetter[any]](mockedGetter[any]{value: []StringGetter[any]{
-			nonLiteralStringGetter[any]{v: "runtime"},
-		}})
-		err := sg.setReflectValue(reflect.ValueOf(*src))
-		require.NoError(t, err)
-		require.Nil(t, sg.typedValues)
-		require.NotNil(t, sg.runtimeSlice)
+		var sg slicegetter.SliceGetter[any, string]
+		require.NoError(t, slicegetter.SetReflectValue(&sg, reflect.ValueOf([]string{"a", "b"})))
+		length, ok := sg.Len()
+		require.True(t, ok)
+		require.Equal(t, 2, length)
 	})
 
 	t.Run("invalid value type", func(t *testing.T) {
-		var sg SliceGetter[any, string]
-		err := sg.setReflectValue(reflect.ValueOf(123))
-		require.Error(t, err)
-		var typeErr TypeError
-		require.ErrorAs(t, err, &typeErr)
+		var sg slicegetter.SliceGetter[any, string]
+		require.Error(t, slicegetter.SetReflectValue(&sg, reflect.ValueOf(123)))
+	})
+
+	t.Run("not a slice getter", func(t *testing.T) {
+		var s []string
+		require.Error(t, slicegetter.SetReflectValue(&s, reflect.ValueOf([]string{"a"})))
+		_, ok := slicegetter.ReflectTypeParam(&s)
+		require.False(t, ok)
+	})
+
+	t.Run("item type", func(t *testing.T) {
+		var sg slicegetter.SliceGetter[any, StringGetter[any]]
+		itemType, ok := slicegetter.ReflectTypeParam(&sg)
+		require.True(t, ok)
+		require.Equal(t, reflect.TypeFor[StringGetter[any]](), itemType)
 	})
 }
 
@@ -76,6 +68,7 @@ func Test_buildSliceGetterValue(t *testing.T) {
 		result, err := buildSliceGetterValue[any](
 			val,
 			reflect.TypeFor[string](),
+			false,
 			pc.buildSliceArg,
 			pc.buildStandardGetSetter,
 			pc.newGetter,
@@ -90,6 +83,7 @@ func Test_buildSliceGetterValue(t *testing.T) {
 		result, err := buildSliceGetterValue[any](
 			val,
 			reflect.TypeFor[uint8](),
+			false,
 			pc.buildSliceArg,
 			pc.buildStandardGetSetter,
 			pc.newGetter,
@@ -105,6 +99,7 @@ func Test_buildSliceGetterValue(t *testing.T) {
 		result, err := buildSliceGetterValue[any](
 			value{},
 			reflect.TypeFor[StringGetter[any]](),
+			true,
 			func(value, reflect.Type) (any, error) {
 				t.Fatal("buildSliceArg should not be called")
 				return nil, nil
@@ -115,16 +110,21 @@ func Test_buildSliceGetterValue(t *testing.T) {
 			},
 		)
 		require.NoError(t, err)
-		src, ok := result.(runtimeSliceSource[any])
-		require.True(t, ok)
-		assert.Same(t, expectedGetter, src.Getter)
-		require.NotNil(t, src.sliceElementCoercer)
+		var sg slicegetter.SliceGetter[any, StringGetter[any]]
+		require.NoError(t, slicegetter.SetReflectValue(&sg, reflect.ValueOf(result)))
+		vals, err := sg.Get(t.Context(), nil)
+		require.NoError(t, err)
+		require.Len(t, vals, 1)
+		got, err := vals[0].Get(t.Context(), nil)
+		require.NoError(t, err)
+		require.Equal(t, "dynamic", got)
 	})
 
 	t.Run("buildGetter error", func(t *testing.T) {
 		_, err := buildSliceGetterValue[any](
 			value{},
 			reflect.TypeFor[StringGetter[any]](),
+			true,
 			nil,
 			pc.buildStandardGetSetter,
 			func(value) (Getter[any], error) {
@@ -133,60 +133,69 @@ func Test_buildSliceGetterValue(t *testing.T) {
 		)
 		require.EqualError(t, err, "getter failed")
 	})
+
+	t.Run("dynamic slices disabled", func(t *testing.T) {
+		_, err := buildSliceGetterValue[any](
+			value{},
+			reflect.TypeFor[StringGetter[any]](),
+			false,
+			nil,
+			pc.buildStandardGetSetter,
+			func(value) (Getter[any], error) {
+				t.Fatal("buildGetter should not be called")
+				return nil, nil
+			},
+		)
+		require.ErrorIs(t, err, errDynamicSliceArgumentsDisabled)
+	})
 }
 
 func TestGetScalarLiteralValues(t *testing.T) {
 	t.Run("empty literal slice", func(t *testing.T) {
-		sg := SliceGetter[any, string]{typedValues: []string{}}
-		vals, ok := GetScalarLiteralValues(&sg)
+		sg := slicegetter.NewTestingSliceGetter[any](true, []string{})
+		vals, ok := slicegetter.GetScalarLiteralValues(sg)
 		require.True(t, ok)
 		require.Empty(t, vals)
 	})
 
 	t.Run("string literals", func(t *testing.T) {
-		sg := SliceGetter[any, string]{typedValues: []string{"a", "b"}}
-		vals, ok := GetScalarLiteralValues(&sg)
+		sg := slicegetter.NewTestingSliceGetter[any](true, []string{"a", "b"})
+		vals, ok := slicegetter.GetScalarLiteralValues(sg)
 		require.True(t, ok)
 		require.Equal(t, []string{"a", "b"}, vals)
 	})
 
 	t.Run("byte literals", func(t *testing.T) {
-		sg := SliceGetter[any, byte]{typedValues: []byte{1, 2}}
-		vals, ok := GetScalarLiteralValues(&sg)
+		sg := slicegetter.NewTestingSliceGetter[any](true, []byte{1, 2})
+		vals, ok := slicegetter.GetScalarLiteralValues(sg)
 		require.True(t, ok)
 		require.Equal(t, []byte{1, 2}, vals)
 	})
 
 	t.Run("int64 literals", func(t *testing.T) {
-		sg := SliceGetter[any, int64]{typedValues: []int64{-1, 2}}
-		vals, ok := GetScalarLiteralValues(&sg)
+		sg := slicegetter.NewTestingSliceGetter[any](true, []int64{-1, 2})
+		vals, ok := slicegetter.GetScalarLiteralValues(sg)
 		require.True(t, ok)
 		require.Equal(t, []int64{-1, 2}, vals)
 	})
 
 	t.Run("float64 literals", func(t *testing.T) {
-		sg := SliceGetter[any, float64]{typedValues: []float64{1.5, 2.5}}
-		vals, ok := GetScalarLiteralValues(&sg)
+		sg := slicegetter.NewTestingSliceGetter[any](true, []float64{1.5, 2.5})
+		vals, ok := slicegetter.GetScalarLiteralValues(sg)
 		require.True(t, ok)
 		require.Equal(t, []float64{1.5, 2.5}, vals)
 	})
 
 	t.Run("runtime slice", func(t *testing.T) {
-		pc := parseContext[any]{}
-		slice := &SliceGetter[any, int64]{
-			runtimeSlice: &runtimeSliceSource[any]{
-				Getter: &exprGetter[any]{
-					expr: Expr[any]{
-						exprFunc: func(context.Context, any) (any, error) {
-							t.Error("runtime slice getter shouldn't be called")
-							return int64(0), nil
-						},
-					},
+		slice := newTestSliceGetterWithRuntimeSource[any, int64](
+			newTestRuntimeSliceSource[any, int64](&exprGetter[any]{expr: Expr[any]{
+				exprFunc: func(context.Context, any) (any, error) {
+					t.Error("runtime slice getter shouldn't be called")
+					return int64(0), nil
 				},
-				sliceElementCoercer: newSliceElementCoercer[any](reflect.TypeFor[int64](), pc.buildStandardGetSetter),
-			},
-		}
-		vals, ok := GetScalarLiteralValues[any, int64](slice)
+			}}),
+		)
+		vals, ok := slicegetter.GetScalarLiteralValues(slice)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
@@ -194,74 +203,64 @@ func TestGetScalarLiteralValues(t *testing.T) {
 
 func TestGetLiteralValues(t *testing.T) {
 	t.Run("static typed getter literals", func(t *testing.T) {
-		sg := SliceGetter[any, StringGetter[any]]{
-			typedValues: []StringGetter[any]{
-				newLiteral[any, string]("one"),
-				newLiteral[any, string]("two"),
-			},
-		}
-		vals, ok := GetLiteralValues[any, string, StringGetter[any]](&sg)
+		sg := slicegetter.NewTestingSliceGetter[any](true, []StringGetter[any]{
+			newLiteral[any, string]("one"),
+			newLiteral[any, string]("two"),
+		})
+		vals, ok := getLiteralValues[any, string](sg)
 		require.True(t, ok)
 		require.Equal(t, []string{"one", "two"}, vals)
 	})
 
 	t.Run("literal runtime slice of typed getters", func(t *testing.T) {
-		sg := NewTestingSliceGetter[any, StringGetter[any]](true, []StringGetter[any]{
+		sg := slicegetter.NewTestingSliceGetter[any, StringGetter[any]](true, []StringGetter[any]{
 			newLiteral[any, string]("10.0.0.0/8"),
 			newLiteral[any, string]("172.16.0.0/12"),
 		})
-		vals, ok := GetLiteralValues[any, string, StringGetter[any]](sg)
+		vals, ok := getLiteralValues[any, string](sg)
 		require.True(t, ok)
 		require.Equal(t, []string{"10.0.0.0/8", "172.16.0.0/12"}, vals)
 	})
 
 	t.Run("literal runtime slice of untyped getters", func(t *testing.T) {
-		sg := NewTestingSliceGetter[any, Getter[any]](true, []Getter[any]{
+		sg := slicegetter.NewTestingSliceGetter[any, Getter[any]](true, []Getter[any]{
 			newLiteral[any, any]("first"),
 			newLiteral[any, any]("second"),
 		})
-		vals, ok := GetLiteralValues[any, any, Getter[any]](sg)
+		vals, ok := getLiteralValues[any, any](sg)
 		require.True(t, ok)
 		require.Equal(t, []any{"first", "second"}, vals)
 	})
 
 	t.Run("dynamic non-literal getters", func(t *testing.T) {
-		sg := NewTestingSliceGetter[any, StringGetter[any]](false, []StringGetter[any]{
+		sg := slicegetter.NewTestingSliceGetter[any, StringGetter[any]](false, []StringGetter[any]{
 			nonLiteralStringGetter[any]{v: "dynamic"},
 		})
-		vals, ok := GetLiteralValues[any, string, StringGetter[any]](sg)
+		vals, ok := getLiteralValues[any, string](sg)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
 
 	t.Run("runtime slice", func(t *testing.T) {
-		pc := parseContext[any]{}
-		slice := &SliceGetter[any, StringGetter[any]]{
-			runtimeSlice: &runtimeSliceSource[any]{
-				Getter: &exprGetter[any]{
-					expr: Expr[any]{
-						exprFunc: func(context.Context, any) (any, error) {
-							t.Error("runtime slice getter shouldn't be called")
-							return nil, nil
-						},
-					},
+		slice := newTestSliceGetterWithRuntimeSource[any, StringGetter[any]](
+			newTestRuntimeSliceSource[any, StringGetter[any]](&exprGetter[any]{expr: Expr[any]{
+				exprFunc: func(context.Context, any) (any, error) {
+					t.Error("runtime slice getter shouldn't be called")
+					return nil, nil
 				},
-				sliceElementCoercer: newSliceElementCoercer[any](reflect.TypeFor[any](), pc.buildStandardGetSetter),
-			},
-		}
-		vals, ok := GetLiteralValues[any, string, StringGetter[any]](slice)
+			}}),
+		)
+		vals, ok := getLiteralValues[any, string](slice)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
 
 	t.Run("mixed literal and non-literal literal values", func(t *testing.T) {
-		sg := SliceGetter[any, StringGetter[any]]{
-			typedValues: []StringGetter[any]{
-				newLiteral[any, string]("literal"),
-				nonLiteralStringGetter[any]{v: "dynamic"},
-			},
-		}
-		vals, ok := GetLiteralValues[any, string, StringGetter[any]](&sg)
+		sg := slicegetter.NewTestingSliceGetter[any](true, []StringGetter[any]{
+			newLiteral[any, string]("literal"),
+			nonLiteralStringGetter[any]{v: "dynamic"},
+		})
+		vals, ok := getLiteralValues[any, string](sg)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
@@ -269,28 +268,28 @@ func TestGetLiteralValues(t *testing.T) {
 
 func TestSliceGetter_Get(t *testing.T) {
 	t.Run("literal values", func(t *testing.T) {
-		sg := SliceGetter[any, string]{typedValues: []string{"a", "b"}}
+		sg := slicegetter.NewTestingSliceGetter[any](true, []string{"a", "b"})
 		vals, err := sg.Get(t.Context(), nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"a", "b"}, vals)
 	})
 
 	t.Run("empty literal values", func(t *testing.T) {
-		sg := SliceGetter[any, string]{typedValues: []string{}}
+		sg := slicegetter.NewTestingSliceGetter[any](true, []string{})
 		vals, err := sg.Get(t.Context(), nil)
 		require.NoError(t, err)
 		require.Empty(t, vals)
 	})
 
 	t.Run("dynamic literal slice direct []V", func(t *testing.T) {
-		sg := NewTestingSliceGetter[any, string](true, []string{"x", "y"})
+		sg := slicegetter.NewTestingSliceGetter[any, string](true, []string{"x", "y"})
 		vals, err := sg.Get(t.Context(), nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"x", "y"}, vals)
 	})
 
 	t.Run("dynamic non-literal []V", func(t *testing.T) {
-		sg := NewTestingSliceGetter[any, Getter[any]](false, []Getter[any]{
+		sg := slicegetter.NewTestingSliceGetter[any, Getter[any]](false, []Getter[any]{
 			newLiteral[any, any]("v1"),
 			newLiteral[any, any]("v2"),
 		})
@@ -416,9 +415,9 @@ func TestSliceGetter_DistinguishesNilAndEmptySlices(t *testing.T) {
 					}}
 				}
 				t.Run(name, func(t *testing.T) {
-					var sg SliceGetter[any, StringGetter[any]]
+					var sg slicegetter.SliceGetter[any, StringGetter[any]]
 					source := newTestRuntimeSliceSource[any, StringGetter[any]](getter)
-					require.NoError(t, sg.setReflectValue(reflect.ValueOf(*source)))
+					require.NoError(t, slicegetter.SetReflectValue(&sg, reflect.ValueOf(source.value())))
 					nonNil, err := sg.Range(t.Context(), nil, func(StringGetter[any]) bool {
 						t.Fatal("nil or empty slice must not invoke yield")
 						return false
@@ -457,7 +456,7 @@ func TestSliceGetter_RangeEvaluatesOnceAndStopsEarly(t *testing.T) {
 
 func TestSliceGetter_Range(t *testing.T) {
 	t.Run("static values", func(t *testing.T) {
-		sg := SliceGetter[any, int]{typedValues: []int{1, 2, 3}}
+		sg := slicegetter.NewTestingSliceGetter[any](true, []int{1, 2, 3})
 		var collected []int
 		nonNil, err := sg.Range(t.Context(), nil, func(v int) bool {
 			collected = append(collected, v)
@@ -469,7 +468,7 @@ func TestSliceGetter_Range(t *testing.T) {
 	})
 
 	t.Run("early stop", func(t *testing.T) {
-		sg := SliceGetter[any, int]{typedValues: []int{1, 2, 3}}
+		sg := slicegetter.NewTestingSliceGetter[any](true, []int{1, 2, 3})
 		var collected []int
 		nonNil, err := sg.Range(t.Context(), nil, func(v int) bool {
 			collected = append(collected, v)
@@ -481,7 +480,7 @@ func TestSliceGetter_Range(t *testing.T) {
 	})
 
 	t.Run("dynamic []V fast path", func(t *testing.T) {
-		sg := NewTestingSliceGetter[any, int](false, []int{4, 5, 6})
+		sg := slicegetter.NewTestingSliceGetter[any, int](false, []int{4, 5, 6})
 		var collected []int
 		nonNil, err := sg.Range(t.Context(), nil, func(v int) bool {
 			collected = append(collected, v)
@@ -559,10 +558,10 @@ func BenchmarkSliceGetter(b *testing.B) {
 		stringGetters = append(stringGetters, getter)
 	}
 
-	literalScalarSliceGetter := NewTestingSliceGetter[any, string](true, strings)
-	runtimeScalarSliceGetter := NewTestingSliceGetter[any, string](false, strings)
-	literalGetterSliceGetter := NewTestingSliceGetter[any, StringGetter[any]](true, stringGetters)
-	runtimeGetterSliceGetter := NewTestingSliceGetter[any, StringGetter[any]](false, stringGetters)
+	literalScalarSliceGetter := slicegetter.NewTestingSliceGetter[any, string](true, strings)
+	runtimeScalarSliceGetter := slicegetter.NewTestingSliceGetter[any, string](false, strings)
+	literalGetterSliceGetter := slicegetter.NewTestingSliceGetter[any, StringGetter[any]](true, stringGetters)
+	runtimeGetterSliceGetter := slicegetter.NewTestingSliceGetter[any, StringGetter[any]](false, stringGetters)
 
 	b.Run("string/bare", func(b *testing.B) {
 		b.ReportAllocs()
@@ -574,7 +573,7 @@ func BenchmarkSliceGetter(b *testing.B) {
 		}
 	})
 
-	benchmarkScalarGet := func(b *testing.B, sliceGetter *SliceGetter[any, string]) {
+	benchmarkScalarGet := func(b *testing.B, sliceGetter *slicegetter.SliceGetter[any, string]) {
 		ctx := b.Context()
 		b.ReportAllocs()
 		total := 0
@@ -595,7 +594,7 @@ func BenchmarkSliceGetter(b *testing.B) {
 		benchmarkScalarGet(b, runtimeScalarSliceGetter)
 	})
 
-	benchmarkScalarRange := func(b *testing.B, sliceGetter *SliceGetter[any, string]) {
+	benchmarkScalarRange := func(b *testing.B, sliceGetter *slicegetter.SliceGetter[any, string]) {
 		ctx := b.Context()
 		b.ReportAllocs()
 		total := 0
@@ -631,7 +630,7 @@ func BenchmarkSliceGetter(b *testing.B) {
 		}
 	})
 
-	benchmarkGetterGet := func(b *testing.B, sliceGetter *SliceGetter[any, StringGetter[any]]) {
+	benchmarkGetterGet := func(b *testing.B, sliceGetter *slicegetter.SliceGetter[any, StringGetter[any]]) {
 		ctx := b.Context()
 		b.ReportAllocs()
 		total := 0
@@ -656,7 +655,7 @@ func BenchmarkSliceGetter(b *testing.B) {
 		benchmarkGetterGet(b, runtimeGetterSliceGetter)
 	})
 
-	benchmarkGetterRange := func(b *testing.B, sliceGetter *SliceGetter[any, StringGetter[any]]) {
+	benchmarkGetterRange := func(b *testing.B, sliceGetter *slicegetter.SliceGetter[any, StringGetter[any]]) {
 		ctx := b.Context()
 		b.ReportAllocs()
 		total := 0
@@ -689,28 +688,28 @@ func BenchmarkSliceGetter(b *testing.B) {
 
 func TestSliceGetter_Len(t *testing.T) {
 	t.Run("static values", func(t *testing.T) {
-		sg := SliceGetter[any, string]{typedValues: []string{"a", "b", "c"}}
+		sg := slicegetter.NewTestingSliceGetter[any](true, []string{"a", "b", "c"})
 		length, ok := sg.Len()
 		require.True(t, ok)
 		require.Equal(t, 3, length)
 	})
 
 	t.Run("empty static values", func(t *testing.T) {
-		sg := SliceGetter[any, string]{typedValues: []string{}}
+		sg := slicegetter.NewTestingSliceGetter[any](true, []string{})
 		length, ok := sg.Len()
 		require.True(t, ok)
 		require.Equal(t, 0, length)
 	})
 
 	t.Run("runtime slice", func(t *testing.T) {
-		sg := NewTestingSliceGetter[any, string](false, []string{"dynamic"})
+		sg := slicegetter.NewTestingSliceGetter[any, string](false, []string{"dynamic"})
 		length, ok := sg.Len()
 		require.False(t, ok)
 		require.Equal(t, 0, length)
 	})
 
 	t.Run("unset getter", func(t *testing.T) {
-		var sg SliceGetter[any, string]
+		var sg slicegetter.SliceGetter[any, string]
 		length, ok := sg.Len()
 		require.False(t, ok)
 		require.Equal(t, 0, length)
@@ -743,9 +742,9 @@ func TestSliceGetter_nilRuntimeSlice(t *testing.T) {
 
 func TestSliceGetter_nilLiteralSlice(t *testing.T) {
 	ctx := t.Context()
-	var sg SliceGetter[any, string]
+	var sg slicegetter.SliceGetter[any, string]
 	src := newTestRuntimeSliceSource[any, string](newLiteral[any, any](nil))
-	require.NoError(t, sg.setReflectValue(reflect.ValueOf(*src)))
+	require.NoError(t, slicegetter.SetReflectValue(&sg, reflect.ValueOf(src.value())))
 
 	t.Run("Get", func(t *testing.T) {
 		vals, err := sg.Get(ctx, nil)
@@ -765,224 +764,24 @@ func TestSliceGetter_nilLiteralSlice(t *testing.T) {
 	})
 }
 
-func Test_sliceElementCoercer_sliceLen(t *testing.T) {
-	coercer := newTestSliceElementCoercer[any, string]()
-
-	t.Run("pcommon.Slice", func(t *testing.T) {
-		s := pcommon.NewSlice()
-		s.AppendEmpty().SetStr("a")
-		lenVal, ok := coercer.sliceLen(s)
-		require.True(t, ok)
-		require.Equal(t, 1, lenVal)
-	})
-
-	t.Run("pcommon.Value slice", func(t *testing.T) {
-		v := pcommon.NewValueSlice()
-		v.Slice().AppendEmpty().SetStr("a")
-		lenVal, ok := coercer.sliceLen(v)
-		require.True(t, ok)
-		require.Equal(t, 1, lenVal)
-	})
-
-	t.Run("pcommon.Value non-slice", func(t *testing.T) {
-		v := pcommon.NewValueStr("text")
-		lenVal, ok := coercer.sliceLen(v)
-		require.False(t, ok)
-		require.Equal(t, 0, lenVal)
-	})
-
-	t.Run("reflect slice", func(t *testing.T) {
-		lenVal, ok := coercer.sliceLen([]string{"a", "b"})
-		require.True(t, ok)
-		require.Equal(t, 2, lenVal)
-	})
-
-	t.Run("not a slice", func(t *testing.T) {
-		lenVal, ok := coercer.sliceLen(map[string]any{})
-		require.False(t, ok)
-		require.Equal(t, 0, lenVal)
-	})
-}
-
-func Test_sliceElementCoercer_rangeSlice(t *testing.T) {
-	t.Run("buildSliceItemGetter error", func(t *testing.T) {
-		coercer := newTestSliceElementCoercerWithBuilder[any](
-			reflect.TypeFor[string](),
-			func(_ string, _ Getter[any]) (any, error) {
-				return nil, errors.New("build failed")
-			},
-		)
-		_, err := coercer.rangeSlice([]any{"a"}, func(_ any) bool { return true })
-		require.Error(t, err)
-		require.EqualError(t, err, "build failed")
-	})
-
-	t.Run("yield stops early", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, string]()
-		calls := 0
-		_, err := coercer.rangeSlice([]string{"a", "b", "c"}, func(_ any) bool {
-			calls++
-			return calls < 2
-		})
-		require.NoError(t, err)
-		require.Equal(t, 2, calls)
-	})
-
-	t.Run("reuses existing Getter elements", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, Getter[any]]()
-		original := newLiteral[any, any]("kept")
-		var seen Getter[any]
-		_, err := coercer.rangeSlice([]Getter[any]{original}, func(val any) bool {
-			seen = val.(Getter[any])
-			return true
-		})
-		require.NoError(t, err)
-		assert.Same(t, original, seen)
-	})
-
-	t.Run("coerces pcommon.Slice items", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, StringGetter[any]]()
-		pSlice := pcommon.NewSlice()
-		pSlice.AppendEmpty().SetStr("coerced")
-
-		var got string
-		_, err := coercer.rangeSlice(pSlice, func(val any) bool {
-			sg := val.(StringGetter[any])
-			str, err := sg.Get(t.Context(), nil)
-			require.NoError(t, err)
-			got = str
-			return true
-		})
-		require.NoError(t, err)
-		require.Equal(t, "coerced", got)
-	})
-
-	t.Run("pcommon.Slice buildSliceItemGetter error", func(t *testing.T) {
-		coercer := newTestSliceElementCoercerWithBuilder[any](
-			reflect.TypeFor[string](),
-			func(_ string, _ Getter[any]) (any, error) {
-				return nil, errors.New("pcommon build failed")
-			},
-		)
-		pSlice := pcommon.NewSlice()
-		pSlice.AppendEmpty().SetStr("item")
-
-		_, err := coercer.rangeSlice(pSlice, func(_ any) bool { return true })
-		require.Error(t, err)
-		require.EqualError(t, err, "pcommon build failed")
-	})
-
-	t.Run("pcommon.Slice yield stops early", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, StringGetter[any]]()
-		pSlice := pcommon.NewSlice()
-		pSlice.AppendEmpty().SetStr("a")
-		pSlice.AppendEmpty().SetStr("b")
-
-		calls := 0
-		_, err := coercer.rangeSlice(pSlice, func(_ any) bool {
-			calls++
-			return calls < 2
-		})
-		require.NoError(t, err)
-		require.Equal(t, 2, calls)
-	})
-
-	t.Run("coerces pcommon.Value slice wrapper", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, StringGetter[any]]()
-		pVal := pcommon.NewValueSlice()
-		pVal.Slice().AppendEmpty().SetStr("wrapped")
-
-		count := 0
-		_, err := coercer.rangeSlice(pVal, func(val any) bool {
-			count++
-			_, ok := val.(StringGetter[any])
-			require.True(t, ok)
-			return true
-		})
-		require.NoError(t, err)
-		require.Equal(t, 1, count)
-	})
-
-	t.Run("pcommon.Value non-slice error", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, string]()
-		_, err := coercer.rangeSlice(pcommon.NewValueStr("text"), func(_ any) bool { return true })
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "expected a slice")
-	})
-
-	t.Run("reflect slice with matching element type", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, string]()
-		var collected []string
-		_, err := coercer.rangeSlice([]string{"direct"}, func(val any) bool {
-			collected = append(collected, val.(string))
-			return true
-		})
-		require.NoError(t, err)
-		require.Equal(t, []string{"direct"}, collected)
-	})
-
-	t.Run("reflect slice matching type yield stops early", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, string]()
-		calls := 0
-		_, err := coercer.rangeSlice([]string{"a", "b", "c"}, func(_ any) bool {
-			calls++
-			return calls < 2
-		})
-		require.NoError(t, err)
-		require.Equal(t, 2, calls)
-	})
-
-	t.Run("reflect slice coerced yield stops early", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, StringGetter[any]]()
-		calls := 0
-		_, err := coercer.rangeSlice([]any{"a", "b"}, func(_ any) bool {
-			calls++
-			return calls < 2
-		})
-		require.NoError(t, err)
-		require.Equal(t, 2, calls)
-	})
-
-	t.Run("reflect slice reuses getter yield stops early", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, Getter[any]]()
-		calls := 0
-		_, err := coercer.rangeSlice([]Getter[any]{
-			newLiteral[any, any]("a"),
-			newLiteral[any, any]("b"),
-		}, func(_ any) bool {
-			calls++
-			return calls < 2
-		})
-		require.NoError(t, err)
-		require.Equal(t, 2, calls)
-	})
-
-	t.Run("reflect non-slice error", func(t *testing.T) {
-		coercer := newTestSliceElementCoercer[any, string]()
-		_, err := coercer.rangeSlice(123, func(_ any) bool { return true })
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "expected a slice")
-	})
-}
-
-func Test_getRuntimeSliceLiterals(t *testing.T) {
+func TestSliceGetter_foldsLiteralSources(t *testing.T) {
 	t.Run("non-literal getter", func(t *testing.T) {
 		source := newTestRuntimeSliceSource[any, string](mockedGetter[any]{value: []string{"a"}})
-		vals, ok := getRuntimeSliceLiterals[any, string](source)
+		vals, ok := foldLiterals[string](t, source)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
 
 	t.Run("literal getter with direct []V", func(t *testing.T) {
 		source := newTestRuntimeSliceSource[any, int](newLiteral[any, any]([]int{1, 2}))
-		vals, ok := getRuntimeSliceLiterals[any, int](source)
+		vals, ok := foldLiterals[int](t, source)
 		require.True(t, ok)
 		require.Equal(t, []int{1, 2}, vals)
 	})
 
 	t.Run("literal getter with coercible []any", func(t *testing.T) {
 		source := newTestRuntimeSliceSource[any, StringGetter[any]](newLiteral[any, any]([]any{"a", "b"}))
-		vals, ok := getRuntimeSliceLiterals[any, StringGetter[any]](source)
+		vals, ok := foldLiterals[StringGetter[any]](t, source)
 		require.True(t, ok)
 		require.Len(t, vals, 2)
 	})
@@ -992,14 +791,14 @@ func Test_getRuntimeSliceLiterals(t *testing.T) {
 		pSlice.AppendEmpty().SetStr("a")
 		pSlice.AppendEmpty().SetStr("b")
 		dyn := newTestRuntimeSliceSource[any, StringGetter[any]](newLiteral[any, any](pSlice))
-		vals, ok := getRuntimeSliceLiterals[any, StringGetter[any]](dyn)
+		vals, ok := foldLiterals[StringGetter[any]](t, dyn)
 		require.True(t, ok)
 		require.Len(t, vals, 2)
 	})
 
 	t.Run("getter error", func(t *testing.T) {
 		source := newTestRuntimeSliceSource[any, string](errSliceGetter{err: errors.New("literal get failed")})
-		vals, ok := getRuntimeSliceLiterals[any, string](source)
+		vals, ok := foldLiterals[string](t, source)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
@@ -1012,14 +811,14 @@ func Test_getRuntimeSliceLiterals(t *testing.T) {
 			},
 		)
 		source := newTestRuntimeSliceSourceWithCoercer[any](newLiteral[any, any]([]any{"x"}), coercer)
-		vals, ok := getRuntimeSliceLiterals[any, string](source)
+		vals, ok := foldLiterals[string](t, source)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
 
 	t.Run("rangeSlice error", func(t *testing.T) {
 		source := newTestRuntimeSliceSource[any, string](newLiteral[any, any]("not-a-slice"))
-		vals, ok := getRuntimeSliceLiterals[any, string](source)
+		vals, ok := foldLiterals[string](t, source)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
@@ -1032,10 +831,22 @@ func Test_getRuntimeSliceLiterals(t *testing.T) {
 			},
 		)
 		source := newTestRuntimeSliceSourceWithCoercer[any](newLiteral[any, any]([]any{"x"}), coercer)
-		vals, ok := getRuntimeSliceLiterals[any, string](source)
+		vals, ok := foldLiterals[string](t, source)
 		require.False(t, ok)
 		require.Nil(t, vals)
 	})
+}
+
+// foldLiterals reports whether setting source folds it into literal values, and returns them.
+func foldLiterals[V any](t *testing.T, source *testRuntimeSliceSource[any]) ([]V, bool) {
+	var sg slicegetter.SliceGetter[any, V]
+	require.NoError(t, slicegetter.SetReflectValue(&sg, reflect.ValueOf(source.value())))
+	if _, ok := sg.Len(); !ok {
+		return nil, false
+	}
+	vals, err := sg.Get(t.Context(), nil)
+	require.NoError(t, err)
+	return vals, true
 }
 
 type errSliceGetter struct {
@@ -1046,32 +857,59 @@ func (g errSliceGetter) Get(_ context.Context, _ any) (any, error) {
 	return nil, g.err
 }
 
-func newTestSliceElementCoercer[K, V any]() *sliceElementCoercer[K] {
+type testSliceElementCoercer[K any] struct {
+	sliceItemType        reflect.Type
+	buildSliceItemGetter func(string, Getter[K]) (any, error)
+}
+
+type testRuntimeSliceSource[K any] struct {
+	getter Getter[K]
+	*testSliceElementCoercer[K]
+}
+
+func (s *testRuntimeSliceSource[K]) value() any {
+	return newRuntimeSliceSource(s.getter, isLiteralGetter(s.getter), s.sliceItemType, s.buildSliceItemGetter)
+}
+
+func newTestSliceElementCoercer[K, V any]() *testSliceElementCoercer[K] {
 	pc := parseContext[K]{}
-	return newSliceElementCoercer[K](reflect.TypeFor[V](), pc.buildStandardGetSetter)
+	return newTestSliceElementCoercerWithBuilder[K](reflect.TypeFor[V](), pc.buildStandardGetSetter)
 }
 
 func newTestSliceElementCoercerWithBuilder[K any](
 	sliceItemType reflect.Type,
 	buildSliceItemGetter func(string, Getter[K]) (any, error),
-) *sliceElementCoercer[K] {
-	return newSliceElementCoercer[K](sliceItemType, buildSliceItemGetter)
+) *testSliceElementCoercer[K] {
+	return &testSliceElementCoercer[K]{sliceItemType: sliceItemType, buildSliceItemGetter: buildSliceItemGetter}
 }
 
-func newTestRuntimeSliceSource[K, V any](getter Getter[K]) *runtimeSliceSource[K] {
-	return &runtimeSliceSource[K]{
-		Getter:              getter,
-		sliceElementCoercer: newTestSliceElementCoercer[K, V](),
+func newTestRuntimeSliceSource[K, V any](getter Getter[K]) *testRuntimeSliceSource[K] {
+	return &testRuntimeSliceSource[K]{
+		getter:                  getter,
+		testSliceElementCoercer: newTestSliceElementCoercer[K, V](),
 	}
 }
 
-func newTestRuntimeSliceSourceWithCoercer[K any](getter Getter[K], coercer *sliceElementCoercer[K]) *runtimeSliceSource[K] {
-	return &runtimeSliceSource[K]{
-		Getter:              getter,
-		sliceElementCoercer: coercer,
+func newTestRuntimeSliceSourceWithCoercer[K any](getter Getter[K], coercer *testSliceElementCoercer[K]) *testRuntimeSliceSource[K] {
+	return &testRuntimeSliceSource[K]{
+		getter:                  getter,
+		testSliceElementCoercer: coercer,
 	}
 }
 
-func newTestSliceGetterWithRuntimeSource[K, V any](src *runtimeSliceSource[K]) SliceGetter[K, V] {
-	return SliceGetter[K, V]{runtimeSlice: src}
+// newTestSliceGetterWithRuntimeSource resolves src at runtime even when its getter is a
+// literal, instead of folding it into literal values.
+func newTestSliceGetterWithRuntimeSource[K, V any](src *testRuntimeSliceSource[K]) *slicegetter.SliceGetter[K, V] {
+	var sg slicegetter.SliceGetter[K, V]
+	err := slicegetter.SetReflectValue(&sg, reflect.ValueOf(newRuntimeSliceSource(src.getter, false, src.sliceItemType, src.buildSliceItemGetter)))
+	if err != nil {
+		panic(err)
+	}
+	return &sg
+}
+
+func getLiteralValues[K, V any, G TypedGetter[K, V]](slice *slicegetter.SliceGetter[K, G]) ([]V, bool) {
+	return slicegetter.GetLiteralValues(slice, func(getter G) (V, bool) {
+		return GetLiteralValue[K, V](getter)
+	})
 }
