@@ -186,15 +186,16 @@ func parseAndHashSplitStatsKey(val string) string {
 	var current strings.Builder
 	inQuotes := false
 	escapeNext := false
+	bracketLevel := 0
 
-	flushToken := func(nextChar byte) {
+	flushToken := func(hashToken bool) {
 		if current.Len() == 0 {
 			return
 		}
 		token := current.String()
 		current.Reset()
 
-		if nextChar == '(' {
+		if !hashToken {
 			result.WriteString(token)
 			return
 		}
@@ -237,8 +238,22 @@ func parseAndHashSplitStatsKey(val string) string {
 		}
 
 		if !inQuotes {
-			if c == '(' || c == ')' || c == ',' {
-				flushToken(c)
+			if c == '(' {
+				flushToken(false)
+				result.WriteByte(c)
+				bracketLevel++
+				continue
+			}
+			if c == ')' {
+				flushToken(bracketLevel > 0)
+				result.WriteByte(c)
+				if bracketLevel > 0 {
+					bracketLevel--
+				}
+				continue
+			}
+			if c == ',' {
+				flushToken(bracketLevel > 0)
 				result.WriteByte(c)
 				continue
 			}
@@ -247,7 +262,8 @@ func parseAndHashSplitStatsKey(val string) string {
 		current.WriteByte(c)
 	}
 
-	flushToken(0)
+	flushToken(bracketLevel > 0)
+
 	return result.String()
 }
 

@@ -304,7 +304,7 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 		{
 			name:          "flat string",
 			originalValue: "test_db_user_123",
-			expectedValue: "3335628364",
+			expectedValue: "test_db_user_123",
 		},
 		{
 			name:          "boundary begin",
@@ -395,6 +395,16 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			name:          "date of birth with slashes",
 			originalValue: "UsersTable(\"05/12/1985\")",
 			expectedValue: "UsersTable(1994209726)",
+		},
+		{
+			name:          "split stats empty brackets",
+			originalValue: "TableA()",
+			expectedValue: "TableA()",
+		},
+		{
+			name:          "split stats interleaved",
+			originalValue: "TableA().TableB",
+			expectedValue: "TableA().TableB",
 		},
 	}
 
