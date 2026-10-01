@@ -13,9 +13,12 @@ import (
 	"sync"
 
 	"github.com/alecthomas/participle/v2"
+	"github.com/alecthomas/participle/v2/lexer"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 )
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
@@ -181,11 +184,11 @@ func (p *Parser[K]) buildStatement(statement string) (*Statement[K], map[string]
 	pc := p.newParseContext()
 	function, err := pc.newFunctionCall(parsed.Editor)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatParseError("statement", statement, err)
 	}
 	expression, err := pc.newBoolExpr(parsed.WhereClause)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatParseError("statement", statement, err)
 	}
 	return &Statement[K]{
 		function:          function,
@@ -244,7 +247,7 @@ func (p *Parser[K]) buildCondition(condition string) (*Condition[K], map[string]
 	pc := p.newParseContext()
 	expression, err := pc.newBoolExpr(parsed)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, formatParseError("condition", condition, err)
 	}
 	return &Condition[K]{
 		condition: expression,
@@ -329,7 +332,7 @@ func parseStatement(raw string) (*parsedStatement, error) {
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
-		return nil, err
+		return nil, formatParseError("statement", raw, err)
 	}
 
 	return parsed, nil
@@ -342,7 +345,7 @@ func parseCondition(raw string) (*booleanExpression, error) {
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
-		return nil, err
+		return nil, formatParseError("condition", raw, err)
 	}
 
 	return parsed, nil
@@ -355,28 +358,66 @@ func parseValueExpression(raw string) (*value, error) {
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
-		return nil, err
+		return nil, formatParseError("expression", raw, err)
 	}
 
 	return parsed, nil
 }
 
-func formatParseError(kind, raw string, err error) error {
-	var unexpected *participle.UnexpectedTokenError
-	if !errors.As(err, &unexpected) {
-		return fmt.Errorf("%s has invalid syntax: %w", kind, err)
-	}
-	pos := unexpected.Position()
+func formatSyntaxError(kind, ottl string, err *participle.UnexpectedTokenError) string {
 	var expected string
-	if msg := unexpected.Message(); msg != "" {
+	if msg := err.Message(); msg != "" {
 		if idx := strings.Index(msg, "(expected "); idx >= 0 {
 			expected = " " + msg[idx:]
 		}
 	}
-	if near := nearParseError(raw, pos.Offset); near != "" {
-		return fmt.Errorf("%s has invalid syntax at %d:%d near `%s`:%s", kind, pos.Line, pos.Column, near, expected)
+	pos := err.Position()
+	if near := nearParseError(ottl, pos.Offset); near != "" {
+		return fmt.Sprintf("%s has invalid syntax near `%s`:%s", kind, near, expected)
 	}
-	return fmt.Errorf("%s has invalid syntax at %d:%d:%s", kind, pos.Line, pos.Column, expected)
+	return fmt.Sprintf("%s has invalid syntax:%s", kind, expected)
+}
+
+func formatErrorWithPosition(kind, ottl string, err error, pos lexer.Position) string {
+	var msg string
+	if e, ok := err.(interface{ Message() string }); ok {
+		msg = e.Message()
+	} else {
+		msg = err.Error()
+	}
+	if near := nearParseError(ottl, pos.Offset); near != "" {
+		return fmt.Sprintf("%s failed to parse near `%s`: %s", kind, near, msg)
+	}
+	return fmt.Sprintf("%s failed to parse: %s", kind, msg)
+}
+
+// errorPosition extracts a lexer.Position from any error kind that carries one.
+func errorPosition(err error) (lexer.Position, bool) {
+	if pe, ok := errors.AsType[ottlerror.Error](err); ok {
+		return ottlerror.AsLexerPosition(pe.Position()), true
+	}
+	if v, ok := errors.AsType[participle.Error](err); ok {
+		return v.Position(), true
+	}
+	return lexer.Position{}, false
+}
+
+func formatParseError(kind, ottl string, err error) error {
+	if v, ok := errors.AsType[*grammarCustomError](err); ok {
+		if len(v.errs) == 1 {
+			if pos, ok := errorPosition(v.errs[0]); ok {
+				return ottlerror.Wrap(pos, v.errs[0], formatErrorWithPosition(kind, ottl, v.errs[0], pos))
+			}
+		}
+		return ottlerror.Wrap(lexer.Position{}, v, fmt.Sprintf("%s failed to parse: %s", kind, v.Error()))
+	}
+	if v, ok := errors.AsType[*participle.UnexpectedTokenError](err); ok {
+		return ottlerror.Wrap(v.Position(), err, formatSyntaxError(kind, ottl, v))
+	}
+	if pos, ok := errorPosition(err); ok {
+		return ottlerror.Wrap(pos, err, formatErrorWithPosition(kind, ottl, err, pos))
+	}
+	return ottlerror.Wrapf(lexer.Position{}, err, "%s is invalid", kind)
 }
 
 // parseErrorSnippetLen is the number of source characters shown after the error position in the "near" clause.

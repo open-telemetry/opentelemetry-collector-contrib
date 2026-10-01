@@ -19,6 +19,7 @@ import (
 	"golang.org/x/exp/constraints"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 )
 
 // ExprFunc is a function in OTTL
@@ -1202,13 +1203,13 @@ func (p *parseContext[K]) newGetter(val value) (Getter[K], error) {
 	if val.Enum != nil {
 		enum, err := p.enumParser((*EnumSymbol)(val.Enum))
 		if err != nil {
-			return nil, err
+			return nil, ottlerror.FromError(val.Pos, err)
 		}
 		return newLiteral[K, any](int64(*enum)), nil
 	}
 
 	if val.Lambda != nil {
-		return nil, errors.New("lambda expressions can only be passed to function arguments that accept them")
+		return nil, ottlerror.New(val.Lambda.Pos, "lambda expressions can only be passed to function arguments that accept them")
 	}
 
 	if eL := val.Literal; eL != nil {
@@ -1235,7 +1236,11 @@ func (p *parseContext[K]) newGetter(val value) (Getter[K], error) {
 			}
 			slice[i] = getter
 		}
-		return newListGetter(slice)
+		g, err := newListGetter(slice)
+		if err != nil {
+			return nil, ottlerror.FromError(val.Pos, err)
+		}
+		return g, nil
 	}
 
 	if val.Map != nil {
@@ -1247,14 +1252,22 @@ func (p *parseContext[K]) newGetter(val value) (Getter[K], error) {
 			}
 			mapValues[*kvp.Key] = getter
 		}
-		return newMapGetter(mapValues)
+		g, err := newMapGetter(mapValues)
+		if err != nil {
+			return nil, ottlerror.FromError(val.Pos, err)
+		}
+		return g, nil
 	}
 
 	if val.MathExpression == nil {
 		// In practice, can't happen since the DSL grammar guarantees one is set
-		return nil, errors.New("no value field set. This is a bug in the OpenTelemetry Transformation Language")
+		return nil, ottlerror.New(val.Pos, "no value field set. This is a bug in the OpenTelemetry Transformation Language")
 	}
-	return p.evaluateMathExpression(val.MathExpression)
+	g, err := p.evaluateMathExpression(val.MathExpression)
+	if err != nil {
+		return nil, ottlerror.FromError(val.Pos, err)
+	}
+	return g, nil
 }
 
 func (p *parseContext[K]) newGetterFromConverter(c converter) (Getter[K], error) {
