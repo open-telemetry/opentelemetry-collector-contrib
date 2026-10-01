@@ -1334,20 +1334,10 @@ func (ms *MongodbQueriesRateMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// MongodbQueryExecutorCollectionScanCountMetricAttributeKey specifies the key of an attribute for the mongodb.query_executor.collection_scan.count metric.
-type MongodbQueryExecutorCollectionScanCountMetricAttributeKey string
-
-const (
-	MongodbQueryExecutorCollectionScanCountMetricAttributeKeyMongodbQueryExecutorCollectionScanType MongodbQueryExecutorCollectionScanCountMetricAttributeKey = "mongodb.query_executor.collection_scan.type"
-)
-
 // MongodbQueryExecutorCollectionScanCountMetricConfig provides config for the mongodb.query_executor.collection_scan.count metric.
 type MongodbQueryExecutorCollectionScanCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MongodbQueryExecutorCollectionScanCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *MongodbQueryExecutorCollectionScanCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1364,41 +1354,13 @@ func (ms *MongodbQueryExecutorCollectionScanCountMetricConfig) Unmarshal(parser 
 	return nil
 }
 
-func (ms *MongodbQueryExecutorCollectionScanCountMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case MongodbQueryExecutorCollectionScanCountMetricAttributeKeyMongodbQueryExecutorCollectionScanType:
-		default:
-			return fmt.Errorf("metric mongodb.query_executor.collection_scan.count doesn't have an attribute %v, valid attributes: [mongodb.query_executor.collection_scan.type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// MongodbQueryExecutorScannedCountMetricAttributeKey specifies the key of an attribute for the mongodb.query_executor.scanned.count metric.
-type MongodbQueryExecutorScannedCountMetricAttributeKey string
-
-const (
-	MongodbQueryExecutorScannedCountMetricAttributeKeyMongodbQueryExecutorScanType MongodbQueryExecutorScannedCountMetricAttributeKey = "mongodb.query_executor.scan.type"
-)
-
-// MongodbQueryExecutorScannedCountMetricConfig provides config for the mongodb.query_executor.scanned.count metric.
-type MongodbQueryExecutorScannedCountMetricConfig struct {
+// MongodbQueryExecutorDocumentScannedCountMetricConfig provides config for the mongodb.query_executor.document.scanned.count metric.
+type MongodbQueryExecutorDocumentScannedCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MongodbQueryExecutorScannedCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MongodbQueryExecutorScannedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MongodbQueryExecutorDocumentScannedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1412,21 +1374,23 @@ func (ms *MongodbQueryExecutorScannedCountMetricConfig) Unmarshal(parser *confma
 	return nil
 }
 
-func (ms *MongodbQueryExecutorScannedCountMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case MongodbQueryExecutorScannedCountMetricAttributeKeyMongodbQueryExecutorScanType:
-		default:
-			return fmt.Errorf("metric mongodb.query_executor.scanned.count doesn't have an attribute %v, valid attributes: [mongodb.query_executor.scan.type]", val)
-		}
+// MongodbQueryExecutorIndexKeyScannedCountMetricConfig provides config for the mongodb.query_executor.index_key.scanned.count metric.
+type MongodbQueryExecutorIndexKeyScannedCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbQueryExecutorIndexKeyScannedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
 	}
 
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -2069,7 +2033,8 @@ type MetricsConfig struct {
 	MongodbPageFaults                         MongodbPageFaultsMetricConfig                         `mapstructure:"mongodb.page_faults"`
 	MongodbQueriesRate                        MongodbQueriesRateMetricConfig                        `mapstructure:"mongodb.queries.rate"`
 	MongodbQueryExecutorCollectionScanCount   MongodbQueryExecutorCollectionScanCountMetricConfig   `mapstructure:"mongodb.query_executor.collection_scan.count"`
-	MongodbQueryExecutorScannedCount          MongodbQueryExecutorScannedCountMetricConfig          `mapstructure:"mongodb.query_executor.scanned.count"`
+	MongodbQueryExecutorDocumentScannedCount  MongodbQueryExecutorDocumentScannedCountMetricConfig  `mapstructure:"mongodb.query_executor.document.scanned.count"`
+	MongodbQueryExecutorIndexKeyScannedCount  MongodbQueryExecutorIndexKeyScannedCountMetricConfig  `mapstructure:"mongodb.query_executor.index_key.scanned.count"`
 	MongodbReplCommandsPerSec                 MongodbReplCommandsPerSecMetricConfig                 `mapstructure:"mongodb.repl_commands_per_sec"`
 	MongodbReplDeletesPerSec                  MongodbReplDeletesPerSecMetricConfig                  `mapstructure:"mongodb.repl_deletes_per_sec"`
 	MongodbReplGetmoresPerSec                 MongodbReplGetmoresPerSecMetricConfig                 `mapstructure:"mongodb.repl_getmores_per_sec"`
@@ -2250,14 +2215,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MongodbQueryExecutorCollectionScanCount: MongodbQueryExecutorCollectionScanCountMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []MongodbQueryExecutorCollectionScanCountMetricAttributeKey{MongodbQueryExecutorCollectionScanCountMetricAttributeKeyMongodbQueryExecutorCollectionScanType},
+			Enabled: false,
 		},
-		MongodbQueryExecutorScannedCount: MongodbQueryExecutorScannedCountMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []MongodbQueryExecutorScannedCountMetricAttributeKey{MongodbQueryExecutorScannedCountMetricAttributeKeyMongodbQueryExecutorScanType},
+		MongodbQueryExecutorDocumentScannedCount: MongodbQueryExecutorDocumentScannedCountMetricConfig{
+			Enabled: false,
+		},
+		MongodbQueryExecutorIndexKeyScannedCount: MongodbQueryExecutorIndexKeyScannedCountMetricConfig{
+			Enabled: false,
 		},
 		MongodbReplCommandsPerSec: MongodbReplCommandsPerSecMetricConfig{
 			Enabled: false,

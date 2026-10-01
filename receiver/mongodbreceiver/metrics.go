@@ -53,11 +53,6 @@ var lockModeMap = map[string]metadata.AttributeLockMode{
 	"w": metadata.AttributeLockModeIntentExclusive,
 }
 
-var queryExecutorScanMap = map[string]metadata.AttributeMongodbQueryExecutorScanType{
-	"scanned":        metadata.AttributeMongodbQueryExecutorScanTypeIndexKey,
-	"scannedObjects": metadata.AttributeMongodbQueryExecutorScanTypeDocument,
-}
-
 const (
 	collectMetricError          = "failed to collect metric %s: %w"
 	collectMetricWithAttributes = "failed to collect metric %s with attribute(s) %s: %w"
@@ -1000,33 +995,34 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 	}
 }
 
-func (s *mongodbScraper) recordQueryExecutorScanned(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	metricName := "mongodb.query_executor.scanned.count"
-	for fieldKey, attr := range queryExecutorScanMap {
-		val, err := collectMetric(doc, []string{"metrics", "queryExecutor", fieldKey})
-		if err != nil {
-			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, attr.String(), err))
-			continue
-		}
-		s.mb.RecordMongodbQueryExecutorScannedCountDataPoint(now, val, attr)
-	}
-}
-
-// recordQueryExecutorCollectionScans records the non-tailable collection scan count as the server
-// reports it. collectionScans.total is deliberately left unread: deriving a tailable count as
-// total - nonTailable is not safe, because the server increments the two counters in separate steps
-// and renders them with separate loads, so a scrape can observe them skewed and emit a stream that
-// moves backwards. A monotonic sum promises that of every one of its streams.
-func (s *mongodbScraper) recordQueryExecutorCollectionScans(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	metricName := "mongodb.query_executor.collection_scan.count"
-	nonTailableAttr := metadata.AttributeMongodbQueryExecutorCollectionScanTypeNonTailable
-
-	nonTailable, err := collectMetric(doc, []string{"metrics", "queryExecutor", "collectionScans", "nonTailable"})
+func (s *mongodbScraper) recordQueryExecutorIndexKeysScanned(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.index_key.scanned.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "scanned"})
 	if err != nil {
-		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, nonTailableAttr.String(), err))
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-	s.mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(now, nonTailable, nonTailableAttr)
+	s.mb.RecordMongodbQueryExecutorIndexKeyScannedCountDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordQueryExecutorDocumentsScanned(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.document.scanned.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "scannedObjects"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorDocumentScannedCountDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordQueryExecutorCollectionScans(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.collection_scan.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "collectionScans", "total"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(now, val)
 }
 
 func aggregateOperationTimeValues(document bson.M, collectionPathNames []string, operationMap map[string]metadata.AttributeOperation) (map[string]int64, error) {

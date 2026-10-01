@@ -494,25 +494,21 @@ The number of queries that performed a collection scan.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {query} | Sum | Int | Cumulative | true | Development |
 
-#### Attributes
+### mongodb.query_executor.document.scanned.count
 
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| mongodb.query_executor.collection_scan.type | The type of cursor that performed the collection scan. | Str: ``non_tailable`` | Recommended | - |
-
-### mongodb.query_executor.scanned.count
-
-The number of index keys and documents scanned by the query executor.
+The number of documents scanned by the query executor.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {item} | Sum | Int | Cumulative | true | Development |
+| {document} | Sum | Int | Cumulative | true | Development |
 
-#### Attributes
+### mongodb.query_executor.index_key.scanned.count
 
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| mongodb.query_executor.scan.type | The type of data scanned by the query executor. | Str: ``index_key``, ``document`` | Recommended | - |
+The number of index keys scanned by the query executor.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {index_key} | Sum | Int | Cumulative | true | Development |
 
 ### mongodb.repl_commands_per_sec
 

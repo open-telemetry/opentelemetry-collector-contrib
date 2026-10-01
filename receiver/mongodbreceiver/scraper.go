@@ -916,8 +916,12 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordWTConcurrentTransactionsOut(now, document, errs)
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorScannedCount.Enabled {
-		s.recordQueryExecutorScanned(now, document, errs)
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorIndexKeyScannedCount.Enabled {
+		s.recordQueryExecutorIndexKeysScanned(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorDocumentScannedCount.Enabled {
+		s.recordQueryExecutorDocumentsScanned(now, document, errs)
 	}
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled {

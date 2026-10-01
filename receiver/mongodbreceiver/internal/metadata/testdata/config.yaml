@@ -100,10 +100,10 @@ all_set:
       enabled: true
     mongodb.query_executor.collection_scan.count:
       enabled: true
-      attributes: ["mongodb.query_executor.collection_scan.type"]
-    mongodb.query_executor.scanned.count:
+    mongodb.query_executor.document.scanned.count:
       enabled: true
-      attributes: ["mongodb.query_executor.scan.type"]
+    mongodb.query_executor.index_key.scanned.count:
+      enabled: true
     mongodb.repl_commands_per_sec:
       enabled: true
     mongodb.repl_deletes_per_sec:
@@ -270,10 +270,10 @@ reaggregate_set:
       enabled: true
     mongodb.query_executor.collection_scan.count:
       enabled: true
-      attributes: []
-    mongodb.query_executor.scanned.count:
+    mongodb.query_executor.document.scanned.count:
       enabled: true
-      attributes: []
+    mongodb.query_executor.index_key.scanned.count:
+      enabled: true
     mongodb.repl_commands_per_sec:
       enabled: true
     mongodb.repl_deletes_per_sec:
@@ -440,10 +440,10 @@ none_set:
       enabled: false
     mongodb.query_executor.collection_scan.count:
       enabled: false
-      attributes: ["mongodb.query_executor.collection_scan.type"]
-    mongodb.query_executor.scanned.count:
+    mongodb.query_executor.document.scanned.count:
       enabled: false
-      attributes: ["mongodb.query_executor.scan.type"]
+    mongodb.query_executor.index_key.scanned.count:
+      enabled: false
     mongodb.repl_commands_per_sec:
       enabled: false
     mongodb.repl_deletes_per_sec:
