@@ -5,8 +5,8 @@ go 1.26.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.162.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/featuregate v1.68.0
-	go.opentelemetry.io/collector/pdata v1.68.0
+	go.opentelemetry.io/collector/featuregate v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/pdata v1.68.1-0.20260930032829-78b98e74fdfd
 	go.uber.org/goleak v1.3.0
 )
 
