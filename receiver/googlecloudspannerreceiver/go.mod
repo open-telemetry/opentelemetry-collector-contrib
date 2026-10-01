@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.26.0
 
 require (
+	cloud.google.com/go v0.123.0
 	cloud.google.com/go/spanner v1.95.1
 	github.com/jellydator/ttlcache/v3 v3.4.1
 	github.com/mitchellh/hashstructure/v2 v2.0.2
@@ -29,7 +30,6 @@ require (
 
 require (
 	cel.dev/expr v0.25.2 // indirect
-	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.23.3 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.1 // indirect

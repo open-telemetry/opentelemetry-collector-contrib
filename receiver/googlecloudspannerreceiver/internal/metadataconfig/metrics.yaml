@@ -360,6 +360,30 @@ metadata:
           type: "gauge"
         unit: "second"
 #
+# -------------------------------------------- Supported Optimizer Versions ------------------------------------------------------
+#
+  - name: "supported optimizer versions"
+    query: "SELECT COUNT(*) AS VERSION_COUNT, VERSION, RELEASE_DATE, IS_DEFAULT FROM SPANNER_SYS.SUPPORTED_OPTIMIZER_VERSIONS GROUP BY VERSION, RELEASE_DATE, IS_DEFAULT ORDER BY RELEASE_DATE DESC"
+    metric_name_prefix: "database/spanner/supported_optimizer_versions/"
+    high_cardinality: false
+    labels:
+      - name: "version"
+        column_name: "VERSION"
+        value_type: "int"
+      - name: "release_date"
+        column_name: "RELEASE_DATE"
+        value_type: "date"
+      - name: "is_default"
+        column_name: "IS_DEFAULT"
+        value_type: "bool"
+    metrics:
+      - name: "version_count"
+        column_name: "VERSION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Transactions Stats ------------------------------------------------------
 #
   - name: "top minute transaction stats"
