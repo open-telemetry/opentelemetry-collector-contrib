@@ -38,6 +38,12 @@ func connect(ctx context.Context, cfg *Config, name string, logger *zap.Logger) 
 // reconnects are visible in the collector logs.
 func setConnHandlers(options *nats.Options, logger *zap.Logger) {
 	options.DisconnectedErrCB = func(_ *nats.Conn, err error) {
+		// A clean Close() also invokes this callback with a nil error; only an
+		// unexpected disconnect carries one.
+		if err == nil {
+			logger.Info("NATS disconnected")
+			return
+		}
 		logger.Warn("NATS disconnected", zap.Error(err))
 	}
 	options.ReconnectedCB = func(c *nats.Conn) {
