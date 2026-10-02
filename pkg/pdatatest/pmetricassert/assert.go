@@ -26,11 +26,10 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 	if err != nil {
 		return err
 	}
-	actualDoc := normalize(actual, writeOptions{includeValues: true})
-	return compareDocuments(expected, actualDoc)
+	return compareDocument(expected, normalize(actual))
 }
 
-func compareDocuments(expected, actual *document) error {
+func compareDocument(expected *document, actual *snapshot) error {
 	var errs []error
 	if err := expected.ResourcesCount.check("resources", len(actual.Resources)); err != nil {
 		errs = append(errs, err)
@@ -61,7 +60,7 @@ func compareDocuments(expected, actual *document) error {
 	return errors.Join(errs...)
 }
 
-func compareResource(expected, actual resourceAssertion) error {
+func compareResource(expected resourceAssertion, actual resourceSnapshot) error {
 	var errs []error
 	if err := expected.ScopesCount.check("scopes", len(actual.Scopes)); err != nil {
 		errs = append(errs, err)
@@ -82,7 +81,7 @@ func compareResource(expected, actual resourceAssertion) error {
 	if expected.ScopesMode == collectionModeExact {
 		for i, as := range actual.Scopes {
 			if !matched[i] {
-				errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version.value))
+				errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
 			}
 		}
 	}
@@ -91,14 +90,14 @@ func compareResource(expected, actual resourceAssertion) error {
 
 // findMatchingScope returns the first unmatched index whose scope satisfies the
 // expected name and version matcher, or -1 if none do.
-func findMatchingScope(expected scopeAssertion, matched []bool, actual []scopeAssertion) int {
+func findMatchingScope(expected scopeAssertion, matched []bool, actual []scopeSnapshot) int {
 	for i := range actual {
 		if matched[i] {
 			continue
 		}
 
 		if expected.Name == actual[i].Name &&
-			matchVersion(expected.Version, actual[i].Version.value) == nil {
+			matchVersion(expected.Version, actual[i].Version) == nil {
 			return i
 		}
 	}
@@ -144,13 +143,13 @@ func versionMatcherString(m versionMatcher) string {
 	}
 }
 
-func compareScope(expected, actual scopeAssertion) error {
+func compareScope(expected scopeAssertion, actual scopeSnapshot) error {
 	var errs []error
 	if err := expected.MetricsCount.check("metrics", len(actual.Metrics)); err != nil {
 		errs = append(errs, err)
 	}
-	expMetrics := indexMetrics(expected.Metrics)
-	actMetrics := indexMetrics(actual.Metrics)
+	expMetrics := indexByName(expected.Metrics, func(m metricAssertion) string { return m.Name })
+	actMetrics := indexByName(actual.Metrics, func(m metricSnapshot) string { return m.Name })
 
 	for name := range expMetrics {
 		em := expMetrics[name]
@@ -173,16 +172,15 @@ func compareScope(expected, actual scopeAssertion) error {
 	return errors.Join(errs...)
 }
 
-func indexMetrics(ms []metricAssertion) map[string]metricAssertion {
-	out := make(map[string]metricAssertion, len(ms))
-	for i := range ms {
-		m := ms[i]
-		out[m.Name] = m
+func indexByName[T any](items []T, name func(T) string) map[string]T {
+	out := make(map[string]T, len(items))
+	for i := range items {
+		out[name(items[i])] = items[i]
 	}
 	return out
 }
 
-func compareMetric(expected, actual metricAssertion) error {
+func compareMetric(expected metricAssertion, actual metricSnapshot) error {
 	var errs []error
 	if expected.Type != actual.Type {
 		errs = append(errs, fmt.Errorf("type mismatch: expected %q, got %q", expected.Type, actual.Type))
@@ -206,7 +204,7 @@ func compareMetric(expected, actual metricAssertion) error {
 	return errors.Join(errs...)
 }
 
-func compareDatapoints(expected []datapointAssertion, mode collectionMode, actual []datapointAssertion) error {
+func compareDatapoints(expected []datapointAssertion, mode collectionMode, actual []datapointSnapshot) error {
 	matched := make([]bool, len(actual))
 	var missing, unexpected []string
 	var valErrs []error
@@ -254,7 +252,7 @@ func roundTo(v float64, n int) float64 {
 	return math.Round(v*factor) / factor
 }
 
-func compareDatapointValues(expected, actual datapointAssertion) error {
+func compareDatapointValues(expected datapointAssertion, actual datapointSnapshot) error {
 	var errs []error
 	if expected.IntValue != nil {
 		if actual.IntValue == nil {

@@ -220,13 +220,15 @@ func decodeCollection[T any](raw map[string]yaml.Node, key string, fixup func(*T
 	return out, mode, nil
 }
 
-// document is the YAML-serializable form of a metrics assertion snapshot.
+// document is a parsed assertion file: the expected side of a comparison,
+// holding matchers rather than values. It is read-only; WriteAssertionFile
+// serializes a snapshot instead.
 //
-// The schema implements the identity-only subset of the grammar proposed in
-// issue #48079: default-exact matching, order-insensitive collections,
-// identity fields only. Attribute maps and collections support /include mode,
-// and collections additionally support /count. Operator-suffix extensions
-// (/exclude, /approx, ...) are tracked as follow-ups.
+// The schema implements the identity-only subset of the operator grammar:
+// default-exact matching, order-insensitive collections, identity fields only.
+// Attribute maps and collections support /include mode, and collections
+// additionally support /count. Operator-suffix extensions (/exclude, /approx,
+// ...) are tracked as follow-ups.
 type document struct {
 	Version        int                 `yaml:"version"`
 	Signal         string              `yaml:"signal"`
@@ -309,16 +311,14 @@ type versionMatcher struct {
 	value string
 }
 
-// scopeAssertionYAML is the on-disk shape of scopeAssertion: the operator keys
-// must be distinct YAML fields because yaml.v3 cannot decode a `version/regex`
-// suffix into the versionMatcher struct directly.
+// scopeAssertionYAML is the on-disk shape of a scope's version operator keys:
+// they must be distinct YAML fields because yaml.v3 cannot decode a
+// `version/regex` suffix into the versionMatcher struct directly.
 type scopeAssertionYAML struct {
 	Name          string  `yaml:"name,omitempty"`
 	Version       *string `yaml:"version,omitempty"`
 	VersionExists *bool   `yaml:"version/exists,omitempty"`
 	VersionRegex  *string `yaml:"version/regex,omitempty"`
-
-	Metrics []metricAssertion `yaml:"metrics"`
 }
 
 // UnmarshalYAML decodes a scope, resolving the version operator keys into a
@@ -384,28 +384,6 @@ func buildVersionMatcher(exact *string, exists *bool, regex *string) (versionMat
 	default:
 		return versionMatcher{op: matchExact}, nil
 	}
-}
-
-// MarshalYAML encodes a scope, rendering an exact version as a plain `version:`
-// scalar (not a suffixed key) so WriteAssertionFile output matches the pre-operator layout.
-func (s scopeAssertion) MarshalYAML() (any, error) {
-	out := scopeAssertionYAML{Name: s.Name, Metrics: s.Metrics}
-
-	switch s.Version.op {
-	case matchExists:
-		t := true
-		out.VersionExists = &t
-	case matchRegex:
-		v := s.Version.value
-		out.VersionRegex = &v
-	case matchExact:
-		if s.Version.value != "" {
-			v := s.Version.value
-			out.Version = &v
-		}
-	}
-
-	return out, nil
 }
 
 type metricAssertion struct {
@@ -669,41 +647,4 @@ func effectiveMode[T any](items []T, mode collectionMode, parentIncluded bool, c
 		return collectionModeInclude
 	}
 	return mode
-}
-
-func writeDocument(path string, doc *document) error {
-	compactShorthand(doc)
-	b, err := yaml.Marshal(doc)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, b, 0o600)
-}
-
-// compactShorthand is the inverse of expandShorthand: it drops an explicit
-// single empty-attribute datapoint so the emitted YAML reads as "metric with
-// no dimensioning attributes" rather than "metric with one empty datapoint".
-func compactShorthand(doc *document) {
-	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && isEmptyDatapointAssertion(m.Datapoints[0]) {
-					m.Datapoints = nil
-				}
-			}
-		}
-	}
-}
-
-func isEmptyDatapointAssertion(dp datapointAssertion) bool {
-	return len(dp.Attributes) == 0 &&
-		dp.IntValue == nil &&
-		dp.DoubleValue == nil &&
-		dp.Count == nil &&
-		dp.Sum == nil &&
-		dp.ExplicitBounds == nil &&
-		len(dp.BucketCounts) == 0 &&
-		dp.Min == nil &&
-		dp.Max == nil
 }
