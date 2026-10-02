@@ -268,6 +268,49 @@ func TestTimeParser(t *testing.T) {
 	}
 }
 
+// TestTimeParserNoDatePart verifies that a timestamp with no date part
+// (e.g. a time-only layout like "%H:%M:%S,%L") defaults to today's date
+// instead of January 1 of the current year.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46111
+func TestTimeParserNoDatePart(t *testing.T) {
+	now := time.Now()
+
+	testCases := []struct {
+		name           string
+		sample         string
+		gotimeLayout   string
+		strptimeLayout string
+	}{
+		{
+			name:           "time-only",
+			sample:         "11:31:06,491",
+			gotimeLayout:   "15:04:05,999",
+			strptimeLayout: "%H:%M:%S,%L",
+		},
+	}
+
+	rootField := entry.NewBodyField()
+	someField := entry.NewBodyField("some_field")
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			expected := time.Date(now.Year(), now.Month(), now.Day(), 11, 31, 6, 491*1000*1000, time.Local)
+
+			gotimeRootCfg := parseTimeTestConfig(helper.GotimeKey, tc.gotimeLayout, rootField)
+			t.Run("gotime-root", runTimeParseTest(t, gotimeRootCfg, makeTestEntry(t, rootField, tc.sample), false, false, expected))
+
+			gotimeNonRootCfg := parseTimeTestConfig(helper.GotimeKey, tc.gotimeLayout, someField)
+			t.Run("gotime-non-root", runTimeParseTest(t, gotimeNonRootCfg, makeTestEntry(t, someField, tc.sample), false, false, expected))
+
+			strptimeRootCfg := parseTimeTestConfig(helper.StrptimeKey, tc.strptimeLayout, rootField)
+			t.Run("strptime-root", runTimeParseTest(t, strptimeRootCfg, makeTestEntry(t, rootField, tc.sample), false, false, expected))
+
+			strptimeNonRootCfg := parseTimeTestConfig(helper.StrptimeKey, tc.strptimeLayout, someField)
+			t.Run("strptime-non-root", runTimeParseTest(t, strptimeNonRootCfg, makeTestEntry(t, someField, tc.sample), false, false, expected))
+		})
+	}
+}
+
 func TestTimeEpochs(t *testing.T) {
 	testCases := []struct {
 		name     string

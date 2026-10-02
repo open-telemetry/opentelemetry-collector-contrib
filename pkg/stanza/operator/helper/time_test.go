@@ -82,14 +82,14 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "kitchen",
 			sample:         "12:34PM",
-			expected:       time.Date(timeutils.Now().Year(), 1, 1, 12, 34, 0, 0, time.Local),
+			expected:       time.Date(timeutils.Now().Year(), timeutils.Now().Month(), timeutils.Now().Day(), 12, 34, 0, 0, time.Local),
 			gotimeLayout:   time.Kitchen,
 			strptimeLayout: "%H:%M%p",
 		},
 		{
 			name:           "kitchen-utc",
 			sample:         "12:34PM",
-			expected:       time.Date(timeutils.Now().Year(), 1, 1, 12, 34, 0, 0, time.UTC),
+			expected:       time.Date(timeutils.Now().Year(), timeutils.Now().Month(), timeutils.Now().Day(), 12, 34, 0, 0, time.UTC),
 			gotimeLayout:   time.Kitchen,
 			strptimeLayout: "%H:%M%p",
 			location:       time.UTC.String(),
@@ -97,7 +97,7 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "kitchen-location",
 			sample:         "12:34PM",
-			expected:       time.Date(timeutils.Now().Year(), 1, 1, 12, 34, 0, 0, hst),
+			expected:       time.Date(timeutils.Now().Year(), timeutils.Now().Month(), timeutils.Now().Day(), 12, 34, 0, 0, hst),
 			gotimeLayout:   time.Kitchen,
 			strptimeLayout: "%H:%M%p",
 			location:       hst.String(),
@@ -105,7 +105,7 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "kitchen-bytes",
 			sample:         []byte("12:34PM"),
-			expected:       time.Date(timeutils.Now().Year(), 1, 1, 12, 34, 0, 0, time.Local),
+			expected:       time.Date(timeutils.Now().Year(), timeutils.Now().Month(), timeutils.Now().Day(), 12, 34, 0, 0, time.Local),
 			gotimeLayout:   time.Kitchen,
 			strptimeLayout: "%H:%M%p",
 		},
