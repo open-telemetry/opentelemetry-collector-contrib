@@ -79,20 +79,27 @@ function areAllCommitsInArray(arrayToCheck, arrayToSearchIn) {
  * @param github authenticated GitHub client
  * @param username GitHub login of the commit author
  * @param ref tag, branch or commit SHA to start looking from
- * @returns true if at least one commit by username is reachable from ref
+ * @returns true if at least one commit by username is reachable from ref,
+ *          false if none is or the lookup fails
  */
 async function hasCommitsAt(github, username, ref) {
-    const response = await github.request('GET /repos/{owner}/{repo}/commits', {
-        owner: REPO_OWNER,
-        repo: REPO_NAME,
-        author: username,
-        sha: ref,
-        per_page: 1,
-        headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
-        }
-    })
-    return response.data.length > 0
+    try {
+        const response = await github.request('GET /repos/{owner}/{repo}/commits', {
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
+            author: username,
+            sha: ref,
+            per_page: 1,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        })
+        return response.data.length > 0
+    } catch (error) {
+        // Do not block the release on this check, keep the contributor instead.
+        console.error('Failed to look up earlier commits for', username, error);
+        return false
+    }
 }
 
 function generateNewContributorText(newContributors) {
