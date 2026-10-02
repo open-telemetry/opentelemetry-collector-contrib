@@ -323,9 +323,8 @@ resources:
 	}
 }
 
-// WriteAssertionFile never emits /count, so a round trip through the writer
-// still produces the default exact form.
-func TestWriteDocument_OmitsCount(t *testing.T) {
+// A round trip through the writer preserves collection count constraints.
+func TestWriteDocument_PreservesCount(t *testing.T) {
 	path := writeAssertionYAML(t, `version: 1
 signal: metrics
 resources/count:
@@ -340,5 +339,7 @@ resources/count:
 
 	roundTripped, err := readDocument(out)
 	require.NoError(t, err)
-	require.Nil(t, roundTripped.ResourcesCount)
+	require.NotNil(t, roundTripped.ResourcesCount)
+	require.NotNil(t, roundTripped.ResourcesCount.min)
+	require.Equal(t, 1, *roundTripped.ResourcesCount.min)
 }

@@ -199,3 +199,44 @@ func TestWriteDocument_EmitsDefaultExactCollections(t *testing.T) {
 	require.Contains(t, string(raw), "metrics:")
 	require.NotContains(t, string(raw), "/include")
 }
+
+func TestWriteDocument_PreservesCollectionInclude(t *testing.T) {
+	path := writeAssertionYAML(t, `version: 1
+signal: metrics
+resources/include:
+  - attributes/include:
+      service.name: svc
+    scopes/include:
+      - name: scope-a
+        metrics/include:
+          - name: svc.requests
+            type: sum
+            datapoints/include:
+              - attributes/include:
+                  method: GET
+`)
+
+	doc, err := readDocument(path)
+	require.NoError(t, err)
+
+	out := writeAssertionYAML(t, "")
+	require.NoError(t, writeDocument(out, doc))
+
+	roundTripped, err := readDocument(out)
+	require.NoError(t, err)
+
+	require.Equal(t, collectionModeInclude, roundTripped.ResourcesMode)
+
+	resource := roundTripped.Resources[0]
+	require.Equal(t, attributeModeInclude, resource.AttributeMode)
+	require.Equal(t, collectionModeInclude, resource.ScopesMode)
+
+	scope := resource.Scopes[0]
+	require.Equal(t, collectionModeInclude, scope.MetricsMode)
+
+	metric := scope.Metrics[0]
+	require.Equal(t, collectionModeInclude, metric.DatapointsMode)
+
+	datapoint := metric.Datapoints[0]
+	require.Equal(t, attributeModeInclude, datapoint.AttributeMode)
+}

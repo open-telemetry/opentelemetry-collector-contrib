@@ -60,6 +60,24 @@ type countMatcher struct {
 	max *int
 }
 
+func (c countMatcher) MarshalYAML() (any, error) {
+	switch {
+	case c.min != nil && c.max != nil && *c.min == *c.max:
+		return map[string]int{"exact": *c.min}, nil
+	case c.min != nil && c.max != nil:
+		return map[string]int{
+			"min": *c.min,
+			"max": *c.max,
+		}, nil
+	case c.min != nil:
+		return map[string]int{"min": *c.min}, nil
+	case c.max != nil:
+		return map[string]int{"max": *c.max}, nil
+	default:
+		return nil, errors.New("count matcher has no bounds")
+	}
+}
+
 // decodeCount reads an optional `<key>/count` constraint from the parent node's
 // raw keys. It accepts a mapping with `exact`, or with `min` and/or `max`, as
 // described in issue #48079. An absent key yields a nil matcher.
@@ -235,12 +253,59 @@ type document struct {
 	ResourcesCount *countMatcher       `yaml:"-"`
 }
 
+func (d document) MarshalYAML() (any, error) {
+	out := map[string]any{
+		"version": d.Version,
+		"signal":  d.Signal,
+	}
+
+	if d.Resources != nil {
+		if d.ResourcesMode == collectionModeInclude {
+			out["resources/include"] = d.Resources
+		} else {
+			out["resources"] = d.Resources
+		}
+	}
+
+	if d.ResourcesCount != nil {
+		out["resources/count"] = d.ResourcesCount
+	}
+
+	return out, nil
+}
+
 type resourceAssertion struct {
 	Attributes    map[string]any   `yaml:"attributes,omitempty"`
 	AttributeMode attributeMode    `yaml:"-"`
 	Scopes        []scopeAssertion `yaml:"scopes"`
 	ScopesMode    collectionMode   `yaml:"-"`
 	ScopesCount   *countMatcher    `yaml:"-"`
+}
+
+func (r resourceAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{}
+
+	if r.Attributes != nil {
+		if r.AttributeMode == attributeModeInclude {
+			out["attributes/include"] = r.Attributes
+		} else {
+			out["attributes"] = r.Attributes
+		}
+	}
+
+	if r.Scopes != nil {
+		if r.ScopesMode == collectionModeInclude {
+			out["scopes/include"] = r.Scopes
+		} else {
+			out["scopes"] = r.Scopes
+		}
+	}
+
+	if r.ScopesCount != nil {
+		out["scopes/count"] = r.ScopesCount
+	}
+
+	return out, nil
 }
 
 // UnmarshalYAML implements custom unmarshaling to support `attributes/include`
@@ -389,20 +454,31 @@ func buildVersionMatcher(exact *string, exists *bool, regex *string) (versionMat
 // MarshalYAML encodes a scope, rendering an exact version as a plain `version:`
 // scalar (not a suffixed key) so WriteAssertionFile output matches the pre-operator layout.
 func (s scopeAssertion) MarshalYAML() (any, error) {
-	out := scopeAssertionYAML{Name: s.Name, Metrics: s.Metrics}
+	out := map[string]any{
+		"name": s.Name,
+	}
 
 	switch s.Version.op {
 	case matchExists:
-		t := true
-		out.VersionExists = &t
+		out["version/exists"] = true
 	case matchRegex:
-		v := s.Version.value
-		out.VersionRegex = &v
+		out["version/regex"] = s.Version.value
 	case matchExact:
 		if s.Version.value != "" {
-			v := s.Version.value
-			out.Version = &v
+			out["version"] = s.Version.value
 		}
+	}
+
+	if s.Metrics != nil {
+		if s.MetricsMode == collectionModeInclude {
+			out["metrics/include"] = s.Metrics
+		} else {
+			out["metrics"] = s.Metrics
+		}
+	}
+
+	if s.MetricsCount != nil {
+		out["metrics/count"] = s.MetricsCount
 	}
 
 	return out, nil
@@ -417,6 +493,37 @@ type metricAssertion struct {
 	Datapoints      []datapointAssertion `yaml:"datapoints,omitempty"`
 	DatapointsMode  collectionMode       `yaml:"-"`
 	DatapointsCount *countMatcher        `yaml:"-"`
+}
+
+func (m metricAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{
+		"name": m.Name,
+		"type": m.Type,
+	}
+
+	if m.Unit != "" {
+		out["unit"] = m.Unit
+	}
+
+	if m.Temporality != "" {
+		out["temporality"] = m.Temporality
+	}
+
+	if m.Monotonic != nil {
+		out["monotonic"] = m.Monotonic
+	}
+
+	if m.DatapointsMode == collectionModeInclude {
+		out["datapoints/include"] = m.Datapoints
+	} else if m.Datapoints != nil {
+		out["datapoints"] = m.Datapoints
+	}
+
+	if m.DatapointsCount != nil {
+		out["datapoints/count"] = m.DatapointsCount
+	}
+
+	return out, nil
 }
 
 // resolveMetricDatapoints reads `datapoints` / `datapoints/include` from a
@@ -536,6 +643,45 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 		d.Max = &maxVal
 	}
 	return nil
+}
+
+func (d datapointAssertion) MarshalYAML() (any, error) {
+	out := map[string]any{}
+
+	if d.AttributeMode == attributeModeInclude {
+		out["attributes/include"] = d.Attributes
+	} else if d.Attributes != nil {
+		out["attributes"] = d.Attributes
+	}
+
+	if d.IntValue != nil {
+		out["int_value"] = d.IntValue
+	}
+	if d.DoublePrecision != nil {
+		out[fmt.Sprintf("%s%d", doubleValuePrecisionPrefix, *d.DoublePrecision)] = d.DoubleValue
+	} else if d.DoubleValue != nil {
+		out["double_value"] = d.DoubleValue
+	}
+	if d.Count != nil {
+		out["count"] = d.Count
+	}
+	if d.Sum != nil {
+		out["sum"] = d.Sum
+	}
+	if d.ExplicitBounds != nil {
+		out["explicit_bounds"] = d.ExplicitBounds
+	}
+	if d.BucketCounts != nil {
+		out["bucket_counts"] = d.BucketCounts
+	}
+	if d.Min != nil {
+		out["min"] = d.Min
+	}
+	if d.Max != nil {
+		out["max"] = d.Max
+	}
+
+	return out, nil
 }
 
 // decodeDoublePrecision resolves `double_value/precision<n>` into DoubleValue
