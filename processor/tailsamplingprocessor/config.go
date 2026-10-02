@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 )
 
@@ -258,6 +259,8 @@ type RateLimitingCfg struct {
 	// This allows for short bursts of traffic above the sustained rate. It also acts as a
 	// limit for individual trace span counts, a single trace with more spans than the burst size will not pass.
 	BurstCapacity int64 `mapstructure:"burst_capacity"`
+	// limiter, when set, is shared by the evaluators of all shards.
+	limiter *sampling.Limiter
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -271,6 +274,8 @@ type BytesLimitingCfg struct {
 	// This allows for short bursts of traffic above the sustained rate. It also acts as a
 	// limit for individual trace sizes, a single trace larger than the burst size will not pass.
 	BurstCapacity int64 `mapstructure:"burst_capacity"`
+	// limiter, when set, is shared by the evaluators of all shards.
+	limiter *sampling.Limiter
 }
 
 // SpanCountCfg holds the configurable settings to create a Span Count filter sampling
@@ -372,13 +377,11 @@ type Config struct {
 	// the trace ID, ensuring all spans for a given trace are processed by
 	// the same shard. Higher values reduce contention between trace
 	// ingestion and sampling decision evaluation under high load. NumTraces,
-	// ExpectedNewTracesPerSec, decision cache sizes, and per-second rate
-	// limits in policies (rate_limiting, bytes_limiting, and composite
-	// max_total_spans_per_second) are divided evenly across shards so
-	// aggregate behavior matches the configured values. Limiter burst
-	// capacities are not divided so single large traces stay admissible
-	// regardless of the shard count. Must not exceed 256,
-	// and values greater than 1 are not supported with tail_storage.
+	// ExpectedNewTracesPerSec, decision cache sizes, and composite
+	// max_total_spans_per_second are divided evenly across shards so
+	// aggregate behavior matches the configured values. rate_limiting and
+	// bytes_limiting policies share one limiter across all shards. Must not
+	// exceed 256, and values greater than 1 are not supported with tail_storage.
 	// Defaults to 1 (single event loop, original behavior).
 	NumShards uint32 `mapstructure:"num_shards"`
 }

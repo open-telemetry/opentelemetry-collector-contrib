@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -41,7 +40,9 @@ func traceSpanCount(trace *samplingpolicy.TraceData) int64 {
 
 // budgetLimiter is a token-bucket sampling algorithm that calculates a tracestate threshold cutoff for a batch of traces.
 type budgetLimiter struct {
-	limiter *rate.Limiter
+	// limiter may be shared with the budgetLimiters of other shards; the
+	// threshold below is always local to this one.
+	limiter *Limiter
 	// cost reports the tokens a single trace consumes from the bucket.
 	cost   traceCostFunc
 	logger *zap.Logger
@@ -59,12 +60,11 @@ type budgetItem struct {
 	cost       int64
 }
 
-// newBudgetLimiter builds a limiter that refills tokensPerSecond tokens per
-// second into a bucket holding at most burstCapacity, measuring each trace
-// with cost.
-func newBudgetLimiter(settings component.TelemetrySettings, tokensPerSecond, burstCapacity int64, cost traceCostFunc) *budgetLimiter {
+// newBudgetLimiter builds a limiter that draws from limiter, measuring each
+// trace with cost.
+func newBudgetLimiter(settings component.TelemetrySettings, limiter *Limiter, cost traceCostFunc) *budgetLimiter {
 	return &budgetLimiter{
-		limiter: rate.NewLimiter(rate.Limit(tokensPerSecond), int(burstCapacity)),
+		limiter: limiter,
 		cost:    cost,
 		logger:  settings.Logger,
 	}
@@ -80,8 +80,6 @@ var (
 // highest-randomness traces in batch, exhaust the currently available budget.
 func (b *budgetLimiter) CalculateThreshold(_ context.Context, batch []*samplingpolicy.TraceData) {
 	b.thresholdCalculated = true
-	now := time.Now()
-	budget := int64(b.limiter.TokensAt(now))
 	burst := int64(b.limiter.Burst())
 
 	items := make([]budgetItem, 0, len(batch))
@@ -104,6 +102,13 @@ func (b *budgetLimiter) CalculateThreshold(_ context.Context, batch []*samplingp
 	sort.SliceStable(items, func(i, j int) bool {
 		return items[i].randomness.Unsigned() > items[j].randomness.Unsigned()
 	})
+
+	// The limiter may be shared with other shards, so hold its lock from
+	// reading the budget until it is spent.
+	b.limiter.Lock()
+	defer b.limiter.Unlock()
+	now := time.Now()
+	budget := int64(b.limiter.TokensAt(now))
 
 	var cumulative int64
 	kept := len(items)
@@ -172,6 +177,7 @@ func (b *budgetLimiter) EvaluateWithThreshold(_ context.Context, id pcommon.Trac
 		return samplingpolicy.NotSampled, sampling.AlwaysSampleThreshold, nil
 	}
 	if !b.thresholdCalculated {
+		// No lock needed: shards sharing this limiter never calculate a threshold either.
 		if b.limiter.AllowN(time.Now(), int(cost)) {
 			return samplingpolicy.Sampled, sampling.AlwaysSampleThreshold, nil
 		}

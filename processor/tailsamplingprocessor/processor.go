@@ -405,16 +405,18 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewStatusCodeFilter(settings, scfCfg.StatusCodes)
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
-		if rlfCfg.BurstCapacity > 0 {
-			return sampling.NewRateLimitingWithBurstCapacity(settings, rlfCfg.SpansPerSecond, rlfCfg.BurstCapacity), nil
+		limiter := rlfCfg.limiter
+		if limiter == nil {
+			limiter = sampling.NewLimiter(rlfCfg.SpansPerSecond, rlfCfg.BurstCapacity)
 		}
-		return sampling.NewRateLimiting(settings, rlfCfg.SpansPerSecond), nil
+		return sampling.NewRateLimitingWithLimiter(settings, limiter), nil
 	case BytesLimiting:
 		blfCfg := cfg.BytesLimitingCfg
-		if blfCfg.BurstCapacity > 0 {
-			return sampling.NewBytesLimitingWithBurstCapacity(settings, blfCfg.BytesPerSecond, blfCfg.BurstCapacity), nil
+		limiter := blfCfg.limiter
+		if limiter == nil {
+			limiter = sampling.NewLimiter(blfCfg.BytesPerSecond, blfCfg.BurstCapacity)
 		}
-		return sampling.NewBytesLimiting(settings, blfCfg.BytesPerSecond), nil
+		return sampling.NewBytesLimitingWithLimiter(settings, limiter), nil
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
 		return sampling.NewSpanCount(settings, spCfg.MinSpans, spCfg.MaxSpans), nil
