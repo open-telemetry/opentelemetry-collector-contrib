@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/load_balancing
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix duplicate span/log/metric delivery when a batch is partially exported across multiple backends and retry is enabled.
+note: Retry only the failed data when a batch is split across backends and some backends report failures synchronously.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44191]
@@ -16,10 +16,8 @@ issues: [44191]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When a batch was split across multiple backends and some succeeded while others failed, the
-  exporter reported the whole batch as failed, so `retry_on_failure` re-sent everything --
-  including the data healthy backends had already accepted. Only the subset that actually
-  failed is retried now.
+  Data rejected permanently by one backend is dropped instead of blocking the retry of the other failed data.
+  A persistent queue can still send already delivered data again after a restart.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -306,25 +306,45 @@ func (e *traceExporterImp) exportToBackend(ctx context.Context, exp *wrappedExpo
 	return err
 }
 
-// exportBatches sends each pre-routed batch to its backend, returning a consumererror.Traces
-// carrying only the subset that failed so retries do not re-send already-delivered data.
+// exportBatches sends each pre-routed batch to its backend. When any backend fails with a
+// retryable error, it returns a consumererror.Traces carrying only the retryable failed data and
+// causes, so a retry re-sends neither delivered data nor data a backend rejected permanently.
+// The permanently rejected data is logged and dropped. When every failure is permanent, it
+// returns a permanent error wrapping a consumererror.Traces with the failed data.
 func (e *traceExporterImp) exportBatches(ctx context.Context, batches exporterTraces) error {
-	var errs error
-	var failed []ptrace.Traces
+	var retryableErrs, permanentErrs []error
+	var retryable, permanent []ptrace.Traces
+	var permanentExps []*wrappedExporter
 	for exp, td := range batches {
-		if err := e.exportToBackend(ctx, exp, td); err != nil {
-			errs = errors.Join(errs, err)
-			failed = append(failed, failedTracesFromError(err, td))
+		err := e.exportToBackend(ctx, exp, td)
+		if err == nil {
+			continue
+		}
+		failed := failedTracesFromError(err, td)
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+			permanent = append(permanent, failed)
+			permanentExps = append(permanentExps, exp)
+		} else {
+			retryableErrs = append(retryableErrs, err)
+			retryable = append(retryable, failed)
 		}
 	}
-	if len(failed) == 0 {
-		return nil
+	if len(retryableErrs) > 0 {
+		// Permanent causes must stay out of the returned error: consumererror.IsPermanent
+		// searches the whole error tree and would stop the retry of the retryable data.
+		for i, err := range permanentErrs {
+			e.logger.Warn("dropping traces rejected permanently by backend, retrying the remaining failed traces",
+				zap.String("endpoint", permanentExps[i].endpoint),
+				zap.Int("spans", permanent[i].SpanCount()),
+				zap.Error(err))
+		}
+		return consumererror.NewTraces(errors.Join(retryableErrs...), copyFailedTraces(retryable))
 	}
-	// Merging into the first failed batch leaves the common single-failure case a no-op.
-	for _, td := range failed[1:] {
-		mergeTraces(failed[0], td)
+	if len(permanentErrs) > 0 {
+		return consumererror.NewPermanent(consumererror.NewTraces(errors.Join(permanentErrs...), copyFailedTraces(permanent)))
 	}
-	return consumererror.NewTraces(errs, failed[0])
+	return nil
 }
 
 // routingIdentifiersFromTraces reads the traces and determines an identifier that can be used to define a position on the

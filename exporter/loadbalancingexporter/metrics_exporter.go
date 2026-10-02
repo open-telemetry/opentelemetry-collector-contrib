@@ -126,7 +126,17 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		batches = splitMetricsByAttributes(md, e.routingAttrs)
 	}
 
-	// Now assign each batch to an exporter, and merge as we go. A Merger (as
+	metricsByExporter, err := groupMetricsByExporter(batches, e.loadBalancer.exporterAndEndpoint)
+	if err != nil {
+		return err
+	}
+	return e.exportBatches(ctx, metricsByExporter)
+}
+
+// groupMetricsByExporter resolves the backend for each routed batch and merges batches that
+// share a backend, adding one consumeWG count per distinct backend.
+func groupMetricsByExporter(batches map[string]pmetric.Metrics, resolve func([]byte) (*wrappedExporter, string, error)) (exporterMetrics, error) {
+	// Assign each batch to an exporter, and merge as we go. A Merger (as
 	// opposed to repeated metrics.Merge calls) caches the identities of the
 	// accumulated data, so merging N batches costs O(N) identity computations
 	// instead of O(N^2) — with per-stream routing keys N can easily be in the
@@ -134,9 +144,14 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	mergersByExporter := map[*wrappedExporter]*metrics.Merger{}
 
 	for routingID, mds := range batches {
-		exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		exp, _, err := resolve([]byte(routingID))
 		if err != nil {
-			return err
+			// Release the consumeWG counts already added for backends collected so far;
+			// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+			for exp := range mergersByExporter {
+				exp.consumeWG.Done()
+			}
+			return nil, err
 		}
 
 		merger, ok := mergersByExporter[exp]
@@ -154,7 +169,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		metricsByExporter[exp] = merger.Metrics()
 	}
 
-	return e.exportBatches(ctx, metricsByExporter)
+	return metricsByExporter, nil
 }
 
 // exportToBackend sends md to one backend, records per-backend telemetry, and signals the
@@ -174,25 +189,45 @@ func (e *metricExporterImp) exportToBackend(ctx context.Context, exp *wrappedExp
 	return err
 }
 
-// exportBatches sends each pre-routed batch to its backend, returning a consumererror.Metrics
-// carrying only the subset that failed so retries do not re-send already-delivered data.
+// exportBatches sends each pre-routed batch to its backend. When any backend fails with a
+// retryable error, it returns a consumererror.Metrics carrying only the retryable failed data and
+// causes, so a retry re-sends neither delivered data nor data a backend rejected permanently.
+// The permanently rejected data is logged and dropped. When every failure is permanent, it
+// returns a permanent error wrapping a consumererror.Metrics with the failed data.
 func (e *metricExporterImp) exportBatches(ctx context.Context, batches exporterMetrics) error {
-	var errs error
-	var failed []pmetric.Metrics
+	var retryableErrs, permanentErrs []error
+	var retryable, permanent []pmetric.Metrics
+	var permanentExps []*wrappedExporter
 	for exp, mds := range batches {
-		if err := e.exportToBackend(ctx, exp, mds); err != nil {
-			errs = errors.Join(errs, err)
-			failed = append(failed, failedMetricsFromError(err, mds))
+		err := e.exportToBackend(ctx, exp, mds)
+		if err == nil {
+			continue
+		}
+		failed := failedMetricsFromError(err, mds)
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+			permanent = append(permanent, failed)
+			permanentExps = append(permanentExps, exp)
+		} else {
+			retryableErrs = append(retryableErrs, err)
+			retryable = append(retryable, failed)
 		}
 	}
-	if len(failed) == 0 {
-		return nil
+	if len(retryableErrs) > 0 {
+		// Permanent causes must stay out of the returned error: consumererror.IsPermanent
+		// searches the whole error tree and would stop the retry of the retryable data.
+		for i, err := range permanentErrs {
+			e.logger.Warn("dropping metrics rejected permanently by backend, retrying the remaining failed metrics",
+				zap.String("endpoint", permanentExps[i].endpoint),
+				zap.Int("data_points", permanent[i].DataPointCount()),
+				zap.Error(err))
+		}
+		return consumererror.NewMetrics(errors.Join(retryableErrs...), copyFailedMetrics(retryable))
 	}
-	// Merging into the first failed batch avoids metrics.Merge's deep copy when only one failed.
-	for _, mds := range failed[1:] {
-		metrics.Merge(failed[0], mds)
+	if len(permanentErrs) > 0 {
+		return consumererror.NewPermanent(consumererror.NewMetrics(errors.Join(permanentErrs...), copyFailedMetrics(permanent)))
 	}
-	return consumererror.NewMetrics(errs, failed[0])
+	return nil
 }
 
 func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, []error) {

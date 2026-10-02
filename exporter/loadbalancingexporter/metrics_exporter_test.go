@@ -1363,7 +1363,7 @@ func TestExportBatches_PropagatesSubExporterPartialFailureMetrics(t *testing.T) 
 		"failed subset should be resource 'one', not 'two'")
 }
 
-func TestConsumeMetrics_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
+func TestConsumeMetrics_PartialFailurePayloadSelection(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 
 	backendErr := errors.New("backend unavailable")
@@ -1405,5 +1405,5 @@ func TestConsumeMetrics_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
 	var metricsErr consumererror.Metrics
 	require.ErrorAs(t, err, &metricsErr, "expected consumererror.Metrics, got %T: %v", err, err)
 	assert.Equal(t, 1, metricsErr.Data().ResourceMetrics().Len(), "failed payload should contain only the bad backend's resource metric")
-	assert.Equal(t, 1, goodCalls, "good backend must not be re-sent")
+	assert.Equal(t, 1, goodCalls, "good backend must be called exactly once")
 }

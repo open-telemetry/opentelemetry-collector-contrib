@@ -1355,8 +1355,8 @@ func traceIDForEndpoint(t *testing.T, ring *hashRing, wantEndpoint string) pcomm
 	return pcommon.TraceID{}
 }
 
-// waitGroupReturns reports whether wg.Wait() completes within the timeout.
-func waitGroupReturns(wg *sync.WaitGroup, timeout time.Duration) bool {
+// waitGroupReturns reports whether wg.Wait() completes within a second.
+func waitGroupReturns(wg *sync.WaitGroup) bool {
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
@@ -1365,7 +1365,7 @@ func waitGroupReturns(wg *sync.WaitGroup, timeout time.Duration) bool {
 	select {
 	case <-done:
 		return true
-	case <-time.After(timeout):
+	case <-time.After(time.Second):
 		return false
 	}
 }
@@ -1399,7 +1399,7 @@ func TestConsumeTracesByID_NoConsumeWGLeakOnResolveError(t *testing.T) {
 	spans.AppendEmpty().SetTraceID(tMissing) // resolve error returns mid-batch
 
 	require.Error(t, e.consumeTracesPerSpan(t.Context(), td, spanTraceIDIdentifier))
-	require.True(t, waitGroupReturns(&good.consumeWG, time.Second),
+	require.True(t, waitGroupReturns(&good.consumeWG),
 		"consumeWG leaked on resolve error: Shutdown's Wait() would hang")
 }
 
@@ -1436,7 +1436,7 @@ func TestExportBatches_PropagatesSubExporterPartialFailureTraces(t *testing.T) {
 	assert.Equal(t, "span-failed", tracesErr.Data().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 }
 
-func TestConsumeTracesByID_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
+func TestConsumeTraces_PartialFailurePayloadSelection(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 
 	backendErr := errors.New("backend unavailable")
@@ -1469,12 +1469,12 @@ func TestConsumeTracesByID_PartialFailureOnlyRetriesFailedBackend(t *testing.T) 
 	spans.AppendEmpty().SetTraceID(tidGood)
 	spans.AppendEmpty().SetTraceID(tidBad)
 
-	err := e.consumeTracesByID(t.Context(), td)
+	err := e.ConsumeTraces(t.Context(), td)
 
 	// Must be a typed error, otherwise the retry machinery re-sends the whole batch.
 	var tracesErr consumererror.Traces
 	require.ErrorAs(t, err, &tracesErr, "expected consumererror.Traces, got %T: %v", err, err)
 	assert.Equal(t, 1, tracesErr.Data().SpanCount(), "failed payload should contain only the bad backend's span")
 	assert.Equal(t, tidBad, tracesErr.Data().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
-	assert.Equal(t, 1, goodCalls, "good backend must not be re-sent")
+	assert.Equal(t, 1, goodCalls, "good backend must be called exactly once")
 }

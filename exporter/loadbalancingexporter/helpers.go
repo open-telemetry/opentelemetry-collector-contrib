@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 )
 
 // mergeTraces concatenates two ptrace.Traces into a single ptrace.Traces.
@@ -46,4 +48,38 @@ func failedMetricsFromError(err error, fallback pmetric.Metrics) pmetric.Metrics
 		return metricsErr.Data()
 	}
 	return fallback
+}
+
+// The copyFailed* helpers combine failure payloads into newly allocated data. The payloads
+// are borrowed from backend batches and errors, so they are copied rather than moved and
+// none of them is modified.
+
+func copyFailedTraces(failed []ptrace.Traces) ptrace.Traces {
+	out := ptrace.NewTraces()
+	for _, td := range failed {
+		rss := td.ResourceSpans()
+		for i := 0; i < rss.Len(); i++ {
+			rss.At(i).CopyTo(out.ResourceSpans().AppendEmpty())
+		}
+	}
+	return out
+}
+
+func copyFailedLogs(failed []plog.Logs) plog.Logs {
+	out := plog.NewLogs()
+	for _, ld := range failed {
+		rls := ld.ResourceLogs()
+		for i := 0; i < rls.Len(); i++ {
+			rls.At(i).CopyTo(out.ResourceLogs().AppendEmpty())
+		}
+	}
+	return out
+}
+
+func copyFailedMetrics(failed []pmetric.Metrics) pmetric.Metrics {
+	merger := metrics.NewMerger(pmetric.NewMetrics())
+	for _, md := range failed {
+		merger.Merge(md)
+	}
+	return merger.Metrics()
 }

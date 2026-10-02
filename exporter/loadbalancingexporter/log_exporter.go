@@ -123,12 +123,27 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		batches = splitLogsByAttributes(ld, e.routingAttrs)
 	}
 
+	logsByExporter, err := groupLogsByExporter(batches, e.loadBalancer.exporterAndEndpoint)
+	if err != nil {
+		return err
+	}
+	return e.exportBatches(ctx, logsByExporter)
+}
+
+// groupLogsByExporter resolves the backend for each routed batch and merges batches that
+// share a backend, adding one consumeWG count per distinct backend.
+func groupLogsByExporter(batches map[string]plog.Logs, resolve func([]byte) (*wrappedExporter, string, error)) (exporterLogs, error) {
 	logsByExporter := make(exporterLogs, len(batches))
 
 	for routingID, lds := range batches {
-		exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		exp, _, err := resolve([]byte(routingID))
 		if err != nil {
-			return err
+			// Release the consumeWG counts already added for backends collected so far;
+			// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+			for exp := range logsByExporter {
+				exp.consumeWG.Done()
+			}
+			return nil, err
 		}
 
 		_, ok := logsByExporter[exp]
@@ -140,7 +155,7 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		}
 	}
 
-	return e.exportBatches(ctx, logsByExporter)
+	return logsByExporter, nil
 }
 
 // exportToBackend sends ld to one backend, records per-backend telemetry, and signals the
@@ -160,25 +175,45 @@ func (e *logExporterImp) exportToBackend(ctx context.Context, exp *wrappedExport
 	return err
 }
 
-// exportBatches sends each pre-routed batch to its backend, returning a consumererror.Logs
-// carrying only the subset that failed so retries do not re-send already-delivered data.
+// exportBatches sends each pre-routed batch to its backend. When any backend fails with a
+// retryable error, it returns a consumererror.Logs carrying only the retryable failed data and
+// causes, so a retry re-sends neither delivered data nor data a backend rejected permanently.
+// The permanently rejected data is logged and dropped. When every failure is permanent, it
+// returns a permanent error wrapping a consumererror.Logs with the failed data.
 func (e *logExporterImp) exportBatches(ctx context.Context, batches exporterLogs) error {
-	var errs error
-	var failed []plog.Logs
+	var retryableErrs, permanentErrs []error
+	var retryable, permanent []plog.Logs
+	var permanentExps []*wrappedExporter
 	for exp, lds := range batches {
-		if err := e.exportToBackend(ctx, exp, lds); err != nil {
-			errs = errors.Join(errs, err)
-			failed = append(failed, failedLogsFromError(err, lds))
+		err := e.exportToBackend(ctx, exp, lds)
+		if err == nil {
+			continue
+		}
+		failed := failedLogsFromError(err, lds)
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+			permanent = append(permanent, failed)
+			permanentExps = append(permanentExps, exp)
+		} else {
+			retryableErrs = append(retryableErrs, err)
+			retryable = append(retryable, failed)
 		}
 	}
-	if len(failed) == 0 {
-		return nil
+	if len(retryableErrs) > 0 {
+		// Permanent causes must stay out of the returned error: consumererror.IsPermanent
+		// searches the whole error tree and would stop the retry of the retryable data.
+		for i, err := range permanentErrs {
+			e.logger.Warn("dropping logs rejected permanently by backend, retrying the remaining failed logs",
+				zap.String("endpoint", permanentExps[i].endpoint),
+				zap.Int("log_records", permanent[i].LogRecordCount()),
+				zap.Error(err))
+		}
+		return consumererror.NewLogs(errors.Join(retryableErrs...), copyFailedLogs(retryable))
 	}
-	// Merging into the first failed batch leaves the common single-failure case a no-op.
-	for _, lds := range failed[1:] {
-		mergeLogs(failed[0], lds)
+	if len(permanentErrs) > 0 {
+		return consumererror.NewPermanent(consumererror.NewLogs(errors.Join(permanentErrs...), copyFailedLogs(permanent)))
 	}
-	return consumererror.NewLogs(errs, failed[0])
+	return nil
 }
 
 func splitLogsByServiceName(ld plog.Logs) map[string]plog.Logs {

@@ -2678,7 +2678,7 @@ func TestExportBatches_PropagatesSubExporterPartialFailureLogs(t *testing.T) {
 	assert.Equal(t, "log-failed", logsErr.Data().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
 }
 
-func TestConsumeLogs_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
+func TestConsumeLogs_PartialFailurePayloadSelection(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 
 	backendErr := errors.New("backend unavailable")
@@ -2714,5 +2714,5 @@ func TestConsumeLogs_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
 	var logsErr consumererror.Logs
 	require.ErrorAs(t, err, &logsErr, "expected consumererror.Logs, got %T: %v", err, err)
 	assert.Equal(t, 1, logsErr.Data().LogRecordCount(), "failed payload should contain only the bad backend's log")
-	assert.Equal(t, 1, goodCalls, "good backend must not be re-sent")
+	assert.Equal(t, 1, goodCalls, "good backend must be called exactly once")
 }
