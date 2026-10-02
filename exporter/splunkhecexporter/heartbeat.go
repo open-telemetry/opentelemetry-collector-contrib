@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
@@ -35,7 +36,23 @@ func getMetricsName(overrides map[string]string, metricName string) string {
 	return metricName
 }
 
-func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error, meter metric.Meter) *heartbeater {
+// heartbeatCounter returns the counter defined in metadata.yaml unless the user
+// configured a custom name for it through telemetry.override_metrics_names, in
+// which case a counter with the overridden name is created on the meter. The
+// override mechanism is retained for backwards compatibility and is expected to
+// be removed together with telemetry.enabled.
+func heartbeatCounter(meter metric.Meter, defaultCounter metric.Int64Counter, overrides map[string]string, defaultName, description string) (metric.Int64Counter, error) {
+	if name := getMetricsName(overrides, defaultName); name != defaultName {
+		return meter.Int64Counter(
+			name,
+			metric.WithDescription(description),
+			metric.WithUnit("1"),
+		)
+	}
+	return defaultCounter, nil
+}
+
+func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error, telemetryBuilder *metadata.TelemetryBuilder, meter metric.Meter) *heartbeater {
 	interval := config.Heartbeat.Interval
 	if interval == 0 {
 		return nil
@@ -52,20 +69,12 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 		}
 		attrs = attribute.NewSet(tags...)
 		var err error
-		heartbeatsSent, err = meter.Int64Counter(
-			getMetricsName(overrides, defaultHBSentMetricsName),
-			metric.WithDescription("number of heartbeats sent"),
-			metric.WithUnit("1"),
-		)
+		heartbeatsSent, err = heartbeatCounter(meter, telemetryBuilder.ExporterSplunkhecHeartbeatsSent, overrides, defaultHBSentMetricsName, "number of heartbeats sent")
 		if err != nil {
 			return nil
 		}
 
-		heartbeatsFailed, err = meter.Int64Counter(
-			getMetricsName(overrides, defaultHBFailedMetricsName),
-			metric.WithDescription("number of heartbeats failed"),
-			metric.WithUnit("1"),
-		)
+		heartbeatsFailed, err = heartbeatCounter(meter, telemetryBuilder.ExporterSplunkhecHeartbeatsFailed, overrides, defaultHBFailedMetricsName, "number of heartbeats failed")
 		if err != nil {
 			return nil
 		}
