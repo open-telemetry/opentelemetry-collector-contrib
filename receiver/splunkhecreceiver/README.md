@@ -77,4 +77,20 @@ receivers:
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
+## Delivery guarantees
+
+The receiver hands data to the pipeline before responding to the client, so it
+provides at-least-once delivery. If the pipeline accepts a batch but the client
+never receives the success response (for example the connection drops before the
+response is written), the client will resend the batch and the data is delivered
+again, producing duplicates downstream.
+
+To detect and avoid duplicates, enable [Splunk indexer acknowledgment][hec-ack]
+via the `ack` extension (see the `ack` setting above) and have the sender use the
+acknowledgment protocol: the sender includes a channel, the receiver returns an
+`ackId`, and the sender confirms delivery by polling the ack endpoint before it
+considers a batch complete. This lets a sender safely retry without assuming a
+lost response means the data was dropped.
+
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls
+[hec-ack]: https://docs.splunk.com/Documentation/Splunk/latest/Data/AboutHECIDXAck
