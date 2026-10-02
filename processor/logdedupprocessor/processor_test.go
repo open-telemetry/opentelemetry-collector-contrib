@@ -33,29 +33,19 @@ import (
 func Test_newProcessor(t *testing.T) {
 	testCases := []struct {
 		desc        string
-		cfg         *Config
+		timezone    string
 		expected    *logDedupProcessor
 		expectedErr error
 	}{
 		{
-			desc: "Timezone error",
-			cfg: &Config{
-				LogCountAttribute: defaultLogCountAttribute,
-				Interval:          defaultInterval,
-				Conditions:        []string{},
-				Timezone:          "bad timezone",
-			},
+			desc:        "Timezone error",
+			timezone:    "bad timezone",
 			expected:    nil,
 			expectedErr: errors.New("invalid timezone"),
 		},
 		{
-			desc: "valid config",
-			cfg: &Config{
-				LogCountAttribute: defaultLogCountAttribute,
-				Interval:          defaultInterval,
-				Conditions:        []string{},
-				Timezone:          defaultTimezone,
-			},
+			desc:     "valid config",
+			timezone: defaultTimezone,
 			expected: &logDedupProcessor{
 				emitInterval: defaultInterval,
 			},
@@ -72,7 +62,9 @@ func Test_newProcessor(t *testing.T) {
 				tc.expected.nextConsumer = logsSink
 			}
 
-			actual, err := newProcessor(tc.cfg, logsSink, settings)
+			cfg := createDefaultConfig().(*Config)
+			cfg.Timezone = tc.timezone
+			actual, err := newProcessor(cfg, logsSink, settings)
 			if tc.expectedErr != nil {
 				require.ErrorContains(t, err, tc.expectedErr.Error())
 				require.Nil(t, actual)
@@ -93,12 +85,8 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 
 	logsSink := &consumertest.LogsSink{}
 	settings := processortest.NewNopSettings(metadata.Type)
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
 
 	// Create a processor
 	p, err := createLogsProcessor(t.Context(), settings, cfg, logsSink)
@@ -119,14 +107,10 @@ func TestProcessorCapabilities(t *testing.T) {
 func TestShutdownBeforeStart(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
 	settings := processortest.NewNopSettings(metadata.Type)
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{},
-		ExcludeFields: []string{
-			fmt.Sprintf("%s.remove_me", attributeField),
-		},
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.ExcludeFields = []string{
+		fmt.Sprintf("%s.remove_me", attributeField),
 	}
 
 	// Create a processor
@@ -141,14 +125,10 @@ func TestShutdownBeforeStart(t *testing.T) {
 func TestProcessorConsume(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
 	settings := processortest.NewNopSettings(metadata.Type)
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{},
-		ExcludeFields: []string{
-			fmt.Sprintf("%s.remove_me", attributeField),
-		},
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.ExcludeFields = []string{
+		fmt.Sprintf("%s.remove_me", attributeField),
 	}
 
 	// Create a processor
@@ -176,7 +156,7 @@ func TestProcessorConsume(t *testing.T) {
 	allSinkLogs := logsSink.AllLogs()
 	require.Len(t, allSinkLogs, 1)
 
-	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp")))
 
 	// Cleanup
 	err = p.Shutdown(t.Context())
@@ -185,12 +165,8 @@ func TestProcessorConsume(t *testing.T) {
 
 func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
 
 	// Create & start a processor
 	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
@@ -219,14 +195,11 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 
 func TestProcessorConsumeCondition(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{`(attributes["ID"] == 1)`},
-		ExcludeFields: []string{
-			fmt.Sprintf("%s.remove_me", attributeField),
-		},
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.Conditions = []string{`(attributes["ID"] == 1)`}
+	cfg.ExcludeFields = []string{
+		fmt.Sprintf("%s.remove_me", attributeField),
 	}
 
 	// Create a processor
@@ -259,8 +232,8 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	consumedLogs := allSinkLogs[0]
 	dedupedLogs := allSinkLogs[1]
 
-	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
-	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
 
 	// Cleanup
 	err = p.Shutdown(t.Context())
@@ -269,14 +242,11 @@ func TestProcessorConsumeCondition(t *testing.T) {
 
 func TestProcessorConsumeCondition_PathContextSyntax(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{`(log.attributes["ID"] == 1)`},
-		ExcludeFields: []string{
-			fmt.Sprintf("%s.remove_me", attributeField),
-		},
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.Conditions = []string{`(log.attributes["ID"] == 1)`}
+	cfg.ExcludeFields = []string{
+		fmt.Sprintf("%s.remove_me", attributeField),
 	}
 
 	// Create a processor
@@ -309,8 +279,8 @@ func TestProcessorConsumeCondition_PathContextSyntax(t *testing.T) {
 	consumedLogs := allSinkLogs[0]
 	dedupedLogs := allSinkLogs[1]
 
-	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
-	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
 
 	// Cleanup
 	err = p.Shutdown(t.Context())
@@ -319,14 +289,11 @@ func TestProcessorConsumeCondition_PathContextSyntax(t *testing.T) {
 
 func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{`attributes["ID"] == 1`, `attributes["ID"] == 3`},
-		ExcludeFields: []string{
-			fmt.Sprintf("%s.remove_me", attributeField),
-		},
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.Conditions = []string{`attributes["ID"] == 1`, `attributes["ID"] == 3`}
+	cfg.ExcludeFields = []string{
+		fmt.Sprintf("%s.remove_me", attributeField),
 	}
 
 	// Create a processor
@@ -359,8 +326,8 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	expectedDedupedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "multipleConditionsDedupedLogs.yaml"))
 	require.NoError(t, err)
 
-	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
-	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp"), plogtest.IgnoreLogRecordsOrder()))
 
 	// Cleanup
 	err = p.Shutdown(t.Context())
@@ -369,41 +336,20 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 
 func TestProcessorIncludeFields(t *testing.T) {
 	testCases := []struct {
-		name string
-		cfg  *Config
+		name          string
+		includeFields []string
 	}{
 		{
-			name: "attribute field",
-			cfg: &Config{
-				LogCountAttribute: defaultLogCountAttribute,
-				Timezone:          defaultTimezone,
-				Interval:          1 * time.Second,
-				Conditions:        []string{},
-				ExcludeFields:     []string{},
-				IncludeFields:     []string{"attributes.dedup_key"},
-			},
+			name:          "attribute field",
+			includeFields: []string{"attributes.dedup_key"},
 		},
 		{
-			name: "body field",
-			cfg: &Config{
-				LogCountAttribute: defaultLogCountAttribute,
-				Timezone:          defaultTimezone,
-				Interval:          1 * time.Second,
-				Conditions:        []string{},
-				ExcludeFields:     []string{},
-				IncludeFields:     []string{"body.dedup_key"},
-			},
+			name:          "body field",
+			includeFields: []string{"body.dedup_key"},
 		},
 		{
-			name: "multiple fields",
-			cfg: &Config{
-				LogCountAttribute: defaultLogCountAttribute,
-				Timezone:          defaultTimezone,
-				Interval:          1 * time.Second,
-				Conditions:        []string{},
-				ExcludeFields:     []string{},
-				IncludeFields:     []string{"attributes.dedup_key", "body.dedup_key"},
-			},
+			name:          "multiple fields",
+			includeFields: []string{"attributes.dedup_key", "body.dedup_key"},
 		},
 	}
 
@@ -414,7 +360,10 @@ func TestProcessorIncludeFields(t *testing.T) {
 			settings := processortest.NewNopSettings(metadata.Type)
 
 			// Create a processor
-			p, err := createLogsProcessor(t.Context(), settings, tt.cfg, logsSink)
+			cfg := createDefaultConfig().(*Config)
+			cfg.Interval = time.Second
+			cfg.IncludeFields = tt.includeFields
+			p, err := createLogsProcessor(t.Context(), settings, cfg, logsSink)
 			require.NoError(t, err)
 
 			err = p.Start(t.Context(), componenttest.NewNopHost())
@@ -438,7 +387,7 @@ func TestProcessorIncludeFields(t *testing.T) {
 			allSinkLogs := logsSink.AllLogs()
 			require.Len(t, allSinkLogs, 1)
 
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"), plogtest.IgnoreLogRecordAttributeValue("first_event_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_event_timestamp")))
 
 			// Cleanup
 			err = p.Shutdown(t.Context())
@@ -501,13 +450,9 @@ func newSimpleLog() plog.Logs {
 
 func TestMetadataKeysSeparateShards(t *testing.T) {
 	sink := &contextCapturingLogsSink{}
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{},
-		MetadataKeys:      []string{"x-scope-orgid"},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.MetadataKeys = []string{"x-scope-orgid"}
 
 	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
@@ -537,13 +482,9 @@ func TestMetadataKeysSeparateShards(t *testing.T) {
 
 func TestMetadataKeysSameTenantAggregated(t *testing.T) {
 	sink := &contextCapturingLogsSink{}
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{},
-		MetadataKeys:      []string{"x-scope-orgid"},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.MetadataKeys = []string{"x-scope-orgid"}
 
 	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
@@ -563,14 +504,10 @@ func TestMetadataKeysSameTenantAggregated(t *testing.T) {
 
 func TestMetadataKeysCardinalityLimit(t *testing.T) {
 	sink := &contextCapturingLogsSink{}
-	cfg := &Config{
-		LogCountAttribute:        defaultLogCountAttribute,
-		Interval:                 1 * time.Second,
-		Timezone:                 defaultTimezone,
-		Conditions:               []string{},
-		MetadataKeys:             []string{"x-scope-orgid"},
-		MetadataCardinalityLimit: 1,
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.MetadataKeys = []string{"x-scope-orgid"}
+	cfg.MetadataCardinalityLimit = 1
 
 	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
@@ -592,13 +529,9 @@ func TestMetadataKeysUnboundedCardinalityLogsWarning(t *testing.T) {
 	settings := processortest.NewNopSettings(metadata.Type)
 	settings.Logger = zap.New(core)
 
-	cfg := &Config{
-		LogCountAttribute:        defaultLogCountAttribute,
-		Interval:                 defaultInterval,
-		Timezone:                 defaultTimezone,
-		MetadataKeys:             []string{"x-scope-orgid"},
-		MetadataCardinalityLimit: 0,
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetadataKeys = []string{"x-scope-orgid"}
+	cfg.MetadataCardinalityLimit = 0
 
 	_, err := createLogsProcessor(t.Context(), settings, cfg, consumertest.NewNop())
 	require.NoError(t, err)
@@ -612,13 +545,9 @@ func TestMetadataKeysBoundedCardinalityNoWarning(t *testing.T) {
 	settings := processortest.NewNopSettings(metadata.Type)
 	settings.Logger = zap.New(core)
 
-	cfg := &Config{
-		LogCountAttribute:        defaultLogCountAttribute,
-		Interval:                 defaultInterval,
-		Timezone:                 defaultTimezone,
-		MetadataKeys:             []string{"x-scope-orgid"},
-		MetadataCardinalityLimit: 1,
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetadataKeys = []string{"x-scope-orgid"}
+	cfg.MetadataCardinalityLimit = 1
 
 	_, err := createLogsProcessor(t.Context(), settings, cfg, consumertest.NewNop())
 	require.NoError(t, err)
@@ -628,13 +557,9 @@ func TestMetadataKeysBoundedCardinalityNoWarning(t *testing.T) {
 
 func TestMetadataKeysCaseInsensitive(t *testing.T) {
 	sink := &contextCapturingLogsSink{}
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          1 * time.Second,
-		Timezone:          defaultTimezone,
-		Conditions:        []string{},
-		MetadataKeys:      []string{"X-Scope-OrgID"}, // mixed case
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.MetadataKeys = []string{"X-Scope-OrgID"} // mixed case
 
 	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
@@ -651,32 +576,106 @@ func TestMetadataKeysCaseInsensitive(t *testing.T) {
 }
 
 func TestMetadataKeysDuplicateValidation(t *testing.T) {
-	cfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          defaultInterval,
-		Timezone:          defaultTimezone,
-		MetadataKeys:      []string{"x-scope-orgid", "X-Scope-OrgID"},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetadataKeys = []string{"x-scope-orgid", "X-Scope-OrgID"}
 	_, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.Error(t, err)
 }
 
+func TestProcessorTimestampModeAggregated(t *testing.T) {
+	logsSink := &consumertest.LogsSink{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.TimestampMode = TimestampModeAggregated
+
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
+	require.NoError(t, err)
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "timestampModeLogs.yaml"))
+	require.NoError(t, err)
+
+	err = p.ConsumeLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	beforeExport := time.Now()
+	require.Eventually(t, func() bool {
+		return logsSink.LogRecordCount() > 0
+	}, 3*time.Second, 200*time.Millisecond)
+	afterExport := time.Now()
+
+	allSinkLogs := logsSink.AllLogs()
+	require.Len(t, allSinkLogs, 1)
+
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "timestampModeAggregatedLogs.yaml"))
+	require.NoError(t, err)
+
+	// Timestamp is ignored in the golden file comparison since it is non-deterministic (set to export time).
+	// It is validated separately below against the export window.
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0],
+		plogtest.IgnoreObservedTimestamp(),
+		plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"),
+		plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"),
+		plogtest.IgnoreTimestamp(),
+	))
+
+	emitted := allSinkLogs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	emittedTS := emitted.Timestamp().AsTime()
+	// Timestamp must fall within the export window, not equal the original event timestamps.
+	require.False(t, emittedTS.Before(beforeExport), "timestamp should not be before export")
+	require.False(t, emittedTS.After(afterExport), "timestamp should not be after export")
+
+	require.NoError(t, p.Shutdown(t.Context()))
+}
+
+func TestProcessorTimestampModePreserved(t *testing.T) {
+	logsSink := &consumertest.LogsSink{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 1 * time.Second
+	cfg.TimestampMode = TimestampModePreserved
+
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
+	require.NoError(t, err)
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "timestampModeLogs.yaml"))
+	require.NoError(t, err)
+
+	err = p.ConsumeLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return logsSink.LogRecordCount() > 0
+	}, 3*time.Second, 200*time.Millisecond)
+
+	allSinkLogs := logsSink.AllLogs()
+	require.Len(t, allSinkLogs, 1)
+
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "timestampModePreservedLogs.yaml"))
+	require.NoError(t, err)
+
+	// Timestamp is intentionally not ignored — preserved mode must keep the original.
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0],
+		plogtest.IgnoreObservedTimestamp(),
+		plogtest.IgnoreLogRecordAttributeValue("first_aggregation_timestamp"),
+		plogtest.IgnoreLogRecordAttributeValue("last_aggregation_timestamp"),
+	))
+
+	require.NoError(t, p.Shutdown(t.Context()))
+}
+
 func TestProcessorConfigValidate(t *testing.T) {
 	t.Parallel()
-	invalidCfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          -1,
-		Timezone:          "",
-	}
+	invalidCfg := createDefaultConfig().(*Config)
+	invalidCfg.Interval = -1
+	invalidCfg.Timezone = ""
 
 	_, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), invalidCfg, consumertest.NewNop())
 	require.Error(t, err)
 
-	validCfg := &Config{
-		LogCountAttribute: defaultLogCountAttribute,
-		Interval:          defaultInterval,
-		Timezone:          defaultTimezone,
-	}
+	validCfg := createDefaultConfig().(*Config)
 
 	_, err = createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), validCfg, consumertest.NewNop())
 	require.NoError(t, err)
