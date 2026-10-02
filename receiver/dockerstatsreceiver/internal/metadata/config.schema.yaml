@@ -262,6 +262,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      container.cpu.time:
+        description: "ContainerCPUTimeMetricConfig provides config for the container.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       container.cpu.usage.kernelmode:
         description: "ContainerCPUUsageKernelmodeMetricConfig provides config for the container.cpu.usage.kernelmode metric."
         type: object
@@ -560,6 +567,13 @@ $defs:
             default: false
       container.memory.unevictable:
         description: "ContainerMemoryUnevictableMetricConfig provides config for the container.memory.unevictable metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.usage:
+        description: "ContainerMemoryUsageMetricConfig provides config for the container.memory.usage metric."
         type: object
         properties:
           enabled:
