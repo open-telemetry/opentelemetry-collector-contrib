@@ -117,7 +117,7 @@ The OpenSearch exporter supports several document schemas and preprocessing beha
     - `flatten_attributes`: Uses the ECS mapping but flattens all resource and log attributes in the record to the top-level.
     - `bodymap`: uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.
     - `otel-v1`: exports logs and traces using the Data Prepper OTel v1 schema, compatible with OpenSearch Observability dashboards.
-  - `manage_index_template`: (optional, default=`false`) When `true`, creates composable index templates on startup. Only valid with `otel-v1` mode.
+  - `manage_index_template`: (optional, default=`false`) When `true`, creates composable index templates on startup. Only valid with `otel-v1` and `ss4o` modes. In `ss4o` mode the templates map attribute bags as `flat_object` to avoid dotted-attribute mapping conflicts (see [SS4O mapping mode](#ss4o-mapping-mode)).
   - `timestamp_field`: (optional) Field to store the timestamp in. If not set, uses the default `@timestamp`.
   - `unix_timestamp`: (optional) Whether to store the timestamp in epoch milliseconds.
   - `dedup`: (optional) removes fields from the document, that have duplicate keys. The filtering only keeps the last value for a key.
@@ -141,6 +141,18 @@ Metrics follow the [SS4O metrics schema](https://github.com/opensearch-project/o
 > Install the [SS4O metrics index template](https://github.com/opensearch-project/opensearch-catalog/tree/main/schema/observability/metrics) before indexing metrics. Without it, OpenSearch's dynamic mapping infers field types from the first document it sees, which can produce inconsistent types (e.g. histogram bucket boundaries) and cause subsequent documents to be rejected.
 >
 > The catalog template maps `value@int` as a 32-bit `integer`; OpenTelemetry integer data points are 64-bit, so values beyond ±2³¹ are rejected. Change that field to `long` in the template before installing it ([Data Prepper's reference template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/metrics-otel-v1-index-standard-template.json) already uses `long`).
+
+##### Dotted attribute keys and mapping conflicts
+
+OpenTelemetry attributes are a flat namespace in which `code.function` and `code.function.name` are two distinct keys. OpenSearch, however, expands dots in JSON field names into nested objects during dynamic mapping. When both keys are present, OpenSearch tries to map `attributes.code.function` as *both* a concrete value and an object and rejects the document with a `mapper_parsing_exception`. This commonly happens while migrating between semantic-convention versions (e.g. `code.function` → `code.function.name`).
+
+The exporter handles this in two complementary ways:
+
+- **Within a document (always on):** if an attribute map contains both a concrete key and a longer key that uses it as an object prefix, the concrete value is relocated under a `.value` sub-key (`code.function` → `code.function.value`) so the document is indexable. This applies to span, event, link, log-record, metric data-point, exemplar and instrumentation-scope attributes (in the `ss4o` and `otel-v1` modes), and only changes documents OpenSearch would otherwise reject.
+- **Across documents (opt-in):** set `manage_index_template: true` to have the exporter install traces and logs index templates that map the attribute-bearing objects (`attributes`, `resource`, scope/event/link attributes) as [`flat_object`](https://docs.opensearch.org/latest/mappings/supported-field-types/flat-object/). OpenSearch then stores attribute bags without expanding dots, which prevents conflicts even when the conflicting keys arrive in separate documents.
+
+> [!NOTE]
+> `flat_object` indexes every leaf value as a string, so type-aware queries (for example numeric range queries) on attribute values are not available. The template only matches the default `ss4o_traces-*` / `ss4o_logs-*` index patterns; if you configure a custom `traces_index`/`logs_index`, install an equivalent template out-of-band.
 
 #### ECS mapping mode
 

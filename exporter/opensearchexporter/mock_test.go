@@ -678,6 +678,54 @@ func TestOpenSearchOTelV1_ManageIndexTemplate(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(t.Context()))
 }
 
+func TestOpenSearchSS4O_ManageIndexTemplate(t *testing.T) {
+	var templateRequests []string
+	var templateBodies []string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead && strings.Contains(r.URL.Path, "_index_template") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "_index_template") {
+			templateRequests = append(templateRequests, r.URL.Path)
+			body, _ := io.ReadAll(r.Body)
+			templateBodies = append(templateBodies, string(body))
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"acknowledged": true}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		response, _ := os.ReadFile("testdata/opensearch-response-no-error.json")
+		_, _ = w.Write(response)
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.ClientConfig.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 0
+		config.MappingsSettings.Mode = "ss4o"
+		config.MappingsSettings.ManageIndexTemplate = true
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+
+	require.Len(t, templateRequests, 2)
+	assert.Contains(t, templateRequests[0], "ss4o-traces-index-template")
+	assert.Contains(t, templateRequests[1], "ss4o-logs-index-template")
+	// The installed templates must map attribute bags as flat_object so
+	// OpenSearch does not expand dotted attribute keys into nested objects.
+	assert.Contains(t, templateBodies[0], `"flat_object"`)
+	assert.Contains(t, templateBodies[0], "ss4o_traces-*")
+	assert.Contains(t, templateBodies[1], `"flat_object"`)
+	assert.Contains(t, templateBodies[1], "ss4o_logs-*")
+
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
 func TestOpenSearchOTelV1_ManageIndexTemplate_Disabled(t *testing.T) {
 	var templateRequests []string
 

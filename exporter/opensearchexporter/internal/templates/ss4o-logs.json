@@ -1,0 +1,16 @@
+{
+  "index_patterns": ["ss4o_logs-*"],
+  "template": {
+    "mappings": {
+      "properties": {
+        "attributes": { "type": "flat_object" },
+        "resource": { "type": "flat_object" },
+        "instrumentationScope": {
+          "properties": {
+            "attributes": { "type": "flat_object" }
+          }
+        }
+      }
+    }
+  }
+}
