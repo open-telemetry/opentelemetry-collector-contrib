@@ -1,5 +1,6 @@
 display_name: SigV4 Authenticator Extension
-type: sigv4auth
+type: sigv4_auth
+deprecated_type: sigv4auth
 
 
 description: |

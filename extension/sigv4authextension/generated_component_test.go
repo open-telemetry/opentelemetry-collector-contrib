@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
-var typ = component.MustNewType("sigv4auth")
+var typ = component.MustNewType("sigv4_auth")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

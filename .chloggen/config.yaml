@@ -121,7 +121,7 @@ components:
     - extension/redis_storage
     - extension/remotetap
     - extension/sd_notify
-    - extension/sigv4auth
+    - extension/sigv4_auth
     - extension/skywalking_encoding
     - extension/solarwindsapmsettings
     - extension/storage
