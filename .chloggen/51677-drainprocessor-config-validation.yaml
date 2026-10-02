@@ -16,10 +16,8 @@ issues: [51677]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Startup validation now rejects invalid settings for `tree_depth` (< 3), `merge_threshold` (outside [0.0, 1.0]),
-  `max_node_children` (<= 0), negative `max_clusters` or `warmup_min_clusters`, empty `template_attribute`,
-  empty `wildcards_attribute` when `emit_wildcards` is true, empty `parameter_key_prefix` when `masking_rules` are configured,
-  `save_interval` (< 0 or set without `storage`), and invalid `masking_rules`.
+  Startup validation now rejects `max_node_children` <= 0, negative `max_clusters`, empty `template_attribute`,
+  empty `wildcards_attribute` when `emit_wildcards` is set, and empty `parameter_key_prefix` when `masking_rules` are configured.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
