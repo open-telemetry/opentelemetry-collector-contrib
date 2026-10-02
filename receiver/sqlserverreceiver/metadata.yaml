@@ -351,7 +351,7 @@ attributes:
     type: string
     requirement_level: recommended
   sqlserver.session.duration:
-    description: Total elapsed time in seconds the session has been actively executing requests.
+    description: Total elapsed time in seconds since the session was established (login time).
     type: double
     requirement_level: recommended
   sqlserver.session.start_time:
