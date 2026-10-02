@@ -3486,6 +3486,41 @@ func DefaultEventsConfig() EventsConfig {
 	}
 }
 
+// DbSystemVersionResourceAttributeConfig provides config for the db.system.version resource attribute.
+type DbSystemVersionResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *DbSystemVersionResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // HostNameResourceAttributeConfig provides config for the host.name resource attribute.
 type HostNameResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -3803,6 +3838,7 @@ func (rac *SqlserverInstanceNameResourceAttributeConfig) Unmarshal(parser *confm
 
 // ResourceAttributesConfig provides config for sqlserver resource attributes.
 type ResourceAttributesConfig struct {
+	DbSystemVersion       DbSystemVersionResourceAttributeConfig       `mapstructure:"db.system.version"`
 	HostName              HostNameResourceAttributeConfig              `mapstructure:"host.name"`
 	ServerAddress         ServerAddressResourceAttributeConfig         `mapstructure:"server.address"`
 	ServerPort            ServerPortResourceAttributeConfig            `mapstructure:"server.port"`
@@ -3816,6 +3852,9 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		DbSystemVersion: DbSystemVersionResourceAttributeConfig{
+			Enabled: false,
+		},
 		HostName: HostNameResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -3850,6 +3889,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // For each enabled resource attribute with a non-nil OverrideValue,
 // the override replaces any existing value in the resource.
 func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.DbSystemVersion.Enabled && rac.DbSystemVersion.OverrideValue != nil {
+		res.Attributes().PutStr("db.system.version", *rac.DbSystemVersion.OverrideValue)
+	}
 	if rac.HostName.Enabled && rac.HostName.OverrideValue != nil {
 		res.Attributes().PutStr("host.name", *rac.HostName.OverrideValue)
 	}

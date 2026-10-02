@@ -41,6 +41,48 @@ request_review () {
     fi
 }
 
+# Helper files pull in "testing" without being named *_test.go. Match the import
+# whether it is grouped, single-line, or aliased.
+imports_testing () {
+    grep -qE '^[[:space:]]*(import[[:space:]]+)?([A-Za-z0-9_.]+[[:space:]]+)?"testing"$' "$1"
+}
+
+# A component "targets" a platform if it ships non-test source constrained to
+# that platform. Go expresses this two ways and both must be handled:
+#   * implicitly, via the name_GOOS.go filename suffix. A name_GOOS_GOARCH.go
+#     file is deliberately NOT matched here: validating GOARCH would mean
+#     hardcoding Go's architecture list, and every such file in this repo also
+#     carries an explicit //go:build line, so the second loop catches it.
+#   * explicitly, via //go:build, where the platform may sit inside a compound
+#     expression ("darwin || freebsd") and where negation -- either a bare
+#     "!windows" or a negated group "!(windows && arm64)" -- must not count.
+# Derived at runtime so the set cannot drift as components are added or removed.
+component_targets_platform () {
+    local dir="$1" plat="$2" file line expr
+    [[ -d "${dir}" ]] || return 1
+
+    while IFS= read -r file; do
+        [[ "${file}" == *_test.go ]] && continue
+        imports_testing "${file}" && continue
+        [[ "$(basename "${file}" .go)" == *_"${plat}" ]] && return 0
+    done < <(find "${dir}" -type f -name "*_${plat}.go" 2>/dev/null)
+
+    while IFS= read -r file; do
+        [[ "${file}" == *_test.go ]] && continue
+        imports_testing "${file}" && continue
+        line=$(grep -m1 '^//go:build ' "${file}") || continue
+        expr="${line#//go:build }"
+        # Nested negations like "!((linux) || windows)" defeat any regex, so
+        # treat a negated directive as no evidence: this can miss a label,
+        # never invent one.
+        case "${expr}" in *'!'*) continue;; esac
+        expr=" $(printf '%s' "${expr}" | sed -E 's/[^a-zA-Z0-9_]/ /g') "
+        [[ "${expr}" == *" ${plat} "* ]] && return 0
+    done < <(grep -rl --include='*.go' "^//go:build .*${plat}" "${dir}" 2>/dev/null)
+
+    return 1
+}
+
 main () {
     CUR_DIRECTORY=$(dirname "$0")
     # Reviews may have comments that need to be cleaned up for jq,
@@ -58,6 +100,8 @@ main () {
     REVIEW_LOGINS=$(echo -n "${JSON}"| jq -r '.latestReviews[].author.login')
     COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh" | tac) # Reversed so we visit subdirectories first
     LABELS=""
+    NEEDS_WINDOWS=""
+    NEEDS_DARWIN=""
     declare -A PROCESSED_COMPONENTS
     declare -A REVIEWED
     declare -A REVIEWER_SET
@@ -98,6 +142,14 @@ main () {
 
             PROCESSED_COMPONENTS["${COMPONENT}"]=true
 
+            if [[ -z "${NEEDS_WINDOWS}" ]] && component_targets_platform "${COMPONENT}" windows; then
+                NEEDS_WINDOWS=1
+            fi
+
+            if [[ -z "${NEEDS_DARWIN}" ]] && component_targets_platform "${COMPONENT}" darwin; then
+                NEEDS_DARWIN=1
+            fi
+
             OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
             for OWNER in ${OWNERS}; do
@@ -125,8 +177,12 @@ main () {
         done
     done
 
-    if [[ $LABELS =~ "receiver/sqlserver" ]]; then
-      LABELS+=",Run Windows"
+    if [[ -n "${NEEDS_WINDOWS}" ]]; then
+        LABELS+=",Run Windows"
+    fi
+
+    if [[ -n "${NEEDS_DARWIN}" ]]; then
+        LABELS+=",Run Darwin"
     fi
 
     if [[ -n "${LABELS}" ]]; then

@@ -120,11 +120,14 @@ func (m *multiLogsReceiver) Shutdown(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
-// receiverType implements adapter.LogReceiverType
+// receiverType implements adapter.LogReceiverTypeWithScope
 // to create a file tailing receiver
 type receiverType struct{}
 
-var _ adapter.LogReceiverType = (*receiverType)(nil)
+var _ adapter.LogReceiverTypeWithScope = (*receiverType)(nil)
+
+// ScopeName sets the scope name that will be used on all logs coming from the receiver.
+func (receiverType) ScopeName() string { return metadata.ScopeName }
 
 // Type is the receiver type
 func (receiverType) Type() component.Type {
