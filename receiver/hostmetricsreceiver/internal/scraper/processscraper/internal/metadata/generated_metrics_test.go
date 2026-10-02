@@ -159,6 +159,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordProcessDiskOperationsDataPoint(ts, 3, AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordProcessDiskOperationsDataPoint(ts+1, 3, AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricProcessDiskOperations.data.Sum().DataPoints().Len())
 			}
 			if tt.name != "all_set" {
 
@@ -265,7 +268,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["process.disk.operations"], "Found a duplicate in the metrics slice: process.disk.operations")
 						validatedMetrics["process.disk.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of disk operations performed by the process.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -766,7 +771,7 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
-				// For metrics with different emitted names, no collison warning shoulds be logged
+				// For metrics with different emitted names, no collision warning should be logged
 				// This guards against the regression where same name collision logic was
 				// incorrectly applied to renamed metrics.
 				if tt.enableNew {
@@ -851,7 +856,7 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
-				// For metrics with different emitted names, no collison warning shoulds be logged
+				// For metrics with different emitted names, no collision warning should be logged
 				// This guards against the regression where same name collision logic was
 				// incorrectly applied to renamed metrics.
 				if tt.enableNew {
@@ -1020,7 +1025,7 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
-				// For metrics with different emitted names, no collison warning shoulds be logged
+				// For metrics with different emitted names, no collision warning should be logged
 				// This guards against the regression where same name collision logic was
 				// incorrectly applied to renamed metrics.
 				if tt.enableNew {
