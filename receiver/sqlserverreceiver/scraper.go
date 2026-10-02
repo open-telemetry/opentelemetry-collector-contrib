@@ -46,6 +46,11 @@ const (
 	// becomes an average once divided by a companion base counter.
 	perfCounterAverageBulkType = "1073874176"
 
+	// instanceRawKey holds the instance name as SQL Server reports it, before
+	// [instance] renames the _Total aggregate.
+	instanceRawKey    = "instance_raw"
+	totalInstanceName = "_Total"
+
 	defaultServiceName  = "unknown_service:microsoft.sql_server"
 	versionQueryTimeout = 5 * time.Second
 )
@@ -732,10 +737,17 @@ func isPerformanceCounterRate(counterType, counterName string) bool {
 }
 
 func performanceCounterKeyFromRow(row sqlquery.StringMap) performanceCounterKey {
+	// Key on the unmodified instance name so the _Total aggregate and a database that
+	// happens to be called Total keep separate samples. [instance] renames the former
+	// to the latter, which would make the two share a key and corrupt both deltas.
+	instance := row[instanceRawKey]
+	if instance == "" {
+		instance = row["instance"]
+	}
 	return performanceCounterKey{
 		object:   row["object"],
 		counter:  row["counter"],
-		instance: row["instance"],
+		instance: instance,
 	}
 }
 
@@ -1005,11 +1017,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		// sum of the others, so emitting both would double-count any aggregation,
 		// and without the name every database would collapse into one series.
 		if strings.HasSuffix(row[objectKey], ":Databases") {
-			instance := row[instanceKey]
-			if instance == "Total" {
+			// Match on the unmodified instance name: the query renames the aggregate
+			// from _Total to Total, which is also a legal database name.
+			if row[instanceRawKey] == totalInstanceName {
 				continue
 			}
-			if instance != "" {
+			if instance := row[instanceKey]; instance != "" {
 				rb.SetSqlserverDatabaseName(instance)
 			}
 		}
