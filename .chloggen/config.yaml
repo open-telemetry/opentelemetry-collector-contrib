@@ -220,6 +220,7 @@ components:
     - processor/metricsgeneration
     - processor/novadetector
     - processor/oracleclouddetector
+    - processor/partitioning
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
