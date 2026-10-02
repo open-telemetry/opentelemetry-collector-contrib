@@ -304,6 +304,100 @@ var MapAttributeThroughputDirection = map[string]AttributeThroughputDirection{
 	"received":    AttributeThroughputDirectionReceived,
 }
 
+// AttributeVcenterAlarmState specifies the value vcenter.alarm.state attribute.
+type AttributeVcenterAlarmState int
+
+const (
+	_ AttributeVcenterAlarmState = iota
+	AttributeVcenterAlarmStateRed
+	AttributeVcenterAlarmStateYellow
+)
+
+// String returns the string representation of the AttributeVcenterAlarmState.
+func (av AttributeVcenterAlarmState) String() string {
+	switch av {
+	case AttributeVcenterAlarmStateRed:
+		return "red"
+	case AttributeVcenterAlarmStateYellow:
+		return "yellow"
+	}
+	return ""
+}
+
+// MapAttributeVcenterAlarmState is a helper map of string to AttributeVcenterAlarmState attribute value.
+var MapAttributeVcenterAlarmState = map[string]AttributeVcenterAlarmState{
+	"red":    AttributeVcenterAlarmStateRed,
+	"yellow": AttributeVcenterAlarmStateYellow,
+}
+
+// AttributeVcenterDatastoreMaintenanceState specifies the value vcenter.datastore.maintenance.state attribute.
+type AttributeVcenterDatastoreMaintenanceState int
+
+const (
+	_ AttributeVcenterDatastoreMaintenanceState = iota
+	AttributeVcenterDatastoreMaintenanceStateNormal
+	AttributeVcenterDatastoreMaintenanceStateEnteringMaintenance
+	AttributeVcenterDatastoreMaintenanceStateInMaintenance
+	AttributeVcenterDatastoreMaintenanceStateUnknown
+)
+
+// String returns the string representation of the AttributeVcenterDatastoreMaintenanceState.
+func (av AttributeVcenterDatastoreMaintenanceState) String() string {
+	switch av {
+	case AttributeVcenterDatastoreMaintenanceStateNormal:
+		return "normal"
+	case AttributeVcenterDatastoreMaintenanceStateEnteringMaintenance:
+		return "entering_maintenance"
+	case AttributeVcenterDatastoreMaintenanceStateInMaintenance:
+		return "in_maintenance"
+	case AttributeVcenterDatastoreMaintenanceStateUnknown:
+		return "unknown"
+	}
+	return ""
+}
+
+// MapAttributeVcenterDatastoreMaintenanceState is a helper map of string to AttributeVcenterDatastoreMaintenanceState attribute value.
+var MapAttributeVcenterDatastoreMaintenanceState = map[string]AttributeVcenterDatastoreMaintenanceState{
+	"normal":               AttributeVcenterDatastoreMaintenanceStateNormal,
+	"entering_maintenance": AttributeVcenterDatastoreMaintenanceStateEnteringMaintenance,
+	"in_maintenance":       AttributeVcenterDatastoreMaintenanceStateInMaintenance,
+	"unknown":              AttributeVcenterDatastoreMaintenanceStateUnknown,
+}
+
+// AttributeVcenterHostConnectionState specifies the value vcenter.host.connection.state attribute.
+type AttributeVcenterHostConnectionState int
+
+const (
+	_ AttributeVcenterHostConnectionState = iota
+	AttributeVcenterHostConnectionStateConnected
+	AttributeVcenterHostConnectionStateDisconnected
+	AttributeVcenterHostConnectionStateNotResponding
+	AttributeVcenterHostConnectionStateUnknown
+)
+
+// String returns the string representation of the AttributeVcenterHostConnectionState.
+func (av AttributeVcenterHostConnectionState) String() string {
+	switch av {
+	case AttributeVcenterHostConnectionStateConnected:
+		return "connected"
+	case AttributeVcenterHostConnectionStateDisconnected:
+		return "disconnected"
+	case AttributeVcenterHostConnectionStateNotResponding:
+		return "not_responding"
+	case AttributeVcenterHostConnectionStateUnknown:
+		return "unknown"
+	}
+	return ""
+}
+
+// MapAttributeVcenterHostConnectionState is a helper map of string to AttributeVcenterHostConnectionState attribute value.
+var MapAttributeVcenterHostConnectionState = map[string]AttributeVcenterHostConnectionState{
+	"connected":      AttributeVcenterHostConnectionStateConnected,
+	"disconnected":   AttributeVcenterHostConnectionStateDisconnected,
+	"not_responding": AttributeVcenterHostConnectionStateNotResponding,
+	"unknown":        AttributeVcenterHostConnectionStateUnknown,
+}
+
 // AttributeVMCountPowerState specifies the value vm_count_power_state attribute.
 type AttributeVMCountPowerState int
 
@@ -484,12 +578,28 @@ var MetricsInfo = metricsInfo{
 		Name:       "vcenter.datacenter.vm.count",
 		Attributes: []string{"entity_status", "vm_count_power_state"},
 	},
+	VcenterDatastoreAlarmCount: metricInfo{
+		Name:       "vcenter.datastore.alarm.count",
+		Attributes: []string{"vcenter.alarm.state"},
+	},
 	VcenterDatastoreDiskUsage: metricInfo{
 		Name:       "vcenter.datastore.disk.usage",
 		Attributes: []string{"disk_state"},
 	},
 	VcenterDatastoreDiskUtilization: metricInfo{
 		Name: "vcenter.datastore.disk.utilization",
+	},
+	VcenterDatastoreMaintenanceStatus: metricInfo{
+		Name:       "vcenter.datastore.maintenance.status",
+		Attributes: []string{"vcenter.datastore.maintenance.state"},
+	},
+	VcenterHostAlarmCount: metricInfo{
+		Name:       "vcenter.host.alarm.count",
+		Attributes: []string{"vcenter.alarm.state"},
+	},
+	VcenterHostConnectionStatus: metricInfo{
+		Name:       "vcenter.host.connection.status",
+		Attributes: []string{"vcenter.host.connection.state"},
 	},
 	VcenterHostCPUCapacity: metricInfo{
 		Name: "vcenter.host.cpu.capacity",
@@ -553,6 +663,13 @@ var MetricsInfo = metricsInfo{
 	VcenterHostNetworkUsage: metricInfo{
 		Name:       "vcenter.host.network.usage",
 		Attributes: []string{"object_name"},
+	},
+	VcenterHostPowerStatus: metricInfo{
+		Name:       "vcenter.host.power.status",
+		Attributes: []string{"host_power_state"},
+	},
+	VcenterHostUptime: metricInfo{
+		Name: "vcenter.host.uptime",
 	},
 	VcenterHostVsanCacheHitRate: metricInfo{
 		Name: "vcenter.host.vsan.cache.hit_rate",
@@ -669,6 +786,10 @@ var MetricsInfo = metricsInfo{
 		Name:       "vcenter.vm.network.usage",
 		Attributes: []string{"object_name"},
 	},
+	VcenterVMPowerStatus: metricInfo{
+		Name:       "vcenter.vm.power.status",
+		Attributes: []string{"vm_count_power_state"},
+	},
 	VcenterVMVsanLatencyAvg: metricInfo{
 		Name:       "vcenter.vm.vsan.latency.avg",
 		Attributes: []string{"vsan_latency_type"},
@@ -702,8 +823,12 @@ type metricsInfo struct {
 	VcenterDatacenterHostCount          metricInfo
 	VcenterDatacenterMemoryLimit        metricInfo
 	VcenterDatacenterVMCount            metricInfo
+	VcenterDatastoreAlarmCount          metricInfo
 	VcenterDatastoreDiskUsage           metricInfo
 	VcenterDatastoreDiskUtilization     metricInfo
+	VcenterDatastoreMaintenanceStatus   metricInfo
+	VcenterHostAlarmCount               metricInfo
+	VcenterHostConnectionStatus         metricInfo
 	VcenterHostCPUCapacity              metricInfo
 	VcenterHostCPUReserved              metricInfo
 	VcenterHostCPUUsage                 metricInfo
@@ -722,6 +847,8 @@ type metricsInfo struct {
 	VcenterHostNetworkPacketRate        metricInfo
 	VcenterHostNetworkThroughput        metricInfo
 	VcenterHostNetworkUsage             metricInfo
+	VcenterHostPowerStatus              metricInfo
+	VcenterHostUptime                   metricInfo
 	VcenterHostVsanCacheHitRate         metricInfo
 	VcenterHostVsanCongestions          metricInfo
 	VcenterHostVsanLatencyAvg           metricInfo
@@ -755,6 +882,7 @@ type metricsInfo struct {
 	VcenterVMNetworkPacketRate          metricInfo
 	VcenterVMNetworkThroughput          metricInfo
 	VcenterVMNetworkUsage               metricInfo
+	VcenterVMPowerStatus                metricInfo
 	VcenterVMVsanLatencyAvg             metricInfo
 	VcenterVMVsanOperations             metricInfo
 	VcenterVMVsanThroughput             metricInfo
@@ -2050,6 +2178,97 @@ func newMetricVcenterDatacenterVMCount(cfg VcenterDatacenterVMCountMetricConfig)
 	return m
 }
 
+type metricVcenterDatastoreAlarmCount struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        VcenterDatastoreAlarmCountMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+}
+
+// init fills vcenter.datastore.alarm.count metric with initial data.
+func (m *metricVcenterDatastoreAlarmCount) init() {
+	m.data.SetName("vcenter.datastore.alarm.count")
+	m.data.SetDescription("The number of triggered alarms on the datastore.")
+	m.data.SetUnit("{alarms}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricVcenterDatastoreAlarmCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcenterAlarmStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterDatastoreAlarmCountMetricAttributeKeyVcenterAlarmState) {
+		dp.Attributes().PutStr("vcenter.alarm.state", vcenterAlarmStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatastoreAlarmCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatastoreAlarmCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatastoreAlarmCount(cfg VcenterDatastoreAlarmCountMetricConfig) metricVcenterDatastoreAlarmCount {
+	m := metricVcenterDatastoreAlarmCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterDatastoreDiskUsage struct {
 	data          pmetric.Metric                        // data buffer for generated metric.
 	config        VcenterDatastoreDiskUsageMetricConfig // metric config provided by user.
@@ -2183,6 +2402,279 @@ func (m *metricVcenterDatastoreDiskUtilization) emit(metrics pmetric.MetricSlice
 
 func newMetricVcenterDatastoreDiskUtilization(cfg VcenterDatastoreDiskUtilizationMetricConfig) metricVcenterDatastoreDiskUtilization {
 	m := metricVcenterDatastoreDiskUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterDatastoreMaintenanceStatus struct {
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        VcenterDatastoreMaintenanceStatusMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
+}
+
+// init fills vcenter.datastore.maintenance.status metric with initial data.
+func (m *metricVcenterDatastoreMaintenanceStatus) init() {
+	m.data.SetName("vcenter.datastore.maintenance.status")
+	m.data.SetDescription("The current maintenance status of the datastore.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricVcenterDatastoreMaintenanceStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcenterDatastoreMaintenanceStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterDatastoreMaintenanceStatusMetricAttributeKeyVcenterDatastoreMaintenanceState) {
+		dp.Attributes().PutStr("vcenter.datastore.maintenance.state", vcenterDatastoreMaintenanceStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatastoreMaintenanceStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatastoreMaintenanceStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatastoreMaintenanceStatus(cfg VcenterDatastoreMaintenanceStatusMetricConfig) metricVcenterDatastoreMaintenanceStatus {
+	m := metricVcenterDatastoreMaintenanceStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterHostAlarmCount struct {
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        VcenterHostAlarmCountMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills vcenter.host.alarm.count metric with initial data.
+func (m *metricVcenterHostAlarmCount) init() {
+	m.data.SetName("vcenter.host.alarm.count")
+	m.data.SetDescription("The number of triggered alarms on the host.")
+	m.data.SetUnit("{alarms}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricVcenterHostAlarmCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcenterAlarmStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterHostAlarmCountMetricAttributeKeyVcenterAlarmState) {
+		dp.Attributes().PutStr("vcenter.alarm.state", vcenterAlarmStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterHostAlarmCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterHostAlarmCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterHostAlarmCount(cfg VcenterHostAlarmCountMetricConfig) metricVcenterHostAlarmCount {
+	m := metricVcenterHostAlarmCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterHostConnectionStatus struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        VcenterHostConnectionStatusMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills vcenter.host.connection.status metric with initial data.
+func (m *metricVcenterHostConnectionStatus) init() {
+	m.data.SetName("vcenter.host.connection.status")
+	m.data.SetDescription("The current connection status of the host.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricVcenterHostConnectionStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcenterHostConnectionStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterHostConnectionStatusMetricAttributeKeyVcenterHostConnectionState) {
+		dp.Attributes().PutStr("vcenter.host.connection.state", vcenterHostConnectionStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterHostConnectionStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterHostConnectionStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterHostConnectionStatus(cfg VcenterHostConnectionStatusMetricConfig) metricVcenterHostConnectionStatus {
+	m := metricVcenterHostConnectionStatus{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3474,6 +3966,147 @@ func (m *metricVcenterHostNetworkUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostNetworkUsage(cfg VcenterHostNetworkUsageMetricConfig) metricVcenterHostNetworkUsage {
 	m := metricVcenterHostNetworkUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterHostPowerStatus struct {
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        VcenterHostPowerStatusMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+}
+
+// init fills vcenter.host.power.status metric with initial data.
+func (m *metricVcenterHostPowerStatus) init() {
+	m.data.SetName("vcenter.host.power.status")
+	m.data.SetDescription("The current power state of the host.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricVcenterHostPowerStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostPowerStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterHostPowerStatusMetricAttributeKeyHostPowerState) {
+		dp.Attributes().PutStr("power_state", hostPowerStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterHostPowerStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterHostPowerStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterHostPowerStatus(cfg VcenterHostPowerStatusMetricConfig) metricVcenterHostPowerStatus {
+	m := metricVcenterHostPowerStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterHostUptime struct {
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   VcenterHostUptimeMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.host.uptime metric with initial data.
+func (m *metricVcenterHostUptime) init() {
+	m.data.SetName("vcenter.host.uptime")
+	m.data.SetDescription("Total time elapsed since last operating system boot-up.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricVcenterHostUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterHostUptime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterHostUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterHostUptime(cfg VcenterHostUptimeMetricConfig) metricVcenterHostUptime {
+	m := metricVcenterHostUptime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5815,6 +6448,97 @@ func newMetricVcenterVMNetworkUsage(cfg VcenterVMNetworkUsageMetricConfig) metri
 	return m
 }
 
+type metricVcenterVMPowerStatus struct {
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        VcenterVMPowerStatusMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+}
+
+// init fills vcenter.vm.power.status metric with initial data.
+func (m *metricVcenterVMPowerStatus) init() {
+	m.data.SetName("vcenter.vm.power.status")
+	m.data.SetDescription("The current power state of the virtual machine.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricVcenterVMPowerStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vmCountPowerStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterVMPowerStatusMetricAttributeKeyVMCountPowerState) {
+		dp.Attributes().PutStr("power_state", vmCountPowerStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMPowerStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMPowerStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMPowerStatus(cfg VcenterVMPowerStatusMetricConfig) metricVcenterVMPowerStatus {
+	m := metricVcenterVMPowerStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMVsanLatencyAvg struct {
 	data          pmetric.Metric                      // data buffer for generated metric.
 	config        VcenterVMVsanLatencyAvgMetricConfig // metric config provided by user.
@@ -6110,8 +6834,12 @@ type MetricsBuilder struct {
 	metricVcenterDatacenterHostCount          metricVcenterDatacenterHostCount
 	metricVcenterDatacenterMemoryLimit        metricVcenterDatacenterMemoryLimit
 	metricVcenterDatacenterVMCount            metricVcenterDatacenterVMCount
+	metricVcenterDatastoreAlarmCount          metricVcenterDatastoreAlarmCount
 	metricVcenterDatastoreDiskUsage           metricVcenterDatastoreDiskUsage
 	metricVcenterDatastoreDiskUtilization     metricVcenterDatastoreDiskUtilization
+	metricVcenterDatastoreMaintenanceStatus   metricVcenterDatastoreMaintenanceStatus
+	metricVcenterHostAlarmCount               metricVcenterHostAlarmCount
+	metricVcenterHostConnectionStatus         metricVcenterHostConnectionStatus
 	metricVcenterHostCPUCapacity              metricVcenterHostCPUCapacity
 	metricVcenterHostCPUReserved              metricVcenterHostCPUReserved
 	metricVcenterHostCPUUsage                 metricVcenterHostCPUUsage
@@ -6130,6 +6858,8 @@ type MetricsBuilder struct {
 	metricVcenterHostNetworkPacketRate        metricVcenterHostNetworkPacketRate
 	metricVcenterHostNetworkThroughput        metricVcenterHostNetworkThroughput
 	metricVcenterHostNetworkUsage             metricVcenterHostNetworkUsage
+	metricVcenterHostPowerStatus              metricVcenterHostPowerStatus
+	metricVcenterHostUptime                   metricVcenterHostUptime
 	metricVcenterHostVsanCacheHitRate         metricVcenterHostVsanCacheHitRate
 	metricVcenterHostVsanCongestions          metricVcenterHostVsanCongestions
 	metricVcenterHostVsanLatencyAvg           metricVcenterHostVsanLatencyAvg
@@ -6163,6 +6893,7 @@ type MetricsBuilder struct {
 	metricVcenterVMNetworkPacketRate          metricVcenterVMNetworkPacketRate
 	metricVcenterVMNetworkThroughput          metricVcenterVMNetworkThroughput
 	metricVcenterVMNetworkUsage               metricVcenterVMNetworkUsage
+	metricVcenterVMPowerStatus                metricVcenterVMPowerStatus
 	metricVcenterVMVsanLatencyAvg             metricVcenterVMVsanLatencyAvg
 	metricVcenterVMVsanOperations             metricVcenterVMVsanOperations
 	metricVcenterVMVsanThroughput             metricVcenterVMVsanThroughput
@@ -6209,8 +6940,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterDatacenterHostCount:          newMetricVcenterDatacenterHostCount(mbc.Metrics.VcenterDatacenterHostCount),
 		metricVcenterDatacenterMemoryLimit:        newMetricVcenterDatacenterMemoryLimit(mbc.Metrics.VcenterDatacenterMemoryLimit),
 		metricVcenterDatacenterVMCount:            newMetricVcenterDatacenterVMCount(mbc.Metrics.VcenterDatacenterVMCount),
+		metricVcenterDatastoreAlarmCount:          newMetricVcenterDatastoreAlarmCount(mbc.Metrics.VcenterDatastoreAlarmCount),
 		metricVcenterDatastoreDiskUsage:           newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
 		metricVcenterDatastoreDiskUtilization:     newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
+		metricVcenterDatastoreMaintenanceStatus:   newMetricVcenterDatastoreMaintenanceStatus(mbc.Metrics.VcenterDatastoreMaintenanceStatus),
+		metricVcenterHostAlarmCount:               newMetricVcenterHostAlarmCount(mbc.Metrics.VcenterHostAlarmCount),
+		metricVcenterHostConnectionStatus:         newMetricVcenterHostConnectionStatus(mbc.Metrics.VcenterHostConnectionStatus),
 		metricVcenterHostCPUCapacity:              newMetricVcenterHostCPUCapacity(mbc.Metrics.VcenterHostCPUCapacity),
 		metricVcenterHostCPUReserved:              newMetricVcenterHostCPUReserved(mbc.Metrics.VcenterHostCPUReserved),
 		metricVcenterHostCPUUsage:                 newMetricVcenterHostCPUUsage(mbc.Metrics.VcenterHostCPUUsage),
@@ -6229,6 +6964,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterHostNetworkPacketRate:        newMetricVcenterHostNetworkPacketRate(mbc.Metrics.VcenterHostNetworkPacketRate),
 		metricVcenterHostNetworkThroughput:        newMetricVcenterHostNetworkThroughput(mbc.Metrics.VcenterHostNetworkThroughput),
 		metricVcenterHostNetworkUsage:             newMetricVcenterHostNetworkUsage(mbc.Metrics.VcenterHostNetworkUsage),
+		metricVcenterHostPowerStatus:              newMetricVcenterHostPowerStatus(mbc.Metrics.VcenterHostPowerStatus),
+		metricVcenterHostUptime:                   newMetricVcenterHostUptime(mbc.Metrics.VcenterHostUptime),
 		metricVcenterHostVsanCacheHitRate:         newMetricVcenterHostVsanCacheHitRate(mbc.Metrics.VcenterHostVsanCacheHitRate),
 		metricVcenterHostVsanCongestions:          newMetricVcenterHostVsanCongestions(mbc.Metrics.VcenterHostVsanCongestions),
 		metricVcenterHostVsanLatencyAvg:           newMetricVcenterHostVsanLatencyAvg(mbc.Metrics.VcenterHostVsanLatencyAvg),
@@ -6262,6 +6999,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterVMNetworkPacketRate:          newMetricVcenterVMNetworkPacketRate(mbc.Metrics.VcenterVMNetworkPacketRate),
 		metricVcenterVMNetworkThroughput:          newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
 		metricVcenterVMNetworkUsage:               newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
+		metricVcenterVMPowerStatus:                newMetricVcenterVMPowerStatus(mbc.Metrics.VcenterVMPowerStatus),
 		metricVcenterVMVsanLatencyAvg:             newMetricVcenterVMVsanLatencyAvg(mbc.Metrics.VcenterVMVsanLatencyAvg),
 		metricVcenterVMVsanOperations:             newMetricVcenterVMVsanOperations(mbc.Metrics.VcenterVMVsanOperations),
 		metricVcenterVMVsanThroughput:             newMetricVcenterVMVsanThroughput(mbc.Metrics.VcenterVMVsanThroughput),
@@ -6427,8 +7165,12 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricVcenterDatacenterHostCount.emit(ils.Metrics())
 	mb.metricVcenterDatacenterMemoryLimit.emit(ils.Metrics())
 	mb.metricVcenterDatacenterVMCount.emit(ils.Metrics())
+	mb.metricVcenterDatastoreAlarmCount.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUsage.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUtilization.emit(ils.Metrics())
+	mb.metricVcenterDatastoreMaintenanceStatus.emit(ils.Metrics())
+	mb.metricVcenterHostAlarmCount.emit(ils.Metrics())
+	mb.metricVcenterHostConnectionStatus.emit(ils.Metrics())
 	mb.metricVcenterHostCPUCapacity.emit(ils.Metrics())
 	mb.metricVcenterHostCPUReserved.emit(ils.Metrics())
 	mb.metricVcenterHostCPUUsage.emit(ils.Metrics())
@@ -6447,6 +7189,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricVcenterHostNetworkPacketRate.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkUsage.emit(ils.Metrics())
+	mb.metricVcenterHostPowerStatus.emit(ils.Metrics())
+	mb.metricVcenterHostUptime.emit(ils.Metrics())
 	mb.metricVcenterHostVsanCacheHitRate.emit(ils.Metrics())
 	mb.metricVcenterHostVsanCongestions.emit(ils.Metrics())
 	mb.metricVcenterHostVsanLatencyAvg.emit(ils.Metrics())
@@ -6480,6 +7224,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricVcenterVMNetworkPacketRate.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
+	mb.metricVcenterVMPowerStatus.emit(ils.Metrics())
 	mb.metricVcenterVMVsanLatencyAvg.emit(ils.Metrics())
 	mb.metricVcenterVMVsanOperations.emit(ils.Metrics())
 	mb.metricVcenterVMVsanThroughput.emit(ils.Metrics())
@@ -6604,6 +7349,11 @@ func (mb *MetricsBuilder) RecordVcenterDatacenterVMCountDataPoint(ts pcommon.Tim
 	mb.metricVcenterDatacenterVMCount.recordDataPoint(mb.startTime, ts, val, entityStatusAttributeValue.String(), vmCountPowerStateAttributeValue.String())
 }
 
+// RecordVcenterDatastoreAlarmCountDataPoint adds a data point to vcenter.datastore.alarm.count metric.
+func (mb *MetricsBuilder) RecordVcenterDatastoreAlarmCountDataPoint(ts pcommon.Timestamp, val int64, vcenterAlarmStateAttributeValue AttributeVcenterAlarmState) {
+	mb.metricVcenterDatastoreAlarmCount.recordDataPoint(mb.startTime, ts, val, vcenterAlarmStateAttributeValue.String())
+}
+
 // RecordVcenterDatastoreDiskUsageDataPoint adds a data point to vcenter.datastore.disk.usage metric.
 func (mb *MetricsBuilder) RecordVcenterDatastoreDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
 	mb.metricVcenterDatastoreDiskUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue.String())
@@ -6612,6 +7362,21 @@ func (mb *MetricsBuilder) RecordVcenterDatastoreDiskUsageDataPoint(ts pcommon.Ti
 // RecordVcenterDatastoreDiskUtilizationDataPoint adds a data point to vcenter.datastore.disk.utilization metric.
 func (mb *MetricsBuilder) RecordVcenterDatastoreDiskUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricVcenterDatastoreDiskUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterDatastoreMaintenanceStatusDataPoint adds a data point to vcenter.datastore.maintenance.status metric.
+func (mb *MetricsBuilder) RecordVcenterDatastoreMaintenanceStatusDataPoint(ts pcommon.Timestamp, val int64, vcenterDatastoreMaintenanceStateAttributeValue AttributeVcenterDatastoreMaintenanceState) {
+	mb.metricVcenterDatastoreMaintenanceStatus.recordDataPoint(mb.startTime, ts, val, vcenterDatastoreMaintenanceStateAttributeValue.String())
+}
+
+// RecordVcenterHostAlarmCountDataPoint adds a data point to vcenter.host.alarm.count metric.
+func (mb *MetricsBuilder) RecordVcenterHostAlarmCountDataPoint(ts pcommon.Timestamp, val int64, vcenterAlarmStateAttributeValue AttributeVcenterAlarmState) {
+	mb.metricVcenterHostAlarmCount.recordDataPoint(mb.startTime, ts, val, vcenterAlarmStateAttributeValue.String())
+}
+
+// RecordVcenterHostConnectionStatusDataPoint adds a data point to vcenter.host.connection.status metric.
+func (mb *MetricsBuilder) RecordVcenterHostConnectionStatusDataPoint(ts pcommon.Timestamp, val int64, vcenterHostConnectionStateAttributeValue AttributeVcenterHostConnectionState) {
+	mb.metricVcenterHostConnectionStatus.recordDataPoint(mb.startTime, ts, val, vcenterHostConnectionStateAttributeValue.String())
 }
 
 // RecordVcenterHostCPUCapacityDataPoint adds a data point to vcenter.host.cpu.capacity metric.
@@ -6702,6 +7467,16 @@ func (mb *MetricsBuilder) RecordVcenterHostNetworkThroughputDataPoint(ts pcommon
 // RecordVcenterHostNetworkUsageDataPoint adds a data point to vcenter.host.network.usage metric.
 func (mb *MetricsBuilder) RecordVcenterHostNetworkUsageDataPoint(ts pcommon.Timestamp, val int64, objectNameAttributeValue string) {
 	mb.metricVcenterHostNetworkUsage.recordDataPoint(mb.startTime, ts, val, objectNameAttributeValue)
+}
+
+// RecordVcenterHostPowerStatusDataPoint adds a data point to vcenter.host.power.status metric.
+func (mb *MetricsBuilder) RecordVcenterHostPowerStatusDataPoint(ts pcommon.Timestamp, val int64, hostPowerStateAttributeValue AttributeHostPowerState) {
+	mb.metricVcenterHostPowerStatus.recordDataPoint(mb.startTime, ts, val, hostPowerStateAttributeValue.String())
+}
+
+// RecordVcenterHostUptimeDataPoint adds a data point to vcenter.host.uptime metric.
+func (mb *MetricsBuilder) RecordVcenterHostUptimeDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricVcenterHostUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterHostVsanCacheHitRateDataPoint adds a data point to vcenter.host.vsan.cache.hit_rate metric.
@@ -6867,6 +7642,11 @@ func (mb *MetricsBuilder) RecordVcenterVMNetworkThroughputDataPoint(ts pcommon.T
 // RecordVcenterVMNetworkUsageDataPoint adds a data point to vcenter.vm.network.usage metric.
 func (mb *MetricsBuilder) RecordVcenterVMNetworkUsageDataPoint(ts pcommon.Timestamp, val int64, objectNameAttributeValue string) {
 	mb.metricVcenterVMNetworkUsage.recordDataPoint(mb.startTime, ts, val, objectNameAttributeValue)
+}
+
+// RecordVcenterVMPowerStatusDataPoint adds a data point to vcenter.vm.power.status metric.
+func (mb *MetricsBuilder) RecordVcenterVMPowerStatusDataPoint(ts pcommon.Timestamp, val int64, vmCountPowerStateAttributeValue AttributeVMCountPowerState) {
+	mb.metricVcenterVMPowerStatus.recordDataPoint(mb.startTime, ts, val, vmCountPowerStateAttributeValue.String())
 }
 
 // RecordVcenterVMVsanLatencyAvgDataPoint adds a data point to vcenter.vm.vsan.latency.avg metric.
