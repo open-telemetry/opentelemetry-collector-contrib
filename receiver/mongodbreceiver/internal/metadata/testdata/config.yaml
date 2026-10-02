@@ -5,6 +5,9 @@ all_set:
       enabled: true
     mongodb.active.writes:
       enabled: true
+    mongodb.assert.count:
+      enabled: true
+      attributes: ["mongodb.assert.type"]
     mongodb.cache.operations:
       enabled: true
       attributes: ["type"]
@@ -37,6 +40,9 @@ all_set:
       enabled: true
     mongodb.getmores.rate:
       enabled: true
+    mongodb.global_lock.queue.count:
+      enabled: true
+      attributes: ["mongodb.global_lock.queue.type"]
     mongodb.global_lock.time:
       enabled: true
     mongodb.health:
@@ -130,6 +136,8 @@ all_set:
     mongodb.updates.rate:
       enabled: true
     mongodb.uptime:
+      enabled: true
+    mongodb.write_concern.wait.time:
       enabled: true
     mongodb.wt.concurrent_transaction.ticket.in_use:
       enabled: true
@@ -169,6 +177,9 @@ reaggregate_set:
       enabled: true
     mongodb.active.writes:
       enabled: true
+    mongodb.assert.count:
+      enabled: true
+      attributes: []
     mongodb.cache.operations:
       enabled: true
       attributes: []
@@ -201,6 +212,9 @@ reaggregate_set:
       enabled: true
     mongodb.getmores.rate:
       enabled: true
+    mongodb.global_lock.queue.count:
+      enabled: true
+      attributes: []
     mongodb.global_lock.time:
       enabled: true
     mongodb.health:
@@ -295,6 +309,8 @@ reaggregate_set:
       enabled: true
     mongodb.uptime:
       enabled: true
+    mongodb.write_concern.wait.time:
+      enabled: true
     mongodb.wt.concurrent_transaction.ticket.in_use:
       enabled: true
       attributes: []
@@ -333,6 +349,9 @@ none_set:
       enabled: false
     mongodb.active.writes:
       enabled: false
+    mongodb.assert.count:
+      enabled: false
+      attributes: ["mongodb.assert.type"]
     mongodb.cache.operations:
       enabled: false
       attributes: ["type"]
@@ -365,6 +384,9 @@ none_set:
       enabled: false
     mongodb.getmores.rate:
       enabled: false
+    mongodb.global_lock.queue.count:
+      enabled: false
+      attributes: ["mongodb.global_lock.queue.type"]
     mongodb.global_lock.time:
       enabled: false
     mongodb.health:
@@ -458,6 +480,8 @@ none_set:
     mongodb.updates.rate:
       enabled: false
     mongodb.uptime:
+      enabled: false
+    mongodb.write_concern.wait.time:
       enabled: false
     mongodb.wt.concurrent_transaction.ticket.in_use:
       enabled: false

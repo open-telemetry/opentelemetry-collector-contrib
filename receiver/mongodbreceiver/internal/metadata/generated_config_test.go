@@ -33,6 +33,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbActiveWrites: MongodbActiveWritesMetricConfig{
 						Enabled: true,
 					},
+					MongodbAssertCount: MongodbAssertCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbAssertCountMetricAttributeKey{MongodbAssertCountMetricAttributeKeyMongodbAssertType},
+					},
 					MongodbCacheOperations: MongodbCacheOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -83,6 +88,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					MongodbGetmoresRate: MongodbGetmoresRateMetricConfig{
 						Enabled: true,
+					},
+					MongodbGlobalLockQueueCount: MongodbGlobalLockQueueCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbGlobalLockQueueCountMetricAttributeKey{MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType},
 					},
 					MongodbGlobalLockTime: MongodbGlobalLockTimeMetricConfig{
 						Enabled: true,
@@ -232,6 +242,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					MongodbUptime: MongodbUptimeMetricConfig{
+						Enabled: true,
+					},
+					MongodbWriteConcernWaitTime: MongodbWriteConcernWaitTimeMetricConfig{
 						Enabled: true,
 					},
 					MongodbWtConcurrentTransactionTicketInUse: MongodbWtConcurrentTransactionTicketInUseMetricConfig{
@@ -277,6 +290,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbActiveWrites: MongodbActiveWritesMetricConfig{
 						Enabled: false,
 					},
+					MongodbAssertCount: MongodbAssertCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbAssertCountMetricAttributeKey{MongodbAssertCountMetricAttributeKeyMongodbAssertType},
+					},
 					MongodbCacheOperations: MongodbCacheOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -327,6 +345,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					MongodbGetmoresRate: MongodbGetmoresRateMetricConfig{
 						Enabled: false,
+					},
+					MongodbGlobalLockQueueCount: MongodbGlobalLockQueueCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbGlobalLockQueueCountMetricAttributeKey{MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType},
 					},
 					MongodbGlobalLockTime: MongodbGlobalLockTimeMetricConfig{
 						Enabled: false,
@@ -478,6 +501,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbUptime: MongodbUptimeMetricConfig{
 						Enabled: false,
 					},
+					MongodbWriteConcernWaitTime: MongodbWriteConcernWaitTimeMetricConfig{
+						Enabled: false,
+					},
 					MongodbWtConcurrentTransactionTicketInUse: MongodbWtConcurrentTransactionTicketInUseMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -515,10 +541,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbOplogLimitMetricConfig{}, MongodbOplogUsageMetricConfig{}, MongodbOplogWindowMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbReplicaStatusMetricConfig{}, MongodbReplicaSetHeadroomMetricConfig{}, MongodbReplicaSetLagMetricConfig{}, MongodbReplicaSetMemberCountMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWtConcurrentTransactionTicketInUseMetricConfig{}, MongodbWtFsyncCountMetricConfig{}, MongodbWtLogOperationCountMetricConfig{}, MongodbWtLogSyncTimeMetricConfig{}, MongodbWtLogWriteMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbAssertCountMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockQueueCountMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbOplogLimitMetricConfig{}, MongodbOplogUsageMetricConfig{}, MongodbOplogWindowMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbReplicaStatusMetricConfig{}, MongodbReplicaSetHeadroomMetricConfig{}, MongodbReplicaSetLagMetricConfig{}, MongodbReplicaSetMemberCountMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWriteConcernWaitTimeMetricConfig{}, MongodbWtConcurrentTransactionTicketInUseMetricConfig{}, MongodbWtFsyncCountMetricConfig{}, MongodbWtLogOperationCountMetricConfig{}, MongodbWtLogSyncTimeMetricConfig{}, MongodbWtLogWriteMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestMongodbAssertCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbAssertCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbAssertCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.assert.count doesn't have an attribute invalid, valid attributes: [mongodb.assert.type]")
+
+	cfg = DefaultMetricsConfig().MongodbAssertCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func TestMongodbCacheOperationsMetricsConfig_Validate(t *testing.T) {
@@ -589,6 +627,18 @@ func TestMongodbExtentCountMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric mongodb.extent.count doesn't have an attribute invalid, valid attributes: [db.namespace]")
 
 	cfg = DefaultMetricsConfig().MongodbExtentCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMongodbGlobalLockQueueCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MongodbGlobalLockQueueCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MongodbGlobalLockQueueCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.global_lock.queue.count doesn't have an attribute invalid, valid attributes: [mongodb.global_lock.queue.type]")
+
+	cfg = DefaultMetricsConfig().MongodbGlobalLockQueueCount
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
