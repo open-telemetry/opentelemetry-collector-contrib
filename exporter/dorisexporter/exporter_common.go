@@ -149,7 +149,7 @@ const (
 // partitions asynchronously after CREATE TABLE returns; creating a
 // materialized view before that is finished can corrupt Doris state.
 func waitForPartitionsReady(ctx context.Context, conn *sql.DB, logger *zap.Logger, database, table string, expected int) error {
-	query := fmt.Sprintf("SHOW PARTITIONS FROM `%s`.`%s`", database, table)
+	query := fmt.Sprintf("SHOW PARTITIONS FROM %#q.%#q", database, table)
 	deadline := time.Now().Add(partitionsReadyTimeout)
 
 	for {
@@ -202,7 +202,7 @@ const (
 // MATERIALIZED VIEW immediately and builds it in the background; a second view on
 // the same table can only be created once the first one is done.
 func waitForMaterializedViewReady(ctx context.Context, conn *sql.DB, logger *zap.Logger, database, table, view string) error {
-	query := fmt.Sprintf("SHOW ALTER TABLE MATERIALIZED VIEW FROM `%s` WHERE TableName = '%s'", database, table)
+	query := fmt.Sprintf("SHOW ALTER TABLE MATERIALIZED VIEW FROM %#q WHERE TableName = '%s'", database, table)
 	deadline := time.Now().Add(mvReadyTimeout)
 
 	for {

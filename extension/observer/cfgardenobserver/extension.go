@@ -79,7 +79,7 @@ func (g *cfGardenObserver) SyncApps() error {
 		info := containers[i]
 		appID, ok := info.Properties[propertiesAppIDKey]
 		if !ok {
-			return fmt.Errorf("container properties do not have a `%s` field, required to fetch application labels", propertiesAppIDKey)
+			return fmt.Errorf("container properties do not have a %#q field, required to fetch application labels", propertiesAppIDKey)
 		}
 
 		if _, ok := g.apps[appID]; ok {
@@ -99,7 +99,7 @@ func (g *cfGardenObserver) SyncApps() error {
 func (g *cfGardenObserver) App(info garden.ContainerInfo) (*resource.App, error) {
 	appID, ok := info.Properties[propertiesAppIDKey]
 	if !ok {
-		return nil, fmt.Errorf("container properties do not have a `%s` field, required to fetch application labels", propertiesAppIDKey)
+		return nil, fmt.Errorf("container properties do not have a %#q field, required to fetch application labels", propertiesAppIDKey)
 	}
 
 	g.appMu.Lock()
@@ -279,7 +279,7 @@ func (g *cfGardenObserver) containerLabels(info garden.ContainerInfo, app *resou
 func parseTags(info garden.ContainerInfo) (map[string]string, error) {
 	logConfig, ok := info.Properties[propertiesLogConfigKey]
 	if !ok {
-		return nil, fmt.Errorf("container properties do not have a `%s` field", propertiesLogConfigKey)
+		return nil, fmt.Errorf("container properties do not have a %#q field", propertiesLogConfigKey)
 	}
 
 	var data map[string]any

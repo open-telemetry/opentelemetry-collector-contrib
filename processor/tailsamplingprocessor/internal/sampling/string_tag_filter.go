@@ -162,7 +162,7 @@ func addFilters(exprs []string) ([]*regexp.Regexp, error) {
 	for _, entry := range exprs {
 		rule, err := regexp.Compile(entry)
 		if err != nil {
-			return nil, fmt.Errorf("invalid regex `%s`: %w", entry, err)
+			return nil, fmt.Errorf("invalid regex %#q: %w", entry, err)
 		}
 		list = append(list, rule)
 	}

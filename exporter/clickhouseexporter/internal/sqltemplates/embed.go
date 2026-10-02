@@ -13,7 +13,7 @@ import (
 var templateFuncs = template.FuncMap{
 	// ident wraps a ClickHouse identifier in backticks, escaping any embedded backticks.
 	"ident": func(s string) string {
-		return fmt.Sprintf("`%s`", strings.ReplaceAll(s, "`", "\\`"))
+		return fmt.Sprintf("%#q", strings.ReplaceAll(s, "`", "\\`"))
 	},
 }
 

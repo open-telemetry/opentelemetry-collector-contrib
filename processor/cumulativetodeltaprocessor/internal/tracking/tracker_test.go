@@ -679,7 +679,7 @@ func Test_metricTracker_sweeper(t *testing.T) {
 		assert.LessOrEqual(t, tr.maxStaleness, time.Since(staleBefore.AsTime()))
 	}
 	cancel()
-	for range sweepEvent { //nolint:revive
+	for range sweepEvent {
 	}
 	assert.True(t, closed.Load(), "Sweeper did not terminate.")
 }

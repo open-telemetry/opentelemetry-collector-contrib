@@ -391,7 +391,7 @@ Examples:
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
 `target` is a path expression to a `pcommon.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
-`replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
+`replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one %#q format specifier as shown in the example below. No other format specifiers are supported.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
@@ -412,7 +412,7 @@ The `replace_all_patterns` function replaces any segments in a string value or k
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one %#q format specifier as shown in the example below. No other format specifiers are supported.
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching regex pattern with the hash value of `replacement`.
 
@@ -435,7 +435,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
 `target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
-`replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
+`replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one %#q format specifier as shown in the example below. No other format specifiers are supported.
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 
@@ -456,7 +456,7 @@ The `replace_pattern` function allows replacing all string sections that match a
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one %#q format specifier as shown in the example below. No other format specifiers are supported
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces a matching regex pattern with the hash value of `replacement`.
 
@@ -1099,7 +1099,7 @@ If either `time` or `format` are nil, an error is returned. The parser used is t
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
-|`%s` | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
+|%#q | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
 |`%i` | Timezone as +/-HH | -07 |
@@ -2502,7 +2502,7 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
-|`%s` | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
+|%#q | Nanosecond as a zero-padded number | 000000000, ..., 999999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
 |`%i` | Timezone as +/-HH | -07 |

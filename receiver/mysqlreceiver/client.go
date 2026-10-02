@@ -1184,7 +1184,7 @@ func (c *mySQLClient) explainQuery(digestText, sampleStatement, schema, digest s
 	defer conn.Close()
 
 	if schema != "" {
-		if _, err = conn.ExecContext(ctx, fmt.Sprintf("/* otel-collector-ignore */ USE `%s`;", strings.ReplaceAll(schema, "`", "``"))); err != nil {
+		if _, err = conn.ExecContext(ctx, fmt.Sprintf("/* otel-collector-ignore */ USE %#q;", strings.ReplaceAll(schema, "`", "``"))); err != nil {
 			logger.Warn(fmt.Sprintf("unable to use schema: %s", schema), zap.String("digest", digest), zap.Error(err))
 			return ""
 		}
