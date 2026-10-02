@@ -229,6 +229,9 @@ func TestMetricsBuilder(t *testing.T) {
 			ebK8sService.RecordK8sServiceEndpointCountDataPoint(ts, 1, AttributeK8sServiceEndpointAddressTypeIPv4, AttributeK8sServiceEndpointConditionReady, "k8s.service.endpoint.zone-val")
 			if tt.name == "reaggregate_set" {
 				ebK8sService.RecordK8sServiceEndpointCountDataPoint(ts, 3, AttributeK8sServiceEndpointAddressTypeIPv6, AttributeK8sServiceEndpointConditionServing, "k8s.service.endpoint.zone-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				ebK8sService.RecordK8sServiceEndpointCountDataPoint(ts+1, 3, AttributeK8sServiceEndpointAddressTypeIPv6, AttributeK8sServiceEndpointConditionServing, "k8s.service.endpoint.zone-val-2")
+				assert.Equal(t, 2, mb.metricK8sServiceEndpointCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -253,12 +256,18 @@ func TestMetricsBuilder(t *testing.T) {
 			ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
 			if tt.name == "reaggregate_set" {
 				ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 3, "k8s.namespace.name-val-2", "resource-val")
+				// a different timestamp is a different key: must not merge with the above.
+				ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts+1, 3, "k8s.namespace.name-val-2", "resource-val")
+				assert.Equal(t, 2, mb.metricOpenshiftAppliedclusterquotaLimit.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
 			if tt.name == "reaggregate_set" {
 				ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 3, "k8s.namespace.name-val-2", "resource-val")
+				// a different timestamp is a different key: must not merge with the above.
+				ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts+1, 3, "k8s.namespace.name-val-2", "resource-val")
+				assert.Equal(t, 2, mb.metricOpenshiftAppliedclusterquotaUsed.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -946,7 +955,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.service.endpoint.count"], "Found a duplicate in the metrics slice: k8s.service.endpoint.count")
 						validatedMetrics["k8s.service.endpoint.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of endpoints for a service, broken down by condition, address type, and zone.", mi.Description())
 						assert.Equal(t, "{endpoint}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1067,7 +1078,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["openshift.appliedclusterquota.limit"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.limit")
 						validatedMetrics["openshift.appliedclusterquota.limit"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The upper limit for a particular resource in a specific namespace.", mi.Description())
 						assert.Equal(t, "{resource}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1112,7 +1125,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["openshift.appliedclusterquota.used"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.used")
 						validatedMetrics["openshift.appliedclusterquota.used"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The usage for a particular resource in a specific namespace.", mi.Description())
 						assert.Equal(t, "{resource}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
