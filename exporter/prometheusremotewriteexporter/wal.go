@@ -417,6 +417,30 @@ func (prweWAL *prweWAL) syncAndTruncateFront() error {
 	return nil
 }
 
+// allNonRetryable reports whether every error in err is a rejection by the
+// remote endpoint that retrying cannot fix. The export path aggregates one
+// error per write request with multierr, so a single retryable failure
+// anywhere means the batch must be kept and retried as a whole.
+func allNonRetryable(err error) bool {
+	if err == nil {
+		return false
+	}
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		errs := joined.Unwrap()
+		if len(errs) == 0 {
+			return false
+		}
+		for _, e := range errs {
+			if !allNonRetryable(e) {
+				return false
+			}
+		}
+		return true
+	}
+	var nre *nonRetryableStatusError
+	return errors.As(err, &nre)
+}
+
 func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*prompb.WriteRequest) error {
 	if len(reqL) == 0 {
 		return nil
@@ -426,7 +450,18 @@ func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*
 	}
 
 	if errL := prweWAL.exportSink(ctx, reqL); errL != nil {
-		return errL
+		if !allNonRetryable(errL) {
+			// Keep the batch so a recovered endpoint can still receive it.
+			return errL
+		}
+		// The endpoint will reject this payload again, so truncate past it;
+		// otherwise it blocks the head of the WAL and nothing drains behind it.
+		if logger, lErr := loggerFromContext(ctx); lErr == nil {
+			logger.Warn("dropping write-ahead log batch rejected by the remote endpoint",
+				zap.Int("request_count", len(reqL)),
+				zap.Error(errL),
+			)
+		}
 	}
 	if err := prweWAL.syncAndTruncateFront(); err != nil {
 		return err
