@@ -334,6 +334,62 @@ func BenchmarkLateSpan_CacheHit(b *testing.B) {
 	}
 }
 
+// Use fresh input for every iteration: ConsumeTraces moves spans out of it.
+// Distinct scope names keep the output shape equal before and after the fix.
+func BenchmarkConsumeTraces_ScopeGroups(b *testing.B) {
+	for _, path := range []string{"pending", "sampled_cache"} {
+		for _, scopes := range []int{1, 8} {
+			b.Run(fmt.Sprintf("%s/%d_scopes", path, scopes), func(b *testing.B) {
+				p := newBenchProcessor(b, benchConfig(benchCatchAllRules()))
+				template := ptrace.NewTraces()
+				rs := template.ResourceSpans().AppendEmpty()
+				rs.Resource().Attributes().PutStr("service.name", "checkout")
+				for scope := range scopes {
+					ss := rs.ScopeSpans().AppendEmpty()
+					ss.Scope().SetName(fmt.Sprintf("lib-%d", scope))
+					ss.Scope().SetVersion("1")
+					ss.Scope().Attributes().PutInt("scope", int64(scope))
+					ss.SetSchemaUrl("schema")
+					for i := range 8 {
+						span := ss.Spans().AppendEmpty()
+						span.SetTraceID(benchTraceID(uint64(i%4 + 1)))
+						span.SetSpanID(pcommon.SpanID{byte(scope + 1), byte(i + 1)})
+						span.SetParentSpanID(pcommon.SpanID{255})
+					}
+				}
+				if path == "sampled_cache" {
+					for i := uint64(1); i <= 4; i++ {
+						p.cache.recordSampled(benchTraceID(i), cachedDecision{ruleName: "default", threshold: sampling.AlwaysSampleThreshold})
+					}
+				} else {
+					seed := ptrace.NewTraces()
+					template.CopyTo(seed)
+					if err := p.ConsumeTraces(b.Context(), seed); err != nil {
+						b.Fatal(err)
+					}
+				}
+				b.ReportAllocs()
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					b.StopTimer()
+					input := ptrace.NewTraces()
+					template.CopyTo(input)
+					p.mu.Lock()
+					for _, pt := range p.traces {
+						pt.spans = nil
+						pt.spanCount = 0
+					}
+					p.mu.Unlock()
+					b.StartTimer()
+					if err := p.ConsumeTraces(b.Context(), input); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		}
+	}
+}
+
 // BenchmarkMemory_PendingTraces reports the retained heap per buffered pending
 // trace (10 spans each), the number capacity planning cares about when sizing
 // num_traces. The ns/op number is not meaningful here; read retained_B/trace.
