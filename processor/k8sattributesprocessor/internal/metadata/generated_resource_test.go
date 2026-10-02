@@ -31,6 +31,9 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
+			rb.SetK8sOwnerKind("k8s.owner.kind-val")
+			rb.SetK8sOwnerName("k8s.owner.name-val")
+			rb.SetK8sOwnerUID("k8s.owner.uid-val")
 			rb.SetK8sPodHostname("k8s.pod.hostname-val")
 			rb.SetK8sPodIP("k8s.pod.ip-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
@@ -52,7 +55,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 31, res.Attributes().Len())
+				assert.Equal(t, 34, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -148,6 +151,21 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "k8s.node.uid-val", k8sNodeUIDAttrVal.Str())
+			}
+			k8sOwnerKindAttrVal, ok := res.Attributes().Get("k8s.owner.kind")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.owner.kind-val", k8sOwnerKindAttrVal.Str())
+			}
+			k8sOwnerNameAttrVal, ok := res.Attributes().Get("k8s.owner.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.owner.name-val", k8sOwnerNameAttrVal.Str())
+			}
+			k8sOwnerUIDAttrVal, ok := res.Attributes().Get("k8s.owner.uid")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.owner.uid-val", k8sOwnerUIDAttrVal.Str())
 			}
 			k8sPodHostnameAttrVal, ok := res.Attributes().Get("k8s.pod.hostname")
 			assert.Equal(t, tt == "all_set", ok)
