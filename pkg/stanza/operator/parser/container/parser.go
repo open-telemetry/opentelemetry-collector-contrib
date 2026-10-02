@@ -386,6 +386,7 @@ func parseContainerd(value any) (any, error) {
 	return m, nil
 }
 
+// parseContainerdInto parses a raw containerd CRI log line into m without allocating.
 func parseContainerdInto(m map[string]any, raw string) error {
 	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok || !isContainerdTimestamp(timePart) {
@@ -410,6 +411,8 @@ func parseContainerdInto(m map[string]any, raw string) error {
 	return nil
 }
 
+// parseCRIO parses a CRI-O format log line into m.
+// Mirrors ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
 func parseCRIO(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
@@ -427,6 +430,7 @@ func parseCRIO(value any) (any, error) {
 	return m, nil
 }
 
+// parseCRIOInto parses a raw CRI-O log line into m without allocating.
 func parseCRIOInto(m map[string]any, raw string) error {
 	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok {
@@ -655,6 +659,7 @@ func parseLogPath(raw string) (map[string]any, bool) {
 	return m, true
 }
 
+// parseLogPathInto parses a Kubernetes pod log file path into m without allocating.
 func parseLogPathInto(m map[string]any, raw string) bool {
 	base, ok := stripLogSuffix(raw)
 	if !ok {
@@ -736,7 +741,7 @@ func isValidPodOrNamespace(s string) bool {
 	return true
 }
 
-// isValidContainerName matches [^\._]+ from the regex — any char except backslash, dot, and underscore.
+// isValidContainerName matches [^\._]+ from the regex — any char except dot and underscore, one or more.
 func isValidContainerName(s string) bool {
 	if s == "" {
 		return false
