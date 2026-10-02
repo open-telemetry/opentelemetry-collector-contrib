@@ -1893,9 +1893,13 @@ func TestParseContainerdFields(t *testing.T) {
 			wantOK: false,
 		},
 		{
-			name:   "no trailing Z on timestamp",
-			input:  "2024-01-15T10:30:00.000+00:00 stdout F message",
-			wantOK: false,
+			name:       "timezone offset timestamp",
+			input:      "2024-01-15T10:30:00.000+00:00 stdout F message",
+			wantOK:     true,
+			wantTime:   "2024-01-15T10:30:00.000+00:00",
+			wantStream: "stdout",
+			wantLogtag: "F",
+			wantLog:    "message",
 		},
 		{
 			name:   "wrong type",

@@ -310,10 +310,36 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 	return crioFormat, nil
 }
 
-// parseContainerd parses containerd-format Kubernetes log fields without regex.
-// The expected format is: <time> <stream> <logtag> <log>
-//
-// Mirrors ^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
+// isContainerdTimestamp reports whether s matches [^ Z]+(?:Z|[+-]\d{2}:\d{2}).
+func isContainerdTimestamp(s string) bool {
+	if s == "" {
+		return false
+	}
+	var prefix string
+	if strings.HasSuffix(s, "Z") {
+		prefix = s[:len(s)-1]
+	} else {
+		// timezone offset [+-]\d{2}:\d{2} — last 6 chars
+		if len(s) < 7 {
+			return false
+		}
+		off := s[len(s)-6:]
+		if (off[0] != '+' && off[0] != '-') || off[3] != ':' {
+			return false
+		}
+		for _, i := range []int{1, 2, 4, 5} {
+			if off[i] < '0' || off[i] > '9' {
+				return false
+			}
+		}
+		prefix = s[:len(s)-6]
+	}
+	// prefix must be [^ Z]+ — at least one char, no spaces or Z
+	return len(prefix) >= 1 && !strings.ContainsAny(prefix, " Z")
+}
+
+// parseContainerd parses a containerd-format CRI log line into m.
+// Mirrors ^(?P<time>[^ Z]+(?:Z|[+-]\d{2}:\d{2})) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
 func parseContainerd(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
@@ -321,12 +347,8 @@ func parseContainerd(value any) (any, error) {
 	}
 
 	timePart, rest, ok := strings.Cut(raw, " ")
-	if !ok || !strings.HasSuffix(timePart, "Z") {
-		return nil, errors.New("could not parse containerd fields")
-	}
-	// [^ ^Z]+Z — requires at least one non-Z char before the trailing Z
-	if len(timePart) < 2 || strings.ContainsAny(timePart[:len(timePart)-1], " ^Z") {
-		return nil, errors.New("could not parse containerd fields")
+	if !ok || !isContainerdTimestamp(timePart) {
+		return errors.New("could not parse containerd fields")
 	}
 
 	stream, rest, ok := strings.Cut(rest, " ")
