@@ -17,8 +17,8 @@ type metricsRouter struct {
 	*baseFailoverRouter[consumer.Metrics]
 }
 
-func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config) (*metricsRouter, error) {
-	failover, err := newBaseFailoverRouter(provider, cfg)
+func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config, set connector.Settings) (*metricsRouter, error) {
+	failover, err := newBaseFailoverRouter(provider, cfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func newMetricsToMetrics(set connector.Settings, cfg component.Config, metrics c
 		return nil, errors.New("consumer is not of type MetricsRouter")
 	}
 
-	failover, err := newMetricsRouter(mr.Consumer, config)
+	failover, err := newMetricsRouter(mr.Consumer, config, set)
 	if err != nil {
 		return nil, err
 	}

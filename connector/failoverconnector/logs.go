@@ -17,8 +17,8 @@ type logsRouter struct {
 	*baseFailoverRouter[consumer.Logs]
 }
 
-func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config) (*logsRouter, error) {
-	failover, err := newBaseFailoverRouter(provider, cfg)
+func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config, set connector.Settings) (*logsRouter, error) {
+	failover, err := newBaseFailoverRouter(provider, cfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func newLogsToLogs(set connector.Settings, cfg component.Config, logs consumer.L
 		return nil, errors.New("consumer is not of type LogsRouter")
 	}
 
-	failover, err := newLogsRouter(lr.Consumer, config)
+	failover, err := newLogsRouter(lr.Consumer, config, set)
 	if err != nil {
 		return nil, err
 	}
