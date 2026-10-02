@@ -485,7 +485,8 @@ func TestTransform(t *testing.T) {
 			NodeName: "node-1",
 			Containers: []corev1.Container{
 				{
-					Name: "my-failing-container",
+					Name:  "my-failing-container",
+					Image: "redis:latest",
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
@@ -498,7 +499,8 @@ func TestTransform(t *testing.T) {
 					},
 				},
 				{
-					Name: "my-container",
+					Name:  "my-container",
+					Image: "nginx:latest",
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
