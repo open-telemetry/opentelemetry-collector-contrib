@@ -86,8 +86,9 @@ func TestReadStaticFile(t *testing.T) {
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
-
-	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.BuildInfo.Version = "v0.1.0"
+	rcvr, err := f.CreateLogs(t.Context(), set, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -110,7 +111,7 @@ func TestReadStaticFile(t *testing.T) {
 	queueEntry("Something bad happened!", entry.Error)
 	queueEntry("Some details...", entry.Debug)
 
-	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries))
+	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries, metadata.ScopeName, set.BuildInfo.Version))
 
 	dir, err := os.Getwd()
 	require.NoError(t, err)

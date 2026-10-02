@@ -7,9 +7,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.162.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component/componenttest v0.162.0
-	go.opentelemetry.io/collector/pdata v1.68.0
-	go.opentelemetry.io/collector/pdata/xpdata v0.162.0
+	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/pdata v1.68.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20261002061526-adaf75eebce7
 	go.uber.org/goleak v1.3.0
 )
 
@@ -39,9 +39,9 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.68.0 // indirect
-	go.opentelemetry.io/collector/component v1.68.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.68.0 // indirect
+	go.opentelemetry.io/collector/client v1.68.1-0.20261002061526-adaf75eebce7 // indirect
+	go.opentelemetry.io/collector/component v1.68.1-0.20261002061526-adaf75eebce7 // indirect
+	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
