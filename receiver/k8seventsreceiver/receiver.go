@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -190,9 +190,9 @@ func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 func (kr *k8seventsReceiver) startWatchers() {
 	kr.initDedupCache()
 
-	// Events GVR (GroupVersionResource)
+	// Events GVR (GroupVersionResource) for events.k8s.io/v1 (stable since k8s 1.25).
 	eventsGVR := schema.GroupVersionResource{
-		Group:    "",
+		Group:    "events.k8s.io",
 		Version:  "v1",
 		Resource: "events",
 	}
@@ -224,8 +224,8 @@ func (kr *k8seventsReceiver) startWatchers() {
 				return
 			}
 
-			// Convert unstructured to corev1.Event
-			ev := &corev1.Event{}
+			// Convert unstructured to eventsv1.Event (events.k8s.io/v1)
+			ev := &eventsv1.Event{}
 			err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, ev)
 			if err != nil {
 				kr.settings.Logger.Error("Failed to convert unstructured object to Event",
@@ -253,7 +253,7 @@ func (kr *k8seventsReceiver) startWatchers() {
 
 // handleEvent always emits ADDED; MODIFIED is gated by dedup_interval.
 // The dedup cache is seeded lazily on the first MODIFIED for a UID.
-func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event, watchType apiWatch.EventType) {
+func (kr *k8seventsReceiver) handleEvent(ev *eventsv1.Event, watchType apiWatch.EventType) {
 	if !kr.allowEvent(ev) {
 		return
 	}
@@ -286,7 +286,7 @@ func (kr *k8seventsReceiver) initDedupCache() {
 	kr.dedupCache.Start()
 }
 
-func (kr *k8seventsReceiver) shouldEmitModified(ev *corev1.Event) bool {
+func (kr *k8seventsReceiver) shouldEmitModified(ev *eventsv1.Event) bool {
 	interval := kr.config.DedupInterval
 	if interval == 0 {
 		return true
@@ -310,11 +310,10 @@ func (kr *k8seventsReceiver) shouldEmitModified(ev *corev1.Event) bool {
 	return true
 }
 
-// Allow events with eventTimestamp(EventTime/LastTimestamp/FirstTimestamp)
-// not older than the receiver start time so that
+// Allow events with eventTimestamp not older than the receiver start time so that
 // event flood can be avoided upon startup.
-func (kr *k8seventsReceiver) allowEvent(ev *corev1.Event) bool {
-	eventTimestamp := k8sinventory.GetEventTimestamp(ev)
+func (kr *k8seventsReceiver) allowEvent(ev *eventsv1.Event) bool {
+	eventTimestamp := getEventTimestamp(ev)
 	return !eventTimestamp.Before(kr.startTime)
 }
 
