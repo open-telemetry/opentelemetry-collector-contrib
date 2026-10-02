@@ -1,4 +1,5 @@
-type: tencentcloud_logservice
+type: tencent_cloud_log_service
+deprecated_type: tencentcloud_logservice
 display_name: TencentCloud LogService Exporter
 
 status:
