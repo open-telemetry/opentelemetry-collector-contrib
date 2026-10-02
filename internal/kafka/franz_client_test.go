@@ -812,15 +812,6 @@ func TestConfigureKgoKerberos(t *testing.T) {
 	}
 }
 
-func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER(t *testing.T) {
-	opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
-		Mechanism: AWSMSKIAMOAUTHBEARER,
-		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
-	}, componenttest.NewNopHost())
-	require.NoError(t, err)
-	require.NotNil(t, opt)
-}
-
 func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
 	var loads, retrievals atomic.Int32
 	orig := loadAWSCredentialsProvider
