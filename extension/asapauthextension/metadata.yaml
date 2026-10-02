@@ -1,5 +1,6 @@
 display_name: ASAP Client Authentication Extension
-type: asapclient
+type: asap_client
+deprecated_type: asapclient
 
 description: |
   This extension provides [Atlassian Service Authentication Protocol](https://s2sauth.bitbucket.io/) (ASAP) client 
