@@ -414,7 +414,7 @@ func TestHistogramExemplarsAttachToLabelledSeries(t *testing.T) {
 	// A histogram carrying an ordinary label must still find its own exemplars.
 	prwReceiver := setupMetricsReceiver(t)
 
-	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
 		Symbols: exemplarSymbols,
 		Timeseries: []writev2.TimeSeries{
 			{
@@ -426,6 +426,7 @@ func TestHistogramExemplarsAttachToLabelledSeries(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	assert.Equal(t, 1, stats.Exemplars)
 
 	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
 		ExponentialHistogram().DataPoints().At(0)
@@ -480,11 +481,12 @@ func TestHistogramExemplarsAttachToTheirOwnDataPoint(t *testing.T) {
 				}
 			}
 
-			metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
 				Symbols:    exemplarSymbols,
 				Timeseries: []writev2.TimeSeries{series(8, nil), series(9, theExemplar())},
 			})
 			require.NoError(t, err)
+			assert.Equal(t, 1, stats.Exemplars)
 
 			counts := tc.byRegion(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
 			assert.Equal(t, 1, counts["us-west"], "the exemplar belongs to the series that sent it")
@@ -524,11 +526,12 @@ func TestHistogramExemplarsAreAttachedOnce(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			prwReceiver := setupMetricsReceiver(t)
 
-			metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
 				Symbols:    exemplarSymbols,
 				Timeseries: tc.timeseries,
 			})
 			require.NoError(t, err)
+			assert.Equal(t, 1, stats.Exemplars)
 
 			dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
 				ExponentialHistogram().DataPoints()
@@ -556,7 +559,7 @@ func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) 
 		}
 	}
 
-	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
 		Symbols: exemplarSymbols,
 		Timeseries: []writev2.TimeSeries{
 			series(8, []int64{1, 1}, nil),
@@ -565,6 +568,7 @@ func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) 
 		},
 	})
 	require.NoError(t, err)
+	assert.Equal(t, 1, stats.Exemplars, "counted when the request is parsed, before the histogram is refused")
 
 	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
 		ExponentialHistogram().DataPoints()
