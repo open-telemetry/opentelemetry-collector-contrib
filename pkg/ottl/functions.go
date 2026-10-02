@@ -359,7 +359,9 @@ func (p *parseContext[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	if !ok {
 		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
 	}
-	p.recordExperimentalFunc(f)
+	if err := p.recordExperimentalFunc(f); err != nil {
+		return Expr[K]{}, err
+	}
 	defaultArgs := f.CreateDefaultArguments()
 	var args Arguments
 
@@ -462,7 +464,10 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value, allowDynam
 			if !ok {
 				return fmt.Errorf("undefined function %s", name)
 			}
-			p.recordExperimentalFunc(f)
+			err = p.recordExperimentalFunc(f)
+			if err != nil {
+				return err
+			}
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case strings.HasPrefix(fieldType.Name(), "SliceGetter"):
 			var fieldAddr any
