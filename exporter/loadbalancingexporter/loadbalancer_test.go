@@ -6,8 +6,11 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
+	"maps"
 	"net"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -245,6 +248,93 @@ func TestOnBackendChanges(t *testing.T) {
 
 	// verify
 	assert.Len(t, p.ring.items, 2*defaultWeight)
+}
+
+func TestOnBackendChanges_SlowStartDoesNotBlockDataPath(t *testing.T) {
+	// prepare
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+
+	reached := make(chan struct{})
+	release := make(chan struct{})
+	closeRelease := sync.OnceFunc(func() { close(release) })
+	t.Cleanup(closeRelease) // Register in case of test failure to avoid a leak.
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		if endpoint == endpointWithPort("endpoint-2") {
+			close(reached)
+			<-release
+		}
+
+		return newNopMockExporter(), nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.onBackendChanges([]string{"endpoint-1"})
+	require.Len(t, p.exporters, 1)
+
+	// find a key that moves to endpoint-2 once the new ring is installed
+	var key []byte
+	newRing := newHashRing([]string{"endpoint-1", "endpoint-2"})
+	for i := range 256 {
+		if candidate := []byte{byte(i), 0, 0, 0}; newRing.endpointFor(candidate) == "endpoint-2" {
+			key = candidate
+			break
+		}
+	}
+	require.NotNil(t, key)
+
+	// test
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+	}()
+
+	// the transition is now blocked inside the component factory for endpoint-2
+	<-reached
+
+	type lookup struct {
+		endpoint string
+		err      error
+	}
+	result := make(chan lookup, 1)
+	go func() {
+		_, endpoint, lookupErr := p.exporterAndEndpoint(key)
+		result <- lookup{endpoint: endpoint, err: lookupErr}
+	}()
+
+	// verify the data path is still served by the existing ring
+	select {
+	case res := <-result:
+		require.NoError(t, res.err)
+		assert.Equal(t, "endpoint-1", res.endpoint)
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "exporterAndEndpoint blocked while the new exporter was being started")
+	}
+
+	closeRelease()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "the backend transition didn't complete")
+	}
+
+	// verify
+	assert.Len(t, p.exporters, 2)
+	assert.Len(t, p.ring.items, 2*defaultWeight)
+	_, endpoint, err := p.exporterAndEndpoint(key)
+	require.NoError(t, err)
+	assert.Equal(t, "endpoint-2", endpoint)
+}
+
+// addMissingExporters synchronously creates and installs an exporter for every missing endpoint.
+func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []string) {
+	maps.Copy(lb.exporters, lb.startMissingExporters(ctx, endpoints, lb.exporters))
 }
 
 func TestRemoveExtraExporters(t *testing.T) {
