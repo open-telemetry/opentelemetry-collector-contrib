@@ -240,6 +240,7 @@ components:
     - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
+    - processor/verify
     - processor/vultrdetector
     - provider/aes
     - provider/googlesecretmanager
