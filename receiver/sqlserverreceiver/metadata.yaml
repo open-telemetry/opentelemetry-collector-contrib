@@ -20,6 +20,10 @@ status:
     seeking_new: true
 
 resource_attributes:
+  db.system.version:
+    description: The database version of the instance. Examples include "15.0.4261.1".
+    enabled: false
+    type: string
   host.name:
     description: The host name of SQL Server
     enabled: true
@@ -483,6 +487,8 @@ events:
     enabled: false
     description: query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
     attributes:
+      - db.namespace
+      - db.system.name
       - sqlserver.query_hash
       - sqlserver.query_plan
       - sqlserver.query_plan_hash
@@ -1158,7 +1164,7 @@ metrics:
     stability: development
     unit: "{stalls}/s"
     gauge:
-      value_type: int
+      value_type: double
     attributes: []
   sqlserver.page.buffer_cache.hit_ratio:
     enabled: true

@@ -492,6 +492,9 @@ func TestSetAttributes(t *testing.T) {
 	visibility, _ := attrs.Get(AttributeVCSRepositoryVisibility)
 	require.Equal(t, "private", visibility.Str())
 
+	projectID, _ := attrs.Get(AttributeGitLabProjectID)
+	require.Equal(t, int64(123), projectID.Int())
+
 	namespace, _ := attrs.Get(AttributeGitLabProjectNamespace)
 	require.Equal(t, "test", namespace.Str())
 

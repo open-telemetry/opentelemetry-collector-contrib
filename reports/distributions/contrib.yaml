@@ -124,6 +124,7 @@ components:
         - remotetap
         - resource
         - resource_detection
+        - rolling_span_latency
         - schema
         - span
         - span_pruning
@@ -236,7 +237,6 @@ components:
         - tls_check
         - udp_log
         - vcenter
-        - wavefront
         - webhook_event
         - windows_event_log
         - windows_perf_counters

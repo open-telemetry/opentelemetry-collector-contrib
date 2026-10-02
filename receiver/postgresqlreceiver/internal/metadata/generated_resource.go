@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetDbSystemVersion sets provided value as "db.system.version" attribute.
+func (rb *ResourceBuilder) SetDbSystemVersion(val string) {
+	if rb.config.DbSystemVersion.Enabled {
+		rb.res.Attributes().PutStr("db.system.version", val)
+	}
+}
+
 // SetPostgresqlDatabaseName sets provided value as "postgresql.database.name" attribute.
 func (rb *ResourceBuilder) SetPostgresqlDatabaseName(val string) {
 	if rb.config.PostgresqlDatabaseName.Enabled {
