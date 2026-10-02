@@ -30,4 +30,39 @@ func TestConfigValid(t *testing.T) {
 	require.False(t, NewConfig(WithMaxSize(-1)).Valid())
 	require.False(t, NewConfig(WithMaxSize(1<<20)).Valid())
 	require.False(t, NewConfig(WithMaxSize(1)).Valid())
+
+	require.True(t, NewConfig(WithMaxScale(0)).Valid())
+	require.True(t, NewConfig(WithMaxScale(MinimumMaxScale)).Valid())
+	require.True(t, NewConfig(WithMaxScale(MaximumMaxScale)).Valid())
+
+	require.False(t, NewConfig(WithMaxScale(MinimumMaxScale-1)).Valid())
+	require.False(t, NewConfig(WithMaxScale(MaximumMaxScale+1)).Valid())
+}
+
+func TestConfigMaxScaleDefault(t *testing.T) {
+	cfg, err := Config{}.Validate()
+	require.NoError(t, err)
+	require.Equal(t, DefaultMaxScale, cfg.maxScale)
+
+	// An explicit zero is honored, it is not treated as unset.
+	cfg, err = NewConfig(WithMaxScale(0)).Validate()
+	require.NoError(t, err)
+	require.Equal(t, int32(0), cfg.maxScale)
+}
+
+func TestConfigMaxScaleClamped(t *testing.T) {
+	cfg, err := NewConfig(WithMaxScale(MaximumMaxScale + 5)).Validate()
+	require.Error(t, err)
+	require.Equal(t, MaximumMaxScale, cfg.maxScale)
+
+	cfg, err = NewConfig(WithMaxScale(MinimumMaxScale - 5)).Validate()
+	require.Error(t, err)
+	require.Equal(t, MinimumMaxScale, cfg.maxScale)
+}
+
+func TestConfigInvalidSizeAndScale(t *testing.T) {
+	cfg, err := NewConfig(WithMaxSize(1), WithMaxScale(MaximumMaxScale+1)).Validate()
+	require.Error(t, err)
+	require.Equal(t, int32(MinSize), cfg.maxSize)
+	require.Equal(t, MaximumMaxScale, cfg.maxScale)
 }
