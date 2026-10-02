@@ -331,9 +331,10 @@ func TestScrape_CpuUtilization_CoreOfflineBetweenScrapes(t *testing.T) {
 	require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
 	_, err = scraper.scrape(t.Context())
+	require.NoError(t, err, "Error in scrape 1: %v", err)
 	// There shouldn't have been any warnings for the first scrape.
 	warningsScrape1 := observedLogs.FilterLevelExact(zap.WarnLevel).All()
-	require.Len(t, warningsScrape1, 0)
+	require.Empty(t, warningsScrape1)
 
 	// Force error not finding CPU info
 	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
@@ -341,6 +342,7 @@ func TestScrape_CpuUtilization_CoreOfflineBetweenScrapes(t *testing.T) {
 	}
 	// 2nd scrape will trigger utilization metrics calculation
 	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err, "Error in scrape 2: %v", err)
 	// We should see a warning that cpu0 could not be found.
 	warningsScrape2 := observedLogs.FilterLevelExact(zap.WarnLevel).All()
 	require.Len(t, warningsScrape2, 1)
