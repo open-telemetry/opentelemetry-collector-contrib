@@ -669,6 +669,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			exemplarSlice pmetric.ExemplarSlice
 			appended      bool
 		)
+		// Process the individual histogram
 		if histogramType == "nhcb" {
 			dps := histMetric.Histogram().DataPoints()
 			before := dps.Len()

@@ -135,8 +135,8 @@ func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels, traceIDSet, 
 // exemplarKey identifies a series the way Prometheus does, by its whole label set.
 type exemplarKey string
 
-// makeExemplarKey returns the map key for a series. labels.Bytes is an opaque encoding meant to
-// be used this way, and the map does not outlive the request, so a change to it cannot matter.
+// makeExemplarKey returns the map key for a series. ToLabels sorts its output, so the encoding is
+// the same whatever order the labels arrived in, and the map does not outlive the request.
 func makeExemplarKey(ls labels.Labels) exemplarKey {
 	return exemplarKey(ls.Bytes(nil))
 }
