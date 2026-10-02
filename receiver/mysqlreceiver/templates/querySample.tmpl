@@ -78,11 +78,11 @@
     -- blockers is a JSON array of {thread_id, session_id} tuples, one entry per
     -- concurrent InnoDB row-lock blocker for this thread. LEFT JOIN means a
     -- blocker that has already disconnected still appears (thread_id populated,
-    -- session_id null) instead of vanishing. Unordered -- an earlier version
-    -- joined information_schema.INNODB_TRX to sort oldest-transaction-first, but
-    -- that table requires the global PROCESS privilege, and MySQL checks
-    -- privileges on every referenced table at prepare time regardless of whether
-    -- a row is actually needed, so the entire query failed outright for any
+    -- session_id null) instead of vanishing. Unordered -- do not join
+    -- information_schema.INNODB_TRX to sort oldest-transaction-first: that table
+    -- requires the global PROCESS privilege, and MySQL checks privileges on
+    -- every referenced table at prepare time regardless of whether a row is
+    -- actually needed, so the entire query would fail outright for any
     -- monitoring user without PROCESS the moment a real block existed. DISTINCT
     -- collapses duplicate rows data_lock_waits can produce when the same blocker
     -- holds multiple conflicting lock structures against this thread's single
