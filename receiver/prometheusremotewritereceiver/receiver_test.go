@@ -411,8 +411,7 @@ func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
 }
 
 func TestHistogramExemplarsAttachToLabelledSeries(t *testing.T) {
-	// The histogram lookup used to build a key without the data labels, so a histogram carrying
-	// any ordinary label never found its own exemplars.
+	// A histogram carrying an ordinary label must still find its own exemplars.
 	prwReceiver := setupMetricsReceiver(t)
 
 	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
@@ -545,8 +544,7 @@ func TestHistogramExemplarsAreAttachedOnce(t *testing.T) {
 }
 
 func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) {
-	// A refused histogram has no data point of its own, so its exemplars must not land on the
-	// one the first series produced.
+	// A refused histogram has no data point, so its exemplars must not land on an earlier one.
 	prwReceiver := setupMetricsReceiver(t)
 
 	series := func(regionRef uint32, deltas []int64, exemplars []writev2.Exemplar) writev2.TimeSeries {

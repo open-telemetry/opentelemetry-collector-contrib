@@ -132,8 +132,7 @@ func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels, traceIDSet, 
 	}
 }
 
-// exemplarKey is the label set of the series an exemplar belongs to, which is how Prometheus
-// identifies one.
+// exemplarKey identifies a series the way Prometheus does, by its whole label set.
 type exemplarKey string
 
 // makeExemplarKey returns the map key for a series. labels.Bytes is an opaque encoding meant to
