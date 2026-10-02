@@ -16,15 +16,17 @@ type scope = Scope
 type Scope struct {
 	resource resource
 
-	name    string
-	version string
-	attrs   [16]byte
+	name      string
+	version   string
+	schemaURL string
+	attrs     [16]byte
 }
 
 func (s Scope) Hash() hash.Hash64 {
 	sum := s.resource.Hash()
 	sum.Write([]byte(s.name))
 	sum.Write([]byte(s.version))
+	sum.Write([]byte(s.schemaURL))
 	sum.Write(s.attrs[:])
 	return sum
 }
@@ -38,10 +40,15 @@ func (s Scope) String() string {
 }
 
 func OfScope(res Resource, scope pcommon.InstrumentationScope) Scope {
+	return OfScopeWithSchema(res, scope, "")
+}
+
+func OfScopeWithSchema(res Resource, scope pcommon.InstrumentationScope, schemaURL string) Scope {
 	return Scope{
-		resource: res,
-		name:     scope.Name(),
-		version:  scope.Version(),
-		attrs:    xhash.MapHash(scope.Attributes()),
+		resource:  res,
+		name:      scope.Name(),
+		version:   scope.Version(),
+		schemaURL: schemaURL,
+		attrs:     xhash.MapHash(scope.Attributes()),
 	}
 }

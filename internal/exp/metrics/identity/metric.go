@@ -70,5 +70,9 @@ func (m Metric) String() string {
 }
 
 func OfResourceMetric(res pcommon.Resource, scope pcommon.InstrumentationScope, metric pmetric.Metric) Metric {
-	return OfMetric(OfScope(OfResource(res), scope), metric)
+	return OfResourceMetricWithSchema(res, scope, "", metric)
+}
+
+func OfResourceMetricWithSchema(res pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, metric pmetric.Metric) Metric {
+	return OfMetric(OfScopeWithSchema(OfResource(res), scope, schemaURL), metric)
 }
