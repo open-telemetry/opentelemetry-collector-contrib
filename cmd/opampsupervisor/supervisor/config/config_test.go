@@ -678,6 +678,36 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErrorFunc: simpleError("agent::package::verifier: cosign::identities must not be empty"),
 		},
+		{
+			name: "Package with valid cosign verifier is not yet supported",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{
+							Type: VerifierTypeCosign,
+							Cosign: CosignSignatureVerifier{
+								Identities: []AgentSignatureIdentity{{
+									Issuer:  "https://token.actions.githubusercontent.com",
+									Subject: "https://github.com/example/repo/.github/workflows/release.yaml@refs/tags/v1.0.0",
+								}},
+							},
+						},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier is not yet supported"),
+		},
 	}
 
 	// create some fake files for validating agent config
