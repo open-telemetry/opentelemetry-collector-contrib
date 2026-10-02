@@ -30,3 +30,20 @@ func WithExperimentalConverters[K any](funcs map[string]ottl.Factory[K]) map[str
 	}
 	return funcs
 }
+
+// ExperimentalEditors returns the editors that are excluded from OTTL's
+// stability guarantees. Components merge these into their function set to make
+// them available in OTTL statements.
+func ExperimentalEditors[K any]() []ottl.Factory[K] {
+	return []ottl.Factory[K]{
+		NewSanitizeUTF8Factory[K](),
+	}
+}
+
+// WithExperimentalEditors adds the experimental editors to the given function map and returns it.
+func WithExperimentalEditors[K any](funcs map[string]ottl.Factory[K]) map[string]ottl.Factory[K] {
+	for _, f := range ExperimentalEditors[K]() {
+		funcs[f.Name()] = f
+	}
+	return funcs
+}

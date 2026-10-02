@@ -12,5 +12,5 @@ import (
 )
 
 func ProfileFunctions() map[string]ottl.Factory[*ottlprofile.TransformContext] {
-	return xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlprofile.TransformContext]()))
+	return xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlprofile.TransformContext]())))
 }

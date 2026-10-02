@@ -16,7 +16,7 @@ import (
 )
 
 func Test_ProfileFunctions(t *testing.T) {
-	expected := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[ottlprofile.TransformContext]()))
+	expected := xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[ottlprofile.TransformContext]())))
 	actual := ProfileFunctions()
 	require.Len(t, expected, len(actual))
 	for k := range actual {
