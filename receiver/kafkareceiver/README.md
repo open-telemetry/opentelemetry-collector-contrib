@@ -180,8 +180,7 @@ consumed message:
 
 Additionally, all Kafka message headers are included in the request metadata.
 
-This metadata can then be used throughout the pipeline, for example to set attributes using the
-[attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md).
+This metadata can then be used throughout the pipeline, for example to set attributes using the [attributes processor](../../processor/attributesprocessor/README.md).
 
 ### Trace context propagation
 
