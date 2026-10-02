@@ -75,15 +75,15 @@ func isInCIDR[K any](target ottl.StringGetter[K], networks *slicegetter.SliceGet
 		matched := false
 		var networkErr error
 		nonNil, err := networks.Range(ctx, tCtx, func(network ottl.StringGetter[K]) bool {
-			networkValue, err := network.Get(ctx, tCtx)
-			if err != nil {
-				networkErr = err
+			networkValue, getErr := network.Get(ctx, tCtx)
+			if getErr != nil {
+				networkErr = getErr
 				return false
 			}
 
-			_, subnet, err := net.ParseCIDR(networkValue)
-			if err != nil {
-				networkErr = err
+			_, subnet, parseErr := net.ParseCIDR(networkValue)
+			if parseErr != nil {
+				networkErr = parseErr
 				return false
 			}
 			if subnet.Contains(ip) {
