@@ -931,7 +931,13 @@ containing the signing certificate, the artifact signature, the Rekor
 transparency log entry, and a signed timestamp.
 
 OpenTelemetry Collector releases prior to `v0.158.0` published separate `.sig`
-and `.pem` files instead of a bundle. That format is not supported.
+and `.pem` files instead of a bundle. The supervisor does not accept those files
+directly. To deliver such a release, the OpAMP server can combine the artifact,
+`.sig`, and `.pem` files into an equivalent bundle with
+`cosign bundle create --artifact <file> --signature <file>.sig --certificate <file>.pem --rekor-url https://rekor.sigstore.dev`
+and send the resulting `.sigstore.json` as the signature. The resulting bundle
+carries the Rekor transparency log entry but no signed timestamp; the log entry's
+integration time is used in its place during verification.
 
 #### Signature Verification
 
