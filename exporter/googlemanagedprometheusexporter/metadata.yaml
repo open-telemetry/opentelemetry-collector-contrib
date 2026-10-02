@@ -1,4 +1,5 @@
-type: googlemanagedprometheus
+type: google_managed_prometheus
+deprecated_type: googlemanagedprometheus
 display_name: Google Cloud Managed Prometheus Exporter
 
 status:

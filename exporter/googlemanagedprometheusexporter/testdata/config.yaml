@@ -5,8 +5,8 @@ processors:
   nop:
 
 exporters:
-  googlemanagedprometheus:
-  googlemanagedprometheus/customname:
+  google_managed_prometheus:
+  google_managed_prometheus/customname:
     project: my-project
     user_agent: opentelemetry-collector-contrib {{version}}
     timeout: 20s
@@ -35,4 +35,4 @@ service:
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [googlemanagedprometheus]
+      exporters: [google_managed_prometheus]
