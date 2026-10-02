@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
@@ -134,7 +135,7 @@ func TestTransformObject(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := transformObject(tt.object)
+			got, err := transformObject(tt.object, pod.ContainerMetricsConfig{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 			if tt.same {
