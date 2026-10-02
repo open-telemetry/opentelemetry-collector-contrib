@@ -1789,6 +1789,7 @@ func TestSplitLogPath(t *testing.T) {
 			if !ok {
 				return
 			}
+			defer pathMapPool.Put(result)
 			if tc.wantNS != "" {
 				require.Equal(t, tc.wantNS, result["k8s.namespace.name"])
 			}
@@ -1918,6 +1919,7 @@ func TestParseContainerdFields(t *testing.T) {
 			require.NoError(t, err)
 			m, ok := result.(map[string]any)
 			require.True(t, ok)
+			defer mapPool.Put(m)
 			if tc.wantTime != "" {
 				require.Equal(t, tc.wantTime, m["time"])
 			}
@@ -1991,6 +1993,7 @@ func TestParseCRIOFields(t *testing.T) {
 			require.NoError(t, err)
 			m, ok := result.(map[string]any)
 			require.True(t, ok)
+			defer mapPool.Put(m)
 			if tc.wantTime != "" {
 				require.Equal(t, tc.wantTime, m["time"])
 			}

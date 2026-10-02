@@ -122,20 +122,36 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			})
 
 			if format == containerdFormat {
-				if err = p.ParseWith(ctx, ent, parseContainerd, write); err != nil {
+				m := mapPool.Get().(map[string]any)
+				for k := range m {
+					delete(m, k)
+				}
+				if err = p.ParseWith(ctx, ent, func(v any) (any, error) {
+					return m, parseContainerdInto(m, v.(string))
+				}, write); err != nil {
+					mapPool.Put(m)
 					if !errors.Is(err, helper.ErrEntryHandled) {
 						errs = append(errs, fmt.Errorf("failed to parse cri log: %w", err))
 					}
 					continue
 				}
+				mapPool.Put(m)
 				p.timeLayout = criTimeLayout
 			} else {
-				if err = p.ParseWith(ctx, ent, parseCRIO, write); err != nil {
+				m := mapPool.Get().(map[string]any)
+				for k := range m {
+					delete(m, k)
+				}
+				if err = p.ParseWith(ctx, ent, func(v any) (any, error) {
+					return m, parseCRIOInto(m, v.(string))
+				}, write); err != nil {
+					mapPool.Put(m)
 					if !errors.Is(err, helper.ErrEntryHandled) {
 						errs = append(errs, fmt.Errorf("failed to parse cri log: %w", err))
 					}
 					continue
 				}
+				mapPool.Put(m)
 				p.timeLayout = criTimeLayout
 			}
 
@@ -207,23 +223,36 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 		})
 
 		if format == containerdFormat {
-			err := p.ParseWith(ctx, entry, parseContainerd, p.Write)
-
-			if err != nil {
+			m := mapPool.Get().(map[string]any)
+			for k := range m {
+				delete(m, k)
+			}
+			if err = p.ParseWith(ctx, entry, func(v any) (any, error) {
+				return m, parseContainerdInto(m, v.(string))
+			}, p.Write); err != nil {
+				mapPool.Put(m)
 				if errors.Is(err, helper.ErrEntryHandled) {
 					return nil
 				}
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
+			mapPool.Put(m)
 			p.timeLayout = criTimeLayout
 		} else {
-			err := p.ParseWith(ctx, entry, parseCRIO, p.Write)
-			if err != nil {
+			m := mapPool.Get().(map[string]any)
+			for k := range m {
+				delete(m, k)
+			}
+			if err = p.ParseWith(ctx, entry, func(v any) (any, error) {
+				return m, parseCRIOInto(m, v.(string))
+			}, p.Write); err != nil {
+				mapPool.Put(m)
 				if errors.Is(err, helper.ErrEntryHandled) {
 					return nil
 				}
 				return fmt.Errorf("failed to parse crio logs: %w", err)
 			}
+			mapPool.Put(m)
 			p.timeLayout = criTimeLayout
 		}
 
@@ -346,6 +375,18 @@ func parseContainerd(value any) (any, error) {
 		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
+	m := mapPool.Get().(map[string]any)
+	for k := range m {
+		delete(m, k)
+	}
+	if err := parseContainerdInto(m, raw); err != nil {
+		mapPool.Put(m)
+		return nil, err
+	}
+	return m, nil
+}
+
+func parseContainerdInto(m map[string]any, raw string) error {
 	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok || !isContainerdTimestamp(timePart) {
 		return errors.New("could not parse containerd fields")
@@ -353,7 +394,7 @@ func parseContainerd(value any) (any, error) {
 
 	stream, rest, ok := strings.Cut(rest, " ")
 	if !ok || (stream != "stdout" && stream != "stderr") {
-		return nil, errors.New("could not parse containerd fields")
+		return errors.New("could not parse containerd fields")
 	}
 
 	logtag, logPart, ok := strings.Cut(rest, " ")
@@ -362,35 +403,39 @@ func parseContainerd(value any) (any, error) {
 		logPart = ""
 	}
 
-	m := mapPool.Get().(map[string]any)
-	for k := range m {
-		delete(m, k)
-	}
 	m["time"] = timePart
 	m["stream"] = stream
 	m["logtag"] = logtag
 	m["log"] = logPart
-	return m, nil
+	return nil
 }
 
-// parseCRIO parses CRIO-format Kubernetes log fields without regex.
-// The expected format is: <time> <stream> <logtag> <log>
-//
-// Mirrors ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)
 func parseCRIO(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
+	m := mapPool.Get().(map[string]any)
+	for k := range m {
+		delete(m, k)
+	}
+	if err := parseCRIOInto(m, raw); err != nil {
+		mapPool.Put(m)
+		return nil, err
+	}
+	return m, nil
+}
+
+func parseCRIOInto(m map[string]any, raw string) error {
 	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok {
-		return nil, errors.New("could not parse CRIO fields")
+		return errors.New("could not parse CRIO fields")
 	}
 
 	stream, rest, ok := strings.Cut(rest, " ")
 	if !ok || (stream != "stdout" && stream != "stderr") {
-		return nil, errors.New("could not parse CRIO fields")
+		return errors.New("could not parse CRIO fields")
 	}
 
 	logtag, logPart, ok := strings.Cut(rest, " ")
@@ -399,15 +444,11 @@ func parseCRIO(value any) (any, error) {
 		logPart = ""
 	}
 
-	m := mapPool.Get().(map[string]any)
-	for k := range m {
-		delete(m, k)
-	}
 	m["time"] = timePart
 	m["stream"] = stream
 	m["logtag"] = logtag
 	m["log"] = logPart
-	return m, nil
+	return nil
 }
 
 // parseDocker will parse a docker log value as JSON
@@ -472,26 +513,29 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
 	}
 
-	var parsedValues map[string]any
 	if p.cache != nil {
-		if parsedValues, ok = p.cache.Get(rawLogPath); ok {
-			return p.setK8sMetadataFromParsedValues(e, parsedValues)
+		if cached, hit := p.cache.Get(rawLogPath); hit {
+			return p.setK8sMetadataFromParsedValues(e, cached)
 		}
 	}
 
-	parsedValues, ok = parseLogPath(rawLogPath)
-	if !ok {
+	m := pathMapPool.Get().(map[string]any)
+	for k := range m {
+		delete(m, k)
+	}
+	if !parseLogPathInto(m, rawLogPath) {
+		pathMapPool.Put(m)
 		return errors.New("failed to detect a valid log path")
 	}
 
 	if p.cache != nil {
-		cachedMap := make(map[string]any, len(parsedValues))
-		maps.Copy(cachedMap, parsedValues)
+		cachedMap := make(map[string]any, len(m))
+		maps.Copy(cachedMap, m)
 		p.cache.Add(rawLogPath, cachedMap)
 	}
 
-	err := p.setK8sMetadataFromParsedValues(e, parsedValues)
-	pathMapPool.Put(parsedValues)
+	err := p.setK8sMetadataFromParsedValues(e, m)
+	pathMapPool.Put(m)
 	return err
 }
 
@@ -600,76 +644,83 @@ func stripLogSuffix(raw string) (string, bool) {
 //
 // Validation rules (mirrors ^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$):
 func parseLogPath(raw string) (map[string]any, bool) {
-	// Validate and strip the suffix before touching any other path components.
+	m := pathMapPool.Get().(map[string]any)
+	for k := range m {
+		delete(m, k)
+	}
+	if !parseLogPathInto(m, raw) {
+		pathMapPool.Put(m)
+		return nil, false
+	}
+	return m, true
+}
+
+func parseLogPathInto(m map[string]any, raw string) bool {
 	base, ok := stripLogSuffix(raw)
 	if !ok {
-		return nil, false
+		return false
 	}
 
 	sep2 := strings.LastIndexAny(base, "/\\")
 	if sep2 < 0 {
-		return nil, false
+		return false
 	}
 	restartCount := base[sep2+1:]
 	if !isDigits(restartCount) {
-		return nil, false
+		return false
 	}
 	base = base[:sep2]
 
 	sep1 := strings.LastIndexAny(base, "/\\")
 	if sep1 < 0 {
-		return nil, false
+		return false
 	}
 	containerName := base[sep1+1:]
 	if !isValidContainerName(containerName) {
-		return nil, false
+		return false
 	}
 	base = base[:sep1]
 
 	sep0 := strings.LastIndexAny(base, "/\\")
 	if sep0 < 0 {
-		return nil, false
+		return false
 	}
 	triplet := base[sep0+1:]
 	if triplet == "" {
-		return nil, false
+		return false
 	}
 
 	lastUnd := strings.LastIndex(triplet, "_")
 	if lastUnd < 0 {
-		return nil, false
+		return false
 	}
 	uid := triplet[lastUnd+1:]
 	if !isValidUID(uid) {
-		return nil, false
+		return false
 	}
 	triplet = triplet[:lastUnd]
 
 	lastUnd = strings.LastIndex(triplet, "_")
 	if lastUnd < 0 {
-		return nil, false
+		return false
 	}
 	ns := triplet[:lastUnd]
 	pod := triplet[lastUnd+1:]
 
 	if !isValidPodOrNamespace(ns) {
-		return nil, false
+		return false
 	}
 	if !isValidPodOrNamespace(pod) {
-		return nil, false
+		return false
 	}
 
-	m := pathMapPool.Get().(map[string]any)
-	for k := range m {
-		delete(m, k)
-	}
 	m["k8s.namespace.name"] = ns
 	m["k8s.pod.name"] = pod
 	m["k8s.pod.uid"] = uid
 	m["k8s.container.name"] = containerName
 	m["k8s.container.restart_count"] = restartCount
 
-	return m, true
+	return true
 }
 
 // isValidPodOrNamespace matches [^_]+ from the regex — any char except underscore, one or more.
