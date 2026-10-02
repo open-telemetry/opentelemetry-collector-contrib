@@ -261,9 +261,8 @@ type resourceAssertion struct {
 }
 
 // UnmarshalYAML implements custom unmarshaling to support `attributes/include`
-// as an alternative to `attributes`, and `scopes/include` as an alternative to
-// `scopes`. When `attributes/include` is used the AttributeMode is set to
-// attributeModeInclude; specifying both keys is an error.
+// as an alternative to `attributes`, and to resolve the `scopes` collection.
+// Specifying both attribute keys is an error.
 func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 	// Decode into a raw map to detect operator-suffixed keys.
 	var raw map[string]yaml.Node
@@ -334,7 +333,7 @@ type scopeAssertionYAML struct {
 }
 
 // UnmarshalYAML decodes a scope, resolving the version operator keys into a
-// versionMatcher and `metrics` / `metrics/include` into the metric collection.
+// versionMatcher and the `metrics` collection via decodeCollection.
 func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
 	var raw scopeAssertionYAML
 	if err := value.Decode(&raw); err != nil {
@@ -426,9 +425,9 @@ type metricAssertion struct {
 	DatapointsMatch collectionMatch      `yaml:"-"`
 }
 
-// resolveMetricDatapoints reads `datapoints` / `datapoints/include` from a
-// metric's raw keys. metricAssertion has no UnmarshalYAML of its own, so this
-// runs as decodeCollection's per-item fixup when a metrics collection is read.
+// resolveMetricDatapoints resolves a metric's `datapoints` collection from its
+// raw keys. metricAssertion has no UnmarshalYAML of its own, so this runs as
+// decodeCollection's per-item fixup when a metrics collection is read.
 func resolveMetricDatapoints(m *metricAssertion, raw map[string]yaml.Node) error {
 	datapoints, match, err := decodeCollection[datapointAssertion](raw, "datapoints", nil)
 	if err != nil {
