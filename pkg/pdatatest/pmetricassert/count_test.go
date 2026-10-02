@@ -4,6 +4,8 @@
 package pmetricassert
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -323,22 +325,17 @@ resources:
 	}
 }
 
-// WriteAssertionFile never emits /count, so a round trip through the writer
-// still produces the default exact form.
-func TestWriteDocument_OmitsCount(t *testing.T) {
-	path := writeAssertionYAML(t, `version: 1
-signal: metrics
-resources/count:
-  min: 1
-`)
+// WriteAssertionFile emits a snapshot of actual metrics, which carries no
+// matchers, so /count never appears in generated output.
+func TestWriteAssertionFile_OmitsCount(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, buildSampleMetrics()))
+
+	body, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.NotContains(t, string(body), "/count")
+
 	doc, err := readDocument(path)
 	require.NoError(t, err)
-	require.NotNil(t, doc.ResourcesCount)
-
-	out := writeAssertionYAML(t, "")
-	require.NoError(t, writeDocument(out, doc))
-
-	roundTripped, err := readDocument(out)
-	require.NoError(t, err)
-	require.Nil(t, roundTripped.ResourcesCount)
+	require.Nil(t, doc.ResourcesCount)
 }
