@@ -162,7 +162,6 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 }
 
 func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
-	t.Skip("Will be fixed by https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17017")
 	testCases := []metricTestCase{
 		{
 			name:            "apply",
@@ -226,7 +225,6 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 }
 
 func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
-	t.Skip("Will be fixed by https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17017")
 	testCases := []metricTestCase{
 		{
 			name:            "apply_to_metric_with_no_attrs",
