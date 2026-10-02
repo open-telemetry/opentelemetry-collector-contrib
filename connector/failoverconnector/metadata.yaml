@@ -9,3 +9,20 @@ status:
   codeowners:
     active: [akats7]
     emeritus: [fatsheep9146]
+
+attributes:
+  connector:
+    description: The ID of the failover connector.
+    type: string
+
+telemetry:
+  metrics:
+    connector_failover_active_level:
+      description: The index of the priority level the connector currently routes data to, starting at 0 for the highest priority. Reports -1 when no active level remains after every level has failed.
+      unit: "1"
+      enabled: true
+      stability: development
+      attributes: [connector]
+      gauge:
+        value_type: int
+        async: true
