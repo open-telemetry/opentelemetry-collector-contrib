@@ -45,7 +45,9 @@ type cpuInfo struct {
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *cpuScraper {
-	return &cpuScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
+	scraper := &cpuScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, now: time.Now}
+	scraper.ucal = ucal.NewCPUUtilizationCalculator(settings.Logger)
+	return scraper
 }
 
 func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
@@ -71,7 +73,6 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				s.recordCPUTimeStateDataPoints(now, cpuTime)
 			}
 		}
-
 		if s.config.MetricsBuilderConfig.Metrics.SystemCPUUtilization.Enabled {
 			s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
 		}
