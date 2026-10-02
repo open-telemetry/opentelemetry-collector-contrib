@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/filter v0.162.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/pdata v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/receiver v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/receiver/xreceiver v0.162.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/receiver/receivertest v0.162.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/scraper v0.162.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.162.1-0.20260930032829-78b98e74fdfd
@@ -61,7 +62,6 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.68.1-0.20260930032829-78b98e74fdfd // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.162.1-0.20260930032829-78b98e74fdfd // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.162.1-0.20260930032829-78b98e74fdfd // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.162.1-0.20260930032829-78b98e74fdfd // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect

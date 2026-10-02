@@ -5314,7 +5314,7 @@ func (ms *OracledbUserRollbacksMetricConfig) Validate() error {
 	return nil
 }
 
-// MetricsConfig provides config for oracledb metrics.
+// MetricsConfig provides config for oracle_db metrics.
 type MetricsConfig struct {
 	OracledbAsmDiskErrors                         OracledbAsmDiskErrorsMetricConfig                         `mapstructure:"oracledb.asm.disk.errors"`
 	OracledbAsmDiskGroupCapacity                  OracledbAsmDiskGroupCapacityMetricConfig                  `mapstructure:"oracledb.asm.disk_group.capacity"`
@@ -6066,7 +6066,7 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// EventsConfig provides config for oracledb events.
+// EventsConfig provides config for oracle_db events.
 type EventsConfig struct {
 	DbServerQueryPlan         EventConfig `mapstructure:"db.server.query_plan"`
 	DbServerQuerySample       EventConfig `mapstructure:"db.server.query_sample"`
@@ -6515,7 +6515,7 @@ func (rac *ServiceNamespaceResourceAttributeConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// ResourceAttributesConfig provides config for oracledb resource attributes.
+// ResourceAttributesConfig provides config for oracle_db resource attributes.
 type ResourceAttributesConfig struct {
 	HostName             HostNameResourceAttributeConfig             `mapstructure:"host.name"`
 	OracleDbEdition      OracleDbEditionResourceAttributeConfig      `mapstructure:"oracle.db.edition"`
@@ -6614,7 +6614,7 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for oracledb metrics builder.
+// MetricsBuilderConfig is a configuration for oracle_db metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
@@ -6627,7 +6627,7 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	}
 }
 
-// LogsBuilderConfig is a configuration for oracledb logs builder.
+// LogsBuilderConfig is a configuration for oracle_db logs builder.
 type LogsBuilderConfig struct {
 	Events             EventsConfig             `mapstructure:"events"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

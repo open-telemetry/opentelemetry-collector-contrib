@@ -312,7 +312,7 @@ components:
     - receiver/nginx
     - receiver/nsxt
     - receiver/ntp
-    - receiver/oracledb
+    - receiver/oracle_db
     - receiver/osquery
     - receiver/otelarrow
     - receiver/otlp_json_file
