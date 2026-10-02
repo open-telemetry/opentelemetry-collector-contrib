@@ -388,7 +388,10 @@ func newRetryBackoffFn(minBackoff time.Duration) func(int) time.Duration {
 // LoadDefaultConfig wraps it in an aws.CredentialsCache. It is a variable so
 // tests can replace it.
 var loadAWSCredentialsProvider = func(ctx context.Context, region string) (aws.CredentialsProvider, error) {
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region),
+		awsconfig.WithCredentialsCacheOptions(func(o *aws.CredentialsCacheOptions) {
+			o.ExpiryWindow = time.Minute
+		}))
 	if err != nil {
 		return nil, err
 	}
