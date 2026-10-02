@@ -1227,7 +1227,7 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 	// NaN raises without landing anywhere.
 	dp.SetCount(count)
 	if count > 0 {
-		// OTLP requires the sum to be zero when the count is.
+		// OTLP requires a data point with no count to carry no sum.
 		dp.SetSum(histogram.Sum)
 	}
 
