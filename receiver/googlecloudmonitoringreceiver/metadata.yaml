@@ -1,5 +1,6 @@
 display_name: Google Cloud Monitoring Receiver
-type: googlecloudmonitoring
+type: google_cloud_monitoring
+deprecated_type: googlecloudmonitoring
 
 description: |
   The primary objective of the Google Cloud Monitoring Receiver is to gather time series metrics data from all Google
