@@ -17,7 +17,7 @@ import (
 )
 
 func Test_LogFunctions(t *testing.T) {
-	expected := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]()))
+	expected := xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]())))
 	expected["ParseCEF"] = logparsingfuncs.NewParseCEFFactory()
 	expected["ParseCLF"] = logparsingfuncs.NewParseCLFFactory()
 	expected["ParseELF"] = logparsingfuncs.NewParseELFFactory()

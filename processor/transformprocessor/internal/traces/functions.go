@@ -15,7 +15,7 @@ import (
 )
 
 func SpanFunctions() map[string]ottl.Factory[*ottlspan.TransformContext] {
-	functions := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()))
+	functions := xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlspan.TransformContext]())))
 
 	spanFunctions := ottl.CreateFactoryMap(
 		ottlfuncs.NewIsRootSpanFactory(),
@@ -29,5 +29,5 @@ func SpanFunctions() map[string]ottl.Factory[*ottlspan.TransformContext] {
 
 func SpanEventFunctions() map[string]ottl.Factory[*ottlspanevent.TransformContext] {
 	// No trace-only functions yet.
-	return xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlspanevent.TransformContext]()))
+	return xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlspanevent.TransformContext]())))
 }

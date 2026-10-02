@@ -1,10 +1,39 @@
 # Experimental OTTL Functions
 
-The converters in this package are experimental. They are not covered by OTTL's stability guarantees, so their
+The functions in this package are experimental. They are not covered by OTTL's stability guarantees, so their
 names, arguments, and behavior may change, and they may be removed, in any release. They are not part of the
 [standard functions](../../ottlfuncs/README.md) returned by `StandardFuncs` and `StandardConverters`. Components make
-them available by merging `ExperimentalConverters` into their function set, for example with
-`WithExperimentalConverters`.
+them available by merging `ExperimentalConverters` and `ExperimentalEditors` into their function set, for example with
+`WithExperimentalConverters` and `WithExperimentalEditors`.
+
+## Editors
+
+Available Editors:
+
+- [sanitize_utf8](#sanitize_utf8)
+
+### sanitize_utf8
+
+> [!IMPORTANT]
+> This function is experimental and may change in future releases.
+
+`sanitize_utf8(target, Optional[replacement])`
+
+The `sanitize_utf8` function replaces every run of invalid UTF-8 bytes in the target with a replacement string, so the target only contains valid UTF-8 afterwards.
+
+`target` is a path expression to a string, a `pcommon.Value`, a `pcommon.Map` or a `pcommon.Slice` field. `replacement` is an optional string (default: the Unicode replacement character `U+FFFD`, rendered as `�`) that is inserted in place of each run of invalid bytes. An empty `replacement` removes the invalid bytes. The function returns an error at parse time when `replacement` itself is not valid UTF-8.
+
+When `target` is a map or a slice, all nested string values are sanitized, including the values of nested maps and slices. Map keys that contain invalid UTF-8 are moved to the sanitized key. If the sanitized key already exists in the map, its value is overwritten. Non-string values, such as integers, booleans and byte arrays, are left untouched. When `target` is a string that is already valid UTF-8, nothing is written back.
+
+Examples:
+
+- `sanitize_utf8(log.body)`
+- `sanitize_utf8(log.attributes)`
+- `sanitize_utf8(resource.attributes)`
+- `sanitize_utf8(span.name)`
+- `sanitize_utf8(log.attributes["message"], "?")`
+- `sanitize_utf8(log.attributes, replacement = "")`
+
 
 ## Converters
 
