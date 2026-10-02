@@ -207,17 +207,22 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 		})
 
 		if format == containerdFormat {
-			if err = p.ParseWith(ctx, entry, parseContainerd, p.Write); err != nil {
+			err := p.ParseWith(ctx, entry, parseContainerd, p.Write)
+
+			if err != nil {
 				if errors.Is(err, helper.ErrEntryHandled) {
 					return nil
 				}
+				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
 			p.timeLayout = criTimeLayout
 		} else {
-			if err = p.ParseWith(ctx, entry, parseCRIO, p.Write); err != nil {
+			err := p.ParseWith(ctx, entry, parseCRIO, p.Write)
+			if err != nil {
 				if errors.Is(err, helper.ErrEntryHandled) {
 					return nil
 				}
+				return fmt.Errorf("failed to parse crio logs: %w", err)
 			}
 			p.timeLayout = criTimeLayout
 		}
@@ -319,8 +324,8 @@ func parseContainerd(value any) (any, error) {
 	if !ok || !strings.HasSuffix(timePart, "Z") {
 		return nil, errors.New("could not parse containerd fields")
 	}
-	// [^ ^Z]+Z — reject any Z or ^ before the trailing Z
-	if strings.ContainsAny(timePart[:len(timePart)-1], " ^Z") {
+	// [^ ^Z]+Z — requires at least one non-Z char before the trailing Z
+	if len(timePart) < 2 || strings.ContainsAny(timePart[:len(timePart)-1], " ^Z") {
 		return nil, errors.New("could not parse containerd fields")
 	}
 
@@ -664,7 +669,7 @@ func isValidContainerName(s string) bool {
 		return false
 	}
 
-	if strings.ContainsAny(s, "\\._") {
+	if strings.ContainsAny(s, "._") {
 		return false
 	}
 	return true
