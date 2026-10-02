@@ -83,72 +83,108 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordHttpcheckClientConnectionDurationDataPoint(ts, 1, "http.url-val", "network.transport-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckClientConnectionDurationDataPoint(ts, 3, "http.url-val-2", "network.transport-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckClientConnectionDurationDataPoint(ts+1, 3, "http.url-val-2", "network.transport-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckClientConnectionDuration.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckClientRequestDurationDataPoint(ts, 1, "http.url-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckClientRequestDurationDataPoint(ts, 3, "http.url-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckClientRequestDurationDataPoint(ts+1, 3, "http.url-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckClientRequestDuration.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckDNSLookupDurationDataPoint(ts, 1, "http.url-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckDNSLookupDurationDataPoint(ts, 3, "http.url-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckDNSLookupDurationDataPoint(ts+1, 3, "http.url-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckDNSLookupDuration.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckDurationDataPoint(ts, 1, "http.url-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckDurationDataPoint(ts, 3, "http.url-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckDurationDataPoint(ts+1, 3, "http.url-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckDuration.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckErrorDataPoint(ts, 1, "http.url-val", "error.message-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckErrorDataPoint(ts, 3, "http.url-val-2", "error.message-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckErrorDataPoint(ts+1, 3, "http.url-val-2", "error.message-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckError.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckResponseDurationDataPoint(ts, 1, "http.url-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckResponseDurationDataPoint(ts, 3, "http.url-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckResponseDurationDataPoint(ts+1, 3, "http.url-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckResponseDuration.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckResponseSizeDataPoint(ts, 1, "http.url-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckResponseSizeDataPoint(ts, 3, "http.url-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckResponseSizeDataPoint(ts+1, 3, "http.url-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckResponseSize.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckStatusDataPoint(ts, 3, "http.url-val-2", 17, "http.method-val-2", "http.status_class-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckStatusDataPoint(ts+1, 3, "http.url-val-2", 17, "http.method-val-2", "http.status_class-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckStatus.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckTLSCertRemainingDataPoint(ts, 1, "http.url-val", "http.tls.issuer-val", "http.tls.cn-val", []any{"http.tls.san-item1", "http.tls.san-item2"})
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckTLSCertRemainingDataPoint(ts, 3, "http.url-val-2", "http.tls.issuer-val-2", "http.tls.cn-val-2", []any{"http.tls.san-item3", "http.tls.san-item4"})
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckTLSCertRemainingDataPoint(ts+1, 3, "http.url-val-2", "http.tls.issuer-val-2", "http.tls.cn-val-2", []any{"http.tls.san-item3", "http.tls.san-item4"})
+				assert.Equal(t, 2, mb.metricHttpcheckTLSCertRemaining.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckTLSHandshakeDurationDataPoint(ts, 1, "http.url-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckTLSHandshakeDurationDataPoint(ts, 3, "http.url-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckTLSHandshakeDurationDataPoint(ts+1, 3, "http.url-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckTLSHandshakeDuration.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckValidationFailedDataPoint(ts, 1, "http.url-val", "validation.type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckValidationFailedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckValidationFailedDataPoint(ts+1, 3, "http.url-val-2", "validation.type-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckValidationFailed.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckValidationPassedDataPoint(ts, 1, "http.url-val", "validation.type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHttpcheckValidationPassedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHttpcheckValidationPassedDataPoint(ts+1, 3, "http.url-val-2", "validation.type-val-2")
+				assert.Equal(t, 2, mb.metricHttpcheckValidationPassed.data.Sum().DataPoints().Len())
 			}
 
 			res := pcommon.NewResource()
@@ -216,7 +252,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.client.connection.duration"], "Found a duplicate in the metrics slice: httpcheck.client.connection.duration")
 						validatedMetrics["httpcheck.client.connection.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent establishing TCP connection to the endpoint.", mi.Description())
 						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -258,7 +296,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.client.request.duration"], "Found a duplicate in the metrics slice: httpcheck.client.request.duration")
 						validatedMetrics["httpcheck.client.request.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent sending the HTTP request to the endpoint.", mi.Description())
 						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -298,7 +338,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.dns.lookup.duration"], "Found a duplicate in the metrics slice: httpcheck.dns.lookup.duration")
 						validatedMetrics["httpcheck.dns.lookup.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent performing DNS lookup for the endpoint.", mi.Description())
 						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -338,7 +380,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.duration"], "Found a duplicate in the metrics slice: httpcheck.duration")
 						validatedMetrics["httpcheck.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the duration of the HTTP check.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -383,7 +427,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.error"], "Found a duplicate in the metrics slice: httpcheck.error")
 						validatedMetrics["httpcheck.error"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Records errors occurring during HTTP check.", mi.Description())
 						assert.Equal(t, "{error}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -427,7 +473,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.response.duration"], "Found a duplicate in the metrics slice: httpcheck.response.duration")
 						validatedMetrics["httpcheck.response.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent receiving the HTTP response from the endpoint.", mi.Description())
 						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -467,7 +515,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.response.size"], "Found a duplicate in the metrics slice: httpcheck.response.size")
 						validatedMetrics["httpcheck.response.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of response body in bytes.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -518,7 +568,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.status"], "Found a duplicate in the metrics slice: httpcheck.status")
 						validatedMetrics["httpcheck.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "1 if the check resulted in status_code matching the status_class, otherwise 0.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -575,7 +627,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.tls.cert_remaining"], "Found a duplicate in the metrics slice: httpcheck.tls.cert_remaining")
 						validatedMetrics["httpcheck.tls.cert_remaining"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -621,7 +675,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.tls.handshake.duration"], "Found a duplicate in the metrics slice: httpcheck.tls.handshake.duration")
 						validatedMetrics["httpcheck.tls.handshake.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent performing TLS handshake with the endpoint.", mi.Description())
 						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -666,7 +722,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
 						validatedMetrics["httpcheck.validation.failed"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of response validations that failed.", mi.Description())
 						assert.Equal(t, "{validation}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -715,7 +773,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
 						validatedMetrics["httpcheck.validation.passed"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of response validations that passed.", mi.Description())
 						assert.Equal(t, "{validation}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

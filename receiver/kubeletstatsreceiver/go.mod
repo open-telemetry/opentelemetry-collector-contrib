@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/filter v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/pdata v1.68.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/pipeline v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/receiver v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.162.1-0.20261002061526-adaf75eebce7
@@ -115,7 +116,6 @@ require (
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.1-0.20261002061526-adaf75eebce7 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 // indirect

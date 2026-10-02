@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/filter v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/pdata v1.68.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/scraper v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/scraper/scrapertest v0.162.1-0.20261002061526-adaf75eebce7
 	go.uber.org/goleak v1.3.0
@@ -40,7 +41,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.1-0.20261002061526-adaf75eebce7 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/pipeline v1.68.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
