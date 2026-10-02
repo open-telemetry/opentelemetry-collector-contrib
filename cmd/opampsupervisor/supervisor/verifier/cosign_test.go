@@ -37,9 +37,20 @@ func loadFixtures(t *testing.T) (sig, digest []byte, trustedRoot root.TrustedMat
 	return sig, digest, trustedRoot
 }
 
+// releasesCfg accepts artifacts signed by the opentelemetry-collector-releases
+// release workflow, matching the identity documented in the specification.
+func releasesCfg() config.CosignSignatureVerifier {
+	return config.CosignSignatureVerifier{
+		CertGithubWorkflowRepository: "open-telemetry/opentelemetry-collector-releases",
+		Identities: []config.AgentSignatureIdentity{{
+			Issuer:        "https://token.actions.githubusercontent.com",
+			SubjectRegExp: `^https://github.com/open-telemetry/opentelemetry-collector-releases/.github/workflows/base-release.yaml@refs/tags/[^/]*$`,
+		}},
+	}
+}
+
 func TestCosignVerifier(t *testing.T) {
 	sig, digest, trustedRoot := loadFixtures(t)
-	defaultCfg := config.DefaultSupervisor().Agent.Package.Verifier.Cosign
 	wrongDigest := append([]byte{}, digest...)
 	wrongDigest[0] ^= 1
 
@@ -51,7 +62,7 @@ func TestCosignVerifier(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name:   "default config accepts release bundle",
+			name:   "releases config accepts release bundle",
 			digest: digest,
 		},
 		{
@@ -118,9 +129,7 @@ func TestCosignVerifier(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := defaultCfg
-			// copy so per-case mutation does not leak between cases
-			cfg.Identities = append([]config.AgentSignatureIdentity{}, defaultCfg.Identities...)
+			cfg := releasesCfg()
 			if tc.cfg != nil {
 				cfg = tc.cfg(cfg)
 			}
@@ -144,7 +153,7 @@ func TestCosignVerifier(t *testing.T) {
 
 func TestCosignVerifier_VerifyRejectsWrongPackage(t *testing.T) {
 	sig, _, trustedRoot := loadFixtures(t)
-	v, err := newCosignVerifierWithTrustedMaterial(config.DefaultSupervisor().Agent.Package.Verifier.Cosign, trustedRoot)
+	v, err := newCosignVerifierWithTrustedMaterial(releasesCfg(), trustedRoot)
 	require.NoError(t, err)
 	require.ErrorContains(t, v.Verify([]byte("not the release tarball"), sig), "verify sigstore bundle: failed to verify signature")
 }

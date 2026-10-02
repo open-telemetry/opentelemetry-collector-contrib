@@ -39,12 +39,6 @@ const (
 	VerifierTypeNone = ""
 	// VerifierTypeCosign verifies packages signed with Cosign keyless signing.
 	VerifierTypeCosign = "cosign"
-
-	// Defaults matching binaries produced by the OpenTelemetry Collector
-	// Releases repository. See the specification for details.
-	defaultCosignRepository    = "open-telemetry/opentelemetry-collector-releases"
-	defaultCosignIssuer        = "https://token.actions.githubusercontent.com"
-	defaultCosignSubjectRegExp = `^https://github.com/open-telemetry/opentelemetry-collector-releases/.github/workflows/base-release.yaml@refs/tags/[^/]*$`
 )
 
 // Validate validates the verifier configuration.
