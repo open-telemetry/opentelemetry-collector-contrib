@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 // shardedProcessor wraps N independent tailSamplingSpanProcessor instances,
@@ -55,7 +56,7 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 		// would scale by num_shards, defeating the memory benefit of sharding.
 		shardCfg.DecisionCache.SampledCacheSize = divideRate(cfg.DecisionCache.SampledCacheSize, numShards)
 		shardCfg.DecisionCache.NonSampledCacheSize = divideRate(cfg.DecisionCache.NonSampledCacheSize, numShards)
-		shardCfg.PolicyCfgs = dividePolicyRates(cfg.PolicyCfgs, numShards)
+		shardCfg.PolicyCfgs = shardPolicyCfgs(cfg.PolicyCfgs, numShards)
 	}
 
 	telemetry, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -84,66 +85,64 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 	}, nil
 }
 
-// dividePolicyRates returns a copy of cfgs with per-second rate limits
-// divided by numShards. Traces are distributed uniformly across shards by
-// trace ID, so each shard enforcing 1/N of a limit keeps the aggregate limit
-// close to the configured value. Without this, every shard would enforce the
-// full limit and the effective limit would be limit*numShards.
-func dividePolicyRates(cfgs []PolicyCfg, numShards uint32) []PolicyCfg {
+// shardPolicyCfgs returns a copy of cfgs whose rate limits are enforced
+// across all shards together. rate_limiting and bytes_limiting policies get a
+// limiter shared by every shard, so the configured rate and burst capacity
+// apply to the processor as a whole. The composite max_total_spans_per_second
+// is a per-shard counter and is instead divided by numShards; traces are
+// distributed uniformly across shards by trace ID, so the aggregate limit
+// stays close to the configured value.
+func shardPolicyCfgs(cfgs []PolicyCfg, numShards uint32) []PolicyCfg {
 	if numShards <= 1 || len(cfgs) == 0 {
 		return cfgs
 	}
 	out := slices.Clone(cfgs)
 	for i := range out {
-		divideSharedPolicyRates(&out[i].sharedPolicyCfg, numShards)
-		out[i].CompositeCfg = divideCompositeRates(out[i].CompositeCfg, numShards)
-		out[i].AndCfg.SubPolicyCfg = divideAndSubPolicyRates(out[i].AndCfg.SubPolicyCfg, numShards)
-		divideSharedPolicyRates(&out[i].NotCfg.SubPolicy.sharedPolicyCfg, numShards)
-		out[i].DropCfg.SubPolicyCfg = divideAndSubPolicyRates(out[i].DropCfg.SubPolicyCfg, numShards)
+		shareLimiter(&out[i].sharedPolicyCfg)
+		out[i].CompositeCfg = shardCompositeCfg(out[i].CompositeCfg, numShards)
+		out[i].AndCfg.SubPolicyCfg = shardAndSubPolicyCfgs(out[i].AndCfg.SubPolicyCfg)
+		shareLimiter(&out[i].NotCfg.SubPolicy.sharedPolicyCfg)
+		out[i].DropCfg.SubPolicyCfg = shardAndSubPolicyCfgs(out[i].DropCfg.SubPolicyCfg)
 	}
 	return out
 }
 
-func divideCompositeRates(cfg CompositeCfg, numShards uint32) CompositeCfg {
+func shardCompositeCfg(cfg CompositeCfg, numShards uint32) CompositeCfg {
 	cfg.MaxTotalSpansPerSecond = divideRate(cfg.MaxTotalSpansPerSecond, numShards)
 	// RateAllocation is percentage-based and needs no division.
 	if len(cfg.SubPolicyCfg) > 0 {
 		subs := slices.Clone(cfg.SubPolicyCfg)
 		for i := range subs {
-			divideSharedPolicyRates(&subs[i].sharedPolicyCfg, numShards)
-			subs[i].AndCfg.SubPolicyCfg = divideAndSubPolicyRates(subs[i].AndCfg.SubPolicyCfg, numShards)
+			shareLimiter(&subs[i].sharedPolicyCfg)
+			subs[i].AndCfg.SubPolicyCfg = shardAndSubPolicyCfgs(subs[i].AndCfg.SubPolicyCfg)
 		}
 		cfg.SubPolicyCfg = subs
 	}
 	return cfg
 }
 
-func divideAndSubPolicyRates(subs []AndSubPolicyCfg, numShards uint32) []AndSubPolicyCfg {
+func shardAndSubPolicyCfgs(subs []AndSubPolicyCfg) []AndSubPolicyCfg {
 	if len(subs) == 0 {
 		return subs
 	}
 	out := slices.Clone(subs)
 	for i := range out {
-		divideSharedPolicyRates(&out[i].sharedPolicyCfg, numShards)
+		shareLimiter(&out[i].sharedPolicyCfg)
+		shareLimiter(&out[i].NotCfg.SubPolicy.sharedPolicyCfg)
 	}
 	return out
 }
 
-func divideSharedPolicyRates(cfg *sharedPolicyCfg, numShards uint32) {
-	// Burst capacity is intentionally not divided: besides absorbing short
-	// spikes, it caps the size of a single trace that can pass the limiter,
-	// and a trace is always evaluated whole on one shard. An unset burst
-	// capacity defaults to 2x the per-shard (divided) rate, so pin it to 2x
-	// the configured rate first to keep the largest admissible trace
-	// independent of num_shards.
-	if cfg.RateLimitingCfg.BurstCapacity <= 0 && cfg.RateLimitingCfg.SpansPerSecond > 0 {
-		cfg.RateLimitingCfg.BurstCapacity = 2 * cfg.RateLimitingCfg.SpansPerSecond
+// shareLimiter attaches the limiter every shard's evaluator for cfg will use.
+func shareLimiter(cfg *sharedPolicyCfg) {
+	switch cfg.Type {
+	case RateLimiting:
+		rl := &cfg.RateLimitingCfg
+		rl.limiter = sampling.NewLimiter(rl.SpansPerSecond, rl.BurstCapacity)
+	case BytesLimiting:
+		bl := &cfg.BytesLimitingCfg
+		bl.limiter = sampling.NewLimiter(bl.BytesPerSecond, bl.BurstCapacity)
 	}
-	if cfg.BytesLimitingCfg.BurstCapacity <= 0 && cfg.BytesLimitingCfg.BytesPerSecond > 0 {
-		cfg.BytesLimitingCfg.BurstCapacity = 2 * cfg.BytesLimitingCfg.BytesPerSecond
-	}
-	cfg.RateLimitingCfg.SpansPerSecond = divideRate(cfg.RateLimitingCfg.SpansPerSecond, numShards)
-	cfg.BytesLimitingCfg.BytesPerSecond = divideRate(cfg.BytesLimitingCfg.BytesPerSecond, numShards)
 }
 
 // divideRate splits a positive limit across numShards, keeping a minimum of
@@ -216,7 +215,7 @@ func (sp *shardedProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 }
 
 func (sp *shardedProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
-	cfgs = dividePolicyRates(cfgs, sp.numShards)
+	cfgs = shardPolicyCfgs(cfgs, sp.numShards)
 	for _, s := range sp.shards {
 		s.SetSamplingPolicy(cfgs)
 	}

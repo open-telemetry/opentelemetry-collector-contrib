@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -18,7 +17,7 @@ import (
 
 type rateLimiting struct {
 	// Rate limiter using golang.org/x/time/rate for efficient token bucket implementation.
-	limiter *rate.Limiter
+	limiter *Limiter
 	logger  *zap.Logger
 }
 
@@ -35,11 +34,17 @@ func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64)
 // spansPerSecond and the bucket holds at most burstCapacity tokens. A single trace whose span
 // count exceeds the burst capacity will not pass.
 func NewRateLimitingWithBurstCapacity(settings component.TelemetrySettings, spansPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
+	return NewRateLimitingWithLimiter(settings, NewLimiter(spansPerSecond, burstCapacity))
+}
+
+// NewRateLimitingWithLimiter creates a rate limiting policy evaluator that draws spans from limiter,
+// which may be shared with other evaluators to enforce one limit across all of them.
+func NewRateLimitingWithLimiter(settings component.TelemetrySettings, limiter *Limiter) samplingpolicy.Evaluator {
 	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
-		return newBudgetLimiter(settings, spansPerSecond, burstCapacity, traceSpanCount)
+		return newBudgetLimiter(settings, limiter, traceSpanCount)
 	}
 	return &rateLimiting{
-		limiter: rate.NewLimiter(rate.Limit(spansPerSecond), int(burstCapacity)),
+		limiter: limiter,
 		logger:  settings.Logger,
 	}
 }

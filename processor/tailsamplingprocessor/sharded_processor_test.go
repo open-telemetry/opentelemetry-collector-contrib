@@ -4,8 +4,11 @@
 package tailsamplingprocessor
 
 import (
+	"context"
 	"encoding/binary"
+	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,10 +16,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
@@ -96,7 +101,7 @@ func TestShardedProcessorDisabledDecisionCacheStaysDisabled(t *testing.T) {
 	}
 }
 
-func TestDividePolicyRates(t *testing.T) {
+func TestShardPolicyCfgs(t *testing.T) {
 	cfgs := []PolicyCfg{
 		{
 			sharedPolicyCfg: sharedPolicyCfg{
@@ -112,12 +117,21 @@ func TestDividePolicyRates(t *testing.T) {
 		},
 		{
 			sharedPolicyCfg: sharedPolicyCfg{Name: "and", Type: And},
-			AndCfg: AndCfg{SubPolicyCfg: []AndSubPolicyCfg{{
-				sharedPolicyCfg: sharedPolicyCfg{
-					Name: "and-rate", Type: RateLimiting,
-					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 400},
+			AndCfg: AndCfg{SubPolicyCfg: []AndSubPolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "and-rate", Type: RateLimiting,
+						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 400},
+					},
 				},
-			}}},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{Name: "and-not", Type: Not},
+					NotCfg: NotCfg{SubPolicy: NotSubPolicyCfg{sharedPolicyCfg: sharedPolicyCfg{
+						Name: "and-not-rate", Type: RateLimiting,
+						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
+					}}},
+				},
+			}},
 		},
 		{
 			sharedPolicyCfg: sharedPolicyCfg{Name: "composite", Type: Composite},
@@ -133,39 +147,130 @@ func TestDividePolicyRates(t *testing.T) {
 			},
 		},
 		{
-			// Limit smaller than the shard count must not round down to 0,
-			// which would sample nothing.
-			sharedPolicyCfg: sharedPolicyCfg{
-				Name: "small", Type: RateLimiting,
-				RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 2},
+			sharedPolicyCfg: sharedPolicyCfg{Name: "not", Type: Not},
+			NotCfg: NotCfg{SubPolicy: NotSubPolicyCfg{sharedPolicyCfg: sharedPolicyCfg{
+				Name: "not-rate", Type: RateLimiting,
+				RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
+			}}},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{Name: "drop", Type: Drop},
+			DropCfg: DropCfg{SubPolicyCfg: []AndSubPolicyCfg{{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "drop-bytes", Type: BytesLimiting,
+					BytesLimitingCfg: BytesLimitingCfg{BytesPerSecond: 10},
+				},
+			}}},
+		},
+		{
+			// Composite limits smaller than the shard count must not round
+			// down to 0, which would sample nothing.
+			sharedPolicyCfg: sharedPolicyCfg{Name: "small", Type: Composite},
+			CompositeCfg: CompositeCfg{
+				MaxTotalSpansPerSecond: 2,
+				SubPolicyCfg: []CompositeSubPolicyCfg{{
+					sharedPolicyCfg: sharedPolicyCfg{Name: "and", Type: And},
+					AndCfg: AndCfg{SubPolicyCfg: []AndSubPolicyCfg{{
+						sharedPolicyCfg: sharedPolicyCfg{
+							Name: "and-rate", Type: RateLimiting,
+							RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
+						},
+					}}},
+				}},
 			},
 		},
 	}
 
-	divided := dividePolicyRates(cfgs, 4)
+	sharded := shardPolicyCfgs(cfgs, 4)
 
-	assert.Equal(t, int64(250), divided[0].RateLimitingCfg.SpansPerSecond)
-	assert.Equal(t, int64(100), divided[0].RateLimitingCfg.BurstCapacity,
-		"explicit burst capacity must not be divided: it caps the size of a single admissible trace")
-	assert.Equal(t, int64(1000), divided[1].BytesLimitingCfg.BytesPerSecond)
-	assert.Equal(t, int64(8000), divided[1].BytesLimitingCfg.BurstCapacity,
-		"unset burst capacity must be pinned to 2x the configured rate, not default to 2x the divided rate")
-	assert.Equal(t, int64(100), divided[2].AndCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
-	assert.Equal(t, int64(200), divided[3].CompositeCfg.MaxTotalSpansPerSecond)
-	assert.Equal(t, int64(10), divided[3].CompositeCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
-	assert.Equal(t, int64(50), divided[3].CompositeCfg.RateAllocation[0].Percent, "percentage allocations must not be divided")
-	assert.Equal(t, int64(1), divided[4].RateLimitingCfg.SpansPerSecond)
+	rl := sharded[0].RateLimitingCfg
+	require.NotNil(t, rl.limiter)
+	assert.Equal(t, rate.Limit(1000), rl.limiter.Limit(), "shared limiters enforce the full configured rate")
+	assert.Equal(t, 100, rl.limiter.Burst())
+	bl := sharded[1].BytesLimitingCfg
+	require.NotNil(t, bl.limiter)
+	assert.Equal(t, rate.Limit(4000), bl.limiter.Limit())
+	assert.Equal(t, 8000, bl.limiter.Burst(), "unset burst capacity defaults to 2x the rate")
+	assert.NotNil(t, sharded[2].AndCfg.SubPolicyCfg[0].RateLimitingCfg.limiter)
+	assert.NotNil(t, sharded[2].AndCfg.SubPolicyCfg[1].NotCfg.SubPolicy.RateLimitingCfg.limiter)
+	assert.Equal(t, int64(200), sharded[3].CompositeCfg.MaxTotalSpansPerSecond)
+	assert.Equal(t, int64(50), sharded[3].CompositeCfg.RateAllocation[0].Percent, "percentage allocations must not be divided")
+	assert.NotNil(t, sharded[3].CompositeCfg.SubPolicyCfg[0].RateLimitingCfg.limiter)
+	assert.NotNil(t, sharded[4].NotCfg.SubPolicy.RateLimitingCfg.limiter)
+	assert.NotNil(t, sharded[5].DropCfg.SubPolicyCfg[0].BytesLimitingCfg.limiter)
+	assert.Equal(t, int64(1), sharded[6].CompositeCfg.MaxTotalSpansPerSecond)
+	assert.NotNil(t, sharded[6].CompositeCfg.SubPolicyCfg[0].AndCfg.SubPolicyCfg[0].RateLimitingCfg.limiter)
 
 	// The input must not be mutated: SetSamplingPolicy callers and the parent
-	// config retain the undivided values.
-	assert.Equal(t, int64(1000), cfgs[0].RateLimitingCfg.SpansPerSecond)
-	assert.Equal(t, int64(0), cfgs[1].BytesLimitingCfg.BurstCapacity)
-	assert.Equal(t, int64(400), cfgs[2].AndCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
+	// config keep their own values and get fresh limiters on every call.
+	assert.Nil(t, cfgs[0].RateLimitingCfg.limiter)
+	assert.Nil(t, cfgs[1].BytesLimitingCfg.limiter)
+	assert.Nil(t, cfgs[2].AndCfg.SubPolicyCfg[0].RateLimitingCfg.limiter)
+	assert.Nil(t, cfgs[2].AndCfg.SubPolicyCfg[1].NotCfg.SubPolicy.RateLimitingCfg.limiter)
 	assert.Equal(t, int64(800), cfgs[3].CompositeCfg.MaxTotalSpansPerSecond)
-	assert.Equal(t, int64(40), cfgs[3].CompositeCfg.SubPolicyCfg[0].RateLimitingCfg.SpansPerSecond)
+	assert.Nil(t, cfgs[3].CompositeCfg.SubPolicyCfg[0].RateLimitingCfg.limiter)
+	assert.NotSame(t, rl.limiter, shardPolicyCfgs(cfgs, 4)[0].RateLimitingCfg.limiter)
 
-	// A single shard needs no division and returns the input unchanged.
-	assert.Equal(t, cfgs, dividePolicyRates(cfgs, 1))
+	// A single shard needs no sharing and returns the input unchanged.
+	assert.Equal(t, cfgs, shardPolicyCfgs(cfgs, 1))
+}
+
+func TestShardedProcessorSharesRateLimit(t *testing.T) {
+	for _, useTracestate := range []bool{false, true} {
+		t.Run(fmt.Sprintf("tracestate=%t", useTracestate), func(t *testing.T) {
+			testShardedProcessorSharesRateLimit(t, useTracestate)
+		})
+	}
+}
+
+func testShardedProcessorSharesRateLimit(t *testing.T, useTracestate bool) {
+	const burst = 10
+	var sampled, notSampled atomic.Int64
+	options := []Option{
+		withTickerFrequency(time.Millisecond),
+		WithSampledHooks(func(context.Context, pcommon.TraceID, *TraceData) { sampled.Add(1) }),
+		WithNonSampledHooks(func(context.Context, pcommon.TraceID, *TraceData) { notSampled.Add(1) }),
+	}
+	if useTracestate {
+		gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
+		prev := gate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+		})
+		options = append(options, withUseTracestate())
+	}
+	cfg := Config{
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        1000,
+		NumShards:        4,
+		PolicyCfgs: []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{
+			Name: "rate", Type: RateLimiting,
+			RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 1, BurstCapacity: burst},
+		}}},
+		Options: options,
+	}
+
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	numTraces := 100
+	for i := range numTraces {
+		require.NoError(t, p.ConsumeTraces(t.Context(), simpleTracesWithID(uInt64ToTraceID(uint64(i)))))
+	}
+	require.Eventually(t, func() bool {
+		return sampled.Load()+notSampled.Load() == int64(numTraces)
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Per-shard limiters would admit up to burst traces on each shard. Allow
+	// for refills at 1 span per second while the test runs.
+	assert.GreaterOrEqual(t, sampled.Load(), int64(burst))
+	assert.LessOrEqual(t, sampled.Load(), int64(burst+5))
 }
 
 func TestShardedProcessorStartShutdown(t *testing.T) {

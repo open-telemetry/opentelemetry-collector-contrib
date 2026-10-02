@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -18,7 +17,7 @@ import (
 
 type bytesLimiting struct {
 	// Rate limiter using golang.org/x/time/rate for efficient token bucket implementation
-	limiter *rate.Limiter
+	limiter *Limiter
 }
 
 var _ samplingpolicy.Evaluator = (*bytesLimiting)(nil)
@@ -30,17 +29,16 @@ func NewBytesLimiting(settings component.TelemetrySettings, bytesPerSecond int64
 }
 
 // NewBytesLimitingWithBurstCapacity creates a policy evaluator with custom burst capacity.
-// Uses golang.org/x/time/rate.Limiter for efficient, thread-safe token bucket implementation.
 func NewBytesLimitingWithBurstCapacity(settings component.TelemetrySettings, bytesPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
+	return NewBytesLimitingWithLimiter(settings, NewLimiter(bytesPerSecond, burstCapacity))
+}
+
+// NewBytesLimitingWithLimiter creates a bytes limiting policy evaluator that draws bytes from limiter,
+// which may be shared with other evaluators to enforce one limit across all of them.
+func NewBytesLimitingWithLimiter(settings component.TelemetrySettings, limiter *Limiter) samplingpolicy.Evaluator {
 	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
-		return newBudgetLimiter(settings, bytesPerSecond, burstCapacity, calculateTraceSize)
+		return newBudgetLimiter(settings, limiter, calculateTraceSize)
 	}
-
-	// Create rate limiter with specified rate and burst capacity
-	// rate.Limit is tokens per second (bytes per second in our case)
-	// burst capacity is the maximum number of tokens (bytes) that can be consumed in a single request
-	limiter := rate.NewLimiter(rate.Limit(bytesPerSecond), int(burstCapacity))
-
 	return &bytesLimiting{
 		limiter: limiter,
 	}

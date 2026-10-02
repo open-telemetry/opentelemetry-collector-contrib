@@ -17,7 +17,7 @@ import (
 func TestBudgetLimiterBatchThreshold(t *testing.T) {
 	// Burst 5 => starting budget of 5 spans. Three traces of 2 spans
 	// each (total 6) exceed the budget by one trace.
-	bl := newBudgetLimiter(componenttest.NewNopTelemetrySettings(), 5, 5, traceSpanCount)
+	bl := newBudgetLimiter(componenttest.NewNopTelemetrySettings(), NewLimiter(5, 5), traceSpanCount)
 
 	a := rlTrace(1, 100, 2)
 	b := rlTrace(2, 50, 2)
@@ -52,7 +52,7 @@ func TestBudgetLimiterBatchThreshold(t *testing.T) {
 }
 
 func TestBudgetLimiterBatchWholeBatchFits(t *testing.T) {
-	bl := newBudgetLimiter(componenttest.NewNopTelemetrySettings(), 10, 10, traceSpanCount)
+	bl := newBudgetLimiter(componenttest.NewNopTelemetrySettings(), NewLimiter(10, 10), traceSpanCount)
 
 	traces := []*samplingpolicy.TraceData{rlTrace(1, 100, 2), rlTrace(2, 50, 2)}
 	bl.CalculateThreshold(t.Context(), traces)
@@ -66,7 +66,7 @@ func TestBudgetLimiterBatchWholeBatchFits(t *testing.T) {
 }
 
 func TestBudgetLimiterBatchLargeTraceDropped(t *testing.T) {
-	bl := newBudgetLimiter(componenttest.NewNopTelemetrySettings(), 2, 2, traceSpanCount)
+	bl := newBudgetLimiter(componenttest.NewNopTelemetrySettings(), NewLimiter(2, 2), traceSpanCount)
 
 	td := rlTrace(1, 100, 5) // 5 spans > budget of 2
 	bl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{td})
@@ -80,7 +80,7 @@ func TestBudgetLimiterOversizedTraceDoesNotStarveOthers(t *testing.T) {
 	// Budget 10. d costs more than the entire burst and has the highest
 	// randomness; without excluding it up front it would zero out the
 	// budget calculation for a and c, which would otherwise both fit.
-	bl := newBudgetLimiter(componenttest.NewNopTelemetrySettings(), 10, 10, traceSpanCount)
+	bl := newBudgetLimiter(componenttest.NewNopTelemetrySettings(), NewLimiter(10, 10), traceSpanCount)
 	d := rlTrace(1, 200, 20)
 	a := rlTrace(2, 100, 3)
 	c := rlTrace(3, 50, 3)
