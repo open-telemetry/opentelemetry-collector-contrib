@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: receiver/azure_blob
+note: Return an error instead of panicking when an Event Hub message has no events or an unexpected blob subject
+issues: [51474]
+subtext: |
+  A malformed or unexpected Event Hub message could crash the collector. Such messages are now
+  logged as errors and skipped, and events other than blob creation are ignored without being parsed.
+change_logs: [user]

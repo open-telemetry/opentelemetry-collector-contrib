@@ -976,7 +976,7 @@ Number of free list stalls.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {stalls}/s | Gauge | Int | Development |
+| {stalls}/s | Gauge | Double | Development |
 
 ### sqlserver.page.compression.rate
 
@@ -1302,7 +1302,7 @@ query sample
 | sqlserver.wait.resource.id | SQL Server identifier for the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.wait.resource.type | SQL Server type of the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.row_count | Number of rows affected or returned by the query. | Any Int | - |
-| sqlserver.session.duration | Total elapsed time in seconds the session has been actively executing requests. | Any Double | - |
+| sqlserver.session.duration | Total elapsed time in seconds since the session was established (login time). | Any Double | - |
 | sqlserver.session.start_time | Timestamp when the session was established (ISO 8601 format). | Any Str | - |
 | sqlserver.session_id | ID of the SQL Server session. | Any Int | - |
 | sqlserver.session_status | Status of the session (e.g., running, sleeping). | Any Str | - |
@@ -1373,6 +1373,7 @@ top query
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.version | The database version of the instance. Examples include "15.0.4261.1". | Any Str | false | - | - |
 | host.name | The host name of SQL Server | Any Str | true | - | - |
 | server.address | The address of the monitored SQL Server instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. | Any Str | true | - | - |
 | server.port | The port of the monitored SQL Server instance, defaulting to 1433 when not configured. | Any Int | true | - | - |
