@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/fake"
+	clienttesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
@@ -696,13 +697,26 @@ func TestWatchModeDeduplicatesNamespaces(t *testing.T) {
 func TestWatchModeStartFailureUnregistersHandlers(t *testing.T) {
 	t.Parallel()
 	client, addObj := newFakeClient(t)
+
+	// Block the informer's initial List so the cache cannot sync before the
+	// timeout. Relying on a tiny timeout alone races with the fake client,
+	// which can sync before WaitForCacheSync first checks its stop channel.
+	releaseList := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(releaseList) }) }
+	client.PrependReactor("list", "pods", func(clienttesting.Action) (bool, runtime.Object, error) {
+		<-releaseList
+		return false, nil, nil
+	})
+
 	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
+	t.Cleanup(release)
 
 	var calls atomic.Int32
 	obs, err := NewWatch(reg, WatchConfig{
 		Config:           k8sinventory.Config{Gvr: podsGVR},
-		CacheSyncTimeout: 1 * time.Nanosecond, // force sync failure
+		CacheSyncTimeout: 100 * time.Millisecond, // informer is blocked, so this always times out
 	}, zap.NewNop(), func(*apiWatch.Event) {
 		calls.Add(1)
 	})
@@ -710,8 +724,11 @@ func TestWatchModeStartFailureUnregistersHandlers(t *testing.T) {
 
 	var wg sync.WaitGroup
 	_, err = obs.Start(t.Context(), &wg)
-	require.Error(t, err, "Start must fail with an unrealistic cache sync timeout")
+	require.Error(t, err, "Start must fail when the cache cannot sync")
 
+	// Let the informer sync now: if handlers were still registered, the
+	// initial list and the late pod would reach them.
+	release()
 	addObj(makePod("late-pod"))
 
 	assert.Never(t, func() bool {

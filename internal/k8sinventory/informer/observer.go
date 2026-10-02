@@ -247,12 +247,17 @@ func (o *Observer) waitForCacheSync(ctx context.Context) error {
 
 	var errs []error
 	for _, s := range syncs {
-		if !cache.WaitForCacheSync(syncCtx.Done(), s.hasSynced) {
-			if ctx.Err() != nil {
-				errs = append(errs, fmt.Errorf("informer cache sync aborted for %s (namespace=%q): %w", o.base.Gvr, s.namespace, ctx.Err()))
-			} else {
-				errs = append(errs, fmt.Errorf("timed out waiting for informer cache to sync for %s (namespace=%q)", o.base.Gvr, s.namespace))
-			}
+		// cache.WaitForCacheSync polls hasSynced before it checks the stop
+		// channel, so an informer that syncs quickly would report success even
+		// when ctx is already done. Check ctx first so a cancelled Start never
+		// succeeds.
+		if ctx.Err() == nil && cache.WaitForCacheSync(syncCtx.Done(), s.hasSynced) {
+			continue
+		}
+		if ctx.Err() != nil {
+			errs = append(errs, fmt.Errorf("informer cache sync aborted for %s (namespace=%q): %w", o.base.Gvr, s.namespace, ctx.Err()))
+		} else {
+			errs = append(errs, fmt.Errorf("timed out waiting for informer cache to sync for %s (namespace=%q)", o.base.Gvr, s.namespace))
 		}
 	}
 	return errors.Join(errs...)
