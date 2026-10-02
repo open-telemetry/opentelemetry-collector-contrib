@@ -79,6 +79,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMemcachedCommandsDataPoint(ts, 1, AttributeCommandGet)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedCommandsDataPoint(ts, 3, AttributeCommandSet)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMemcachedCommandsDataPoint(ts+1, 3, AttributeCommandSet)
+				assert.Equal(t, 2, mb.metricMemcachedCommands.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -91,6 +94,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMemcachedCPUUsageDataPoint(ts, 1, AttributeStateSystem)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedCPUUsageDataPoint(ts, 3, AttributeStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMemcachedCPUUsageDataPoint(ts+1, 3, AttributeStateUser)
+				assert.Equal(t, 2, mb.metricMemcachedCPUUsage.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -103,18 +109,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMemcachedNetworkDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedNetworkDataPoint(ts, 3, AttributeDirectionReceived)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMemcachedNetworkDataPoint(ts+1, 3, AttributeDirectionReceived)
+				assert.Equal(t, 2, mb.metricMemcachedNetwork.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedOperationHitRatioDataPoint(ts, 1, AttributeOperationIncrement)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedOperationHitRatioDataPoint(ts, 3, AttributeOperationDecrement)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMemcachedOperationHitRatioDataPoint(ts+1, 3, AttributeOperationDecrement)
+				assert.Equal(t, 2, mb.metricMemcachedOperationHitRatio.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedOperationsDataPoint(ts, 1, AttributeTypeHit, AttributeOperationIncrement)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMemcachedOperationsDataPoint(ts, 3, AttributeTypeMiss, AttributeOperationDecrement)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMemcachedOperationsDataPoint(ts+1, 3, AttributeTypeMiss, AttributeOperationDecrement)
+				assert.Equal(t, 2, mb.metricMemcachedOperations.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -189,7 +204,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["memcached.commands"], "Found a duplicate in the metrics slice: memcached.commands")
 						validatedMetrics["memcached.commands"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Commands executed.", mi.Description())
 						assert.Equal(t, "{commands}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -261,7 +278,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["memcached.cpu.usage"], "Found a duplicate in the metrics slice: memcached.cpu.usage")
 						validatedMetrics["memcached.cpu.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Accumulated user and system time.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -333,7 +352,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["memcached.network"], "Found a duplicate in the metrics slice: memcached.network")
 						validatedMetrics["memcached.network"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Bytes transferred over the network.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -375,7 +396,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["memcached.operation_hit_ratio"], "Found a duplicate in the metrics slice: memcached.operation_hit_ratio")
 						validatedMetrics["memcached.operation_hit_ratio"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -420,7 +443,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["memcached.operations"], "Found a duplicate in the metrics slice: memcached.operations")
 						validatedMetrics["memcached.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Operation counts.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

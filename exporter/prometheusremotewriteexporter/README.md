@@ -117,7 +117,7 @@ exporters:
 ```
 
 > [!NOTE]
-> The deprecated coponent type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
+> The deprecated component type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
 
 ## Advanced Configuration
 
