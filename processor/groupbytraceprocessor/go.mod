@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/pdata v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/processor v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/processor/processortest v0.162.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/otel v1.46.0
