@@ -20,33 +20,52 @@ Stores pending trace data for tail sampling in a local Pebble database.
 # Pebble Tail Storage Extension
 
 The Pebble Tail Storage Extension stores pending trace data on local disk for the
-Tail Sampling processor.
+[Tail Sampling processor](../../../processor/tailsamplingprocessor/README.md).
 
-This extension is intended to be used with the Tail Sampling processor `tail_storage`
-setting and is useful when in-memory pending-trace state would otherwise be too large.
-
-## Limitations
-
-Persistence across collector restarts is **not yet supported**. The extension
-drops all data in the Pebble database in `directory` on startup. This is a temporary
-measure while the on-disk schema is under heavy development; operators should
-treat the directory as ephemeral.
+Use it with the Tail Sampling processor `tail_storage` setting when the pending
+trace state would otherwise be too large to keep in memory. Spans for traces that
+are still waiting for a sampling decision are written to a local
+[Pebble](https://github.com/cockroachdb/pebble) database instead of being held in
+memory. When the processor makes a decision, it reads the spans back and deletes
+them from the database.
 
 ## Configuration
 
-- `directory` (required): directory used to store Pebble DB files.
-- `max_storage_size_mib` (optional): maximum on-disk size observed for the Pebble tail
-  store. The limit is best-effort because Pebble may perform filesystem operations
-  asynchronously. After the last periodic size observation exceeds the limit, new
-  appends fail. `0` keeps the existing unlimited behavior.
+| Field | Required | Default | Description |
+| ----- | -------- | ------- | ----------- |
+| `directory` | yes | | Directory used to store the Pebble database files. The extension creates the directory if it does not exist and writes the database in a versioned subdirectory. |
+| `max_storage_size_mib` | no | `0` | Maximum on-disk size of the Pebble database, in MiB. `0` means no limit. See [Size limit](#size-limit). |
 
-The size limit protects normal runtime disk usage for this extension. It does not make
-the storage durable across restarts. Startup still clears any existing Pebble database.
+### Minimal example
 
-## Example
+```yaml
+extensions:
+  pebble_tail_storage:
+    directory: /var/lib/otelcol/pebble-tail-storage
+
+processors:
+  tail_sampling:
+    tail_storage: pebble_tail_storage
+    decision_wait: 30s
+    policies:
+      - name: errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+
+service:
+  extensions: [pebble_tail_storage]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [tail_sampling]
+      exporters: [debug]
+```
+
+### Bounded memory with `span-ingest` and a size limit
 
 The following example uses the `span-ingest` sampling strategy with a decision
-cache and Pebble tail storage. The `span-ingest` strategy evaluates each
+cache and a bounded Pebble tail storage. The `span-ingest` strategy evaluates each
 incoming span batch immediately on ingest, which avoids accumulating complete
 traces in memory before making a decision. Combined with `tail_storage`, spans
 for traces that are still pending a decision are written to disk rather than
@@ -95,14 +114,91 @@ service:
       exporters: [debug]
 ```
 
-## Feature Gate
+## Feature gate
 
-Tail storage support in Tail Sampling is guarded by:
+Tail storage support in the Tail Sampling processor is guarded by the
+`processor.tailsamplingprocessor.tailstorageextension` feature gate. The gate is
+in the `alpha` stage and is disabled by default. If `tail_storage` is set while
+the gate is disabled, configuration validation fails and the collector does not
+start.
 
-`processor.tailsamplingprocessor.tailstorageextension`
-
-Enable it when running the collector:
+Enable the gate when you want to use this extension:
 
 ```sh
 otelcol-contrib --feature-gates=+processor.tailsamplingprocessor.tailstorageextension
 ```
+
+The gate exists because the `TailStorage` interface between the processor and the
+extension is still under development. Expect changes in behavior between releases
+while the gate is in `alpha`.
+
+## Size limit
+
+`max_storage_size_mib` protects the disk from unbounded growth. The extension
+samples the on-disk size of the database once per second. When the last observed
+size is above the limit, new appends fail until a later observation is below the
+limit again. Reads and deletes are not affected by the limit.
+
+The limit is best-effort:
+
+- The check uses the last observation, not the current size, so the database can
+  exceed the limit by the amount written in one second.
+- Pebble reclaims disk space asynchronously through compaction, so the observed
+  size can stay above the limit for some time after the processor has deleted
+  the pending traces.
+- The size limit does not make the storage durable across restarts.
+
+Set the limit lower than the free space on the volume, and leave headroom for the
+Pebble write-ahead log and compaction output.
+
+## Deployment guidance
+
+- Use a local disk. Pebble is a log-structured storage engine and expects local
+  filesystem semantics. Network filesystems are not supported.
+- Do not use a memory-backed filesystem such as `tmpfs`. The data would count
+  against the collector memory again and defeat the purpose of the extension.
+- Use one extension instance per directory. Pebble locks the directory, so a
+  second collector or a second extension instance that points to the same
+  directory fails to start.
+- Size the volume for the maximum amount of pending trace data you expect. A
+  rough upper bound is the incoming span volume per second multiplied by
+  `decision_wait`, plus headroom for compaction.
+- Pebble keeps a block cache and a memtable in memory. Expect a baseline memory
+  cost in the range of tens of MiB for the extension itself.
+
+## Limitations
+
+- **No persistence across restarts.** The extension drops all data in the Pebble
+  database in `directory` on startup and logs a warning when it finds an existing
+  database. Any trace that was pending a decision when the collector stopped is
+  lost. This is a temporary measure while the on-disk schema is under heavy
+  development. Treat the directory as ephemeral.
+- **Append failures lose spans.** When an append fails, for example because the
+  size limit is reached, the Tail Sampling processor logs the error and continues.
+  The spans in that batch are not stored and are not exported. The trace stays
+  pending and the final decision is made on the spans that were stored.
+- **Read failures drop the trace.** When the processor cannot read a pending
+  trace back from storage, it logs the error and drops the trace from its state
+  without making a sampling decision.
+- **Not supported with `num_shards` greater than 1.** The Tail Sampling processor
+  rejects a configuration that sets both `tail_storage` and `num_shards > 1`.
+- **Unsupported platforms.** The extension is not built on AIX and Solaris.
+
+## Telemetry
+
+The extension emits the following internal metrics. See [documentation.md][documentation_md]
+for the full definition of each metric.
+
+| Metric | Attributes | Description |
+| ------ | ---------- | ----------- |
+| `otelcol_extension_pebble_tail_storage_operations` | `operation` (`append`, `take`, `delete`), `outcome` (`success`, `failure`) | Count of storage operations by operation and outcome. |
+| `otelcol_extension_pebble_tail_storage_read_errors` | | Count of read-path errors: iterator creation, value read, payload decode, and iterator terminal errors. |
+
+Alert on a growing `outcome="failure"` count for `append`, which usually means the
+size limit was reached or the disk is full, and on any increase of
+`otelcol_extension_pebble_tail_storage_read_errors`.
+
+The extension does not emit traces, metrics, or logs of its own into the
+pipeline, so no resource attributes are defined.
+
+[documentation_md]: ./documentation.md

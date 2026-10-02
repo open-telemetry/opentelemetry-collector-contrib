@@ -166,6 +166,7 @@ components:
     - pkg/otelarrow
     - pkg/ottl
     - pkg/ottl/contexts/xprofile
+    - pkg/ottl/xottl
     - pkg/pdatatest
     - pkg/prometheus
     - pkg/resourcetotelemetry

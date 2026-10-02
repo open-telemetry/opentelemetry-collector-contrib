@@ -177,6 +177,7 @@ body:
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
+      - pkg/ottl/xottl
       - pkg/pdatatest
       - pkg/resourcetotelemetry
       - pkg/sampling

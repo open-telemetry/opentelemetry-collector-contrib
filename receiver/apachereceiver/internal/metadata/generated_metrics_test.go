@@ -89,12 +89,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordApacheConnectionStatusDataPoint(ts, "1", AttributeApacheConnectionStateWriting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheConnectionStatusDataPoint(ts, "3", AttributeApacheConnectionStateKeepalive)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordApacheConnectionStatusDataPoint(ts+1, "3", AttributeApacheConnectionStateKeepalive)
+				assert.Equal(t, 2, mb.metricApacheConnectionStatus.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheConnectionsAsyncDataPoint(ts, "1", AttributeConnectionStateWriting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheConnectionsAsyncDataPoint(ts, "3", AttributeConnectionStateKeepalive)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordApacheConnectionsAsyncDataPoint(ts+1, "3", AttributeConnectionStateKeepalive)
+				assert.Equal(t, 2, mb.metricApacheConnectionsAsync.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -104,6 +110,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevelSelf, AttributeCPUModeSystem)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheCPUTimeDataPoint(ts, "3", AttributeCPULevelChildren, AttributeCPUModeUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordApacheCPUTimeDataPoint(ts+1, "3", AttributeCPULevelChildren, AttributeCPUModeUser)
+				assert.Equal(t, 2, mb.metricApacheCPUTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -134,6 +143,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardStateOpen)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheScoreboardDataPoint(ts, 3, AttributeScoreboardStateWaiting)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordApacheScoreboardDataPoint(ts+1, 3, AttributeScoreboardStateWaiting)
+				assert.Equal(t, 2, mb.metricApacheScoreboard.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -158,12 +170,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordApacheWorkerStatusDataPoint(ts, 1, AttributeApacheWorkerStateOpen)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheWorkerStatusDataPoint(ts, 3, AttributeApacheWorkerStateWaiting)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordApacheWorkerStatusDataPoint(ts+1, 3, AttributeApacheWorkerStateWaiting)
+				assert.Equal(t, 2, mb.metricApacheWorkerStatus.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersStateBusy)
 			if tt.name == "reaggregate_set" {
 				mb.RecordApacheWorkersDataPoint(ts, "3", AttributeWorkersStateIdle)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordApacheWorkersDataPoint(ts+1, "3", AttributeWorkersStateIdle)
+				assert.Equal(t, 2, mb.metricApacheWorkers.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -241,7 +259,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["apache.connection.status"], "Found a duplicate in the metrics slice: apache.connection.status")
 						validatedMetrics["apache.connection.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -283,7 +303,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["apache.connections.async"], "Found a duplicate in the metrics slice: apache.connections.async")
 						validatedMetrics["apache.connections.async"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", mi.Description())
 						assert.Equal(t, "{connections}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -340,7 +362,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["apache.cpu.time"], "Found a duplicate in the metrics slice: apache.cpu.time")
 						validatedMetrics["apache.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Jiffs used by processes of given category.", mi.Description())
 						assert.Equal(t, "{jiff}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -490,7 +514,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["apache.scoreboard"], "Found a duplicate in the metrics slice: apache.scoreboard")
 						validatedMetrics["apache.scoreboard"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of workers in each state.", mi.Description())
 						assert.Equal(t, "{workers}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -616,7 +642,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["apache.worker.status"], "Found a duplicate in the metrics slice: apache.worker.status")
 						validatedMetrics["apache.worker.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of workers in each state.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -660,7 +688,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["apache.workers"], "Found a duplicate in the metrics slice: apache.workers")
 						validatedMetrics["apache.workers"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of workers currently attached to the HTTP server.", mi.Description())
 						assert.Equal(t, "{workers}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
