@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -67,4 +68,20 @@ func TestCreateMetricsWithNilConsumer(t *testing.T) {
 
 	require.Error(t, err, "Nil Consumer")
 	require.Nil(t, metricsReceiver)
+}
+
+func TestFactoryTypeAlias(t *testing.T) {
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://localhost:51678")
+	factory := NewFactory()
+	require.Equal(t, component.MustNewType("aws_ecs_container_metrics"), factory.Type())
+
+	for _, typ := range []component.Type{metadata.Type, component.MustNewType("awsecscontainermetrics")} {
+		t.Run(typ.String(), func(t *testing.T) {
+			cfg := factory.CreateDefaultConfig()
+			comp, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(typ), cfg, consumertest.NewNop())
+			require.NoError(t, err)
+			require.NotNil(t, comp)
+			require.NoError(t, comp.Shutdown(t.Context()))
+		})
+	}
 }

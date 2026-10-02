@@ -1,5 +1,6 @@
 display_name: AWS ECS Container Metrics Receiver
-type: awsecscontainermetrics
+type: aws_ecs_container_metrics
+deprecated_type: awsecscontainermetrics
 
 status:
   class: receiver

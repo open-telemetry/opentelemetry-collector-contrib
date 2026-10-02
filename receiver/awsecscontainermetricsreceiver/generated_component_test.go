@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-var typ = component.MustNewType("awsecscontainermetrics")
+var typ = component.MustNewType("aws_ecs_container_metrics")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
