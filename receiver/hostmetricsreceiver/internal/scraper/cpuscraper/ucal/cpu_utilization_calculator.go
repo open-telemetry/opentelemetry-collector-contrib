@@ -65,7 +65,7 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, cpu
 			//
 			// We opt just to log a warning so the user can see what happened, and continue.
 			// We want this to be a warning rather than an error because this can be a perfectly
-			// reasonable occurence and the Collector has no way to know if that's the case.
+			// reasonable occurrence and the Collector has no way to know if that's the case.
 			if err != nil {
 				c.logger.Warn(
 					"could not get time for cpu, utilization will not be recorded",
