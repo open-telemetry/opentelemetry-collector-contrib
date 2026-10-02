@@ -312,6 +312,27 @@ func NewPodSpecWithContainer(containerName string) *corev1.PodSpec {
 	}
 }
 
+func NewPodSpecWithContainerAndSidecarContainer(containerName, sidecarName string) *corev1.PodSpec {
+	sidecarRestartPolicy := corev1.ContainerRestartPolicyAlways
+	spec := NewPodSpecWithContainer(containerName)
+	spec.InitContainers = []corev1.Container{
+		{
+			Name:          sidecarName,
+			Image:         "sidecar-image-name",
+			RestartPolicy: &sidecarRestartPolicy,
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU: *resource.NewQuantity(2, resource.DecimalSI),
+				},
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU: *resource.NewQuantity(1, resource.DecimalSI),
+				},
+			},
+		},
+	}
+	return spec
+}
+
 func NewPodStatusWithContainer(containerName, containerID string) *corev1.PodStatus {
 	return &corev1.PodStatus{
 		Phase: corev1.PodSucceeded,
@@ -330,6 +351,25 @@ func NewPodStatusWithContainer(containerName, containerID string) *corev1.PodSta
 			},
 		},
 	}
+}
+
+func NewPodStatusWithContainerAndSidecarContainer(containerName, containerID, sidecarName, sidecarID string) *corev1.PodStatus {
+	status := NewPodStatusWithContainer(containerName, containerID)
+	status.InitContainerStatuses = []corev1.ContainerStatus{
+		{
+			Name:         sidecarName,
+			Ready:        true,
+			RestartCount: 1,
+			Image:        "sidecar-image-name",
+			ContainerID:  sidecarID,
+			State: corev1.ContainerState{
+				Running: &corev1.ContainerStateRunning{
+					StartedAt: v1.Time{Time: time.Date(1, time.January, 1, 1, 1, 1, 1, time.UTC)},
+				},
+			},
+		},
+	}
+	return status
 }
 
 func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID string) *corev1.PodStatus {
