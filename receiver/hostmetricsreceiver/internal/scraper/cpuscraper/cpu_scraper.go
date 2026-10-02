@@ -59,18 +59,22 @@ func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
 
 func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(s.now())
-	cpuTimes, err := s.times(ctx, true /*percpu=*/)
-	if err != nil {
-		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
-	}
+	if s.config.MetricsBuilderConfig.Metrics.SystemCPUTime.Enabled ||
+		s.config.MetricsBuilderConfig.Metrics.SystemCPUUtilization.Enabled {
+		cpuTimes, err := s.times(ctx, true /*percpu=*/)
+		if err != nil {
+			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		}
 
-	for _, cpuTime := range cpuTimes {
-		s.recordCPUTimeStateDataPoints(now, cpuTime)
-	}
+		if s.config.MetricsBuilderConfig.Metrics.SystemCPUTime.Enabled {
+			for _, cpuTime := range cpuTimes {
+				s.recordCPUTimeStateDataPoints(now, cpuTime)
+			}
+		}
 
-	err = s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
-	if err != nil {
-		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		if s.config.MetricsBuilderConfig.Metrics.SystemCPUUtilization.Enabled {
+			s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
+		}
 	}
 
 	if s.config.MetricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled {
