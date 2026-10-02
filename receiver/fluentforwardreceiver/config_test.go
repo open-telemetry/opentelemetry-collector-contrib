@@ -29,3 +29,16 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, confmap.Validate(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
+
+func TestValidateRejectsNegativeMaxConnections(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaxConnections = -1
+	require.ErrorContains(t, cfg.Validate(), "max_connections")
+}
+
+func TestValidateRejectsRefuseWithoutLimit(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaxConnections = 0
+	cfg.RefuseOverLimit = true
+	require.ErrorContains(t, cfg.Validate(), "refuse_over_limit")
+}
