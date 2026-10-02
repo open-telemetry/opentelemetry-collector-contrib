@@ -52,7 +52,6 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, cpu
 		for _, previousCPUTime := range c.previousCPUTimes {
 			// Check the CPU times from this scrape for the new times of the current CPU.
 			currentCPUTime, err := cpuTimeForCPU(previousCPUTime.CPU, cpuTimes)
-
 			// If the current scrape does not have a times entry for a previously seen CPU,
 			// then we have to skip it. We can only report a utilization value for a core
 			// if we have a time for it within the previous scrape interval. Our only choice
