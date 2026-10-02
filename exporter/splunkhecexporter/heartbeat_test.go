@@ -170,9 +170,10 @@ func Test_Heartbeat_failure(t *testing.T) {
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		got, err = getMetricValue(reader, defaultHBFailedMetricsName)
 		require.NoError(tt, err)
-		assert.NotEmpty(tt, got)
+		if assert.NotEmpty(tt, got) {
+			assert.Positive(tt, got[0], "there should be at least one failure metric datapoint")
+		}
 	}, time.Second, 10*time.Millisecond)
-	assert.Positive(t, got[0], "there should be at least one failure metric datapoint")
 	attrs, err := getAttributes(reader, defaultHBFailedMetricsName)
 	require.NoError(t, err)
 	assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), attrs[0])
