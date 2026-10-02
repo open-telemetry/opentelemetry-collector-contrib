@@ -121,6 +121,9 @@ The following settings are also optional and nested under `tls` to help configur
 
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `timeout` (default = `60s`): The context deadline for each metrics or logs collection cycle, shared across its queries and databases. It is independent of `collection_interval` and is not a separate timeout for each query. Increase it if legitimate scrapes need more time. Setting `timeout: 0` disables the deadline and allows blocked queries to stall collection and shutdown indefinitely.
+
+The timeout also applies to enabled query sample and top query log collectors; collectors in the same logs controller share the deadline. During shutdown, the receiver waits for an active scrape to finish, which can take the remaining timeout plus cancellation and cleanup time. The timeout does not make shutdown immediate or impose a strict process-exit deadline. Existing partial telemetry and error handling also apply to timed-out scrapes.
 
 ### Query Sample Collection
 We provide functionality to collect the query sample from PostgreSQL. It will get historical query 
