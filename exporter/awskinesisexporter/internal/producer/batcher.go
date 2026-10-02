@@ -28,6 +28,7 @@ var _ Batcher = (*batcher)(nil)
 var (
 	permanentErrResourceNotFound = new(*types.ResourceNotFoundException)
 	permanentErrInvalidArgument  = new(*types.InvalidArgumentException)
+	limitExceededException       = new(*types.LimitExceededException)
 )
 
 func NewBatcher(kinesisAPI Kinesis, stream string, opts ...BatcherOptions) (Batcher, error) {
@@ -70,8 +71,14 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 }
 
 func (b *batcher) Ready(ctx context.Context) error {
-	_, err := b.client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
+	if _, err := b.client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
 		StreamName: b.stream,
-	})
-	return err
+	}); err != nil {
+		if errors.As(err, limitExceededException) {
+			b.log.Warn("DescribeStream rate limit exceeded at startup; continuing without pre-flight validation", zap.Error(err))
+			return nil
+		}
+		return err
+	}
+	return nil
 }
