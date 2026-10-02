@@ -5,7 +5,7 @@ receivers:
         endpoint: ":4317"
 
 exporters:
-  tencentcloud_logservice:
+  tencent_cloud_log_service:
       # LogService's Region, https://cloud.tencent.com/document/product/614/18940
       # set cls.{region}.tencentcloudapi.com, eg cls.ap-beijing.tencentcloudapi.com;
     region: "ap-beijing"
@@ -22,4 +22,4 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      exporters: [tencentcloud_logservice]
+      exporters: [tencent_cloud_log_service]

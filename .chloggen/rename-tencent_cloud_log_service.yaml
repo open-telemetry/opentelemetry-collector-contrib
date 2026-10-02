@@ -1,0 +1,4 @@
+change_type: deprecation
+component: exporter/tencent_cloud_log_service
+note: "Rename the tencentcloud_logservice exporter to tencent_cloud_log_service. The old name remains available as a deprecated alias."
+issues: [45339]

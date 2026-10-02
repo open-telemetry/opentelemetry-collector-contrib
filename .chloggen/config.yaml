@@ -73,7 +73,7 @@ components:
     - exporter/stef
     - exporter/sumologic
     - exporter/syslog
-    - exporter/tencentcloud_logservice
+    - exporter/tencent_cloud_log_service
     - exporter/tinybird
     - exporter/zipkin
     - extension/ack

@@ -57,7 +57,7 @@ components:
         - stef
         - sumologic
         - syslog
-        - tencentcloud_logservice
+        - tencent_cloud_log_service
         - tinybird
         - zipkin
     extension:

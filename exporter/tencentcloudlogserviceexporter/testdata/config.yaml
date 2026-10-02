@@ -1,6 +1,6 @@
-tencentcloud_logservice:
+tencent_cloud_log_service:
   region: "ap-beijing"
-tencentcloud_logservice/2:
+tencent_cloud_log_service/2:
   region: "ap-beijing"
   # LogService's LogSet ID
   logset: "demo-logset"
