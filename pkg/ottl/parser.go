@@ -15,9 +15,11 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 )
 
@@ -740,10 +742,34 @@ func (p *Parser[K]) newParseContext() *parseContext[K] {
 	}
 }
 
+// legacyExperimentalFuncGates maps experimental functions that predate the experimental functions
+// feature gate to the feature gate they require instead. A nil gate means the function is ungated.
+var legacyExperimentalFuncGates = map[string]*featuregate.Gate{
+	"All":       metadata.OttlFunctionsEnableLambdaFeatureGate,
+	"Any":       metadata.OttlFunctionsEnableLambdaFeatureGate,
+	"Filter":    metadata.OttlFunctionsEnableLambdaFeatureGate,
+	"Find":      metadata.OttlFunctionsEnableLambdaFeatureGate,
+	"MapEach":   metadata.OttlFunctionsEnableLambdaFeatureGate,
+	"MapKeys":   metadata.OttlFunctionsEnableLambdaFeatureGate,
+	"Reduce":    metadata.OttlFunctionsEnableLambdaFeatureGate,
+	"When":      metadata.OttlFunctionsEnableLambdaFeatureGate,
+	"ProfileID": nil,
+}
+
 // recordExperimentalFunc records the given Factory's function name when it is experimental so a
-// warning can be emitted after parsing completes.
-func (p *parseContext[K]) recordExperimentalFunc(f Factory[K]) {
-	if f.Experimental() {
-		p.experimentalFuncs[f.Name()] = struct{}{}
+// warning can be emitted after parsing completes. Experimental functions are rejected unless their
+// feature gate is enabled.
+func (p *parseContext[K]) recordExperimentalFunc(f Factory[K]) error {
+	if !f.Experimental() {
+		return nil
 	}
+	gate, ok := legacyExperimentalFuncGates[f.Name()]
+	if !ok {
+		gate = metadata.PkgOttlFunctionsEnableExperimentalFeatureGate
+	}
+	if gate != nil && !gate.IsEnabled() {
+		return fmt.Errorf("function %q is experimental and requires the `%s` feature gate to be enabled", f.Name(), gate.ID())
+	}
+	p.experimentalFuncs[f.Name()] = struct{}{}
+	return nil
 }

@@ -30,3 +30,11 @@ var PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate = featuregate.GlobalR
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27821"),
 	featuregate.WithRegisterFromVersion("v0.163.0"),
 )
+
+var PkgOttlFunctionsEnableExperimentalFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.ottl.functions.enableExperimental",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927"),
+	featuregate.WithRegisterFromVersion("v0.163.0"),
+)
