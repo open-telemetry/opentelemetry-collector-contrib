@@ -17,17 +17,21 @@
 
 ## Description
 
-The interval processor (`intervalprocessor`) aggregates metrics and periodically forwards the latest values to the next component in the pipeline. The processor supports aggregating the following metric types:
+The interval processor (`intervalprocessor`) aggregates metrics and periodically forwards the aggregated values to the next component in the pipeline. The processor supports aggregating the following metric types:
 
-* Monotonically increasing, cumulative sums
-* Monotonically increasing, cumulative histograms
-* Monotonically increasing, cumulative exponential histograms
+* Monotonically increasing sums (cumulative and delta)
+* Histograms (cumulative and delta)
+* Exponential histograms (cumulative and delta)
 * Gauges 
 * Summaries
 
+How data points are aggregated over the interval depends on the aggregation temporality:
+
+* Cumulative metrics, gauges, and summaries: only the latest data point of each stream is kept.
+* Delta metrics: the data points of each stream are added together. The resulting data point keeps the earliest start timestamp and the latest timestamp seen during the interval.
+
 The following metric types will *not* be aggregated, and will instead be passed, unchanged, to the next component in the pipeline:
 
-* All delta metrics
 * Non-monotonically increasing sums
 
 > NOTE: Aggregating data over an interval is an inherently "lossy" process. For monotonically increasing, cumulative sums, histograms, and exponential histograms, you "lose" precision, but you don't lose overall data. But for non-monotonically increasing sums, gauges, and summaries, aggregation represents actual data loss. IE you could "lose" that a value increased and then decreased back to the original value. In most cases, this data "loss" is ok. However, if you would rather these values be passed through, and *not* aggregated, you can set that in the configuration
@@ -45,12 +49,12 @@ interval:
     # Whether gauges should be aggregated or passed through to the next component as they are
     [ gauge: <bool> | default = false ]
     # Whether summaries should be aggregated or passed through to the next component as they are
-    [ summary: <boo>l | default = false ]
+    [ summary: <bool> | default = false ]
 ```
 
 ## Example of metric flows
 
-The following sum metrics come into the processor to be handled
+The following monotonic sum metrics come into the processor to be handled
 
 | Timestamp | Metric Name  | Aggregation Temporality | Attributes        | Value |
 | --------- | ------------ | ----------------------- | ----------------- | ----: |
@@ -59,22 +63,18 @@ The following sum metrics come into the processor to be handled
 | 4         | other_metric | Delta                   | fruitType: orange |  77.4 |
 | 6         | test_metric  | Cumulative              | labelA: foo       |   8.2 |
 | 8         | test_metric  | Cumulative              | labelA: foo       |  12.8 |
+| 9         | other_metric | Delta                   | fruitType: orange |  12.1 |
 | 10        | test_metric  | Cumulative              | labelA: bar       |   6.4 |
 
-The processor would immediately pass the following metrics to the next processor in the chain
+At the next `interval` (60s by default), the processor would pass the following metrics to the next processor in the chain
 
 | Timestamp | Metric Name  | Aggregation Temporality | Attributes        | Value |
 | --------- | ------------ | ----------------------- | ----------------- | ----: |
-| 4         | other_metric | Delta                   | fruitType: orange |  77.4 |
+| 8         | test_metric  | Cumulative              | labelA: foo       |  12.8 |
+| 10        | test_metric  | Cumulative              | labelA: bar       |   6.4 |
+| 9         | other_metric | Delta                   | fruitType: orange |  89.5 |
 
-Because it's a Delta metric.
-
-At the next `interval` (15s by default), the processor would pass the following metrics to the next processor in the chain
-
-| Timestamp | Metric Name | Aggregation Temporality | Attributes  | Value |
-| --------- | ----------- | ----------------------- | ----------- | ----: |
-| 8         | test_metric | Cumulative              | labelA: foo |  12.8 |
-| 10        | test_metric | Cumulative              | labelA: bar |   6.4 |
+For the cumulative `test_metric`, only the latest value of each stream is kept. For the delta `other_metric`, the values are added together.
 
 > [!IMPORTANT]
 > After exporting, any internal state is cleared. So if no new metrics come in, the next interval will export nothing.
