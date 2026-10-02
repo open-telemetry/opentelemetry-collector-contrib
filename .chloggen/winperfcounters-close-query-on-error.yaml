@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/winperfcounters
+note: Close the PDH query when adding the counter fails, preventing a handle leak on counter initialization errors.
+issues: [51048]
+subtext:
+change_logs: []
