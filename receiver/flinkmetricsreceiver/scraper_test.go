@@ -6,6 +6,7 @@ package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -128,11 +129,13 @@ func TestScraperScrape(t *testing.T) {
 	jobsMetricsInstances = append(jobsMetricsInstances,
 		&models.JobMetrics{
 			Host:    "mock-host",
+			JobID:   "mock-job-id",
 			JobName: "mock-job-name",
 			Metrics: *jobsMetricsResponse,
 		},
 		&models.JobMetrics{
 			Host:    "mock-host2",
+			JobID:   "mock-job-id2",
 			JobName: "mock-job-name2",
 			Metrics: *jobsMetricsResponse,
 		})
@@ -141,6 +144,7 @@ func TestScraperScrape(t *testing.T) {
 	subtaskMetricsInstances = append(subtaskMetricsInstances, &models.SubtaskMetrics{
 		Host:          "mock-host",
 		TaskmanagerID: "mock-taskmanager-id",
+		JobID:         "mock-job-id",
 		JobName:       "mock-job-name",
 		TaskName:      "mock-task-name",
 		SubtaskIndex:  "mock-subtask-index",
@@ -266,6 +270,57 @@ func TestScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		})
+	}
+}
+
+func TestScraperJobIDResourceAttribute(t *testing.T) {
+	jobsMetrics := []*models.JobMetrics{{
+		Host:    "mock-host",
+		JobID:   "mock-job-id",
+		JobName: "mock-job-name",
+		Metrics: models.MetricsResponse{{ID: "numRestarts", Value: "1"}},
+	}}
+	subtaskMetrics := []*models.SubtaskMetrics{{
+		Host:          "mock-host",
+		TaskmanagerID: "mock-taskmanager-id",
+		JobID:         "mock-job-id",
+		JobName:       "mock-job-name",
+		TaskName:      "mock-task-name",
+		SubtaskIndex:  "0",
+		Metrics:       models.MetricsResponse{{ID: "numRecordsIn", Value: "1"}},
+	}}
+
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("enabled=%t", enabled), func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.MetricsBuilderConfig.ResourceAttributes.FlinkJobID.Enabled = enabled
+			scraper := newflinkScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+
+			mockClient := mocks.MockClient{}
+			mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&models.JobmanagerMetrics{}, nil)
+			mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(nil, nil)
+			mockClient.On("GetJobsMetrics", mock.Anything).Return(jobsMetrics, nil)
+			mockClient.On("GetSubtasksMetrics", mock.Anything).Return(subtaskMetrics, nil)
+			scraper.client = &mockClient
+
+			actual, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+
+			found := 0
+			for i := 0; i < actual.ResourceMetrics().Len(); i++ {
+				attrs := actual.ResourceMetrics().At(i).Resource().Attributes()
+				if _, ok := attrs.Get("flink.job.name"); !ok {
+					continue
+				}
+				found++
+				v, ok := attrs.Get("flink.job.id")
+				require.Equal(t, enabled, ok)
+				if enabled {
+					require.Equal(t, "mock-job-id", v.Str())
+				}
+			}
+			require.Equal(t, 2, found)
 		})
 	}
 }
