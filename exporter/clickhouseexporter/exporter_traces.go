@@ -4,12 +4,14 @@
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -51,7 +53,7 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 			return err
 		}
 
-		if err := createTraceTables(ctx, e.cfg, e.db); err != nil {
+		if err := createTraceTables(ctx, e.cfg, e.db, e.logger); err != nil {
 			return err
 		}
 	}
@@ -200,43 +202,97 @@ func renderInsertTracesSQL(cfg *Config) string {
 	return fmt.Sprintf(sqltemplates.TracesInsert, cfg.database(), cfg.TracesTableName)
 }
 
-func renderCreateTracesTableSQL(cfg *Config) string {
+func renderCreateTracesTableSQL(cfg *Config, hasFullTextSearch bool) (string, error) {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
-	return fmt.Sprintf(sqltemplates.TracesCreateTable,
-		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
-		cfg.tableEngineString(),
-		ttlExpr,
-	)
-}
-
-func renderCreateTraceIDTsTableSQL(cfg *Config) string {
-	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Start)")
-	return fmt.Sprintf(sqltemplates.TracesCreateTsTable,
-		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
-		cfg.tableEngineString(),
-		ttlExpr,
-	)
-}
-
-func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
-	database := cfg.database()
-	return fmt.Sprintf(sqltemplates.TracesCreateTsView,
-		database, cfg.TracesTableName, cfg.clusterString(),
-		database, cfg.TracesTableName,
-		database, cfg.TracesTableName,
-	)
-}
-
-func createTraceTables(ctx context.Context, cfg *Config, db driver.Conn) error {
-	if err := db.Exec(ctx, renderCreateTracesTableSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create traces table sql: %w", err)
+	data := sqltemplates.CreateTableData{
+		Database:          cfg.database(),
+		TableName:         cfg.TracesTableName,
+		ClusterString:     cfg.clusterString(),
+		Engine:            cfg.tableEngineString(),
+		TTL:               ttlExpr,
+		HasFullTextSearch: hasFullTextSearch,
 	}
-	if err := db.Exec(ctx, renderCreateTraceIDTsTableSQL(cfg)); err != nil {
+
+	var buf bytes.Buffer
+	if err := sqltemplates.TracesCreateTableTmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("execute traces create table template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+func renderCreateTraceIDTsTableSQL(cfg *Config) (string, error) {
+	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Start)")
+	data := sqltemplates.CreateTableData{
+		Database:      cfg.database(),
+		TableName:     cfg.TracesTableName + "_trace_id_ts",
+		ClusterString: cfg.clusterString(),
+		Engine:        cfg.traceIDTsTableEngineString(),
+		TTL:           ttlExpr,
+	}
+
+	var buf bytes.Buffer
+	if err := sqltemplates.TracesCreateTsTableTmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("execute trace ID timestamp table template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+func renderTraceIDTsMaterializedViewSQL(cfg *Config) (string, error) {
+	data := sqltemplates.TracesTsMVData{
+		Database:        cfg.database(),
+		ViewName:        cfg.TracesTableName + "_trace_id_ts_mv",
+		TableName:       cfg.TracesTableName + "_trace_id_ts",
+		SourceTableName: cfg.TracesTableName,
+		ClusterString:   cfg.clusterString(),
+	}
+
+	var buf bytes.Buffer
+	if err := sqltemplates.TracesCreateTsViewTmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("execute trace ID timestamp view template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+func createTraceIDTsTable(ctx context.Context, cfg *Config, db driver.Conn) error {
+	tsTableSQL, err := renderCreateTraceIDTsTableSQL(cfg)
+	if err != nil {
+		return err
+	}
+	tsViewSQL, err := renderTraceIDTsMaterializedViewSQL(cfg)
+	if err != nil {
+		return err
+	}
+
+	if err := db.Exec(ctx, tsTableSQL); err != nil {
 		return fmt.Errorf("exec create traceID timestamp table sql: %w", err)
 	}
-	if err := db.Exec(ctx, renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
+	if err := db.Exec(ctx, tsViewSQL); err != nil {
 		return fmt.Errorf("exec create traceID timestamp view sql: %w", err)
 	}
 
 	return nil
+}
+
+func createTraceTables(ctx context.Context, cfg *Config, db driver.Conn, logger *zap.Logger) error {
+	hasFullTextSearch := false
+	sv, err := db.ServerVersion()
+	if err != nil {
+		logger.Warn("failed to get ClickHouse server version, falling back to bloom filter indexes", zap.Error(err))
+	} else {
+		hasFullTextSearch = proto.CheckMinVersion(versionFullTextSearch, sv.Version)
+	}
+
+	tracesSQL, err := renderCreateTracesTableSQL(cfg, hasFullTextSearch)
+	if err != nil {
+		return err
+	}
+
+	if err := db.Exec(ctx, tracesSQL); err != nil {
+		return fmt.Errorf("exec create traces table sql: %w", err)
+	}
+
+	return createTraceIDTsTable(ctx, cfg, db)
 }

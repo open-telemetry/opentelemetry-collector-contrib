@@ -1,9 +1,9 @@
-CREATE MATERIALIZED VIEW IF NOT EXISTS "%s"."%s_trace_id_ts_mv" %s
-TO "%s"."%s_trace_id_ts"
+CREATE MATERIALIZED VIEW IF NOT EXISTS {{ident .Database}}.{{ident .ViewName}} {{.ClusterString}}
+TO {{ident .Database}}.{{ident .TableName}}
 AS SELECT
-              TraceId,
-              min(Timestamp) as Start,
-              max(Timestamp) as End
-   FROM "%s"."%s"
-   WHERE TraceId != ''
-   GROUP BY TraceId
+    TraceId,
+    min(toDateTime(Timestamp)) AS Start,
+    max(toDateTime(Timestamp)) AS End
+FROM {{ident .Database}}.{{ident .SourceTableName}}
+WHERE TraceId != ''
+GROUP BY TraceId

@@ -163,6 +163,14 @@ LIMIT 100;
 
 ### Traces
 
+> [!NOTE]
+> On ClickHouse 26.2 or newer, the traces table is created with `text` (full-text-search) indexes on
+> `TraceId`, the attribute map keys, and the attribute items columns; on older servers it falls back
+> to `bloom_filter` indexes. The table also exposes zero-storage
+> `ResourceAttributeItems`/`SpanAttributeItems` ALIAS columns that render attributes as `key=value`
+> arrays for exact-match lookups, e.g.
+> `WHERE has(SpanAttributeItems, 'peer.service=telemetrygen-server')`.
+
 - Find spans with specific attribute.
 
 ```sql
