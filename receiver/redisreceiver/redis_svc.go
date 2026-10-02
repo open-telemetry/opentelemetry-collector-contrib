@@ -22,12 +22,28 @@ func newRedisSvc(client client) *redisSvc {
 	}
 }
 
-// Calls the Redis INFO and CLUSTER INFO command on the client and returns an `info` map.
+// Calls the Redis INFO command on the client and returns an `info` map.
 func (p *redisSvc) info() (info, error) {
 	str, err := p.client.retrieveInfo()
 	if err != nil {
 		return nil, err
 	}
+	return p.parse(str), nil
+}
+
+// Calls the Redis CLUSTER INFO command on the client and returns an `info` map.
+// The fields it returns - cluster state, slot counts, known nodes - are not part
+// of INFO, so they need this second call.
+func (p *redisSvc) clusterInfo() (info, error) {
+	str, err := p.client.retrieveClusterInfo()
+	if err != nil {
+		return nil, err
+	}
+	return p.parse(str), nil
+}
+
+// Turns the key/value lines both commands return into a map.
+func (p *redisSvc) parse(str string) info {
 	lines := strings.Split(str, p.delimiter)
 	attrs := make(map[string]string)
 	for _, line := range lines {
@@ -39,5 +55,5 @@ func (p *redisSvc) info() (info, error) {
 			attrs[pair[0]] = pair[1]
 		}
 	}
-	return attrs, nil
+	return attrs
 }
