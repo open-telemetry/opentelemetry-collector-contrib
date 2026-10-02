@@ -245,6 +245,12 @@ receivers:
 
 Details about the metrics scraped by this receiver can be found in [Supported metrics with Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported). This receiver adds the prefix "azure_" to all scraped metrics.
 
+## Known limitations
+
+Azure Storage Capacity metrics, including `BlobCapacity` and `UsedCapacity`, can be published with a variable delay that differs between storage accounts and can exceed an hour. Other metrics with `PT1H` or coarser time grains may behave similarly. The receiver preserves the timestamp assigned by Azure instead of replacing it with the collection time. Backends that enforce a maximum sample age or out-of-order window may therefore reject delayed data points, which can appear as gaps in the exported series.
+
+At debug log level, the receiver reports the delay for each emitted Azure metric value. The `data_point_delay` field is the difference between `collection_time` and `data_point_timestamp`; the log also includes `metric_name` and `resource_id`. Use this value when sizing a backend's accepted sample-age or out-of-order window.
+
 ## Azure API calls summary
 At each collection interval, here are the different Azure API that can be called.
 It can be useful to know that, in order to configure the client permission in Azure or to choose the 
