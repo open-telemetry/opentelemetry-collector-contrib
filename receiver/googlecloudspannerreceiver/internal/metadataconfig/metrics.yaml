@@ -610,3 +610,31 @@ metadata:
         data:
           type: "gauge"
         unit: "byte"
+#
+# -------------------------------------------- Table Size Per Locality Group Stats ------------------------------------------------------
+#
+  - name: "hourly table size per locality group stats"
+    query: "SELECT * FROM SPANNER_SYS.TABLE_SIZES_STATS_PER_LOCALITY_GROUP_1HOUR WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC"
+    metric_name_prefix: "database/spanner/table_sizes_per_locality_group/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "locality_group"
+        column_name: "LOCALITY_GROUP"
+        value_type: "string"
+    metrics:
+      - name: "used_ssd_bytes"
+        column_name: "USED_SSD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "used_hdd_bytes"
+        column_name: "USED_HDD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"

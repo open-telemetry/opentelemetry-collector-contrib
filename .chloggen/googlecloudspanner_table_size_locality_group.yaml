@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: "Add table size per locality group stats"
+issues: [51550]
+subtext: ""
+change_logs: [user]
