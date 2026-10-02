@@ -11,6 +11,7 @@ internal/common
 internal/coreinternal
 pkg/ottl
 pkg/ottl/contexts/xprofile
+pkg/ottl/xottl
 connector/routingconnector
 internal/pdatautil
 pkg/sampling
