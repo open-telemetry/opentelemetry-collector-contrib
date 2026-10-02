@@ -21,6 +21,7 @@ var defaultContextInferPriority = []string{
 	"datapoint",
 	"metric",
 	"spanevent",
+	"spanlink",
 	"span",
 	"profile",
 	"scope",
