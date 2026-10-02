@@ -41,6 +41,7 @@ The following settings can be optionally configured:
 - `traces:`
   - `container_name:` (default = "traces"): Name of the blob container with the traces
   - `encoding:` (default = "otlp_json"): Encoding of trace blob payloads. Either one of the built-in values `otlp_json` or `otlp_proto`, or the ID of an encoding extension that implements `ptrace.Unmarshaler`.
+- `compression:` (default = ""): Compression format of blob payloads. Options are `` (none), `gzip`, or `auto`. `auto` detects gzip per blob from its header ([see RFC 1952](https://www.rfc-editor.org/rfc/rfc1952#section-2.3)), and is useful when a container holds a mix of compressed and uncompressed blobs. Decompression is applied before the payload is decoded with the configured encoding.
 
 Authenticating using a connection string requires configuration of the following additional setting:
 
@@ -104,6 +105,15 @@ receivers:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
     logs:
       encoding: text_encoding
+```
+
+Reading gzip compressed blobs:
+
+```yaml
+receivers:
+  azure_blob:
+    connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+    compression: gzip
 ```
 
 ## Behavior
