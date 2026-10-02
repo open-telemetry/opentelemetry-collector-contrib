@@ -18,12 +18,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/sasl"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -811,7 +813,7 @@ func TestConfigureKgoKerberos(t *testing.T) {
 }
 
 func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER(t *testing.T) {
-	opt, err := configureKgoSASL(&configkafka.SASLConfig{
+	opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: AWSMSKIAMOAUTHBEARER,
 		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
 	}, componenttest.NewNopHost())
@@ -819,11 +821,59 @@ func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER(t *testing.T) {
 	require.NotNil(t, opt)
 }
 
+func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
+	var loads, retrievals atomic.Int32
+	orig := loadAWSCredentialsProvider
+	t.Cleanup(func() { loadAWSCredentialsProvider = orig })
+	loadAWSCredentialsProvider = func(_ context.Context, region string) (aws.CredentialsProvider, error) {
+		loads.Add(1)
+		assert.Equal(t, "us-west-2", region)
+		// Mirror LoadDefaultConfig, which wraps the provider in a cache.
+		return aws.NewCredentialsCache(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+			retrievals.Add(1)
+			return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET"}, nil
+		})), nil
+	}
+
+	opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+		Mechanism: AWSMSKIAMOAUTHBEARER,
+		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	cl, err := kgo.NewClient(opt)
+	require.NoError(t, err)
+	defer cl.Close()
+	mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
+	require.Len(t, mechanisms, 1)
+	for range 3 {
+		_, msg, err := mechanisms[0].Authenticate(t.Context(), "broker:9098")
+		require.NoError(t, err)
+		assert.Contains(t, string(msg), "auth=Bearer ")
+	}
+	assert.Equal(t, int32(1), loads.Load())
+	assert.Equal(t, int32(1), retrievals.Load())
+}
+
+func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_LoadError(t *testing.T) {
+	orig := loadAWSCredentialsProvider
+	t.Cleanup(func() { loadAWSCredentialsProvider = orig })
+	loadAWSCredentialsProvider = func(context.Context, string) (aws.CredentialsProvider, error) {
+		return nil, errors.New("bad profile")
+	}
+
+	_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+		Mechanism: AWSMSKIAMOAUTHBEARER,
+		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+	}, componenttest.NewNopHost())
+	require.ErrorContains(t, err, "bad profile")
+}
+
 func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 	extID := component.MustNewID("oauth2client")
 
 	t.Run("missing_extension", func(t *testing.T) {
-		_, err := configureKgoSASL(&configkafka.SASLConfig{
+		_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
 		}, componenttest.NewNopHost())
@@ -835,7 +885,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		host := &mockHost{extensions: map[component.ID]component.Component{
 			extID: &mockTokenSource{token: "tok"},
 		}}
-		opt, err := configureKgoSASL(&configkafka.SASLConfig{
+		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
 		}, host)
@@ -845,7 +895,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 }
 
 func TestConfigureKgoSASL_UnsupportedMechanism(t *testing.T) {
-	_, err := configureKgoSASL(&configkafka.SASLConfig{
+	_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: "BOGUS",
 	}, componenttest.NewNopHost())
 	require.ErrorContains(t, err, "unsupported SASL mechanism")
