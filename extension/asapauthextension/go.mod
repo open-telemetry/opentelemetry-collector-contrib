@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/confmap v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/extension v1.68.1-0.20260930032829-78b98e74fdfd
+	go.opentelemetry.io/collector/extension/xextension v0.162.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/extension/extensionauth v1.68.1-0.20260930032829-78b98e74fdfd
 	go.opentelemetry.io/collector/extension/extensiontest v0.162.1-0.20260930032829-78b98e74fdfd
 	go.uber.org/multierr v1.11.0

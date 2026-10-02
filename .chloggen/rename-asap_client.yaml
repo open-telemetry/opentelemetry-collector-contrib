@@ -1,0 +1,4 @@
+change_type: deprecation
+component: extension/asap_client
+note: "Rename the asapclient extension to asap_client. The old name remains available as a deprecated alias."
+issues: [45339]

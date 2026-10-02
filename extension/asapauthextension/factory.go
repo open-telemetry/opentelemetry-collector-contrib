@@ -8,17 +8,19 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/xextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension/internal/metadata"
 )
 
 // NewFactory creates a factory for asapauthextension.
 func NewFactory() extension.Factory {
-	return extension.NewFactory(
+	return xextension.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.ExtensionStability,
+		xextension.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
