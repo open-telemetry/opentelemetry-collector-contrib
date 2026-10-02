@@ -84,6 +84,33 @@ func TestSyslogParseRFC3164_MalformedDay(t *testing.T) {
 	}
 }
 
+func TestSyslogParseRFC3164Multiline(t *testing.T) {
+	cfg := basicConfig()
+	cfg.Protocol = syslog.RFC3164
+	cfg.AllowSkipPriHeader = true
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	fake := testutil.NewFakeOutput(t)
+	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+	newEntry := entry.New()
+	newEntry.Body = "Sep 24 16:47:33 realejo login[3242]: first line\nstack trace continuation"
+	require.NoError(t, op.Process(t.Context(), newEntry))
+
+	select {
+	case e := <-fake.Received:
+		require.Equal(t, "first line\nstack trace continuation", e.Attributes["message"])
+		require.Equal(t, "realejo", e.Attributes["hostname"])
+		require.Equal(t, "login", e.Attributes["appname"])
+		require.Equal(t, "3242", e.Attributes["proc_id"])
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry to be processed")
+	}
+}
+
 func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	cfg := basicConfig()
 	cfg.Protocol = syslog.RFC5424
