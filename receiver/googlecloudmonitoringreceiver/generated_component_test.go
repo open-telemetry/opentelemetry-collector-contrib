@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-var typ = component.MustNewType("googlecloudmonitoring")
+var typ = component.MustNewType("google_cloud_monitoring")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
