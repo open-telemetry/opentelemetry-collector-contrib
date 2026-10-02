@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
+	"k8s.io/utils/clock"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
@@ -34,6 +35,12 @@ const (
 	resourceVersionRetryCap      = 60 * time.Second
 	resourceVersionRetryFactor   = 2
 	resourceVersionRetryJitter   = 0.2
+	// watch restart backoff mirrors client-go's reflector defaults
+	watchRestartInterval      = 800 * time.Millisecond
+	watchRestartCap           = 30 * time.Second
+	watchRestartResetInterval = 2 * time.Minute
+	watchRestartFactor        = 2
+	watchRestartJitter        = 1.0
 )
 
 type Config struct {
@@ -51,6 +58,7 @@ type Observer struct {
 
 	handleWatchEventFunc        func(event *apiWatch.Event)
 	resourceVersionRetryBackoff wait.Backoff
+	watchRestartBackoff         wait.Backoff
 }
 
 func New(client dynamic.Interface, config Config, logger *zap.Logger, storageClient storage.Client, handleWatchEventFunc func(event *apiWatch.Event)) (*Observer, error) {
@@ -64,6 +72,13 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, storageCli
 			Factor:   resourceVersionRetryFactor,
 			Jitter:   resourceVersionRetryJitter,
 			Cap:      resourceVersionRetryCap,
+			Steps:    math.MaxInt32,
+		},
+		watchRestartBackoff: wait.Backoff{
+			Duration: watchRestartInterval,
+			Factor:   watchRestartFactor,
+			Jitter:   watchRestartJitter,
+			Cap:      watchRestartCap,
 			Steps:    math.MaxInt32,
 		},
 	}
@@ -160,6 +175,14 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 	}
 
 	cancelCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func() {
+		select {
+		case <-stopperChan:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
 
 	// Start flusher before sendInitialState so setLatestRV is wired up for
 	// both the initial listing and the subsequent watch loop.
@@ -183,7 +206,8 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 		flushCheckpoint()
 	}
 
-	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
+	restartDelay := o.watchRestartBackoff.DelayWithReset(clock.RealClock{}, watchRestartResetInterval)
+	_ = restartDelay.Until(cancelCtx, true, true, func(newCtx context.Context) (bool, error) {
 		var resourceVersion string
 		if initialListRV != "" {
 			// First iteration: reuse the list RV from sendInitialState directly,
@@ -198,15 +222,14 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 					zap.String("resource", o.config.Gvr.String()),
 					zap.String("namespace", namespace),
 					zap.Error(err))
-				cancel()
-				return
+				return false, nil
 			}
 		}
 
-		done := o.doWatch(ctx, resourceVersion, namespace, watchFunc, stopperChan, setLatestRV)
+		done, expired := o.doWatch(ctx, resourceVersion, namespace, watchFunc, stopperChan, setLatestRV)
 		if done {
 			cancel()
-			return
+			return true, nil
 		}
 
 		// need to restart with a fresh resource version
@@ -215,7 +238,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 
 		// Delete the persisted resourceVersion so we don't reuse the stale/expired value
 		// This handles 410 Gone errors where the persisted resourceVersion is too old
-		if o.checkpointer != nil {
+		if expired && o.checkpointer != nil {
 			if err := o.checkpointer.DeleteCheckpoint(context.Background(), namespace, o.config.Gvr.Resource); err != nil {
 				o.logger.Error("failed to delete persisted resourceVersion after watch restart",
 					zap.String("namespace", namespace),
@@ -223,7 +246,8 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 					zap.Error(err))
 			}
 		}
-	}, 0)
+		return false, nil
+	})
 }
 
 // getResourceVersionWithRetry retries getResourceVersion using an exponential
@@ -356,16 +380,16 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 	return listRV
 }
 
-// doWatch returns true when watching is done, false when watching should be restarted.
+// doWatch returns whether watching is done and whether the resource version expired.
 // setLatestRV is called with each new resourceVersion to update the in-memory value
 // that the periodic checkpoint flush will persist.
-func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(ctx context.Context, options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
+func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(ctx context.Context, options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) (done, expired bool) {
 	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFuncWithContext: watchFunc})
 	if err != nil {
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),
 			zap.Error(err))
-		return false
+		return false, false
 	}
 
 	defer watcher.Stop()
@@ -376,14 +400,23 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 			if !ok {
 				o.logger.Warn("Watch channel closed unexpectedly",
 					zap.String("resource", o.config.Gvr.String()))
-				return true
+				return false, false
 			}
 
 			if isExpiredResourceVersionEvent(data) {
 				o.logger.Info("received a 410, grabbing new resource version",
 					zap.Any("data", data))
 				// we received a 410 so we need to restart
-				return false
+				return false, true
+			}
+
+			if data.Type == apiWatch.Error {
+				errObject := apierrors.FromObject(data.Object)
+				o.logger.Warn("received watch error event",
+					zap.String("resource", o.config.Gvr.String()),
+					zap.String("reason", string(apierrors.ReasonForError(errObject))),
+					zap.Error(errObject))
+				continue
 			}
 
 			if o.config.Exclude[data.Type] {
@@ -413,7 +446,7 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 
 		case <-stopperChan:
 			watcher.Stop()
-			return true
+			return true, false
 		}
 	}
 }
