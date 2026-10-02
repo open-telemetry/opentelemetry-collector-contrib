@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -208,6 +210,61 @@ func Test_FactoryWithFunctions_CreateTracesToTraces(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.NotNil(t, conn)
+		})
+	}
+}
+
+func Test_FactoryWithFunctions_LogsWhenOverridden(t *testing.T) {
+	tests := []struct {
+		name           string
+		factoryOptions []FactoryOption
+		wantLog        bool
+	}{
+		{
+			name:           "no functions overridden: nothing logged",
+			factoryOptions: nil,
+			wantLog:        false,
+		},
+		{
+			name: "resource functions overridden: logged",
+			factoryOptions: []FactoryOption{
+				WithResourceFunctions([]ottl.Factory[*ottlresource.TransformContext]{createTestFuncFactory[*ottlresource.TransformContext]("TestResourceFunc")}),
+			},
+			wantLog: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+			settings := connectortest.NewNopSettings(metadata.Type)
+			settings.Logger = zap.New(observedZapCore)
+
+			factory := NewFactoryWithOptions(tt.factoryOptions...)
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.Table = []RoutingTableItem{{
+				Context:   "resource",
+				Condition: `resource.attributes["X-Tenant"] == "acme"`,
+				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "0")},
+			}}
+
+			router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+				pipeline.NewIDWithName(pipeline.SignalTraces, "default"): consumertest.NewNop(),
+				pipeline.NewIDWithName(pipeline.SignalTraces, "0"):       consumertest.NewNop(),
+			})
+
+			_, err := factory.CreateTracesToTraces(t.Context(), settings, cfg, router.(consumer.Traces))
+			require.NoError(t, err)
+
+			if !tt.wantLog {
+				assert.Equal(t, 0, observedLogs.Len())
+				return
+			}
+			require.Equal(t, 1, observedLogs.Len())
+			entry := observedLogs.All()[0]
+			assert.Equal(t, zap.DebugLevel, entry.Level)
+			assert.Contains(t, entry.Message, `non-default OTTL functions have been registered in the "routing" connector`)
+			assert.Equal(t, true, entry.ContextMap()["resource"])
 		})
 	}
 }

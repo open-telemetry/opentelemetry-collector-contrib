@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -140,9 +141,9 @@ func NewFactoryWithOptions(options ...FactoryOption) connector.Factory {
 	return connector.NewFactory(
 		metadata.Type,
 		f.createDefaultConfig,
-		connector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
-		connector.WithLogsToLogs(createLogsToLogs, metadata.LogsToLogsStability),
+		connector.WithTracesToTraces(f.createTracesToTraces, metadata.TracesToTracesStability),
+		connector.WithMetricsToMetrics(f.createMetricsToMetrics, metadata.MetricsToMetricsStability),
+		connector.WithLogsToLogs(f.createLogsToLogs, metadata.LogsToLogsStability),
 	)
 }
 
@@ -160,31 +161,53 @@ func (f *routingConnectorFactory) createDefaultConfig() component.Config {
 }
 
 // createTracesToTraces creates a traces to traces connector based on provided config.
-func createTracesToTraces(
+func (f *routingConnectorFactory) createTracesToTraces(
 	_ context.Context,
 	set connector.Settings,
 	cfg component.Config,
 	traces consumer.Traces,
 ) (connector.Traces, error) {
+	if f.defaultOtelColFunctionsOverridden || f.defaultResourceFunctionsOverridden || f.defaultSpanFunctionsOverridden {
+		set.Logger.Debug(`non-default OTTL functions have been registered in the "routing" connector`,
+			zap.Bool("otelcol", f.defaultOtelColFunctionsOverridden),
+			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
+			zap.Bool("span", f.defaultSpanFunctionsOverridden),
+		)
+	}
 	return newTracesConnector(set, cfg, traces)
 }
 
 // createMetricsToMetrics creates a metrics to metrics connector based on provided config.
-func createMetricsToMetrics(
+func (f *routingConnectorFactory) createMetricsToMetrics(
 	_ context.Context,
 	set connector.Settings,
 	cfg component.Config,
 	metrics consumer.Metrics,
 ) (connector.Metrics, error) {
+	if f.defaultOtelColFunctionsOverridden || f.defaultResourceFunctionsOverridden || f.defaultMetricFunctionsOverridden || f.defaultDataPointFunctionsOverridden {
+		set.Logger.Debug(`non-default OTTL functions have been registered in the "routing" connector`,
+			zap.Bool("otelcol", f.defaultOtelColFunctionsOverridden),
+			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
+			zap.Bool("metric", f.defaultMetricFunctionsOverridden),
+			zap.Bool("datapoint", f.defaultDataPointFunctionsOverridden),
+		)
+	}
 	return newMetricsConnector(set, cfg, metrics)
 }
 
 // createLogsToLogs creates a logs to logs connector based on provided config.
-func createLogsToLogs(
+func (f *routingConnectorFactory) createLogsToLogs(
 	_ context.Context,
 	set connector.Settings,
 	cfg component.Config,
 	logs consumer.Logs,
 ) (connector.Logs, error) {
+	if f.defaultOtelColFunctionsOverridden || f.defaultResourceFunctionsOverridden || f.defaultLogFunctionsOverridden {
+		set.Logger.Debug(`non-default OTTL functions have been registered in the "routing" connector`,
+			zap.Bool("otelcol", f.defaultOtelColFunctionsOverridden),
+			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
+			zap.Bool("log", f.defaultLogFunctionsOverridden),
+		)
+	}
 	return newLogsConnector(set, cfg, logs)
 }
