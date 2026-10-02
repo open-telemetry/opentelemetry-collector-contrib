@@ -87,13 +87,13 @@ resourceLogs:
                   stringValue: "2026-01-10T08:00:00.0000000+00:00"
               - key: db.query.full_text
                 value:
-                  stringValue: ""
+                  stringValue: SELECT TOP ( @topNValue ) qs.query_hash FROM sys.dm_exec_query_stats qs WHERE qs.total_rows > ?
               - key: db.query.comment_tags
                 value:
-                  stringValue: ""
+                  stringValue: traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate'
             body: {}
             eventName: db.server.top_query
-            timeUnixNano: "1790107220689334000"
+            timeUnixNano: "1790107220694317000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

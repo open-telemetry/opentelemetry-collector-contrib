@@ -22,7 +22,7 @@
         ) + 1),
     ib.event_info,
     '') AS statement_text,
-  {full_query_text}
+  COALESCE(o.TEXT, ib.event_info, '') AS full_query_text,
   r.blocking_session_id,
   CASE
     WHEN r.blocking_session_id > 0 AND r.wait_time > 0
@@ -51,10 +51,7 @@
   s.login_name AS username,
   ISNULL(s.program_name, '') AS client_app_name,
   CONVERT(NVARCHAR, TODATETIMEOFFSET(s.login_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS session_start_time,
-  CASE WHEN s.login_time > DATEADD(YEAR, -60, GETDATE())
-    THEN DATEDIFF(SECOND, s.login_time, GETDATE())
-    ELSE 0
-  END AS session_duration,
+  s.total_elapsed_time AS session_duration,
   ISNULL(CASE WHEN o.objectid > 0 THEN o.objectid END, '') AS procedure_id,
   ISNULL(CASE WHEN o.objectid > 0
            THEN QUOTENAME(OBJECT_SCHEMA_NAME(o.objectid, o.dbid))

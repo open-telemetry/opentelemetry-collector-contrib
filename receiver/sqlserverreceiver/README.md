@@ -154,6 +154,7 @@ Top-Query collection specific options (only useful when top-query collection are
       - However, the top queries collection will only run after 60 seconds have passed since the last collection.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
       - In this case, `top_query_collection.collection_internal` will make no effects to the collection
+- `collect_full_query_text`, `allowed_comment_keys` (optional): See [full query text](#full-query-text) below.
 
 By default, `db.server.top_query` carries the query's execution plan in its `sqlserver.query_plan`
 attribute. Execution plans can be large, so an oversized plan can push its record past a
@@ -170,6 +171,45 @@ plan out of it, so it collects nothing unless `db.server.top_query` is enabled t
 
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
+- `collect_full_query_text`, `allowed_comment_keys` (optional): See [full query text](#full-query-text) below.
+
+### Full query text
+
+`db.query.text` is extracted from SQL Server's DMVs by byte offset, so it covers only the statement
+that ran. Anything else the surrounding batch carried is dropped, including the metadata that W3C
+traceparent propagation, [sqlcommenter](https://google.github.io/sqlcommenter/) and ORM frameworks
+inject as SQL comments. Two per-collection options recover it, configured inside
+`top_query_collection` and/or `query_sample_collection` so each event opts in independently:
+
+- `collect_full_query_text` (optional, default = `false`): Emits the obfuscated text of the full SQL
+  batch or stored procedure as `db.query.full_text`, alongside the statement-level
+  `db.query.text`.
+- `allowed_comment_keys` (optional, default = unset): The comment keys to export as
+  `db.query.comment_tags`, a comma-separated `key=value` string. Only the keys listed here are
+  exported, so no comment content leaves the receiver until you name the keys you consider safe. Has
+  no effect unless `collect_full_query_text` is also enabled for the same collection. This uses the
+  shared extractor in `internal/common/sqlcomments`, the same one the `oracledb` receiver uses, which
+  reads only **leading** `/* */` block comments — a trailing comment, a `--` line comment, or a
+  comment placed after `sp_executesql` parameter declarations is not recognized.
+
+```yaml
+    receivers:
+      sqlserver:
+        top_query_collection:
+          collect_full_query_text: true
+          allowed_comment_keys:
+            - traceparent
+        query_sample_collection:
+          collect_full_query_text: true
+          allowed_comment_keys:
+            - traceparent
+```
+
+The batch text is obfuscated with the same rules as `db.query.text`, which strips comments — so
+`db.query.comment_tags` is the only place the comment metadata survives, and it is harvested
+before obfuscation. Both attributes are present but empty on events from a collection that has not
+opted in. The batch-text column is only added to the underlying query when a collection opts in, so
+leaving this disabled costs nothing.
 Example:
 
 ```yaml
