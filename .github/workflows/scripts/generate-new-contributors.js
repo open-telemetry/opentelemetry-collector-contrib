@@ -73,6 +73,28 @@ function areAllCommitsInArray(arrayToCheck, arrayToSearchIn) {
     return arrayToCheck.every(item => arrayToSearchIn.findIndex(item2 => item2.hash === item.hash) > -1);
 }
 
+/**
+ * hasCommitsAt checks if the GitHub account has authored any commit reachable from ref.
+ *
+ * @param github authenticated GitHub client
+ * @param username GitHub login of the commit author
+ * @param ref tag, branch or commit SHA to start looking from
+ * @returns true if at least one commit by username is reachable from ref
+ */
+async function hasCommitsAt(github, username, ref) {
+    const response = await github.request('GET /repos/{owner}/{repo}/commits', {
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
+        author: username,
+        sha: ref,
+        per_page: 1,
+        headers: {
+            'X-GitHub-Api-Version': '2022-11-28'
+        }
+    })
+    return response.data.length > 0
+}
+
 function generateNewContributorText(newContributors) {
     const annotatedUsernames = newContributors.map(username => "@" + username)
     return firstTimeContributorText + annotatedUsernames.join(", ") + " ! 🎉"
@@ -95,7 +117,26 @@ export const main = async (github, tag, previous_tag) => {
                 'X-GitHub-Api-Version': '2022-11-28'
             }
         })
-        usernames.push(response.data.author.login)
+        // author is null when the commit email is not linked to a GitHub account
+        const username = response.data.author?.login
+        if (!username) {
+            console.log('Skipping commit without a GitHub account:', contributor.hash);
+            continue
+        }
+        if (usernames.includes(username)) {
+            continue
+        }
+        // The git author name can change between commits of the same GitHub account,
+        // so confirm that the account has no commits in earlier releases.
+        if (await hasCommitsAt(github, username, previous_tag)) {
+            console.log('Skipping returning contributor:', username);
+            continue
+        }
+        usernames.push(username)
+    }
+
+    if(usernames.length === 0) {
+        return ""
     }
     console.log('First-time contributors:', usernames);
     console.log('Number of first-time contributors: ', usernames.length);
