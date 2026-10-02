@@ -1,0 +1,63 @@
+drain:
+
+drain/custom:
+  tree_depth: 5
+  merge_threshold: 0.6
+  max_node_children: 200
+  max_clusters: 500
+  extra_delimiters: ["-", "_"]
+  body_field: "message"
+  template_attribute: "custom.template"
+  parameter_key_prefix: "custom.param"
+  emit_wildcards: true
+  wildcards_attribute: "custom.wildcards"
+  seed_templates: ["user <*> logged in"]
+  seed_logs: ["user 123 logged in"]
+  warmup_min_clusters: 10
+  storage: file_storage
+  save_interval: 10m
+  masking_rules:
+    - name: "ip"
+      pattern: '\d+\.\d+\.\d+\.\d+'
+
+drain/invalid_tree_depth:
+  tree_depth: 2
+
+drain/invalid_merge_threshold_low:
+  merge_threshold: -0.1
+
+drain/invalid_merge_threshold_high:
+  merge_threshold: 1.5
+
+drain/invalid_max_node_children:
+  max_node_children: 0
+
+drain/invalid_max_clusters:
+  max_clusters: -1
+
+drain/invalid_template_attribute:
+  template_attribute: ""
+
+drain/invalid_warmup_min_clusters:
+  warmup_min_clusters: -1
+
+drain/invalid_save_interval_negative:
+  save_interval: -5m
+
+drain/invalid_save_interval_without_storage:
+  save_interval: 10m
+
+drain/invalid_emit_wildcards:
+  emit_wildcards: true
+  wildcards_attribute: ""
+
+drain/invalid_parameter_key_prefix:
+  parameter_key_prefix: ""
+  masking_rules:
+    - name: "ip"
+      pattern: '\d+\.\d+\.\d+\.\d+'
+
+drain/invalid_masking_rule:
+  masking_rules:
+    - name: "invalid name"
+      pattern: '\d+'
