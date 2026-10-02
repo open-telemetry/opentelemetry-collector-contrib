@@ -34,11 +34,16 @@ const (
 )
 
 var (
-	errInvalidAccessKey         = errors.New("invalid firehose access key")
-	errInHeaderMissingRequestID = errors.New("missing request id in header")
-	errInBodyMissingRequestID   = errors.New("missing request id in body")
-	errInBodyDiffRequestID      = errors.New("different request id in body")
+	errInvalidAccessKey           = errors.New("invalid firehose access key")
+	errInHeaderMissingRequestID   = errors.New("missing request id in header")
+	errInBodyMissingRequestID     = errors.New("missing request id in body")
+	errInBodyDiffRequestID        = errors.New("different request id in body")
+	errDecompressedRecordTooLarge = errors.New("decompressed record size exceeds the configured limit")
 )
+
+// defaultMaxRequestBodySize mirrors confighttp's own default, and is used as the
+// upper bound on cumulative decompressed record size when MaxRequestBodySize is unset.
+const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20 MiB
 
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
@@ -202,6 +207,12 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
+	decompressionLimit := fmr.config.ServerConfig.MaxRequestBodySize
+	if decompressionLimit <= 0 {
+		decompressionLimit = defaultMaxRequestBodySize
+	}
+	var decompressedSize int64
+
 	var recordIndex int
 	var recordBuf []byte
 	nextRecord := func() ([]byte, error) {
@@ -217,7 +228,7 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return nil, fmt.Errorf("unable to base64 decode the record at index %d: %w", recordIndex-1, decodeErr)
 		}
 
-		recordBuf, decodeErr = gunzipRecordIfNeeded(recordBuf)
+		recordBuf, decodeErr = gunzipRecordIfNeeded(recordBuf, decompressionLimit, &decompressedSize)
 		if decodeErr != nil {
 			return nil, fmt.Errorf("unable to decompress the record at index %d: %w", recordIndex-1, decodeErr)
 		}
@@ -282,7 +293,11 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 	}
 }
 
-func gunzipRecordIfNeeded(record []byte) ([]byte, error) {
+// gunzipRecordIfNeeded decompresses record if it is gzip-encoded, bounding the
+// decompressed size to protect against decompression bomb attacks. limit is the
+// maximum number of decompressed bytes allowed across all records in the request,
+// and decompressedSize accumulates the total decompressed so far.
+func gunzipRecordIfNeeded(record []byte, limit int64, decompressedSize *int64) ([]byte, error) {
 	if len(record) < 2 || record[0] != 0x1f || record[1] != 0x8b {
 		return record, nil
 	}
@@ -293,10 +308,15 @@ func gunzipRecordIfNeeded(record []byte) ([]byte, error) {
 	}
 	defer reader.Close()
 
-	decompressed, err := io.ReadAll(reader)
+	remaining := max(limit-*decompressedSize, 0)
+	decompressed, err := io.ReadAll(io.LimitReader(reader, remaining+1))
 	if err != nil {
 		return nil, err
 	}
+	if int64(len(decompressed)) > remaining {
+		return nil, errDecompressedRecordTooLarge
+	}
+	*decompressedSize += int64(len(decompressed))
 
 	return decompressed, nil
 }
