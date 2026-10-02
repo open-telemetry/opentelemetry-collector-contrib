@@ -106,10 +106,10 @@ func TestStopKillsAgentThatIgnoresShutdownSignals(t *testing.T) {
 			Env: map[string]string{
 				passthroughTestModeEnv: "ignore-signals-forever",
 			},
+			StopGracePeriod: 2 * time.Second,
 		},
 	)
 	require.NoError(t, err)
-	cmdr.stopGracePeriod = 2 * time.Second
 
 	ready := make(chan struct{})
 	var once sync.Once
@@ -157,10 +157,10 @@ func TestStopCalledConcurrentlyBothReturn(t *testing.T) {
 			Env: map[string]string{
 				passthroughTestModeEnv: "ignore-signals-forever",
 			},
+			StopGracePeriod: 2 * time.Second,
 		},
 	)
 	require.NoError(t, err)
-	cmdr.stopGracePeriod = 2 * time.Second
 
 	ready := make(chan struct{})
 	var once sync.Once
@@ -322,10 +322,10 @@ func TestStopKillsUnresponsiveProcess(t *testing.T) {
 			Env: map[string]string{
 				passthroughTestModeEnv: "ignore-shutdown-signal",
 			},
+			StopGracePeriod: 100 * time.Millisecond,
 		},
 	)
 	require.NoError(t, err)
-	cmdr.stopGracePeriod = 100 * time.Millisecond
 
 	ready := make(chan struct{})
 	var readyOnce sync.Once
@@ -348,31 +348,6 @@ func TestStopKillsUnresponsiveProcess(t *testing.T) {
 	require.False(t, cmdr.IsRunning())
 }
 
-// NewCommander uses the configured stop grace period, falling back to the
-// default when it is unset.
-func TestNewCommanderUsesConfiguredStopGracePeriod(t *testing.T) {
-	cmdr, err := NewCommander(
-		zap.NewNop(),
-		filepath.Join(t.TempDir(), "agent.log"),
-		config.Agent{
-			Executable:      os.Args[0],
-			StopGracePeriod: 3 * time.Second,
-		},
-	)
-	require.NoError(t, err)
-	require.Equal(t, 3*time.Second, cmdr.stopGracePeriod)
-
-	cmdrDefault, err := NewCommander(
-		zap.NewNop(),
-		filepath.Join(t.TempDir(), "agent.log"),
-		config.Agent{
-			Executable: os.Args[0],
-		},
-	)
-	require.NoError(t, err)
-	require.Equal(t, defaultStopGracePeriod, cmdrDefault.stopGracePeriod)
-}
-
 func TestStopDelaysShutdownSignalForNewlyStartedAgent(t *testing.T) {
 	cmdr, err := NewCommander(
 		zap.NewNop(),
@@ -383,6 +358,7 @@ func TestStopDelaysShutdownSignalForNewlyStartedAgent(t *testing.T) {
 			Env: map[string]string{
 				passthroughTestModeEnv: "exit-on-interrupt",
 			},
+			StopGracePeriod: 10 * time.Second,
 		},
 	)
 	require.NoError(t, err)
