@@ -1,0 +1,113 @@
+default:
+all_set:
+  resource_attributes:
+    cicd.pipeline.name:
+      enabled: true
+    cicd.pipeline.result:
+      enabled: true
+    cicd.pipeline.run.actor.id:
+      enabled: true
+    cicd.pipeline.run.actor.name:
+      enabled: true
+    cicd.pipeline.run.id:
+      enabled: true
+    cicd.pipeline.run.url.full:
+      enabled: true
+    gitlab.pipeline.run.actor.username:
+      enabled: true
+    gitlab.project.id:
+      enabled: true
+    gitlab.project.namespace:
+      enabled: true
+    service.name:
+      enabled: true
+    vcs.change.id:
+      enabled: true
+    vcs.change.state:
+      enabled: true
+    vcs.change.title:
+      enabled: true
+    vcs.provider.name:
+      enabled: true
+    vcs.ref.base.name:
+      enabled: true
+    vcs.ref.base.type:
+      enabled: true
+    vcs.ref.head.name:
+      enabled: true
+    vcs.ref.head.revision:
+      enabled: true
+    vcs.ref.head.revision.author.email:
+      enabled: true
+    vcs.ref.head.revision.author.name:
+      enabled: true
+    vcs.ref.head.revision.message:
+      enabled: true
+    vcs.ref.head.revision.timestamp:
+      enabled: true
+    vcs.ref.head.type:
+      enabled: true
+    vcs.repository.name:
+      enabled: true
+    vcs.repository.ref.default:
+      enabled: true
+    vcs.repository.url.full:
+      enabled: true
+    vcs.repository.visibility:
+      enabled: true
+none_set:
+  resource_attributes:
+    cicd.pipeline.name:
+      enabled: false
+    cicd.pipeline.result:
+      enabled: false
+    cicd.pipeline.run.actor.id:
+      enabled: false
+    cicd.pipeline.run.actor.name:
+      enabled: false
+    cicd.pipeline.run.id:
+      enabled: false
+    cicd.pipeline.run.url.full:
+      enabled: false
+    gitlab.pipeline.run.actor.username:
+      enabled: false
+    gitlab.project.id:
+      enabled: false
+    gitlab.project.namespace:
+      enabled: false
+    service.name:
+      enabled: false
+    vcs.change.id:
+      enabled: false
+    vcs.change.state:
+      enabled: false
+    vcs.change.title:
+      enabled: false
+    vcs.provider.name:
+      enabled: false
+    vcs.ref.base.name:
+      enabled: false
+    vcs.ref.base.type:
+      enabled: false
+    vcs.ref.head.name:
+      enabled: false
+    vcs.ref.head.revision:
+      enabled: false
+    vcs.ref.head.revision.author.email:
+      enabled: false
+    vcs.ref.head.revision.author.name:
+      enabled: false
+    vcs.ref.head.revision.message:
+      enabled: false
+    vcs.ref.head.revision.timestamp:
+      enabled: false
+    vcs.ref.head.type:
+      enabled: false
+    vcs.repository.name:
+      enabled: false
+    vcs.repository.ref.default:
+      enabled: false
+    vcs.repository.url.full:
+      enabled: false
+    vcs.repository.visibility:
+      enabled: false

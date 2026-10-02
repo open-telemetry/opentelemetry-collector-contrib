@@ -14,3 +14,113 @@ tests:
   config:
     webhook:
       endpoint: "localhost:0" #dynamic port allocation to avoid falky tests
+
+resource_attributes:
+  cicd.pipeline.name:
+    description: The name of the pipeline.
+    type: string
+    enabled: true
+  cicd.pipeline.result:
+    description: The result of the pipeline run.
+    type: string
+    enabled: true
+  cicd.pipeline.run.actor.id:
+    description: The ID of the user who triggered the pipeline run.
+    type: int
+    enabled: false
+  cicd.pipeline.run.actor.name:
+    description: The name of the user who triggered the pipeline run.
+    type: string
+    enabled: false
+  cicd.pipeline.run.id:
+    description: The unique identifier of the pipeline run.
+    type: int
+    enabled: true
+  cicd.pipeline.run.url.full:
+    description: The URL of the pipeline run.
+    type: string
+    enabled: true
+  gitlab.pipeline.run.actor.username:
+    description: The username of the user who triggered the pipeline run.
+    type: string
+    enabled: false
+  gitlab.project.id:
+    description: The ID of the GitLab project.
+    type: int
+    enabled: true
+  gitlab.project.namespace:
+    description: The namespace of the GitLab project.
+    type: string
+    enabled: true
+  service.name:
+    description: The GitLab project path with namespace.
+    type: string
+    enabled: true
+  vcs.change.id:
+    description: The ID of the merge request. Only set for merge request pipelines.
+    type: string
+    enabled: true
+  vcs.change.state:
+    description: The state of the merge request. Only set for merge request pipelines.
+    type: string
+    enabled: true
+  vcs.change.title:
+    description: The title of the merge request. Only set for merge request pipelines.
+    type: string
+    enabled: true
+  vcs.provider.name:
+    description: The name of the version control system provider.
+    type: string
+    enabled: true
+  vcs.ref.base.name:
+    description: The target branch of the merge request. Only set for merge request pipelines.
+    type: string
+    enabled: true
+  vcs.ref.base.type:
+    description: The type of the base reference. Only set for merge request pipelines.
+    type: string
+    enabled: true
+  vcs.ref.head.name:
+    description: The name of the head reference (branch or tag) the pipeline ran on.
+    type: string
+    enabled: true
+  vcs.ref.head.revision:
+    description: The commit SHA of the head reference.
+    type: string
+    enabled: true
+  vcs.ref.head.revision.author.email:
+    description: The email of the head commit author.
+    type: string
+    enabled: false
+  vcs.ref.head.revision.author.name:
+    description: The name of the head commit author.
+    type: string
+    enabled: false
+  vcs.ref.head.revision.message:
+    description: The message of the head commit.
+    type: string
+    enabled: false
+  vcs.ref.head.revision.timestamp:
+    description: The timestamp of the head commit.
+    type: string
+    enabled: true
+  vcs.ref.head.type:
+    description: The type of the head reference (branch or tag).
+    type: string
+    enabled: true
+  vcs.repository.name:
+    description: The name of the repository.
+    type: string
+    enabled: true
+  vcs.repository.ref.default:
+    description: The default branch of the repository.
+    type: string
+    enabled: true
+  vcs.repository.url.full:
+    description: The URL of the repository.
+    type: string
+    enabled: true
+  vcs.repository.visibility:
+    description: The visibility of the repository.
+    type: string
+    enabled: true

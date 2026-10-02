@@ -408,7 +408,7 @@ func TestParseGitlabTime(t *testing.T) {
 	}
 }
 
-func TestIncludeUserAttributes(t *testing.T) {
+func TestUserResourceAttributes(t *testing.T) {
 	tests := []struct {
 		name                  string
 		includeUserAttributes bool
@@ -429,14 +429,15 @@ func TestIncludeUserAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			receiver := setupGitlabTracesReceiver(t)
-			receiver.cfg.WebHook.IncludeUserAttributes = tt.includeUserAttributes
+			if tt.includeUserAttributes {
+				enableUserResourceAttributes(&receiver.cfg.ResourceAttributes)
+			}
 
 			var pipelineEvent gitlab.PipelineEvent
 			err := json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
 			require.NoError(t, err)
 
-			attrs := pcommon.NewMap()
-			receiver.setResourceAttributes(attrs, &pipelineEvent)
+			attrs := receiver.buildResource(&pipelineEvent).Attributes()
 
 			_, hasAuthorName := attrs.Get(AttributeVCSRefHeadRevisionAuthorName)
 			_, hasAuthorEmail := attrs.Get(AttributeVCSRefHeadRevisionAuthorEmail)
@@ -468,16 +469,30 @@ func TestIncludeUserAttributes(t *testing.T) {
 	}
 }
 
+func TestDisabledResourceAttribute(t *testing.T) {
+	receiver := setupGitlabTracesReceiver(t)
+	receiver.cfg.ResourceAttributes.ServiceName.Enabled = false
+
+	var pipelineEvent gitlab.PipelineEvent
+	require.NoError(t, json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent))
+
+	attrs := receiver.buildResource(&pipelineEvent).Attributes()
+
+	_, hasServiceName := attrs.Get("service.name")
+	require.False(t, hasServiceName, "disabled service.name should not be present")
+	_, hasRepoName := attrs.Get("vcs.repository.name")
+	require.True(t, hasRepoName, "enabled attributes should still be present")
+}
+
 func TestSetAttributes(t *testing.T) {
 	receiver := setupGitlabTracesReceiver(t)
-	receiver.cfg.WebHook.IncludeUserAttributes = true
+	enableUserResourceAttributes(&receiver.cfg.ResourceAttributes)
 
 	var pipelineEvent gitlab.PipelineEvent
 	err := json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
 	require.NoError(t, err)
 
-	attrs := pcommon.NewMap()
-	receiver.setResourceAttributes(attrs, &pipelineEvent)
+	attrs := receiver.buildResource(&pipelineEvent).Attributes()
 
 	// VCS
 	vcsProvider, _ := attrs.Get("vcs.provider.name")
@@ -573,7 +588,7 @@ func TestMultiPipeline(t *testing.T) {
 
 func TestPipelineWithMissingOptionalFields(t *testing.T) {
 	receiver, pipeline, _, _ := setupTestPipelineFromJSON(t, minimalValidPipelineWebhookEvent)
-	receiver.cfg.WebHook.IncludeUserAttributes = true
+	enableUserResourceAttributes(&receiver.cfg.ResourceAttributes)
 
 	traces, err := receiver.handlePipeline(pipeline)
 	require.NoError(t, err)
@@ -601,7 +616,7 @@ func TestPipelineWithMissingOptionalFields(t *testing.T) {
 	_, found = attrs.Get(AttributeVCSRefHeadRevisionTimestamp)
 	require.False(t, found)
 
-	// User attributes with include_user_attributes=true but user is nil
+	// User attributes enabled but user is nil
 	_, found = attrs.Get(AttributeCICDPipelineRunActorID)
 	require.False(t, found)
 
