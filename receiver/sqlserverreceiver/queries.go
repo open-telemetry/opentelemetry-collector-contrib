@@ -281,6 +281,8 @@ SELECT DISTINCT
 				,'Latch Waits/sec'
 				,'Lock Requests/sec'
 				,'Lock Wait Time (ms)'
+				,'Average Wait Time (ms)'
+				,'Average Wait Time Base'
 			)
 		)
 )
@@ -324,6 +326,9 @@ SELECT
 	,pc.[object_name] AS [object]
 	,pc.[counter_name] AS [counter]
 	,CASE pc.[instance_name] WHEN '_Total' THEN 'Total' ELSE ISNULL(pc.[instance_name],'') END AS [instance]
+	-- [instance] renames the _Total aggregate to Total, which a real database could also
+	-- be called, so carry the unmodified name for telling the two apart.
+	,ISNULL(pc.[instance_name],'') AS [instance_raw]
 	,CAST(CASE WHEN pc.[cntr_type] = 537003264 AND pc1.[cntr_value] > 0 THEN (pc.[cntr_value] * 1.0) / (pc1.[cntr_value] * 1.0) * 100 ELSE pc.[cntr_value] END AS float(10)) AS [value]
 	,pc.[cntr_value] AS [raw_value]
 	,CAST(pc.[cntr_type] AS varchar(25)) AS [counter_type]
@@ -338,7 +343,12 @@ LEFT OUTER JOIN @PCounters AS pc1
 	AND pc.[instance_name] = pc1.[instance_name]
 	AND pc1.[counter_name] LIKE '%base'
 WHERE
-	pc.[counter_name] NOT LIKE '% base'
+	(
+		pc.[counter_name] NOT LIKE '% base'
+		-- Average Wait Time (ms) only becomes an average once divided by this base
+		-- counter, so it has to survive the filter that drops the other bases.
+		OR pc.[counter_name] = 'Average Wait Time Base'
+	)
 {filter_instance_name}
 OPTION(RECOMPILE)
 `

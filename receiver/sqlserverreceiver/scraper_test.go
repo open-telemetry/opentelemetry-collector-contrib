@@ -337,7 +337,9 @@ func TestSuccessfulScrape(t *testing.T) {
 
 							if queryCall == 0 {
 								for _, row := range rows {
-									if isPerformanceCounterRate(row["counter_type"], row["counter"]) {
+									if isPerformanceCounterRate(row["counter_type"], row["counter"]) ||
+										isPerformanceCounterAverageBulk(row["counter_type"], row["counter"]) ||
+										isPerformanceCounterAverageBulkBase(row["counter"]) {
 										row["value"] = "0"
 										row["raw_value"] = "0"
 									}
@@ -391,6 +393,37 @@ func TestSuccessfulScrape(t *testing.T) {
 	}
 }
 
+func TestIsPerformanceCounterAverageBulk(t *testing.T) {
+	assert.True(t, isPerformanceCounterAverageBulk(perfCounterAverageBulkType, "Average Wait Time (ms)"))
+	assert.False(t, isPerformanceCounterAverageBulk(perfCounterBulkCountType, "Average Wait Time (ms)"),
+		"the counter type has to match too")
+	assert.False(t, isPerformanceCounterAverageBulk(perfCounterAverageBulkType, "Average Latch Wait Time (ms)"),
+		"only counters paired with a known base are handled")
+	assert.True(t, isPerformanceCounterAverageBulkBase("Average Wait Time Base"))
+	assert.False(t, isPerformanceCounterAverageBulkBase("Average Wait Time (ms)"))
+}
+
+// A database may legitimately be called Total, which the query's [instance] column
+// renames the _Total aggregate to. The two must not share a sample key.
+func TestPerformanceCounterKeyDistinguishesTotalDatabase(t *testing.T) {
+	aggregate := sqlquery.StringMap{
+		"object": "SQLServer:Databases", "counter": "Transactions/sec",
+		"instance": "Total", instanceRawKey: "_Total",
+	}
+	database := sqlquery.StringMap{
+		"object": "SQLServer:Databases", "counter": "Transactions/sec",
+		"instance": "Total", instanceRawKey: "Total",
+	}
+	assert.NotEqual(t, performanceCounterKeyFromRow(aggregate), performanceCounterKeyFromRow(database),
+		"the aggregate and a database named Total must keep separate samples")
+
+	// Rows without the column fall back to [instance] rather than collapsing to "".
+	legacy := sqlquery.StringMap{
+		"object": "SQLServer:Databases", "counter": "Transactions/sec", "instance": "master",
+	}
+	assert.Equal(t, "master", performanceCounterKeyFromRow(legacy).instance)
+}
+
 func TestIsPerformanceCounterRate(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -409,6 +442,36 @@ func TestIsPerformanceCounterRate(t *testing.T) {
 			counterType: perfCounterCounterType,
 			counterName: "Batch Requests/sec",
 			expected:    true,
+		},
+		{
+			name:        "transactions rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Transactions/sec",
+			expected:    true,
+		},
+		{
+			name:        "page read rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Page reads/sec",
+			expected:    true,
+		},
+		{
+			name:        "page write rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Page writes/sec",
+			expected:    true,
+		},
+		{
+			name:        "lazy write rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Lazy writes/sec",
+			expected:    true,
+		},
+		{
+			name:        "average bulk counter is not a rate",
+			counterType: perfCounterAverageBulkType,
+			counterName: "Average Wait Time (ms)",
+			expected:    false,
 		},
 		{
 			name:        "bulk cumulative counter",
