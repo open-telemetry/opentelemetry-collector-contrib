@@ -4,6 +4,8 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"hash/fnv"
 	"strconv"
 	"strings"
@@ -150,6 +152,119 @@ func (mdp *MetricsDataPoint) HideLockStatsRowrangestartkeyPII() {
 		p.ModifyValue(hashedKey)
 		mdp.labelValues[index] = v
 	}
+}
+
+func (mdp *MetricsDataPoint) HideSplitStatsKeysPII() {
+	for index, labelValue := range mdp.labelValues {
+		if labelValue.Metadata().Name() != "split_start" && labelValue.Metadata().Name() != "split_limit" {
+			continue
+		}
+
+		switch v := labelValue.(type) {
+		case byteSliceLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashSplitStatsKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		case stringSliceLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashSplitStatsKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		case stringLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashSplitStatsKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		}
+	}
+}
+
+func parseAndHashSplitStatsKey(val string) string {
+	if val == "<begin>" || val == "<end>" || val == "<infinity>" {
+		return val
+	}
+
+	var result strings.Builder
+	var current strings.Builder
+	inQuotes := false
+	escapeNext := false
+	bracketLevel := 0
+
+	flushToken := func(hashToken bool) {
+		if current.Len() == 0 {
+			return
+		}
+		token := current.String()
+		current.Reset()
+
+		if !hashToken {
+			result.WriteString(token)
+			return
+		}
+
+		hasPlus := strings.HasSuffix(token, "+")
+		partToHash := token
+		if hasPlus {
+			partToHash = token[:len(token)-1]
+		}
+
+		hash := sha256.Sum256([]byte(partToHash))
+		hashUint := binary.BigEndian.Uint32(hash[:4])
+		hashedStr := strconv.FormatUint(uint64(hashUint), 10)
+
+		result.WriteString(hashedStr)
+		if hasPlus {
+			result.WriteByte('+')
+		}
+	}
+
+	for i := 0; i < len(val); i++ {
+		c := val[i]
+
+		if escapeNext {
+			current.WriteByte(c)
+			escapeNext = false
+			continue
+		}
+
+		if c == '\\' {
+			current.WriteByte(c)
+			escapeNext = true
+			continue
+		}
+
+		if c == '"' {
+			inQuotes = !inQuotes
+			current.WriteByte(c)
+			continue
+		}
+
+		if !inQuotes {
+			if c == '(' {
+				flushToken(false)
+				result.WriteByte(c)
+				bracketLevel++
+				continue
+			}
+			if c == ')' {
+				flushToken(bracketLevel > 0)
+				result.WriteByte(c)
+				if bracketLevel > 0 {
+					bracketLevel--
+				}
+				continue
+			}
+			if c == ',' {
+				flushToken(bracketLevel > 0)
+				result.WriteByte(c)
+				continue
+			}
+		}
+
+		current.WriteByte(c)
+	}
+
+	flushToken(bracketLevel > 0)
+
+	return result.String()
 }
 
 func TruncateString(str string, length int) string {
