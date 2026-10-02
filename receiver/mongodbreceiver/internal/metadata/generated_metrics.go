@@ -583,6 +583,15 @@ var MetricsInfo = metricsInfo{
 	MongodbQueriesRate: metricInfo{
 		Name: "mongodb.queries.rate",
 	},
+	MongodbQueryExecutorCollectionScanCount: metricInfo{
+		Name: "mongodb.query_executor.collection_scan.count",
+	},
+	MongodbQueryExecutorDocumentScannedCount: metricInfo{
+		Name: "mongodb.query_executor.document.scanned.count",
+	},
+	MongodbQueryExecutorIndexKeyScannedCount: metricInfo{
+		Name: "mongodb.query_executor.index_key.scanned.count",
+	},
 	MongodbReplCommandsPerSec: metricInfo{
 		Name: "mongodb.repl_commands_per_sec",
 	},
@@ -692,6 +701,9 @@ type metricsInfo struct {
 	MongodbOplogWindow                        metricInfo
 	MongodbPageFaults                         metricInfo
 	MongodbQueriesRate                        metricInfo
+	MongodbQueryExecutorCollectionScanCount   metricInfo
+	MongodbQueryExecutorDocumentScannedCount  metricInfo
+	MongodbQueryExecutorIndexKeyScannedCount  metricInfo
 	MongodbReplCommandsPerSec                 metricInfo
 	MongodbReplDeletesPerSec                  metricInfo
 	MongodbReplGetmoresPerSec                 metricInfo
@@ -3506,6 +3518,162 @@ func newMetricMongodbQueriesRate(cfg MongodbQueriesRateMetricConfig) metricMongo
 	return m
 }
 
+type metricMongodbQueryExecutorCollectionScanCount struct {
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   MongodbQueryExecutorCollectionScanCountMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.query_executor.collection_scan.count metric with initial data.
+func (m *metricMongodbQueryExecutorCollectionScanCount) init() {
+	m.data.SetName("mongodb.query_executor.collection_scan.count")
+	m.data.SetDescription("The number of queries that performed a collection scan.")
+	m.data.SetUnit("{query}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMongodbQueryExecutorCollectionScanCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbQueryExecutorCollectionScanCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbQueryExecutorCollectionScanCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbQueryExecutorCollectionScanCount(cfg MongodbQueryExecutorCollectionScanCountMetricConfig) metricMongodbQueryExecutorCollectionScanCount {
+	m := metricMongodbQueryExecutorCollectionScanCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbQueryExecutorDocumentScannedCount struct {
+	data     pmetric.Metric                                       // data buffer for generated metric.
+	config   MongodbQueryExecutorDocumentScannedCountMetricConfig // metric config provided by user.
+	capacity int                                                  // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.query_executor.document.scanned.count metric with initial data.
+func (m *metricMongodbQueryExecutorDocumentScannedCount) init() {
+	m.data.SetName("mongodb.query_executor.document.scanned.count")
+	m.data.SetDescription("The number of documents scanned by the query executor.")
+	m.data.SetUnit("{document}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMongodbQueryExecutorDocumentScannedCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbQueryExecutorDocumentScannedCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbQueryExecutorDocumentScannedCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbQueryExecutorDocumentScannedCount(cfg MongodbQueryExecutorDocumentScannedCountMetricConfig) metricMongodbQueryExecutorDocumentScannedCount {
+	m := metricMongodbQueryExecutorDocumentScannedCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbQueryExecutorIndexKeyScannedCount struct {
+	data     pmetric.Metric                                       // data buffer for generated metric.
+	config   MongodbQueryExecutorIndexKeyScannedCountMetricConfig // metric config provided by user.
+	capacity int                                                  // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.query_executor.index_key.scanned.count metric with initial data.
+func (m *metricMongodbQueryExecutorIndexKeyScannedCount) init() {
+	m.data.SetName("mongodb.query_executor.index_key.scanned.count")
+	m.data.SetDescription("The number of index keys scanned by the query executor.")
+	m.data.SetUnit("{index_key}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMongodbQueryExecutorIndexKeyScannedCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbQueryExecutorIndexKeyScannedCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbQueryExecutorIndexKeyScannedCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbQueryExecutorIndexKeyScannedCount(cfg MongodbQueryExecutorIndexKeyScannedCountMetricConfig) metricMongodbQueryExecutorIndexKeyScannedCount {
+	m := metricMongodbQueryExecutorIndexKeyScannedCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbReplCommandsPerSec struct {
 	data     pmetric.Metric                        // data buffer for generated metric.
 	config   MongodbReplCommandsPerSecMetricConfig // metric config provided by user.
@@ -4853,6 +5021,9 @@ type MetricsBuilder struct {
 	metricMongodbOplogWindow                        metricMongodbOplogWindow
 	metricMongodbPageFaults                         metricMongodbPageFaults
 	metricMongodbQueriesRate                        metricMongodbQueriesRate
+	metricMongodbQueryExecutorCollectionScanCount   metricMongodbQueryExecutorCollectionScanCount
+	metricMongodbQueryExecutorDocumentScannedCount  metricMongodbQueryExecutorDocumentScannedCount
+	metricMongodbQueryExecutorIndexKeyScannedCount  metricMongodbQueryExecutorIndexKeyScannedCount
 	metricMongodbReplCommandsPerSec                 metricMongodbReplCommandsPerSec
 	metricMongodbReplDeletesPerSec                  metricMongodbReplDeletesPerSec
 	metricMongodbReplGetmoresPerSec                 metricMongodbReplGetmoresPerSec
@@ -4937,6 +5108,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMongodbOplogWindow:                        newMetricMongodbOplogWindow(mbc.Metrics.MongodbOplogWindow),
 		metricMongodbPageFaults:                         newMetricMongodbPageFaults(mbc.Metrics.MongodbPageFaults),
 		metricMongodbQueriesRate:                        newMetricMongodbQueriesRate(mbc.Metrics.MongodbQueriesRate),
+		metricMongodbQueryExecutorCollectionScanCount:   newMetricMongodbQueryExecutorCollectionScanCount(mbc.Metrics.MongodbQueryExecutorCollectionScanCount),
+		metricMongodbQueryExecutorDocumentScannedCount:  newMetricMongodbQueryExecutorDocumentScannedCount(mbc.Metrics.MongodbQueryExecutorDocumentScannedCount),
+		metricMongodbQueryExecutorIndexKeyScannedCount:  newMetricMongodbQueryExecutorIndexKeyScannedCount(mbc.Metrics.MongodbQueryExecutorIndexKeyScannedCount),
 		metricMongodbReplCommandsPerSec:                 newMetricMongodbReplCommandsPerSec(mbc.Metrics.MongodbReplCommandsPerSec),
 		metricMongodbReplDeletesPerSec:                  newMetricMongodbReplDeletesPerSec(mbc.Metrics.MongodbReplDeletesPerSec),
 		metricMongodbReplGetmoresPerSec:                 newMetricMongodbReplGetmoresPerSec(mbc.Metrics.MongodbReplGetmoresPerSec),
@@ -5104,6 +5278,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbOplogWindow.emit(ils.Metrics())
 	mb.metricMongodbPageFaults.emit(ils.Metrics())
 	mb.metricMongodbQueriesRate.emit(ils.Metrics())
+	mb.metricMongodbQueryExecutorCollectionScanCount.emit(ils.Metrics())
+	mb.metricMongodbQueryExecutorDocumentScannedCount.emit(ils.Metrics())
+	mb.metricMongodbQueryExecutorIndexKeyScannedCount.emit(ils.Metrics())
 	mb.metricMongodbReplCommandsPerSec.emit(ils.Metrics())
 	mb.metricMongodbReplDeletesPerSec.emit(ils.Metrics())
 	mb.metricMongodbReplGetmoresPerSec.emit(ils.Metrics())
@@ -5348,6 +5525,21 @@ func (mb *MetricsBuilder) RecordMongodbPageFaultsDataPoint(ts pcommon.Timestamp,
 // RecordMongodbQueriesRateDataPoint adds a data point to mongodb.queries.rate metric.
 func (mb *MetricsBuilder) RecordMongodbQueriesRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricMongodbQueriesRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbQueryExecutorCollectionScanCountDataPoint adds a data point to mongodb.query_executor.collection_scan.count metric.
+func (mb *MetricsBuilder) RecordMongodbQueryExecutorCollectionScanCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbQueryExecutorCollectionScanCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbQueryExecutorDocumentScannedCountDataPoint adds a data point to mongodb.query_executor.document.scanned.count metric.
+func (mb *MetricsBuilder) RecordMongodbQueryExecutorDocumentScannedCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbQueryExecutorDocumentScannedCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbQueryExecutorIndexKeyScannedCountDataPoint adds a data point to mongodb.query_executor.index_key.scanned.count metric.
+func (mb *MetricsBuilder) RecordMongodbQueryExecutorIndexKeyScannedCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbQueryExecutorIndexKeyScannedCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbReplCommandsPerSecDataPoint adds a data point to mongodb.repl_commands_per_sec metric.

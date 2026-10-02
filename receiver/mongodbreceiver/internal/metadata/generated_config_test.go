@@ -182,6 +182,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbQueriesRate: MongodbQueriesRateMetricConfig{
 						Enabled: true,
 					},
+					MongodbQueryExecutorCollectionScanCount: MongodbQueryExecutorCollectionScanCountMetricConfig{
+						Enabled: true,
+					},
+					MongodbQueryExecutorDocumentScannedCount: MongodbQueryExecutorDocumentScannedCountMetricConfig{
+						Enabled: true,
+					},
+					MongodbQueryExecutorIndexKeyScannedCount: MongodbQueryExecutorIndexKeyScannedCountMetricConfig{
+						Enabled: true,
+					},
 					MongodbReplCommandsPerSec: MongodbReplCommandsPerSecMetricConfig{
 						Enabled: true,
 					},
@@ -426,6 +435,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbQueriesRate: MongodbQueriesRateMetricConfig{
 						Enabled: false,
 					},
+					MongodbQueryExecutorCollectionScanCount: MongodbQueryExecutorCollectionScanCountMetricConfig{
+						Enabled: false,
+					},
+					MongodbQueryExecutorDocumentScannedCount: MongodbQueryExecutorDocumentScannedCountMetricConfig{
+						Enabled: false,
+					},
+					MongodbQueryExecutorIndexKeyScannedCount: MongodbQueryExecutorIndexKeyScannedCountMetricConfig{
+						Enabled: false,
+					},
 					MongodbReplCommandsPerSec: MongodbReplCommandsPerSecMetricConfig{
 						Enabled: false,
 					},
@@ -515,7 +533,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbOplogLimitMetricConfig{}, MongodbOplogUsageMetricConfig{}, MongodbOplogWindowMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbReplicaStatusMetricConfig{}, MongodbReplicaSetHeadroomMetricConfig{}, MongodbReplicaSetLagMetricConfig{}, MongodbReplicaSetMemberCountMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWtConcurrentTransactionTicketInUseMetricConfig{}, MongodbWtFsyncCountMetricConfig{}, MongodbWtLogOperationCountMetricConfig{}, MongodbWtLogSyncTimeMetricConfig{}, MongodbWtLogWriteMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbActiveReadsMetricConfig{}, MongodbActiveWritesMetricConfig{}, MongodbCacheOperationsMetricConfig{}, MongodbCollectionCountMetricConfig{}, MongodbCommandsRateMetricConfig{}, MongodbConnectionCountMetricConfig{}, MongodbCursorCountMetricConfig{}, MongodbCursorTimeoutCountMetricConfig{}, MongodbDataSizeMetricConfig{}, MongodbDatabaseCountMetricConfig{}, MongodbDeletesRateMetricConfig{}, MongodbDocumentOperationCountMetricConfig{}, MongodbExtentCountMetricConfig{}, MongodbFlushesRateMetricConfig{}, MongodbGetmoresRateMetricConfig{}, MongodbGlobalLockTimeMetricConfig{}, MongodbHealthMetricConfig{}, MongodbIndexAccessCountMetricConfig{}, MongodbIndexCountMetricConfig{}, MongodbIndexSizeMetricConfig{}, MongodbInsertsRateMetricConfig{}, MongodbLockAcquireCountMetricConfig{}, MongodbLockAcquireTimeMetricConfig{}, MongodbLockAcquireWaitCountMetricConfig{}, MongodbLockDeadlockCountMetricConfig{}, MongodbMemoryUsageMetricConfig{}, MongodbNetworkIoReceiveMetricConfig{}, MongodbNetworkIoTransmitMetricConfig{}, MongodbNetworkRequestCountMetricConfig{}, MongodbObjectCountMetricConfig{}, MongodbOperationCountMetricConfig{}, MongodbOperationLatencyTimeMetricConfig{}, MongodbOperationReplCountMetricConfig{}, MongodbOperationTimeMetricConfig{}, MongodbOplogLimitMetricConfig{}, MongodbOplogUsageMetricConfig{}, MongodbOplogWindowMetricConfig{}, MongodbPageFaultsMetricConfig{}, MongodbQueriesRateMetricConfig{}, MongodbQueryExecutorCollectionScanCountMetricConfig{}, MongodbQueryExecutorDocumentScannedCountMetricConfig{}, MongodbQueryExecutorIndexKeyScannedCountMetricConfig{}, MongodbReplCommandsPerSecMetricConfig{}, MongodbReplDeletesPerSecMetricConfig{}, MongodbReplGetmoresPerSecMetricConfig{}, MongodbReplInsertsPerSecMetricConfig{}, MongodbReplQueriesPerSecMetricConfig{}, MongodbReplUpdatesPerSecMetricConfig{}, MongodbReplicaStatusMetricConfig{}, MongodbReplicaSetHeadroomMetricConfig{}, MongodbReplicaSetLagMetricConfig{}, MongodbReplicaSetMemberCountMetricConfig{}, MongodbSessionCountMetricConfig{}, MongodbStorageSizeMetricConfig{}, MongodbUpdatesRateMetricConfig{}, MongodbUptimeMetricConfig{}, MongodbWtConcurrentTransactionTicketInUseMetricConfig{}, MongodbWtFsyncCountMetricConfig{}, MongodbWtLogOperationCountMetricConfig{}, MongodbWtLogSyncTimeMetricConfig{}, MongodbWtLogWriteMetricConfig{}, MongodbWtcacheBytesReadMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

@@ -486,6 +486,30 @@ The number of queries executed per second.
 | ---- | ----------- | ---------- | --------- |
 | {query}/s | Gauge | Double | Development |
 
+### mongodb.query_executor.collection_scan.count
+
+The number of queries that performed a collection scan.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {query} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.query_executor.document.scanned.count
+
+The number of documents scanned by the query executor.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {document} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.query_executor.index_key.scanned.count
+
+The number of index keys scanned by the query executor.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {index_key} | Sum | Int | Cumulative | true | Development |
+
 ### mongodb.repl_commands_per_sec
 
 The number of replicated commands executed per second.
