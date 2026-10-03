@@ -20,7 +20,7 @@ import (
 const (
 	// Value was generated using the same library. Intent is to detect that something changed in library implementation
 	// in case we received different value here. For more details inspect tests where this value is used.
-	expectedHashValue = "29282762c26450b7"
+	expectedHashValue = "d0379c5fd2eae312"
 )
 
 func TestMetricsDataPoint_GroupingKey(t *testing.T) {
@@ -203,6 +203,11 @@ func allPossibleLabelValues() []LabelValue {
 		metadata: lckReqSliceLabelValueMetadata,
 		value:    stringValue,
 	}
+	iSliceLabelValueMetadata, _ := NewLabelValueMetadata("intSliceLabelName", "intSliceLabelColumnName", IntSliceValueType)
+	iSliceLabelValue := intSliceLabelValue{
+		metadata: iSliceLabelValueMetadata,
+		value:    stringValue,
+	}
 
 	return []LabelValue{
 		strLabelValue,
@@ -211,6 +216,7 @@ func allPossibleLabelValues() []LabelValue {
 		strSliceLabelValue,
 		btSliceLabelValue,
 		lckReqSliceLabelValue,
+		iSliceLabelValue,
 	}
 }
 
@@ -249,7 +255,7 @@ func assertLabelValue(t *testing.T, attributesMap pcommon.Map, labelValue LabelV
 
 	assert.True(t, exists)
 	switch labelValue.(type) {
-	case stringLabelValue, stringSliceLabelValue, byteSliceLabelValue, lockRequestSliceLabelValue:
+	case stringLabelValue, stringSliceLabelValue, byteSliceLabelValue, lockRequestSliceLabelValue, intSliceLabelValue:
 		assert.Equal(t, labelValue.Value(), value.Str())
 	case boolLabelValue:
 		assert.Equal(t, labelValue.Value(), value.Bool())
