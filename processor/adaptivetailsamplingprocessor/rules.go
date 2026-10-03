@@ -38,6 +38,10 @@ type rule struct {
 	// dynsamplerAttrSet carries the rule and sampler_type attributes for
 	// metrics derived from the sampler's GetMetrics output.
 	dynsamplerAttrSet metric.MeasurementOption
+
+	// goalThroughput is the configured fleet-wide goal for adaptive_throughput
+	// rules; 0 otherwise.
+	goalThroughput int
 }
 
 // matches returns true when the rule's conditions are satisfied by the
@@ -156,6 +160,9 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 			attribute.String("sampler_type", string(cfg.Sampler.Type)),
 			attribute.String("sampler_algorithm", string(cfg.Sampler.effectiveAlgorithm())),
 		),
+	}
+	if cfg.Sampler.Type == AdaptiveThroughput {
+		r.goalThroughput = cfg.Sampler.GoalThroughput
 	}
 	if len(cfg.Conditions) == 0 {
 		return r, nil
