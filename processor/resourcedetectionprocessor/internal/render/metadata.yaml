@@ -1,0 +1,24 @@
+type: resourcedetectionprocessor/render
+sem_conv_version: 1.40.0
+
+parent: resourcedetection
+
+resource_attributes:
+  service.instance.id:
+    semantic_convention:
+      ref: service.md#service-instance-id
+    description: The service.instance.id
+    type: string
+    enabled: true
+  service.name:
+    semantic_convention:
+      ref: service.md#service-name
+    description: Render service name recorded as service.name.
+    enabled: true
+    type: string
+  service.version:
+    semantic_convention:
+      ref: service.md#service-version
+    description: Render git commit set as service.version.
+    enabled: true
+    type: string
