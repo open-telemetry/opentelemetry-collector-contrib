@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestWriteMetrics(t *testing.T) {
@@ -326,7 +327,7 @@ func TestSortAndNormalizeMetrics(t *testing.T) {
 }
 
 func TestReadProfiles(t *testing.T) {
-	expectedProfiles := CreateTestProfiles()
+	expectedProfiles := normalizeProfiles(t, CreateTestProfiles())
 
 	expectedFile := filepath.Join("testdata", "profiles-roundtrip", "expected.yaml")
 	actualProfiles, err := ReadProfiles(expectedFile)
@@ -363,11 +364,22 @@ func TestProfilesRoundTrip(t *testing.T) {
 
 	actualProfiles, err := ReadProfiles(tempDir)
 	require.NoError(t, err)
-	require.Equal(t, expectedProfiles, actualProfiles)
+	require.Equal(t, normalizeProfiles(t, expectedProfiles), actualProfiles)
+}
+
+// normalizeProfiles passes profiles through an OTLP/JSON marshal/unmarshal
+// cycle, so that strings referenced from the dictionary end up in the string
+// table the same way they do when reading profiles from a file.
+func normalizeProfiles(t *testing.T, profiles pprofile.Profiles) pprofile.Profiles {
+	b, err := (&pprofile.JSONMarshaler{}).MarshalProfiles(profiles)
+	require.NoError(t, err)
+	normalized, err := (&pprofile.JSONUnmarshaler{}).UnmarshalProfiles(b)
+	require.NoError(t, err)
+	return normalized
 }
 
 func CreateTestProfiles() pprofile.Profiles {
-	profiles := pprofile.NewProfiles()
+	profiles := testdata.GenerateProfiles(0)
 	dic := profiles.Dictionary()
 	resource := profiles.ResourceProfiles().AppendEmpty()
 	scope := resource.ScopeProfiles().AppendEmpty()

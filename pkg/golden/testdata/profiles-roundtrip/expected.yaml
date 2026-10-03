@@ -1,5 +1,12 @@
 dictionary:
   attributeTable:
+    - value: {}
+    - keyStrindex: 1
+      value:
+        stringValue: value-1
+    - keyStrindex: 1
+      value:
+        stringValue: value-2
     - keyStrindex: 4
       value:
         stringValue: 600DCAFE4A110000F2BF38C493F5FB92
@@ -9,17 +16,26 @@ dictionary:
     - keyStrindex: 6
       value:
         stringValue: localhost
+  functionTable:
+    - {}
+  linkTable:
+    - {}
   locationTable:
+    - {}
     - address: "111"
       attributeIndices:
         - 1
   mappingTable:
+    - {}
     - attributeIndices:
         - 0
   stackTable:
+    - {}
     - locationIndices:
         - 0
   stringTable:
+    - ""
+    - key
     - samples
     - count
     - cpu
@@ -27,7 +43,16 @@ dictionary:
     - process.executable.build_id.htlhash
     - profile.frame.type
     - host.id
+    - resource-attr
+    - resource-attr-val-1
 resourceProfiles:
+  - resource:
+      attributes:
+        - keyStrindex: 9
+          value:
+            stringValueStrindex: 10
+    scopeProfiles:
+      - scope: {}
   - resource: {}
     scopeProfiles:
       - profiles:
