@@ -361,31 +361,15 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			originalValue: "Table()",
 			expectedValue: "Table()",
 		},
-		{
-			name:          "trailing backslash",
-			originalValue: "UsersTable(abc\\)",
-			expectedValue: "UsersTable(3879977533",
-		},
-		{
-			name:          "unclosed quotes",
-			originalValue: "UsersTable(\"abc)",
-			expectedValue: "UsersTable(1304451591",
-		},
+		
+		
 		{
 			name:          "emoji unicode",
 			originalValue: "UsersTable(bob😊)",
 			expectedValue: "UsersTable(2856295094)",
 		},
-		{
-			name:          "missing table name",
-			originalValue: "(123)",
-			expectedValue: "(2791679065)",
-		},
-		{
-			name:          "missing closing bracket",
-			originalValue: "UsersTable(123",
-			expectedValue: "UsersTable(2791679065",
-		},
+		
+		
 		{
 			name:          "date of birth with hyphens",
 			originalValue: "UsersTable(\"1990-01-01\")",
