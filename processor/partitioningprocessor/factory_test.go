@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -36,7 +37,7 @@ func TestCreateProcessors(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	pp, err := f.CreateProfiles(t.Context(), set, cfg, consumertest.NewNop())
+	pp, err := f.(xprocessor.Factory).CreateProfiles(t.Context(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NotNil(t, pp)
 }

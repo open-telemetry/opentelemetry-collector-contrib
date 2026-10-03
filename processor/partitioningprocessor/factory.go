@@ -21,8 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/partitioningprocessor/internal/metadata"
 )
 
-// NewFactory returns a new xprocessor.Factory for the partitioning processor.
-func NewFactory() xprocessor.Factory {
+// NewFactory returns a new factory for the partitioning processor.
+func NewFactory() processor.Factory {
 	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
