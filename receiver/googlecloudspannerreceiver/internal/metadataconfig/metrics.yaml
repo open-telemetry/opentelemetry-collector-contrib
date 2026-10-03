@@ -268,6 +268,12 @@ metadata:
       - name: "fingerprint"
         column_name: "FPRINT"
         value_type: "int"
+      - name: "read_type"
+        column_name: "READ_TYPE"
+        value_type: "string"
+      - name: "request_tag"
+        column_name: "REQUEST_TAG"
+        value_type: "string"
     metrics:
       - name: "execution_count"
         column_name: "EXECUTION_COUNT"
@@ -311,6 +317,18 @@ metadata:
         data:
           type: "gauge"
         unit: "second"
+      - name: "run_in_rw_transaction_execution_count"
+        column_name: "RUN_IN_RW_TRANSACTION_EXECUTION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_disk_io_cost"
+        column_name: "AVG_DISK_IO_COST"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
   - name: "total minute read stats"
     query: "SELECT * FROM SPANNER_SYS.READ_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/read_stats/total/"
@@ -359,6 +377,18 @@ metadata:
         data:
           type: "gauge"
         unit: "second"
+      - name: "run_in_rw_transaction_execution_count"
+        column_name: "RUN_IN_RW_TRANSACTION_EXECUTION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_disk_io_cost"
+        column_name: "AVG_DISK_IO_COST"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
 #
 # -------------------------------------------- Transactions Stats ------------------------------------------------------
 #
