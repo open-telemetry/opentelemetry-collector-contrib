@@ -37,9 +37,9 @@ The following settings are available:
 - `retry_interval (optional)`: the frequency at which the pipeline levels will attempt to reestablish connection with all higher priority levels. Default value is 10 minutes. (See Example below for further explanation)
 - `condition`: Conditional statements that decide when the connector should failover. Currently supports below types
     - `error`: 
-       - `contains`: "network failure" (required, non-empty, case-sensitive substring matched against the downstream error message)
+       - `contains`: ["network failure", "connection refused"] (required list of non-empty, case-insensitive substrings)
 
-  Only errors whose message contains the configured string trigger failover. Non-matching errors are returned
+  Only errors whose message contains any configured string trigger failover. Non-matching errors are returned
   to the upstream caller without failing over, and they do not mark the pipeline level unhealthy during
   retry sampling either. When `condition` is omitted, all errors trigger failover.
 

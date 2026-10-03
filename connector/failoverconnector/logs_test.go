@@ -26,6 +26,33 @@ import (
 
 var errLogsConsumer = errors.New("Error from ConsumeLogs")
 
+func TestLogsWithErrorCondition(t *testing.T) {
+	var first, second consumertest.LogsSink
+	firstID := pipeline.NewIDWithName(pipeline.SignalLogs, "first")
+	secondID := pipeline.NewIDWithName(pipeline.SignalLogs, "second")
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{firstID}, {secondID}},
+		RetryInterval:    time.Hour,
+		Condition:        configoptional.Some(ConditionsConfig{ErrorCond: &ErrorCondition{Contains: []string{"network failure", "connection refused"}}}),
+	}
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{firstID: &first, secondID: &second})
+	conn, err := NewFactory().CreateLogsToLogs(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
+	require.NoError(t, err)
+	f := conn.(*logsFailover)
+	defer f.Shutdown(t.Context())
+	data := sampleLog()
+	nonMatching := errors.New("queue full")
+	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(nonMatching))
+	require.ErrorIs(t, f.ConsumeLogs(t.Context(), data), nonMatching)
+	assert.Equal(t, 0, f.failover.TestGetCurrentConsumerIndex())
+	assert.Empty(t, second.AllLogs())
+	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errors.New("CONNECTION REFUSED")))
+	require.NoError(t, f.ConsumeLogs(t.Context(), data))
+	assert.Equal(t, 1, f.failover.TestGetCurrentConsumerIndex())
+	require.NoError(t, f.ConsumeLogs(t.Context(), data))
+	assert.Len(t, second.AllLogs(), 2)
+}
+
 func TestLogsRegisterConsumers(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
 	logsFirst := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/first")

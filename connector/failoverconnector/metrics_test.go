@@ -24,6 +24,33 @@ import (
 
 var errMetricsConsumer = errors.New("Error from ConsumeMetrics")
 
+func TestMetricsWithErrorCondition(t *testing.T) {
+	var first, second consumertest.MetricsSink
+	firstID := pipeline.NewIDWithName(pipeline.SignalMetrics, "first")
+	secondID := pipeline.NewIDWithName(pipeline.SignalMetrics, "second")
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{firstID}, {secondID}},
+		RetryInterval:    time.Hour,
+		Condition:        configoptional.Some(ConditionsConfig{ErrorCond: &ErrorCondition{Contains: []string{"network failure", "connection refused"}}}),
+	}
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{firstID: &first, secondID: &second})
+	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
+	require.NoError(t, err)
+	f := conn.(*metricsFailover)
+	defer f.Shutdown(t.Context())
+	data := sampleMetric()
+	nonMatching := errors.New("queue full")
+	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(nonMatching))
+	require.ErrorIs(t, f.ConsumeMetrics(t.Context(), data), nonMatching)
+	assert.Equal(t, 0, f.failover.TestGetCurrentConsumerIndex())
+	assert.Empty(t, second.AllMetrics())
+	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errors.New("CONNECTION REFUSED")))
+	require.NoError(t, f.ConsumeMetrics(t.Context(), data))
+	assert.Equal(t, 1, f.failover.TestGetCurrentConsumerIndex())
+	require.NoError(t, f.ConsumeMetrics(t.Context(), data))
+	assert.Len(t, second.AllMetrics(), 2)
+}
+
 func TestMetricsRegisterConsumers(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
 	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")

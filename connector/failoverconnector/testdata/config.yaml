@@ -34,7 +34,7 @@ failover/condition:
   retry_interval: 5m
   condition:
     error:
-      contains: "network failure"
+      contains: ["network failure", "connection refused"]
 
 failover/emptycondition:
   priority_levels:

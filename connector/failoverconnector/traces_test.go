@@ -198,7 +198,7 @@ func TestTracesWithErrorCondition(t *testing.T) {
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}},
 		RetryInterval:    50 * time.Millisecond,
 		Condition: configoptional.Some(ConditionsConfig{
-			ErrorCond: &ErrorCondition{Contains: "network failure"},
+			ErrorCond: &ErrorCondition{Contains: []string{"network failure", "connection refused"}},
 		}),
 	}
 
@@ -231,4 +231,32 @@ func TestTracesWithErrorCondition(t *testing.T) {
 	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(matching))
 	require.NoError(t, failoverConnector.ConsumeTraces(t.Context(), tr))
 	assert.Equal(t, 1, failoverConnector.failover.TestGetCurrentConsumerIndex())
+	require.NoError(t, failoverConnector.ConsumeTraces(t.Context(), tr))
+	assert.Len(t, sinkSecond.AllTraces(), 2, "subsequent data must reach the second pipeline")
+}
+
+func TestTracesRetryWithNonMatchingError(t *testing.T) {
+	var first, second consumertest.TracesSink
+	firstID := pipeline.NewIDWithName(pipeline.SignalTraces, "first")
+	secondID := pipeline.NewIDWithName(pipeline.SignalTraces, "second")
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{firstID}, {secondID}},
+		RetryInterval:    time.Hour,
+		Condition:        configoptional.Some(ConditionsConfig{ErrorCond: &ErrorCondition{Contains: []string{"network failure"}}}),
+	}
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{firstID: &first, secondID: &second})
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
+	require.NoError(t, err)
+	f := conn.(*tracesFailover)
+	defer f.Shutdown(t.Context())
+	data := sampleTrace()
+	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errors.New("network failure")))
+	require.NoError(t, f.ConsumeTraces(t.Context(), data))
+	assert.Equal(t, 1, f.failover.TestGetCurrentConsumerIndex())
+	nonMatching := errors.New("queue full")
+	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(nonMatching))
+	f.failover.notifyRetry <- struct{}{}
+	require.ErrorIs(t, f.ConsumeTraces(t.Context(), data), nonMatching)
+	assert.Equal(t, 0, f.failover.TestGetCurrentConsumerIndex())
+	assert.Len(t, second.AllTraces(), 1, "retry batch must not reach the second pipeline")
 }

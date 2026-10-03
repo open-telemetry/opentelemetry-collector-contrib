@@ -11,7 +11,7 @@ import (
 var (
 	errNoConditionDefined           = errors.New("no condition is defined")
 	errTooManyConditions            = errors.New("only one failover condition can be applied")
-	errEmptyErrorContains           = errors.New("error condition must define a non-empty 'contains' string")
+	errEmptyErrorContains           = errors.New("error condition must define non-empty 'contains' strings")
 	_                     Condition = (*ErrorCondition)(nil)
 )
 
@@ -39,12 +39,6 @@ func (c *ConditionsConfig) Validate() error {
 		return errNoConditionDefined
 	}
 
-	if c.ErrorCond != nil {
-		if err := c.ErrorCond.Validate(); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -56,9 +50,9 @@ type Condition interface {
 
 // ErrorCondition implements Condition
 type ErrorCondition struct {
-	// Contains is a case-sensitive substring matched against the downstream
-	// error message. Only errors containing this string trigger failover.
-	Contains string `mapstructure:"contains"`
+	// Contains lists case-insensitive substrings matched against downstream errors.
+	// An error matching any substring triggers failover.
+	Contains []string `mapstructure:"contains"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -66,8 +60,13 @@ type ErrorCondition struct {
 
 // Validate ensures the error condition has a usable match string.
 func (c *ErrorCondition) Validate() error {
-	if c.Contains == "" {
+	if len(c.Contains) == 0 {
 		return errEmptyErrorContains
+	}
+	for _, value := range c.Contains {
+		if value == "" {
+			return errEmptyErrorContains
+		}
 	}
 	return nil
 }
@@ -79,7 +78,13 @@ func (c *ErrorCondition) ShouldFailover(err error) bool {
 	if err == nil {
 		return false
 	}
-	return strings.Contains(err.Error(), c.Contains)
+	message := strings.ToLower(err.Error())
+	for _, value := range c.Contains {
+		if value != "" && strings.Contains(message, strings.ToLower(value)) {
+			return true
+		}
+	}
+	return false
 }
 
 func buildCondition(c *ConditionsConfig) Condition {
