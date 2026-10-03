@@ -109,6 +109,37 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "merge_summaries"),
+			expected: &Config{
+				GroupByAttributes:               []string{"db.operation"},
+				MinSpansToAggregate:             5,
+				MaxParentDepth:                  1,
+				AggregationAttributePrefix:      "aggregation.",
+				AggregationHistogramBuckets:     defaultHistogramBuckets,
+				EnableAttributeLossAnalysis:     false,
+				MergeExistingSummaries:          true,
+				AttributeLossExemplarSampleRate: 0,
+				EnableOutlierAnalysis:           false,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+					PreserveOutliers:               false,
+					MaxPreservedOutliers:           2,
+					PreserveOnlyWithCorrelation:    false,
+					MinOutlierThresholdPercent:     0.1,
+				},
+				EnableExemplarSampling: false,
+				ExemplarSampling: ExemplarSamplingConfig{
+					PrecisionMultiplier: 1.0,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

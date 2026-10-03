@@ -24,3 +24,10 @@ span_pruning/attribute_loss:
   aggregation_attribute_prefix: "aggregation."
   enable_attribute_loss_analysis: true
   attribute_loss_exemplar_sample_rate: 0.25
+
+span_pruning/merge_summaries:
+  group_by_attributes:
+    - "db.operation"
+  min_spans_to_aggregate: 5
+  aggregation_attribute_prefix: "aggregation."
+  merge_existing_summaries: true
