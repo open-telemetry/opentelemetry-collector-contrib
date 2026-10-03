@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"testing"
@@ -94,6 +95,8 @@ func TestIsRetryableError(t *testing.T) {
 			true,
 		},
 		{"flush-wrapped deadline", fmt.Errorf("flush: %w", context.DeadlineExceeded), true},
+		{"flush-wrapped EOF", fmt.Errorf("flush: %w", io.EOF), true},
+		{"unexpected EOF", io.ErrUnexpectedEOF, true},
 		{"encoding error", errors.New("json: unsupported value"), false},
 	}
 	for _, tt := range tests {
