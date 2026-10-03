@@ -14,7 +14,7 @@ Count of logs that were sampled or not
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
-### otelcol_processor_probabilistic_sampler_count_spans_processed_total
+### otelcol_processor_probabilistic_sampler_count_spans_processed
 
 Count of spans that were sampled or not
 

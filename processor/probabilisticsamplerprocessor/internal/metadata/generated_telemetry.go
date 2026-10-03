@@ -22,12 +22,12 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                                 metric.Meter
-	mu                                                    sync.Mutex
-	registrations                                         []metric.Registration
-	ProcessorProbabilisticSamplerCountLogsSampled         metric.Int64Counter
-	ProcessorProbabilisticSamplerCountSpansProcessedTotal metric.Int64Counter
-	ProcessorProbabilisticSamplerCountTracesSampled       metric.Int64Counter
+	meter                                            metric.Meter
+	mu                                               sync.Mutex
+	registrations                                    []metric.Registration
+	ProcessorProbabilisticSamplerCountLogsSampled    metric.Int64Counter
+	ProcessorProbabilisticSamplerCountSpansProcessed metric.Int64Counter
+	ProcessorProbabilisticSamplerCountTracesSampled  metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -65,8 +65,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorProbabilisticSamplerCountSpansProcessedTotal, err = builder.meter.Int64Counter(
-		"otelcol_processor_probabilistic_sampler_count_spans_processed_total",
+	builder.ProcessorProbabilisticSamplerCountSpansProcessed, err = builder.meter.Int64Counter(
+		"otelcol_processor_probabilistic_sampler_count_spans_processed",
 		metric.WithDescription("Count of spans that were sampled or not [Development]"),
 		metric.WithUnit("1"),
 	)
