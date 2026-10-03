@@ -248,7 +248,9 @@ func TestTracesRetryWithNonMatchingError(t *testing.T) {
 	conn, err := NewFactory().CreateTracesToTraces(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 	require.NoError(t, err)
 	f := conn.(*tracesFailover)
-	defer f.Shutdown(t.Context())
+	defer func() {
+		assert.NoError(t, f.Shutdown(t.Context()))
+	}()
 	data := sampleTrace()
 	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errors.New("network failure")))
 	require.NoError(t, f.ConsumeTraces(t.Context(), data))

@@ -37,7 +37,9 @@ func TestMetricsWithErrorCondition(t *testing.T) {
 	conn, err := NewFactory().CreateMetricsToMetrics(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 	require.NoError(t, err)
 	f := conn.(*metricsFailover)
-	defer f.Shutdown(t.Context())
+	defer func() {
+		assert.NoError(t, f.Shutdown(t.Context()))
+	}()
 	data := sampleMetric()
 	nonMatching := errors.New("queue full")
 	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(nonMatching))

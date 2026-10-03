@@ -5,6 +5,7 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"slices"
 	"strings"
 )
 
@@ -60,13 +61,8 @@ type ErrorCondition struct {
 
 // Validate ensures the error condition has a usable match string.
 func (c *ErrorCondition) Validate() error {
-	if len(c.Contains) == 0 {
+	if len(c.Contains) == 0 || slices.Contains(c.Contains, "") {
 		return errEmptyErrorContains
-	}
-	for _, value := range c.Contains {
-		if value == "" {
-			return errEmptyErrorContains
-		}
 	}
 	return nil
 }

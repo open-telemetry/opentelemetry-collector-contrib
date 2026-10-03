@@ -39,7 +39,9 @@ func TestLogsWithErrorCondition(t *testing.T) {
 	conn, err := NewFactory().CreateLogsToLogs(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 	require.NoError(t, err)
 	f := conn.(*logsFailover)
-	defer f.Shutdown(t.Context())
+	defer func() {
+		assert.NoError(t, f.Shutdown(t.Context()))
+	}()
 	data := sampleLog()
 	nonMatching := errors.New("queue full")
 	f.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(nonMatching))
