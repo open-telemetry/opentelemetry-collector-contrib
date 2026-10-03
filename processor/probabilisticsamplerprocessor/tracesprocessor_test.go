@@ -1155,7 +1155,7 @@ func Test_tracesamplerprocessor_SamplingMetricsCountSpans(t *testing.T) {
 	require.NoError(t, tsp.ConsumeTraces(t.Context(), traces))
 	require.Equal(t, 3, sink.SpanCount())
 
-	metadatatest.AssertEqualProcessorProbabilisticSamplerCountSpansProcessedTotal(
+	metadatatest.AssertEqualProcessorProbabilisticSamplerCountSpansProcessed(
 		t,
 		tt,
 		[]metricdata.DataPoint[int64]{{
