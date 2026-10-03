@@ -799,15 +799,15 @@ func TestMetricBuilderCounters(t *testing.T) {
 				e2.SetTimestamp(timestampFromMs(1663113420863))
 				e2.SetDoubleValue(1)
 				e2.FilteredAttributes().PutStr("foo", "bar")
-				e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
-				e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
+				e2.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				e2.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
 
 				e3 := pt0.Exemplars().AppendEmpty()
 				e3.SetTimestamp(timestampFromMs(1663113420863))
 				e3.SetDoubleValue(1)
 				e3.FilteredAttributes().PutStr("foo", "bar")
-				e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
-				e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
+				e3.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e3.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -1035,15 +1035,15 @@ func TestMetricBuilderGauges(t *testing.T) {
 				e2.SetTimestamp(timestampFromMs(1663350815890))
 				e2.SetDoubleValue(2)
 				e2.FilteredAttributes().PutStr("foo", "bar")
-				e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
-				e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
+				e2.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				e2.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
 
 				e3 := pt0.Exemplars().AppendEmpty()
 				e3.SetTimestamp(timestampFromMs(1663350815890))
 				e3.SetDoubleValue(2)
 				e3.FilteredAttributes().PutStr("foo", "bar")
-				e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
-				e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
+				e3.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e3.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
 
 				md1 := pmetric.NewMetrics()
 				mL1 := md1.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
@@ -1364,16 +1364,16 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				e2.SetTimestamp(timestampFromMs(1663113420863))
 				e2.SetDoubleValue(1)
 				e2.FilteredAttributes().PutStr("foo", "bar")
+				e2.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				e2.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
 				e2.FilteredAttributes().PutStr("traceid", "e3688e1aa2961786")
-				e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
-				e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
 
 				e3 := pt0.Exemplars().AppendEmpty()
 				e3.SetTimestamp(timestampFromMs(1663113420863))
 				e3.SetDoubleValue(1)
 				e3.FilteredAttributes().PutStr("foo", "bar")
-				e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
-				e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
+				e3.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e3.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
 
 				e4 := pt0.Exemplars().AppendEmpty()
 				e4.SetTimestamp(timestampFromMs(1663113420863))
@@ -2013,7 +2013,7 @@ func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *test
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
 	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
 		string(model.MetricNameLabel): "foo",
-	}))
+	}), false)
 	require.False(t, ok, "expected false when metadata type != histogram")
 }
 
@@ -2062,7 +2062,7 @@ func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
 }
 
 func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
-	scope, attrs := getScopeID(labels.FromStrings(
+	scope, attrs, _ := getScopeID(labels.FromStrings(
 		string(model.MetricNameLabel), "metric_x",
 		prometheus.ScopeNameLabelKey, "scope.with.info",
 		prometheus.ScopeVersionLabelKey, "v1.0.0",
@@ -2071,7 +2071,9 @@ func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
 	require.Equal(t, "scope.with.info", scope.name)
 	require.Equal(t, "v1.0.0", scope.version)
 	require.Zero(t, scope.attrsHash)
-	require.Zero(t, attrs.Len())
+	if attrs != (pcommon.Map{}) {
+		require.Zero(t, attrs.Len())
+	}
 }
 
 func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {

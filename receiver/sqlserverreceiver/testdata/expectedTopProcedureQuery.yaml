@@ -1,0 +1,130 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: sqlserver.computer.name
+          value:
+            stringValue: test-computer
+        - key: sqlserver.instance.name
+          value:
+            stringValue: test-instance
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: microsoft.sql_server
+              - key: db.namespace
+                value:
+                  stringValue: AdventureWorks
+              - key: sqlserver.procedure_id
+                value:
+                  stringValue: "1234567"
+              - key: sqlserver.procedure_name
+                value:
+                  stringValue: '[dbo].[usp_GetOrderDetails]'
+              - key: sqlserver.schema.name
+                value:
+                  stringValue: dbo
+              - key: sqlserver.procedure_execution_count
+                value:
+                  intValue: "500"
+              - key: sqlserver.total_worker_time
+                value:
+                  doubleValue: 15
+              - key: sqlserver.total_elapsed_time
+                value:
+                  doubleValue: 30
+              - key: sqlserver.total_logical_reads
+                value:
+                  intValue: "80000"
+              - key: sqlserver.total_logical_writes
+                value:
+                  intValue: "100"
+              - key: sqlserver.total_physical_reads
+                value:
+                  intValue: "20"
+              - key: sqlserver.procedure.tempdb.spilled_pages
+                value:
+                  intValue: "4"
+              - key: sqlserver.procedure.max_duration
+                value:
+                  doubleValue: 8.5
+              - key: sqlserver.procedure.min_duration
+                value:
+                  doubleValue: 0.0012
+              - key: sqlserver.procedure.last_execution_time
+                value:
+                  stringValue: "2026-09-08T10:15:30.0000000+00:00"
+            body: {}
+            eventName: db.server.top_procedure
+            timeUnixNano: "1789008772652315000"
+          - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: microsoft.sql_server
+              - key: db.namespace
+                value:
+                  stringValue: AdventureWorks
+              - key: sqlserver.procedure_id
+                value:
+                  stringValue: "7654321"
+              - key: sqlserver.procedure_name
+                value:
+                  stringValue: '[sales].[usp_UpdateInventory]'
+              - key: sqlserver.schema.name
+                value:
+                  stringValue: sales
+              - key: sqlserver.procedure_execution_count
+                value:
+                  intValue: "100"
+              - key: sqlserver.total_worker_time
+                value:
+                  doubleValue: 2
+              - key: sqlserver.total_elapsed_time
+                value:
+                  doubleValue: 4
+              - key: sqlserver.total_logical_reads
+                value:
+                  intValue: "5000"
+              - key: sqlserver.total_logical_writes
+                value:
+                  intValue: "1000"
+              - key: sqlserver.total_physical_reads
+                value:
+                  intValue: "5"
+              - key: sqlserver.procedure.tempdb.spilled_pages
+                value:
+                  intValue: "0"
+              - key: sqlserver.procedure.max_duration
+                value:
+                  doubleValue: 0.15
+              - key: sqlserver.procedure.min_duration
+                value:
+                  doubleValue: 0.0009
+              - key: sqlserver.procedure.last_execution_time
+                value:
+                  stringValue: "2026-09-08T10:15:31.0000000+00:00"
+            body: {}
+            eventName: db.server.top_procedure
+            timeUnixNano: "1789008772652315000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

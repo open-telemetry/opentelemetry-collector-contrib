@@ -16,7 +16,7 @@ SELECT
 FROM
   pg_stat_statements as pg_stat_statements
   LEFT JOIN pg_roles ON pg_stat_statements.userid = pg_roles.oid
-  LEFT JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid
+  INNER JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid
 WHERE
   datname IS NOT NULL
   AND query != '<insufficient privilege>'

@@ -15,7 +15,9 @@ import (
 	"github.com/iancoleman/strcase"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 // PathExpressionParser is how a context provides OTTL access to all its Paths.
@@ -357,6 +359,9 @@ func (p *parseContext[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	if !ok {
 		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
 	}
+	if err := p.recordExperimentalFunc(f); err != nil {
+		return Expr[K]{}, err
+	}
 	defaultArgs := f.CreateDefaultArguments()
 	var args Arguments
 
@@ -371,7 +376,8 @@ func (p *parseContext[K]) newFunctionCall(ed editor) (Expr[K], error) {
 
 		args = reflect.New(reflect.ValueOf(defaultArgs).Elem().Type()).Interface()
 
-		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
+		allowDynamicSlices := f.Experimental() || metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate.IsEnabled()
+		err := p.buildArgs(ed, reflect.ValueOf(args).Elem(), allowDynamicSlices)
 		if err != nil {
 			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to %q: %w", ed.Function, err)
 		}
@@ -385,7 +391,7 @@ func (p *parseContext[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, err
 }
 
-func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
+func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value, allowDynamicSlices bool) error {
 	requiredArgs := 0
 	seenNamed := false
 
@@ -458,14 +464,19 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			if !ok {
 				return fmt.Errorf("undefined function %s", name)
 			}
+			err = p.recordExperimentalFunc(f)
+			if err != nil {
+				return err
+			}
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case strings.HasPrefix(fieldType.Name(), "SliceGetter"):
-			var fieldAddr reflectTypedArg
+			var fieldAddr any
 			if isOptional {
-				fieldAddr, ok = optionalArg.addrReflectValue().(reflectTypedArg)
+				fieldAddr = optionalArg.addrReflectValue()
 			} else {
-				fieldAddr, ok = reflect.TypeAssert[reflectTypedArg](field.Addr())
+				fieldAddr = field.Addr().Interface()
 			}
+			sliceItemType, ok := slicegetter.ReflectTypeParam(fieldAddr)
 			if !ok {
 				return errors.New("slice getter type is not manageable by the OTTL parser. This is a bug in OTTL")
 			}
@@ -473,7 +484,8 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			var gv any
 			gv, err = buildSliceGetterValue[K](
 				arg.Value,
-				fieldAddr.reflectTypeParam(),
+				sliceItemType,
+				allowDynamicSlices,
 				p.buildSliceArg,
 				p.buildStandardGetSetter,
 				p.newGetter,
@@ -482,7 +494,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 				return err
 			}
 
-			err = fieldAddr.setReflectValue(reflect.ValueOf(gv))
+			err = slicegetter.SetReflectValue(fieldAddr, reflect.ValueOf(gv))
 			if err != nil {
 				return err
 			}
@@ -764,12 +776,12 @@ var errLambdaExpressionDisable = fmt.Errorf(
 	metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
 )
 
-func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[K], error) {
+func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*lambda.LambdaExpression[K], error) {
 	if !metadata.OttlFunctionsEnableLambdaFeatureGate.IsEnabled() {
 		return nil, errLambdaExpressionDisable
 	}
 
-	formals := make([]LocalIdentifierDecl, len(l.Params))
+	formals := make([]string, len(l.Params))
 	validFormals := make(localScopeFrame, len(l.Params))
 	for i, param := range l.Params {
 		name := param.Name()
@@ -779,10 +791,10 @@ func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[
 			}
 			validFormals[name] = struct{}{}
 		}
-		formals[i] = &param
+		formals[i] = name
 	}
 
-	var result *LambdaExpression[K]
+	var result *lambda.LambdaExpression[K]
 	err := p.withLocalScope(validFormals, func() error {
 		switch {
 		case l.Body.Expr != nil && l.Body.Value != nil:
@@ -809,6 +821,26 @@ func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[
 		return nil, err
 	}
 	return result, nil
+}
+
+// newLambdaExpression creates a new LambdaExpression. It must either have a body or a bodyExpr, but not both.
+func newLambdaExpression[K any](formals []string, body Getter[K], bodyExpr boolExpr[K]) *lambda.LambdaExpression[K] {
+	switch {
+	case body != nil:
+		if literal, ok := GetLiteralValue(body); ok {
+			return lambda.NewLiteral[K](formals, literal)
+		}
+		return lambda.New(formals, body.Get)
+	case bodyExpr != nil:
+		if literal, ok := bodyExpr.(*literalBoolExpr[K]); ok {
+			return lambda.NewLiteral[K](formals, literal.getValue())
+		}
+		return lambda.New(formals, func(ctx context.Context, tCtx K) (any, error) {
+			return bodyExpr.Eval(ctx, tCtx)
+		})
+	default:
+		return lambda.New[K](formals, nil)
+	}
 }
 
 // reflectTypedArg is implemented by generic OTTL function argument types that expose
@@ -877,12 +909,12 @@ func NewTestingOptional[T any](val T) Optional[T] {
 	}
 }
 
-// typedGetter is like Getter, but with typed return values.
-type typedGetter[K, V any] interface {
+// TypedGetter is like Getter, but with typed return values.
+type TypedGetter[K, V any] interface {
 	Get(ctx context.Context, tCtx K) (V, error)
 }
 
-// mockLiteralGetter is a mock implementation of LiteralGetter that can be used for testing.
+// mockLiteralGetter is a mock implementation of TypedGetter that can be used for testing.
 type mockLiteralGetter[K, V any] struct {
 	valueGetter func(context.Context, K) (V, error)
 }
@@ -893,10 +925,7 @@ func (m mockLiteralGetter[K, V]) Get(_ context.Context, _ K) (V, error) {
 
 // NewTestingLiteralGetter creates a mock literal getter for testing OTTL functions.
 // Pass `literal` as true if the getter should be treated as a literal.
-func NewTestingLiteralGetter[K, V any](literal bool, getter typedGetter[K, V]) (interface {
-	typedGetter[K, V]
-}, error,
-) {
+func NewTestingLiteralGetter[K, V any](literal bool, getter TypedGetter[K, V]) (TypedGetter[K, V], error) {
 	if literal {
 		val, err := getter.Get(context.Background(), *new(K))
 		if err != nil {
@@ -907,13 +936,13 @@ func NewTestingLiteralGetter[K, V any](literal bool, getter typedGetter[K, V]) (
 	return mockLiteralGetter[K, V]{valueGetter: getter.Get}, nil
 }
 
-// optionalGetter is like typedGetter, but for getters whose Get also returns a found bool,
+// OptionalGetter is like TypedGetter, but for getters whose Get also returns a found bool,
 // such as the "Like" getters.
-type optionalGetter[K, V any] interface {
+type OptionalGetter[K, V any] interface {
 	Get(ctx context.Context, tCtx K) (V, bool, error)
 }
 
-// mockOptionalLiteralGetter is a mock implementation of an optionalGetter literal for testing.
+// mockOptionalLiteralGetter is a mock implementation of an OptionalGetter literal for testing.
 type mockOptionalLiteralGetter[K, V any] struct {
 	valueGetter func(context.Context, K) (V, bool, error)
 }
@@ -925,7 +954,7 @@ func (m mockOptionalLiteralGetter[K, V]) Get(_ context.Context, _ K) (V, bool, e
 // NewTestingOptionalLiteralGetter creates a mock literal getter for testing OTTL functions that
 // take a getter whose Get returns a found bool, such as the "Like" getters. Pass `literal` as
 // true if the getter should be treated as a literal.
-func NewTestingOptionalLiteralGetter[K, V any](literal bool, getter optionalGetter[K, V]) (optionalGetter[K, V], error) {
+func NewTestingOptionalLiteralGetter[K, V any](literal bool, getter OptionalGetter[K, V]) (OptionalGetter[K, V], error) {
 	if literal {
 		val, found, err := getter.Get(context.Background(), *new(K))
 		if err != nil {

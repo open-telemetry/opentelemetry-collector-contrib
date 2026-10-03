@@ -70,14 +70,14 @@ func Test_ValuesFactory(t *testing.T) {
 		factory := NewValuesFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ValuesArguments[any]{}, args)
+		assert.IsType(t, &valuesArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewValuesFactory[any]()
 		args := factory.CreateDefaultArguments()
-		valuesArgs, ok := args.(*ValuesArguments[any])
+		valuesArgs, ok := args.(*valuesArguments[any])
 		require.True(t, ok)
 		valuesArgs.Target = &ottl.StandardPMapGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -92,6 +92,33 @@ func Test_ValuesFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createValuesFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ValuesFactory args must be of type *ValuesArguments[K]")
+		assert.ErrorContains(t, err, "ValuesFactory args must be of type *valuesArguments[K]")
 	})
+}
+
+func BenchmarkValues(b *testing.B) {
+	m := pcommon.NewMap()
+	err := m.FromRaw(map[string]any{
+		"key1": "test",
+		"key2": "test2",
+		"key3": 4,
+		"key4": true,
+		"key5": []any{1, 2, 3},
+		"key6": 3.14,
+		"key7": map[string]any{"subkey": "subvalue"},
+	})
+	require.NoError(b, err)
+	target := ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return m, nil
+		},
+	}
+	exprFunc := values[any](target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
@@ -685,7 +686,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			require.NoError(t, err)
 
 			rs, ss, span := createTelemetry()
-			tCtx := NewTransformContextPtr(rs, ss, span)
+			tCtx := NewTransformContext(rs, ss, span)
 			defer tCtx.Close()
 
 			got, err := accessor.Get(t.Context(), tCtx)
@@ -712,7 +713,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := rs.ScopeSpans().AppendEmpty().Scope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	tCtx := NewTransformContextPtr(rs, rs.ScopeSpans().At(0), ptrace.NewSpan())
+	tCtx := NewTransformContext(rs, rs.ScopeSpans().At(0), ptrace.NewSpan())
 	defer tCtx.Close()
 
 	tests := []struct {
@@ -934,4 +935,21 @@ func Test_ParseEnum_False(t *testing.T) {
 			assert.Nil(t, actual)
 		})
 	}
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext: func(options ...TransformContextOption) *TransformContext {
+			return NewTransformContext(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), ptrace.NewSpan(), options...)
+		},
+		WithCache: WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }

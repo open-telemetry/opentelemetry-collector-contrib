@@ -26,7 +26,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for resources.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxresource.Name
 
 var (
@@ -39,7 +38,7 @@ type TransformContext struct {
 	resource      pcommon.Resource
 	cache         pcommon.Map
 	externalCache *pcommon.Map
-	schemaURLItem ctxcommon.SchemaURLItem
+	schemaURLItem ottl.SchemaURLItem
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
@@ -54,6 +53,11 @@ type TransformContextOption func(*TransformContext)
 
 // WithCache sets an external shared cache on the TransformContext.
 // When set, the cache is shared across multiple TransformContext instances.
+// The caller owns the cache: TransformContext.Close does not clear it, so the caller
+// is responsible for clearing or discarding it when it is no longer needed.
+// pcommon.Map is not safe for concurrent use, so a shared cache must not be used by
+// multiple goroutines at the same time.
+// If cache is nil, the option has no effect and the TransformContext uses its own cache.
 // Experimental: *NOTE* this option is subject to change or removal in the future.
 func WithCache(cache *pcommon.Map) TransformContextOption {
 	return func(tCtx *TransformContext) {
@@ -63,9 +67,9 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	}
 }
 
-// NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
+// NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(resource pcommon.Resource, schemaURLItem ctxcommon.SchemaURLItem, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(resource pcommon.Resource, schemaURLItem ottl.SchemaURLItem, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.resource = resource
 	tCtx.schemaURLItem = schemaURLItem
@@ -91,15 +95,13 @@ func (tCtx *TransformContext) GetResource() pcommon.Resource {
 }
 
 // GetResourceSchemaURLItem returns the schema URL item for the resource from the TransformContext.
-func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetResourceSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{

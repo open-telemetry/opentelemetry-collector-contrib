@@ -250,12 +250,13 @@ func BenchmarkParseJSON(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		_, err := parseJSON(ottl.StandardStringGetter[any]{
+		if _, err := parseJSON(ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
 				return benchData, nil
 			},
-		})(ctx, nil)
-		require.NoError(b, err)
+		})(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -269,14 +270,14 @@ func Test_ParseJSONFactory(t *testing.T) {
 		factory := NewParseJSONFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ParseJSONArguments[any]{}, args)
+		assert.IsType(t, &parseJSONArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewParseJSONFactory[any]()
 		args := factory.CreateDefaultArguments()
-		jsonArgs, ok := args.(*ParseJSONArguments[any])
+		jsonArgs, ok := args.(*parseJSONArguments[any])
 		require.True(t, ok)
 		jsonArgs.Target = ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -291,6 +292,6 @@ func Test_ParseJSONFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createParseJSONFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ParseJSONFactory args must be of type *ParseJSONArguments[K]")
+		assert.ErrorContains(t, err, "ParseJSONFactory args must be of type *parseJSONArguments[K]")
 	})
 }

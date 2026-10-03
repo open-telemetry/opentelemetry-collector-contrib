@@ -10,7 +10,7 @@ sem_conv_version: 1.42.0
 status:
   class: processor
   stability:
-    beta: [logs, metrics, traces]
+    stable: [logs, metrics, traces]
     development: [profiles]
   distributions: [contrib, k8s]
   warnings: [Memory consumption, Other]
@@ -236,13 +236,13 @@ resource_attributes:
 
 feature_gates:
   - id: processor.k8sattributes.DontEmitV0K8sConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, semconv legacy attributes are disabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
   - id: processor.k8sattributes.EmitV1K8sConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, semconv stable attributes are enabled.
     from_version: v0.145.0

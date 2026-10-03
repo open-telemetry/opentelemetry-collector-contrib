@@ -33,12 +33,11 @@ func Test_SHA256(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := SHA256HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := sha256HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
@@ -70,13 +69,12 @@ func Test_SHA256Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := SHA256HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := sha256HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
-			_, err = exprFunc(nil, nil)
+			_, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -92,14 +90,14 @@ func Test_SHA256Factory(t *testing.T) {
 		factory := NewSHA256Factory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SHA256Arguments[any]{}, args)
+		assert.IsType(t, &sHA256Arguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSHA256Factory[any]()
 		args := factory.CreateDefaultArguments()
-		shaArgs, ok := args.(*SHA256Arguments[any])
+		shaArgs, ok := args.(*sHA256Arguments[any])
 		require.True(t, ok)
 		shaArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -114,6 +112,21 @@ func Test_SHA256Factory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSHA256Function[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SHA256Factory args must be of type *SHA256Arguments[K]")
+		assert.ErrorContains(t, err, "SHA256Factory args must be of type *sHA256Arguments[K]")
 	})
+}
+
+func BenchmarkSHA256(b *testing.B) {
+	exprFunc := sha256HashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

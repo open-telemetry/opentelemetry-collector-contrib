@@ -32,7 +32,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for span events.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxspanevent.Name
 
 var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
@@ -66,6 +65,11 @@ type TransformContextOption func(*TransformContext)
 
 // WithCache sets an external shared cache on the TransformContext.
 // When set, the cache is shared across multiple TransformContext instances.
+// The caller owns the cache: TransformContext.Close does not clear it, so the caller
+// is responsible for clearing or discarding it when it is no longer needed.
+// pcommon.Map is not safe for concurrent use, so a shared cache must not be used by
+// multiple goroutines at the same time.
+// If cache is nil, the option has no effect and the TransformContext uses its own cache.
 // Experimental: *NOTE* this option is subject to change or removal in the future.
 func WithCache(cache *pcommon.Map) TransformContextOption {
 	return func(tCtx *TransformContext) {
@@ -75,9 +79,9 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	}
 }
 
-// NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
+// NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span, spanEvent ptrace.SpanEvent, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span, spanEvent ptrace.SpanEvent, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.resourceSpans = resourceSpans
 	tCtx.scopeSpans = scopeSpans
@@ -131,12 +135,12 @@ func (tCtx *TransformContext) GetResource() pcommon.Resource {
 }
 
 // GetScopeSchemaURLItem returns the schema URL item for the scope from the TransformContext.
-func (tCtx *TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetScopeSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.scopeSpans
 }
 
 // GetResourceSchemaURLItem returns the schema URL item for the resource from the TransformContext.
-func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetResourceSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.resourceSpans
 }
 
@@ -155,8 +159,6 @@ func (tCtx *TransformContext) GetEventIndex() (int64, error) {
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{

@@ -1,20 +1,26 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogexporter
 
 import (
+	"bytes"
+	"compress/zlib"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/DataDog/agent-payload/v5/gogen"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -64,6 +70,145 @@ func singleGaugeMetrics() pmetric.Metrics {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dp.SetDoubleValue(1.0)
 	return md
+}
+
+func azureAppServiceMetrics(instanceIDs ...string) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	for _, instanceID := range instanceIDs {
+		rm := md.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("cloud.platform", "azure.app_service")
+		attrs.PutStr("service.name", "my-app")
+		attrs.PutStr("cloud.account.id", "sub-123")
+		attrs.PutStr("azure.resource_group.name", "my-rg")
+		attrs.PutStr("azure.app_service.instance.id", instanceID)
+
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetName("test.azure_app_service.gauge")
+		dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dp.SetDoubleValue(1)
+	}
+	return md
+}
+
+func runningMetricTags(t *testing.T, body []byte, metricName string) [][]string {
+	t.Helper()
+
+	zr, err := zlib.NewReader(bytes.NewReader(body))
+	require.NoError(t, err)
+	defer zr.Close()
+	data, err := io.ReadAll(zr)
+	require.NoError(t, err)
+
+	payload := new(gogen.MetricPayload)
+	require.NoError(t, payload.Unmarshal(data))
+
+	var tagSets [][]string
+	for _, series := range payload.GetSeries() {
+		if series.GetMetric() != metricName {
+			continue
+		}
+		assert.Equal(t, gogen.MetricPayload_GAUGE, series.GetType())
+		require.Len(t, series.GetResources(), 1)
+		assert.Equal(t, "host", series.GetResources()[0].GetType())
+		assert.Empty(t, series.GetResources()[0].GetName())
+		require.Len(t, series.GetPoints(), 1)
+		assert.Equal(t, 1.0, series.GetPoints()[0].GetValue())
+		tagSets = append(tagSets, series.GetTags())
+	}
+	return tagSets
+}
+
+type azureFunctionsResource struct {
+	appName       string
+	instanceID    string
+	functionName  string
+	resourceGroup string
+}
+
+func azureFunctionsMetrics(resources ...azureFunctionsResource) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	for _, resource := range resources {
+		rm := md.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("cloud.platform", "azure.functions")
+		attrs.PutStr("service.name", resource.appName)
+		attrs.PutStr("cloud.account.id", "sub-123")
+		if resource.resourceGroup != "" {
+			attrs.PutStr("azure.resource_group.name", resource.resourceGroup)
+		}
+		attrs.PutStr("faas.instance", resource.instanceID)
+		attrs.PutStr("faas.name", resource.functionName)
+
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetName("azure.functions.requests")
+		dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dp.SetDoubleValue(1)
+	}
+	return md
+}
+
+func azureFunctionsIdentityTags(tagSets [][]string) [][]string {
+	identityTagSets := make([][]string, 0, len(tagSets))
+	for _, tagSet := range tagSets {
+		identityTags := make([]string, 0, 4)
+		for _, tag := range tagSet {
+			if strings.HasPrefix(tag, "instance:") ||
+				strings.HasPrefix(tag, "name:") ||
+				strings.HasPrefix(tag, "resource_group:") ||
+				strings.HasPrefix(tag, "subscription_id:") {
+				identityTags = append(identityTags, tag)
+			}
+		}
+		identityTagSets = append(identityTagSets, identityTags)
+	}
+	return identityTagSets
+}
+
+func completeGCPServerlessAttributes(platform string) map[string]any {
+	return map[string]any{
+		"cloud.provider":   "gcp",
+		"cloud.platform":   platform,
+		"cloud.account.id": "project-1",
+		"cloud.region":     "us-central1",
+		"faas.name":        "my-service",
+		"faas.instance":    "instance-1",
+		"faas.version":     "revision-1",
+		"host.name":        "resource-host",
+	}
+}
+
+func gcpServerlessMetrics(t *testing.T, resourceAttrs map[string]any) pmetric.Metrics {
+	t.Helper()
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	require.NoError(t, rm.Resource().Attributes().FromRaw(resourceAttrs))
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName("test.gcp_serverless.gauge")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(1)
+	return md
+}
+
+func gcpServerlessIdentityTags(tagSets [][]string) [][]string {
+	identityTagSets := make([][]string, 0, len(tagSets))
+	for _, tagSet := range tagSets {
+		identityTags := make([]string, 0, 4)
+		for _, tag := range tagSet {
+			if strings.HasPrefix(tag, "instance:") ||
+				strings.HasPrefix(tag, "service_name:") ||
+				strings.HasPrefix(tag, "project_id:") ||
+				strings.HasPrefix(tag, "location:") {
+				identityTags = append(identityTags, tag)
+			}
+		}
+		slices.Sort(identityTags)
+		identityTagSets = append(identityTagSets, identityTags)
+	}
+	return identityTagSets
 }
 
 // setSyncForwarderGate enables or disables the UseSyncForwarder gate and
@@ -131,6 +276,235 @@ func buildSyncForwarderExporter(t *testing.T, intakeURL string) exporter.Metrics
 	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { _ = exp.Shutdown(t.Context()) })
 	return exp
+}
+
+func TestAzureAppServiceRunningMetrics(t *testing.T) {
+	tests := []struct {
+		name        string
+		instanceIDs []string
+	}{
+		{name: "complete identity", instanceIDs: []string{"instance-1"}},
+		{name: "distinct resources", instanceIDs: []string{"instance-1", "instance-2"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSyncForwarderGate(t, true)
+
+			seriesRecorder := &testutil.HTTPRequestRecorderWithChan{
+				Pattern: testutil.MetricV2Endpoint,
+				ReqChan: make(chan []byte, 1),
+			}
+			server := testutil.DatadogServerMock(seriesRecorder.HandlerFunc)
+			defer server.Close()
+
+			exp := buildSyncForwarderExporter(t, server.URL)
+			require.NoError(t, exp.ConsumeMetrics(t.Context(), azureAppServiceMetrics(tt.instanceIDs...)))
+
+			var body []byte
+			select {
+			case body = <-seriesRecorder.ReqChan:
+			case <-time.After(10 * time.Second):
+				t.Fatal("timed out waiting for Datadog series payload")
+			}
+
+			got := runningMetricTags(t, body, "otel.datadog_exporter.metrics.running.azureappservices")
+			require.Len(t, got, len(tt.instanceIDs))
+
+			for _, instanceID := range tt.instanceIDs {
+				var matchingTags []string
+				for _, tags := range got {
+					if slices.Contains(tags, "instance:"+instanceID) {
+						matchingTags = tags
+						break
+					}
+				}
+				require.NotNil(t, matchingTags, "missing running metric for %s", instanceID)
+				assert.Subset(t, matchingTags, []string{
+					"instance:" + instanceID,
+					"name:my-app",
+					"resource_group:my-rg",
+					"subscription_id:sub-123",
+				})
+			}
+		})
+	}
+}
+
+func TestAzureFunctionsRunningMetrics(t *testing.T) {
+	tests := []struct {
+		name      string
+		resources []azureFunctionsResource
+		wantTags  [][]string
+	}{
+		{
+			name: "complete canonical identity",
+			resources: []azureFunctionsResource{
+				{appName: "my-app", instanceID: "instance-1", functionName: "function-a", resourceGroup: "my-rg"},
+			},
+			wantTags: [][]string{{
+				"instance:instance-1",
+				"name:my-app",
+				"resource_group:my-rg",
+				"subscription_id:sub-123",
+			}},
+		},
+		{
+			name: "two functions in one app instance",
+			resources: []azureFunctionsResource{
+				{appName: "my-app", instanceID: "instance-1", functionName: "function-a", resourceGroup: "my-rg"},
+				{appName: "my-app", instanceID: "instance-1", functionName: "function-b", resourceGroup: "my-rg"},
+			},
+			wantTags: [][]string{{
+				"instance:instance-1",
+				"name:my-app",
+				"resource_group:my-rg",
+				"subscription_id:sub-123",
+			}},
+		},
+		{
+			name: "two app instances",
+			resources: []azureFunctionsResource{
+				{appName: "my-app", instanceID: "instance-1", functionName: "function-a", resourceGroup: "my-rg"},
+				{appName: "my-app", instanceID: "instance-2", functionName: "function-a", resourceGroup: "my-rg"},
+			},
+			wantTags: [][]string{
+				{"instance:instance-1", "name:my-app", "resource_group:my-rg", "subscription_id:sub-123"},
+				{"instance:instance-2", "name:my-app", "resource_group:my-rg", "subscription_id:sub-123"},
+			},
+		},
+		{
+			name: "different apps with shared instance string",
+			resources: []azureFunctionsResource{
+				{appName: "first-app", instanceID: "shared-instance", functionName: "function-a", resourceGroup: "my-rg"},
+				{appName: "second-app", instanceID: "shared-instance", functionName: "function-a", resourceGroup: "my-rg"},
+			},
+			wantTags: [][]string{
+				{"instance:shared-instance", "name:first-app", "resource_group:my-rg", "subscription_id:sub-123"},
+				{"instance:shared-instance", "name:second-app", "resource_group:my-rg", "subscription_id:sub-123"},
+			},
+		},
+		{
+			name: "incomplete identity",
+			resources: []azureFunctionsResource{
+				{appName: "my-app", instanceID: "instance-1", functionName: "function-a"},
+			},
+			wantTags: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSyncForwarderGate(t, true)
+
+			seriesRecorder := &testutil.HTTPRequestRecorderWithChan{
+				Pattern: testutil.MetricV2Endpoint,
+				ReqChan: make(chan []byte, 1),
+			}
+			server := testutil.DatadogServerMock(seriesRecorder.HandlerFunc)
+			defer server.Close()
+
+			exp := buildSyncForwarderExporter(t, server.URL)
+			require.NoError(t, exp.ConsumeMetrics(t.Context(), azureFunctionsMetrics(tt.resources...)))
+
+			var body []byte
+			select {
+			case body = <-seriesRecorder.ReqChan:
+			case <-time.After(10 * time.Second):
+				t.Fatal("timed out waiting for Datadog series payload")
+			}
+
+			got := runningMetricTags(t, body, "otel.datadog_exporter.metrics.running.azurefunctions")
+			assert.ElementsMatch(t, tt.wantTags, azureFunctionsIdentityTags(got))
+		})
+	}
+}
+
+func TestGCPServerlessRunningMetrics(t *testing.T) {
+	tests := []struct {
+		name       string
+		attributes map[string]any
+		metricName string
+		wantTags   [][]string
+	}{
+		{
+			name:       "Cloud Run service",
+			attributes: completeGCPServerlessAttributes("gcp_cloud_run"),
+			metricName: "otel.datadog_exporter.metrics.running.cloudrun",
+			wantTags: [][]string{{
+				"instance:instance-1",
+				"location:us-central1",
+				"project_id:project-1",
+				"service_name:my-service",
+			}},
+		},
+		{
+			name:       "Cloud Functions v2",
+			attributes: completeGCPServerlessAttributes("gcp_cloud_functions"),
+			metricName: "otel.datadog_exporter.metrics.running.cloudrunfunctions",
+			wantTags: [][]string{{
+				"instance:instance-1",
+				"location:us-central1",
+				"project_id:project-1",
+				"service_name:my-service",
+			}},
+		},
+		{
+			name: "incomplete identity",
+			attributes: func() map[string]any {
+				attrs := completeGCPServerlessAttributes("gcp_cloud_run")
+				delete(attrs, "faas.instance")
+				return attrs
+			}(),
+		},
+		{
+			name: "Cloud Run job execution",
+			attributes: func() map[string]any {
+				attrs := completeGCPServerlessAttributes("gcp_cloud_run")
+				attrs["gcp.cloud_run.job.execution"] = ""
+				return attrs
+			}(),
+		},
+		{
+			name: "Cloud Run job task",
+			attributes: func() map[string]any {
+				attrs := completeGCPServerlessAttributes("gcp_cloud_run")
+				attrs["gcp.cloud_run.job.task_index"] = int64(0)
+				return attrs
+			}(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSyncForwarderGate(t, true)
+
+			seriesRecorder := &testutil.HTTPRequestRecorderWithChan{
+				Pattern: testutil.MetricV2Endpoint,
+				ReqChan: make(chan []byte, 1),
+			}
+			server := testutil.DatadogServerMock(seriesRecorder.HandlerFunc)
+			defer server.Close()
+
+			exp := buildSyncForwarderExporter(t, server.URL)
+			require.NoError(t, exp.ConsumeMetrics(t.Context(), gcpServerlessMetrics(t, tt.attributes)))
+
+			var body []byte
+			select {
+			case body = <-seriesRecorder.ReqChan:
+			case <-time.After(10 * time.Second):
+				t.Fatal("timed out waiting for Datadog series payload")
+			}
+
+			if tt.metricName == "" {
+				assert.Empty(t, runningMetricTags(t, body, "otel.datadog_exporter.metrics.running.cloudrun"))
+				assert.Empty(t, runningMetricTags(t, body, "otel.datadog_exporter.metrics.running.cloudrunfunctions"))
+				return
+			}
+			got := runningMetricTags(t, body, tt.metricName)
+			assert.ElementsMatch(t, tt.wantTags, gcpServerlessIdentityTags(got))
+		})
+	}
 }
 
 // TestSyncForwarder_PropagatesErrors verifies that when

@@ -103,12 +103,17 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 
 	var i int64
 	for w.running.Load() {
+		metricAttrs := signalAttrs
 		if w.enforceUnique {
-			signalAttrs = append(signalAttrs, tb.getAttribute())
+			// Keep the timebox attribute local to this data point so signalAttrs
+			// does not grow on every iteration.
+			metricAttrs = make([]attribute.KeyValue, len(signalAttrs)+1)
+			copy(metricAttrs, signalAttrs)
+			metricAttrs[len(signalAttrs)] = tb.getAttribute()
 		}
 
 		// Add load size attributes if specified
-		loadAttrs := signalAttrs
+		loadAttrs := metricAttrs
 		if w.loadSize > 0 {
 			for j := 0; j < w.loadSize; j++ {
 				loadAttrs = append(loadAttrs, config.CreateLoadAttribute(fmt.Sprintf("load-%v", j), 1))
@@ -195,7 +200,7 @@ func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expo
 			dp := &metricdata.ExponentialHistogramDataPoint[int64]{
 				StartTime:  startTime,
 				Time:       now,
-				Attributes: attribute.NewSet(signalAttrs...),
+				Attributes: attribute.NewSet(metricAttrs...),
 				Exemplars:  w.exemplars,
 			}
 			expoHistToSDKExponentialDataPoint(hist, dp)

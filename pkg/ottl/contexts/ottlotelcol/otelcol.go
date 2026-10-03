@@ -24,27 +24,43 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for context.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxotelcol.Name
 
 var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 
 // TransformContext represents the data passed through the OpenTelemetry Collector by its components.
 type TransformContext struct {
-	cache pcommon.Map
+	cache         pcommon.Map
+	externalCache *pcommon.Map
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
 func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	err := encoder.AddObject("cache", logging.Map(tCtx.cache))
+	err := encoder.AddObject("cache", logging.Map(getCache(tCtx)))
 	return err
 }
 
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
-// NewTransformContextPtr creates a new TransformContext with the provided parameters.
-func NewTransformContextPtr(options ...TransformContextOption) *TransformContext {
+// WithCache sets an external shared cache on the TransformContext.
+// When set, the cache is shared across multiple TransformContext instances.
+// The caller owns the cache: TransformContext.Close does not clear it, so the caller
+// is responsible for clearing or discarding it when it is no longer needed.
+// pcommon.Map is not safe for concurrent use, so a shared cache must not be used by
+// multiple goroutines at the same time.
+// If cache is nil, the option has no effect and the TransformContext uses its own cache.
+// Experimental: *NOTE* this option is subject to change or removal in the future.
+func WithCache(cache *pcommon.Map) TransformContextOption {
+	return func(tCtx *TransformContext) {
+		if cache != nil {
+			tCtx.externalCache = cache
+		}
+	}
+}
+
+// NewTransformContext creates a new TransformContext with the provided parameters.
+func NewTransformContext(options ...TransformContextOption) *TransformContext {
 	tc := tcPool.Get().(*TransformContext)
 	for _, opt := range options {
 		opt(tc)
@@ -56,14 +72,13 @@ func NewTransformContextPtr(options ...TransformContextOption) *TransformContext
 // After this function returns this instance cannot be used.
 func (tCtx *TransformContext) Close() {
 	tCtx.cache.Clear()
+	tCtx.externalCache = nil
 	tcPool.Put(tCtx)
 }
 
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{ContextName})(p)
@@ -128,6 +143,9 @@ func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
 }
 
 func getCache(tCtx *TransformContext) pcommon.Map {
+	if tCtx.externalCache != nil {
+		return *tCtx.externalCache
+	}
 	return tCtx.cache
 }
 

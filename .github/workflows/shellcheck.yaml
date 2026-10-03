@@ -10,7 +10,7 @@ permissions:
 jobs:
   shellcheck:
     name: shellcheck
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     env:
       VERSION: v0.10.0
     steps:
