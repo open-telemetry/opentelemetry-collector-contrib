@@ -768,7 +768,16 @@ func TestProcessor_RootSpanConditionMultipleMatches(t *testing.T) {
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches(
 		t,
 		tt,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Count:        1,
+				Sum:          3,
+				Bounds:       []float64{2, 3, 5, 10, 25, 100},
+				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0},
+				Min:          metricdata.NewExtrema(int64(3)),
+				Max:          metricdata.NewExtrema(int64(3)),
+			},
+		},
 		metricdatatest.IgnoreTimestamp(),
 		metricdatatest.IgnoreExemplars(),
 	)
