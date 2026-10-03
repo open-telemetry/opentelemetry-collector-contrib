@@ -590,6 +590,9 @@ exclusions:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
     feature_gates:
+      - name: processor.tailsamplingprocessor.defaultErrorModeIgnore
+        validation:
+          enabled: false
       - name: processor.tailsamplingprocessor.metricstatcountbytessampled
         validation:
           enabled: false
