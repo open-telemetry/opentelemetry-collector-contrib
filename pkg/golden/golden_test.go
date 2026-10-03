@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestWriteMetrics(t *testing.T) {
@@ -326,7 +327,7 @@ func TestSortAndNormalizeMetrics(t *testing.T) {
 }
 
 func TestReadProfiles(t *testing.T) {
-	expectedProfiles := CreateTestProfiles()
+	expectedProfiles := normalizeProfiles(t, CreateTestProfiles())
 
 	expectedFile := filepath.Join("testdata", "profiles-roundtrip", "expected.yaml")
 	actualProfiles, err := ReadProfiles(expectedFile)
@@ -363,11 +364,22 @@ func TestProfilesRoundTrip(t *testing.T) {
 
 	actualProfiles, err := ReadProfiles(tempDir)
 	require.NoError(t, err)
-	require.Equal(t, expectedProfiles, actualProfiles)
+	require.Equal(t, normalizeProfiles(t, expectedProfiles), actualProfiles)
+}
+
+// normalizeProfiles passes profiles through an OTLP/JSON marshal/unmarshal
+// cycle, so that strings referenced from the dictionary end up in the string
+// table the same way they do when reading profiles from a file.
+func normalizeProfiles(t *testing.T, profiles pprofile.Profiles) pprofile.Profiles {
+	b, err := (&pprofile.JSONMarshaler{}).MarshalProfiles(profiles)
+	require.NoError(t, err)
+	normalized, err := (&pprofile.JSONUnmarshaler{}).UnmarshalProfiles(b)
+	require.NoError(t, err)
+	return normalized
 }
 
 func CreateTestProfiles() pprofile.Profiles {
-	profiles := pprofile.NewProfiles()
+	profiles := testdata.GenerateProfiles(0)
 	dic := profiles.Dictionary()
 	resource := profiles.ResourceProfiles().AppendEmpty()
 	scope := resource.ScopeProfiles().AppendEmpty()
@@ -375,22 +387,22 @@ func CreateTestProfiles() pprofile.Profiles {
 
 	dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
 	st := profile.SampleType()
-	st.SetTypeStrindex(0)
-	st.SetUnitStrindex(1)
+	st.SetTypeStrindex(2)
+	st.SetUnitStrindex(3)
 	pt := profile.PeriodType()
-	pt.SetTypeStrindex(2)
-	pt.SetUnitStrindex(3)
+	pt.SetTypeStrindex(4)
+	pt.SetUnitStrindex(5)
 
 	a := dic.AttributeTable().AppendEmpty()
-	a.SetKeyStrindex(4)
+	a.SetKeyStrindex(6)
 	dic.StringTable().Append("process.executable.build_id.htlhash")
 	a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
 	a = dic.AttributeTable().AppendEmpty()
-	a.SetKeyStrindex(5)
+	a.SetKeyStrindex(7)
 	dic.StringTable().Append("profile.frame.type")
 	a.Value().SetStr("native")
 	a = dic.AttributeTable().AppendEmpty()
-	a.SetKeyStrindex(6)
+	a.SetKeyStrindex(8)
 	dic.StringTable().Append("host.id")
 	a.Value().SetStr("localhost")
 
@@ -400,13 +412,13 @@ func CreateTestProfiles() pprofile.Profiles {
 	sample.TimestampsUnixNano().Append(0)
 
 	stack := dic.StackTable().AppendEmpty()
-	stack.LocationIndices().Append(0)
+	stack.LocationIndices().Append(1)
 
 	m := dic.MappingTable().AppendEmpty()
-	m.AttributeIndices().Append(0)
+	m.AttributeIndices().Append(4)
 
 	l := dic.LocationTable().AppendEmpty()
-	l.SetMappingIndex(0)
+	l.SetMappingIndex(1)
 	l.SetAddress(111)
 	l.AttributeIndices().Append(1)
 
