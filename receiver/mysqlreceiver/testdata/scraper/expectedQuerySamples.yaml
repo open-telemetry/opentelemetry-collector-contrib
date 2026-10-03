@@ -76,6 +76,9 @@ resourceLogs:
               - key: network.peer.port
                 value:
                   intValue: "1234"
+              - key: mysql.events_statements_current.timer_start
+                value:
+                  intValue: "0"
             body: {}
             eventName: db.server.query_sample
             spanId: "2222222222222222"
