@@ -609,7 +609,6 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 		for _, partition := range partitions {
 			c.telemetryBuilder.KafkaReceiverPartitionStart.Add(context.Background(), 1)
 			partitionConsumer := pc{
-				backOff: newExponentialBackOff(c.config.ErrorBackOff),
 				logger: c.settings.Logger.With(
 					zap.String("topic", topic),
 					zap.Int64("partition", int64(partition)),
@@ -776,9 +775,7 @@ func (c *franzConsumer) shouldMarkOnError(pc *pc, err error) bool {
 
 // handleMessage is called on a per-partition basis.
 func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
-	if pc.backOff != nil {
-		defer pc.backOff.Reset()
-	}
+	backOff := newExponentialBackOff(c.config.ErrorBackOff)
 
 	for {
 		err := c.consumeMessage(pc.ctx, record, pc.attrs)
@@ -794,8 +791,8 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 		// https://cwiki.apache.org/confluence/display/KAFKA/KIP-932%3A+Queues+for+Kafka.
 		// One possible exception is if the OTel collector is used for analytics
 		// pipelines, where it may make sense to make share groups opt-in.
-		if pc.backOff != nil && !consumererror.IsPermanent(err) {
-			backOffDelay := pc.backOff.NextBackOff()
+		if backOff != nil && !consumererror.IsPermanent(err) {
+			backOffDelay := backOff.NextBackOff()
 			if backOffDelay != backoff.Stop {
 				pc.logger.Info("Backing off due to error from the next consumer.",
 					zap.Error(err),
@@ -809,7 +806,7 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 				}
 			}
 			pc.logger.Warn("Stop error backoff because the configured max_elapsed_time is reached",
-				zap.Duration("max_elapsed_time", pc.backOff.MaxElapsedTime),
+				zap.Duration("max_elapsed_time", backOff.MaxElapsedTime),
 			)
 		}
 

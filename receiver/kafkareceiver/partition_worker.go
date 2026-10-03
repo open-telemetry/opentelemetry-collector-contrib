@@ -9,7 +9,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/otel/attribute"
@@ -37,10 +36,12 @@ type pc struct {
 
 	ctx    context.Context
 	cancel context.CancelCauseFunc
-	// Not safe for concurrent use, this field is never accessed concurrently.
-	backOff *backoff.ExponentialBackOff
 
 	mailbox *partitionMailbox
+	// skipConsume holds offsets this worker already finished above a rewind
+	// hole. It stays nil until a rewind writes it. Entries drop when the
+	// marked prefix advances past them, and the map dies with pc on rebalance.
+	skipConsume map[int64]struct{}
 	// pauseReasons stores a bitmask of partitionPauseReason values.
 	pauseReasons atomic.Uint32
 
@@ -94,6 +95,17 @@ func (p *pc) clearPauseReasons(reasons partitionPauseReason) bool {
 	previous := p.pauseReasons.And(^mask)
 	remaining := previous &^ mask
 	return previous&mask != 0 && remaining == 0
+}
+
+// logProcessError reports a record the pipeline rejected. A cancelled partition
+// is an expected shutdown path, so it logs at debug level.
+func (p *pc) logProcessError(record *kgo.Record, err error) {
+	fields := []zap.Field{zap.Error(err), zap.Int64("offset", record.Offset)}
+	if p.ctx.Err() != nil {
+		p.logger.Debug("message processing interrupted", fields...)
+		return
+	}
+	p.logger.Error("unable to process message", fields...)
 }
 
 // runPartitionWorker processes exactly one partition in offset order. Workers
@@ -174,58 +186,68 @@ func (c *franzConsumer) applyMailboxRewind(pc *pc, tp topicPartition, partition 
 //     dequeues the batch. Records still waiting in the mailbox are not marked.
 //   - Legacy with autocommit disabled marks records here. consume commits all
 //     marked partitions after the fetched batch finishes.
+//   - Independent with max_in_flight above 1 always marks after processing,
+//     because concurrent calls have no single record to mark before.
+//     processRecordsConcurrent also marks the contiguous prefix as soon as
+//     earlier in-flight records finish.
 func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
 	var fatalRecord *kgo.Record
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
-	for _, msg := range p.Records {
-		// Stop before marking once the partition consumer is cancelled. The
-		// records left here are still committable, and lost() commits the marks,
-		// so marking one now drops it: nothing processed it and nothing
-		// redelivers it. Leaving them unmarked hands them to the next owner
-		// after a revocation, or to the next run after a shutdown.
-		//
-		// This also keeps the wait in lost() down to the in-flight record
-		// instead of the whole batch, and that wait has to fit in the re-balance
-		// timeout.
-		//
-		// break, not return, so processed records still get their After mark and
-		// lag telemetry below.
-		if pc.ctx.Err() != nil {
-			pc.logger.Debug("stopped processing records, leaving the rest of the batch unmarked",
-				zap.Int64("offset", msg.Offset),
-			)
-			break
-		}
-		if !c.config.MessageMarking.After {
-			c.markCommitRecords(pc, p.Topic, p.Partition, msg)
-		}
-		// Record the current consumer offset.
-		pc.currentOffset.Store(msg.Offset)
-		if err := c.handleMessage(pc, msg); err != nil {
+	concurrent := c.maxInFlight() > 1
+	if concurrent {
+		fatalRecord, fatalIsPermanent, lastProcessed = c.processRecordsConcurrent(pc, p)
+	} else {
+		for _, msg := range p.Records {
+			// Stop before marking once the partition consumer is cancelled. The
+			// records left here are still committable, and lost() commits the marks,
+			// so marking one now drops it: nothing processed it and nothing
+			// redelivers it. Leaving them unmarked hands them to the next owner
+			// after a revocation, or to the next run after a shutdown.
+			//
+			// This also keeps the wait in lost() down to the in-flight record
+			// instead of the whole batch, and that wait has to fit in the re-balance
+			// timeout.
+			//
+			// break, not return, so processed records still get their After mark and
+			// lag telemetry below.
 			if pc.ctx.Err() != nil {
-				pc.logger.Debug("message processing interrupted",
-					zap.Error(err),
+				pc.logger.Debug("stopped processing records, leaving the rest of the batch unmarked",
 					zap.Int64("offset", msg.Offset),
 				)
-			} else {
-				pc.logger.Error("unable to process message",
-					zap.Error(err),
-					zap.Int64("offset", msg.Offset),
-				)
-			}
-			// handleMessage only returns an error when After=true and the
-			// message should not be marked, so asking again here is consistent
-			// with that contract. The backoff path is the exception: it returns
-			// the cancellation cause without consulting the config.
-			if !c.shouldMarkOnError(pc, err) {
-				fatalRecord = msg
-				fatalIsPermanent = consumererror.IsPermanent(err)
 				break
 			}
+			if !c.config.MessageMarking.After {
+				c.markCommitRecords(pc, p.Topic, p.Partition, msg)
+			}
+			// Record the current consumer offset.
+			pc.currentOffset.Store(msg.Offset)
+			if err := c.handleMessage(pc, msg); err != nil {
+				if pc.ctx.Err() != nil {
+					pc.logger.Debug("message processing interrupted",
+						zap.Error(err),
+						zap.Int64("offset", msg.Offset),
+					)
+				} else {
+					pc.logger.Error("unable to process message",
+						zap.Error(err),
+						zap.Int64("offset", msg.Offset),
+					)
+				}
+				// handleMessage only returns an error when After=true and the
+				// message should not be marked, so asking again here is consistent
+				// with that contract. The backoff path is the exception: it returns
+				// the cancellation cause without consulting the config.
+				if !c.shouldMarkOnError(pc, err) {
+					fatalRecord = msg
+					fatalIsPermanent = consumererror.IsPermanent(err)
+					break
+				}
+			}
+			lastProcessed = msg
 		}
-		lastProcessed = msg
 	}
+
 	result := partitionBatchResult{}
 	terminallyPaused := false
 	if fatalRecord != nil {
@@ -308,16 +330,16 @@ func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition)
 		return result
 	}
 
-	// Record the current consumer lag
-	// Skip for terminally paused partitions, reporting will resume after rebalance.
+	// Record the current consumer lag.
+	// Skip for terminally paused partitions. Reporting resumes after rebalance.
 	if !terminallyPaused {
 		pc.offsetLag.Store((p.HighWatermark - 1) - lastProcessed.Offset)
 		pc.offsetLagReportable.Store(true)
 	}
 
-	if c.config.MessageMarking.After {
+	if c.config.MessageMarking.After && !concurrent {
 		// Mark the latest accepted record after processing. This also covers
-		// every earlier record in the batch.
+		// every earlier record in the batch. The concurrent path marks as it goes.
 		c.markCommitRecords(pc, p.Topic, p.Partition, lastProcessed)
 	}
 	return result
@@ -335,4 +357,164 @@ func (c *franzConsumer) markCommitRecords(pc *pc, topic string, partition int32,
 		}
 	}
 	c.client.MarkCommitRecords(records...)
+}
+
+// maxInFlight returns how many handleMessage calls one partition worker may run
+// at once. Only independent workers go above 1.
+func (c *franzConsumer) maxInFlight() int {
+	if c.config.PartitionProcessing.Independent {
+		return c.config.PartitionProcessing.MaxInFlight
+	}
+	return 1
+}
+
+// processRecordsConcurrent runs up to maxInFlight handleMessage calls at once
+// on one partition. It marks the contiguous accepted prefix as records finish.
+// That prefix includes failures message marking skips. After an unmarked
+// failure it starts no new calls and waits for the in-flight ones. It returns
+// that record, whether the error is permanent, and the last record of the
+// accepted prefix. Before a rewind it remembers the offsets it already finished
+// above the hole, so this worker skips Consume for them on the next fetch.
+func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartition) (fatalRecord *kgo.Record, fatalIsPermanent bool, lastProcessed *kgo.Record) {
+	b := &inflightBatch{
+		c:             c,
+		pc:            pc,
+		p:             p,
+		sem:           make(chan struct{}, c.maxInFlight()),
+		errs:          make([]error, len(p.Records)),
+		done:          make([]bool, len(p.Records)),
+		markedThrough: -1,
+	}
+	for i, msg := range p.Records {
+		if pc.ctx.Err() != nil {
+			break
+		}
+		pc.currentOffset.Store(msg.Offset)
+		if _, ok := pc.skipConsume[msg.Offset]; ok {
+			b.complete(i, nil)
+			continue
+		}
+		if !b.acquire() {
+			break
+		}
+		b.start(i)
+	}
+	b.wg.Wait()
+
+	// wg.Wait orders every write to b before the reads below.
+	if b.markedThrough >= 0 {
+		lastProcessed = p.Records[b.markedThrough]
+	}
+	for i, err := range b.errs {
+		if err == nil {
+			continue
+		}
+		fatalRecord, fatalIsPermanent = p.Records[i], consumererror.IsPermanent(err)
+		pc.logProcessError(fatalRecord, err)
+		// Only a rewind on this pc retries the hole. A pause or a cancelled
+		// partition hands the offsets to a new owner, which must Consume them.
+		if c.config.ErrorBackOff.Enabled && !fatalIsPermanent && pc.ctx.Err() == nil {
+			b.rememberFinished(i + 1)
+		}
+		break
+	}
+	pc.dropSkipConsume(lastProcessed)
+	return fatalRecord, fatalIsPermanent, lastProcessed
+}
+
+// inflightBatch holds the state of one batch in processRecordsConcurrent.
+type inflightBatch struct {
+	c   *franzConsumer
+	pc  *pc
+	p   kgo.FetchTopicPartition
+	sem chan struct{}
+	wg  sync.WaitGroup
+
+	mu sync.Mutex
+	// errs holds failures message marking does not skip. A non-nil entry is a
+	// hole the accepted prefix cannot pass.
+	errs []error
+	done []bool
+	// failed stops new calls once any record leaves a hole.
+	failed bool
+	// markedThrough is the index of the last marked record, or -1.
+	markedThrough int
+}
+
+// acquire waits for a free slot. It returns false once a record has failed.
+func (b *inflightBatch) acquire() bool {
+	b.sem <- struct{}{}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.failed {
+		<-b.sem
+		return false
+	}
+	return true
+}
+
+// start runs handleMessage for record i on its own goroutine. The caller must
+// hold a slot from acquire.
+func (b *inflightBatch) start(i int) {
+	b.wg.Go(func() {
+		// Release after complete, so the next acquire sees failed.
+		defer func() { <-b.sem }()
+		msg := b.p.Records[i]
+		err := b.c.handleMessage(b.pc, msg)
+		if err != nil && b.c.shouldMarkOnError(b.pc, err) {
+			b.pc.logProcessError(msg, err)
+			err = nil
+		}
+		b.complete(i, err)
+	})
+}
+
+// complete records that record i finished. A non-nil err is a failure message
+// marking does not skip. It marks the accepted prefix when it advances.
+func (b *inflightBatch) complete(i int, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.errs[i], b.done[i] = err, true
+	if err != nil {
+		b.failed = true
+	}
+	start := b.markedThrough
+	for next := start + 1; next < len(b.done) && b.done[next] && b.errs[next] == nil; next++ {
+		b.markedThrough = next
+	}
+	if b.markedThrough > start {
+		b.c.markCommitRecords(b.pc, b.p.Topic, b.p.Partition, b.p.Records[b.markedThrough])
+	}
+}
+
+// rememberFinished adds the accepted records from index from onward that
+// already finished to pc.skipConsume.
+func (b *inflightBatch) rememberFinished(from int) {
+	for i := from; i < len(b.done); i++ {
+		if !b.done[i] || b.errs[i] != nil {
+			continue
+		}
+		if b.pc.skipConsume == nil {
+			b.pc.skipConsume = make(map[int64]struct{})
+		}
+		b.pc.skipConsume[b.p.Records[i].Offset] = struct{}{}
+	}
+}
+
+// dropSkipConsume removes skip entries at or below the last marked record. The
+// map returns to nil when it is empty so later success batches do not keep a set.
+func (p *pc) dropSkipConsume(marked *kgo.Record) {
+	if p.skipConsume == nil {
+		return
+	}
+	if marked != nil {
+		for off := range p.skipConsume {
+			if off <= marked.Offset {
+				delete(p.skipConsume, off)
+			}
+		}
+	}
+	if len(p.skipConsume) == 0 {
+		p.skipConsume = nil
+	}
 }

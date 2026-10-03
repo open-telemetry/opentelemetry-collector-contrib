@@ -105,6 +105,12 @@ kafka/partition_processing:
     independent: true
     max_buffered_batches: 2
 
+kafka/partition_processing_max_in_flight:
+  partition_processing:
+    independent: true
+    max_buffered_batches: 1
+    max_in_flight: 4
+
 kafka/invalid_exclude_topics_logs_non_regex:
   logs:
     topics:
@@ -189,3 +195,8 @@ kafka/invalid_partition_processing_manual_commit:
     enable: false
   partition_processing:
     independent: true
+
+kafka/invalid_partition_processing_zero_max_in_flight:
+  partition_processing:
+    independent: true
+    max_in_flight: 0
