@@ -25,7 +25,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{MaxConnections: defaultMaxConnections}
 }
 
 func createLogsReceiver(

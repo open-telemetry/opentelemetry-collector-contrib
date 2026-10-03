@@ -42,6 +42,12 @@ receivers:
     endpoint: 0.0.0.0:8006
 ```
 
+The following settings are optional:
+
+- `max_connections` (default = `100`): maximum simultaneously open connections.
+  Connections over the limit wait in the accept backlog until a slot frees. `0`
+  means no limit.
+
 ## Data Conversion
 
 The receiver converts Fluentd events to OpenTelemetry logs. Each Fluentd event
