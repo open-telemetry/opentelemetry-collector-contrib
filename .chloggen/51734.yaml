@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add missing labels and execution metrics to top minute query stats in `googlecloudspannerreceiver`.
+issues: [51219]
+change_logs: []
