@@ -32,7 +32,7 @@ type TelemetryBuilder struct {
 	ProcessorAdaptiveTailSamplingFingerprintDuration              metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable    metric.Int64Counter
 	ProcessorAdaptiveTailSamplingOttlEvalErrors                   metric.Int64Counter
-	ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches metric.Int64Counter
+	ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingSamplerBurstCount                metric.Int64ObservableCounter
 	ProcessorAdaptiveTailSamplingSamplerKeyspaceSize              metric.Int64ObservableGauge
 	ProcessorAdaptiveTailSamplingSamplerRequestCount              metric.Int64ObservableCounter
@@ -157,10 +157,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches, err = builder.meter.Int64Counter(
+	builder.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches, err = builder.meter.Int64Histogram(
 		"otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches",
-		metric.WithDescription("Number of traces where root_span_condition matched more than one span. [Development]"),
-		metric.WithUnit("{traces}"),
+		metric.WithDescription("Distribution of root span condition matches for traces where the condition matched at least once. [Development]"),
+		metric.WithUnit("{matches}"),
+		metric.WithExplicitBucketBoundaries([]float64{2, 3, 5, 10, 25, 100}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerBurstCount, err = builder.meter.Int64ObservableCounter(

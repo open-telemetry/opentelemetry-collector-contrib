@@ -37,7 +37,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorAdaptiveTailSamplingFingerprintDuration.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingOttlEvalErrors.Add(context.Background(), 1)
-	tb.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches.Add(context.Background(), 1)
+	tb.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingTraceSpanCount.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingTracesActive.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingTracesDropped.Add(context.Background(), 1)
@@ -59,7 +59,7 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

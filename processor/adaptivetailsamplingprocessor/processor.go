@@ -511,10 +511,6 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 				pt.spanCount++
 				if p.evalRootSpanCondition(ctx, rs, ss, span) {
 					pt.rootSpanConditionMatches++
-
-					if pt.rootSpanConditionMatches == 2 {
-						p.telemetry.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches.Add(ctx, 1)
-					}
 				}
 				b, ok := pendingBuckets[id]
 				if !ok {
@@ -833,6 +829,12 @@ func (p *adaptiveTailSamplingProcessor) decide(id pcommon.TraceID) {
 // forwards or drops its spans. Shared by the timer-driven decide path and the
 // evaluate eviction policy.
 func (p *adaptiveTailSamplingProcessor) decideTrace(ctx context.Context, pt *pendingTrace) {
+	if pt.rootSpanConditionMatches > 0 {
+		p.telemetry.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches.Record(
+			ctx,
+			int64(pt.rootSpanConditionMatches),
+		)
+	}
 	matchedRule, rate, key := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
