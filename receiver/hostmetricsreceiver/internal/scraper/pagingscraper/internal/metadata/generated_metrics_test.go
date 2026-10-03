@@ -75,24 +75,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemPagingFaultsDataPoint(ts, 3, AttributeTypeMinor)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemPagingFaultsDataPoint(ts+1, 3, AttributeTypeMinor)
+				assert.Equal(t, 2, mb.metricSystemPagingFaults.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirectionPageIn, AttributeTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemPagingOperationsDataPoint(ts, 3, AttributeDirectionPageOut, AttributeTypeMinor)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemPagingOperationsDataPoint(ts+1, 3, AttributeDirectionPageOut, AttributeTypeMinor)
+				assert.Equal(t, 2, mb.metricSystemPagingOperations.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemPagingUsageDataPoint(ts, 1, "device-val", AttributeStateCached)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemPagingUsageDataPoint(ts, 3, "device-val-2", AttributeStateFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemPagingUsageDataPoint(ts+1, 3, "device-val-2", AttributeStateFree)
+				assert.Equal(t, 2, mb.metricSystemPagingUsage.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSystemPagingUtilizationDataPoint(ts, 1, "device-val", AttributeStateCached)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemPagingUtilizationDataPoint(ts, 3, "device-val-2", AttributeStateFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemPagingUtilizationDataPoint(ts+1, 3, "device-val-2", AttributeStateFree)
+				assert.Equal(t, 2, mb.metricSystemPagingUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			res := pcommon.NewResource()
@@ -151,7 +163,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.paging.faults"], "Found a duplicate in the metrics slice: system.paging.faults")
 						validatedMetrics["system.paging.faults"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of page faults.", mi.Description())
 						assert.Equal(t, "{faults}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -198,7 +212,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.paging.operations"], "Found a duplicate in the metrics slice: system.paging.operations")
 						validatedMetrics["system.paging.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of paging operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -247,7 +263,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.paging.usage"], "Found a duplicate in the metrics slice: system.paging.usage")
 						validatedMetrics["system.paging.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Swap (unix) or pagefile (windows) usage.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -294,7 +312,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.paging.utilization"], "Found a duplicate in the metrics slice: system.paging.utilization")
 						validatedMetrics["system.paging.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Swap (unix) or pagefile (windows) utilization.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
