@@ -288,10 +288,7 @@ func TestProcessPartitionBatchMaxInFlight(t *testing.T) {
 	cases := []struct {
 		name string
 		// failAt is the offset that fails, or -1 when every record succeeds.
-		failAt int64
-		// failTimes is how many Consume calls at failAt return an error.
-		// 0 means every call at failAt fails.
-		failTimes  int
+		failAt     int64
 		records    int
 		wantRewind int64
 		wantMarked int64
@@ -303,22 +300,7 @@ func TestProcessPartitionBatchMaxInFlight(t *testing.T) {
 			wantMarked: inFlight,
 		},
 		{
-			name:       "retries the hole in memory and does not rewind",
-			failAt:     1,
-			failTimes:  1,
-			wantRewind: -1,
-			wantMarked: inFlight,
-		},
-		{
-			name:       "retries the hole then processes the rest of the batch",
-			failAt:     1,
-			failTimes:  1,
-			records:    2 * inFlight,
-			wantRewind: -1,
-			wantMarked: 2 * inFlight,
-		},
-		{
-			name:       "marks the successful prefix and rewinds when the hole retry fails",
+			name:       "marks the successful prefix and rewinds when a record fails",
 			failAt:     1,
 			wantRewind: 1,
 			wantMarked: 1,
@@ -346,10 +328,10 @@ func TestProcessPartitionBatchMaxInFlight(t *testing.T) {
 			}
 			calls := make([]atomic.Int64, records)
 			consumer.consumeMessage = func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
-				n := calls[record.Offset].Add(1)
+				calls[record.Offset].Add(1)
 				entered <- struct{}{}
 				<-releases[record.Offset]
-				if record.Offset == tc.failAt && (tc.failTimes == 0 || n <= int64(tc.failTimes)) {
+				if record.Offset == tc.failAt {
 					return errors.New("boom")
 				}
 				return nil
@@ -401,7 +383,7 @@ func TestProcessPartitionBatchMaxInFlight(t *testing.T) {
 				require.Equal(t, tc.wantMarked, marked[0].Offset)
 			}
 			if tc.failAt >= 0 {
-				require.Equal(t, int64(2), calls[tc.failAt].Load())
+				require.Equal(t, int64(1), calls[tc.failAt].Load())
 			}
 			if tc.failAt == 1 {
 				require.Equal(t, int64(1), calls[2].Load())
@@ -534,7 +516,7 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 		marked := kafkaClient.MarkedOffsets()[topic]
 		require.Len(t, marked, 1)
 		require.Equal(t, int64(2), marked[0].Offset)
-		require.Equal(t, int64(2), calls[2].Load())
+		require.Equal(t, int64(1), calls[2].Load())
 		require.Equal(t, int64(1), calls[3].Load())
 
 		secondBatch.Store(true)

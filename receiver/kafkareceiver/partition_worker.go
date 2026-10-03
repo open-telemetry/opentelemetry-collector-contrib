@@ -337,8 +337,9 @@ func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition)
 		pc.offsetLagReportable.Store(true)
 	}
 
-	if c.config.MessageMarking.After || concurrent {
-		// Marking one record commits the contiguous accepted prefix.
+	if c.config.MessageMarking.After && !concurrent {
+		// Mark the latest accepted record after processing. This also covers
+		// every earlier record in the batch. The concurrent path marks as it goes.
 		c.markCommitRecords(pc, p.Topic, p.Partition, lastProcessed)
 	}
 	return result
@@ -369,148 +370,151 @@ func (c *franzConsumer) maxInFlight() int {
 
 // processRecordsConcurrent runs up to maxInFlight handleMessage calls at once
 // on one partition. It marks the contiguous accepted prefix as records finish.
-// That prefix includes failures message marking skips. An unmarked failure is
-// retried once in memory. If that retry fails, this worker rewinds and skips
-// Consume for offsets it already finished above the hole. It returns that
-// unmarked record, whether the error is permanent, and the last record of the
-// accepted prefix.
+// That prefix includes failures message marking skips. After an unmarked
+// failure it starts no new calls and waits for the in-flight ones. It returns
+// that record, whether the error is permanent, and the last record of the
+// accepted prefix. Before a rewind it remembers the offsets it already finished
+// above the hole, so this worker skips Consume for them on the next fetch.
 func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartition) (fatalRecord *kgo.Record, fatalIsPermanent bool, lastProcessed *kgo.Record) {
-	records := p.Records
-	sem := make(chan struct{}, c.maxInFlight())
-	finished := make([]atomic.Bool, len(records))
-	errs := make([]error, len(records))
-	var markMu sync.Mutex
-	markedThrough := -1
-	advanceMark := func() {
-		markMu.Lock()
-		defer markMu.Unlock()
-		start := markedThrough
-		base := markedThrough + 1
-		for k := range records[base:] {
-			next := base + k
-			if !finished[next].Load() {
-				break
-			}
-			if err := errs[next]; err != nil && !c.shouldMarkOnError(pc, err) {
-				break
-			}
-			markedThrough = next
-		}
-		if markedThrough > start {
-			c.markCommitRecords(pc, p.Topic, p.Partition, records[markedThrough])
-		}
+	b := &inflightBatch{
+		c:             c,
+		pc:            pc,
+		p:             p,
+		sem:           make(chan struct{}, c.maxInFlight()),
+		errs:          make([]error, len(p.Records)),
+		done:          make([]bool, len(p.Records)),
+		markedThrough: -1,
 	}
-
-	for pos := 0; pos < len(records); {
-		var (
-			wg      sync.WaitGroup
-			failed  atomic.Bool
-			started int
-		)
-		for rel, msg := range records[pos:] {
-			if pc.ctx.Err() != nil {
-				break
-			}
-			i := pos + rel
-			pc.currentOffset.Store(msg.Offset)
-			if _, ok := pc.skipConsume[msg.Offset]; ok {
-				finished[i].Store(true)
-				started++
-				advanceMark()
-				continue
-			}
-			sem <- struct{}{}
-			// Stop starting once a record fails. The hole is retried below.
-			if failed.Load() {
-				<-sem
-				break
-			}
-			started++
-			wg.Go(func() {
-				err := c.handleMessage(pc, msg)
-				if err != nil {
-					errs[i] = err
-					if !c.shouldMarkOnError(pc, err) {
-						failed.Store(true)
-					} else {
-						pc.logProcessError(msg, err)
-					}
-				}
-				finished[i].Store(true)
-				advanceMark()
-				<-sem
-			})
-		}
-		wg.Wait()
-
-		for j, msg := range records[pos : pos+started] {
-			idx := pos + j
-			err := errs[idx]
-			if err != nil && !c.shouldMarkOnError(pc, err) {
-				// One extra Consume, no new backoff. handleMessage already used
-				// the configured max_elapsed_time. Skip it when the partition
-				// context is cancelled: that error is shutdown, and another
-				// Consume would run on the cancelled context.
-				if c.config.ErrorBackOff.Enabled && !consumererror.IsPermanent(err) && pc.ctx.Err() == nil {
-					err = c.consumeMessage(pc.ctx, msg, pc.attrs)
-					if err == nil || c.shouldMarkOnError(pc, err) {
-						errs[idx] = err
-						lastProcessed = msg
-						continue
-					}
-					c.rememberSkipConsume(pc, records[idx+1:pos+started], errs[idx+1:pos+started])
-				}
-				pc.logProcessError(msg, err)
-				pc.dropSkipConsume(markedOffset(records, markedThrough))
-				return msg, consumererror.IsPermanent(err), lastProcessed
-			}
-			lastProcessed = msg
-		}
-		advanceMark()
-		pc.dropSkipConsume(markedOffset(records, markedThrough))
-		if started == 0 {
+	for i, msg := range p.Records {
+		if pc.ctx.Err() != nil {
 			break
 		}
-		pos += started
+		pc.currentOffset.Store(msg.Offset)
+		if _, ok := pc.skipConsume[msg.Offset]; ok {
+			b.complete(i, nil)
+			continue
+		}
+		if !b.acquire() {
+			break
+		}
+		b.start(i)
 	}
-	return nil, false, lastProcessed
+	b.wg.Wait()
+
+	// wg.Wait orders every write to b before the reads below.
+	if b.markedThrough >= 0 {
+		lastProcessed = p.Records[b.markedThrough]
+	}
+	for i, err := range b.errs {
+		if err == nil {
+			continue
+		}
+		fatalRecord, fatalIsPermanent = p.Records[i], consumererror.IsPermanent(err)
+		pc.logProcessError(fatalRecord, err)
+		// Only a rewind on this pc retries the hole. A pause or a cancelled
+		// partition hands the offsets to a new owner, which must Consume them.
+		if c.config.ErrorBackOff.Enabled && !fatalIsPermanent && pc.ctx.Err() == nil {
+			b.rememberFinished(i + 1)
+		}
+		break
+	}
+	pc.dropSkipConsume(lastProcessed)
+	return fatalRecord, fatalIsPermanent, lastProcessed
 }
 
-func markedOffset(records []*kgo.Record, markedThrough int) int64 {
-	if markedThrough < 0 {
-		return -1
-	}
-	return records[markedThrough].Offset
+// inflightBatch holds the state of one batch in processRecordsConcurrent.
+type inflightBatch struct {
+	c   *franzConsumer
+	pc  *pc
+	p   kgo.FetchTopicPartition
+	sem chan struct{}
+	wg  sync.WaitGroup
+
+	mu sync.Mutex
+	// errs holds failures message marking does not skip. A non-nil entry is a
+	// hole the accepted prefix cannot pass.
+	errs []error
+	done []bool
+	// failed stops new calls once any record leaves a hole.
+	failed bool
+	// markedThrough is the index of the last marked record, or -1.
+	markedThrough int
 }
 
-// dropSkipConsume removes skip entries at or below the marked prefix. The map
-// returns to nil when it is empty so later success batches do not keep a set.
-func (p *pc) dropSkipConsume(through int64) {
+// acquire waits for a free slot. It returns false once a record has failed.
+func (b *inflightBatch) acquire() bool {
+	b.sem <- struct{}{}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.failed {
+		<-b.sem
+		return false
+	}
+	return true
+}
+
+// start runs handleMessage for record i on its own goroutine. The caller must
+// hold a slot from acquire.
+func (b *inflightBatch) start(i int) {
+	b.wg.Go(func() {
+		// Release after complete, so the next acquire sees failed.
+		defer func() { <-b.sem }()
+		msg := b.p.Records[i]
+		err := b.c.handleMessage(b.pc, msg)
+		if err != nil && b.c.shouldMarkOnError(b.pc, err) {
+			b.pc.logProcessError(msg, err)
+			err = nil
+		}
+		b.complete(i, err)
+	})
+}
+
+// complete records that record i finished. A non-nil err is a failure message
+// marking does not skip. It marks the accepted prefix when it advances.
+func (b *inflightBatch) complete(i int, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.errs[i], b.done[i] = err, true
+	if err != nil {
+		b.failed = true
+	}
+	start := b.markedThrough
+	for next := start + 1; next < len(b.done) && b.done[next] && b.errs[next] == nil; next++ {
+		b.markedThrough = next
+	}
+	if b.markedThrough > start {
+		b.c.markCommitRecords(b.pc, b.p.Topic, b.p.Partition, b.p.Records[b.markedThrough])
+	}
+}
+
+// rememberFinished adds the accepted records from index from onward that
+// already finished to pc.skipConsume.
+func (b *inflightBatch) rememberFinished(from int) {
+	for i := from; i < len(b.done); i++ {
+		if !b.done[i] || b.errs[i] != nil {
+			continue
+		}
+		if b.pc.skipConsume == nil {
+			b.pc.skipConsume = make(map[int64]struct{})
+		}
+		b.pc.skipConsume[b.p.Records[i].Offset] = struct{}{}
+	}
+}
+
+// dropSkipConsume removes skip entries at or below the last marked record. The
+// map returns to nil when it is empty so later success batches do not keep a set.
+func (p *pc) dropSkipConsume(marked *kgo.Record) {
 	if p.skipConsume == nil {
 		return
 	}
-	if through >= 0 {
+	if marked != nil {
 		for off := range p.skipConsume {
-			if off <= through {
+			if off <= marked.Offset {
 				delete(p.skipConsume, off)
 			}
 		}
 	}
 	if len(p.skipConsume) == 0 {
 		p.skipConsume = nil
-	}
-}
-
-// rememberSkipConsume records offsets above a rewind hole that this worker
-// already finished, so the next fetch on this pc does not Consume them again.
-func (c *franzConsumer) rememberSkipConsume(pc *pc, records []*kgo.Record, errs []error) {
-	for i, rec := range records {
-		if errs[i] != nil && !c.shouldMarkOnError(pc, errs[i]) {
-			continue
-		}
-		if pc.skipConsume == nil {
-			pc.skipConsume = make(map[int64]struct{}, len(records))
-		}
-		pc.skipConsume[rec.Offset] = struct{}{}
 	}
 }
