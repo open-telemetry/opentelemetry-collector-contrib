@@ -841,9 +841,15 @@ and add this to your workload:
 
 ### OpenShift
 
-Queries the OpenShift and Kubernetes API to retrieve related resource attributes.
+Queries the OpenShift API to retrieve related resource attributes. Detection is delegated to
+[go.opentelemetry.io/contrib/detectors/openshift](https://pkg.go.dev/go.opentelemetry.io/contrib/detectors/openshift).
 
 The list of the populated resource attributes can be found at [OpenShift Detector Resource Attributes](./internal/openshift/documentation.md).
+AWS, Google Cloud and IBM Cloud clusters report `cloud.provider`, `cloud.platform` and `cloud.region`.
+Azure clusters report `cloud.provider` and `cloud.platform` only, as the OpenShift API does not expose the Azure region.
+OpenStack clusters and clusters not running on a cloud provider report no cloud attributes.
+When not running in a cluster, or when the API server does not serve the OpenShift config API, no attributes are reported,
+or detection fails if `fail_on_missing_metadata` is enabled.
 
 The following permissions are required:
 ```yaml
@@ -852,8 +858,9 @@ metadata:
   name: otel-collector
 rules:
 - apiGroups: ["config.openshift.io"]
-  resources: ["infrastructures", "infrastructures/status"]
-  verbs: ["get", "watch", "list"]
+  resources: ["infrastructures/status"]
+  resourceNames: ["cluster"]
+  verbs: ["get"]
 ```
 
 By default, the API address is determined from the environment variables `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVICE_PORT` and the service token is read from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
