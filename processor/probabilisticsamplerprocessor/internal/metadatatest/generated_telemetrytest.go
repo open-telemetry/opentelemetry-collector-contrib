@@ -37,9 +37,9 @@ func AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t *testing.T, tt *
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorProbabilisticSamplerCountSpansProcessedTotal(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorProbabilisticSamplerCountSpansProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_probabilistic_sampler_count_spans_processed_total",
+		Name:        "otelcol_processor_probabilistic_sampler_count_spans_processed",
 		Description: "Count of spans that were sampled or not [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
@@ -48,7 +48,7 @@ func AssertEqualProcessorProbabilisticSamplerCountSpansProcessedTotal(t *testing
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_probabilistic_sampler_count_spans_processed_total")
+	got, err := tt.GetMetric("otelcol_processor_probabilistic_sampler_count_spans_processed")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
