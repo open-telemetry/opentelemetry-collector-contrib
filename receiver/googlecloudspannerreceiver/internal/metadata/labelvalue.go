@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"cloud.google.com/go/spanner"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -285,6 +286,12 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 			var valueHolder []*lockRequest
 			return &valueHolder
 		}
+	case DateValueType:
+		newLabelValueFunc = newDateLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder spanner.NullDate
+			return &valueHolder
+		}
 	default:
 		return nil, fmt.Errorf("invalid value type received for label %q", name)
 	}
@@ -296,4 +303,39 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		newLabelValueFunc: newLabelValueFunc,
 		valueHolderFunc:   valueHolderFunc,
 	}, nil
+}
+
+type dateLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+func (v dateLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v dateLabelValue) Value() any {
+	return v.value
+}
+
+func (v dateLabelValue) SetValueTo(attributes pcommon.Map) {
+	if v.value != "" {
+		attributes.PutStr(v.metadata.Name(), v.value)
+	}
+}
+
+func (v *dateLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func newDateLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullDate := *valueHolder.(*spanner.NullDate)
+	var val string
+	if nullDate.Valid {
+		val = nullDate.Date.String()
+	}
+	return dateLabelValue{
+		metadata: metadata,
+		value:    val,
+	}
 }
