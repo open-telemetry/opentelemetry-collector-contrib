@@ -24,22 +24,23 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                                      metric.Meter
-	mu                                                         sync.Mutex
-	registrations                                              []metric.Registration
-	ProcessorAdaptiveTailSamplingDecisionSampleRate            metric.Int64Histogram
-	ProcessorAdaptiveTailSamplingDecisionTriggers              metric.Int64Counter
-	ProcessorAdaptiveTailSamplingFingerprintDuration           metric.Int64Histogram
-	ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable metric.Int64Counter
-	ProcessorAdaptiveTailSamplingOttlEvalErrors                metric.Int64Counter
-	ProcessorAdaptiveTailSamplingSamplerBurstCount             metric.Int64ObservableCounter
-	ProcessorAdaptiveTailSamplingSamplerKeyspaceSize           metric.Int64ObservableGauge
-	ProcessorAdaptiveTailSamplingSamplerRequestCount           metric.Int64ObservableCounter
-	ProcessorAdaptiveTailSamplingTraceSpanCount                metric.Int64Histogram
-	ProcessorAdaptiveTailSamplingTracesActive                  metric.Int64Gauge
-	ProcessorAdaptiveTailSamplingTracesDropped                 metric.Int64Counter
-	ProcessorAdaptiveTailSamplingTracesEvicted                 metric.Int64Counter
-	ProcessorAdaptiveTailSamplingTracesSampled                 metric.Int64Counter
+	meter                                                         metric.Meter
+	mu                                                            sync.Mutex
+	registrations                                                 []metric.Registration
+	ProcessorAdaptiveTailSamplingDecisionSampleRate               metric.Int64Histogram
+	ProcessorAdaptiveTailSamplingDecisionTriggers                 metric.Int64Counter
+	ProcessorAdaptiveTailSamplingFingerprintDuration              metric.Int64Histogram
+	ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable    metric.Int64Counter
+	ProcessorAdaptiveTailSamplingOttlEvalErrors                   metric.Int64Counter
+	ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches metric.Int64Histogram
+	ProcessorAdaptiveTailSamplingSamplerBurstCount                metric.Int64ObservableCounter
+	ProcessorAdaptiveTailSamplingSamplerKeyspaceSize              metric.Int64ObservableGauge
+	ProcessorAdaptiveTailSamplingSamplerRequestCount              metric.Int64ObservableCounter
+	ProcessorAdaptiveTailSamplingTraceSpanCount                   metric.Int64Histogram
+	ProcessorAdaptiveTailSamplingTracesActive                     metric.Int64Gauge
+	ProcessorAdaptiveTailSamplingTracesDropped                    metric.Int64Counter
+	ProcessorAdaptiveTailSamplingTracesEvicted                    metric.Int64Counter
+	ProcessorAdaptiveTailSamplingTracesSampled                    metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -154,6 +155,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_adaptive_tail_sampling_ottl_eval_errors",
 		metric.WithDescription("Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition). [Development]"),
 		metric.WithUnit("{errors}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches, err = builder.meter.Int64Histogram(
+		"otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches",
+		metric.WithDescription("Distribution of root span condition matches for traces where the condition matched at least once. [Development]"),
+		metric.WithUnit("{matches}"),
+		metric.WithExplicitBucketBoundaries([]float64{2, 3, 5, 10, 25, 100}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerBurstCount, err = builder.meter.Int64ObservableCounter(

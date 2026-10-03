@@ -46,6 +46,14 @@ Number of OTTL condition evaluation errors, labelled by the rule the condition b
 | ---- | ----------- | ---------- | --------- | --------- |
 | {errors} | Sum | Int | true | Development |
 
+### otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches
+
+Distribution of root span condition matches for traces where the condition matched at least once.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {matches} | Histogram | Int | Development |
+
 ### otelcol_processor_adaptive_tail_sampling_sampler_burst_count
 
 Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter.
