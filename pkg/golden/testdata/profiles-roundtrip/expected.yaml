@@ -7,13 +7,13 @@ dictionary:
     - keyStrindex: 1
       value:
         stringValue: value-2
-    - keyStrindex: 4
+    - keyStrindex: 6
       value:
         stringValue: 600DCAFE4A110000F2BF38C493F5FB92
-    - keyStrindex: 5
+    - keyStrindex: 7
       value:
         stringValue: native
-    - keyStrindex: 6
+    - keyStrindex: 8
       value:
         stringValue: localhost
   functionTable:
@@ -25,14 +25,15 @@ dictionary:
     - address: "111"
       attributeIndices:
         - 1
+      mappingIndex: 1
   mappingTable:
     - {}
     - attributeIndices:
-        - 0
+        - 4
   stackTable:
     - {}
     - locationIndices:
-        - 0
+        - 1
   stringTable:
     - ""
     - key
@@ -59,10 +60,11 @@ resourceProfiles:
           - attributeIndices:
               - 2
             periodType:
+              typeStrindex: 4
+              unitStrindex: 5
+            sampleType:
               typeStrindex: 2
               unitStrindex: 3
-            sampleType:
-              unitStrindex: 1
             samples:
               - timestampsUnixNano:
                   - "0"
