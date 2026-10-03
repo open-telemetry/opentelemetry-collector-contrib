@@ -185,7 +185,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					"traces sampler",
 					tp.logger,
 					tp.telemetryBuilder.ProcessorProbabilisticSamplerCountTracesSampled,
-					tp.telemetryBuilder.ProcessorProbabilisticSamplerCountSpansProcessedTotal,
+					tp.telemetryBuilder.ProcessorProbabilisticSamplerCountSpansProcessed,
 				)
 			})
 			// Filter out empty ScopeMetrics
