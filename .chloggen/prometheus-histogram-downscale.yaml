@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: exporter/prometheus
+note: Fix double-counting of buckets when downscaling delta exponential histograms.
+issues: [51705]
