@@ -18,11 +18,8 @@ data:
         detectors: [openshift]
         timeout: 2s
         override: false
-        openshift:
-          address: "http://localhost:8443"
-          token: "test-token"
-          tls:
-            insecure: true
+        # No openshift overrides: address, token and CA come from the
+        # in-cluster service account defaults.
     receivers:
       hostmetrics:
         collection_interval: 1s

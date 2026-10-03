@@ -5,6 +5,7 @@ package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"os"
 	"runtime"
 	"testing"
 	"time"
@@ -14,7 +15,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+// HostEndpoint returns the address pods use to reach the test process.
+// HOST_ENDPOINT overrides it for clusters outside the kind network (e.g. MicroShift).
 func HostEndpoint(t *testing.T) string {
+	if h := os.Getenv("HOST_ENDPOINT"); h != "" {
+		return h
+	}
 	if runtime.GOOS == "darwin" {
 		return "host.docker.internal"
 	}
