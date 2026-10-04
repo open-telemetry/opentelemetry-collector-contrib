@@ -8,6 +8,13 @@ $defs:
         type: array
         items:
           type: string
+  max_in_flight_config:
+    description: 'MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one partition worker. TODO: add Bytes to cap the fetched payload size of those calls.'
+    type: object
+    properties:
+      records:
+        description: Records is how many calls may run at once. Default 1.
+        type: integer
   message_marking:
     type: object
     properties:
@@ -38,14 +45,14 @@ $defs:
     type: object
     properties:
       independent:
-        description: Independent enables independent partition workers. Records stay ordered within a partition unless MaxInFlight is above 1.
+        description: Independent enables independent partition workers. Records stay ordered within a partition unless MaxInFlight.Records is above 1.
         type: boolean
       max_buffered_batches:
         description: MaxBufferedBatches bounds the number of fetched batches waiting for each partition worker.
         type: integer
       max_in_flight:
-        description: MaxInFlight limits concurrent unmarshal-plus-Consume calls for each independent partition worker. Default 1.
-        type: integer
+        description: MaxInFlight limits concurrent unmarshal-plus-Consume calls for each independent partition worker.
+        $ref: max_in_flight_config
   telemetry_config:
     type: object
     properties:

@@ -363,7 +363,7 @@ func (c *franzConsumer) markCommitRecords(pc *pc, topic string, partition int32,
 // at once. Only independent workers go above 1.
 func (c *franzConsumer) maxInFlight() int {
 	if c.config.PartitionProcessing.Independent {
-		return c.config.PartitionProcessing.MaxInFlight
+		return c.config.PartitionProcessing.MaxInFlight.Records
 	}
 	return 1
 }

@@ -687,7 +687,7 @@ func newIndependentConsumer(
 ) (*franzConsumer, *kgo.Client, *pc) {
 	kafkaClient, cfg := mustNewMarkedFakeCluster(tb, kfake.SeedTopics(1, topic))
 	cfg.PartitionProcessing.Independent = true
-	cfg.PartitionProcessing.MaxInFlight = maxInFlight
+	cfg.PartitionProcessing.MaxInFlight.Records = maxInFlight
 	cfg.MessageMarking = marking
 	cfg.MessageMarking.OnPermanentError = marking.OnError
 	if backoff {

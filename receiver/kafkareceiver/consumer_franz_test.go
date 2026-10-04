@@ -513,7 +513,7 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 	cfg.PartitionProcessing = PartitionProcessing{
 		Independent:        true,
 		MaxBufferedBatches: 1,
-		MaxInFlight:        1,
+		MaxInFlight:        MaxInFlightConfig{Records: 1},
 	}
 	if configure != nil {
 		configure(cfg)
@@ -646,7 +646,7 @@ func newStaleWorkerConsumer(t *testing.T, kafkaClient *kgo.Client, cfg *Config, 
 	cfg.PartitionProcessing = PartitionProcessing{
 		Independent:        true,
 		MaxBufferedBatches: 2,
-		MaxInFlight:        1,
+		MaxInFlight:        MaxInFlightConfig{Records: 1},
 	}
 	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
 	cfg.MessageMarking.After = true
@@ -1145,7 +1145,7 @@ func TestLostDiscardsQueuedBatches(t *testing.T) {
 	cfg.PartitionProcessing = PartitionProcessing{
 		Independent:        true,
 		MaxBufferedBatches: 2,
-		MaxInFlight:        1,
+		MaxInFlight:        MaxInFlightConfig{Records: 1},
 	}
 	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
 

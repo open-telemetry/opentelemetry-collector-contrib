@@ -172,7 +172,7 @@ func TestLoadConfig(t *testing.T) {
 				cfg.PartitionProcessing = PartitionProcessing{
 					Independent:        true,
 					MaxBufferedBatches: 2,
-					MaxInFlight:        1,
+					MaxInFlight:        MaxInFlightConfig{Records: 1},
 				}
 				return cfg
 			}(),
@@ -226,13 +226,13 @@ func TestLoadConfig(t *testing.T) {
 			expected: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.PartitionProcessing.Independent = true
-				cfg.PartitionProcessing.MaxInFlight = 4
+				cfg.PartitionProcessing.MaxInFlight.Records = 4
 				return cfg
 			}(),
 		},
 		{
 			name:        "kafka/invalid_partition_processing_zero_max_in_flight",
-			expectedErr: "partition_processing.max_in_flight must be greater than zero",
+			expectedErr: "partition_processing.max_in_flight.records must be greater than zero",
 		},
 	}
 
