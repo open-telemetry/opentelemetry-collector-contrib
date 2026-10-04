@@ -9,8 +9,8 @@ status:
     beta: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [hanjm, Frapschen, SpencerTorres]
-    emeritus: [dmitryax]
+    active: [Frapschen, SpencerTorres]
+    emeritus: [dmitryax, hanjm]
 
 tests:
   config:
