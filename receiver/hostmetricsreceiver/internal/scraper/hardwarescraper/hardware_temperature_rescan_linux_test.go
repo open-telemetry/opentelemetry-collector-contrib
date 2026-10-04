@@ -40,10 +40,9 @@ func TestRescan_SensorAppearsAndDisappearsBetweenScrapes(t *testing.T) {
 	s := &hardwareTemperatureScraper{
 		logger:               zap.NewNop(),
 		config:               &TemperatureConfig{},
-		hwmonPath:            base,
 		metricsBuilderConfig: cfg,
 	}
-	require.NoError(t, s.start(t.Context()))
+	require.NoError(t, s.start(contextWithHwmon(t, base)))
 
 	assert.Equal(t, 1, scrapeCount(t, s, cfg), "the sensor present at start is reported")
 
@@ -66,10 +65,9 @@ func TestRescan_HwmonPathAppearsAfterStart(t *testing.T) {
 	s := &hardwareTemperatureScraper{
 		logger:               zap.NewNop(),
 		config:               &TemperatureConfig{},
-		hwmonPath:            hwmonPath,
 		metricsBuilderConfig: cfg,
 	}
-	require.NoError(t, s.start(t.Context()))
+	require.NoError(t, s.start(contextWithHwmon(t, hwmonPath)))
 
 	assert.Equal(t, 0, scrapeCount(t, s, cfg), "no hwmon path means no metrics and no error")
 

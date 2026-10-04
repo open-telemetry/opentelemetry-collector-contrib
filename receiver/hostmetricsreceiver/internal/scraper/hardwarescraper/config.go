@@ -8,15 +8,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
-const defaultHwmonPath = "/sys/class/hwmon"
-
 // Config relating to Hardware Sensor Metric Scraper.
 type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-
-	// HwmonPath specifies the path to hwmon directory
-	// Default: /sys/class/hwmon
-	HwmonPath string `mapstructure:"hwmon_path"`
 
 	// Temperature specifies temperature sensor configuration
 	Temperature *TemperatureConfig `mapstructure:"temperature"`

@@ -17,7 +17,6 @@ import (
 type hardwareTemperatureScraper struct {
 	logger               *zap.Logger
 	config               *TemperatureConfig
-	hwmonPath            string
 	metricsBuilderConfig metadata.MetricsBuilderConfig
 }
 

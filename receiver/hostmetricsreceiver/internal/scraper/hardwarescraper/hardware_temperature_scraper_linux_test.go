@@ -6,16 +6,19 @@
 package hardwarescraper
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
@@ -85,11 +88,10 @@ func TestHardwareTemperatureScraperStart_Linux(t *testing.T) {
 			scraper := &hardwareTemperatureScraper{
 				logger:               zap.NewNop(),
 				config:               test.config,
-				hwmonPath:            test.hwmonPath,
 				metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			}
 
-			err := scraper.start(t.Context())
+			err := scraper.start(contextWithHwmon(t, test.hwmonPath))
 			if test.expectedErr != "" {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), test.expectedErr)
@@ -198,11 +200,10 @@ func TestHardwareTemperatureScraperScrape_Linux(t *testing.T) {
 			scraper := &hardwareTemperatureScraper{
 				logger:               zap.NewNop(),
 				config:               test.config,
-				hwmonPath:            hwmonPath,
 				metricsBuilderConfig: test.metricsConfig,
 			}
 
-			err := scraper.start(t.Context())
+			err := scraper.start(contextWithHwmon(t, hwmonPath))
 			require.NoError(t, err)
 
 			mb := metadata.NewMetricsBuilder(test.metricsConfig, scrapertest.NewNopSettings(metadata.Type))
@@ -284,6 +285,65 @@ func TestDeviceKey(t *testing.T) {
 
 		assert.Equal(t, "hwmon0", deviceKey(hwmonDir))
 	})
+}
+
+// contextWithHwmon exposes a flat sensor fixture through a sysfs root so tests
+// exercise the same path resolution as the receiver instead of setting private state.
+func contextWithHwmon(t *testing.T, hwmonPath string) context.Context {
+	t.Helper()
+	sysPath := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(sysPath, "class"), 0o755))
+	require.NoError(t, os.Symlink(hwmonPath, filepath.Join(sysPath, "class", "hwmon")))
+	return context.WithValue(t.Context(), common.EnvKey, common.EnvMap{common.HostSysEnvKey: sysPath})
+}
+
+func TestHardwareSysfsRoot(t *testing.T) {
+	for _, override := range []bool{false, true} {
+		name := "root_path"
+		if override {
+			name = "HOST_SYS overrides root_path"
+		}
+		t.Run(name, func(t *testing.T) {
+			t.Setenv(string(common.HostSysEnvKey), "")
+			require.NoError(t, os.Unsetenv(string(common.HostSysEnvKey)))
+			rootPath := createTestRootPathWithHwmon(t)
+			expectedTemperature := 45.0
+			if override {
+				sysPath := t.TempDir()
+				writeSensor(t, filepath.Join(sysPath, "class", "hwmon"), "hwmon0", "coretemp", "temp1", "87000", "temp1", "", "95000")
+				t.Setenv(string(common.HostSysEnvKey), sysPath)
+				expectedTemperature = 87.0
+			}
+
+			ctx := context.WithValue(t.Context(), common.EnvKey, gopsutilenv.SetGoPsutilEnvVars(rootPath))
+			cfg := createDefaultConfig().(*Config)
+			cfg.Metrics.HwTemperatureLimit.Enabled = true
+			s := newHardwareScraper(ctx, scrapertest.NewNopSettings(metadata.Type), cfg)
+			require.NoError(t, s.start(ctx, nil))
+			metrics, err := s.scrape(ctx)
+			require.NoError(t, err)
+			_, temperatures := collect(t, metrics, "hw.temperature")
+			require.Len(t, temperatures, 1)
+			assert.InDelta(t, expectedTemperature, temperatures[0].val, 0.001)
+			assert.Equal(t, "coretemp", temperatures[0].attr["hw.name"])
+			assert.Equal(t, "temp1", temperatures[0].attr["hw.sensor_location"])
+			_, limits := collect(t, metrics, "hw.temperature.limit")
+			require.Len(t, limits, 1)
+			expectedLimit := 100.0
+			if override {
+				expectedLimit = 95.0
+			}
+			assert.InDelta(t, expectedLimit, limits[0].val, 0.001)
+			assert.Equal(t, "high.degraded", limits[0].attr["hw.limit_type"])
+		})
+	}
+}
+
+func TestHardwareDefaultSysfsPath(t *testing.T) {
+	t.Setenv(string(common.HostSysEnvKey), "")
+	s := &hardwareTemperatureScraper{config: &TemperatureConfig{}}
+	require.NoError(t, s.start(t.Context()))
+	assert.Equal(t, "/sys/class/hwmon", s.hwmonPath)
 }
 
 // createTestHwmonDir creates a basic hwmon directory structure

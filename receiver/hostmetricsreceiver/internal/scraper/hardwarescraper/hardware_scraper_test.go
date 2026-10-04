@@ -36,37 +36,22 @@ func TestScrape(t *testing.T) {
 	}
 
 	rootPath := createTestRootPathWithHwmon(t)
+	t.Setenv(string(common.HostSysEnvKey), "")
+	require.NoError(t, os.Unsetenv(string(common.HostSysEnvKey)))
 	rootPathCtx := context.WithValue(t.Context(), common.EnvKey, gopsutilenv.SetGoPsutilEnvVars(rootPath))
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.HwmonPath = createTestHwmonData(t)
 
 	testCases := []testCase{
 		{
 			name:                "Default without sensor filter",
 			config:              defaultConfig,
-			ctx:                 t.Context(),
-			expectedMetricCount: 1,
-		},
-		{
-			name: "Standard",
-			config: &Config{
-				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-				HwmonPath:            createTestHwmonData(t),
-				Temperature: &TemperatureConfig{
-					Include: MatchConfig{
-						Config:  filterset.Config{MatchType: filterset.Regexp},
-						Sensors: []string{".*"},
-					},
-				},
-			},
-			ctx:                 t.Context(),
+			ctx:                 rootPathCtx,
 			expectedMetricCount: 1,
 		},
 		{
 			name: "Standard with root path",
 			config: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-				HwmonPath:            defaultHwmonPath,
 				Temperature: &TemperatureConfig{
 					Include: MatchConfig{
 						Config:  filterset.Config{MatchType: filterset.Regexp},
@@ -81,7 +66,6 @@ func TestScrape(t *testing.T) {
 			name: "No hwmon path",
 			config: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-				HwmonPath:            "/nonexistent/path",
 				Temperature: &TemperatureConfig{
 					Include: MatchConfig{
 						Config:  filterset.Config{MatchType: filterset.Regexp},
@@ -89,17 +73,16 @@ func TestScrape(t *testing.T) {
 					},
 				},
 			},
-			ctx:                 t.Context(),
+			ctx:                 context.WithValue(t.Context(), common.EnvKey, gopsutilenv.SetGoPsutilEnvVars(t.TempDir())),
 			expectedMetricCount: 0,
 		},
 		{
 			name: "No temperature config",
 			config: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-				HwmonPath:            createTestHwmonData(t),
 				Temperature:          nil,
 			},
-			ctx:                 t.Context(),
+			ctx:                 rootPathCtx,
 			expectedMetricCount: 0,
 		},
 	}
@@ -131,7 +114,6 @@ func TestScrapeOnNonLinux(t *testing.T) {
 
 	config := &Config{
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-		HwmonPath:            "/sys/class/hwmon",
 		Temperature: &TemperatureConfig{
 			Include: MatchConfig{
 				Sensors: []string{".*"},

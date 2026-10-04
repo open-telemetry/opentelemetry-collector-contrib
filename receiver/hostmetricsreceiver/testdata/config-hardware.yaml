@@ -1,0 +1,13 @@
+hostmetrics:
+  root_path: /hostfs
+  scrapers:
+    hardware:
+      temperature:
+        include:
+          match_type: regexp
+          sensors: ["Core.*"]
+
+hostmetrics/removed-path:
+  scrapers:
+    hardware:
+      hwmon_path: /custom/hwmon

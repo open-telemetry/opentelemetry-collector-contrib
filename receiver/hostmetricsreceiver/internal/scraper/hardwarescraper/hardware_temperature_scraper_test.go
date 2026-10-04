@@ -19,7 +19,6 @@ func TestHardwareTemperatureScraperStart(t *testing.T) {
 	scraper := &hardwareTemperatureScraper{
 		logger:               zap.NewNop(),
 		config:               &TemperatureConfig{},
-		hwmonPath:            "/sys/class/hwmon",
 		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 
@@ -32,7 +31,6 @@ func TestHardwareTemperatureScraperScrape(t *testing.T) {
 	scraper := &hardwareTemperatureScraper{
 		logger:               zap.NewNop(),
 		config:               &TemperatureConfig{},
-		hwmonPath:            "/sys/class/hwmon",
 		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 

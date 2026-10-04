@@ -149,7 +149,6 @@ The following settings are optional:
 
 ```yaml
 hardware:
-  hwmon_path: <string>
   temperature:
     <include|exclude>:
       sensors: [ <sensor pattern>, ... ]
@@ -157,7 +156,7 @@ hardware:
 ```
 
 The following settings are optional:
-- `hwmon_path` (default: "/sys/class/hwmon"): path to hwmon directory for reading hardware sensors (Linux only)
+
 - `temperature.include.sensors` (unset by default): when unset, all sensors are included
 
 The hardwarescraper currently supports the following sub-scrapers:
@@ -167,7 +166,9 @@ The hardwarescraper currently supports the following sub-scrapers:
 
 **Note**: Hardware scraping is currently only supported on Linux systems that expose hardware sensors through the sysfs hwmon interface. Only temperature monitoring is implemented at this time.
 
-When collecting host hardware metrics from a container, mount the host's `/sys` tree under `root_path` (for example, `/hostfs/sys`). Entries in `/sys/class/hwmon` can be relative symlinks into `/sys/devices`; mounting only `/sys/class/hwmon` leaves their targets unavailable and may result in no sensor metrics. A non-default `hwmon_path` overrides the path derived from `root_path`.
+Hardware sensors are discovered in `/sys/class/hwmon`, respecting the receiver's `root_path` and existing `HOST_SYS` environment override. There is no separate scraper-level path setting.
+
+When collecting host hardware metrics from a container, mount the host's `/sys` tree under `root_path` (for example, `/hostfs/sys`). Entries in `/sys/class/hwmon` can be relative symlinks into `/sys/devices`; mounting only `/sys/class/hwmon` leaves their targets unavailable and may result in no sensor metrics.
 
 Known limitations, both of which come from the hwmon interface itself:
 

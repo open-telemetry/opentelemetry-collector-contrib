@@ -56,10 +56,9 @@ func scrapeFixture(t *testing.T, hwmonPath string, withLimits bool) pmetric.Metr
 	s := &hardwareTemperatureScraper{
 		logger:               zap.NewNop(),
 		config:               &TemperatureConfig{},
-		hwmonPath:            hwmonPath,
 		metricsBuilderConfig: cfg,
 	}
-	require.NoError(t, s.start(t.Context()))
+	require.NoError(t, s.start(contextWithHwmon(t, hwmonPath)))
 
 	mb := metadata.NewMetricsBuilder(cfg, scrapertest.NewNopSettings(metadata.Type))
 	require.NoError(t, s.scrape(t.Context(), mb))

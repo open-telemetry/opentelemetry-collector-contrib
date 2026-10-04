@@ -34,7 +34,6 @@ func newHardwareScraper(_ context.Context, settings scraper.Settings, cfg *Confi
 		tempScraper = &hardwareTemperatureScraper{
 			logger:               settings.Logger,
 			config:               cfg.Temperature,
-			hwmonPath:            cfg.HwmonPath,
 			metricsBuilderConfig: cfg.MetricsBuilderConfig,
 		}
 	}
@@ -65,8 +64,7 @@ func (s *hardwareScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			s.logger.Debug("Temperature scraper returned error", zap.Error(err))
 			// Preserve the sub-scraper's failure count instead of replacing it with
 			// a constant in the wrapper.
-			var partialErr scrapererror.PartialScrapeError
-			if errors.As(err, &partialErr) {
+			if partialErr, ok := errors.AsType[scrapererror.PartialScrapeError](err); ok {
 				errs.AddPartial(partialErr.Failed, err)
 			} else {
 				errs.Add(err)

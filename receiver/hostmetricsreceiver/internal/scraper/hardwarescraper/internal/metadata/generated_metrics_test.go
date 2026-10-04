@@ -73,12 +73,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordHwTemperatureDataPoint(ts, 1, "hw.id-val", "hw.name-val", "hw.parent-val", "hw.sensor_location-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHwTemperatureDataPoint(ts, 3, "hw.id-val-2", "hw.name-val-2", "hw.parent-val-2", "hw.sensor_location-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHwTemperatureDataPoint(ts+1, 3, "hw.id-val-2", "hw.name-val-2", "hw.parent-val-2", "hw.sensor_location-val-2")
+				assert.Equal(t, 2, mb.metricHwTemperature.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordHwTemperatureLimitDataPoint(ts, 1, "hw.id-val", AttributeHwLimitTypeHighCritical, "hw.name-val", "hw.parent-val", "hw.sensor_location-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordHwTemperatureLimitDataPoint(ts, 3, "hw.id-val-2", AttributeHwLimitTypeHighDegraded, "hw.name-val-2", "hw.parent-val-2", "hw.sensor_location-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHwTemperatureLimitDataPoint(ts+1, 3, "hw.id-val-2", AttributeHwLimitTypeHighDegraded, "hw.name-val-2", "hw.parent-val-2", "hw.sensor_location-val-2")
+				assert.Equal(t, 2, mb.metricHwTemperatureLimit.data.Gauge().DataPoints().Len())
 			}
 
 			res := pcommon.NewResource()
@@ -142,7 +148,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["hw.temperature"], "Found a duplicate in the metrics slice: hw.temperature")
 						validatedMetrics["hw.temperature"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Temperature in degrees Celsius.", mi.Description())
 						assert.Equal(t, "Cel", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -200,7 +208,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["hw.temperature.limit"], "Found a duplicate in the metrics slice: hw.temperature.limit")
 						validatedMetrics["hw.temperature.limit"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Temperature limit in degrees Celsius.", mi.Description())
 						assert.Equal(t, "Cel", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

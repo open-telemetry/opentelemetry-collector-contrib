@@ -40,9 +40,7 @@ type hardwareTemperatureScraper struct {
 func (s *hardwareTemperatureScraper) start(ctx context.Context) error {
 	var err error
 
-	if s.hwmonPath == "" || s.hwmonPath == defaultHwmonPath {
-		s.hwmonPath = gopsutilenv.GetEnvWithContext(ctx, string(common.HostSysEnvKey), "/sys", "class", "hwmon")
-	}
+	s.hwmonPath = gopsutilenv.GetEnvWithContext(ctx, string(common.HostSysEnvKey), "/sys", "class", "hwmon")
 
 	if len(s.config.Include.Sensors) > 0 {
 		s.includeFilter, err = filterset.CreateFilterSet(s.config.Include.Sensors, &s.config.Include.Config)

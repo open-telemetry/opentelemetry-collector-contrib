@@ -30,10 +30,9 @@ func TestPartialError_CountsEveryFailedSensor(t *testing.T) {
 
 	s := newHardwareScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
 		MetricsBuilderConfig: cfg,
-		HwmonPath:            base,
 		Temperature:          &TemperatureConfig{},
 	})
-	require.NoError(t, s.start(t.Context(), nil))
+	require.NoError(t, s.start(contextWithHwmon(t, base), nil))
 
 	m, err := s.scrape(t.Context())
 	require.Error(t, err)
@@ -58,10 +57,9 @@ func TestPartialError_PreservesLimitsWhenTemperatureInputFails(t *testing.T) {
 
 	s := newHardwareScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
 		MetricsBuilderConfig: cfg,
-		HwmonPath:            base,
 		Temperature:          &TemperatureConfig{},
 	})
-	require.NoError(t, s.start(t.Context(), nil))
+	require.NoError(t, s.start(contextWithHwmon(t, base), nil))
 
 	m, err := s.scrape(t.Context())
 	var partialErr scrapererror.PartialScrapeError
@@ -90,10 +88,9 @@ func TestPartialError_LimitOnlyDoesNotReadTemperatureInput(t *testing.T) {
 
 	s := newHardwareScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
 		MetricsBuilderConfig: cfg,
-		HwmonPath:            base,
 		Temperature:          &TemperatureConfig{},
 	})
-	require.NoError(t, s.start(t.Context(), nil))
+	require.NoError(t, s.start(contextWithHwmon(t, base), nil))
 
 	m, err := s.scrape(t.Context())
 	require.NoError(t, err)
