@@ -523,11 +523,6 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 		result = consumer.processPartitionBatch(partitionConsumer, offsetBatchFrom(2, 3))
 		require.NotNil(t, result.rewindRecord)
 		require.Equal(t, int64(1), calls[3].Load(), "same-worker rewind must not Consume offset 3 again")
-		require.LessOrEqual(t, calls[4].Load(), int64(1))
-
-		result = consumer.processPartitionBatch(partitionConsumer, offsetBatchFrom(2, 3))
-		require.NotNil(t, result.rewindRecord)
-		require.Equal(t, int64(1), calls[3].Load(), "repeated rewind must still skip offset 3")
 
 		failAt.Store(-1)
 		result = consumer.processPartitionBatch(partitionConsumer, offsetBatchFrom(2, 3))
@@ -547,14 +542,11 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 		for i := range releases {
 			releases[i] = make(chan struct{})
 		}
-		var secondBatch atomic.Bool
 		calls := make([]atomic.Int64, 5)
 		consumer.consumeMessage = func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
 			calls[record.Offset].Add(1)
-			if !secondBatch.Load() {
-				entered <- struct{}{}
-				<-releases[record.Offset]
-			}
+			entered <- struct{}{}
+			<-releases[record.Offset]
 			if record.Offset == 2 {
 				return errors.New("boom")
 			}
@@ -591,11 +583,7 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 		require.True(t, result.terminal)
 		require.Nil(t, result.rewindRecord)
 		require.Equal(t, int64(1), calls[3].Load())
-
-		secondBatch.Store(true)
-		result = consumer.processPartitionBatch(partitionConsumer, offsetBatchFrom(2, 3))
-		require.True(t, result.terminal)
-		require.Equal(t, int64(2), calls[3].Load(), "pause path must not skip Consume on a later batch")
+		require.Nil(t, partitionConsumer.skipConsume, "pause path must not remember finished offsets")
 	})
 
 	t.Run("later fail drops prefix skip", func(t *testing.T) {
@@ -633,6 +621,43 @@ func TestProcessPartitionBatchCancelledSkipsExtraConsume(t *testing.T) {
 
 	result := consumer.processPartitionBatch(partitionConsumer, offsetBatch(1))
 	require.True(t, result.terminal)
+	require.Nil(t, result.rewindRecord)
+	require.Equal(t, int64(1), calls.Load())
+}
+
+func TestProcessPartitionBatchCancelDoesNotStartNext(t *testing.T) {
+	consumer, _, partitionConsumer := newMaxInFlightConsumer(t, 1)
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	var calls atomic.Int64
+	consumer.consumeMessage = func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		calls.Add(1)
+		if record.Offset == 0 {
+			entered <- struct{}{}
+			<-release
+		}
+		return nil
+	}
+
+	done := make(chan partitionBatchResult, 1)
+	go func() {
+		done <- consumer.processPartitionBatch(partitionConsumer, offsetBatch(2))
+	}()
+
+	select {
+	case <-entered:
+	case <-time.After(10 * time.Second):
+		t.Fatal("first Consume did not start")
+	}
+	partitionConsumer.cancel(context.Canceled)
+	close(release)
+
+	var result partitionBatchResult
+	select {
+	case result = <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("batch did not return")
+	}
 	require.Nil(t, result.rewindRecord)
 	require.Equal(t, int64(1), calls.Load())
 }

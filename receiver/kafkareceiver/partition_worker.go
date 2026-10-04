@@ -441,12 +441,14 @@ type inflightBatch struct {
 	markedThrough int
 }
 
-// acquire waits for a free slot. It returns false once a record has failed.
+// acquire waits for a free slot. It returns false when a record has failed or
+// the partition context is done, so a revoked partition does not start another
+// Consume after this wait.
 func (b *inflightBatch) acquire() bool {
 	b.sem <- struct{}{}
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.failed {
+	if b.failed || b.pc.ctx.Err() != nil {
 		<-b.sem
 		return false
 	}
