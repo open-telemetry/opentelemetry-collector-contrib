@@ -342,11 +342,6 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			expectedValue: "Table(1309098117,145129574)",
 		},
 		{
-			name:          "trailing plus",
-			originalValue: "Users(3+)",
-			expectedValue: "Users(1309098117+)",
-		},
-		{
 			name:          "escaped quotes",
 			originalValue: "Table(\"O\\\"Connor\")",
 			expectedValue: "Table(1624458470)",
@@ -361,15 +356,31 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			originalValue: "Table()",
 			expectedValue: "Table()",
 		},
-		
-		
+		{
+			name:          "single quoted uuid",
+			originalValue: "INDEX Order ('5b8bac71-0cb2-95e9-e1b0-89a027525460')",
+			expectedValue: "INDEX Order (1576611093)",
+		},
+		{
+			name:          "multi index with single quotes and escaped comma",
+			originalValue: "INDEX IndexABC (0, '2020-06-18T17:24:53Z', '2020-06-18T17:24:53Z') TableKey (123,'ab\\,c')",
+			expectedValue: "INDEX IndexABC (1609362278,1478541813,1478541813) TableKey (2791679065,4005005524)",
+		},
+		{
+			name:          "verbose index key with begin",
+			originalValue: "Index: T_IDX on T, Index Key: (10), Primary Table Key: (<begin>,<begin>)",
+			expectedValue: "Index: T_IDX on T, Index Key: (1246026773), Primary Table Key: (<begin>,<begin>)",
+		},
+		{
+			name:          "index with NULL values",
+			originalValue: "INDEX IndexXYZ ('8762203435012030000',NULL,NULL)",
+			expectedValue: "INDEX IndexXYZ (3755976169,NULL,NULL)",
+		},
 		{
 			name:          "emoji unicode",
-			originalValue: "UsersTable(bob😊)",
-			expectedValue: "UsersTable(2856295094)",
+			originalValue: "UsersTable('bob😊')",
+			expectedValue: "UsersTable(1331076972)",
 		},
-		
-		
 		{
 			name:          "date of birth with hyphens",
 			originalValue: "UsersTable(\"1990-01-01\")",

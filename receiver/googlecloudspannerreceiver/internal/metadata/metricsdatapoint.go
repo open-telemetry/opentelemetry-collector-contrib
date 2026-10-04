@@ -195,25 +195,16 @@ func parseAndHashSplitStatsKey(val string) string {
 		token := current.String()
 		current.Reset()
 
-		if !hashToken {
+		if !hashToken || token == "NULL" || token == "<begin>" || token == "<end>" || token == "<infinity>" {
 			result.WriteString(token)
 			return
 		}
 
-		hasPlus := strings.HasSuffix(token, "+")
-		partToHash := token
-		if hasPlus {
-			partToHash = token[:len(token)-1]
-		}
-
-		hash := sha256.Sum256([]byte(partToHash))
+		hash := sha256.Sum256([]byte(token))
 		hashUint := binary.BigEndian.Uint32(hash[:4])
 		hashedStr := strconv.FormatUint(uint64(hashUint), 10)
 
 		result.WriteString(hashedStr)
-		if hasPlus {
-			result.WriteByte('+')
-		}
 	}
 
 	for i := 0; i < len(val); i++ {
