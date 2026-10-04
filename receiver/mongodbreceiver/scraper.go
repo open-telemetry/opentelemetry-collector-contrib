@@ -96,6 +96,9 @@ type mongodbScraper struct {
 	planCache             *lru.LRU[string, string]
 	lastScrapeTime        time.Time // upper bound of the last successful scrape window; used by both profiler and getLog paths
 	lastTopQueryExecution time.Time
+	// collectorHostName stands in for a loopback server address. It is empty when the host name
+	// could not be determined, in which case the address is reported as the server gave it.
+	collectorHostName string
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
@@ -112,7 +115,19 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		prevCounts:         make(map[string]int64),
 		prevFlushCount:     0,
 		obfuscator:         newObfuscator(),
+		collectorHostName:  resolveCollectorHostName(settings.Logger),
 	}
+}
+
+// resolveServerAddress reports the network location of the server described by serverStatus, with a
+// loopback address replaced by the collector host's name. Both server.address and the
+// service.instance.id seed are taken from this one result, so they cannot name different machines.
+func (s *mongodbScraper) resolveServerAddress(serverStatus bson.M) (string, int64, error) {
+	address, port, err := serverAddressAndPort(serverStatus)
+	if err != nil {
+		return "", 0, err
+	}
+	return resolveLoopbackHost(address, s.collectorHostName), port, nil
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
@@ -212,7 +227,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 		return
 	}
 
-	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
+	serverAddress, serverPort, err := s.resolveServerAddress(serverStatus)
 	if err != nil {
 		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
 		return
@@ -562,7 +577,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		errs.Add(fmt.Errorf("failed to fetch server status: %w", sErr))
 		return
 	}
-	serverAddress, serverPort, aErr := serverAddressAndPort(serverStatus)
+	serverAddress, serverPort, aErr := s.resolveServerAddress(serverStatus)
 	if aErr != nil {
 		errs.Add(fmt.Errorf("failed to fetch server address and port: %w", aErr))
 		return
@@ -924,26 +939,6 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
-}
-
-func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
-	host, ok := serverStatus["host"].(string)
-	if !ok {
-		return "", 0, errors.New("host field not found in server status")
-	}
-	hostParts := strings.Split(host, ":")
-	switch len(hostParts) {
-	case 1:
-		return hostParts[0], defaultMongoDBPort, nil
-	case 2:
-		port, err := strconv.ParseInt(hostParts[1], 10, 64)
-		if err != nil {
-			return "", 0, fmt.Errorf("failed to parse port: %w", err)
-		}
-		return hostParts[0], port, nil
-	default:
-		return "", 0, fmt.Errorf("unexpected host format: %s", host)
-	}
 }
 
 func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {

@@ -4,6 +4,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 24f7cb73cc66
+        - key: server.port
+          value:
+            intValue: "27017"
         - key: service.instance.id
           value:
             stringValue: 4f261213-014b-5ec8-92ba-bb0ff345724f
