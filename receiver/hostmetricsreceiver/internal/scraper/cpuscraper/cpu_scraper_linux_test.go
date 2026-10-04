@@ -6,12 +6,14 @@
 package cpuscraper
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -22,7 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/cputicks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
@@ -124,9 +125,10 @@ func TestCputicksEmitter(t *testing.T) {
 		metadata.SystemCPUUtilizationMetricAttributeKeyState,
 	}
 
+	t.Setenv("HOST_PROC", procDir)
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg, rootPath: root})
-	scraper.emitCPUMetrics = newCputicksEmitter(cputicks.NewReader(root, defaultTicksPerSecond))
+	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -181,9 +183,10 @@ func TestCputicksEmitter_Utilization(t *testing.T) {
 		metadata.SystemCPUUtilizationMetricAttributeKeyState,
 	}
 
+	t.Setenv("HOST_PROC", procDir)
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg, rootPath: root})
-	scraper.emitCPUMetrics = newCputicksEmitter(cputicks.NewReader(root, defaultTicksPerSecond))
+	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -220,9 +223,10 @@ func TestCputicksEmitter_NewCPUAppears(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.SystemCPUUtilization.Enabled = true
 
+	t.Setenv("HOST_PROC", procDir)
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg, rootPath: root})
-	scraper.emitCPUMetrics = newCputicksEmitter(cputicks.NewReader(root, defaultTicksPerSecond))
+	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -248,9 +252,10 @@ func TestCputicksEmitter_CPUDisappears(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.SystemCPUUtilization.Enabled = true
 
+	t.Setenv("HOST_PROC", procDir)
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg, rootPath: root})
-	scraper.emitCPUMetrics = newCputicksEmitter(cputicks.NewReader(root, defaultTicksPerSecond))
+	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -267,29 +272,15 @@ func TestCputicksEmitter_CPUDisappears(t *testing.T) {
 	assert.ErrorContains(t, partialErr, ucal.ErrTimeStatNotFound.Error())
 }
 
-// mockTickReader implements tickReader for testing.
-type mockTickReader struct {
-	readAll        func() ([]cputicks.Stat, error)
-	ticksPerSecond uint64
-}
-
-func (m *mockTickReader) ReadAll() ([]cputicks.Stat, error) {
-	return m.readAll()
-}
-
-func (m *mockTickReader) TicksPerSecond() uint64 { return m.ticksPerSecond }
-
 func TestCputicksEmitter_ReadError(t *testing.T) {
 	readErr := errors.New("disk I/O error")
-	reader := &mockTickReader{
-		readAll:        func() ([]cputicks.Stat, error) { return nil, readErr },
-		ticksPerSecond: 100,
-	}
 
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg})
-	scraper.emitCPUMetrics = newCputicksEmitter(reader)
+	scraper.emitCPUMetrics = newCputicksEmitter(func(_ context.Context, _ bool) ([]cpu.ExTimesStat, error) {
+		return nil, readErr
+	})
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -301,12 +292,8 @@ func TestCputicksEmitter_ReadError(t *testing.T) {
 }
 
 func TestCputicksEmitter_ZeroDelta(t *testing.T) {
-	sameTicks := []cputicks.Stat{
+	sameTicks := []cpu.ExTimesStat{
 		{CPU: "cpu0", User: 100, Nice: 25, System: 50, Idle: 200, Iowait: 25, Irq: 25, Softirq: 25, Steal: 50},
-	}
-	reader := &mockTickReader{
-		readAll:        func() ([]cputicks.Stat, error) { return sameTicks, nil },
-		ticksPerSecond: 100,
 	}
 
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
@@ -315,7 +302,9 @@ func TestCputicksEmitter_ZeroDelta(t *testing.T) {
 
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg})
-	scraper.emitCPUMetrics = newCputicksEmitter(reader)
+	scraper.emitCPUMetrics = newCputicksEmitter(func(_ context.Context, _ bool) ([]cpu.ExTimesStat, error) {
+		return sameTicks, nil
+	})
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)

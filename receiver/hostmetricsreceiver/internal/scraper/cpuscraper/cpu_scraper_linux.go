@@ -18,20 +18,12 @@ import (
 
 	hostmetricsmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/cputicks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
 
 // USER_HZ: hardcoded at 100 in the Linux kernel since 2.6 for /proc/stat ABI stability.
 const defaultTicksPerSecond = 100
-
-// tickReader reads per-CPU tick counts from the operating system.
-// Defined at the consumer for testability.
-type tickReader interface {
-	ReadAll() ([]cputicks.Stat, error)
-	TicksPerSecond() uint64
-}
 
 func clockTicksPerSecond() uint64 {
 	clkTck, err := sysconf.Sysconf(sysconf.SC_CLK_TCK)
@@ -41,22 +33,18 @@ func clockTicksPerSecond() uint64 {
 	return uint64(clkTck)
 }
 
-func newCPUEmitter(cfg *Config) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
+func newCPUEmitter(_ *Config) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
 	if hostmetricsmetadata.ReceiverHostmetricsreceiverUseCPUTicksFeatureGate.IsEnabled() {
-		return newCputicksEmitter(cputicks.NewReader(cfg.rootPath, clockTicksPerSecond()))
+		return newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 	}
 	return newGopsutilEmitter(cpu.TimesWithContext)
 }
 
-func newCputicksEmitter(reader tickReader) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
-	tps := reader.TicksPerSecond()
-	if tps == 0 {
-		tps = defaultTicksPerSecond
-	}
-	tickDuration := time.Second / time.Duration(tps)
-	var prevTicks map[string]cputicks.Stat
-	return func(_ context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
-		ticks, err := reader.ReadAll()
+func newCputicksEmitter(readTicks func(context.Context, bool) ([]cpu.ExTimesStat, error)) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
+	tickDuration := time.Second / time.Duration(clockTicksPerSecond())
+	var prevTicks map[string]cpu.ExTimesStat
+	return func(ctx context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
+		ticks, err := readTicks(ctx, true)
 		if err != nil {
 			return err
 		}
@@ -64,7 +52,7 @@ func newCputicksEmitter(reader tickReader) func(context.Context, pcommon.Timesta
 		recordTickTimes(now, ticks, tickDuration, mb)
 
 		if prevTicks != nil {
-			currTicks := make(map[string]cputicks.Stat, len(ticks))
+			currTicks := make(map[string]cpu.ExTimesStat, len(ticks))
 			for _, t := range ticks {
 				currTicks[t.CPU] = t
 			}
@@ -76,7 +64,7 @@ func newCputicksEmitter(reader tickReader) func(context.Context, pcommon.Timesta
 				recordTickUtilization(now, prev, curr, mb)
 			}
 		}
-		prevTicks = make(map[string]cputicks.Stat, len(ticks))
+		prevTicks = make(map[string]cpu.ExTimesStat, len(ticks))
 		for _, t := range ticks {
 			prevTicks[t.CPU] = t
 		}
@@ -84,7 +72,11 @@ func newCputicksEmitter(reader tickReader) func(context.Context, pcommon.Timesta
 	}
 }
 
-func recordTickTimes(now pcommon.Timestamp, ticks []cputicks.Stat, tickDuration time.Duration, mb *metadata.MetricsBuilder) {
+func totalTicks(s cpu.ExTimesStat) uint64 {
+	return s.User + s.Nice + s.System + s.Idle + s.Iowait + s.Irq + s.Softirq + s.Steal
+}
+
+func recordTickTimes(now pcommon.Timestamp, ticks []cpu.ExTimesStat, tickDuration time.Duration, mb *metadata.MetricsBuilder) {
 	for _, t := range ticks {
 		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.User, tickDuration), t.CPU, metadata.AttributeStateUser)
 		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.System, tickDuration), t.CPU, metadata.AttributeStateSystem)
@@ -97,8 +89,8 @@ func recordTickTimes(now pcommon.Timestamp, ticks []cputicks.Stat, tickDuration 
 	}
 }
 
-func recordTickUtilization(now pcommon.Timestamp, prev, curr cputicks.Stat, mb *metadata.MetricsBuilder) {
-	deltaTotal := curr.Total() - prev.Total()
+func recordTickUtilization(now pcommon.Timestamp, prev, curr cpu.ExTimesStat, mb *metadata.MetricsBuilder) {
+	deltaTotal := totalTicks(curr) - totalTicks(prev)
 	if deltaTotal == 0 {
 		recordZeroUtilization(now, curr.CPU, mb)
 		return
@@ -113,6 +105,7 @@ func recordTickUtilization(now pcommon.Timestamp, prev, curr cputicks.Stat, mb *
 	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Steal-prev.Steal)/total, curr.CPU, metadata.AttributeStateSteal)
 	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Iowait-prev.Iowait)/total, curr.CPU, metadata.AttributeStateWait)
 }
+
 
 func recordZeroUtilization(now pcommon.Timestamp, cpuName string, mb *metadata.MetricsBuilder) {
 	for _, state := range []metadata.AttributeState{
