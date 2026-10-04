@@ -1438,7 +1438,8 @@ func TestResetStateSkipsIterationWhenNothingToReset(t *testing.T) {
 	require.NoError(t, p.ConsumeTraces(metadata.NewIncomingContext(t.Context(), nil), buildSampleTrace()))
 
 	// With cumulative temporality and no exemplars or expiration configured, resetState has
-	// nothing to do per resource, so it must not iterate over (and allocate a key slice for) the cache.
+	// nothing to do per resource, so it must not iterate over the cache at all. The single
+	// allocation this guards against is the key slice that cache.ForEach gets from lru.Keys().
 	allocs := testing.AllocsPerRun(10, p.resetState)
 	assert.Zero(t, allocs)
 	assert.Equal(t, 2, p.resourceMetrics.Len())
