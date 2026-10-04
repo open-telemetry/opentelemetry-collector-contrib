@@ -465,12 +465,12 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 		// Split the batch by traceID and by decision-cache status so we can
 		// stamp sampled-cache hits with the original rule annotations once per
 		// batch.
-		pendingBuckets := make(map[pcommon.TraceID]ptrace.ResourceSpans)
+		pendingBuckets := make(map[pcommon.TraceID]*scopeSpansBuilder)
 		lateBuckets := make(map[pcommon.TraceID]struct {
-			rs ptrace.ResourceSpans
-			md cachedDecision
+			builder *scopeSpansBuilder
+			md      cachedDecision
 		})
-		for _, ss := range rs.ScopeSpans().All() {
+		for scopeIndex, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				id := span.TraceID()
 				// The pending map is checked before the decision cache: spans
@@ -480,8 +480,7 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 				pt, exists := p.traces[id]
 				if !exists {
 					if b, ok := lateBuckets[id]; ok {
-						dstSS := findOrAppendScopeSpans(b.rs, ss)
-						span.MoveTo(dstSS.Spans().AppendEmpty())
+						b.builder.appendSpan(scopeIndex, ss, span)
 						continue
 					}
 					if _, ok := dropped[id]; ok {
@@ -493,16 +492,12 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 							dropped[id] = struct{}{}
 							continue
 						}
-						rsCopy := ptrace.NewResourceSpans()
-						rs.Resource().CopyTo(rsCopy.Resource())
-						rsCopy.SetSchemaUrl(rs.SchemaUrl())
 						b := struct {
-							rs ptrace.ResourceSpans
-							md cachedDecision
-						}{rs: rsCopy, md: md}
+							builder *scopeSpansBuilder
+							md      cachedDecision
+						}{builder: newScopeSpansBuilder(rs), md: md}
 						lateBuckets[id] = b
-						dstSS := findOrAppendScopeSpans(b.rs, ss)
-						span.MoveTo(dstSS.Spans().AppendEmpty())
+						b.builder.appendSpan(scopeIndex, ss, span)
 						continue
 					}
 					pt = &pendingTrace{
@@ -519,19 +514,17 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 				if !pt.hasRootSpan && !pt.triggered && p.evalRootSpanCondition(ctx, rs, ss, span) {
 					pt.hasRootSpan = true
 				}
-				if _, ok := pendingBuckets[id]; !ok {
-					rsCopy := ptrace.NewResourceSpans()
-					rs.Resource().CopyTo(rsCopy.Resource())
-					rsCopy.SetSchemaUrl(rs.SchemaUrl())
-					pendingBuckets[id] = rsCopy
+				b, ok := pendingBuckets[id]
+				if !ok {
+					b = newScopeSpansBuilder(rs)
+					pendingBuckets[id] = b
 				}
-				dstSS := findOrAppendScopeSpans(pendingBuckets[id], ss)
-				span.MoveTo(dstSS.Spans().AppendEmpty())
+				b.appendSpan(scopeIndex, ss, span)
 			}
 		}
-		for id, copied := range pendingBuckets {
+		for id, b := range pendingBuckets {
 			if pt, ok := p.traces[id]; ok {
-				pt.spans = append(pt.spans, copied)
+				pt.spans = append(pt.spans, b.rs)
 				// The span-limit check runs before the root-span check so a
 				// trace that crosses the limit decides immediately rather
 				// than waiting decision_delay; the check sits after the
@@ -551,7 +544,7 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 		}
 		for id, b := range lateBuckets {
 			out := ptrace.NewTraces()
-			b.rs.MoveTo(out.ResourceSpans().AppendEmpty())
+			b.builder.rs.MoveTo(out.ResourceSpans().AppendEmpty())
 			lateForwards = append(lateForwards, lateSampled{traceID: id, md: b.md, td: out})
 		}
 	}
@@ -790,19 +783,30 @@ func (p *adaptiveTailSamplingProcessor) stampLateBatch(ctx context.Context, td p
 	}
 }
 
-// findOrAppendScopeSpans returns the ScopeSpans slot in dst that matches src,
-// appending an empty entry if needed. This preserves resource attributes when
-// copying spans across batches.
-func findOrAppendScopeSpans(dst ptrace.ResourceSpans, src ptrace.ScopeSpans) ptrace.ScopeSpans {
-	for _, ss := range dst.ScopeSpans().All() {
-		if ss.Scope().Name() == src.Scope().Name() && ss.Scope().Version() == src.Scope().Version() {
-			return ss
-		}
+// scopeSpansBuilder collects one trace's spans from one source ResourceSpans.
+// Source scopes are visited in order and never revisited, so remembering the
+// last source index preserves their grouping without comparing scope contents.
+type scopeSpansBuilder struct {
+	rs        ptrace.ResourceSpans
+	destScope ptrace.ScopeSpans
+	lastScope int
+}
+
+func newScopeSpansBuilder(src ptrace.ResourceSpans) *scopeSpansBuilder {
+	rs := ptrace.NewResourceSpans()
+	src.Resource().CopyTo(rs.Resource())
+	rs.SetSchemaUrl(src.SchemaUrl())
+	return &scopeSpansBuilder{rs: rs, lastScope: -1}
+}
+
+func (b *scopeSpansBuilder) appendSpan(scopeIndex int, src ptrace.ScopeSpans, span ptrace.Span) {
+	if b.lastScope != scopeIndex {
+		b.destScope = b.rs.ScopeSpans().AppendEmpty()
+		src.Scope().CopyTo(b.destScope.Scope())
+		b.destScope.SetSchemaUrl(src.SchemaUrl())
+		b.lastScope = scopeIndex
 	}
-	out := dst.ScopeSpans().AppendEmpty()
-	src.Scope().CopyTo(out.Scope())
-	out.SetSchemaUrl(src.SchemaUrl())
-	return out
+	span.MoveTo(b.destScope.Spans().AppendEmpty())
 }
 
 // decide pops a trace from the buffer, evaluates rules, and either forwards or
