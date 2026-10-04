@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-imds-config
+  namespace: default
+data:
+  server.py: |
+    import json
+    import os
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    TOKEN = "fake-imds-token"
+    TTL_HEADER = "X-aws-ec2-metadata-token-ttl-seconds"
+    TOKEN_HEADER = "X-aws-ec2-metadata-token"
+
+    IDENTITY_DOCUMENT = {
+        "accountId": "0123456789",
+        "architecture": "x86_64",
+        "availabilityZone": "us-east-1f",
+        "imageId": "ami-0b69ea66ff7391e80",
+        "instanceId": "i-1234567890abcdef0",
+        "instanceType": "m4.xlarge",
+        "pendingTime": "2019-10-31T07:02:24Z",
+        "privateIp": "172.16.34.43",
+        "region": "us-east-1",
+        "version": "2017-09-30",
+    }
+
+    METADATA = {
+        "/latest/meta-data/instance-id": IDENTITY_DOCUMENT["instanceId"],
+        "/latest/meta-data/hostname": "ip-172-16-34-43.ec2.internal",
+        "/latest/meta-data/tags/instance": "Name\nTest",
+        "/latest/meta-data/tags/instance/Name": "test-instance",
+        "/latest/meta-data/tags/instance/Test": "test-tag",
+        "/latest/dynamic/instance-identity/document": json.dumps(IDENTITY_DOCUMENT),
+    }
+
+    class Handler(BaseHTTPRequestHandler):
+        def _respond(self, status, body=b"", headers=None):
+            self.send_response(status)
+            for key, value in (headers or {}).items():
+                self.send_header(key, value)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_PUT(self):
+            if self.path != "/latest/api/token":
+                self._respond(404)
+                return
+            ttl = self.headers.get(TTL_HEADER, "21600")
+            self._respond(200, TOKEN.encode("utf-8"), {TTL_HEADER: ttl, "Content-Type": "text/plain"})
+
+        def do_GET(self):
+            if self.path == "/healthz":
+                self._respond(200, b"ok")
+                return
+            if self.headers.get(TOKEN_HEADER) != TOKEN:
+                self._respond(401)
+                return
+            value = METADATA.get(self.path)
+            if value is None:
+                self._respond(404)
+                return
+            self._respond(200, value.encode("utf-8"), {"Content-Type": "text/plain"})
+
+        def log_message(self, fmt, *args):
+            return
+
+    if __name__ == "__main__":
+        port = int(os.environ.get("PORT", "1338"))
+        HTTPServer(("", port), Handler).serve_forever()

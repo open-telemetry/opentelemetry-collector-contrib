@@ -51,9 +51,6 @@ func mustRe(p string) *regexp.Regexp {
 }
 
 func TestDetect(t *testing.T) {
-	// Set this before all tests to ensure metadata.onGCE() returns true
-	t.Setenv("GCE_METADATA_HOST", "169.254.169.254")
-
 	for _, tc := range []struct {
 		desc             string
 		detector         internal.Detector
@@ -398,6 +395,35 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "Bare Metal Solution with unknown cloud platform",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                       "my-project",
+				cloudPlatform:                   gcp.UnknownPlatform,
+				gcpBareMetalSolutionCloudRegion: "us-central1",
+				gcpBareMetalSolutionInstanceID:  "1472385723456792345",
+				gcpBareMetalSolutionProjectID:   "my-project",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+				"cloud.platform":   "gcp_bare_metal_solution",
+				"cloud.region":     "us-central1",
+				"host.name":        "1472385723456792345",
+			},
+		},
+		{
+			desc: "Bare Metal Solution with incomplete environment",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                     "my-project",
+				cloudPlatform:                 gcp.UnknownPlatform,
+				gcpBareMetalSolutionProjectID: "my-project",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "my-project",
+			},
+		},
+		{
 			desc: "Unknown Platform",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:     "my-project",
@@ -433,6 +459,26 @@ func TestDetect(t *testing.T) {
 	}
 }
 
+func TestDetectSkipsPlatformWhenContextIsDone(t *testing.T) {
+	fake := &fakeGCPDetector{
+		projectID:     "my-project",
+		cloudPlatform: gcp.GCE,
+	}
+	d := newTestDetector(fake)
+	d.onGCE = func(ctx context.Context) bool {
+		return ctx.Err() == nil
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	res, schema, err := d.Detect(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, schema)
+	assert.Equal(t, 0, res.Attributes().Len())
+	assert.False(t, fake.cloudPlatformCalled)
+}
+
 func TestDetectFailOnMissingMetadata(t *testing.T) {
 	d := newTestDetector(&fakeGCPDetector{
 		err: errors.New("failed to get metadata"),
@@ -454,6 +500,7 @@ func newTestDetector(gcpDetector *fakeGCPDetector, opts ...func(*localMetadata.R
 	return &detector{
 		logger:          zap.NewNop(),
 		detector:        gcpDetector,
+		onGCE:           func(context.Context) bool { return true },
 		rb:              localMetadata.NewResourceBuilder(cfg),
 		hostTypeEnabled: cfg.HostType.Enabled,
 	}
@@ -464,6 +511,7 @@ type fakeGCPDetector struct {
 	err                             error
 	projectID                       string
 	cloudPlatform                   gcp.Platform
+	cloudPlatformCalled             bool
 	gkeAvailabilityZone             string
 	gkeRegion                       string
 	gkeClusterName                  string
@@ -561,9 +609,6 @@ func TestGCELabels(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Force metadata.OnGCE() to return true without a real metadata server.
-			t.Setenv("GCE_METADATA_HOST", "169.254.169.254")
-
 			d := newTestDetector(&fakeGCPDetector{
 				projectID:           "test-proj",
 				cloudPlatform:       gcp.GCE,
@@ -609,6 +654,7 @@ func (f *fakeGCPDetector) ProjectID() (string, error) {
 }
 
 func (f *fakeGCPDetector) CloudPlatform() gcp.Platform {
+	f.cloudPlatformCalled = true
 	return f.cloudPlatform
 }
 

@@ -86,3 +86,12 @@ func Test_newRule(t *testing.T) {
 		})
 	}
 }
+
+func TestRuleDoesNotExposeTemplateFunctions(t *testing.T) {
+	rule, err := newRule(`type == "pod" && joinHostPort(endpoint, 8080) == "localhost:8080"`)
+	require.NoError(t, err)
+	env, err := podEndpoint.Env()
+	require.NoError(t, err)
+	_, err = rule.eval(env)
+	require.Error(t, err)
+}

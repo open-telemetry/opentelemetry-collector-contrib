@@ -8,4 +8,5 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, joker-star-l]
+    active: [joker-star-l]
+    emeritus: [atoulme]

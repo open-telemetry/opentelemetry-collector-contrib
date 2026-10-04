@@ -12,7 +12,7 @@ This receiver fetches stats from a MongoDB instance using the
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fmongodb%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fmongodb) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fmongodb%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fmongodb) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_mongodb)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_mongodb&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@justinianvoss22](https://www.github.com/justinianvoss22), [@dyl10s](https://www.github.com/dyl10s), [@ishleenk17](https://www.github.com/ishleenk17), [@shrenikjain38](https://www.github.com/shrenikjain38) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@justinianvoss22](https://www.github.com/justinianvoss22), [@dyl10s](https://www.github.com/dyl10s), [@ishleenk17](https://www.github.com/ishleenk17), [@shrenikjain38](https://www.github.com/shrenikjain38), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@sv-splunk](https://www.github.com/sv-splunk), [@splunk-shanu](https://www.github.com/splunk-shanu) \| Seeking more code owners! |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -295,6 +295,37 @@ receivers:
 
 The default Kerberos service name is `mongodb`. Users can authenticate with an explicit password or by storing authentication keys in keytab files initialized with the `kinit` utility.
 
+## Resource attributes
+
+`server.address` and `server.port` identify the monitored instance and are emitted by default. They
+describe the location each scraped node reports for itself, not the configured `hosts` entry, so a
+replica set emits a distinct pair per member. A node reports its port only when it is not the
+default, so `server.port` is `27017` whenever no port is reported. Two instances on one machine
+listening on different ports are therefore still told apart.
+
+When a node reports a loopback address (`localhost`, `127.0.0.1` or `::1`), `server.address` is the
+host name of the machine running the collector. Loopback is only reachable when the instance is
+co-located with the collector, so the collector host's name is the instance's real network identity;
+reported verbatim, every monitored host would emit the same address. Any other address is reported
+as given. If the collector host name cannot be determined, the loopback address is reported
+unchanged and a warning is logged.
+
+`service.instance.id` is a UUID v5 seeded from the same resolved address and port, so the two cannot
+name different machines. Deployments whose nodes report a loopback address will see this identifier
+change.
+
+To stop emitting the server attributes, disable them individually:
+
+```yaml
+receivers:
+  mongodb:
+    resource_attributes:
+      server.address:
+        enabled: false
+      server.port:
+        enabled: false
+```
+
 ## Metrics
 
 The following metrics are version-gated:
@@ -302,6 +333,18 @@ The following metrics are version-gated:
 - `mongodb.extent.count` — MongoDB `< 4.4` with the MMAPv1 storage engine only.
 - `mongodb.wt.log.write`, `mongodb.wt.log.operation.count`, `mongodb.wt.log.sync.time`, `mongodb.wt.fsync.count`, and `mongodb.wt.concurrent_transaction.ticket.in_use` — require the WiredTiger storage engine (the default since MongoDB 3.2; MMAPv1, the previous default, was removed in 4.2). No data points are emitted on other storage engines, such as the Enterprise-only inMemory engine.
 - `mongodb.wt.concurrent_transaction.ticket.in_use` is additionally read from `serverStatus.wiredTiger.concurrentTransactions.{read,write}.out` on MongoDB `< 8.0`, and from `serverStatus.queues.execution.{read,write}.out` on MongoDB `8.0+` (the field was renamed in 8.0). The receiver probes both paths and uses whichever is present, so the same metric emits across all supported versions.
+
+The `mongodb.oplog.*`, `mongodb.replica.*`, and `mongodb.replica_set.*` metrics are only emitted by a
+`mongod` that is a member of a replica set. They are skipped on a standalone deployment, on a `mongos` router, and
+on a member whose replica set has not been initiated. They require the `clusterMonitor` role; if the
+configured user lacks it, each scrape reports an authorization error for the enabled metrics rather
+than skipping them. Where the role cannot be granted, such as on a managed service that restricts it,
+leave these metrics disabled. `mongodb.replica_set.lag` and `mongodb.replica_set.headroom` are additionally only
+emitted when the scraped member is the primary, which is the only member with an up-to-date view of
+every other member's replication progress.
+
+`mongodb.replica_set.member.count` describes the whole replica set, so every scraped member reports
+the same value. Do not sum it across members.
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
