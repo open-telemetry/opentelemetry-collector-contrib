@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/xpdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -89,24 +90,34 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 			// Because we are changing the keys we cannot do in-place update, but we can move values to the
 			// updated map and then move back the updated map to the initial map to avoid a copy in the target.Set,
 			// because the pcommon.Map.CopyTo will not do a copy if it is the same object in this case val.
-			updated := pcommon.NewMap()
+			// The updated map is assembled through an xpdata.MapBuilder, which appends without the per-key
+			// duplicate check of pcommon.Map.PutEmpty (a linear scan), keeping this function linear in the size
+			// of the map; seenKeys deduplicates renamed keys, preserving the previous last-writer-wins collision
+			// behavior where a later entry overwrites the value of an earlier one under the same final key.
+			var updated xpdata.MapBuilder
 			updated.EnsureCapacity(val.Len())
+			seenKeys := make(map[string]pcommon.Value, val.Len())
 			for key, value := range val.All() {
-				if !cp.MatchString(key) {
-					value.MoveTo(updated.PutEmpty(key))
+				newKey := key
+				if cp.MatchString(key) {
+					if !fn.IsEmpty() {
+						var err error
+						if newKey, err = applyOptReplaceFunction(ctx, tCtx, cp, fn, key, replacementVal, replacementFormat); err != nil {
+							continue
+						}
+					} else {
+						newKey = cp.ReplaceAllString(key, replacementVal)
+					}
+				}
+				if seenValue, ok := seenKeys[newKey]; ok {
+					value.MoveTo(seenValue)
 					continue
 				}
-				if !fn.IsEmpty() {
-					updatedKey, err := applyOptReplaceFunction(ctx, tCtx, cp, fn, key, replacementVal, replacementFormat)
-					if err != nil {
-						continue
-					}
-					value.MoveTo(updated.PutEmpty(updatedKey))
-				} else {
-					value.MoveTo(updated.PutEmpty(cp.ReplaceAllString(key, replacementVal)))
-				}
+				newValue := updated.AppendEmpty(newKey)
+				value.MoveTo(newValue)
+				seenKeys[newKey] = newValue
 			}
-			updated.MoveTo(val)
+			updated.UnsafeIntoMap(val)
 		}
 		return nil, target.Set(ctx, tCtx, val)
 	}, nil
