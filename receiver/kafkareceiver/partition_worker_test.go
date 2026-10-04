@@ -4,8 +4,10 @@
 package kafkareceiver
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"runtime"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -438,7 +440,6 @@ func TestProcessPartitionBatchPrefixMark(t *testing.T) {
 			t.Fatal("second wave did not start")
 		}
 	}
-	requireNoEntry(t, entered, "started more than max_in_flight calls in the second wave")
 
 	marked := kafkaClient.MarkedOffsets()[topic]
 	require.Len(t, marked, 1)
@@ -506,6 +507,8 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 			}
 		}
 		requireNoEntry(t, entered, "started offset 4 before the hole failed")
+		// Offset 4 may start if record 3 frees a slot before record 2 fails.
+		// Later asserts do not read that offset.
 		close(releases[2])
 		close(releases[3])
 		close(releases[4])
@@ -575,6 +578,8 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 				t.Fatal("second pair did not start")
 			}
 		}
+		// Offset 4 may start if record 3 frees a slot before record 2 fails.
+		// Later asserts do not read that offset.
 		close(releases[2])
 		close(releases[3])
 		close(releases[4])
@@ -612,17 +617,52 @@ func TestProcessPartitionBatchSkipConsume(t *testing.T) {
 
 func TestProcessPartitionBatchCancelledSkipsExtraConsume(t *testing.T) {
 	consumer, _, partitionConsumer := newMaxInFlightConsumer(t, 2)
+	entered := make(chan struct{})
+	releases := make([]chan struct{}, 2)
+	for i := range releases {
+		releases[i] = make(chan struct{})
+	}
 	var calls atomic.Int64
-	consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set) error {
+	consumer.consumeMessage = func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
 		calls.Add(1)
-		partitionConsumer.cancel(context.Canceled)
-		return errors.New("boom")
+		if record.Offset >= 2 {
+			return nil
+		}
+		entered <- struct{}{}
+		<-releases[record.Offset]
+		return nil
 	}
 
-	result := consumer.processPartitionBatch(partitionConsumer, offsetBatch(1))
-	require.True(t, result.terminal)
+	done := make(chan partitionBatchResult, 1)
+	go func() {
+		done <- consumer.processPartitionBatch(partitionConsumer, offsetBatch(3))
+	}()
+
+	timeout := time.After(10 * time.Second)
+	for range 2 {
+		select {
+		case <-entered:
+		case <-timeout:
+			t.Fatal("in-flight Consume calls did not start")
+		}
+	}
+	// The next acquire must already be waiting on the semaphore. A cancel
+	// before that wait ends at the loop's context check and never enters acquire.
+	waitAcquireBlocked(t)
+	partitionConsumer.cancel(context.Canceled)
+	close(releases[0])
+	close(releases[1])
+
+	var result partitionBatchResult
+	select {
+	case result = <-done:
+	case <-timeout:
+		t.Fatal("batch did not return")
+	}
+	require.False(t, result.terminal)
 	require.Nil(t, result.rewindRecord)
-	require.Equal(t, int64(1), calls.Load())
+	require.Equal(t, int64(2), calls.Load())
+	require.Nil(t, partitionConsumer.skipConsume)
 }
 
 func TestProcessPartitionBatchCancelDoesNotStartNext(t *testing.T) {
@@ -660,6 +700,27 @@ func TestProcessPartitionBatchCancelDoesNotStartNext(t *testing.T) {
 	}
 	require.Nil(t, result.rewindRecord)
 	require.Equal(t, int64(1), calls.Load())
+}
+
+// waitAcquireBlocked returns once a goroutine is blocked in inflightBatch.acquire.
+func waitAcquireBlocked(t *testing.T) {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	buf := make([]byte, 64<<10)
+	for time.Now().Before(deadline) {
+		for {
+			n := runtime.Stack(buf, true)
+			if n < len(buf) {
+				if bytes.Contains(buf[:n], []byte("inflightBatch).acquire")) {
+					return
+				}
+				break
+			}
+			buf = make([]byte, len(buf)*2)
+		}
+		runtime.Gosched()
+	}
+	t.Fatal("timed out waiting for acquire to block")
 }
 
 // requireNoEntry fails if a Consume call arrives within a short wait.

@@ -9,7 +9,7 @@ $defs:
         items:
           type: string
   max_in_flight_config:
-    description: 'MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one partition worker. TODO: add Bytes to cap the fetched payload size of those calls.'
+    description: MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one partition worker.
     type: object
     properties:
       records:

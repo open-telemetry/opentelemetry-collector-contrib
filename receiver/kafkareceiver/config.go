@@ -208,11 +208,11 @@ type PartitionProcessing struct {
 
 // MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one
 // partition worker.
-//
-// TODO: add Bytes to cap the fetched payload size of those calls.
 type MaxInFlightConfig struct {
 	// Records is how many calls may run at once. Default 1.
 	Records int `mapstructure:"records"`
+
+	_ struct{} // avoids unkeyed_literal_initialization. TODO: add Bytes to cap the fetched payload size of in-flight records.
 }
 
 type HeaderExtraction struct {
