@@ -764,8 +764,8 @@ Note: when database profiling is disabled, the receiver falls back to MongoDB's 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | db.system.version | The database version of the instance. Examples include "5.0.0", "6.0.4". | Any Str | false | - | - |
-| server.address | The address of the MongoDB host. | Any Str | true | - | - |
-| server.port | The port of the MongoDB host. | Any Int | false | - | - |
-| service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true | - | - |
+| server.address | The address of the monitored MongoDB instance. A loopback address (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. | Any Str | true | - | - |
+| server.port | The port of the monitored MongoDB instance, defaulting to 27017 when the instance does not report one. | Any Int | true | - | - |
+| service.instance.id | A unique identifier of the MongoDB instance as a UUID v5, derived from the address and port using the OTel namespace. The address is resolved the same way as server.address. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:mongodb. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
