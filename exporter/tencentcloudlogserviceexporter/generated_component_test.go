@@ -36,7 +36,6 @@ func TestComponentLifecycle(t *testing.T) {
 		createFn func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error)
 		name     string
 	}{
-
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
