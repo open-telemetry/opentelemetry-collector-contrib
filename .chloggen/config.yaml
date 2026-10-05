@@ -251,10 +251,10 @@ components:
     - receiver/apache
     - receiver/apache_spark
     - receiver/aws_cloudwatch
+    - receiver/aws_ecs_container_metrics
     - receiver/aws_lambda
     - receiver/aws_s3
     - receiver/awscontainerinsightreceiver
-    - receiver/awsecscontainermetrics
     - receiver/awsfirehose
     - receiver/awsxray
     - receiver/azure_blob

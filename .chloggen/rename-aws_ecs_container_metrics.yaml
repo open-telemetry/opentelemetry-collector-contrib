@@ -1,0 +1,4 @@
+change_type: deprecation
+component: receiver/aws_ecs_container_metrics
+note: "Rename the awsecscontainermetrics receiver to aws_ecs_container_metrics. The old name remains available as a deprecated alias."
+issues: [45339]
