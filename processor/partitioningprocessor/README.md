@@ -24,6 +24,9 @@ partition keys added to the outgoing request metadata.
 
 A processor that partitions incoming telemetry batches using [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) value expressions. Each incoming batch is split into one or more sub-batches whose items all evaluate to the same set of partition key values. Each sub-batch is forwarded to the next consumer concurrently with the evaluated key/value pairs appended to the outgoing [request metadata](https://pkg.go.dev/go.opentelemetry.io/collector/client#Metadata).
 
+> [!WARNING]
+> This component is under development. Only logs are partitioned so far; traces, metrics, and profiles are currently forwarded unchanged.
+
 **Use cases**
 
 - **Kafka topic routing and message keying** — partition by a resource attribute to control which topic and/or partition key each batch lands on, without the multi-resource routing bug present in the Kafka exporter.
@@ -43,6 +46,8 @@ processors:
 ### `keys`
 
 Required. A map from **partition key name** to an [OTTL value expression](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) that evaluates to a `string`. Each expression is evaluated against every item in the incoming batch; items that produce the same tuple of values are collected into the same partition.
+
+Key names are used as `client.Metadata` keys, which are case-insensitive and stored lower-cased; names that differ only in case are rejected.
 
 Expressions must evaluate to `string`, or `nil`. In case of a `nil` result (e.g. a missing attribute), the item is partitioned with other items that also produce `nil` for that key, and the key will be omitted from the metadata.
 This allows you to partition by optional attributes without losing those items entirely.
@@ -72,7 +77,9 @@ client.Metadata["<key-name>"] = ["<evaluated-value>"]
 
 Any metadata already present on the inbound context is preserved. If a partition key name collides with an existing metadata key, the partition value takes precedence (the downstream consumer needs a deterministic value for the key).
 
-Partition deliveries run concurrently, one per partition. If any downstream `Consume*` call returns an error, the processor cancels the remaining in-flight partition deliveries and returns that error.
+Partition deliveries are started concurrently, in the order in which each partition was first seen in the batch. Every partition is delivered even if another one fails; the errors of all failed deliveries are joined and returned. The inbound context is passed through without a derived cancellation, so downstream consumers that keep the context after returning are not affected.
+
+When every item in a batch maps to the same partition, the batch is forwarded as-is without copying. When a batch is split, items are moved (not copied) into the partitions, so the processor declares that it mutates data; if the pipeline fans out to several consumers, the collector clones the batch before it reaches this processor.
 
 ## Examples
 
@@ -100,8 +107,6 @@ processors:
 Records with the same `(tenant.id, severity_text)` tuple are grouped together. The outgoing context carries both keys.
 
 ### Partition by inbound request metadata (e.g. gRPC header)
-
-Requires the `ottl.contexts.enableOTelColContext` feature gate to be enabled on the collector (e.g. `--feature-gates=ottl.contexts.enableOTelColContext`).
 
 `otelcol.client.metadata["<header>"]` returns a `[]string`; select a single element with `[0]` to satisfy the string constraint.
 

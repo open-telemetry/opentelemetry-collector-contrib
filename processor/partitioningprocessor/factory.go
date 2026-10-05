@@ -5,11 +5,13 @@ package partitioningprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"maps"
+	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -37,15 +39,22 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-// NOTE: this is the initial skeleton donation PR. The processors below are
-// no-op passthroughs that forward telemetry unchanged. The partitioning logic
-// will follow in subsequent PRs.
-
-func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
-	return processorhelper.NewLogs(ctx, set, cfg, next,
-		func(_ context.Context, ld plog.Logs) (plog.Logs, error) { return ld, nil },
-	)
+func createLogsProcessor(_ context.Context, set processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
+	c := cfg.(*Config)
+	keyNames, expressions := sortedPartitionKeys(c.Keys)
+	p, err := newLogsPartitioner(expressions, set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	return &partitioningProcessor{
+		nextLogs:        next,
+		logsPartitioner: p,
+		keyNames:        keyNames,
+	}, nil
 }
+
+// NOTE: the processors below are no-op passthroughs that forward telemetry
+// unchanged. Partitioning for these signals will follow in a subsequent PR.
 
 func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Metrics) (processor.Metrics, error) {
 	return processorhelper.NewMetrics(ctx, set, cfg, next,
@@ -63,4 +72,15 @@ func createProfilesProcessor(ctx context.Context, set processor.Settings, cfg co
 	return xprocessorhelper.NewProfiles(ctx, set, cfg, next,
 		func(_ context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) { return pd, nil },
 	)
+}
+
+func sortedPartitionKeys(keys map[string]string) ([]string, []string) {
+	names := slices.Sorted(maps.Keys(keys))
+	expressions := make([]string, len(names))
+	for i, name := range names {
+		expressions[i] = keys[name]
+		// client.Metadata keys are case-insensitive and stored lower-cased.
+		names[i] = strings.ToLower(name)
+	}
+	return names, expressions
 }
