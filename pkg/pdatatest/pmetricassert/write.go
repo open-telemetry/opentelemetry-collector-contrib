@@ -5,9 +5,11 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"maps"
+	"os"
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"gopkg.in/yaml.v3"
 )
 
 type writeOptions struct {
@@ -96,9 +98,76 @@ func WriteAssertionFile(tb testing.TB, path string, actual pmetric.Metrics, opts
 	for _, opt := range opts {
 		opt.apply(&o)
 	}
-	doc := normalize(actual, o)
-	if err := applyWriteAttributeMatchers(doc, o); err != nil {
+	snap := normalize(actual)
+	project(snap, o)
+	if err := applyWriteAttributeMatchers(snap, o); err != nil {
 		return err
 	}
-	return writeDocument(path, doc)
+	return writeSnapshot(path, snap)
+}
+
+// project drops the datapoint fields the write options do not opt into. A
+// snapshot captures every value it can represent, but an assertion file should
+// only pin the volatile ones a test explicitly asks for.
+func project(snap *snapshot, opts writeOptions) {
+	if opts.includeValues {
+		return
+	}
+	forEachDatapoint(snap, func(dp *datapointSnapshot) {
+		kept := datapointSnapshot{Attributes: dp.Attributes}
+		if opts.includeHistogramExplicitBounds {
+			kept.ExplicitBounds = dp.ExplicitBounds
+		}
+		*dp = kept
+	})
+}
+
+func writeSnapshot(path string, snap *snapshot) error {
+	compactShorthand(snap)
+	b, err := yaml.Marshal(snap)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, b, 0o600)
+}
+
+// compactShorthand is the inverse of expandShorthand: it drops an explicit
+// single empty-attribute datapoint so the emitted YAML reads as "metric with
+// no dimensioning attributes" rather than "metric with one empty datapoint".
+func compactShorthand(snap *snapshot) {
+	forEachMetric(snap, func(m *metricSnapshot) {
+		if len(m.Datapoints) == 1 && isEmptyDatapointSnapshot(m.Datapoints[0]) {
+			m.Datapoints = nil
+		}
+	})
+}
+
+func isEmptyDatapointSnapshot(dp datapointSnapshot) bool {
+	return len(dp.Attributes) == 0 &&
+		dp.IntValue == nil &&
+		dp.DoubleValue == nil &&
+		dp.Count == nil &&
+		dp.Sum == nil &&
+		dp.ExplicitBounds == nil &&
+		len(dp.BucketCounts) == 0 &&
+		dp.Min == nil &&
+		dp.Max == nil
+}
+
+func forEachMetric(snap *snapshot, fn func(*metricSnapshot)) {
+	for i := range snap.Resources {
+		for j := range snap.Resources[i].Scopes {
+			for k := range snap.Resources[i].Scopes[j].Metrics {
+				fn(&snap.Resources[i].Scopes[j].Metrics[k])
+			}
+		}
+	}
+}
+
+func forEachDatapoint(snap *snapshot, fn func(*datapointSnapshot)) {
+	forEachMetric(snap, func(m *metricSnapshot) {
+		for i := range m.Datapoints {
+			fn(&m.Datapoints[i])
+		}
+	})
 }

@@ -11,26 +11,73 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// normalize produces the identity-only document form of m.
+// snapshot is the normalized form of actual metrics: plain data, no matchers.
+// It is the right-hand side of every comparison in assert.go, and the value
+// WriteAssertionFile serializes.
+//
+// The assertion types in document.go are the left-hand side and hold matchers
+// instead of values. Both describe the same file format: the assertion side
+// additionally accepts the operator suffixes that this side never produces.
+//
+// Fields are exported because yaml.v3 only marshals exported fields; the tags
+// and field order define WriteAssertionFile's output.
+type snapshot struct {
+	Version   int                `yaml:"version"`
+	Signal    string             `yaml:"signal"`
+	Resources []resourceSnapshot `yaml:"resources"`
+}
+
+type resourceSnapshot struct {
+	Attributes map[string]any  `yaml:"attributes,omitempty"`
+	Scopes     []scopeSnapshot `yaml:"scopes"`
+}
+
+type scopeSnapshot struct {
+	Name    string           `yaml:"name,omitempty"`
+	Version string           `yaml:"version,omitempty"`
+	Metrics []metricSnapshot `yaml:"metrics"`
+}
+
+type metricSnapshot struct {
+	Name        string              `yaml:"name"`
+	Type        string              `yaml:"type"`
+	Unit        string              `yaml:"unit,omitempty"`
+	Temporality string              `yaml:"temporality,omitempty"`
+	Monotonic   *bool               `yaml:"monotonic,omitempty"`
+	Datapoints  []datapointSnapshot `yaml:"datapoints,omitempty"`
+}
+
+type datapointSnapshot struct {
+	Attributes     map[string]any `yaml:"attributes,omitempty"`
+	IntValue       *int64         `yaml:"int_value,omitempty"`
+	DoubleValue    *float64       `yaml:"double_value,omitempty"`
+	Count          *uint64        `yaml:"count,omitempty"`
+	Sum            *float64       `yaml:"sum,omitempty"`
+	ExplicitBounds *[]float64     `yaml:"explicit_bounds,omitempty"`
+	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
+	Min            *float64       `yaml:"min,omitempty"`
+	Max            *float64       `yaml:"max,omitempty"`
+}
+
+// normalize produces the snapshot form of m, capturing every field the
+// snapshot can represent. Dropping fields a snapshot file should not pin is
+// the write path's job, in project.
 //
 // Normalization merges compatible resources (by resource attributes), scopes
 // (by name+version) and metrics (by name) so that batch boundaries do not
 // influence the assertion. Datapoints are keyed by their attribute values for
-// order-insensitive comparison.
-func normalize(m pmetric.Metrics, opts writeOptions) *document {
-	type dpKey struct {
-		attrs string
-	}
+// order-insensitive comparison, so datapoints sharing an attribute set collapse
+// into one logical series.
+func normalize(m pmetric.Metrics) *snapshot {
 	type metricAgg struct {
-		assertion  metricAssertion
-		datapoints map[dpKey]datapointAssertion
+		metric     metricSnapshot
+		datapoints map[string]datapointSnapshot
 	}
 	type scopeKey struct {
 		name, version string
 	}
 	type scopeAgg struct {
-		name, version string
-		metrics       map[string]*metricAgg
+		metrics map[string]*metricAgg
 	}
 	type resourceAgg struct {
 		attrs  map[string]any
@@ -38,7 +85,6 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 	}
 
 	resourceByKey := map[string]*resourceAgg{}
-	resourceOrder := []string{}
 
 	rms := m.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -49,7 +95,6 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 		if !ok {
 			rAgg = &resourceAgg{attrs: attrs, scopes: map[scopeKey]*scopeAgg{}}
 			resourceByKey[rk] = rAgg
-			resourceOrder = append(resourceOrder, rk)
 		}
 
 		sms := rm.ScopeMetrics()
@@ -58,7 +103,7 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 			sk := scopeKey{name: sm.Scope().Name(), version: sm.Scope().Version()}
 			sAgg, ok := rAgg.scopes[sk]
 			if !ok {
-				sAgg = &scopeAgg{name: sk.name, version: sk.version, metrics: map[string]*metricAgg{}}
+				sAgg = &scopeAgg{metrics: map[string]*metricAgg{}}
 				rAgg.scopes[sk] = sAgg
 			}
 
@@ -68,55 +113,33 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 				mAgg, ok := sAgg.metrics[metric.Name()]
 				if !ok {
 					mAgg = &metricAgg{
-						assertion:  buildMetricAssertion(metric),
-						datapoints: map[dpKey]datapointAssertion{},
+						metric:     buildMetricSnapshot(metric),
+						datapoints: map[string]datapointSnapshot{},
 					}
 					sAgg.metrics[metric.Name()] = mAgg
 				}
 				for _, extDP := range extractDatapoints(metric) {
-					raw := attrMapToRaw(extDP.attributes)
-					key := dpKey{attrs: canonKey(raw)}
-					dp := datapointAssertion{Attributes: raw}
-					if opts.includeValues {
-						if extDP.intValue != nil {
-							dp.IntValue = extDP.intValue
-						}
-						if extDP.doubleValue != nil {
-							dp.DoubleValue = extDP.doubleValue
-						}
-						if extDP.count != nil {
-							dp.Count = extDP.count
-						}
-						if extDP.sum != nil {
-							dp.Sum = extDP.sum
-						}
-						if extDP.minVal != nil {
-							dp.Min = extDP.minVal
-						}
-						if extDP.maxVal != nil {
-							dp.Max = extDP.maxVal
-						}
-						if extDP.explicitBounds != nil {
-							dp.ExplicitBounds = extDP.explicitBounds
-						}
-						if extDP.bucketCounts != nil {
-							dp.BucketCounts = extDP.bucketCounts
-						}
+					dp := datapointSnapshot{
+						Attributes:     attrMapToRaw(extDP.attributes),
+						IntValue:       extDP.intValue,
+						DoubleValue:    extDP.doubleValue,
+						Count:          extDP.count,
+						Sum:            extDP.sum,
+						ExplicitBounds: extDP.explicitBounds,
+						BucketCounts:   extDP.bucketCounts,
+						Min:            extDP.minVal,
+						Max:            extDP.maxVal,
 					}
-					if opts.includeHistogramExplicitBounds && extDP.explicitBounds != nil {
-						dp.ExplicitBounds = extDP.explicitBounds
-					}
-					mAgg.datapoints[key] = dp
+					mAgg.datapoints[canonKey(dp.Attributes)] = dp
 				}
 			}
 		}
 	}
 
-	doc := &document{Version: documentVersion, Signal: "metrics"}
-	sort.Strings(resourceOrder)
-	for _, rk := range resourceOrder {
+	out := &snapshot{Version: documentVersion, Signal: "metrics"}
+	for _, rk := range sortedKeys(resourceByKey) {
 		rAgg := resourceByKey[rk]
-		res := resourceAssertion{Attributes: rAgg.attrs}
+		res := resourceSnapshot{Attributes: rAgg.attrs}
 
 		scopeKeys := make([]scopeKey, 0, len(rAgg.scopes))
 		for k := range rAgg.scopes {
@@ -130,38 +153,35 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 		})
 		for _, sk := range scopeKeys {
 			sAgg := rAgg.scopes[sk]
-			scope := scopeAssertion{
-				Name:    sAgg.name,
-				Version: versionMatcher{op: matchExact, value: sAgg.version},
-			}
-
-			metricNames := make([]string, 0, len(sAgg.metrics))
-			for n := range sAgg.metrics {
-				metricNames = append(metricNames, n)
-			}
-			sort.Strings(metricNames)
-			for _, n := range metricNames {
-				mAgg := sAgg.metrics[n]
-				metricAssert := mAgg.assertion
-				dpList := make([]datapointAssertion, 0, len(mAgg.datapoints))
-				for _, dp := range mAgg.datapoints {
-					dpList = append(dpList, dp)
+			scope := scopeSnapshot{Name: sk.name, Version: sk.version}
+			for _, name := range sortedKeys(sAgg.metrics) {
+				mAgg := sAgg.metrics[name]
+				metric := mAgg.metric
+				for _, dpk := range sortedKeys(mAgg.datapoints) {
+					metric.Datapoints = append(metric.Datapoints, mAgg.datapoints[dpk])
 				}
-				sort.Slice(dpList, func(i, j int) bool {
-					return canonKey(dpList[i].Attributes) < canonKey(dpList[j].Attributes)
-				})
-				metricAssert.Datapoints = dpList
-				scope.Metrics = append(scope.Metrics, metricAssert)
+				scope.Metrics = append(scope.Metrics, metric)
 			}
 			res.Scopes = append(res.Scopes, scope)
 		}
-		doc.Resources = append(doc.Resources, res)
+		out.Resources = append(out.Resources, res)
 	}
-	return doc
+	return out
 }
 
-func buildMetricAssertion(metric pmetric.Metric) metricAssertion {
-	a := metricAssertion{
+// sortedKeys returns m's keys in ascending order, so that the snapshot is
+// deterministic regardless of map iteration order.
+func sortedKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func buildMetricSnapshot(metric pmetric.Metric) metricSnapshot {
+	s := metricSnapshot{
 		Name: metric.Name(),
 		Unit: metric.Unit(),
 		Type: metricTypeString(metric.Type()),
@@ -169,15 +189,15 @@ func buildMetricAssertion(metric pmetric.Metric) metricAssertion {
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
 		sum := metric.Sum()
-		a.Temporality = temporalityString(sum.AggregationTemporality())
+		s.Temporality = temporalityString(sum.AggregationTemporality())
 		mono := sum.IsMonotonic()
-		a.Monotonic = &mono
+		s.Monotonic = &mono
 	case pmetric.MetricTypeHistogram:
-		a.Temporality = temporalityString(metric.Histogram().AggregationTemporality())
+		s.Temporality = temporalityString(metric.Histogram().AggregationTemporality())
 	case pmetric.MetricTypeExponentialHistogram:
-		a.Temporality = temporalityString(metric.ExponentialHistogram().AggregationTemporality())
+		s.Temporality = temporalityString(metric.ExponentialHistogram().AggregationTemporality())
 	}
-	return a
+	return s
 }
 
 func metricTypeString(t pmetric.MetricType) string {
