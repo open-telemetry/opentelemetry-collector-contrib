@@ -141,6 +141,19 @@ func refillBenchWindow(batches []ptrace.Traces, template ptrace.Traces, base uin
 	}
 }
 
+// newBenchPendingTrace builds a pendingTrace from a fresh copy of template.
+// The decide path consumes pt.spans, so every iteration needs its own copy,
+// and reusing one pendingTrace would also understate steady-state behavior.
+func newBenchPendingTrace(template ptrace.Traces, traceID pcommon.TraceID, spanCount int) *pendingTrace {
+	td := ptrace.NewTraces()
+	template.CopyTo(td)
+	spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
+	for _, rs := range td.ResourceSpans().All() {
+		spans = append(spans, rs)
+	}
+	return &pendingTrace{traceID: traceID, spans: spans, spanCount: spanCount}
+}
+
 // BenchmarkConsumeTraces_Accumulate measures the buffering path: per-span
 // bucketing, the per-span root-span OTTL evaluation, span copy into the
 // pending buffer, and the trace_timeout timer arm for new traces. Timers use
@@ -302,24 +315,12 @@ func BenchmarkDecide(b *testing.B) {
 			id := benchTraceID(1)
 			template := benchTrace(id, bc.spansPerTrace, bc.traceState)
 
-			// The pending trace is rebuilt (untimed) every iteration: the
-			// decide path consumes pt.spans, and reusing one pendingTrace
-			// would also understate steady-state behavior.
-			newPT := func() *pendingTrace {
-				td := ptrace.NewTraces()
-				template.CopyTo(td)
-				spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
-				for _, rs := range td.ResourceSpans().All() {
-					spans = append(spans, rs)
-				}
-				return &pendingTrace{traceID: id, spans: spans, spanCount: bc.spansPerTrace}
-			}
-
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				// Rebuilt untimed every iteration, see newBenchPendingTrace.
 				b.StopTimer()
-				pt := newPT()
+				pt := newBenchPendingTrace(template, id, bc.spansPerTrace)
 				b.StartTimer()
 				p.mu.Lock()
 				p.traces[id] = pt
@@ -474,21 +475,11 @@ func BenchmarkDecide_RecordFingerprint(b *testing.B) {
 				template := benchTrace(id, spansPerTrace, "")
 				template.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
 
-				newPT := func() *pendingTrace {
-					td := ptrace.NewTraces()
-					template.CopyTo(td)
-					spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
-					for _, rs := range td.ResourceSpans().All() {
-						spans = append(spans, rs)
-					}
-					return &pendingTrace{traceID: id, spans: spans, spanCount: spansPerTrace}
-				}
-
 				b.ReportAllocs()
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
 					b.StopTimer()
-					pt := newPT()
+					pt := newBenchPendingTrace(template, id, spansPerTrace)
 					b.StartTimer()
 					p.mu.Lock()
 					p.traces[id] = pt
