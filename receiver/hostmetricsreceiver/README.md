@@ -51,7 +51,7 @@ The available scrapers are:
 | [cpu]        | All                          | CPU utilization metrics                                |
 | [disk]       | All                          | Disk I/O metrics                                       |
 | [filesystem] | All                          | File System utilization metrics                        |
-| [hardware]   | Linux                        | Hardware sensor metrics (temperature, status)          |
+| [hardware]   | Linux                        | Hardware sensor metrics (temperature)          |
 | [load]       | All                          | CPU load metrics                                       |
 | [memory]     | All                          | Memory utilization metrics                             |
 | [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
