@@ -60,6 +60,10 @@ exclusions:
     lifecycle_test:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+    feature_gates:
+      - name: exporter.xray.allowDot
+        validation:
+          enabled: false
     goleak:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
