@@ -75,15 +75,13 @@ func TestDockerParserInvalidType(t *testing.T) {
 }
 
 func TestCrioParserInvalidType(t *testing.T) {
-	m := make(map[string]any, 4)
-	err := parseCRIOInto(m, "")
-	require.Error(t, err)
+	err := parseCRIOInto(make(map[string]any, 4), []int{})
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as cri-o container logs")
 }
 
 func TestContainerdParserInvalidType(t *testing.T) {
-	m := make(map[string]any, 4)
-	err := parseContainerdInto(m, "")
-	require.Error(t, err)
+	err := parseContainerdInto(make(map[string]any, 4), []int{})
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as containerd logs")
 }
 
 func TestFormatDetectionFailure(t *testing.T) {

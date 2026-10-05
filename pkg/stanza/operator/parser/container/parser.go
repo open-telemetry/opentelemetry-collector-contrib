@@ -127,7 +127,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 					delete(m, k)
 				}
 				if err = p.ParseWith(ctx, ent, func(v any) (any, error) {
-					return m, parseContainerdInto(m, v.(string))
+					return m, parseContainerdInto(m, v)
 				}, write); err != nil {
 					mapPool.Put(m)
 					if !errors.Is(err, helper.ErrEntryHandled) {
@@ -143,7 +143,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 					delete(m, k)
 				}
 				if err = p.ParseWith(ctx, ent, func(v any) (any, error) {
-					return m, parseCRIOInto(m, v.(string))
+					return m, parseCRIOInto(m, v)
 				}, write); err != nil {
 					mapPool.Put(m)
 					if !errors.Is(err, helper.ErrEntryHandled) {
@@ -228,7 +228,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				delete(m, k)
 			}
 			if err = p.ParseWith(ctx, entry, func(v any) (any, error) {
-				return m, parseContainerdInto(m, v.(string))
+				return m, parseContainerdInto(m, v)
 			}, p.Write); err != nil {
 				mapPool.Put(m)
 				if errors.Is(err, helper.ErrEntryHandled) {
@@ -244,7 +244,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				delete(m, k)
 			}
 			if err = p.ParseWith(ctx, entry, func(v any) (any, error) {
-				return m, parseCRIOInto(m, v.(string))
+				return m, parseCRIOInto(m, v)
 			}, p.Write); err != nil {
 				mapPool.Put(m)
 				if errors.Is(err, helper.ErrEntryHandled) {
@@ -369,7 +369,11 @@ func isContainerdTimestamp(s string) bool {
 }
 
 // parseContainerdInto parses a raw containerd CRI log line into m without allocating.
-func parseContainerdInto(m map[string]any, raw string) error {
+func parseContainerdInto(m map[string]any, value any) error {
+	raw, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("type '%T' cannot be parsed as containerd logs", value)
+	}
 	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok || !isContainerdTimestamp(timePart) {
 		return errors.New("could not parse containerd fields")
@@ -394,7 +398,11 @@ func parseContainerdInto(m map[string]any, raw string) error {
 }
 
 // parseCRIOInto parses a raw CRI-O log line into m without allocating.
-func parseCRIOInto(m map[string]any, raw string) error {
+func parseCRIOInto(m map[string]any, value any) error {
+	raw, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("type '%T' cannot be parsed as cri-o container logs", value)
+	}
 	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok {
 		return errors.New("could not parse CRIO fields")
