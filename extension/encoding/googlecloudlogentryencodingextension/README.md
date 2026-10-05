@@ -472,7 +472,7 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 | `healthyIps` | `gcp.dns.healthy.ips` |
 | `unhealthyIps` | `gcp.dns.unhealthy.ips` |
 | `dns64Translated` | `gcp.dns.dns64.translated` |
-| `vmInstanceId` | `host.id` |
+| `vmInstanceIdString` | `host.id` |
 | `vmInstanceName` | `host.name` |
 | `vmProjectId` | `gcp.project.id` |
 | `vmZoneName` | `cloud.availability_zone` |
