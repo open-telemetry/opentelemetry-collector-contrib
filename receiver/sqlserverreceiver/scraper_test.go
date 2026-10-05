@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -518,11 +519,11 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 	case getSQLServerQueryTextAndPlanQuery(false):
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery(true):
-		queryResults, err = readFile("queryTextAndPlanQueryDataWithFullQueryText.txt")
+		queryResults, err = readFile("queryTextAndPlanQueryDataWithCommentTags.txt")
 	case getSQLServerQuerySamplesQuery(false):
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
 	case getSQLServerQuerySamplesQuery(true):
-		queryResults, err = readFile("recordDatabaseSampleQueryDataWithFullQueryText.txt")
+		queryResults, err = readFile("recordDatabaseSampleQueryDataWithCommentTags.txt")
 	case getSQLServerTopProcedureQuery(mc.instanceName):
 		fixture := "topProcedureQueryData.txt"
 		if mc.procedureFixtureFile != "" {
@@ -711,9 +712,9 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	assert.NoError(t, errs)
 }
 
-// TestQueryTextAndPlanQueryWithFullQueryText covers db.server.top_query with
-// collect_full_query_text enabled on top_query_collection.
-func TestQueryTextAndPlanQueryWithFullQueryText(t *testing.T) {
+// TestQueryTextAndPlanQueryWithCommentTags covers db.server.top_query with
+// allowed_comment_keys set on top_query_collection.
+func TestQueryTextAndPlanQueryWithCommentTags(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
 	cfg.Password = "password"
@@ -722,7 +723,6 @@ func TestQueryTextAndPlanQueryWithFullQueryText(t *testing.T) {
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
-	cfg.TopQueryCollection.CollectFullQueryText = true
 	cfg.TopQueryCollection.AllowedCommentKeys = []string{"traceparent", "framework"}
 	assert.NoError(t, cfg.Validate())
 
@@ -775,15 +775,16 @@ func TestQueryTextAndPlanQueryWithFullQueryText(t *testing.T) {
 		commentTags.Str())
 	assert.NotContains(t, commentTags.Str(), "secret")
 
-	// The full text spans the whole batch, is obfuscated, and no longer carries the
-	// comment the tags were harvested from.
-	fullText, ok := logRecord.Attributes().Get("db.query.full_text")
+	// The batch text the tags came from is never emitted, and db.query.text stays
+	// the obfuscated statement with its comments stripped.
+	_, ok = logRecord.Attributes().Get("db.query.full_text")
+	assert.False(t, ok, "db.query.full_text must not be emitted")
+	queryText, ok := logRecord.Attributes().Get("db.query.text")
 	assert.True(t, ok)
-	assert.NotEmpty(t, fullText.Str())
-	assert.NotContains(t, fullText.Str(), "traceparent")
-	assert.NotContains(t, fullText.Str(), "do-not-export")
+	assert.NotContains(t, queryText.Str(), "traceparent")
+	assert.NotContains(t, queryText.Str(), "do-not-export")
 
-	expectedFile := filepath.Join("testdata", "expectedQueryTextAndPlanQueryWithFullQueryText.yaml")
+	expectedFile := filepath.Join("testdata", "expectedQueryTextAndPlanQueryWithCommentTags.yaml")
 
 	// Uncomment line below to re-generate expected logs.
 	// golden.WriteLogs(t, expectedFile, actualLogs)
@@ -794,9 +795,9 @@ func TestQueryTextAndPlanQueryWithFullQueryText(t *testing.T) {
 	assert.NoError(t, errs)
 }
 
-// TestQueryTextAndPlanQueryFullQueryTextDisabled asserts the attributes stay empty
-// when the collection has not opted in, which is the default.
-func TestQueryTextAndPlanQueryFullQueryTextDisabled(t *testing.T) {
+// TestQueryTextAndPlanQueryCommentTagsDisabled asserts db.query.comment_tags stays
+// empty when the collection named no keys, which is the default.
+func TestQueryTextAndPlanQueryCommentTagsDisabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
 	cfg.Password = "password"
@@ -805,8 +806,7 @@ func TestQueryTextAndPlanQueryFullQueryTextDisabled(t *testing.T) {
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
-	// An allow-list alone must not turn anything on.
-	cfg.TopQueryCollection.AllowedCommentKeys = []string{"traceparent"}
+	// AllowedCommentKeys is left unset, which is what opts the collection out.
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, false)
@@ -839,11 +839,9 @@ func TestQueryTextAndPlanQueryFullQueryTextDisabled(t *testing.T) {
 	require.Positive(t, actualLogs.LogRecordCount())
 
 	logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	for _, attr := range []string{"db.query.full_text", "db.query.comment_tags"} {
-		value, ok := logRecord.Attributes().Get(attr)
-		assert.True(t, ok, "%s is always emitted by the generated event builder", attr)
-		assert.Empty(t, value.Str(), "%s must stay empty when the collection has not opted in", attr)
-	}
+	value, ok := logRecord.Attributes().Get("db.query.comment_tags")
+	assert.True(t, ok, "db.query.comment_tags is always emitted by the generated event builder")
+	assert.Empty(t, value.Str(), "db.query.comment_tags must stay empty when the collection named no keys")
 }
 
 func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
@@ -1165,9 +1163,9 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 	}
 }
 
-// TestRecordDatabaseSampleQueryWithFullQueryText covers db.server.query_sample with
-// collect_full_query_text enabled on query_sample_collection.
-func TestRecordDatabaseSampleQueryWithFullQueryText(t *testing.T) {
+// TestRecordDatabaseSampleQueryWithCommentTags covers db.server.query_sample with
+// allowed_comment_keys set on query_sample_collection.
+func TestRecordDatabaseSampleQueryWithCommentTags(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
 	cfg.Password = "password"
@@ -1175,7 +1173,6 @@ func TestRecordDatabaseSampleQueryWithFullQueryText(t *testing.T) {
 	cfg.Server = "0.0.0.0"
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 
-	cfg.QuerySample.CollectFullQueryText = true
 	cfg.QuerySample.AllowedCommentKeys = []string{"traceparent", "framework"}
 	assert.NoError(t, cfg.Validate())
 
@@ -1203,13 +1200,15 @@ func TestRecordDatabaseSampleQueryWithFullQueryText(t *testing.T) {
 		"traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate'",
 		commentTags.Str())
 
-	fullText, ok := logRecord.Attributes().Get("db.query.full_text")
+	// The batch text the tags came from is never emitted.
+	_, ok = logRecord.Attributes().Get("db.query.full_text")
+	assert.False(t, ok, "db.query.full_text must not be emitted")
+	queryText, ok := logRecord.Attributes().Get("db.query.text")
 	assert.True(t, ok)
-	assert.NotEmpty(t, fullText.Str())
-	assert.NotContains(t, fullText.Str(), "traceparent")
-	assert.NotContains(t, fullText.Str(), "ABC-123", "literals in the batch must be obfuscated")
+	assert.NotContains(t, queryText.Str(), "traceparent")
+	assert.NotContains(t, queryText.Str(), "ABC-123", "literals must be obfuscated")
 
-	expectedFile := filepath.Join("testdata", "expectedRecordDatabaseSampleQueryWithFullQueryText.yaml")
+	expectedFile := filepath.Join("testdata", "expectedRecordDatabaseSampleQueryWithCommentTags.yaml")
 
 	// Uncomment line below to re-generate expected logs.
 	// golden.WriteLogs(t, expectedFile, actualLogs)
@@ -1222,9 +1221,10 @@ func TestRecordDatabaseSampleQueryWithFullQueryText(t *testing.T) {
 	assert.NoError(t, errs)
 }
 
-// TestRecordDatabaseSampleQueryCommentKeysGateExtraction asserts the tags stay empty
-// when no keys are allowed, even though the full text itself is collected.
-func TestRecordDatabaseSampleQueryCommentKeysGateExtraction(t *testing.T) {
+// TestRecordDatabaseSampleQueryCommentTagsDisabled asserts the tags stay empty when
+// the collection named no keys, and that the batch-text column is not even selected,
+// so the emitted SQL is what it was before this option existed.
+func TestRecordDatabaseSampleQueryCommentTagsDisabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
 	cfg.Password = "password"
@@ -1232,7 +1232,6 @@ func TestRecordDatabaseSampleQueryCommentKeysGateExtraction(t *testing.T) {
 	cfg.Server = "0.0.0.0"
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 
-	cfg.QuerySample.CollectFullQueryText = true
 	cfg.QuerySample.AllowedCommentKeys = nil
 	assert.NoError(t, cfg.Validate())
 
@@ -1257,9 +1256,8 @@ func TestRecordDatabaseSampleQueryCommentKeysGateExtraction(t *testing.T) {
 	assert.True(t, ok)
 	assert.Empty(t, commentTags.Str(), "no allowed keys must extract no tags")
 
-	fullText, ok := logRecord.Attributes().Get("db.query.full_text")
-	assert.True(t, ok)
-	assert.NotEmpty(t, fullText.Str(), "the full text itself is still collected")
+	assert.NotContains(t, scraper.sqlQuery, "batch_text",
+		"the batch-text column must not be selected when no keys are allowed")
 }
 
 // removeBlockingStartTimeFromAllLogRecords drops sqlserver.blocking.start_time,
@@ -2268,4 +2266,121 @@ func TestProcedureLookbackSeconds(t *testing.T) {
 		assert.GreaterOrEqual(t, got, 75, "expected roughly 65s elapsed plus a 10s buffer")
 		assert.LessOrEqual(t, got, 80, "expected roughly 65s elapsed plus a 10s buffer, with some slack for test timing")
 	})
+}
+
+// TestQueryTextAndPlanQueryCollectFullQueryText asserts collect_full_query_text
+// swaps db.query.text from the offset-bounded statement to the whole batch the
+// statement came from, with no second attribute involved.
+func TestQueryTextAndPlanQueryCollectFullQueryText(t *testing.T) {
+	newScraper := func(t *testing.T, collectFullQueryText bool) *sqlServerScraperHelper {
+		t.Helper()
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Username = "sa"
+		cfg.Password = "password"
+		cfg.Port = 1433
+		cfg.Server = "0.0.0.0"
+		enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+		cfg.TopQueryCollection.CollectFullQueryText = collectFullQueryText
+		// Keyed so the fixture's batch-text column is selected either way, which
+		// isolates the flag's effect on db.query.text.
+		cfg.TopQueryCollection.AllowedCommentKeys = []string{"framework"}
+		require.NoError(t, cfg.Validate())
+
+		configureAllScraperMetricsAndEvents(cfg, false)
+		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+		cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+		scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		require.NotEmpty(t, scrapers)
+		scraper := scrapers[0]
+
+		queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+		queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+		for column, value := range map[string]int64{
+			"total_elapsed_time": 846, "total_rows": 1, "total_logical_reads": 1,
+			"total_logical_writes": 1, "total_physical_reads": 1, "execution_count": 1,
+			"total_worker_time": 845, "total_grant_kb": 1, "procedure_execution_count": 0,
+		} {
+			scraper.cacheAndDiff(queryHash, queryPlanHash, "0", column, value)
+		}
+
+		scraper.client = mockClient{
+			instanceName:        scraper.config.InstanceName,
+			SQL:                 scraper.sqlQuery,
+			maxQuerySampleCount: 1000,
+			lookbackTime:        20,
+			topQueryCount:       200,
+		}
+		return scraper
+	}
+
+	queryTextOf := func(t *testing.T, scraper *sqlServerScraperHelper) string {
+		t.Helper()
+		logs, err := scraper.ScrapeLogs(t.Context())
+		require.NoError(t, err)
+		require.Positive(t, logs.LogRecordCount())
+		value, ok := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("db.query.text")
+		require.True(t, ok)
+		return value.Str()
+	}
+
+	statementOnly := queryTextOf(t, newScraper(t, false))
+	fullBatch := queryTextOf(t, newScraper(t, true))
+
+	// The fixture's statement column is the long top-query CTE; its batch column is
+	// a short commented SELECT. They must not be the same text.
+	assert.NotEqual(t, statementOnly, fullBatch)
+	assert.Contains(t, statementOnly, "qstats", "default db.query.text is the statement column")
+	assert.NotContains(t, fullBatch, "qstats", "with the flag db.query.text is the batch column")
+	assert.Contains(t, fullBatch, "dm_exec_query_stats")
+
+	// Either way the text is obfuscated, so the comment it carried is stripped and
+	// its literals are masked. The comment survives only in db.query.comment_tags.
+	assert.NotContains(t, fullBatch, "traceparent")
+	assert.NotContains(t, fullBatch, "do-not-export")
+	assert.NotContains(t, fullBatch, "100", "literals in the batch must be obfuscated")
+
+	// No second attribute is introduced for the batch text.
+	logs, err := newScraper(t, true).ScrapeLogs(t.Context())
+	require.NoError(t, err)
+	_, ok := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("db.query.full_text")
+	assert.False(t, ok, "db.query.full_text must not be emitted")
+}
+
+// TestNeedsBatchTextSelectsColumn asserts the batch-text column is selected when
+// either option asks for it and omitted when neither does, so a deployment using
+// neither keeps the query it had before these options existed.
+func TestNeedsBatchTextSelectsColumn(t *testing.T) {
+	for _, tc := range []struct {
+		name                 string
+		collectFullQueryText bool
+		allowedCommentKeys   []string
+		wantColumn           bool
+	}{
+		{name: "neither", wantColumn: false},
+		{name: "comment keys only", allowedCommentKeys: []string{"framework"}, wantColumn: true},
+		{name: "full query text only", collectFullQueryText: true, wantColumn: true},
+		{name: "both", collectFullQueryText: true, allowedCommentKeys: []string{"framework"}, wantColumn: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			topQuery := TopQueryCollection{
+				CollectFullQueryText: tc.collectFullQueryText,
+				AllowedCommentKeys:   tc.allowedCommentKeys,
+			}
+			querySample := QuerySample{
+				CollectFullQueryText: tc.collectFullQueryText,
+				AllowedCommentKeys:   tc.allowedCommentKeys,
+			}
+			assert.Equal(t, tc.wantColumn, topQuery.needsBatchText())
+			assert.Equal(t, tc.wantColumn, querySample.needsBatchText())
+
+			assert.Equal(t, tc.wantColumn,
+				strings.Contains(getSQLServerQueryTextAndPlanQuery(topQuery.needsBatchText()), "AS batch_text"))
+			assert.Equal(t, tc.wantColumn,
+				strings.Contains(getSQLServerQuerySamplesQuery(querySample.needsBatchText()), "AS batch_text"))
+		})
+	}
 }

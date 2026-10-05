@@ -85,9 +85,6 @@ resourceLogs:
               - key: sqlserver.query.plan.creation_time
                 value:
                   stringValue: "2026-01-10T08:00:00.0000000+00:00"
-              - key: db.query.full_text
-                value:
-                  stringValue: ""
               - key: db.query.comment_tags
                 value:
                   stringValue: ""

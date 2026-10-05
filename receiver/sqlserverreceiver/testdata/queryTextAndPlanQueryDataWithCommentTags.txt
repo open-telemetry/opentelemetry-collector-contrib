@@ -21,6 +21,6 @@
 		"procedure_id": "0",
 		"procedure_name": "",
 		"procedure_execution_count": "0",
-		"full_query_text": "/*traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate',secret='do-not-export'*/SELECT TOP(@topNValue) qs.query_hash FROM sys.dm_exec_query_stats qs WHERE qs.total_rows > 100"
+		"batch_text": "/*traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate',secret='do-not-export'*/SELECT TOP(@topNValue) qs.query_hash FROM sys.dm_exec_query_stats qs WHERE qs.total_rows > 100"
 	}
 ]

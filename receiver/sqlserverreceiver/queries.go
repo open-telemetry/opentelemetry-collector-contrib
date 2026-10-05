@@ -474,30 +474,32 @@ func getSQLServerTopProcedureQuery(instanceName string) string {
 //go:embed templates/dbQueryAndTextQuery.tmpl
 var sqlServerQueryTextAndPlanQueryTemplate string
 
-func getSQLServerQueryTextAndPlanQuery(collectFullQueryText bool) string {
-	return replaceFullQueryTextColumn(sqlServerQueryTextAndPlanQueryTemplate, "\t", "st.text", collectFullQueryText)
+func getSQLServerQueryTextAndPlanQuery(selectBatchText bool) string {
+	return replaceBatchTextColumn(sqlServerQueryTextAndPlanQueryTemplate, "\t", "st.text", selectBatchText)
 }
 
 //go:embed templates/sqlServerQuerySample.tmpl
 var sqlServerQuerySamples string
 
-func getSQLServerQuerySamplesQuery(collectFullQueryText bool) string {
-	return replaceFullQueryTextColumn(sqlServerQuerySamples, "  ", "COALESCE(o.TEXT, ib.event_info, '')", collectFullQueryText)
+func getSQLServerQuerySamplesQuery(selectBatchText bool) string {
+	return replaceBatchTextColumn(sqlServerQuerySamples, "  ", "COALESCE(o.TEXT, ib.event_info, '')", selectBatchText)
 }
 
-// replaceFullQueryTextColumn resolves the {full_query_text} placeholder line in a
-// query template, where indent is the leading whitespace the placeholder sits
-// behind. The column is only selected when the caller asked for it, so a
-// deployment that leaves collect_full_query_text off does not pay to transfer the
-// batch text — which is nvarchar(max) — for every row of every scrape. When it is
-// off the whole line is removed, leaving the query byte-identical to what it was
-// before this option existed.
-func replaceFullQueryTextColumn(query, indent, expression string, collectFullQueryText bool) string {
+// replaceBatchTextColumn resolves the {batch_text} placeholder line in a query
+// template, where indent is the leading whitespace the placeholder sits behind.
+// The column carries the whole SQL batch the statement was extracted from, which
+// feeds db.query.text when collect_full_query_text is set and the comment tags when
+// allowed_comment_keys is, so it is only selected when a collection asked for one of
+// those: a deployment that asks for neither does not pay to transfer the batch text
+// — which is nvarchar(max) — for every row of every scrape. When it is off the whole
+// line is removed, leaving the query byte-identical to what it was before these
+// options existed.
+func replaceBatchTextColumn(query, indent, expression string, selectBatchText bool) string {
 	line := ""
-	if collectFullQueryText {
-		line = indent + expression + " AS full_query_text,\n"
+	if selectBatchText {
+		line = indent + expression + " AS batch_text,\n"
 	}
-	return strings.NewReplacer(indent+"{full_query_text}\n", line).Replace(query)
+	return strings.NewReplacer(indent+"{batch_text}\n", line).Replace(query)
 }
 
 //go:embed templates/sqlServerIdleBlockerQuerySample.tmpl

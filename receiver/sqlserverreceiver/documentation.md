@@ -1276,7 +1276,7 @@ query sample
 | client.address | Hostname or address of the client. | Any Str | - |
 | client.port | TCP port used by the client. | Any Int | - |
 | db.namespace | The database name. | Any Str | - |
-| db.query.text | The text of the database query being executed. | Any Str | - |
+| db.query.text | The text of the database query being executed. This is the statement that ran, unless collect_full_query_text is set for the collection emitting this event, in which case it is the whole SQL batch the statement came from. | Any Str | - |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
@@ -1314,8 +1314,7 @@ query sample
 | user.name | Login name associated with the SQL Server session. | Any Str | - |
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
-| db.query.full_text | The obfuscated text of the full SQL batch or stored procedure the statement was extracted from. Unlike db.query.text, which covers only the statement, this spans the whole batch. Empty unless collect_full_query_text is enabled for the collection emitting this event. | Any Str | - |
-| db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. Empty unless collect_full_query_text is also enabled for the collection emitting this event. | Any Str | - |
+| db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlating a query with the application that issued it. Only low-cardinality keys belong here. Empty unless allowed_comment_keys is set for the collection emitting this event. | Any Str | - |
 
 ### db.server.top_procedure
 
@@ -1350,7 +1349,7 @@ top query
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | sqlserver.total_worker_time | Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds. | Any Double | - |
-| db.query.text | The text of the database query being executed. | Any Str | - |
+| db.query.text | The text of the database query being executed. This is the statement that ran, unless collect_full_query_text is set for the collection emitting this event, in which case it is the whole SQL batch the statement came from. | Any Str | - |
 | db.namespace | The database name. | Any Str | - |
 | sqlserver.execution_count | Number of times that the plan has been executed since it was last compiled, reported in delta value. | Any Int | - |
 | sqlserver.total_logical_reads | Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
@@ -1368,8 +1367,7 @@ top query
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
 | sqlserver.query.last_started | Timestamp of when the SQL query last started executing (ISO 8601 format). | Any Str | - |
 | sqlserver.query.plan.creation_time | Timestamp of when the SQL query execution plan was compiled (ISO 8601 format). | Any Str | - |
-| db.query.full_text | The obfuscated text of the full SQL batch or stored procedure the statement was extracted from. Unlike db.query.text, which covers only the statement, this spans the whole batch. Empty unless collect_full_query_text is enabled for the collection emitting this event. | Any Str | - |
-| db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. Empty unless collect_full_query_text is also enabled for the collection emitting this event. | Any Str | - |
+| db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlating a query with the application that issued it. Only low-cardinality keys belong here. Empty unless allowed_comment_keys is set for the collection emitting this event. | Any Str | - |
 
 ## Resource Attributes
 

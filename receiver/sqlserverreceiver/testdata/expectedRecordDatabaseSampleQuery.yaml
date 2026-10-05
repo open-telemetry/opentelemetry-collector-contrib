@@ -151,9 +151,6 @@ resourceLogs:
               - key: sqlserver.procedure_name
                 value:
                   stringValue: ""
-              - key: db.query.full_text
-                value:
-                  stringValue: ""
               - key: db.query.comment_tags
                 value:
                   stringValue: ""

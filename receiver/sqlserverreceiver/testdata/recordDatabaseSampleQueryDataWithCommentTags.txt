@@ -41,6 +41,6 @@
 		"session_start_time": "2025-02-12T15:00:00.000+08:00",
 		"procedure_id": "0",
 		"procedure_name": "",
-		"full_query_text": "/*traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate'*/SELECT name FROM inventory.items WHERE sku = 'ABC-123' AND qty > 10"
+		"batch_text": "/*traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',framework='hibernate'*/SELECT name FROM inventory.items WHERE sku = 'ABC-123' AND qty > 10"
 	}
 ]

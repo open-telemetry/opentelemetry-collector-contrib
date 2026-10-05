@@ -151,9 +151,6 @@ resourceLogs:
               - key: sqlserver.procedure_name
                 value:
                   stringValue: ""
-              - key: db.query.full_text
-                value:
-                  stringValue: ""
             body: {}
             eventName: db.server.query_sample
             timeUnixNano: "1790107220701735000"

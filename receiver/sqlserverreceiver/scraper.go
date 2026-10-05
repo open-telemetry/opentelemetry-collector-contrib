@@ -168,13 +168,13 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	var isQuerySample bool
 	switch s.sqlQuery {
-	case getSQLServerQueryTextAndPlanQuery(s.config.TopQueryCollection.CollectFullQueryText):
+	case getSQLServerQueryTextAndPlanQuery(s.config.TopQueryCollection.needsBatchText()):
 		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopQueryCollection.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
 		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx)
-	case getSQLServerQuerySamplesQuery(s.config.QuerySample.CollectFullQueryText):
+	case getSQLServerQuerySamplesQuery(s.config.QuerySample.needsBatchText()):
 		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
 	case getSQLServerTopProcedureQuery(s.config.InstanceName):
@@ -1627,7 +1627,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryPlan         = "query_plan"
 		queryPlanHash     = "query_plan_hash"
 		queryText         = "query_text"
-		fullQueryText     = "full_query_text"
+		batchText         = "batch_text"
 		rowsReturned      = "total_rows"
 		// the time returned from mssql is in microsecond
 		totalElapsedTime = "total_elapsed_time"
@@ -1700,7 +1700,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			continue
 		}
 
-		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+		queryTextColumn := queryTextColumnFor(row, queryText, batchText, s.config.TopQueryCollection.CollectFullQueryText)
+		queryTextVal := s.retrieveValue(row, queryTextColumn, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
@@ -1715,11 +1716,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			continue
 		}
 
-		fullQueryTextVal, commentTagsVal := s.collectFullQueryText(
-			row[fullQueryText],
-			s.config.TopQueryCollection.CollectFullQueryText,
-			s.config.TopQueryCollection.AllowedCommentKeys,
-		)
+		commentTagsVal := extractCommentTags(row[batchText], s.config.TopQueryCollection.AllowedCommentKeys)
 
 		databaseNameVal := row[databaseName]
 
@@ -1814,7 +1811,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			row[storedProcedureName],
 			lastExecutionTimeVal,
 			planCreationTimeVal,
-			fullQueryTextVal,
 			commentTagsVal,
 		)
 		s.lb.RecordDbServerQueryPlanEvent(
@@ -1828,29 +1824,37 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	return resources, errors.Join(errs...)
 }
 
-// collectFullQueryText derives the db.query.full_text and
-// db.query.comment_tags attribute values from the raw batch text of a row.
-// Both are empty when the collection has not opted in, and the caller always
-// passes them on, since the generated event builder emits every declared
-// attribute regardless.
+// queryTextColumnFor picks the column db.query.text is built from. By default that
+// is the statement column, which SQL Server's DMVs bound by byte offset so it holds
+// only the statement that ran. With collect_full_query_text the whole batch the
+// statement came from is reported instead, which is what carries any surrounding
+// statements and the comments clients inject.
 //
-// The comment tags are read from the raw text before obfuscation: the obfuscator
-// strips comments, so anything not harvested here is gone by the time full_text
-// is produced.
-func (s *sqlServerScraperHelper) collectFullQueryText(rawFullText string, collect bool, allowedCommentKeys []string) (fullQueryText, commentTags string) {
-	if !collect || rawFullText == "" {
-		return "", ""
+// It falls back to the statement column when the batch text came back empty — the
+// DMV can return NULL — so enabling the option never empties db.query.text.
+func queryTextColumnFor(row sqlquery.StringMap, statementColumn, batchColumn string, collectFullQueryText bool) string {
+	if collectFullQueryText && row[batchColumn] != "" {
+		return batchColumn
+	}
+	return statementColumn
+}
+
+// extractCommentTags derives the db.query.comment_tags attribute value from the
+// raw batch text of a row. It is empty when the collection named no keys, and the
+// caller passes it on regardless, since the generated event builder emits every
+// declared attribute.
+//
+// The batch text is read rather than db.query.text because the latter is bounded
+// by the statement offsets, which exclude a comment that precedes the statement —
+// the usual placement. It is read before obfuscation because the obfuscator strips
+// comments, so anything not harvested here is gone. The batch text itself is never
+// emitted.
+func extractCommentTags(rawBatchText string, allowedCommentKeys []string) string {
+	if rawBatchText == "" || len(allowedCommentKeys) == 0 {
+		return ""
 	}
 
-	commentTags = sqlcomments.ExtractAndFilterComments(rawFullText, allowedCommentKeys)
-
-	obfuscated, err := s.obfuscator.obfuscateSQLString(rawFullText)
-	if err != nil {
-		s.logger.Error("failed to obfuscate full SQL batch text", zap.Error(err))
-		return "", commentTags
-	}
-
-	return obfuscated, commentTags
+	return sqlcomments.ExtractAndFilterComments(rawBatchText, allowedCommentKeys)
 }
 
 func (s *sqlServerScraperHelper) retrieveValue(
@@ -2080,7 +2084,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const sessionStartTime = "session_start_time"
 	const sessionStatus = "session_status"
 	const statementText = "statement_text"
-	const fullQueryText = "full_query_text"
+	const batchText = "batch_text"
 	const totalElapsedTimeMillisecond = "total_elapsed_time"
 	const transactionID = "transaction_id"
 	const transactionIsolationLevel = "transaction_isolation_level"
@@ -2179,7 +2183,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		dbNamespaceVal := row[dbName]
-		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+		queryTextColumn := queryTextColumnFor(row, statementText, batchText, s.config.QuerySample.CollectFullQueryText)
+		queryTextVal := s.retrieveValue(row, queryTextColumn, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
@@ -2193,11 +2198,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			continue
 		}
 
-		fullQueryTextVal, commentTagsVal := s.collectFullQueryText(
-			row[fullQueryText],
-			s.config.QuerySample.CollectFullQueryText,
-			s.config.QuerySample.AllowedCommentKeys,
-		)
+		commentTagsVal := extractCommentTags(row[batchText], s.config.QuerySample.AllowedCommentKeys)
 
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
@@ -2281,7 +2282,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 			row[storedProcedureID], row[storedProcedureName],
-			fullQueryTextVal, commentTagsVal,
+			commentTagsVal,
 		)
 
 		if !resourcesAdded {

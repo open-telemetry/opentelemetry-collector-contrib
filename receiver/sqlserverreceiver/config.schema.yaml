@@ -30,7 +30,7 @@ $defs:
         items:
           type: string
       collect_full_query_text:
-        description: CollectFullQueryText enables collection of the full SQL batch text for the db.server.query_sample event, in addition to the statement-level substring already captured in db.query.text.
+        description: CollectFullQueryText makes db.query.text carry the whole SQL batch the statement came from, rather than just the statement, for the db.server.query_sample event.
         type: boolean
       max_rows_per_query:
         type: integer
@@ -58,7 +58,7 @@ $defs:
         items:
           type: string
       collect_full_query_text:
-        description: CollectFullQueryText enables collection of the full SQL batch text for the db.server.top_query event, in addition to the statement-level substring already captured in db.query.text.
+        description: CollectFullQueryText makes db.query.text carry the whole SQL batch the statement came from, rather than just the statement, for the db.server.top_query event.
         type: boolean
       collection_interval:
         type: string

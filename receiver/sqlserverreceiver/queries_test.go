@@ -148,7 +148,7 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 		instanceName             string
 		maxQuerySampleCount      uint
 		lookbackTime             uint
-		collectFullQueryText     bool
+		collectCommentTags       bool
 		getQuery                 func(bool) string
 		expectedQueryValFilename string
 	}{
@@ -161,13 +161,13 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 			expectedQueryValFilename: "databaseTopQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test query text and query plan with full query text",
+			name:                     "Test query text and query plan with comment tags",
 			instanceName:             "",
 			maxQuerySampleCount:      1000,
 			lookbackTime:             60,
-			collectFullQueryText:     true,
+			collectCommentTags:       true,
 			getQuery:                 getSQLServerQueryTextAndPlanQuery,
-			expectedQueryValFilename: "databaseTopQueryWithFullQueryText.txt",
+			expectedQueryValFilename: "databaseTopQueryWithCommentTags.txt",
 		},
 	}
 
@@ -175,7 +175,7 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			expected, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
 			require.NoError(t, err)
-			actual := tt.getQuery(tt.collectFullQueryText)
+			actual := tt.getQuery(tt.collectCommentTags)
 			require.NoError(t, err)
 			require.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(actual))
 		})
@@ -186,7 +186,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 	queryTests := []struct {
 		name                     string
 		instanceName             string
-		collectFullQueryText     bool
+		collectCommentTags       bool
 		getQuery                 func(bool) string
 		expectedQueryValFilename string
 		maxRowsPerQuery          uint64
@@ -199,12 +199,12 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			expectedQueryValFilename: "testQuerySampleQuery.txt",
 		},
 		{
-			name:                     "Test query sample query with full query text",
+			name:                     "Test query sample query with comment tags",
 			instanceName:             "",
 			maxRowsPerQuery:          1000,
-			collectFullQueryText:     true,
+			collectCommentTags:       true,
 			getQuery:                 getSQLServerQuerySamplesQuery,
-			expectedQueryValFilename: "testQuerySampleQueryWithFullQueryText.txt",
+			expectedQueryValFilename: "testQuerySampleQueryWithCommentTags.txt",
 		},
 	}
 
@@ -214,7 +214,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			require.NoError(t, err)
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
-			actual := strings.ReplaceAll(tt.getQuery(tt.collectFullQueryText), "\r\n", "\n")
+			actual := strings.ReplaceAll(tt.getQuery(tt.collectCommentTags), "\r\n", "\n")
 			require.Equal(t, expected, actual)
 		})
 	}
