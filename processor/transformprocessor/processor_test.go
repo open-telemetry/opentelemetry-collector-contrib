@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -17,22 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
-
-func TestFlattenDataDisabledByDefault(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	assert.False(t, oCfg.FlattenData)
-	require.NoError(t, oCfg.Validate())
-}
-
-func TestFlattenDataRequiresGate(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	oCfg.FlattenData = true
-	assert.Equal(t, errFlatLogsGateDisabled, oCfg.Validate())
-}
 
 func TestProcessLogsWithoutFlatten(t *testing.T) {
 	factory := NewFactory()
@@ -68,10 +51,10 @@ func TestProcessLogsWithFlatten(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.FlattenData = true
 	oCfg.LogStatements = []common.ContextStatements{
 		{
 			Context: "log",
+			Flatten: true,
 			Statements: []string{
 				`set(resource.attributes["host.name"], attributes["host.name"])`,
 				`delete_key(attributes, "host.name")`,
@@ -124,10 +107,10 @@ func BenchmarkLogsWithFlatten(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.FlattenData = true
 	oCfg.LogStatements = []common.ContextStatements{
 		{
 			Context: "log",
+			Flatten: true,
 			Statements: []string{
 				`set(resource.attributes["host.name"], attributes["host.name"])`,
 				`delete_key(attributes, "host.name")`,

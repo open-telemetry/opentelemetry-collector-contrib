@@ -46,6 +46,9 @@ type ContextStatements struct {
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 	// SharedCache is experimental and subject to change or removal in the future.
 	SharedCache bool `mapstructure:"shared_cache"`
+	// Flatten gives each log record a distinct copy of its resource and scope while this group runs.
+	// Requires the transform.flatten.logs feature gate and is only supported for log context groups.
+	Flatten bool `mapstructure:"flatten"`
 }
 
 func (c ContextStatements) GetStatements() []string {
