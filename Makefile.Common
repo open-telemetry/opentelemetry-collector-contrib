@@ -20,6 +20,21 @@ GO_BUILD_LDFLAGS="-s -w"
 GO_COMPAT_VERSION=$(shell awk '/^go /{print $$2}' go.mod)
 GOTEST_TIMEOUT?= 900s
 GOCMD?= go
+# `|` between distinct spellings of one proxy makes Go retry any fetch error; keep in sync with setup-go-tools, prepare-release, prometheus-compliance-tests.
+ifeq ($(GITHUB_ACTIONS),true)
+export GOPROXY ?= https://proxy.golang.org|https://proxy.golang.org/|https://proxy.golang.org:443,direct
+endif
+
+# sum.golang.org is read directly (no GOPROXY fallback), so commands that verify new module sums should run via $(call retry,<cmd>).
+define retry
+for i in 1 2 3; do \
+	$(1) && break; \
+	[ $$i -lt 3 ] || { echo "failed after 3 attempts"; exit 1; }; \
+	echo "attempt $$i/3 failed, retrying in $$((i*10))s..."; \
+	sleep $$((i*10)); \
+done
+endef
+
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
@@ -93,6 +108,7 @@ GOJQ                = $(subst \,/,$(shell $(GO_TOOL) -n github.com/itchyny/gojq/
 GOTESTSUM           = $(subst \,/,$(shell $(GO_TOOL) -n gotest.tools/gotestsum))
 CHECKAPI            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkapi))
 MODERNIZE           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize))
+SCHEMAGEN           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/schemagen))
 
 GOTESTSUM_OPT?= --rerun-fails=1
 
@@ -368,12 +384,7 @@ misspell-correction:
 
 .PHONY: moddownload
 moddownload:
-	@for i in 1 2 3; do \
-		$(GOCMD) mod download && exit 0; \
-		[ $$i -lt 3 ] && echo "go mod download failed (attempt $$i/3), retrying in $$((i*10))s..." && sleep $$((i*10)); \
-	done; \
-	echo "go mod download failed after 3 attempts"; \
-	exit 1
+	$(GOCMD) mod download
 
 .PHONY: gci
 gci:
@@ -439,13 +450,7 @@ run-changed-tests:
 SRC ?= '$(CURDIR)'
 FLAGS ?= '-o=$(CURDIR)/'
 
-# SCHEMAGEN_PKG controls which build of go.opentelemetry.io/collector/cmd/schemagen
-# is invoked. Pinned to the post-migration commit on collector main; bump to a
-# released `@v0.x.y` once a collector release ships `cmd/schemagen`. Override on
-# the make command line for ad-hoc runs (e.g. `SCHEMAGEN_PKG=...@latest`).
-SCHEMAGEN_PKG ?= go.opentelemetry.io/collector/cmd/schemagen@v0.22.1-0.20260615181954-d04d642d0a3e
-
 .PHONY: schemagen
 schemagen:
 	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
-	go run $(SCHEMAGEN_PKG) $(FLAGS) $(SRC)
+	$(SCHEMAGEN) $(FLAGS) $(SRC)
