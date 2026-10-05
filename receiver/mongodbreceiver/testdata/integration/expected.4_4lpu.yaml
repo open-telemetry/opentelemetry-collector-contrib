@@ -4,6 +4,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: placeholder
+        - key: server.port
+          value:
+            intValue: "27017"
         - key: service.instance.id
           value:
             stringValue: placeholder
