@@ -131,7 +131,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 				}, write); err != nil {
 					mapPool.Put(m)
 					if !errors.Is(err, helper.ErrEntryHandled) {
-						errs = append(errs, fmt.Errorf("failed to parse cri log: %w", err))
+						errs = append(errs, fmt.Errorf("failed to parse containerd log: %w", err))
 					}
 					continue
 				}
@@ -147,7 +147,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 				}, write); err != nil {
 					mapPool.Put(m)
 					if !errors.Is(err, helper.ErrEntryHandled) {
-						errs = append(errs, fmt.Errorf("failed to parse cri log: %w", err))
+						errs = append(errs, fmt.Errorf("failed to parse crio log: %w", err))
 					}
 					continue
 				}
@@ -250,7 +250,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				if errors.Is(err, helper.ErrEntryHandled) {
 					return nil
 				}
-				return fmt.Errorf("failed to parse crio logs: %w", err)
+				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
 			mapPool.Put(m)
 			p.timeLayout = criTimeLayout

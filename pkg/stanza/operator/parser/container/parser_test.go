@@ -1595,6 +1595,7 @@ func TestFilepathCachePopulatedOnFirstEntry(t *testing.T) {
 
 	cached, ok := p.cache.Get(testLogPath)
 	require.True(t, ok, "cache should be populated after first call")
+	require.Equal(t, "49cc7c1fd3702c40b2686ea7486091d3", cached["k8s.pod.uid"])
 	require.Equal(t, "default", cached["k8s.namespace.name"])
 	require.Equal(t, "mypod", cached["k8s.pod.name"])
 	require.Equal(t, "mycontainer", cached["k8s.container.name"])
