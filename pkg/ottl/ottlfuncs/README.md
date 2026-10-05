@@ -2916,7 +2916,9 @@ New functions are introduced as experimental functions. While a function is expe
 the stability guarantee**: its name, signature, and behavior may change in a backward-incompatible way, and the
 function may be removed entirely, in any `1.x` release without a major version bump. Experimental functions are
 not part of `StandardFuncs` or `StandardConverters`; they live in the `xottl` module and are documented in its
-[functions README](../xottl/ottlfuncs/README.md). Each component decides whether to make them available.
+[functions README](../xottl/ottlfuncs/README.md). Each component decides whether to make them available, and
+statements that use them only parse when the [`pkg.ottl.functions.enableExperimental`](../documentation.md#feature-gates)
+feature gate is enabled. The existing lambda functions instead require the `ottl.functions.enableLambda` feature gate.
 
 ### Promotion to standard
 
