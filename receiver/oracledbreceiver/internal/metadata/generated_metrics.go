@@ -1308,7 +1308,7 @@ func (m *metricOracledbAsmDiskErrors) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbAsmDiskErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string, oracledbAsmDiskNameAttributeValue string, diskIoDirectionAttributeValue string) {
+func (m *metricOracledbAsmDiskErrors) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue, oracledbAsmDiskNameAttributeValue, diskIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1405,7 +1405,7 @@ func (m *metricOracledbAsmDiskGroupCapacity) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbAsmDiskGroupCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
+func (m *metricOracledbAsmDiskGroupCapacity) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1496,7 +1496,7 @@ func (m *metricOracledbAsmDiskGroupFree) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbAsmDiskGroupFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
+func (m *metricOracledbAsmDiskGroupFree) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1587,7 +1587,7 @@ func (m *metricOracledbAsmDiskGroupOfflineDisks) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbAsmDiskGroupOfflineDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
+func (m *metricOracledbAsmDiskGroupOfflineDisks) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1678,7 +1678,7 @@ func (m *metricOracledbAsmDiskGroupUsableFree) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbAsmDiskGroupUsableFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
+func (m *metricOracledbAsmDiskGroupUsableFree) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1771,7 +1771,7 @@ func (m *metricOracledbBufferInspected) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbBufferInspected) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbBufferStateAttributeValue string) {
+func (m *metricOracledbBufferInspected) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbBufferStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1859,7 +1859,7 @@ func (m *metricOracledbBufferRequests) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbBufferRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbBufferRequests) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1911,7 +1911,7 @@ func (m *metricOracledbBufferCacheBlockChanges) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbBufferCacheBlockChanges) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbBufferCacheBlockChanges) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1966,7 +1966,7 @@ func (m *metricOracledbBufferCacheBlockChangesRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbBufferCacheBlockChangesRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbBufferCacheBlockChangesRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2054,7 +2054,7 @@ func (m *metricOracledbBufferCacheBlockGets) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbBufferCacheBlockGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbBufferCacheBlockGets) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2109,7 +2109,7 @@ func (m *metricOracledbBufferCacheUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbBufferCacheUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbBufferCacheUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2202,7 +2202,7 @@ func (m *metricOracledbCallCount) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbCallCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbCallTypeAttributeValue string) {
+func (m *metricOracledbCallCount) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbCallTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2290,7 +2290,7 @@ func (m *metricOracledbCallRecursiveCPUTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbCallRecursiveCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbCallRecursiveCPUTime) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2342,7 +2342,7 @@ func (m *metricOracledbCheckpointBuffers) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbCheckpointBuffers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbCheckpointBuffers) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2394,7 +2394,7 @@ func (m *metricOracledbCheckpointCompleted) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbCheckpointCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbCheckpointCompleted) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2451,7 +2451,7 @@ func (m *metricOracledbConsistentGets) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbConsistentGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbConsistentGets) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2542,7 +2542,7 @@ func (m *metricOracledbCPUUsageRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbCPUUsageRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbCPUUsageRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2635,7 +2635,7 @@ func (m *metricOracledbCPUTime) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbCPUTime) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2723,7 +2723,7 @@ func (m *metricOracledbCursorCacheHits) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbCursorCacheHits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbCursorCacheHits) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2773,7 +2773,7 @@ func (m *metricOracledbCursorCacheSize) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbCursorCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbCursorCacheSize) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2828,7 +2828,7 @@ func (m *metricOracledbCursorCacheUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbCursorCacheUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbCursorCacheUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2914,7 +2914,7 @@ func (m *metricOracledbCursorOpen) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbCursorOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbCursorOpen) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2969,7 +2969,7 @@ func (m *metricOracledbCursorOpenRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbCursorOpenRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbCursorOpenRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3055,7 +3055,7 @@ func (m *metricOracledbDataDictionaryHitRatio) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbDataDictionaryHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbDataDictionaryHitRatio) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3110,7 +3110,7 @@ func (m *metricOracledbDatabaseCPUUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbDatabaseCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbDatabaseCPUUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3201,7 +3201,7 @@ func (m *metricOracledbDatabaseWaitUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbDatabaseWaitUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbDatabaseWaitUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3294,7 +3294,7 @@ func (m *metricOracledbDbTime) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbDbTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbSessionTypeAttributeValue string) {
+func (m *metricOracledbDbTime) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracledbSessionTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3387,7 +3387,7 @@ func (m *metricOracledbDbBlockGets) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbDbBlockGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbDbBlockGets) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3480,7 +3480,7 @@ func (m *metricOracledbDdlStatementsParallelized) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbDdlStatementsParallelized) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbDdlStatementsParallelized) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3566,7 +3566,7 @@ func (m *metricOracledbDmlLocksLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbDmlLocksLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbDmlLocksLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3616,7 +3616,7 @@ func (m *metricOracledbDmlLocksUsage) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbDmlLocksUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbDmlLocksUsage) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3673,7 +3673,7 @@ func (m *metricOracledbDmlStatementsParallelized) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbDmlStatementsParallelized) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbDmlStatementsParallelized) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3764,7 +3764,7 @@ func (m *metricOracledbEnqueueDeadlocksRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbEnqueueDeadlocksRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbEnqueueDeadlocksRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3857,7 +3857,7 @@ func (m *metricOracledbEnqueueOperations) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbEnqueueOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbEnqueueTypeAttributeValue string) {
+func (m *metricOracledbEnqueueOperations) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbEnqueueTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3948,7 +3948,7 @@ func (m *metricOracledbEnqueueTimeoutsRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbEnqueueTimeoutsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbEnqueueTimeoutsRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4041,7 +4041,7 @@ func (m *metricOracledbEnqueueDeadlocks) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbEnqueueDeadlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbEnqueueDeadlocks) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4127,7 +4127,7 @@ func (m *metricOracledbEnqueueLocksLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbEnqueueLocksLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbEnqueueLocksLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4177,7 +4177,7 @@ func (m *metricOracledbEnqueueLocksUsage) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbEnqueueLocksUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbEnqueueLocksUsage) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4227,7 +4227,7 @@ func (m *metricOracledbEnqueueResourcesLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbEnqueueResourcesLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbEnqueueResourcesLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4277,7 +4277,7 @@ func (m *metricOracledbEnqueueResourcesUsage) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbEnqueueResourcesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbEnqueueResourcesUsage) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4334,7 +4334,7 @@ func (m *metricOracledbExchangeDeadlocks) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbExchangeDeadlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbExchangeDeadlocks) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4425,7 +4425,7 @@ func (m *metricOracledbExecutionUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbExecutionUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbParseTypeAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbExecutionUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracledbParseTypeAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4521,7 +4521,7 @@ func (m *metricOracledbExecutions) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbExecutions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbExecutions) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4612,7 +4612,7 @@ func (m *metricOracledbExecutionsRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbExecutionsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbExecutionsRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4705,7 +4705,7 @@ func (m *metricOracledbGcCurrentBlockTime) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbGcCurrentBlockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, networkIoDirectionAttributeValue string) {
+func (m *metricOracledbGcCurrentBlockTime) recordDataPoint(start, ts pcommon.Timestamp, val float64, networkIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4798,7 +4798,7 @@ func (m *metricOracledbHardParses) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbHardParses) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbHardParses) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4889,7 +4889,7 @@ func (m *metricOracledbHardParsesRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbHardParsesRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbHardParsesRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4975,7 +4975,7 @@ func (m *metricOracledbHostCPUUsageRate) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbHostCPUUsageRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbHostCPUUsageRate) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5030,7 +5030,7 @@ func (m *metricOracledbHostCPUUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbHostCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbHostCPUUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5116,7 +5116,7 @@ func (m *metricOracledbIoRequestsRate) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbIoRequestsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbIoRequestsRate) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5166,7 +5166,7 @@ func (m *metricOracledbIoSingleBlockReadLatency) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbIoSingleBlockReadLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbIoSingleBlockReadLatency) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5216,7 +5216,7 @@ func (m *metricOracledbIoThroughputRate) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbIoThroughputRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbIoThroughputRate) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5266,7 +5266,7 @@ func (m *metricOracledbJvmMemoryCommitted) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbJvmMemoryCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbJvmMemoryCommitted) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5316,7 +5316,7 @@ func (m *metricOracledbJvmMemoryLive) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbJvmMemoryLive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbJvmMemoryLive) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5366,7 +5366,7 @@ func (m *metricOracledbJvmMemoryUsed) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbJvmMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbJvmMemoryUsed) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5421,7 +5421,7 @@ func (m *metricOracledbLibraryCacheUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbLibraryCacheUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbLibraryCacheUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5514,7 +5514,7 @@ func (m *metricOracledbLobOperations) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbLobOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
+func (m *metricOracledbLobOperations) recordDataPoint(start, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5607,7 +5607,7 @@ func (m *metricOracledbLockTime) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbLockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string, oracledbSessionTypeAttributeValue string) {
+func (m *metricOracledbLockTime) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue, oracledbSessionTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5703,7 +5703,7 @@ func (m *metricOracledbLogicalReads) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbLogicalReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbLogicalReads) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5794,7 +5794,7 @@ func (m *metricOracledbLogicalReadsRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbLogicalReadsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbLogicalReadsRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5887,7 +5887,7 @@ func (m *metricOracledbLogons) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbLogons) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbLogons) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5978,7 +5978,7 @@ func (m *metricOracledbLogonsRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbLogonsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbLogonsRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6066,7 +6066,7 @@ func (m *metricOracledbOsSwaps) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbOsSwaps) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbOsSwaps) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6123,7 +6123,7 @@ func (m *metricOracledbParallelOperationsDowngraded1To25Pct) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParallelOperationsDowngraded1To25Pct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParallelOperationsDowngraded1To25Pct) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6216,7 +6216,7 @@ func (m *metricOracledbParallelOperationsDowngraded25To50Pct) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParallelOperationsDowngraded25To50Pct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParallelOperationsDowngraded25To50Pct) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6309,7 +6309,7 @@ func (m *metricOracledbParallelOperationsDowngraded50To75Pct) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParallelOperationsDowngraded50To75Pct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParallelOperationsDowngraded50To75Pct) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6402,7 +6402,7 @@ func (m *metricOracledbParallelOperationsDowngraded75To99Pct) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParallelOperationsDowngraded75To99Pct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParallelOperationsDowngraded75To99Pct) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6495,7 +6495,7 @@ func (m *metricOracledbParallelOperationsDowngradedToSerial) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParallelOperationsDowngradedToSerial) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParallelOperationsDowngradedToSerial) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6588,7 +6588,7 @@ func (m *metricOracledbParallelOperationsNotDowngraded) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParallelOperationsNotDowngraded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParallelOperationsNotDowngraded) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6676,7 +6676,7 @@ func (m *metricOracledbParseCPUTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbParseCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbParseCPUTime) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6728,7 +6728,7 @@ func (m *metricOracledbParseElapsedTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbParseElapsedTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbParseElapsedTime) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6783,7 +6783,7 @@ func (m *metricOracledbParseRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParseRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbParseResultAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParseRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracledbParseResultAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6877,7 +6877,7 @@ func (m *metricOracledbParseUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParseUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParseUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -6970,7 +6970,7 @@ func (m *metricOracledbParseCalls) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbParseCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbParseCalls) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7056,7 +7056,7 @@ func (m *metricOracledbPgaCacheUtilization) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbPgaCacheUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbPgaCacheUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7113,7 +7113,7 @@ func (m *metricOracledbPgaMemory) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPgaMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPgaMemory) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7206,7 +7206,7 @@ func (m *metricOracledbPhysicalIoCacheWrites) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalIoCacheWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalIoCacheWrites) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7299,7 +7299,7 @@ func (m *metricOracledbPhysicalIoRequests) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalIoRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, diskIoBlockSizeAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalIoRequests) recordDataPoint(start, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue, diskIoBlockSizeAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7396,7 +7396,7 @@ func (m *metricOracledbPhysicalIoRequestsRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalIoRequestsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalIoRequestsRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7492,7 +7492,7 @@ func (m *metricOracledbPhysicalIoTransferred) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalIoTransferred) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, diskIoTypeAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalIoTransferred) recordDataPoint(start, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue, diskIoTypeAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7589,7 +7589,7 @@ func (m *metricOracledbPhysicalIoTransferredRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalIoTransferredRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalIoTransferredRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7683,7 +7683,7 @@ func (m *metricOracledbPhysicalOperationsRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalOperationsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalOperationsRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, diskIoDirectionAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7779,7 +7779,7 @@ func (m *metricOracledbPhysicalReadIoRequests) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalReadIoRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalReadIoRequests) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7872,7 +7872,7 @@ func (m *metricOracledbPhysicalReads) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalReads) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7965,7 +7965,7 @@ func (m *metricOracledbPhysicalReadsDirect) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalReadsDirect) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalReadsDirect) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8058,7 +8058,7 @@ func (m *metricOracledbPhysicalWriteIoRequests) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalWriteIoRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalWriteIoRequests) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8151,7 +8151,7 @@ func (m *metricOracledbPhysicalWrites) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalWrites) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8244,7 +8244,7 @@ func (m *metricOracledbPhysicalWritesDirect) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbPhysicalWritesDirect) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbPhysicalWritesDirect) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8330,7 +8330,7 @@ func (m *metricOracledbProcessesLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbProcessesLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbProcessesLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8380,7 +8380,7 @@ func (m *metricOracledbProcessesUsage) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbProcessesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbProcessesUsage) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8437,7 +8437,7 @@ func (m *metricOracledbQueriesParallelized) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbQueriesParallelized) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbQueriesParallelized) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8525,7 +8525,7 @@ func (m *metricOracledbRecoveryBlocks) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbRecoveryBlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbRecoveryBlocks) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8575,7 +8575,7 @@ func (m *metricOracledbRecycleBinLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbRecycleBinLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbRecycleBinLimit) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8632,7 +8632,7 @@ func (m *metricOracledbRedoBlocks) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbRedoBlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
+func (m *metricOracledbRedoBlocks) recordDataPoint(start, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8725,7 +8725,7 @@ func (m *metricOracledbRedoOperations) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbRedoOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
+func (m *metricOracledbRedoOperations) recordDataPoint(start, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8818,7 +8818,7 @@ func (m *metricOracledbRedoRequests) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbRedoRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbRedoRequestTypeAttributeValue string) {
+func (m *metricOracledbRedoRequests) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbRedoRequestTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8911,7 +8911,7 @@ func (m *metricOracledbRedoRetries) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbRedoRetries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbRedoRetryTypeAttributeValue string) {
+func (m *metricOracledbRedoRetries) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbRedoRetryTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -8999,7 +8999,7 @@ func (m *metricOracledbRedoSize) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbRedoSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbRedoSize) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9054,7 +9054,7 @@ func (m *metricOracledbRedoSizeRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbRedoSizeRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbRedoSizeRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9147,7 +9147,7 @@ func (m *metricOracledbRedoTime) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbRedoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbRedoTypeAttributeValue string) {
+func (m *metricOracledbRedoTime) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracledbRedoTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9238,7 +9238,7 @@ func (m *metricOracledbRedoAllocationUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbRedoAllocationUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbRedoAllocationUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9331,7 +9331,7 @@ func (m *metricOracledbScanCount) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbScanCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbScanTypeAttributeValue string, oracledbScanModeAttributeValue string) {
+func (m *metricOracledbScanCount) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbScanTypeAttributeValue, oracledbScanModeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9422,7 +9422,7 @@ func (m *metricOracledbScanTableRows) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbScanTableRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbScanTableRows) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9477,7 +9477,7 @@ func (m *metricOracledbSessionAverage) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSessionAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sessionStatusAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSessionAverage) recordDataPoint(start, ts pcommon.Timestamp, val float64, sessionStatusAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9571,7 +9571,7 @@ func (m *metricOracledbSessionStoredProcedureMemory) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSessionStoredProcedureMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSessionStoredProcedureMemory) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9664,7 +9664,7 @@ func (m *metricOracledbSessionWaitTime) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSessionWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbSessionWaitStateAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSessionWaitTime) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracledbSessionWaitStateAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9760,7 +9760,7 @@ func (m *metricOracledbSessionWaits) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSessionWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbSessionWaitStateAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSessionWaits) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbSessionWaitStateAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9849,7 +9849,7 @@ func (m *metricOracledbSessionsLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbSessionsLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbSessionsLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9904,7 +9904,7 @@ func (m *metricOracledbSessionsUsage) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSessionsUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sessionTypeAttributeValue string, sessionStatusAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSessionsUsage) recordDataPoint(start, ts pcommon.Timestamp, val int64, sessionTypeAttributeValue, sessionStatusAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -9996,7 +9996,7 @@ func (m *metricOracledbSgaLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbSgaLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbSgaLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10051,7 +10051,7 @@ func (m *metricOracledbSgaUsage) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSgaUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbSgaComponentNameAttributeValue string) {
+func (m *metricOracledbSgaUsage) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbSgaComponentNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10142,7 +10142,7 @@ func (m *metricOracledbSharedPoolUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSharedPoolUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSharedPoolUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10235,7 +10235,7 @@ func (m *metricOracledbSmonPosts) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSmonPosts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbSmonTypeAttributeValue string) {
+func (m *metricOracledbSmonPosts) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbSmonTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10328,7 +10328,7 @@ func (m *metricOracledbSortOperations) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSortOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbSortTypeAttributeValue string) {
+func (m *metricOracledbSortOperations) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracledbSortTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10419,7 +10419,7 @@ func (m *metricOracledbSortRatio) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSortRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbSortTypeAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSortRatio) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracledbSortTypeAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10510,7 +10510,7 @@ func (m *metricOracledbSortRows) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricOracledbSortRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbSortRows) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10565,7 +10565,7 @@ func (m *metricOracledbSQLServiceResponseDuration) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSQLServiceResponseDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSQLServiceResponseDuration) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10658,7 +10658,7 @@ func (m *metricOracledbSqlnetIoTransferred) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbSqlnetIoTransferred) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, destinationTypeAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbSqlnetIoTransferred) recordDataPoint(start, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue, destinationTypeAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10750,7 +10750,7 @@ func (m *metricOracledbStorageUsage) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbStorageUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbStorageUsage) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10800,7 +10800,7 @@ func (m *metricOracledbStorageUtilization) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbStorageUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbStorageUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10850,7 +10850,7 @@ func (m *metricOracledbSystemCPUCount) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbSystemCPUCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbSystemCPUCount) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10900,7 +10900,7 @@ func (m *metricOracledbSystemMemoryLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbSystemMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbSystemMemoryLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -10950,7 +10950,7 @@ func (m *metricOracledbSystemProcessCount) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbSystemProcessCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricOracledbSystemProcessCount) recordDataPoint(start, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11005,7 +11005,7 @@ func (m *metricOracledbTablespaceLimit) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbTablespaceLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbTablespaceLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11101,7 +11101,7 @@ func (m *metricOracledbTablespaceStatus) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbTablespaceStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracledbTablespaceStateAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbTablespaceStatus) recordDataPoint(start, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue, oracledbTablespaceStateAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11198,7 +11198,7 @@ func (m *metricOracledbTablespaceUtilization) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbTablespaceUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbTablespaceUtilization) recordDataPoint(start, ts pcommon.Timestamp, val float64, tablespaceNameAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11292,7 +11292,7 @@ func (m *metricOracledbTablespaceSizeLimit) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbTablespaceSizeLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbTablespaceSizeLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11386,7 +11386,7 @@ func (m *metricOracledbTablespaceSizeUsage) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbTablespaceSizeUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbTablespaceSizeUsage) recordDataPoint(start, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11480,7 +11480,7 @@ func (m *metricOracledbTransactionResponseTime) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbTransactionResponseTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbTransactionResponseTime) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11573,7 +11573,7 @@ func (m *metricOracledbTransactionRollbacks) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbTransactionRollbacks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbTransactionRollbacks) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11659,7 +11659,7 @@ func (m *metricOracledbTransactionsLimit) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbTransactionsLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbTransactionsLimit) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11714,7 +11714,7 @@ func (m *metricOracledbTransactionsRate) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbTransactionsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, oracledbTransactionTypeAttributeValue string, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbTransactionsRate) recordDataPoint(start, ts pcommon.Timestamp, val float64, oracledbTransactionTypeAttributeValue, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11803,7 +11803,7 @@ func (m *metricOracledbTransactionsUsage) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbTransactionsUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbTransactionsUsage) recordDataPoint(start, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11860,7 +11860,7 @@ func (m *metricOracledbUserCommits) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbUserCommits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbUserCommits) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -11953,7 +11953,7 @@ func (m *metricOracledbUserRollbacks) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricOracledbUserRollbacks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
+func (m *metricOracledbUserRollbacks) recordDataPoint(start, ts pcommon.Timestamp, val int64, oracleDbPdbAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -12189,6 +12189,7 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
+
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                              mbc,
@@ -12641,7 +12642,7 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordOracledbAsmDiskErrorsDataPoint adds a data point to oracledb.asm.disk.errors metric.
-func (mb *MetricsBuilder) RecordOracledbAsmDiskErrorsDataPoint(ts pcommon.Timestamp, inputVal string, oracledbAsmDiskGroupNameAttributeValue string, oracledbAsmDiskNameAttributeValue string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
+func (mb *MetricsBuilder) RecordOracledbAsmDiskErrorsDataPoint(ts pcommon.Timestamp, inputVal, oracledbAsmDiskGroupNameAttributeValue, oracledbAsmDiskNameAttributeValue string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbAsmDiskErrors, value was %s: %w", inputVal, err)
@@ -12756,7 +12757,7 @@ func (mb *MetricsBuilder) RecordOracledbCheckpointCompletedDataPoint(ts pcommon.
 }
 
 // RecordOracledbConsistentGetsDataPoint adds a data point to oracledb.consistent_gets metric.
-func (mb *MetricsBuilder) RecordOracledbConsistentGetsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbConsistentGetsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbConsistentGets, value was %s: %w", inputVal, err)
@@ -12836,7 +12837,7 @@ func (mb *MetricsBuilder) RecordOracledbDbTimeDataPoint(ts pcommon.Timestamp, va
 }
 
 // RecordOracledbDbBlockGetsDataPoint adds a data point to oracledb.db_block_gets metric.
-func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbDbBlockGets, value was %s: %w", inputVal, err)
@@ -12846,7 +12847,7 @@ func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestam
 }
 
 // RecordOracledbDdlStatementsParallelizedDataPoint adds a data point to oracledb.ddl_statements_parallelized metric.
-func (mb *MetricsBuilder) RecordOracledbDdlStatementsParallelizedDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbDdlStatementsParallelizedDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbDdlStatementsParallelized, value was %s: %w", inputVal, err)
@@ -12876,7 +12877,7 @@ func (mb *MetricsBuilder) RecordOracledbDmlLocksUsageDataPoint(ts pcommon.Timest
 }
 
 // RecordOracledbDmlStatementsParallelizedDataPoint adds a data point to oracledb.dml_statements_parallelized metric.
-func (mb *MetricsBuilder) RecordOracledbDmlStatementsParallelizedDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbDmlStatementsParallelizedDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbDmlStatementsParallelized, value was %s: %w", inputVal, err)
@@ -12906,7 +12907,7 @@ func (mb *MetricsBuilder) RecordOracledbEnqueueTimeoutsRateDataPoint(ts pcommon.
 }
 
 // RecordOracledbEnqueueDeadlocksDataPoint adds a data point to oracledb.enqueue_deadlocks metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueDeadlocksDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbEnqueueDeadlocksDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbEnqueueDeadlocks, value was %s: %w", inputVal, err)
@@ -12956,7 +12957,7 @@ func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesUsageDataPoint(ts pcommo
 }
 
 // RecordOracledbExchangeDeadlocksDataPoint adds a data point to oracledb.exchange_deadlocks metric.
-func (mb *MetricsBuilder) RecordOracledbExchangeDeadlocksDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbExchangeDeadlocksDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbExchangeDeadlocks, value was %s: %w", inputVal, err)
@@ -12971,7 +12972,7 @@ func (mb *MetricsBuilder) RecordOracledbExecutionUtilizationDataPoint(ts pcommon
 }
 
 // RecordOracledbExecutionsDataPoint adds a data point to oracledb.executions metric.
-func (mb *MetricsBuilder) RecordOracledbExecutionsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbExecutionsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbExecutions, value was %s: %w", inputVal, err)
@@ -12991,7 +12992,7 @@ func (mb *MetricsBuilder) RecordOracledbGcCurrentBlockTimeDataPoint(ts pcommon.T
 }
 
 // RecordOracledbHardParsesDataPoint adds a data point to oracledb.hard_parses metric.
-func (mb *MetricsBuilder) RecordOracledbHardParsesDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbHardParsesDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbHardParses, value was %s: %w", inputVal, err)
@@ -13081,7 +13082,7 @@ func (mb *MetricsBuilder) RecordOracledbLockTimeDataPoint(ts pcommon.Timestamp, 
 }
 
 // RecordOracledbLogicalReadsDataPoint adds a data point to oracledb.logical_reads metric.
-func (mb *MetricsBuilder) RecordOracledbLogicalReadsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbLogicalReadsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbLogicalReads, value was %s: %w", inputVal, err)
@@ -13096,7 +13097,7 @@ func (mb *MetricsBuilder) RecordOracledbLogicalReadsRateDataPoint(ts pcommon.Tim
 }
 
 // RecordOracledbLogonsDataPoint adds a data point to oracledb.logons metric.
-func (mb *MetricsBuilder) RecordOracledbLogonsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbLogonsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbLogons, value was %s: %w", inputVal, err)
@@ -13121,7 +13122,7 @@ func (mb *MetricsBuilder) RecordOracledbOsSwapsDataPoint(ts pcommon.Timestamp, i
 }
 
 // RecordOracledbParallelOperationsDowngraded1To25PctDataPoint adds a data point to oracledb.parallel_operations_downgraded_1_to_25_pct metric.
-func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngraded1To25Pct, value was %s: %w", inputVal, err)
@@ -13131,7 +13132,7 @@ func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded1To25PctData
 }
 
 // RecordOracledbParallelOperationsDowngraded25To50PctDataPoint adds a data point to oracledb.parallel_operations_downgraded_25_to_50_pct metric.
-func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngraded25To50Pct, value was %s: %w", inputVal, err)
@@ -13141,7 +13142,7 @@ func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded25To50PctDat
 }
 
 // RecordOracledbParallelOperationsDowngraded50To75PctDataPoint adds a data point to oracledb.parallel_operations_downgraded_50_to_75_pct metric.
-func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngraded50To75Pct, value was %s: %w", inputVal, err)
@@ -13151,7 +13152,7 @@ func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded50To75PctDat
 }
 
 // RecordOracledbParallelOperationsDowngraded75To99PctDataPoint adds a data point to oracledb.parallel_operations_downgraded_75_to_99_pct metric.
-func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngraded75To99Pct, value was %s: %w", inputVal, err)
@@ -13161,7 +13162,7 @@ func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngraded75To99PctDat
 }
 
 // RecordOracledbParallelOperationsDowngradedToSerialDataPoint adds a data point to oracledb.parallel_operations_downgraded_to_serial metric.
-func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsDowngradedToSerial, value was %s: %w", inputVal, err)
@@ -13171,7 +13172,7 @@ func (mb *MetricsBuilder) RecordOracledbParallelOperationsDowngradedToSerialData
 }
 
 // RecordOracledbParallelOperationsNotDowngradedDataPoint adds a data point to oracledb.parallel_operations_not_downgraded metric.
-func (mb *MetricsBuilder) RecordOracledbParallelOperationsNotDowngradedDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbParallelOperationsNotDowngradedDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbParallelOperationsNotDowngraded, value was %s: %w", inputVal, err)
@@ -13201,7 +13202,7 @@ func (mb *MetricsBuilder) RecordOracledbParseUtilizationDataPoint(ts pcommon.Tim
 }
 
 // RecordOracledbParseCallsDataPoint adds a data point to oracledb.parse_calls metric.
-func (mb *MetricsBuilder) RecordOracledbParseCallsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbParseCallsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbParseCalls, value was %s: %w", inputVal, err)
@@ -13216,7 +13217,7 @@ func (mb *MetricsBuilder) RecordOracledbPgaCacheUtilizationDataPoint(ts pcommon.
 }
 
 // RecordOracledbPgaMemoryDataPoint adds a data point to oracledb.pga_memory metric.
-func (mb *MetricsBuilder) RecordOracledbPgaMemoryDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbPgaMemoryDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPgaMemory, value was %s: %w", inputVal, err)
@@ -13226,7 +13227,7 @@ func (mb *MetricsBuilder) RecordOracledbPgaMemoryDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordOracledbPhysicalIoCacheWritesDataPoint adds a data point to oracledb.physical_io.cache_writes metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalIoCacheWritesDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalIoCacheWritesDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalIoCacheWrites, value was %s: %w", inputVal, err)
@@ -13271,7 +13272,7 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalOperationsRateDataPoint(ts pcomm
 }
 
 // RecordOracledbPhysicalReadIoRequestsDataPoint adds a data point to oracledb.physical_read_io_requests metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalReadIoRequestsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalReadIoRequestsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalReadIoRequests, value was %s: %w", inputVal, err)
@@ -13281,7 +13282,7 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalReadIoRequestsDataPoint(ts pcomm
 }
 
 // RecordOracledbPhysicalReadsDataPoint adds a data point to oracledb.physical_reads metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalReads, value was %s: %w", inputVal, err)
@@ -13291,7 +13292,7 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDataPoint(ts pcommon.Timest
 }
 
 // RecordOracledbPhysicalReadsDirectDataPoint adds a data point to oracledb.physical_reads_direct metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDirectDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDirectDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalReadsDirect, value was %s: %w", inputVal, err)
@@ -13301,7 +13302,7 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDirectDataPoint(ts pcommon.
 }
 
 // RecordOracledbPhysicalWriteIoRequestsDataPoint adds a data point to oracledb.physical_write_io_requests metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalWriteIoRequestsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalWriteIoRequestsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalWriteIoRequests, value was %s: %w", inputVal, err)
@@ -13311,7 +13312,7 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalWriteIoRequestsDataPoint(ts pcom
 }
 
 // RecordOracledbPhysicalWritesDataPoint adds a data point to oracledb.physical_writes metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalWritesDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalWritesDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalWrites, value was %s: %w", inputVal, err)
@@ -13321,7 +13322,7 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalWritesDataPoint(ts pcommon.Times
 }
 
 // RecordOracledbPhysicalWritesDirectDataPoint adds a data point to oracledb.physical_writes_direct metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalWritesDirectDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbPhysicalWritesDirectDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalWritesDirect, value was %s: %w", inputVal, err)
@@ -13351,7 +13352,7 @@ func (mb *MetricsBuilder) RecordOracledbProcessesUsageDataPoint(ts pcommon.Times
 }
 
 // RecordOracledbQueriesParallelizedDataPoint adds a data point to oracledb.queries_parallelized metric.
-func (mb *MetricsBuilder) RecordOracledbQueriesParallelizedDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbQueriesParallelizedDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbQueriesParallelized, value was %s: %w", inputVal, err)
@@ -13461,12 +13462,12 @@ func (mb *MetricsBuilder) RecordOracledbScanTableRowsDataPoint(ts pcommon.Timest
 }
 
 // RecordOracledbSessionAverageDataPoint adds a data point to oracledb.session.average metric.
-func (mb *MetricsBuilder) RecordOracledbSessionAverageDataPoint(ts pcommon.Timestamp, val float64, sessionStatusAttributeValue string, oracleDbPdbAttributeValue string) {
+func (mb *MetricsBuilder) RecordOracledbSessionAverageDataPoint(ts pcommon.Timestamp, val float64, sessionStatusAttributeValue, oracleDbPdbAttributeValue string) {
 	mb.metricOracledbSessionAverage.recordDataPoint(mb.startTime, ts, val, sessionStatusAttributeValue, oracleDbPdbAttributeValue)
 }
 
 // RecordOracledbSessionStoredProcedureMemoryDataPoint adds a data point to oracledb.session.stored_procedure.memory metric.
-func (mb *MetricsBuilder) RecordOracledbSessionStoredProcedureMemoryDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbSessionStoredProcedureMemoryDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbSessionStoredProcedureMemory, value was %s: %w", inputVal, err)
@@ -13501,7 +13502,7 @@ func (mb *MetricsBuilder) RecordOracledbSessionsLimitDataPoint(ts pcommon.Timest
 }
 
 // RecordOracledbSessionsUsageDataPoint adds a data point to oracledb.sessions.usage metric.
-func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timestamp, inputVal string, sessionTypeAttributeValue string, sessionStatusAttributeValue string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timestamp, inputVal, sessionTypeAttributeValue, sessionStatusAttributeValue, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbSessionsUsage, value was %s: %w", inputVal, err)
@@ -13601,7 +13602,7 @@ func (mb *MetricsBuilder) RecordOracledbSystemProcessCountDataPoint(ts pcommon.T
 }
 
 // RecordOracledbTablespaceLimitDataPoint adds a data point to oracledb.tablespace.limit metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+func (mb *MetricsBuilder) RecordOracledbTablespaceLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue, oracleDbPdbAttributeValue string) {
 	mb.metricOracledbTablespaceLimit.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue, oracleDbPdbAttributeValue)
 }
 
@@ -13611,17 +13612,17 @@ func (mb *MetricsBuilder) RecordOracledbTablespaceStatusDataPoint(ts pcommon.Tim
 }
 
 // RecordOracledbTablespaceUtilizationDataPoint adds a data point to oracledb.tablespace.utilization metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceUtilizationDataPoint(ts pcommon.Timestamp, val float64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+func (mb *MetricsBuilder) RecordOracledbTablespaceUtilizationDataPoint(ts pcommon.Timestamp, val float64, tablespaceNameAttributeValue, oracleDbPdbAttributeValue string) {
 	mb.metricOracledbTablespaceUtilization.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue, oracleDbPdbAttributeValue)
 }
 
 // RecordOracledbTablespaceSizeLimitDataPoint adds a data point to oracledb.tablespace_size.limit metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+func (mb *MetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue, oracleDbPdbAttributeValue string) {
 	mb.metricOracledbTablespaceSizeLimit.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue, oracleDbPdbAttributeValue)
 }
 
 // RecordOracledbTablespaceSizeUsageDataPoint adds a data point to oracledb.tablespace_size.usage metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string, oracleDbPdbAttributeValue string) {
+func (mb *MetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue, oracleDbPdbAttributeValue string) {
 	mb.metricOracledbTablespaceSizeUsage.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue, oracleDbPdbAttributeValue)
 }
 
@@ -13631,7 +13632,7 @@ func (mb *MetricsBuilder) RecordOracledbTransactionResponseTimeDataPoint(ts pcom
 }
 
 // RecordOracledbTransactionRollbacksDataPoint adds a data point to oracledb.transaction.rollbacks metric.
-func (mb *MetricsBuilder) RecordOracledbTransactionRollbacksDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbTransactionRollbacksDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbTransactionRollbacks, value was %s: %w", inputVal, err)
@@ -13666,7 +13667,7 @@ func (mb *MetricsBuilder) RecordOracledbTransactionsUsageDataPoint(ts pcommon.Ti
 }
 
 // RecordOracledbUserCommitsDataPoint adds a data point to oracledb.user_commits metric.
-func (mb *MetricsBuilder) RecordOracledbUserCommitsDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbUserCommitsDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbUserCommits, value was %s: %w", inputVal, err)
@@ -13676,7 +13677,7 @@ func (mb *MetricsBuilder) RecordOracledbUserCommitsDataPoint(ts pcommon.Timestam
 }
 
 // RecordOracledbUserRollbacksDataPoint adds a data point to oracledb.user_rollbacks metric.
-func (mb *MetricsBuilder) RecordOracledbUserRollbacksDataPoint(ts pcommon.Timestamp, inputVal string, oracleDbPdbAttributeValue string) error {
+func (mb *MetricsBuilder) RecordOracledbUserRollbacksDataPoint(ts pcommon.Timestamp, inputVal, oracleDbPdbAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbUserRollbacks, value was %s: %w", inputVal, err)

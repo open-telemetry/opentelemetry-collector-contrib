@@ -202,7 +202,7 @@ components:
         - nginx
         - nsxt
         - ntp
-        - oracledb
+        - oracle_db
         - otelarrow
         - otlp_json_file
         - podman_stats

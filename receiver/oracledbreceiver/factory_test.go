@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
@@ -203,6 +204,25 @@ func TestGetDataSource(t *testing.T) {
 			require.Equal(t, tc.expected, dataSource)
 			_, err := url.PathUnescape(dataSource)
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestFactoryTypeAlias(t *testing.T) {
+	factory := NewFactory()
+	require.Equal(t, component.MustNewType("oracle_db"), factory.Type())
+
+	for _, typ := range []component.Type{metadata.Type, component.MustNewType("oracledb")} {
+		t.Run(typ.String(), func(t *testing.T) {
+			cfg := factory.CreateDefaultConfig()
+			comp, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(typ), cfg, consumertest.NewNop())
+			require.NoError(t, err)
+			require.NotNil(t, comp)
+			require.NoError(t, comp.Shutdown(t.Context()))
+			logs, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(typ), factory.CreateDefaultConfig(), consumertest.NewNop())
+			require.NoError(t, err)
+			require.NotNil(t, logs)
+			require.NoError(t, logs.Shutdown(t.Context()))
 		})
 	}
 }

@@ -211,7 +211,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestParseConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	sub, err := cm.Sub("oracledb")
+	sub, err := cm.Sub(metadata.Type.String())
 	require.NoError(t, err)
 	cfg := createDefaultConfig().(*Config)
 
