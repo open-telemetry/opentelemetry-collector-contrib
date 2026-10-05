@@ -24,9 +24,6 @@ partition keys added to the outgoing request metadata.
 
 A processor that partitions incoming telemetry batches using [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) value expressions. Each incoming batch is split into one or more sub-batches whose items all evaluate to the same set of partition key values. Each sub-batch is forwarded to the next consumer concurrently with the evaluated key/value pairs appended to the outgoing [request metadata](https://pkg.go.dev/go.opentelemetry.io/collector/client#Metadata).
 
-> [!WARNING]
-> This component is under development. Only logs are partitioned so far; traces, metrics, and profiles are currently forwarded unchanged.
-
 **Use cases**
 
 - **Kafka topic routing and message keying** — partition by a resource attribute to control which topic and/or partition key each batch lands on, without the multi-resource routing bug present in the Kafka exporter.
