@@ -82,6 +82,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemdServiceCPUTimeDataPoint(ts, 1, AttributeCPUModeSystem)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemdServiceCPUTimeDataPoint(ts, 3, AttributeCPUModeUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemdServiceCPUTimeDataPoint(ts+1, 3, AttributeCPUModeUser)
+				assert.Equal(t, 2, mb.metricSystemdServiceCPUTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -97,6 +100,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemdUnitStateDataPoint(ts, 1, AttributeSystemdUnitActiveStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemdUnitStateDataPoint(ts, 3, AttributeSystemdUnitActiveStateReloading)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemdUnitStateDataPoint(ts+1, 3, AttributeSystemdUnitActiveStateReloading)
+				assert.Equal(t, 2, mb.metricSystemdUnitState.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -155,7 +161,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["systemd.service.cpu.time"], "Found a duplicate in the metrics slice: systemd.service.cpu.time")
 						validatedMetrics["systemd.service.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total CPU time spent by this service.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -241,7 +249,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["systemd.unit.state"], "Found a duplicate in the metrics slice: systemd.unit.state")
 						validatedMetrics["systemd.unit.state"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "1 if the check resulted in active_state matching the current state, otherwise 0.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

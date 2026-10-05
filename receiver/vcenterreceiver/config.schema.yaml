@@ -7,6 +7,8 @@ properties:
     type: integer
   password:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
+  proxy_url:
+    type: string
   tls:
     $ref: go.opentelemetry.io/collector/config/configtls.client_config
   username:

@@ -166,7 +166,8 @@ tidylist:
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
 		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION) && $(GOCMD) get toolchain@none) || exit $?; \
+		$(call retry,(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION))); \
+		(cd $$mod && $(GOCMD) get toolchain@none) || exit 1; \
 	done
 
 .PHONY: bump-go-version
@@ -303,6 +304,27 @@ pkg/datadog: exporter/datadogexporter/integrationtest
 extension/datadogextension: pkg/datadog
 connector/datadogconnector: extension/datadogextension
 exporter/datadogexporter: internal/datadog
+
+# The following modules are each both their own Go module and the parent
+# directory of one or more other modules below (e.g. extension/encoding
+# contains jaegerencodingextension as a nested module). `generate`'s fmt/gci
+# step (gofumpt/gci) walks the filesystem tree, not Go module boundaries, so
+# a parent's own fmt/gci pass recurses into its nested modules' files while
+# those modules run their own `generate` concurrently under `make -jN`,
+# racing on the same files (surfacing as spurious "size changed during
+# reading" or "no such file" errors from gofumpt/gci). Serialize each parent
+# relative to its children; unrelated modules still run in parallel.
+cmd/telemetrygen/internal/e2etest: cmd/telemetrygen
+exporter/elasticsearchexporter/integrationtest: exporter/elasticsearchexporter
+extension/dbauth/awsiamdbauthextension: extension/dbauth
+extension/encoding/avrologencodingextension extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awslogsencodingextension extension/encoding/azureencodingextension extension/encoding/googlecloudlogentryencodingextension extension/encoding/jaegerencodingextension extension/encoding/jsonlogencodingextension extension/encoding/otlpencodingextension extension/encoding/skywalkingencodingextension extension/encoding/textencodingextension extension/encoding/zipkinencodingextension: extension/encoding
+extension/observer/cfgardenobserver extension/observer/dockerobserver extension/observer/ecsobserver extension/observer/hostobserver extension/observer/k8sobserver: extension/observer
+extension/storage/dbstorage extension/storage/filestorage extension/storage/redisstorageextension: extension/storage
+extension/tailstorage/pebbletailstorageextension/integrationtest: extension/tailstorage/pebbletailstorageextension
+internal/aws/xray/testdata/sampleapp internal/aws/xray/testdata/sampleserver: internal/aws/xray
+internal/datadog/e2e: internal/datadog
+pkg/ottl/contexts/xprofile pkg/ottl/xottl: pkg/ottl
+testbed/mockdatasenders/mockdatadogagentexporter: testbed
 
 # Trigger each module's delegation target
 .PHONY: for-all-target
@@ -471,10 +493,14 @@ chlog-preview:
 chlog-update:
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
+# OCB keeps an existing go.sum, so seeding it with the repo's verified sums leaves only collector-only modules for sum.golang.org to verify.
+seed-collector-go-sum = git ls-files -z '*go.sum' | xargs -0 cat | sort -u > cmd/$(1)/go.sum
+
 .PHONY: genotelcontribcol
 genotelcontribcol:
 	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
+	$(call seed-collector-go-sum,otelcontribcol)
+	@$(call retry,$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -491,7 +517,8 @@ otelcontribcollite: genotelcontribcol
 .PHONY: genoteltestbedcol
 genoteltestbedcol:
 	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
+	$(call seed-collector-go-sum,oteltestbedcol)
+	@$(call retry,$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml)
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -747,7 +774,7 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 
 .PHONY: generate-schemas
 generate-schemas:
-	@$(foreach dir,$(SCHEMA_DIRS), go run $(SCHEMAGEN_PKG) $(abspath $(dir)) -o $(abspath $(dir));)
+	@$(foreach dir,$(SCHEMA_DIRS), $(SCHEMAGEN) $(abspath $(dir)) -o $(abspath $(dir));)
 
 .PHONY: checks
 checks:
