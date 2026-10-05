@@ -281,10 +281,10 @@ components:
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
+    - receiver/google_cloud_pub_sub_push
     - receiver/google_cloud_spanner
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
-    - receiver/googlecloudpubsubpush
     - receiver/haproxy
     - receiver/host_metrics
     - receiver/http_check

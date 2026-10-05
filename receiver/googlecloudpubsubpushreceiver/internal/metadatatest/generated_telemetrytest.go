@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	set := receivertest.NewNopSettings(receivertest.NopType)
-	set.ID = component.NewID(component.MustNewType("googlecloudpubsubpush"))
+	set.ID = component.NewID(component.MustNewType("google_cloud_pub_sub_push"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }

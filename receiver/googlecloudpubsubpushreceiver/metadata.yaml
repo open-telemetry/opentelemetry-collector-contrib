@@ -1,5 +1,6 @@
 display_name: Google Pub/Sub Push Receiver
-type: googlecloudpubsubpush
+type: google_cloud_pub_sub_push
+deprecated_type: googlecloudpubsubpush
 
 status:
   class: receiver

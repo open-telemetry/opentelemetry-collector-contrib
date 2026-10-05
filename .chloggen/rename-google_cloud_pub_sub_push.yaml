@@ -1,0 +1,4 @@
+change_type: deprecation
+component: receiver/google_cloud_pub_sub_push
+note: "Rename the googlecloudpubsubpush receiver to google_cloud_pub_sub_push. The old name remains available as a deprecated alias."
+issues: [45339]
