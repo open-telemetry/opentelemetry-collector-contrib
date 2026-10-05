@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/ottl
+note: Improve `replace_all_patterns` key-mode performance for large maps
+issues: [51716]
+subtext:
+change_logs: [user]
