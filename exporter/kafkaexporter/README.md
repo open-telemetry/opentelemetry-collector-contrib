@@ -134,7 +134,7 @@ The following settings can be optionally configured:
 
 ### Trace context propagation
 
-The exporter injects trace context from the current export span into Kafka record headers for any signal when `service::telemetry::traces::propagators` is configured. For example, to add W3C `traceparent` and, when present, `tracestate` headers:
+The exporter injects trace context from the current export span into Kafka record headers for any signal when `service::telemetry::traces::propagators` is configured, and are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted. For example, to add W3C `traceparent` and, when present, `tracestate` headers:
 
 ```yaml
 service:
