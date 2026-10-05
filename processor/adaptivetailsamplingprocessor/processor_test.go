@@ -722,7 +722,7 @@ func TestProcessor_RootSpanConditionMultipleMatches(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
 		TraceTimeout:      time.Hour,
-		DecisionDelay:     100 * time.Millisecond,
+		DecisionDelay:     500 * time.Millisecond,
 		NumTraces:         10,
 		RootSpanCondition: `span.attributes["trigger"] == true`,
 		Rules: []RuleConfig{
@@ -741,6 +741,7 @@ func TestProcessor_RootSpanConditionMultipleMatches(t *testing.T) {
 
 	first := newTrace(traceID, ptrace.StatusCodeUnset)
 	firstSpan := first.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	firstSpan.SetSpanID(pcommon.SpanID([8]byte{1}))
 	firstSpan.Attributes().PutBool("trigger", true)
 
 	require.NoError(t, p.ConsumeTraces(t.Context(), first))
@@ -752,10 +753,12 @@ func TestProcessor_RootSpanConditionMultipleMatches(t *testing.T) {
 
 	second := newTrace(traceID, ptrace.StatusCodeUnset)
 	secondSpan := second.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	secondSpan.SetSpanID(pcommon.SpanID([8]byte{2}))
 	secondSpan.Attributes().PutBool("trigger", true)
 
 	third := newTrace(traceID, ptrace.StatusCodeUnset)
 	thirdSpan := third.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	thirdSpan.SetSpanID(pcommon.SpanID([8]byte{3}))
 	thirdSpan.Attributes().PutBool("trigger", true)
 
 	require.NoError(t, p.ConsumeTraces(t.Context(), second))
@@ -763,7 +766,7 @@ func TestProcessor_RootSpanConditionMultipleMatches(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		return sink.SpanCount() == 3
-	}, time.Second, 10*time.Millisecond)
+	}, 3*time.Second, 10*time.Millisecond)
 
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches(
 		t,
