@@ -166,6 +166,7 @@ components:
     - pkg/otelarrow
     - pkg/ottl
     - pkg/ottl/contexts/xprofile
+    - pkg/ottl/xottl
     - pkg/pdatatest
     - pkg/prometheus
     - pkg/resourcetotelemetry
@@ -338,7 +339,7 @@ components:
     - receiver/splunk_enterprise
     - receiver/splunk_hec
     - receiver/sql_query
-    - receiver/sqlserver
+    - receiver/sql_server
     - receiver/ssh_check
     - receiver/statsd
     - receiver/stef
