@@ -362,7 +362,7 @@ type querySample struct {
 	digest             string
 	eventID            int64
 	sessionStatus      string
-	waitEvent          string
+	waitType           string
 	waitTime           float64
 	statementTimerWait float64
 	traceparent        string
@@ -593,6 +593,10 @@ func (c *mySQLClient) getTableStats() ([]tableStats, error) {
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -618,6 +622,10 @@ func (c *mySQLClient) getTableIoWaitsStats() ([]tableIoWaitsStats, error) {
 			return nil, err
 		}
 		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
@@ -646,6 +654,10 @@ func (c *mySQLClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
 			return nil, err
 		}
 		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
@@ -685,6 +697,10 @@ func (c *mySQLClient) getStatementEventsStats() ([]statementEventStats, error) {
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -717,6 +733,10 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 			return nil, err
 		}
 		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
@@ -968,6 +988,10 @@ func (c *mySQLClient) getReplicaStatusStats(supportsReplicaStatus bool) ([]repli
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -1037,6 +1061,11 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 		}
 		topQueries = append(topQueries, tq)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return topQueries, nil
 }
 
@@ -1098,8 +1127,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.eventID)
 			case "session_status":
 				dest = append(dest, &s.sessionStatus)
-			case "wait_event":
-				dest = append(dest, &s.waitEvent)
+			case "wait_type":
+				dest = append(dest, &s.waitType)
 			case "wait_time_seconds":
 				dest = append(dest, &s.waitTime)
 			case "statement_timer_wait_seconds":
@@ -1127,6 +1156,10 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 		}
 
 		samples = append(samples, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return samples, nil
@@ -1227,6 +1260,10 @@ func query(c mySQLClient, query string) (map[string]string, error) {
 			return nil, err
 		}
 		stats[key] = val
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil

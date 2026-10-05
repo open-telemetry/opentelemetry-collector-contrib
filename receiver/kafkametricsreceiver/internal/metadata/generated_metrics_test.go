@@ -95,6 +95,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(ts, 1, "broker-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(ts, 3, "broker-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaBrokerLogRetentionPeriodDataPoint(ts+1, 3, "broker-val-2")
+				assert.Equal(t, 2, mb.metricKafkaBrokerLogRetentionPeriod.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -104,84 +107,126 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupLagDataPoint(ts, 3, "group-val-2", "topic-val-2", 10)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaConsumerGroupLagDataPoint(ts+1, 3, "group-val-2", "topic-val-2", 10)
+				assert.Equal(t, 2, mb.metricKafkaConsumerGroupLag.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "group-val", "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 3, "group-val-2", "topic-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaConsumerGroupLagSumDataPoint(ts+1, 3, "group-val-2", "topic-val-2")
+				assert.Equal(t, 2, mb.metricKafkaConsumerGroupLagSum.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "group-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 3, "group-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaConsumerGroupMembersDataPoint(ts+1, 3, "group-val-2")
+				assert.Equal(t, 2, mb.metricKafkaConsumerGroupMembers.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "group-val", "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 3, "group-val-2", "topic-val-2", 10)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaConsumerGroupOffsetDataPoint(ts+1, 3, "group-val-2", "topic-val-2", 10)
+				assert.Equal(t, 2, mb.metricKafkaConsumerGroupOffset.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "group-val", "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 3, "group-val-2", "topic-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts+1, 3, "group-val-2", "topic-val-2")
+				assert.Equal(t, 2, mb.metricKafkaConsumerGroupOffsetSum.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 3, "topic-val-2", 10)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts+1, 3, "topic-val-2", 10)
+				assert.Equal(t, 2, mb.metricKafkaPartitionCurrentOffset.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 3, "topic-val-2", 10)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaPartitionOldestOffsetDataPoint(ts+1, 3, "topic-val-2", 10)
+				assert.Equal(t, 2, mb.metricKafkaPartitionOldestOffset.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionReplicasDataPoint(ts, 3, "topic-val-2", 10)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaPartitionReplicasDataPoint(ts+1, 3, "topic-val-2", 10)
+				assert.Equal(t, 2, mb.metricKafkaPartitionReplicas.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9)
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 3, "topic-val-2", 10)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts+1, 3, "topic-val-2", 10)
+				assert.Equal(t, 2, mb.metricKafkaPartitionReplicasInSync.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordKafkaTopicLogRetentionPeriodDataPoint(ts, 1, "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaTopicLogRetentionPeriodDataPoint(ts, 3, "topic-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaTopicLogRetentionPeriodDataPoint(ts+1, 3, "topic-val-2")
+				assert.Equal(t, 2, mb.metricKafkaTopicLogRetentionPeriod.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordKafkaTopicLogRetentionSizeDataPoint(ts, 1, "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaTopicLogRetentionSizeDataPoint(ts, 3, "topic-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaTopicLogRetentionSizeDataPoint(ts+1, 3, "topic-val-2")
+				assert.Equal(t, 2, mb.metricKafkaTopicLogRetentionSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 1, "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 3, "topic-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts+1, 3, "topic-val-2")
+				assert.Equal(t, 2, mb.metricKafkaTopicMinInsyncReplicas.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaTopicPartitionsDataPoint(ts, 3, "topic-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaTopicPartitionsDataPoint(ts+1, 3, "topic-val-2")
+				assert.Equal(t, 2, mb.metricKafkaTopicPartitions.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordKafkaTopicReplicationFactorDataPoint(ts, 1, "topic-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordKafkaTopicReplicationFactorDataPoint(ts, 3, "topic-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordKafkaTopicReplicationFactorDataPoint(ts+1, 3, "topic-val-2")
+				assert.Equal(t, 2, mb.metricKafkaTopicReplicationFactor.data.Gauge().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -252,7 +297,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.broker.log_retention_period"], "Found a duplicate in the metrics slice: kafka.broker.log_retention_period")
 						validatedMetrics["kafka.broker.log_retention_period"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "log retention time (s) of a broker.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -312,7 +359,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.consumer_group.lag"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag")
 						validatedMetrics["kafka.consumer_group.lag"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Current approximate lag of consumer group at partition of topic", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -359,7 +408,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.consumer_group.lag_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag_sum")
 						validatedMetrics["kafka.consumer_group.lag_sum"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Current approximate sum of consumer group lag across all partitions of topic", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -403,7 +454,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.consumer_group.members"], "Found a duplicate in the metrics slice: kafka.consumer_group.members")
 						validatedMetrics["kafka.consumer_group.members"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Count of members in the consumer group", mi.Description())
 						assert.Equal(t, "{members}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -451,7 +504,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.consumer_group.offset"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset")
 						validatedMetrics["kafka.consumer_group.offset"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Current offset of the consumer group at partition of topic", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -498,7 +553,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.consumer_group.offset_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset_sum")
 						validatedMetrics["kafka.consumer_group.offset_sum"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Sum of consumer group offset across partitions of topic", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -543,7 +600,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.partition.current_offset"], "Found a duplicate in the metrics slice: kafka.partition.current_offset")
 						validatedMetrics["kafka.partition.current_offset"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Current offset of partition of topic.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -588,7 +647,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.partition.oldest_offset"], "Found a duplicate in the metrics slice: kafka.partition.oldest_offset")
 						validatedMetrics["kafka.partition.oldest_offset"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Oldest offset of partition of topic", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -635,7 +696,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.partition.replicas"], "Found a duplicate in the metrics slice: kafka.partition.replicas")
 						validatedMetrics["kafka.partition.replicas"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of replicas for partition of topic", mi.Description())
 						assert.Equal(t, "{replicas}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -684,7 +747,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.partition.replicas_in_sync"], "Found a duplicate in the metrics slice: kafka.partition.replicas_in_sync")
 						validatedMetrics["kafka.partition.replicas_in_sync"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of synchronized replicas of partition", mi.Description())
 						assert.Equal(t, "{replicas}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -728,7 +793,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.topic.log_retention_period"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_period")
 						validatedMetrics["kafka.topic.log_retention_period"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "log retention period of a topic (s).", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -768,7 +835,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.topic.log_retention_size"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_size")
 						validatedMetrics["kafka.topic.log_retention_size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "log retention size of a topic in Bytes, The value (-1) indicates infinite size.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -808,7 +877,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.topic.min_insync_replicas"], "Found a duplicate in the metrics slice: kafka.topic.min_insync_replicas")
 						validatedMetrics["kafka.topic.min_insync_replicas"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "minimum in-sync replicas of a topic.", mi.Description())
 						assert.Equal(t, "{replicas}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -850,7 +921,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.topic.partitions"], "Found a duplicate in the metrics slice: kafka.topic.partitions")
 						validatedMetrics["kafka.topic.partitions"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of partitions in topic.", mi.Description())
 						assert.Equal(t, "{partitions}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -892,7 +965,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["kafka.topic.replication_factor"], "Found a duplicate in the metrics slice: kafka.topic.replication_factor")
 						validatedMetrics["kafka.topic.replication_factor"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "replication factor of a topic.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

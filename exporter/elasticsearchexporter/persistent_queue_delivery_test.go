@@ -145,7 +145,7 @@ func pqTraces(n int) ptrace.Traces {
 	return traces
 }
 
-func pqProfiles() pprofile.Profiles {
+func basicProfiles() pprofile.Profiles {
 	profiles := pprofile.NewProfiles()
 	dic := profiles.Dictionary()
 	profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
@@ -235,7 +235,7 @@ func TestPersistentQueueDelivery(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, exp.Start(t.Context(), host))
 		t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.WithoutCancel(t.Context()))) })
-		require.NoError(t, exp.ConsumeProfiles(t.Context(), pqProfiles()))
+		require.NoError(t, exp.ConsumeProfiles(t.Context(), basicProfiles()))
 		rec.WaitItems(4)
 	})
 }
