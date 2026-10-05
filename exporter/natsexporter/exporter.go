@@ -104,9 +104,9 @@ func (e *natsExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *natsExporter) Shutdown(_ context.Context) error {
+func (e *natsExporter) Shutdown(ctx context.Context) error {
 	if e.publisher != nil {
-		e.publisher.close()
+		return e.publisher.close(ctx)
 	}
 	return nil
 }
@@ -153,7 +153,7 @@ func publishSignal[T any](ctx context.Context, pub publisher, g grouper.Grouper[
 // path does not care whether it targets core NATS or (in a follow-up) JetStream.
 type publisher interface {
 	publish(ctx context.Context, subject string, data []byte) error
-	close()
+	close(ctx context.Context) error
 }
 
 // corePublisher publishes with core NATS (fire-and-forget, no delivery guarantee).
@@ -165,8 +165,23 @@ func (p *corePublisher) publish(_ context.Context, subject string, data []byte) 
 	return p.conn.Publish(subject, data)
 }
 
-func (p *corePublisher) close() {
+func (p *corePublisher) close(ctx context.Context) error {
+	// Core NATS buffers publishes client-side, so flush before closing to avoid
+	// dropping fire-and-forget messages still in the send buffer on a clean
+	// shutdown. Skip it when already disconnected (nothing to flush, and the
+	// flush would just error).
+	var err error
+	if p.conn.IsConnected() {
+		// Honor the shutdown deadline when the caller sets one; FlushWithContext
+		// requires a deadline, so otherwise fall back to a bounded Flush.
+		if _, ok := ctx.Deadline(); ok {
+			err = p.conn.FlushWithContext(ctx)
+		} else {
+			err = p.conn.Flush()
+		}
+	}
 	p.conn.Close()
+	return err
 }
 
 // newPublisher connects to NATS and returns a core-NATS publisher. JetStream

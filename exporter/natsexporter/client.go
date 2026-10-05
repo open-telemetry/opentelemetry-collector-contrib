@@ -5,9 +5,7 @@ package natsexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"os"
 
-	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -98,22 +96,11 @@ func setNkeyJWTOption(options *nats.Options, cfg *NkeyJWTConfig) error {
 }
 
 func setNkeyUserFileOption(options *nats.Options, cfg *NkeyUserFileConfig) error {
-	var errs error
-	userConfig, err := os.ReadFile(cfg.UserFilePath)
-	errs = multierr.Append(errs, err)
-	userJWT, err := jwt.ParseDecoratedJWT(userConfig)
-	errs = multierr.Append(errs, err)
-	keyPair, err := jwt.ParseDecoratedNKey(userConfig)
-	errs = multierr.Append(errs, err)
-	if errs != nil {
-		return errs
-	}
-
-	options.UserJWT = func() (string, error) {
-		return userJWT, nil
-	}
-	options.SignatureCB = keyPair.Sign
-	return nil
+	// UserCredentials installs UserJWT/SignatureCB callbacks that re-read the
+	// creds file each time they run, so a rotated (short-lived) credential is
+	// picked up on reconnect rather than pinned at first connect. It also smoke-
+	// tests the file once here, so a missing/unreadable file still errors eagerly.
+	return nats.UserCredentials(cfg.UserFilePath)(options)
 }
 
 func setAuthOption(options *nats.Options, cfg *AuthConfig) error {

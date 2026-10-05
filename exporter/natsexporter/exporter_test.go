@@ -86,3 +86,28 @@ func TestExporter_PermanentError(t *testing.T) {
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err), "a non-string subject should be a permanent error")
 }
+
+// TestExporter_InvalidSubjectIsPermanent verifies that a subject expression that
+// evaluates to a valid string which NATS nonetheless rejects as a subject (here,
+// empty) is reported as a permanent error rather than retried forever.
+func TestExporter_InvalidSubjectIsPermanent(t *testing.T) {
+	t.Parallel()
+
+	url := runServer(t)
+	ctx := t.Context()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = url
+	// Valid OTTL that yields an empty string; NATS rejects an empty subject.
+	cfg.Logs.Subject = `""`
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp := newExporter(set, cfg)
+
+	require.NoError(t, exp.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = exp.Shutdown(ctx) })
+
+	err := exp.pushLogs(ctx, testdata.GenerateLogs(1))
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err), "an invalid NATS subject should be a permanent error")
+}
