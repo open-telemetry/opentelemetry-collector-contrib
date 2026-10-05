@@ -754,7 +754,7 @@ Examples:
 
 The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`values` can be a list of values or an expression/path that resolves to a slice. Its values support paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`values` can be a list of values or an expression/path that resolves to a slice. Its values support paths, primitive values, and byte slices (such as trace IDs or span IDs). Passing an expression/path requires the [`pkg.ottl.functions.enableDynamicSliceArguments`](../README.md#pkgottlfunctionsenabledynamicslicearguments) feature gate, which is enabled by default.
 
 `delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
@@ -2916,7 +2916,9 @@ New functions are introduced as experimental functions. While a function is expe
 the stability guarantee**: its name, signature, and behavior may change in a backward-incompatible way, and the
 function may be removed entirely, in any `1.x` release without a major version bump. Experimental functions are
 not part of `StandardFuncs` or `StandardConverters`; they live in the `xottl` module and are documented in its
-[functions README](../xottl/ottlfuncs/README.md). Each component decides whether to make them available.
+[functions README](../xottl/ottlfuncs/README.md). Each component decides whether to make them available, and
+statements that use them only parse when the [`pkg.ottl.functions.enableExperimental`](../documentation.md#feature-gates)
+feature gate is enabled. The existing lambda functions instead require the `ottl.functions.enableLambda` feature gate.
 
 ### Promotion to standard
 

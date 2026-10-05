@@ -23,3 +23,15 @@ feature_gates:
     from_version: v0.158.0
     to_version: v1.0.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49741
+
+  - id: "pkg.ottl.functions.enableDynamicSliceArguments"
+    description: Allow slice arguments of stable OTTL functions, such as the values of Concat, to be paths or converters that resolve to a slice at runtime. When disabled, these arguments only accept list literals.
+    stage: beta
+    from_version: v0.163.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27821
+
+  - id: "pkg.ottl.functions.enableExperimental"
+    description: Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected.
+    stage: alpha
+    from_version: v0.163.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927
