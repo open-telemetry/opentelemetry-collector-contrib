@@ -12,3 +12,13 @@
 | cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
 | cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-region) | - |
 | k8s.cluster.name | The k8s.cluster.name | Any Str | true | [k8s.cluster.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/k8s.md#k8s-cluster-name) | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.resourcedetection.openshift.removeCloudNameRegion` | alpha | When enabled, the detector no longer sets `cloud.region` from the Azure or OpenStack `cloudName`, which names a cloud environment or a `clouds.yaml` entry rather than a region. | v0.163.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

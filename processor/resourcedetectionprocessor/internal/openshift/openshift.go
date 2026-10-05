@@ -5,16 +5,20 @@ package openshift // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"reflect"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	openshiftdetector "go.opentelemetry.io/contrib/detectors/openshift"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
+	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
@@ -34,7 +38,10 @@ var _ internal.Detector = (*detector)(nil)
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
-	var opts []openshiftdetector.Option
+	var (
+		opts   []openshiftdetector.Option
+		tlsCfg *tls.Config
+	)
 	if cfg.Address != "" {
 		opts = append(opts, openshiftdetector.WithAddress(cfg.Address))
 	}
@@ -47,7 +54,8 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		if !cfg.TLSs.Insecure && cfg.TLSs.CAFile == "" && cfg.TLSs.CAPem == "" {
 			cfg.TLSs.CAFile = defaultCAPath
 		}
-		tlsCfg, err := cfg.TLSs.LoadTLSConfig(context.Background())
+		var err error
+		tlsCfg, err = cfg.TLSs.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -56,6 +64,8 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 
 	return &detector{
 		detector:              openshiftdetector.NewResourceDetector(opts...),
+		cfg:                   cfg,
+		tlsCfg:                tlsCfg,
 		logger:                set.Logger,
 		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata,
@@ -64,6 +74,8 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 
 type detector struct {
 	detector              sdkresource.Detector
+	cfg                   Config
+	tlsCfg                *tls.Config
 	logger                *zap.Logger
 	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
@@ -92,6 +104,54 @@ func (d *detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 		return pcommon.NewResource(), "", nil
 	}
 
+	if !metadata.ProcessorResourcedetectionOpenshiftRemoveCloudNameRegionFeatureGate.IsEnabled() {
+		if _, ok := res.Attributes().Get(string(conventions.CloudRegionKey)); !ok {
+			region, err := d.legacyCloudNameRegion(ctx)
+			if err != nil {
+				d.logger.Debug("OpenShift detector: legacy cloud.region retrieval failed", zap.Error(err))
+			} else if region != "" {
+				res.Attributes().PutStr(string(conventions.CloudRegionKey), region)
+			}
+		}
+	}
+
 	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
 	return res, schemaURL, nil
+}
+
+// legacyCloudNameRegion returns the lower cased Azure or OpenStack cloudName, which the
+// detector reported as cloud.region before it was ported to the SDK detector.
+// It is removed together with the removeCloudNameRegion feature gate.
+func (d *detector) legacyCloudNameRegion(ctx context.Context) (string, error) {
+	address, token, tlsCfg := d.cfg.Address, d.cfg.Token, d.tlsCfg
+	var err error
+	if address == "" {
+		if address, err = readSVCAddressFromENV(); err != nil {
+			return "", err
+		}
+	}
+	if token == "" {
+		if token, err = readK8STokenFromFile(); err != nil {
+			return "", err
+		}
+	}
+	if tlsCfg == nil && strings.HasPrefix(address, "https://") {
+		caCfg := configtls.ClientConfig{Config: configtls.Config{CAFile: defaultCAPath}}
+		if tlsCfg, err = caCfg.LoadTLSConfig(ctx); err != nil {
+			return "", err
+		}
+	}
+
+	infra, err := ocp.NewProvider(address, token, tlsCfg).Infrastructure(ctx)
+	if err != nil {
+		return "", err
+	}
+	platform := infra.Status.PlatformStatus
+	switch strings.ToLower(platform.Type) {
+	case "azure":
+		return strings.ToLower(platform.Azure.CloudName), nil
+	case "openstack":
+		return strings.ToLower(platform.OpenStack.CloudName), nil
+	}
+	return "", nil
 }

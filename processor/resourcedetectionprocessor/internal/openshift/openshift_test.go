@@ -12,12 +12,30 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
 )
 
 const infrastructurePath = "/apis/config.openshift.io/v1/infrastructures/cluster/status"
 
-const awsInfra = `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"AWS","aws":{"region":"US-EAST-1"}}}}`
+const (
+	awsInfra       = `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"AWS","aws":{"region":"US-EAST-1"}}}}`
+	azureInfra     = `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"Azure","azure":{"cloudName":"AzurePublicCloud"}}}}`
+	openstackInfra = `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"OpenStack","openstack":{"cloudName":"openstack"}}}}`
+)
+
+// setRemoveCloudNameRegionGate forces the state of the removeCloudNameRegion gate
+// for the duration of the test.
+func setRemoveCloudNameRegionGate(t *testing.T, enabled bool) {
+	gate := metadata.ProcessorResourcedetectionOpenshiftRemoveCloudNameRegionFeatureGate
+	originalValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
+	})
+}
 
 // newInfraServer serves body on the Infrastructure status endpoint with the given status code.
 func newInfraServer(t *testing.T, status int, body string) *httptest.Server {
@@ -52,6 +70,7 @@ func detect(t *testing.T, cfg Config, failOnMissingMetadata bool) (map[string]an
 }
 
 func TestDetect(t *testing.T) {
+	setRemoveCloudNameRegionGate(t, true)
 	tests := []struct {
 		name string
 		body string
@@ -69,7 +88,7 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			name: "azure reports no region",
-			body: `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"Azure","azure":{"cloudName":"AzurePublicCloud"}}}}`,
+			body: azureInfra,
 			want: map[string]any{
 				"k8s.cluster.name": "my-cluster",
 				"cloud.provider":   "azure",
@@ -78,7 +97,7 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			name: "openstack reports no cloud attributes",
-			body: `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"OpenStack","openstack":{"cloudName":"openstack"}}}}`,
+			body: openstackInfra,
 			want: map[string]any{
 				"k8s.cluster.name": "my-cluster",
 			},
@@ -100,6 +119,59 @@ func TestDetect(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestDetectLegacyCloudNameRegion(t *testing.T) {
+	setRemoveCloudNameRegionGate(t, false)
+	tests := []struct {
+		name string
+		body string
+		want map[string]any
+	}{
+		{
+			name: "azure",
+			body: azureInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+				"cloud.provider":   "azure",
+				"cloud.platform":   "azure.openshift",
+				"cloud.region":     "azurepubliccloud",
+			},
+		},
+		{
+			name: "openstack",
+			body: openstackInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+				"cloud.region":     "openstack",
+			},
+		},
+		{
+			name: "aws keeps the sdk region",
+			body: awsInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+				"cloud.provider":   "aws",
+				"cloud.platform":   "aws_openshift",
+				"cloud.region":     "us-east-1",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := detect(t, testConfig(newInfraServer(t, http.StatusOK, tt.body)), true)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+
+	t.Run("disabled attribute", func(t *testing.T) {
+		cfg := testConfig(newInfraServer(t, http.StatusOK, azureInfra))
+		cfg.ResourceAttributes.CloudRegion.Enabled = false
+		got, err := detect(t, cfg, true)
+		require.NoError(t, err)
+		assert.NotContains(t, got, "cloud.region")
+	})
 }
 
 func TestDetectFailures(t *testing.T) {

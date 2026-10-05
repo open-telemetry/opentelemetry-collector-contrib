@@ -4,12 +4,39 @@
 package openshift // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 
 import (
+	"errors"
+	"fmt"
+	"os"
+
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
 )
 
-const defaultCAPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" //#nosec
+const (
+	defaultServiceTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"  //#nosec
+	defaultCAPath           = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" //#nosec
+)
+
+func readK8STokenFromFile() (string, error) {
+	token, err := os.ReadFile(defaultServiceTokenPath)
+	if err != nil {
+		return "", err
+	}
+	return string(token), nil
+}
+
+func readSVCAddressFromENV() (string, error) {
+	host := os.Getenv("KUBERNETES_SERVICE_HOST")
+	if host == "" {
+		return "", errors.New("could not extract openshift api host")
+	}
+	port := os.Getenv("KUBERNETES_SERVICE_PORT")
+	if port == "" {
+		return "", errors.New("could not extract openshift api port")
+	}
+	return fmt.Sprintf("https://%s:%s", host, port), nil
+}
 
 // Config can contain user-specified inputs to overwrite default values.
 // Unset fields are resolved by the SDK detector from the pod environment.
