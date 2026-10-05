@@ -128,7 +128,6 @@ The following settings can be optionally configured:
   - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
   - `max_in_flight`:
     - `records` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
-      > **WARNING**: Unmarshal must be safe for concurrent calls. Independent workers and values above 1 call Unmarshal at the same time. Built-in `text` and `text_*` encodings are not concurrent-safe. Encoding extensions must be concurrent-safe too.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -165,8 +164,7 @@ Available only for traces:
 Available only for logs:
 
 - `raw`: the payload's bytes are inserted as the body of a log record.
-- `text`: the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior. 
-> **WARNING**: `text` and `text_*` are not safe for concurrent Unmarshal (`partition_processing.independent` or `max_in_flight.records` above 1).
+- `text`: the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
 - `json`: the payload is decoded as JSON and inserted as the body of a log record.
 - `azure_resource_logs` (Deprecated [v0.149.0]: use [`azureencodingextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/azureencodingextension)): the payload is converted from Azure Resource Logs format to OTel format.
 

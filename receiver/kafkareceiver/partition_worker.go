@@ -223,26 +223,10 @@ func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition)
 			// Record the current consumer offset.
 			pc.currentOffset.Store(msg.Offset)
 			if err := c.handleMessage(pc, msg); err != nil {
-				if pc.ctx.Err() != nil {
-					pc.logger.Debug("message processing interrupted",
-						zap.Error(err),
-						zap.Int64("offset", msg.Offset),
-					)
-				} else {
-					pc.logger.Error("unable to process message",
-						zap.Error(err),
-						zap.Int64("offset", msg.Offset),
-					)
-				}
-				// handleMessage only returns an error when After=true and the
-				// message should not be marked, so asking again here is consistent
-				// with that contract. The backoff path is the exception: it returns
-				// the cancellation cause without consulting the config.
-				if !c.shouldMarkOnError(pc, err) {
-					fatalRecord = msg
-					fatalIsPermanent = consumererror.IsPermanent(err)
-					break
-				}
+				pc.logProcessError(msg, err)
+				fatalRecord = msg
+				fatalIsPermanent = consumererror.IsPermanent(err)
+				break
 			}
 			lastProcessed = msg
 		}
@@ -461,13 +445,7 @@ func (b *inflightBatch) start(i int) {
 	b.wg.Go(func() {
 		// Release after complete, so the next acquire sees failed.
 		defer func() { <-b.sem }()
-		msg := b.p.Records[i]
-		err := b.c.handleMessage(b.pc, msg)
-		if err != nil && b.c.shouldMarkOnError(b.pc, err) {
-			b.pc.logProcessError(msg, err)
-			err = nil
-		}
-		b.complete(i, err)
+		b.complete(i, b.c.handleMessage(b.pc, b.p.Records[i]))
 	})
 }
 

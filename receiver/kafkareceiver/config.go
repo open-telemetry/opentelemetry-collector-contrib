@@ -97,14 +97,16 @@ func (c *Config) Validate() error {
 	if err := validateExcludeTopic("profiles", c.Profiles.Topics, c.Profiles.ExcludeTopics); err != nil {
 		return err
 	}
-	if c.PartitionProcessing.Independent && c.PartitionProcessing.MaxBufferedBatches <= 0 {
-		return errors.New("partition_processing.max_buffered_batches must be greater than zero")
-	}
-	if c.PartitionProcessing.Independent && c.PartitionProcessing.MaxInFlight.Records <= 0 {
-		return errors.New("partition_processing.max_in_flight.records must be greater than zero")
-	}
-	if c.PartitionProcessing.Independent && !c.ConsumerConfig.AutoCommit.Enable {
-		return errors.New("partition_processing.independent requires autocommit.enable")
+	if c.PartitionProcessing.Independent {
+		if c.PartitionProcessing.MaxBufferedBatches <= 0 {
+			return errors.New("partition_processing.max_buffered_batches must be greater than zero")
+		}
+		if c.PartitionProcessing.MaxInFlight.Records <= 0 {
+			return errors.New("partition_processing.max_in_flight.records must be greater than zero")
+		}
+		if !c.ConsumerConfig.AutoCommit.Enable {
+			return errors.New("partition_processing.independent requires autocommit.enable")
+		}
 	}
 	return nil
 }
@@ -212,7 +214,10 @@ type MaxInFlightConfig struct {
 	// Records is how many calls may run at once. Default 1.
 	Records int `mapstructure:"records"`
 
-	_ struct{} // avoids unkeyed_literal_initialization. TODO: add Bytes to cap the fetched payload size of in-flight records.
+	// TODO: add Bytes to cap the fetched payload size of in-flight records.
+	// Bytes int `mapstructure:"bytes"`
+
+	_ struct{} // avoids unkeyed_literal_initialization.
 }
 
 type HeaderExtraction struct {
