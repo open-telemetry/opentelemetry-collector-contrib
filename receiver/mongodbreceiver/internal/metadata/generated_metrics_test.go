@@ -112,12 +112,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeTypeHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbCacheOperationsDataPoint(ts, 3, AttributeTypeMiss)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbCacheOperationsDataPoint(ts+1, 3, AttributeTypeMiss)
+				assert.Equal(t, 2, mb.metricMongodbCacheOperations.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCollectionCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbCollectionCountDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbCollectionCountDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbCollectionCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -127,6 +133,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbConnectionCountDataPoint(ts, 1, AttributeConnectionTypeActive, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbConnectionCountDataPoint(ts, 3, AttributeConnectionTypeAvailable, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbConnectionCountDataPoint(ts+1, 3, AttributeConnectionTypeAvailable, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbConnectionCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -139,6 +148,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbDataSizeDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbDataSizeDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbDataSizeDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbDataSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -151,12 +163,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, AttributeOperationInsert, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbDocumentOperationCountDataPoint(ts, 3, AttributeOperationQuery, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbDocumentOperationCountDataPoint(ts+1, 3, AttributeOperationQuery, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbDocumentOperationCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbExtentCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbExtentCountDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbExtentCountDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbExtentCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -175,18 +193,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "collection-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbIndexAccessCountDataPoint(ts, 3, "collection-val-2", "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbIndexAccessCountDataPoint(ts+1, 3, "collection-val-2", "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbIndexAccessCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbIndexCountDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbIndexCountDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbIndexCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexSizeDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbIndexSizeDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbIndexSizeDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbIndexSize.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -196,30 +223,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbLockAcquireCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbLockAcquireCountDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbLockAcquireCountDataPoint(ts+1, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbLockAcquireCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbLockAcquireTimeDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbLockAcquireTimeDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbLockAcquireTimeDataPoint(ts+1, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbLockAcquireTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbLockAcquireWaitCountDataPoint(ts+1, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbLockAcquireWaitCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbLockDeadlockCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbLockDeadlockCountDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbLockDeadlockCountDataPoint(ts+1, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbLockDeadlockCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, AttributeMemoryTypeResident, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbMemoryUsageDataPoint(ts, 3, AttributeMemoryTypeVirtual, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbMemoryUsageDataPoint(ts+1, 3, AttributeMemoryTypeVirtual, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbMemoryUsage.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -235,30 +277,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbObjectCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbObjectCountDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbObjectCountDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbObjectCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperationInsert)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbOperationCountDataPoint(ts, 3, AttributeOperationQuery)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbOperationCountDataPoint(ts+1, 3, AttributeOperationQuery)
+				assert.Equal(t, 2, mb.metricMongodbOperationCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatencyRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 3, AttributeOperationLatencyWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbOperationLatencyTimeDataPoint(ts+1, 3, AttributeOperationLatencyWrite)
+				assert.Equal(t, 2, mb.metricMongodbOperationLatencyTime.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperationInsert)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbOperationReplCountDataPoint(ts, 3, AttributeOperationQuery)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbOperationReplCountDataPoint(ts+1, 3, AttributeOperationQuery)
+				assert.Equal(t, 2, mb.metricMongodbOperationReplCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperationInsert)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbOperationTimeDataPoint(ts, 3, AttributeOperationQuery)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbOperationTimeDataPoint(ts+1, 3, AttributeOperationQuery)
+				assert.Equal(t, 2, mb.metricMongodbOperationTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -298,24 +355,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbReplicaStatusDataPoint(ts, 1, AttributeMongodbReplicaStateStartup)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbReplicaStatusDataPoint(ts, 3, AttributeMongodbReplicaStatePrimary)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbReplicaStatusDataPoint(ts+1, 3, AttributeMongodbReplicaStatePrimary)
+				assert.Equal(t, 2, mb.metricMongodbReplicaStatus.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbReplicaSetHeadroomDataPoint(ts, 1, "mongodb.replica.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbReplicaSetHeadroomDataPoint(ts, 3, "mongodb.replica.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbReplicaSetHeadroomDataPoint(ts+1, 3, "mongodb.replica.name-val-2")
+				assert.Equal(t, 2, mb.metricMongodbReplicaSetHeadroom.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbReplicaSetLagDataPoint(ts, 1, "mongodb.replica.name-val", AttributeMongodbReplicaSetLagTypeApplied)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbReplicaSetLagDataPoint(ts, 3, "mongodb.replica.name-val-2", AttributeMongodbReplicaSetLagTypeDurable)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbReplicaSetLagDataPoint(ts+1, 3, "mongodb.replica.name-val-2", AttributeMongodbReplicaSetLagTypeDurable)
+				assert.Equal(t, 2, mb.metricMongodbReplicaSetLag.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbReplicaSetMemberCountDataPoint(ts, 1, AttributeMongodbReplicaStateStartup)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbReplicaSetMemberCountDataPoint(ts, 3, AttributeMongodbReplicaStatePrimary)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbReplicaSetMemberCountDataPoint(ts+1, 3, AttributeMongodbReplicaStatePrimary)
+				assert.Equal(t, 2, mb.metricMongodbReplicaSetMemberCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -325,6 +394,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbStorageSizeDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbStorageSizeDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricMongodbStorageSize.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -337,6 +409,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(ts, 1, AttributeMongodbWtConcurrentTransactionTicketTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(ts, 3, AttributeMongodbWtConcurrentTransactionTicketTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(ts+1, 3, AttributeMongodbWtConcurrentTransactionTicketTypeWrite)
+				assert.Equal(t, 2, mb.metricMongodbWtConcurrentTransactionTicketInUse.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -346,6 +421,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbWtLogOperationCountDataPoint(ts, 1, AttributeMongodbWtLogOperationTypeWrite)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbWtLogOperationCountDataPoint(ts, 3, AttributeMongodbWtLogOperationTypeSync)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbWtLogOperationCountDataPoint(ts+1, 3, AttributeMongodbWtLogOperationTypeSync)
+				assert.Equal(t, 2, mb.metricMongodbWtLogOperationCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -470,7 +548,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.cache.operations"], "Found a duplicate in the metrics slice: mongodb.cache.operations")
 						validatedMetrics["mongodb.cache.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of cache operations of the instance.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -514,7 +594,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.collection.count"], "Found a duplicate in the metrics slice: mongodb.collection.count")
 						validatedMetrics["mongodb.collection.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of collections.", mi.Description())
 						assert.Equal(t, "{collections}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -573,7 +655,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.connection.count"], "Found a duplicate in the metrics slice: mongodb.connection.count")
 						validatedMetrics["mongodb.connection.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of connections.", mi.Description())
 						assert.Equal(t, "{connections}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -647,7 +731,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.data.size"], "Found a duplicate in the metrics slice: mongodb.data.size")
 						validatedMetrics["mongodb.data.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size of the collection. Data compression does not affect this value.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -720,7 +806,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.document.operation.count"], "Found a duplicate in the metrics slice: mongodb.document.operation.count")
 						validatedMetrics["mongodb.document.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of document operations executed.", mi.Description())
 						assert.Equal(t, "{documents}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -766,7 +854,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.extent.count"], "Found a duplicate in the metrics slice: mongodb.extent.count")
 						validatedMetrics["mongodb.extent.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of extents.", mi.Description())
 						assert.Equal(t, "{extents}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -863,7 +953,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.index.access.count"], "Found a duplicate in the metrics slice: mongodb.index.access.count")
 						validatedMetrics["mongodb.index.access.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of times an index has been accessed.", mi.Description())
 						assert.Equal(t, "{accesses}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -909,7 +1001,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.index.count"], "Found a duplicate in the metrics slice: mongodb.index.count")
 						validatedMetrics["mongodb.index.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of indexes.", mi.Description())
 						assert.Equal(t, "{indexes}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -953,7 +1047,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.index.size"], "Found a duplicate in the metrics slice: mongodb.index.size")
 						validatedMetrics["mongodb.index.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Sum of the space allocated to all indexes in the database, including free index space.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1015,7 +1111,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.lock.acquire.count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.count")
 						validatedMetrics["mongodb.lock.acquire.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times the lock was acquired in the specified mode.", mi.Description())
 						assert.Equal(t, "{count}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1069,7 +1167,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.lock.acquire.time"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.time")
 						validatedMetrics["mongodb.lock.acquire.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative wait time for the lock acquisitions.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1123,7 +1223,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.lock.acquire.wait_count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.wait_count")
 						validatedMetrics["mongodb.lock.acquire.wait_count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.", mi.Description())
 						assert.Equal(t, "{count}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1177,7 +1279,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.lock.deadlock.count"], "Found a duplicate in the metrics slice: mongodb.lock.deadlock.count")
 						validatedMetrics["mongodb.lock.deadlock.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times the lock acquisitions encountered deadlocks.", mi.Description())
 						assert.Equal(t, "{count}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1228,7 +1332,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.memory.usage"], "Found a duplicate in the metrics slice: mongodb.memory.usage")
 						validatedMetrics["mongodb.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of memory used.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1316,7 +1422,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.object.count"], "Found a duplicate in the metrics slice: mongodb.object.count")
 						validatedMetrics["mongodb.object.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of objects.", mi.Description())
 						assert.Equal(t, "{objects}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1360,7 +1468,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.operation.count"], "Found a duplicate in the metrics slice: mongodb.operation.count")
 						validatedMetrics["mongodb.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations executed.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1402,7 +1512,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.operation.latency.time"], "Found a duplicate in the metrics slice: mongodb.operation.latency.time")
 						validatedMetrics["mongodb.operation.latency.time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The latency of operations.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1444,7 +1556,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.operation.repl.count"], "Found a duplicate in the metrics slice: mongodb.operation.repl.count")
 						validatedMetrics["mongodb.operation.repl.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of replicated operations executed.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1488,7 +1602,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.operation.time"], "Found a duplicate in the metrics slice: mongodb.operation.time")
 						validatedMetrics["mongodb.operation.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The total time spent performing operations.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1670,7 +1786,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.replica.status"], "Found a duplicate in the metrics slice: mongodb.replica.status")
 						validatedMetrics["mongodb.replica.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current state of the scraped replica.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1712,7 +1830,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.replica_set.headroom"], "Found a duplicate in the metrics slice: mongodb.replica_set.headroom")
 						validatedMetrics["mongodb.replica_set.headroom"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The time margin a replica set member has before it falls off the end of the oplog.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1755,7 +1875,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.replica_set.lag"], "Found a duplicate in the metrics slice: mongodb.replica_set.lag")
 						validatedMetrics["mongodb.replica_set.lag"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The time a replica set member is behind the primary.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1799,7 +1921,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.replica_set.member.count"], "Found a duplicate in the metrics slice: mongodb.replica_set.member.count")
 						validatedMetrics["mongodb.replica_set.member.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of members in the replica set.", mi.Description())
 						assert.Equal(t, "{member}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1857,7 +1981,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.storage.size"], "Found a duplicate in the metrics slice: mongodb.storage.size")
 						validatedMetrics["mongodb.storage.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The total amount of storage allocated to this collection.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1927,7 +2053,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"], "Found a duplicate in the metrics slice: mongodb.wt.concurrent_transaction.ticket.in_use")
 						validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of in-flight WiredTiger read/write concurrent-transaction tickets.", mi.Description())
 						assert.Equal(t, "{ticket}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1985,7 +2113,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodb.wt.log.operation.count"], "Found a duplicate in the metrics slice: mongodb.wt.log.operation.count")
 						validatedMetrics["mongodb.wt.log.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The total number of WiredTiger journal operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

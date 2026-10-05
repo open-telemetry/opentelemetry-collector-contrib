@@ -1821,7 +1821,7 @@ func buildQuerySampleRow(sessionID, blockingSessionID, command, statement string
 		"username":                    "sa",
 		"client_app_name":             "SSMS",
 		"session_start_time":          "2025-02-12T15:00:00.000+08:00",
-		"session_duration":            "720456",
+		"session_duration":            "720",
 		"procedure_id":                "0",
 		"procedure_name":              "",
 		"blocking_start_time":         "",
@@ -1878,6 +1878,39 @@ func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
 		}
 	}
 	assert.True(t, foundIdleBlocker)
+}
+
+func TestSessionDurationSecondsAndZeroClamp(t *testing.T) {
+	tests := []struct {
+		name             string
+		sessionDuration  string
+		expectedDuration float64
+	}{
+		{"seconds passthrough", "720", 720},
+		{"zero clamp", "0", 0},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			scraper := setupQuerySampleScraper(t, nil)
+			scraper.db = &sql.DB{}
+
+			row := buildQuerySampleRow("60", "0", "SELECT", "SELECT 1")
+			row["session_duration"] = tc.sessionDuration
+			scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+				return []sqlquery.StringMap{row}, nil
+			}}
+
+			actualLogs, err := scraper.ScrapeLogs(t.Context())
+			assert.NoError(t, err)
+			assert.Equal(t, 1, actualLogs.LogRecordCount())
+
+			attrs := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			duration, ok := attrs.Get("sqlserver.session.duration")
+			assert.True(t, ok)
+			assert.Equal(t, tc.expectedDuration, duration.Double())
+		})
+	}
 }
 
 func TestRecordDatabaseSampleQueryDoesNotFetchIdleBlockersWhenNoneMissing(t *testing.T) {
