@@ -10,7 +10,8 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, michael-burt, chengchuanpeng, yanfeng1992]
+    active: [atoulme, michael-burt, chengchuanpeng]
+    emeritus: [yanfeng1992]
 
 resource_attributes:
 
