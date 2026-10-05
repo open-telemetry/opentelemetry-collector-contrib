@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/xpdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -76,8 +77,8 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 					continue
 				}
 				if !fn.IsEmpty() {
-					updatedString, err := applyOptReplaceFunction(ctx, tCtx, cp, fn, value.Str(), replacementVal, replacementFormat)
-					if err != nil {
+					updatedString, applyErr := applyOptReplaceFunction(ctx, tCtx, cp, fn, value.Str(), replacementVal, replacementFormat)
+					if applyErr != nil {
 						continue
 					}
 					value.SetStr(updatedString)
@@ -96,27 +97,36 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 			if !hasMatch {
 				break
 			}
-			// Because we are changing the keys we cannot do in-place update, but we can move values to the
-			// updated map and then move back the updated map to the initial map to avoid a copy in the target.Set,
-			// because the pcommon.Map.CopyTo will not do a copy if it is the same object in this case val.
-			updated := pcommon.NewMap()
+
+			// Append each unique key without pcommon.Map.PutEmpty's linear duplicate check. Keeping the
+			// first destination value for each key preserves entry order while later values overwrite it.
+			var updated xpdata.MapBuilder
 			updated.EnsureCapacity(val.Len())
+			valuesByKey := make(map[string]pcommon.Value, val.Len())
 			for key, value := range val.All() {
-				if !compiledPattern.matchString(cp, key) {
-					value.MoveTo(updated.PutEmpty(key))
+				updatedKey := key
+				if compiledPattern.matchString(cp, key) {
+					if !fn.IsEmpty() {
+						transformedKey, applyErr := applyOptReplaceFunction(ctx, tCtx, cp, fn, key, replacementVal, replacementFormat)
+						if applyErr != nil {
+							continue
+						}
+						updatedKey = transformedKey
+					} else {
+						updatedKey = cp.ReplaceAllString(key, replacementVal)
+					}
+				}
+
+				if updatedValue, ok := valuesByKey[updatedKey]; ok {
+					value.MoveTo(updatedValue)
 					continue
 				}
-				if !fn.IsEmpty() {
-					updatedKey, err := applyOptReplaceFunction(ctx, tCtx, cp, fn, key, replacementVal, replacementFormat)
-					if err != nil {
-						continue
-					}
-					value.MoveTo(updated.PutEmpty(updatedKey))
-				} else {
-					value.MoveTo(updated.PutEmpty(cp.ReplaceAllString(key, replacementVal)))
-				}
+
+				updatedValue := updated.AppendEmpty(updatedKey)
+				value.MoveTo(updatedValue)
+				valuesByKey[updatedKey] = updatedValue
 			}
-			updated.MoveTo(val)
+			updated.UnsafeIntoMap(val)
 		}
 		return nil, target.Set(ctx, tCtx, val)
 	}, nil
