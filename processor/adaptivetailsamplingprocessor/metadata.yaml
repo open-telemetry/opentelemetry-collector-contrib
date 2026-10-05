@@ -8,8 +8,8 @@ description: |
 status:
   class: processor
   stability:
-    development: [traces]
-  distributions: []
+    alpha: [traces]
+  distributions: [contrib]
   codeowners:
     active: [MikeGoldsmith, VinozzZ, jmacd]
 

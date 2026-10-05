@@ -7,7 +7,8 @@ status:
     alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, martin-majlis-s1, zdaratom-s1, tomaz-s1]
+    active: [atoulme, martin-majlis-s1, tomaz-s1]
+    emeritus: [zdaratom-s1]
 
 # TODO: Update the exporter to pass the tests
 tests:

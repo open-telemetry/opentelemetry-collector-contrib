@@ -58,7 +58,7 @@ exporter/cassandraexporter/                                      @open-telemetry
 exporter/clickhouseexporter/                                     @open-telemetry/collector-contrib-approvers @hanjm @Frapschen @SpencerTorres
 exporter/coralogixexporter/                                      @open-telemetry/collector-contrib-approvers @povilasv @iblancasa @douglascamata
 exporter/datadogexporter/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @jade-guiton-dd @IbraheemA
-exporter/datasetexporter/                                        @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
+exporter/datasetexporter/                                        @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @tomaz-s1
 exporter/dorisexporter/                                          @open-telemetry/collector-contrib-approvers @joker-star-l
 exporter/elasticsearchexporter/                                  @open-telemetry/collector-contrib-approvers @JaredTan95 @blakerouse @carsonip @lahsivjar
 exporter/faroexporter/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
@@ -134,7 +134,7 @@ extension/opampextension/                                        @open-telemetry
 extension/pprofextension/                                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/remotetapextension/                                    @open-telemetry/collector-contrib-approvers @atoulme
 extension/sdnotifyextension/                                     @open-telemetry/collector-contrib-approvers @VihasMakwana @iypetrov
-extension/sigv4authextension/                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
+extension/sigv4authextension/                                    @open-telemetry/collector-contrib-approvers @Aneurysm9
 extension/solarwindsapmsettingsextension/                        @open-telemetry/collector-contrib-approvers @jerrytfleung @cheempz
 extension/storage/                                               @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @swiatekm @VihasMakwana
 extension/storage/dbstorage/                                     @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
@@ -368,7 +368,7 @@ receiver/statsdreceiver/                                         @open-telemetry
 receiver/stefreceiver/                                           @open-telemetry/collector-contrib-approvers @tigrannajaryan @MovieStoreGuy @dmitryax @atoulme @pjanotti @crobert-1
 receiver/syslogreceiver/                                         @open-telemetry/collector-contrib-approvers @andrzej-stencel
 receiver/systemdreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme
-receiver/tcpcheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt @chengchuanpeng @yanfeng1992
+receiver/tcpcheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt @chengchuanpeng
 receiver/tcplogreceiver/                                         @open-telemetry/collector-contrib-approvers @VihasMakwana
 receiver/tlscheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt
 receiver/udplogreceiver/                                         @open-telemetry/collector-contrib-approvers @VihasMakwana
