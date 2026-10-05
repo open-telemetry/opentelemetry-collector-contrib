@@ -55,7 +55,7 @@ type transformProcessorFactory struct {
 type FactoryOption func(factory *transformProcessorFactory)
 
 // WithDataPointFunctions will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
-// Subsequent uses of WithDataPointFunctionsNew will merge the provided dataPointFunctions with the previously registered functions.
+// Subsequent uses of WithDataPointFunctions will merge the provided dataPointFunctions with the previously registered functions.
 func WithDataPointFunctions(dataPointFunctions []ottl.Factory[*ottldatapoint.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		if !factory.defaultDataPointFunctionsOverridden {
@@ -128,6 +128,8 @@ func WithSpanFunctions(spanFunctions []ottl.Factory[*ottlspan.TransformContext])
 
 // WithProfileFunctions will override the default OTTL profile context functions with the provided profileFunctions in the resulting processor.
 // Subsequent uses of WithProfileFunctions will merge the provided profileFunctions with the previously registered functions.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func WithProfileFunctions(profileFunctions []ottl.Factory[*ottlprofile.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		if !factory.defaultProfileFunctionsOverridden {

@@ -24,15 +24,15 @@ resource_attributes:
     enabled: false
     type: string
   server.address:
-    description: The address of the MongoDB host.
+    description: The address of the monitored MongoDB instance. A loopback address (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it.
     enabled: true
     type: string
   server.port:
-    description: The port of the MongoDB host.
-    enabled: false
+    description: The port of the monitored MongoDB instance, defaulting to 27017 when the instance does not report one.
+    enabled: true
     type: int
   service.instance.id:
-    description: A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port.
+    description: A unique identifier of the MongoDB instance as a UUID v5, derived from the address and port using the OTel namespace. The address is resolved the same way as server.address.
     enabled: true
     type: string
   service.name:
