@@ -17,12 +17,11 @@ import (
 	"time"
 
 	awsP "github.com/aws/aws-sdk-go-v2/aws"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
-	xraymetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
+		xraymetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -54,13 +53,6 @@ const (
 // Unicode letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =, +, \, -, @
 // Doc: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 var reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+\-@]`)
-
-var remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
-	"exporter.xray.allowDot",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
-	featuregate.WithRegisterFromVersion("v0.97.0"),
-)
 
 const (
 	// defaultMetadataNamespace is used for non-namespaced non-indexed attributes.
@@ -780,7 +772,7 @@ func fixAnnotationKey(key string) string {
 			'A' <= r && r <= 'Z',
 			'a' <= r && r <= 'z':
 			return r
-		case remoteXrayExporterDotConverter.IsEnabled() && r == '.':
+		case xraymetadata.ExporterXrayAllowDotFeatureGate.IsEnabled() && r == '.':
 			return r
 		default:
 			return '_'
