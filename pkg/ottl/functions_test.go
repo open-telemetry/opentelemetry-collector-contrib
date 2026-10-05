@@ -16,7 +16,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 func Test_NewFunctionCall_invalid(t *testing.T) {
@@ -2452,10 +2454,10 @@ func functionWithGetterSlice(getters []Getter[any]) (ExprFunc[any], error) {
 }
 
 type sliceGetterArguments struct {
-	Values SliceGetter[any, StringGetter[any]]
+	Values slicegetter.SliceGetter[any, StringGetter[any]]
 }
 
-func functionWithSliceGetter(values SliceGetter[any, StringGetter[any]]) (ExprFunc[any], error) {
+func functionWithSliceGetter(values slicegetter.SliceGetter[any, StringGetter[any]]) (ExprFunc[any], error) {
 	return func(ctx context.Context, tCtx any) (any, error) {
 		vals, err := values.Get(ctx, tCtx)
 		if err != nil {
@@ -2466,10 +2468,10 @@ func functionWithSliceGetter(values SliceGetter[any, StringGetter[any]]) (ExprFu
 }
 
 type optionalSliceGetterArguments struct {
-	Values Optional[SliceGetter[any, Getter[any]]]
+	Values Optional[slicegetter.SliceGetter[any, Getter[any]]]
 }
 
-func functionWithOptionalSliceGetter(values Optional[SliceGetter[any, Getter[any]]]) (ExprFunc[any], error) {
+func functionWithOptionalSliceGetter(values Optional[slicegetter.SliceGetter[any, Getter[any]]]) (ExprFunc[any], error) {
 	return func(ctx context.Context, tCtx any) (any, error) {
 		if values.IsEmpty() {
 			return 0, nil
@@ -2654,22 +2656,22 @@ func functionWithFunctionGetter(FunctionGetter[any]) (ExprFunc[any], error) {
 }
 
 type nonPointerLambdaArguments struct {
-	Expr LambdaExpression[any]
+	Expr lambda.LambdaExpression[any]
 }
 
-func functionWithNonPointerLambda(LambdaExpression[any]) (ExprFunc[any], error) {
+func functionWithNonPointerLambda(lambda.LambdaExpression[any]) (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return nil, nil
 	}, nil
 }
 
 type evalLambdaArguments[K any] struct {
-	Expr *LambdaExpression[K]
+	Expr *lambda.LambdaExpression[K]
 	Args []Getter[K]
 }
 
 //nolint:unparam // returning (ExprFunc[K], error) is required by this local test framework
-func evalLambdaFunction[K any](expr *LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
+func evalLambdaFunction[K any](expr *lambda.LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		if err := expr.ValidateArity(len(args)); err != nil {
 			return nil, err
@@ -3548,4 +3550,162 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 		_, err := p.newParseContext().newFunctionCall(funcWithLambda)
 		require.ErrorContains(t, err, "lambda expression arguments require the `ottl.functions.enableLambda` feature gate to be enabled")
 	})
+}
+
+func Test_PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate(t *testing.T) {
+	stable := createFactory[any]("testing_slicegetter", &sliceGetterArguments{}, functionWithSliceGetter)
+	experimental := NewFactory(
+		"testing_experimental_slicegetter",
+		&sliceGetterArguments{},
+		stable.CreateFunction,
+		WithExperimental[any](),
+	)
+	p, err := NewParser(
+		CreateFactoryMap(stable, experimental),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	pathArg := func(function string) editor {
+		return editor{
+			Function: function,
+			Arguments: []argument{{Value: value{Literal: &mathExprLiteral{
+				Path: &path{Fields: []field{{Name: "name"}}},
+			}}}},
+		}
+	}
+	listArg := editor{
+		Function:  "testing_slicegetter",
+		Arguments: []argument{{Value: value{List: &list{Values: []value{{String: new("a")}}}}}},
+	}
+
+	t.Run("enabled", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, true)()
+		_, err := p.newParseContext().newFunctionCall(pathArg("testing_slicegetter"))
+		require.NoError(t, err)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true)()
+		_, err := p.newParseContext().newFunctionCall(pathArg("testing_slicegetter"))
+		require.ErrorIs(t, err, errDynamicSliceArgumentsDisabled)
+
+		_, err = p.newParseContext().newFunctionCall(listArg)
+		require.NoError(t, err)
+
+		_, err = p.newParseContext().newFunctionCall(pathArg("testing_experimental_slicegetter"))
+		require.NoError(t, err)
+	})
+}
+
+type stubBoolExpr[K any] struct {
+	eval func(context.Context, K) (bool, error)
+}
+
+func (s stubBoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	return s.eval(ctx, tCtx)
+}
+
+func (stubBoolExpr[K]) unexported() {}
+
+func Test_newLambdaExpression(t *testing.T) {
+	tests := []struct {
+		name     string
+		formals  []string
+		body     Getter[any]
+		bodyExpr boolExpr[any]
+		params   []any
+		want     any
+		wantErr  string
+	}{
+		{
+			name:    "literal body evaluates as-is",
+			formals: []string{"a"},
+			body:    newLiteral[any, any]("literal"),
+			params:  []any{"a value"},
+			want:    "literal",
+		},
+		{
+			name:     "literal body expression evaluates as-is",
+			formals:  []string{"a"},
+			bodyExpr: newAlwaysTrue[any](),
+			params:   []any{"a value"},
+			want:     true,
+		},
+		{
+			name:    "body expression",
+			formals: []string{"a"},
+			bodyExpr: stubBoolExpr[any]{
+				eval: func(ctx context.Context, _ any) (bool, error) {
+					v, err := lambda.ResolveBinding(ctx, "a")
+					return err == nil && v == "bound", nil
+				},
+			},
+			params: []any{"bound"},
+			want:   true,
+		},
+		{
+			name:    "body expression error",
+			formals: []string{"a"},
+			bodyExpr: stubBoolExpr[any]{
+				eval: func(context.Context, any) (bool, error) {
+					return false, errors.New("failed to evaluate")
+				},
+			},
+			params:  []any{"bound"},
+			wantErr: "failed to evaluate",
+		},
+		{
+			name:    "body getter reads parameter",
+			formals: []string{"a"},
+			body:    &localIdentifierGetter[any]{identifier: &basePath[any]{name: "a"}},
+			params:  []any{42},
+			want:    42,
+		},
+		{
+			name:    "parameter indexing",
+			formals: []string{"a"},
+			body: &localIdentifierGetter[any]{
+				identifier: &basePath[any]{
+					name: "a",
+					keys: []Key[any]{
+						&baseKey[any]{s: new("name")},
+						&baseKey[any]{i: new(int64(1))},
+					},
+				},
+			},
+			params: []any{
+				map[string]any{"name": []any{"zero", "one"}},
+			},
+			want: "one",
+		},
+		{
+			name:    "invalid lambda without body",
+			wantErr: "invalid lambda: no body",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr := newLambdaExpression[any](tt.formals, tt.body, tt.bodyExpr)
+			require.NoError(t, expr.ValidateArity(len(tt.formals)))
+			activation, err := expr.Activate(t.Context())
+			require.NoError(t, err)
+			defer activation.Close()
+			for i, param := range tt.params {
+				require.NoError(t, activation.SetArg(i, param))
+			}
+
+			got, err := activation.Eval(nil)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
