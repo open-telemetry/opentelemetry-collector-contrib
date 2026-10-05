@@ -3,5 +3,5 @@
 
 //go:generate make mdatagen
 
-// Package hardwarescraper scrapes hardware metrics including temperature, voltage, and fan speed data
+// Package hardwarescraper scrapes hardware temperature metrics
 package hardwarescraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper"
