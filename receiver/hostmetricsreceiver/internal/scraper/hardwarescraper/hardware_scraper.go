@@ -21,7 +21,6 @@ var ErrHwmonUnavailable = errors.New("hwmon not available")
 type hardwareScraper struct {
 	logger             *zap.Logger
 	mb                 *metadata.MetricsBuilder
-	config             *Config
 	temperatureScraper *hardwareTemperatureScraper
 }
 
@@ -41,7 +40,6 @@ func newHardwareScraper(_ context.Context, settings scraper.Settings, cfg *Confi
 	return &hardwareScraper{
 		logger:             settings.Logger,
 		mb:                 mb,
-		config:             cfg,
 		temperatureScraper: tempScraper,
 	}
 }
