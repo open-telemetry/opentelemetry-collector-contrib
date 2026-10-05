@@ -114,6 +114,46 @@ func benchTrace(traceID pcommon.TraceID, nSpans int, traceState string) ptrace.T
 	return td
 }
 
+// setBenchTraceID stamps every span in td with traceID, so a batch copied from
+// a template can stand in for a different trace.
+func setBenchTraceID(td ptrace.Traces, traceID pcommon.TraceID) {
+	for _, rs := range td.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				span.SetTraceID(traceID)
+			}
+		}
+	}
+}
+
+// refillBenchWindow rebuilds every slot in batches from template, stamping slot
+// i with benchTraceID(base+i). ConsumeTraces moves spans out of its input,
+// which leaves the source spans zeroed while the slice keeps its length, so a
+// consumed window has to be rebuilt rather than reused in place. Reusing it
+// would benchmark empty spans. Pass base 0 to keep the same traceIDs on every
+// refill, or a rising base to make each refill a fresh set of traces.
+func refillBenchWindow(batches []ptrace.Traces, template ptrace.Traces, base uint64) {
+	for i := range batches {
+		td := ptrace.NewTraces()
+		template.CopyTo(td)
+		setBenchTraceID(td, benchTraceID(base+uint64(i)))
+		batches[i] = td
+	}
+}
+
+// newBenchPendingTrace builds a pendingTrace from a fresh copy of template.
+// The decide path consumes pt.spans, so every iteration needs its own copy,
+// and reusing one pendingTrace would also understate steady-state behavior.
+func newBenchPendingTrace(template ptrace.Traces, traceID pcommon.TraceID, spanCount int) *pendingTrace {
+	td := ptrace.NewTraces()
+	template.CopyTo(td)
+	spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
+	for _, rs := range td.ResourceSpans().All() {
+		spans = append(spans, rs)
+	}
+	return &pendingTrace{traceID: traceID, spans: spans, spanCount: spanCount}
+}
+
 // BenchmarkConsumeTraces_Accumulate measures the buffering path: per-span
 // bucketing, the per-span root-span OTTL evaluation, span copy into the
 // pending buffer, and the trace_timeout timer arm for new traces. Timers use
@@ -163,26 +203,22 @@ func BenchmarkConsumeTraces_Accumulate(b *testing.B) {
 
 			// Pre-build a rotating window of batches so input construction is
 			// outside the timed loop and traceIDs stay unique per iteration.
+			// The window is refilled whenever it wraps, with a rising base so
+			// every iteration is a new trace.
 			const window = 512
+			template := benchTrace(benchTraceID(0), bc.spansPerTrace, "")
 			batches := make([]ptrace.Traces, window)
-			for i := range batches {
-				batches[i] = benchTrace(benchTraceID(uint64(i)), bc.spansPerTrace, "")
-			}
+			refillBenchWindow(batches, template, 0)
 
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				td := batches[i%window]
-				// Rewrite the traceID so every iteration is a new trace.
-				id := benchTraceID(uint64(i) + window)
-				for _, rs := range td.ResourceSpans().All() {
-					for _, ss := range rs.ScopeSpans().All() {
-						for _, span := range ss.Spans().All() {
-							span.SetTraceID(id)
-						}
-					}
+				if i > 0 && i%window == 0 {
+					b.StopTimer()
+					refillBenchWindow(batches, template, uint64(i))
+					b.StartTimer()
 				}
-				if err := p.ConsumeTraces(ctx, td); err != nil {
+				if err := p.ConsumeTraces(ctx, batches[i%window]); err != nil {
 					b.Fatal(err)
 				}
 			}
@@ -206,13 +242,18 @@ func BenchmarkConsumeTraces_AppendToPending(b *testing.B) {
 	const window = 512
 	// Seed a window of pending traces so every iteration hits an existing
 	// entry. Child spans only, so nothing triggers a decision.
+	//
+	// The window is refilled with base 0 so each slot keeps its traceID and
+	// iterations keep appending to the pending entries seeded here.
+	template := benchTrace(benchTraceID(0), spansPerBatch, "")
 	batches := make([]ptrace.Traces, window)
+	refillBenchWindow(batches, template, 0)
 	for i := range batches {
-		batches[i] = benchTrace(benchTraceID(uint64(i)), spansPerBatch, "")
 		if err := p.ConsumeTraces(ctx, batches[i]); err != nil {
 			b.Fatal(err)
 		}
 	}
+	refillBenchWindow(batches, template, 0)
 
 	// resetPending clears the accumulated span buffers without touching the
 	// traces map or timers, keeping the benchmark's memory bounded.
@@ -229,6 +270,11 @@ func BenchmarkConsumeTraces_AppendToPending(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		if i > 0 && i%window == 0 {
+			b.StopTimer()
+			refillBenchWindow(batches, template, 0)
+			b.StartTimer()
+		}
 		if i > 0 && i%resetEvery == 0 {
 			b.StopTimer()
 			resetPending()
@@ -269,24 +315,12 @@ func BenchmarkDecide(b *testing.B) {
 			id := benchTraceID(1)
 			template := benchTrace(id, bc.spansPerTrace, bc.traceState)
 
-			// The pending trace is rebuilt (untimed) every iteration: the
-			// decide path consumes pt.spans, and reusing one pendingTrace
-			// would also understate steady-state behavior.
-			newPT := func() *pendingTrace {
-				td := ptrace.NewTraces()
-				template.CopyTo(td)
-				spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
-				for _, rs := range td.ResourceSpans().All() {
-					spans = append(spans, rs)
-				}
-				return &pendingTrace{traceID: id, spans: spans, spanCount: bc.spansPerTrace}
-			}
-
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
+				// Rebuilt untimed every iteration, see newBenchPendingTrace.
 				b.StopTimer()
-				pt := newPT()
+				pt := newBenchPendingTrace(template, id, bc.spansPerTrace)
 				b.StartTimer()
 				p.mu.Lock()
 				p.traces[id] = pt
@@ -441,21 +475,11 @@ func BenchmarkDecide_RecordFingerprint(b *testing.B) {
 				template := benchTrace(id, spansPerTrace, "")
 				template.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
 
-				newPT := func() *pendingTrace {
-					td := ptrace.NewTraces()
-					template.CopyTo(td)
-					spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
-					for _, rs := range td.ResourceSpans().All() {
-						spans = append(spans, rs)
-					}
-					return &pendingTrace{traceID: id, spans: spans, spanCount: spansPerTrace}
-				}
-
 				b.ReportAllocs()
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
 					b.StopTimer()
-					pt := newPT()
+					pt := newBenchPendingTrace(template, id, spansPerTrace)
 					b.StartTimer()
 					p.mu.Lock()
 					p.traces[id] = pt
