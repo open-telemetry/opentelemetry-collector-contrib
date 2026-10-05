@@ -846,8 +846,11 @@ Queries the OpenShift API to retrieve related resource attributes. Detection is 
 
 The list of the populated resource attributes can be found at [OpenShift Detector Resource Attributes](./internal/openshift/documentation.md).
 AWS, Google Cloud and IBM Cloud clusters report `cloud.provider`, `cloud.platform` and `cloud.region`.
-Azure clusters report `cloud.provider` and `cloud.platform` only, as the OpenShift API does not expose the Azure region.
-OpenStack clusters and clusters not running on a cloud provider report no cloud attributes.
+Azure clusters report `cloud.provider` and `cloud.platform`, and OpenStack clusters report no cloud attributes.
+For backwards compatibility, Azure and OpenStack clusters also report `cloud.region` set to the `cloudName` of the platform
+(the Azure cloud environment, e.g. `azurepubliccloud`, or the OpenStack `clouds.yaml` entry), which is not a region.
+Enable the `processor.resourcedetection.openshift.removeCloudNameRegion` feature gate to stop reporting it.
+Clusters not running on a cloud provider report no cloud attributes.
 When not running in a cluster, or when the API server does not serve the OpenShift config API, no attributes are reported,
 or detection fails if `fail_on_missing_metadata` is enabled.
 
