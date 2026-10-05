@@ -18,7 +18,7 @@ type eventDbServerQueryPlan struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue, postgresqlQueryidAttributeValue, dbNamespaceAttributeValue, postgresqlUseridAttributeValue, postgresqlRolnameAttributeValue, postgresqlQueryPlanAttributeValue string) {
+func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlUseridAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlQueryPlanAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -36,6 +36,7 @@ func (e *eventDbServerQueryPlan) recordEvent(ctx context.Context, timestamp pcom
 	dp.Attributes().PutStr("postgresql.userid", postgresqlUseridAttributeValue)
 	dp.Attributes().PutStr("postgresql.rolname", postgresqlRolnameAttributeValue)
 	dp.Attributes().PutStr("postgresql.query_plan", postgresqlQueryPlanAttributeValue)
+
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -58,7 +59,7 @@ type eventDbServerQuerySample struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue, dbNamespaceAttributeValue, dbQueryTextAttributeValue, userNameAttributeValue, postgresqlStateAttributeValue string, postgresqlPidAttributeValue int64, postgresqlBackendConnectionStartAttributeValue, postgresqlApplicationNameAttributeValue, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, postgresqlClientHostnameAttributeValue, postgresqlQueryStartAttributeValue, postgresqlWaitEventAttributeValue, postgresqlWaitEventTypeAttributeValue, postgresqlQueryIDAttributeValue string, postgresqlTotalExecTimeAttributeValue float64, postgresqlBlockingPidsAttributeValue, postgresqlBlockingStartTimeAttributeValue string, postgresqlBlockingWaitDurationAttributeValue int64, postgresqlBlockingLockModeAttributeValue, postgresqlBlockingLockTypeAttributeValue, postgresqlBlockingLockRelationAttributeValue, postgresqlBlockingTransactionStartTimeAttributeValue string) {
+func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, dbQueryTextAttributeValue string, userNameAttributeValue string, postgresqlStateAttributeValue string, postgresqlPidAttributeValue int64, postgresqlBackendConnectionStartAttributeValue string, postgresqlApplicationNameAttributeValue string, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, postgresqlClientHostnameAttributeValue string, postgresqlQueryStartAttributeValue string, postgresqlWaitEventAttributeValue string, postgresqlWaitEventTypeAttributeValue string, postgresqlQueryIDAttributeValue string, postgresqlTotalExecTimeAttributeValue float64, postgresqlBlockingPidsAttributeValue string, postgresqlBlockingStartTimeAttributeValue string, postgresqlBlockingWaitDurationAttributeValue int64, postgresqlBlockingLockModeAttributeValue string, postgresqlBlockingLockTypeAttributeValue string, postgresqlBlockingLockRelationAttributeValue string, postgresqlBlockingTransactionStartTimeAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -93,6 +94,7 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 	dp.Attributes().PutStr("postgresql.blocking.lock.type", postgresqlBlockingLockTypeAttributeValue)
 	dp.Attributes().PutStr("postgresql.blocking.lock.relation", postgresqlBlockingLockRelationAttributeValue)
 	dp.Attributes().PutStr("postgresql.blocking.transaction.start_time", postgresqlBlockingTransactionStartTimeAttributeValue)
+
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -115,7 +117,7 @@ type eventDbServerTopQuery struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue, dbNamespaceAttributeValue, dbQueryTextAttributeValue string, postgresqlCallsAttributeValue, postgresqlRowsAttributeValue, postgresqlSharedBlksDirtiedAttributeValue, postgresqlSharedBlksHitAttributeValue, postgresqlSharedBlksReadAttributeValue, postgresqlSharedBlksWrittenAttributeValue, postgresqlTempBlksReadAttributeValue, postgresqlTempBlksWrittenAttributeValue int64, postgresqlQueryidAttributeValue, postgresqlUseridAttributeValue, postgresqlRolnameAttributeValue string, postgresqlTotalExecTimeAttributeValue, postgresqlTotalPlanTimeAttributeValue float64, postgresqlQueryPlanAttributeValue string) {
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, dbQueryTextAttributeValue string, postgresqlCallsAttributeValue int64, postgresqlRowsAttributeValue int64, postgresqlSharedBlksDirtiedAttributeValue int64, postgresqlSharedBlksHitAttributeValue int64, postgresqlSharedBlksReadAttributeValue int64, postgresqlSharedBlksWrittenAttributeValue int64, postgresqlTempBlksReadAttributeValue int64, postgresqlTempBlksWrittenAttributeValue int64, postgresqlQueryidAttributeValue string, postgresqlUseridAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlTotalExecTimeAttributeValue float64, postgresqlTotalPlanTimeAttributeValue float64, postgresqlQueryPlanAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -144,6 +146,7 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 	dp.Attributes().PutDouble("postgresql.total_exec_time", postgresqlTotalExecTimeAttributeValue)
 	dp.Attributes().PutDouble("postgresql.total_plan_time", postgresqlTotalPlanTimeAttributeValue)
 	dp.Attributes().PutStr("postgresql.query_plan", postgresqlQueryPlanAttributeValue)
+
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -335,16 +338,16 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.
-func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, postgresqlQueryidAttributeValue, dbNamespaceAttributeValue, postgresqlUseridAttributeValue, postgresqlRolnameAttributeValue, postgresqlQueryPlanAttributeValue string) {
+func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, postgresqlQueryidAttributeValue string, dbNamespaceAttributeValue string, postgresqlUseridAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlQueryPlanAttributeValue string) {
 	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), postgresqlQueryidAttributeValue, dbNamespaceAttributeValue, postgresqlUseridAttributeValue, postgresqlRolnameAttributeValue, postgresqlQueryPlanAttributeValue)
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
-func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue, dbQueryTextAttributeValue, userNameAttributeValue, postgresqlStateAttributeValue string, postgresqlPidAttributeValue int64, postgresqlBackendConnectionStartAttributeValue, postgresqlApplicationNameAttributeValue, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, postgresqlClientHostnameAttributeValue, postgresqlQueryStartAttributeValue, postgresqlWaitEventAttributeValue, postgresqlWaitEventTypeAttributeValue, postgresqlQueryIDAttributeValue string, postgresqlTotalExecTimeAttributeValue float64, postgresqlBlockingPidsAttributeValue, postgresqlBlockingStartTimeAttributeValue string, postgresqlBlockingWaitDurationAttributeValue int64, postgresqlBlockingLockModeAttributeValue, postgresqlBlockingLockTypeAttributeValue, postgresqlBlockingLockRelationAttributeValue, postgresqlBlockingTransactionStartTimeAttributeValue string) {
+func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbQueryTextAttributeValue string, userNameAttributeValue string, postgresqlStateAttributeValue string, postgresqlPidAttributeValue int64, postgresqlBackendConnectionStartAttributeValue string, postgresqlApplicationNameAttributeValue string, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, postgresqlClientHostnameAttributeValue string, postgresqlQueryStartAttributeValue string, postgresqlWaitEventAttributeValue string, postgresqlWaitEventTypeAttributeValue string, postgresqlQueryIDAttributeValue string, postgresqlTotalExecTimeAttributeValue float64, postgresqlBlockingPidsAttributeValue string, postgresqlBlockingStartTimeAttributeValue string, postgresqlBlockingWaitDurationAttributeValue int64, postgresqlBlockingLockModeAttributeValue string, postgresqlBlockingLockTypeAttributeValue string, postgresqlBlockingLockRelationAttributeValue string, postgresqlBlockingTransactionStartTimeAttributeValue string) {
 	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbQueryTextAttributeValue, userNameAttributeValue, postgresqlStateAttributeValue, postgresqlPidAttributeValue, postgresqlBackendConnectionStartAttributeValue, postgresqlApplicationNameAttributeValue, networkPeerAddressAttributeValue, networkPeerPortAttributeValue, postgresqlClientHostnameAttributeValue, postgresqlQueryStartAttributeValue, postgresqlWaitEventAttributeValue, postgresqlWaitEventTypeAttributeValue, postgresqlQueryIDAttributeValue, postgresqlTotalExecTimeAttributeValue, postgresqlBlockingPidsAttributeValue, postgresqlBlockingStartTimeAttributeValue, postgresqlBlockingWaitDurationAttributeValue, postgresqlBlockingLockModeAttributeValue, postgresqlBlockingLockTypeAttributeValue, postgresqlBlockingLockRelationAttributeValue, postgresqlBlockingTransactionStartTimeAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
-func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue, dbQueryTextAttributeValue string, postgresqlCallsAttributeValue, postgresqlRowsAttributeValue, postgresqlSharedBlksDirtiedAttributeValue, postgresqlSharedBlksHitAttributeValue, postgresqlSharedBlksReadAttributeValue, postgresqlSharedBlksWrittenAttributeValue, postgresqlTempBlksReadAttributeValue, postgresqlTempBlksWrittenAttributeValue int64, postgresqlQueryidAttributeValue, postgresqlUseridAttributeValue, postgresqlRolnameAttributeValue string, postgresqlTotalExecTimeAttributeValue, postgresqlTotalPlanTimeAttributeValue float64, postgresqlQueryPlanAttributeValue string) {
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbQueryTextAttributeValue string, postgresqlCallsAttributeValue int64, postgresqlRowsAttributeValue int64, postgresqlSharedBlksDirtiedAttributeValue int64, postgresqlSharedBlksHitAttributeValue int64, postgresqlSharedBlksReadAttributeValue int64, postgresqlSharedBlksWrittenAttributeValue int64, postgresqlTempBlksReadAttributeValue int64, postgresqlTempBlksWrittenAttributeValue int64, postgresqlQueryidAttributeValue string, postgresqlUseridAttributeValue string, postgresqlRolnameAttributeValue string, postgresqlTotalExecTimeAttributeValue float64, postgresqlTotalPlanTimeAttributeValue float64, postgresqlQueryPlanAttributeValue string) {
 	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbQueryTextAttributeValue, postgresqlCallsAttributeValue, postgresqlRowsAttributeValue, postgresqlSharedBlksDirtiedAttributeValue, postgresqlSharedBlksHitAttributeValue, postgresqlSharedBlksReadAttributeValue, postgresqlSharedBlksWrittenAttributeValue, postgresqlTempBlksReadAttributeValue, postgresqlTempBlksWrittenAttributeValue, postgresqlQueryidAttributeValue, postgresqlUseridAttributeValue, postgresqlRolnameAttributeValue, postgresqlTotalExecTimeAttributeValue, postgresqlTotalPlanTimeAttributeValue, postgresqlQueryPlanAttributeValue)
 }

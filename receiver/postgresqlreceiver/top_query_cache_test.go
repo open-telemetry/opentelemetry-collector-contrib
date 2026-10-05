@@ -135,9 +135,11 @@ func TestTopQueryCacheSeparatesDatabaseAndRole(t *testing.T) {
 		role     string
 		userid   string
 	}{
+		// app is the same role cluster-wide, so it carries the same userid in both
+		// databases: database, not userid, is what disambiguates these two rows.
 		{database: "db_a", role: "app", userid: "101"},
-		{database: "db_b", role: "app", userid: "102"},
-		{database: "db_a", role: "reporting", userid: "103"},
+		{database: "db_b", role: "app", userid: "101"},
+		{database: "db_a", role: "reporting", userid: "102"},
 	} {
 		values := map[string]driver.Value{
 			"datname":         identity.database,
@@ -264,9 +266,11 @@ func TestTopQueryPlanCacheSeparatesDatabaseAndRole(t *testing.T) {
 		userid   string
 		plan     string
 	}{
+		// app is the same role cluster-wide, so it carries the same userid in both
+		// databases: database, not userid, is what disambiguates these two rows.
 		{database: "db_a", role: "app", userid: "101", plan: `[{"Plan":{"Node Type":"Seq Scan"}}]`},
-		{database: "db_b", role: "app", userid: "102", plan: `[{"Plan":{"Node Type":"Index Scan"}}]`},
-		{database: "db_a", role: "reporting", userid: "103", plan: `[{"Plan":{"Node Type":"Index Only Scan"}}]`},
+		{database: "db_b", role: "app", userid: "101", plan: `[{"Plan":{"Node Type":"Index Scan"}}]`},
+		{database: "db_a", role: "reporting", userid: "102", plan: `[{"Plan":{"Node Type":"Index Only Scan"}}]`},
 	}
 	expectedPlans := make(map[[2]string]string, len(statements))
 	for _, statement := range statements {

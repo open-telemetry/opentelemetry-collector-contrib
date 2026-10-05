@@ -501,6 +501,14 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		// userid is oid NOT NULL in pg_stat_statements, so this should never be nil;
+		// skip defensively rather than silently fall back to "" and collapse the
+		// cache key, which depends on userid being unique per role.
+		if row[dbAttributePrefix+"userid"] == nil {
+			logger.Debug("skipping top query row with nil userid")
+			continue
+		}
+
 		database, _ := row[string(semconv.DBNamespaceKey)].(string)
 		userid, _ := row[dbAttributePrefix+"userid"].(string)
 		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel). userid is
@@ -554,7 +562,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
 		rolname := item.Value[dbAttributePrefix+"rolname"].(string)
-		userid := item.Value[dbAttributePrefix+"userid"].(string)
+		userid, _ := item.Value[dbAttributePrefix+"userid"].(string)
 		// userid, not rolname: rolname is empty for a dropped role and would
 		// collide two dropped roles onto one cached plan.
 		planCacheKey := database + "\x00" + userid + "\x00" + queryID
