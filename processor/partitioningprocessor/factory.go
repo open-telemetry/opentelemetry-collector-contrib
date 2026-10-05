@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -39,18 +40,24 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createLogsProcessor(_ context.Context, set processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
 	c := cfg.(*Config)
 	keyNames, expressions := sortedPartitionKeys(c.Keys)
 	p, err := newLogsPartitioner(expressions, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	return &partitioningProcessor{
+	// processorhelper only supports one outgoing batch, so the partitioner runs
+	// as its next consumer; the helper still records the processor telemetry.
+	pp := &partitioningProcessor{
 		nextLogs:        next,
 		logsPartitioner: p,
 		keyNames:        keyNames,
-	}, nil
+	}
+	return processorhelper.NewLogs(ctx, set, cfg, pp,
+		func(_ context.Context, ld plog.Logs) (plog.Logs, error) { return ld, nil },
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
 
 // NOTE: the processors below are no-op passthroughs that forward telemetry

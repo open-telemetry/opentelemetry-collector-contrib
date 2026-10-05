@@ -7,18 +7,18 @@ import (
 	"context"
 	"errors"
 	"maps"
-	"sync"
+	"runtime"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"golang.org/x/sync/errgroup"
 )
 
+// partitioningProcessor is the consumer wrapped by processorhelper; it
+// splits each batch and fans the partitions out to the next consumer.
 type partitioningProcessor struct {
-	component.StartFunc
-	component.ShutdownFunc
-
 	nextLogs        consumer.Logs
 	logsPartitioner logsPartitioner
 
@@ -36,12 +36,13 @@ func (*partitioningProcessor) Capabilities() consumer.Capabilities {
 func (p *partitioningProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	parts, err := p.logsPartitioner.partitionLogs(ctx, ld)
 	if err != nil {
-		return err
+		// Key evaluation depends only on the data, so a retry would fail the same way.
+		return consumererror.NewPermanent(err)
 	}
 	return consumePartitions(ctx, p.keyNames, parts, p.nextLogs.ConsumeLogs)
 }
 
-// consumePartitions forwards partitions concurrently.
+// consumePartitions forwards partitions concurrently, up to GOMAXPROCS at a time.
 //
 // Every partition is delivered even if a sibling fails; all errors are
 // joined. The parent context is passed through unchanged (no derived
@@ -57,14 +58,16 @@ func consumePartitions[T any](ctx context.Context, keyNames []string, parts []pa
 		return consume(withPartitionMetadata(ctx, info, base, keyNames, parts[0].values), parts[0].data)
 	}
 
-	var wg sync.WaitGroup
+	var g errgroup.Group
+	g.SetLimit(runtime.GOMAXPROCS(0))
 	errs := make([]error, len(parts))
 	for i, part := range parts {
-		wg.Go(func() {
+		g.Go(func() error {
 			errs[i] = consume(withPartitionMetadata(ctx, info, base, keyNames, part.values), part.data)
+			return nil
 		})
 	}
-	wg.Wait()
+	_ = g.Wait()
 	return errors.Join(errs...)
 }
 

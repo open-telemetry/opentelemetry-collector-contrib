@@ -12,16 +12,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-func buildLogsProcessor(t *testing.T, cfg *Config, next consumer.Logs) *partitioningProcessor {
+func buildLogsProcessor(t *testing.T, cfg *Config, next consumer.Logs) processor.Logs {
 	t.Helper()
 	p, err := createLogsProcessor(t.Context(), nopSettings(), cfg, next)
 	require.NoError(t, err)
-	return p.(*partitioningProcessor)
+	return p
 }
 
 func TestConsumeLogs_SinglePartition_OneCall(t *testing.T) {
@@ -323,4 +327,48 @@ func (*capturingLogsConsumer) Capabilities() consumer.Capabilities {
 
 func (c *capturingLogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return c.fn(ctx, ld)
+}
+
+func TestConsumeLogs_NonStringKeyIsPermanentError(t *testing.T) {
+	proc := buildLogsProcessor(t, &Config{Keys: map[string]string{
+		"count": `resource.attributes["count"]`,
+	}}, consumertest.NewNop())
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutInt("count", 1)
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	err := proc.ConsumeLogs(t.Context(), logs)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
+func TestConsumeLogs_RecordsProcessorTelemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+	set := nopSettings()
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	sink := &consumertest.LogsSink{}
+	proc, err := createLogsProcessor(t.Context(), set, validConfig(), sink)
+	require.NoError(t, err)
+
+	logs := plog.NewLogs()
+	for _, tenant := range []string{"t1", "t2", "t1"} {
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("tenant.id", tenant)
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	}
+	require.NoError(t, proc.ConsumeLogs(t.Context(), logs))
+	assert.Len(t, sink.AllLogs(), 2)
+
+	for _, name := range []string{"otelcol_processor_incoming_items", "otelcol_processor_outgoing_items"} {
+		m, err := tel.GetMetric(name)
+		require.NoError(t, err, name)
+		sum, ok := m.Data.(metricdata.Sum[int64])
+		require.True(t, ok, name)
+		require.Len(t, sum.DataPoints, 1, name)
+		assert.Equal(t, int64(3), sum.DataPoints[0].Value, name)
+	}
 }

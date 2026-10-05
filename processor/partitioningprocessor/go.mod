@@ -8,6 +8,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/confmap v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/consumer v1.68.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/consumer/consumererror v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/consumer/xconsumer v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/pdata v1.68.1-0.20261002061526-adaf75eebce7
@@ -18,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/processor/xprocessor v0.162.1-0.20261002061526-adaf75eebce7
 	go.uber.org/goleak v1.3.0
+	golang.org/x/sync v0.23.0
 )
 
 require (
@@ -39,7 +41,6 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.68.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/exporter v1.68.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.162.0 // indirect
 	go.opentelemetry.io/collector/extension v1.68.0 // indirect
@@ -88,7 +89,7 @@ require (
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
