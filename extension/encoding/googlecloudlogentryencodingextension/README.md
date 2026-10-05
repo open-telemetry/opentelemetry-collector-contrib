@@ -8,7 +8,7 @@ This extension can be used to unmarshall a [Cloud Logging LogEntry](https://clou
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fgooglecloudlogentryencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fgooglecloudlogentryencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fgooglecloudlogentryencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fgooglecloudlogentryencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://www.github.com/constanca-m) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://www.github.com/constanca-m) \| Seeking more code owners! |
 | Emeritus      | [@alexvanboxel](https://www.github.com/alexvanboxel) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -472,7 +472,7 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 | `healthyIps` | `gcp.dns.healthy.ips` |
 | `unhealthyIps` | `gcp.dns.unhealthy.ips` |
 | `dns64Translated` | `gcp.dns.dns64.translated` |
-| `vmInstanceId` | `host.id` |
+| `vmInstanceIdString` | `host.id` |
 | `vmInstanceName` | `host.name` |
 | `vmProjectId` | `gcp.project.id` |
 | `vmZoneName` | `cloud.availability_zone` |

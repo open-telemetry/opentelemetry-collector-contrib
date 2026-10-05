@@ -98,6 +98,12 @@ all_set:
       enabled: true
     mongodb.queries.rate:
       enabled: true
+    mongodb.query_executor.collection_scan.count:
+      enabled: true
+    mongodb.query_executor.document.scanned.count:
+      enabled: true
+    mongodb.query_executor.index_key.scanned.count:
+      enabled: true
     mongodb.repl_commands_per_sec:
       enabled: true
     mongodb.repl_deletes_per_sec:
@@ -262,6 +268,12 @@ reaggregate_set:
       enabled: true
     mongodb.queries.rate:
       enabled: true
+    mongodb.query_executor.collection_scan.count:
+      enabled: true
+    mongodb.query_executor.document.scanned.count:
+      enabled: true
+    mongodb.query_executor.index_key.scanned.count:
+      enabled: true
     mongodb.repl_commands_per_sec:
       enabled: true
     mongodb.repl_deletes_per_sec:
@@ -425,6 +437,12 @@ none_set:
     mongodb.page_faults:
       enabled: false
     mongodb.queries.rate:
+      enabled: false
+    mongodb.query_executor.collection_scan.count:
+      enabled: false
+    mongodb.query_executor.document.scanned.count:
+      enabled: false
+    mongodb.query_executor.index_key.scanned.count:
       enabled: false
     mongodb.repl_commands_per_sec:
       enabled: false

@@ -16,6 +16,7 @@ import (
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
@@ -40,11 +41,12 @@ func newCache(size int) *lru.Cache[string, int64] {
 
 // NewFactory creates a factory for SQL Server receiver.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
