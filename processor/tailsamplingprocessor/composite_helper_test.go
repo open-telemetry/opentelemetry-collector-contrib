@@ -63,6 +63,52 @@ func TestCompositeHelper(t *testing.T) {
 		assert.Equal(t, expected, actual)
 	})
 
+	t.Run("sub-policy omitted from rate_allocation gets the default share", func(t *testing.T) {
+		actual, err := getNewCompositePolicy(componenttest.NewNopTelemetrySettings(), &CompositeCfg{
+			MaxTotalSpansPerSecond: 1000,
+			PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2"},
+			SubPolicyCfg: []CompositeSubPolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:       "test-composite-policy-1",
+						Type:       Latency,
+						LatencyCfg: LatencyCfg{ThresholdMs: 100},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name:       "test-composite-policy-2",
+						Type:       Latency,
+						LatencyCfg: LatencyCfg{ThresholdMs: 200},
+					},
+				},
+			},
+			// test-composite-policy-2 is intentionally left out of RateAllocation
+			// entirely, not just given Percent: 0.
+			RateAllocation: []RateAllocationCfg{
+				{
+					Policy:  "test-composite-policy-1",
+					Percent: 25,
+				},
+			},
+		}, nil)
+		require.NoError(t, err)
+
+		expected := sampling.NewComposite(zap.NewNop(), 1000, []sampling.SubPolicyEvalParams{
+			{
+				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100, 0),
+				MaxSpansPerSecond: 250,
+				Name:              "test-composite-policy-1",
+			},
+			{
+				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 200, 0),
+				MaxSpansPerSecond: 500,
+				Name:              "test-composite-policy-2",
+			},
+		}, sampling.MonotonicClock{}, false)
+		assert.Equal(t, expected, actual)
+	})
+
 	t.Run("unsupported sampling policy type", func(t *testing.T) {
 		_, err := getNewCompositePolicy(componenttest.NewNopTelemetrySettings(), &CompositeCfg{
 			SubPolicyCfg: []CompositeSubPolicyCfg{

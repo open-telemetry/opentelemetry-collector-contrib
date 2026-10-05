@@ -5,6 +5,8 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -82,7 +84,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 			)
 			endpoints = append(endpoints, observer.Endpoint{
 				ID:     endpointID,
-				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
+				Target: net.JoinHostPort(podIP, strconv.Itoa(int(port.ContainerPort))),
 				Details: &observer.Port{
 					Pod:            podDetails,
 					Name:           port.Name,

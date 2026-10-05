@@ -88,14 +88,14 @@ func Test_FormatFactory(t *testing.T) {
 		factory := NewFormatFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &FormatArguments[any]{}, args)
+		assert.IsType(t, &formatArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Format", "Vals"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewFormatFactory[any]()
 		args := factory.CreateDefaultArguments()
-		formatArgs, ok := args.(*FormatArguments[any])
+		formatArgs, ok := args.(*formatArguments[any])
 		require.True(t, ok)
 		formatArgs.Format = "%s"
 		formatArgs.Vals = []ottl.Getter[any]{
@@ -113,6 +113,26 @@ func Test_FormatFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createFormatFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "FormatFactory args must be of type *FormatArguments[K]")
+		assert.ErrorContains(t, err, "FormatFactory args must be of type *formatArguments[K]")
 	})
+}
+
+func BenchmarkFormat(b *testing.B) {
+	vals := []ottl.Getter[any]{
+		getterFunc[any](func(context.Context, any) (any, error) {
+			return 2, nil
+		}),
+		getterFunc[any](func(context.Context, any) (any, error) {
+			return "te", nil
+		}),
+	}
+	exprFunc := format[any]("test-%04d-%4s", vals)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

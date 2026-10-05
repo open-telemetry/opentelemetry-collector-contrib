@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
@@ -293,8 +292,38 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				return out
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint(
+					fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)),
+					&sfxMetricTypeGauge,
+					maps.MergeRawMaps(map[string]any{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, labelMap),
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
+					&sfxMetricTypeGauge,
+					maps.MergeRawMaps(map[string]any{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, labelMap),
+				),
+				doubleSFxDataPoint(
+					fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)),
+					&sfxMetricTypeGauge,
+					maps.MergeRawMaps(map[string]any{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, labelMap),
+				),
+				doubleSFxDataPoint(
+					fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)),
 					&sfxMetricTypeGauge,
 					maps.MergeRawMaps(map[string]any{
 						"k_n0": "vn0",
@@ -346,10 +375,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, map[string]any{
-						"k0": "v0",
-						"k2": "v2",
-					}),
+					}, longLabelMap),
 				),
 			},
 		},
@@ -1145,14 +1171,18 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 			Value: fmt.Sprint("dim_val_", i),
 		})
 	}
-	assert.Empty(t, c.MetricsToSignalFxV2(mdInvalid))
+	gotDps := c.MetricsToSignalFxV2(mdInvalid)
+	require.Len(t, gotDps, 1)
+	sortDimensions(gotDps)
+	sortDimensions([]*sfxpb.DataPoint{dpSFX})
+	assert.Equal(t, dpSFX, gotDps[0])
+
 	require.Equal(t, 1, observedLogs.Len())
-	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
-	assert.ElementsMatch(t, []zap.Field{
-		{Type: zapcore.StringType, Key: "reason", String: invalidNumberOfDimensions},
-		{Type: zapcore.StringerType, Key: "datapoint", Interface: dpSFX},
-		{Type: zapcore.Int64Type, Key: "number_of_dimensions", Integer: 37},
-	}, observedLogs.All()[0].Context)
+	loggedEntry := observedLogs.All()[0]
+	assert.Equal(t, "datapoint is not valid and will be dropped at ingest", loggedEntry.Message)
+	loggedFields := loggedEntry.ContextMap()
+	assert.Equal(t, []any{invalidNumberOfDimensions}, loggedFields["reasons"])
+	assert.Equal(t, dpSFX.String(), loggedFields["datapoint"])
 }
 
 func sortDimensions(points []*sfxpb.DataPoint) {

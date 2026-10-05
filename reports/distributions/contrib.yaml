@@ -7,7 +7,7 @@ components:
         - datadog
         - exceptions
         - failover
-        - grafanacloud
+        - grafana_cloud
         - otlp_json
         - round_robin
         - routing
@@ -45,7 +45,6 @@ components:
         - load_balancing
         - logicmonitor
         - logzio
-        - mezmo
         - opensearch
         - otelarrow
         - prometheus
@@ -102,6 +101,7 @@ components:
         - text_encoding
         - zipkin_encoding
     processor:
+        - adaptive_tail_sampling
         - attributes
         - cardinality_guardian
         - cumulative_to_delta
@@ -125,6 +125,7 @@ components:
         - remotetap
         - resource
         - resource_detection
+        - rolling_span_latency
         - schema
         - span
         - span_pruning
@@ -145,10 +146,10 @@ components:
         - apache_spark
         - aws_cloudwatch
         - aws_lambda
+        - aws_s3
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
-        - awss3
         - awsxray
         - azure_blob
         - azure_event_hub
@@ -226,7 +227,7 @@ components:
         - splunk_enterprise
         - splunk_hec
         - sql_query
-        - sqlserver
+        - sql_server
         - ssh_check
         - statsd
         - stef
@@ -237,11 +238,10 @@ components:
         - tls_check
         - udp_log
         - vcenter
-        - wavefront
         - webhook_event
         - windows_event_log
+        - windows_perf_counters
         - windows_service
-        - windowsperfcounters
         - yang_grpc
         - zipkin
         - zookeeper

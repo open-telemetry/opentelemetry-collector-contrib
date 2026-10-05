@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,8 @@ var (
 )
 
 const (
+	adminDatabase               = "admin"
+	replSetGetStatusCommand     = "replSetGetStatus"
 	defaultServiceName          = "unknown_service:mongodb"
 	namespaceKey                = "ns"
 	commandKey                  = "command"
@@ -93,6 +96,9 @@ type mongodbScraper struct {
 	planCache             *lru.LRU[string, string]
 	lastScrapeTime        time.Time // upper bound of the last successful scrape window; used by both profiler and getLog paths
 	lastTopQueryExecution time.Time
+	// collectorHostName stands in for a loopback server address. It is empty when the host name
+	// could not be determined, in which case the address is reported as the server gave it.
+	collectorHostName string
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
@@ -109,7 +115,19 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		prevCounts:         make(map[string]int64),
 		prevFlushCount:     0,
 		obfuscator:         newObfuscator(),
+		collectorHostName:  resolveCollectorHostName(settings.Logger),
 	}
+}
+
+// resolveServerAddress reports the network location of the server described by serverStatus, with a
+// loopback address replaced by the collector host's name. Both server.address and the
+// service.instance.id seed are taken from this one result, so they cannot name different machines.
+func (s *mongodbScraper) resolveServerAddress(serverStatus bson.M) (string, int64, error) {
+	address, port, err := serverAddressAndPort(serverStatus)
+	if err != nil {
+		return "", 0, err
+	}
+	return resolveLoopbackHost(address, s.collectorHostName), port, nil
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
@@ -119,8 +137,9 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	s.client = c
 
-	// Skip secondary host discovery if direct connection is enabled
-	if s.config.DirectConnection {
+	if reason := s.config.secondaryDiscoverySkipReason(); reason != "" {
+		s.logger.Info("skipping replica set secondary discovery, scraping only the configured host",
+			zap.String("reason", reason))
 		return nil
 	}
 
@@ -208,7 +227,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 		return
 	}
 
-	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
+	serverAddress, serverPort, err := s.resolveServerAddress(serverStatus)
 	if err != nil {
 		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
 		return
@@ -223,7 +242,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 	s.processCurrentOp(ctx, operations, now)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, serverAddress, serverPort)
+	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 }
 
@@ -535,12 +554,15 @@ func clientAddressAndPort(clientAddr string) (string, int64) {
 	return host, parsedPort
 }
 
-func setResourceAttributes(rb *metadata.ResourceBuilder, serverAddress string, serverPort int64) {
+func setResourceAttributes(rb *metadata.ResourceBuilder, serverAddress string, serverPort int64, mongoVersion *version.Version) {
 	rb.SetServerAddress(serverAddress)
 	rb.SetServerPort(serverPort)
 	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
+	if mongoVersion != nil && !mongoVersion.Equal(unknownVersion()) {
+		rb.SetDbSystemVersion(mongoVersion.String())
+	}
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
@@ -555,7 +577,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		errs.Add(fmt.Errorf("failed to fetch server status: %w", sErr))
 		return
 	}
-	serverAddress, serverPort, aErr := serverAddressAndPort(serverStatus)
+	serverAddress, serverPort, aErr := s.resolveServerAddress(serverStatus)
 	if aErr != nil {
 		errs.Add(fmt.Errorf("failed to fetch server address and port: %w", aErr))
 		return
@@ -566,6 +588,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
+	s.collectReplicaSetMetrics(ctx, now, errs)
 
 	// Collect metrics for each database
 	for _, dbName := range dbNames {
@@ -583,7 +606,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 
 	// Emit single resource for the server
 	rb := s.mb.NewResourceBuilder()
-	setResourceAttributes(rb, serverAddress, serverPort)
+	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -610,6 +633,147 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordOperationTime(now, topStats, errs)
+}
+
+// replicationUnavailableCodes are the server error codes returned when the deployment does not
+// expose replica set state: a standalone mongod, a mongos router, or a member whose replica set has
+// not been initiated. Unauthorized is deliberately absent: it means the configured user lacks a
+// privilege it can be granted, so it is reported rather than skipped.
+var replicationUnavailableCodes = []int{
+	26, // NamespaceNotFound
+	59, // CommandNotFound
+	76, // NoReplicationEnabled
+	94, // NotYetInitialized
+}
+
+func isReplicationUnavailable(err error) bool {
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return true
+	}
+	var srvErr mongo.ServerError
+	if !errors.As(err, &srvErr) {
+		return false
+	}
+	return slices.ContainsFunc(replicationUnavailableCodes, srvErr.HasErrorCode)
+}
+
+// reportReplicationError records err as a partial scrape failure, unless it only means the
+// deployment does not expose replica set state, in which case the metrics are skipped.
+func (s *mongodbScraper) reportReplicationError(err error, message string, failed int, errs *scrapererror.ScrapeErrors) {
+	if isReplicationUnavailable(err) {
+		s.logger.Debug(message, zap.Error(err))
+		return
+	}
+	errs.AddPartial(failed, fmt.Errorf("%s: %w", message, err))
+}
+
+// countEnabled returns how many of the given metric enabled flags are set, which is the number of
+// metrics a failed server read leaves unrecorded.
+func countEnabled(enabled ...bool) int {
+	count := 0
+	for _, e := range enabled {
+		if e {
+			count++
+		}
+	}
+	return count
+}
+
+func (s *mongodbScraper) collectReplicaSetMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+
+	if metrics.MongodbOplogUsage.Enabled || metrics.MongodbOplogLimit.Enabled {
+		s.collectOplogStats(ctx, now, errs)
+	}
+
+	var oplogWindow float64
+	var hasOplogWindow bool
+	if metrics.MongodbOplogWindow.Enabled || metrics.MongodbReplicaSetHeadroom.Enabled {
+		oplogWindow, hasOplogWindow = s.collectOplogWindow(ctx, now, errs)
+	}
+
+	if metrics.MongodbReplicaSetHeadroom.Enabled || metrics.MongodbReplicaSetLag.Enabled ||
+		metrics.MongodbReplicaSetMemberCount.Enabled || metrics.MongodbReplicaStatus.Enabled {
+		s.collectReplicaSetStatus(ctx, now, oplogWindow, hasOplogWindow, errs)
+	}
+}
+
+func (s *mongodbScraper) collectOplogStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+	oplogStats, err := s.client.OplogStats(ctx)
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch oplog stats metrics", countEnabled(metrics.MongodbOplogUsage.Enabled, metrics.MongodbOplogLimit.Enabled), errs)
+		return
+	}
+
+	if metrics.MongodbOplogUsage.Enabled {
+		s.recordOplogUsage(now, oplogStats, errs)
+	}
+
+	if metrics.MongodbOplogLimit.Enabled {
+		s.recordOplogLimit(now, oplogStats, errs)
+	}
+}
+
+// collectOplogWindow returns the time span the oplog covers, which mongodb.replica_set.headroom
+// is measured against. A failure here is counted against both metrics, since neither can be
+// recorded without it.
+func (s *mongodbScraper) collectOplogWindow(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) (float64, bool) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+	oldest, newest, err := s.client.OplogBounds(ctx)
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch oplog window and replica set headroom metrics",
+			countEnabled(metrics.MongodbOplogWindow.Enabled, metrics.MongodbReplicaSetHeadroom.Enabled), errs)
+		return 0, false
+	}
+
+	if metrics.MongodbOplogWindow.Enabled {
+		s.recordOplogWindow(now, oldest, newest)
+	}
+	return oplogWindowSeconds(oldest, newest), true
+}
+
+func (s *mongodbScraper) collectReplicaSetStatus(ctx context.Context, now pcommon.Timestamp, oplogWindow float64, hasOplogWindow bool, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+	// Headroom is left out when the oplog window is missing, as collectOplogWindow already counted it.
+	failed := countEnabled(metrics.MongodbReplicaSetMemberCount.Enabled, metrics.MongodbReplicaStatus.Enabled,
+		metrics.MongodbReplicaSetLag.Enabled, metrics.MongodbReplicaSetHeadroom.Enabled && hasOplogWindow)
+
+	status, err := s.client.RunCommand(ctx, adminDatabase, bson.M{replSetGetStatusCommand: 1})
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch replica set status metrics", failed, errs)
+		return
+	}
+
+	members, ok := status[replicaSetMembersKey].(bson.A)
+	if !ok {
+		errs.AddPartial(failed, fmt.Errorf("failed to fetch replica set members: expected %T, got %T", bson.A{}, status[replicaSetMembersKey]))
+		return
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetMemberCount.Enabled {
+		s.recordReplicaSetMemberCount(now, members)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaStatus.Enabled {
+		s.recordReplicaStatus(now, members, errs)
+	}
+
+	// Lag and headroom are only reported by the primary. A secondary sees the other members
+	// through heartbeats, so its view of their progress trails the primary's.
+	self, ok := replicaSetSelf(members)
+	if !ok || replicaSetMemberStates[getInt64Value(self, replicaSetMemberStateKey)] != metadata.AttributeMongodbReplicaStatePrimary {
+		return
+	}
+	lags := replicaSetLags(members)
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetLag.Enabled {
+		s.recordReplicaSetLag(now, lags)
+	}
+
+	if hasOplogWindow && s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetHeadroom.Enabled {
+		s.recordReplicaSetHeadroom(now, lags, oplogWindow)
+	}
 }
 
 func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
@@ -748,6 +912,26 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordWTCacheBytes(now, document, errs)
 	}
 
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogWrite.Enabled {
+		s.recordWTLogWrite(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled {
+		s.recordWTLogOperations(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogSyncTime.Enabled {
+		s.recordWTLogSyncTime(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled {
+		s.recordWTFsyncCount(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.Enabled {
+		s.recordWTConcurrentTransactionsOut(now, document, errs)
+	}
+
 	if s.config.MetricsBuilderConfig.Metrics.MongodbPageFaults.Enabled {
 		s.recordPageFaults(now, document, errs)
 	}
@@ -757,52 +941,25 @@ func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bs
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
 }
 
-func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
-	host, ok := serverStatus["host"].(string)
-	if !ok {
-		return "", 0, errors.New("host field not found in server status")
-	}
-	hostParts := strings.Split(host, ":")
-	switch len(hostParts) {
-	case 1:
-		return hostParts[0], defaultMongoDBPort, nil
-	case 2:
-		port, err := strconv.ParseInt(hostParts[1], 10, 64)
-		if err != nil {
-			return "", 0, fmt.Errorf("failed to parse port: %w", err)
-		}
-		return hostParts[0], port, nil
-	default:
-		return "", 0, fmt.Errorf("unexpected host format: %s", host)
-	}
-}
-
 func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {
-	result, err := s.client.RunCommand(ctx, "admin", bson.M{"replSetGetStatus": 1})
+	result, err := s.client.RunCommand(ctx, adminDatabase, bson.M{replSetGetStatusCommand: 1})
 	if err != nil {
 		s.logger.Error("Failed to get replica set status", zap.Error(err))
 		return nil, fmt.Errorf("failed to get replica set status: %w", err)
 	}
 
-	members, ok := result["members"].(bson.A)
+	members, ok := result[replicaSetMembersKey].(bson.A)
 	if !ok {
-		return nil, fmt.Errorf("invalid members format: expected type primitive.A but got %T, value: %v", result["members"], result["members"])
+		return nil, fmt.Errorf("invalid members format: expected type bson.A but got %T, value: %v", result["members"], result["members"])
 	}
 
 	var hosts []string
 	for _, member := range members {
-		m, ok := member.(bson.M)
-		if !ok {
-			continue
-		}
-
-		state, ok := m["stateStr"].(string)
-		if !ok {
-			continue
-		}
-
-		name, ok := m["name"].(string)
-		if !ok {
+		// A member arrives as a bson.D, which is how the driver decodes an embedded document
+		// held in a bson.M, so read it through lookup rather than asserting a concrete type.
+		state := getValue[string](member, "stateStr")
+		name := getValue[string](member, "name")
+		if name == "" {
 			continue
 		}
 

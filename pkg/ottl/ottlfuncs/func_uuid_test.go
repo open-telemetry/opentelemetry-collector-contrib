@@ -34,3 +34,15 @@ func Test_UUIDFactory(t *testing.T) {
 		assert.NotNil(t, fn)
 	})
 }
+
+func BenchmarkUUID(b *testing.B) {
+	exprFunc, err := uuid[any]()
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

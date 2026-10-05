@@ -355,10 +355,14 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (DEPRECATED, use `sending_queue::num_consumers` instead): This config is deprecated and will be used to configure `sending_queue::num_consumers` if `sending_queue::num_consumers` is not explicitly defined. Number of workers publishing bulk requests concurrently.
-- `flush` (DEPRECATED, use `sending_queue` instead): This config is deprecated and will be used to configure different options for `sending_queue` if `sending_queue` options are not explicitly defined. Event bulk indexer buffer flush settings
-  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if `sending_queue::batch::max_size` is not explicitly defined. See the `sending_queue::batch::max_size` for more details.
-  - `interval` (DEPRECATED, use `sending_queue::batch::flush_timeout` instead): This config is deprecated and will be used to configure `sending_queue::batch::flush_timeout` if `sending_queue::batch::flush_timeout` is not explicitly defined. See the `sending_queue::batch::flush_timeout` for more details.
+The deprecated `num_workers` and `flush` settings have been removed. Existing configurations should use these replacements:
+
+| Removed setting | Replacement |
+| --- | --- |
+| `num_workers` | `sending_queue::num_consumers` |
+| `flush::interval` | `sending_queue::batch::flush_timeout` |
+| `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
+
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
@@ -490,6 +494,40 @@ exporters:
 > For the Elasticsearch Exporter to be able to export Profiles data, Universal Profiling needs to be installed in the database.
 > See [the Universal Profiling getting started documentation](https://www.elastic.co/guide/en/observability/current/profiling-get-started.html)
 > You will need to use the Elasticsearch endpoint, with an [Elasticsearch API key](https://www.elastic.co/guide/en/kibana/current/api-keys.html).
+
+### OTel profiling datastreams
+
+In `otel` mapping mode, profiling signals are ingested into OTel-native Elasticsearch datastreams.
+Each profiling signal type is written to a dedicated backing index:
+
+| Signal type    | Index pattern                                 |
+| -------------- | --------------------------------------------- |
+| Stack traces   | `profiling-stacktraces.otel-default`          |
+| Stack frames   | `profiling-stackframes.otel-default`          |
+| Executables    | `profiling-executables.otel-default`          |
+| Trace events   | `profiling-events-all.otel-default`           |
+| Downsampled trace events | `profiling-events-5powNN.otel-default` (`NN` from `01` to `11`) |
+| Host metadata  | `profiling-hosts.otel-default`                |
+
+> [!NOTE]
+> Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations)
+> is not yet supported in OTel profiling datastream mode.
+
+> [!WARNING]
+> The `.otel-default` profiling datastream index templates are only available in **Elasticsearch 9.6.0 and later**.
+> If you send profiles with the default OTel mapping mode to an older cluster, documents will be rejected
+> with `index_not_found_exception` (HTTP 404) and profiling data will be lost.
+>
+> To continue sending profiles to Elasticsearch < 9.6.0, restrict the exporter to ECS mode:
+>
+> ```yaml
+> mapping:
+>   allowed_modes: [ecs]
+> ```
+>
+> This is a **breaking change** for existing OTel-mode profiling users (profiles are still in tech preview):
+> the backing indices are different from the ECS-schema indices used by prior versions,
+> and existing profiling data in the old indices is not migrated automatically.
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings

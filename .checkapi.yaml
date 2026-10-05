@@ -17,8 +17,6 @@ ignored_paths:
   - pkg/golden
   - pkg/kafka/configkafka
   - pkg/kafka/topic
-  - pkg/ottl
-  - pkg/pdatautil
   - pkg/resourcetotelemetry
   - pkg/sampling
   - pkg/status

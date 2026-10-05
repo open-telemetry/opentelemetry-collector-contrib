@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// github.com/DataDog/datadog-agent/comp/core/config is not suppported on AIX
+// github.com/DataDog/datadog-agent/comp/core/config is not supported on AIX
 //go:build !aix
 
 package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
@@ -253,7 +253,6 @@ func WithPayloadsConfig() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
 		pkgconfig.Set("enable_payloads.events", true, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("enable_payloads.json_to_v1_intake", true, pkgconfigmodel.SourceDefault)
-		pkgconfig.Set("enable_sketch_stream_payload_serialization", true, pkgconfigmodel.SourceDefault)
 	}
 }
 

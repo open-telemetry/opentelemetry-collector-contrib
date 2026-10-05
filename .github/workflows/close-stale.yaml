@@ -12,7 +12,7 @@ jobs:
     permissions:
       issues: write # required for closing stale issues
       pull-requests: write # required for closing stale pull requests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     env:
       GH_TOKEN: ${{ github.token }}
     steps:

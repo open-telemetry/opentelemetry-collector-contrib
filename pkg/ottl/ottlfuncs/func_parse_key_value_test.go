@@ -385,14 +385,14 @@ func Test_ParseKeyValueFactory(t *testing.T) {
 		factory := NewParseKeyValueFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ParseKeyValueArguments[any]{}, args)
+		assert.IsType(t, &parseKeyValueArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter", "PairDelimiter"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewParseKeyValueFactory[any]()
 		args := factory.CreateDefaultArguments()
-		kvArgs, ok := args.(*ParseKeyValueArguments[any])
+		kvArgs, ok := args.(*parseKeyValueArguments[any])
 		require.True(t, ok)
 		kvArgs.Target = ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -407,6 +407,23 @@ func Test_ParseKeyValueFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createParseKeyValueFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ParseKeyValueFactory args must be of type *ParseKeyValueArguments[K]")
+		assert.ErrorContains(t, err, "ParseKeyValueFactory args must be of type *parseKeyValueArguments[K]")
 	})
+}
+
+func BenchmarkParseKeyValue(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "name=ottl func=key_value", nil
+		},
+	}
+	exprFunc, err := parseKeyValue[any](target, ottl.Optional[string]{}, ottl.Optional[string]{})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -34,9 +34,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -140,6 +143,88 @@ func TestReceiver_Headers_Metadata(t *testing.T) {
 				assert.Equal(t, []string{"otlp_spans"}, info.Metadata.Get("kafka.topic"))
 				assert.Equal(t, []string{"0"}, info.Metadata.Get("kafka.partition"))
 				assert.Equal(t, []string{"0"}, info.Metadata.Get("kafka.offset"))
+			})
+		})
+	}
+}
+
+func TestReceiver_TraceContextPropagation(t *testing.T) {
+	producerSpanContext := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+		SpanID:     trace.SpanID{1, 2, 3, 4, 5, 6, 7, 8},
+		TraceFlags: trace.FlagsSampled,
+		Remote:     true,
+	})
+
+	validHeaders := []kgo.RecordHeader{
+		{Key: "traceparent", Value: []byte("00-0102030405060708090a0b0c0d0e0f10-0102030405060708-01")},
+	}
+
+	for name, testcase := range map[string]struct {
+		propagator    propagation.TextMapPropagator
+		headers       []kgo.RecordHeader
+		expectedLinks []trace.SpanContext
+	}{
+		"no propagator": {
+			propagator: propagation.NewCompositeTextMapPropagator(),
+			headers:    validHeaders,
+		},
+		"no trace context": {
+			propagator: propagation.TraceContext{},
+		},
+		"invalid trace context": {
+			propagator: propagation.TraceContext{},
+			headers: []kgo.RecordHeader{
+				{Key: "traceparent", Value: []byte("invalid")},
+			},
+		},
+		"valid trace context": {
+			propagator:    propagation.TraceContext{},
+			headers:       validHeaders,
+			expectedLinks: []trace.SpanContext{producerSpanContext},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			otel.SetTextMapPropagator(testcase.propagator)
+			t.Cleanup(func() { otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator()) })
+
+			runTestForClients(t, func(t *testing.T) {
+				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+				traces := testdata.GenerateTraces(1)
+				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+				require.NoError(t, err)
+				results := kafkaClient.ProduceSync(t.Context(), &kgo.Record{
+					Topic:   "otlp_spans",
+					Value:   data,
+					Headers: testcase.headers,
+				})
+				require.NoError(t, results.FirstErr())
+
+				received := make(chan consumerArgs[ptrace.Traces], 1)
+				set, tel, _ := mustNewSettings(t)
+				r, err := NewFactory().CreateTraces(t.Context(), set, receiverConfig, newChannelTracesConsumer(received))
+				require.NoError(t, err)
+				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+				t.Cleanup(func() {
+					assert.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+				})
+				args := <-received
+
+				require.Eventually(t, func() bool {
+					return len(tel.SpanRecorder.Ended()) == 1
+				}, 10*time.Second, 10*time.Millisecond)
+				span := tel.SpanRecorder.Ended()[0]
+
+				// The receive span starts a new trace, links to the extracted span
+				// context, and is propagated to the next consumer.
+				assert.False(t, span.Parent().IsValid())
+				var links []trace.SpanContext
+				for _, link := range span.Links() {
+					links = append(links, link.SpanContext)
+				}
+				assert.Equal(t, testcase.expectedLinks, links)
+				assert.Equal(t, span.SpanContext(), trace.SpanContextFromContext(args.ctx))
 			})
 		})
 	}
@@ -385,6 +470,20 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 				),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 0,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_spans"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
+		metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 4, // offset of the final message
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp_spans"),
+				attribute.Int64("partition", 0),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
 
 		// Shut down and check that the partition close metric is updated.
 		err = r.Shutdown(t.Context())
@@ -398,22 +497,6 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		assert.Len(t, logEntries, 2)
 		assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
 		assert.Equal(t, "failed to consume message, skipping due to message_marking config", logEntries[1].Message)
-
-		metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
-			Value: 4, // offset of the final message
-			Attributes: attribute.NewSet(
-				attribute.String("topic", "otlp_spans"),
-				attribute.Int64("partition", 0),
-			),
-		}}, metricdatatest.IgnoreTimestamp())
-
-		metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
-			Value: 0,
-			Attributes: attribute.NewSet(
-				attribute.String("topic", "otlp_spans"),
-				attribute.Int64("partition", 0),
-			),
-		}}, metricdatatest.IgnoreTimestamp())
 	})
 }
 
@@ -866,8 +949,22 @@ func newTracesConsumer(f consumer.ConsumeTracesFunc) consumer.Traces {
 // mustNewFakeCluster creates a new fake Kafka cluster with the given options,
 // and returns a kgo.Client for operating on the cluster, and a receiver config.
 func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config) {
-	cluster, clientConfig := kafkatest.NewCluster(tb, opts...)
-	kafkaClient := mustNewClient(tb, cluster)
+	return newFakeCluster(tb, opts, nil)
+}
+
+// mustNewMarkedFakeCluster is mustNewFakeCluster with AutoCommitMarks so tests
+// can inspect MarkedOffsets.
+func mustNewMarkedFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config) {
+	return newFakeCluster(tb, opts, []kgo.Opt{
+		kgo.ConsumerGroup(tb.Name()),
+		kgo.AutoCommitMarks(),
+		kgo.AutoCommitInterval(time.Hour),
+	})
+}
+
+func newFakeCluster(tb testing.TB, clusterOpts []kfake.Opt, extra []kgo.Opt) (*kgo.Client, *Config) {
+	cluster, clientConfig := kafkatest.NewCluster(tb, clusterOpts...)
+	kafkaClient := mustNewClient(tb, cluster, extra...)
 	tb.Cleanup(func() { deleteConsumerGroups(tb, kafkaClient) })
 
 	cfg := createDefaultConfig().(*Config)
@@ -878,15 +975,16 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 	return kafkaClient, cfg
 }
 
-func mustNewClient(tb testing.TB, cluster *kfake.Cluster) *kgo.Client {
-	client, err := kgo.NewClient(
+func mustNewClient(tb testing.TB, cluster *kfake.Cluster, extra ...kgo.Opt) *kgo.Client {
+	opts := []kgo.Opt{
 		kgo.SeedBrokers(cluster.ListenAddrs()...),
-
 		// Disable compression for greater determinism in tests
 		// relating to record sizes. This is important for tests
 		// that set minimum fetch size, for example.
 		kgo.ProducerBatchCompression(kgo.NoCompression()),
-	)
+	}
+	opts = append(opts, extra...)
+	client, err := kgo.NewClient(opts...)
 	require.NoError(tb, err)
 	tb.Cleanup(client.Close)
 	return client

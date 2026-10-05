@@ -1136,3 +1136,173 @@ func TestAccumulateSum_RefusedNonMonotonicDelta_Logging(t *testing.T) {
 	require.Equal(t, "non-monotonic sum with delta aggregation temporality is not supported", fieldMap["reason"])
 	require.Equal(t, int64(2), fieldMap["data_points_refused"])
 }
+
+// A scrape that drops several series of one metric sends a staleness marker
+// for each of them in the same batch. Every marker has to remove its own
+// series, and the live points of the same metric have to be stored whatever
+// their position relative to the markers.
+func TestAccumulateStalenessMarkersAmongSeveralPoints(t *testing.T) {
+	stale := pmetric.DefaultDataPointFlags.WithNoRecordedValue(true)
+	tests := []struct {
+		name   string
+		metric func(pmetric.MetricSlice) pmetric.Metric
+		point  func(m pmetric.Metric, series string, ts time.Time, isStale bool)
+	}{
+		{
+			name: "Gauge",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptyGauge()
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.Gauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+		{
+			name: "Sum",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+		{
+			name: "Summary",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptySummary()
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.Summary().DataPoints().AppendEmpty()
+				dp.SetCount(1)
+				dp.SetSum(1)
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+		{
+			name: "Histogram",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.Histogram().DataPoints().AppendEmpty()
+				dp.BucketCounts().FromRaw([]uint64{1, 0})
+				dp.ExplicitBounds().FromRaw([]float64{1})
+				dp.SetCount(1)
+				dp.SetSum(1)
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+		{
+			name: "ExponentialHistogram",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.ExponentialHistogram().DataPoints().AppendEmpty()
+				dp.SetScale(0)
+				dp.SetCount(1)
+				dp.SetSum(1)
+				dp.Positive().BucketCounts().FromRaw([]uint64{1})
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts1 := time.Now().Add(-2 * time.Second)
+			ts2 := time.Now().Add(-1 * time.Second)
+			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+
+			first := pmetric.NewResourceMetrics()
+			m := tt.metric(first.ScopeMetrics().AppendEmpty().Metrics())
+			for _, series := range []string{"a", "b", "c"} {
+				tt.point(m, series, ts1, false)
+			}
+			require.Equal(t, 3, a.Accumulate(first))
+
+			// a and b disappeared from the target, c is still there. The two
+			// markers come first, which is where a loop that stops at the first
+			// marker loses both the second marker and the live point.
+			second := pmetric.NewResourceMetrics()
+			m = tt.metric(second.ScopeMetrics().AppendEmpty().Metrics())
+			tt.point(m, "a", ts2, true)
+			tt.point(m, "b", ts2, true)
+			tt.point(m, "c", ts2, false)
+			require.Equal(t, 1, a.Accumulate(second))
+
+			kept := map[string]time.Time{}
+			a.registeredMetrics.Range(func(_, value any) bool {
+				labels, ts := firstPoint(value.(*accumulatedValue).value)
+				series, _ := labels.Get("series")
+				kept[series.Str()] = ts
+				return true
+			})
+			require.Len(t, kept, 1, "only the live series is kept: %v", kept)
+			require.Equal(t, ts2.UnixNano(), kept["c"].UnixNano())
+		})
+	}
+}
+
+// The attributes and timestamp of an accumulated metric, which holds a single
+// data point whatever its type.
+func firstPoint(m pmetric.Metric) (pcommon.Map, time.Time) {
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
+		dp := m.Gauge().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	case pmetric.MetricTypeSum:
+		dp := m.Sum().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	case pmetric.MetricTypeSummary:
+		dp := m.Summary().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	case pmetric.MetricTypeHistogram:
+		dp := m.Histogram().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	case pmetric.MetricTypeExponentialHistogram:
+		dp := m.ExponentialHistogram().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	}
+	panic("unexpected metric type " + m.Type().String())
+}

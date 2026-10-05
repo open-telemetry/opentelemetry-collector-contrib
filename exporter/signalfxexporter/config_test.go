@@ -35,35 +35,37 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	seventy := 70
-	hundred := 100
-	idleConnTimeout := 30 * time.Second
 	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultClientConfig.Keepalive = configoptional.Some(confighttp.NewDefaultKeepaliveClientConfig())
+	defaultClientConfig.Keepalive.Get().IdleConnTimeout = 30 * time.Second
+	defaultClientConfig.Keepalive.Get().MaxIdleConnsPerHost = 100
 	defaultClientConfig.Timeout = 10 * time.Second
-	defaultClientConfig.MaxIdleConns = hundred
-	defaultClientConfig.MaxIdleConnsPerHost = hundred
 	defaultClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	defaultClientConfig.IdleConnTimeout = idleConnTimeout
 	defaultClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	defaultClientConfig.HTTP2PingTimeout = 10 * time.Second
-	defaultClientConfig.ForceAttemptHTTP2 = true
 
 	allSettingsClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	allSettingsClientConfig.Keepalive.Get().IdleConnTimeout = 30 * time.Second
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConnsPerHost = 100
 	allSettingsClientConfig.Timeout = 2 * time.Second
 	allSettingsClientConfig.Headers = configopaque.MapList{
 		{Name: "added-entry", Value: "added value"},
 		{Name: "dot.test", Value: "test"},
 	}
-	allSettingsClientConfig.MaxIdleConns = seventy
-	allSettingsClientConfig.MaxIdleConnsPerHost = seventy
 	allSettingsClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	allSettingsClientConfig.IdleConnTimeout = idleConnTimeout
 	allSettingsClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	allSettingsClientConfig.HTTP2PingTimeout = 10 * time.Second
-	allSettingsClientConfig.ForceAttemptHTTP2 = true
+	// max_idle_conns and max_idle_conns_per_host are deprecated keys and set
+	// as such in testdata/config.yaml; unmarshal them through confmap
+	// (rather than setting the fields directly) so that allSettingsClientConfig
+	// picks up the same deprecation-warning bookkeeping that loading the
+	// testdata produces.
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{
+		"max_idle_conns":          seventy,
+		"max_idle_conns_per_host": seventy,
+	}).Unmarshal(&allSettingsClientConfig))
 
 	tests := []struct {
 		id       component.ID
@@ -378,10 +380,6 @@ func TestConfigGetAPIURL(t *testing.T) {
 
 func TestConfigValidateErrors(t *testing.T) {
 	negativeTimeoutClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	negativeTimeoutClientConfig.MaxIdleConns = 0
-	negativeTimeoutClientConfig.IdleConnTimeout = 0
-	negativeTimeoutClientConfig.ForceAttemptHTTP2 = false
 	negativeTimeoutClientConfig.Timeout = -1 * time.Second
 	tests := []struct {
 		name string

@@ -767,6 +767,40 @@ operators:
 	}
 }
 
+func TestCreateLogsConfigDoesNotMutateDefaultConfig(t *testing.T) {
+	defaultConfig := userConfigMap{
+		"include_file_path": true,
+	}
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
+
+	createLogsConfig(
+		map[string]string{
+			"io.opentelemetry.discovery.logs/config": "operators:\n- type: regex_parser\n  id: test-regex-parser",
+		},
+		"annotated-container",
+		"uid-1",
+		"annotated-pod",
+		"namespace",
+		defaultConfig,
+		logger,
+	)
+
+	config := createLogsConfig(
+		nil,
+		"unrelated-container",
+		"uid-2",
+		"unrelated-pod",
+		"namespace",
+		defaultConfig,
+		logger,
+	)
+
+	assert.Equal(t, userConfigMap{
+		"include":           []string{"/var/log/pods/namespace_unrelated-pod_uid-2/unrelated-container/*.log"},
+		"include_file_path": true,
+	}, config)
+}
+
 func TestDiscoveryEnabled(t *testing.T) {
 	config := `
 endpoint: "0.0.0.0:8080"`

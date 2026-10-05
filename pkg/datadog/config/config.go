@@ -181,18 +181,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
-// It does not validate online; this is handled on startup.
-//
-// Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
-func StaticAPIKeyCheck(key string) error {
-	if key == "" {
-		return ErrUnsetAPIKey
-	}
-
-	return nil
-}
-
 func validateClientConfig(cfg confighttp.ClientConfig) error {
 	var unsupported []string
 	if cfg.Auth.HasValue() {
@@ -312,6 +300,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	}
 
 	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
+	c.Hostname = strings.TrimSpace(c.Hostname)
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {

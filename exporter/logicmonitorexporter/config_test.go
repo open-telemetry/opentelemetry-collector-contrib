@@ -24,31 +24,15 @@ import (
 
 func TestConfigValidation(t *testing.T) {
 	emptyEndpointClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	emptyEndpointClientConfig.MaxIdleConns = 0
-	emptyEndpointClientConfig.IdleConnTimeout = 0
-	emptyEndpointClientConfig.ForceAttemptHTTP2 = false
 	emptyEndpointClientConfig.Endpoint = ""
 
 	missingSchemeClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	missingSchemeClientConfig.MaxIdleConns = 0
-	missingSchemeClientConfig.IdleConnTimeout = 0
-	missingSchemeClientConfig.ForceAttemptHTTP2 = false
 	missingSchemeClientConfig.Endpoint = "test.com/dummy"
 
 	invalidFormatClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	invalidFormatClientConfig.MaxIdleConns = 0
-	invalidFormatClientConfig.IdleConnTimeout = 0
-	invalidFormatClientConfig.ForceAttemptHTTP2 = false
 	invalidFormatClientConfig.Endpoint = "invalid.com@#$%"
 
 	validClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	validClientConfig.MaxIdleConns = 0
-	validClientConfig.IdleConnTimeout = 0
-	validClientConfig.ForceAttemptHTTP2 = false
 	validClientConfig.Endpoint = "http://validurl.com/rest"
 
 	testcases := []struct {
@@ -117,27 +101,15 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	apitokenClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	apitokenClientConfig.MaxIdleConns = 0
-	apitokenClientConfig.IdleConnTimeout = 0
-	apitokenClientConfig.ForceAttemptHTTP2 = false
 	apitokenClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
 
 	bearertokenClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	bearertokenClientConfig.MaxIdleConns = 0
-	bearertokenClientConfig.IdleConnTimeout = 0
-	bearertokenClientConfig.ForceAttemptHTTP2 = false
 	bearertokenClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
 	bearertokenClientConfig.Headers = configopaque.MapList{
 		{Name: "Authorization", Value: "Bearer <token>"},
 	}
 
 	resourceMappingClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	resourceMappingClientConfig.MaxIdleConns = 0
-	resourceMappingClientConfig.IdleConnTimeout = 0
-	resourceMappingClientConfig.ForceAttemptHTTP2 = false
 	resourceMappingClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
 	resourceMappingClientConfig.Headers = configopaque.MapList{
 		{Name: "Authorization", Value: "Bearer <token>"},

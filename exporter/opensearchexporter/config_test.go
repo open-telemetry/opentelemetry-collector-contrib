@@ -34,8 +34,6 @@ func TestLoadConfig(t *testing.T) {
 		config.ClientConfig.Endpoint = sampleEndpoint
 		config.BulkAction = defaultBulkAction
 	})
-	maxIdleConns := 100
-	idleConnTimeout := 90 * time.Second
 
 	tests := []struct {
 		id                   component.ID
@@ -65,8 +63,6 @@ func TestLoadConfig(t *testing.T) {
 					config.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
-					config.MaxIdleConns = maxIdleConns
-					config.IdleConnTimeout = idleConnTimeout
 					config.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewID("sample_basic_auth")})
 				}),
 				BackOffConfig: configretry.BackOffConfig{
@@ -225,6 +221,28 @@ func TestLoadConfig(t *testing.T) {
 			}),
 			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.ErrorContains(t, err, errTracesIndexTimeFormatInvalid.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metrics_index_valid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.ClientConfig.Endpoint = sampleEndpoint
+				config.MetricsIndex = "otel-metrics-%{service.name}"
+				config.MetricsIndexFallback = "default-service"
+				config.MetricsIndexTimeFormat = "yyyy.MM.dd"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metrics_index_time_format_invalid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.ClientConfig.Endpoint = sampleEndpoint
+				config.MetricsIndex = "otel-metrics-%{service.name}"
+				config.MetricsIndexFallback = "default-service"
+				config.MetricsIndexTimeFormat = "invalid_format!"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errMetricsIndexTimeFormatInvalid.Error())
 			},
 		},
 		{

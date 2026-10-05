@@ -9,7 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap/zaptest"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
@@ -137,6 +140,158 @@ func TestDetect(t *testing.T) {
 
 			assert.Equal(t, tc.expectedResource, resource)
 			assert.Contains(t, schemaURL, tc.expectedSchemaURL)
+		})
+	}
+}
+
+func TestDetectPlatforms(t *testing.T) {
+	tt := []struct {
+		name           string
+		infraName      string
+		platformStatus ocp.InfrastructurePlatformStatus
+		expected       map[string]any
+	}{
+		{
+			name:      "azure",
+			infraName: "test-cluster",
+			platformStatus: ocp.InfrastructurePlatformStatus{
+				Type:  "Azure",
+				Azure: ocp.InfrastructureStatusAzure{CloudName: "AzurePublicCloud"},
+			},
+			expected: map[string]any{
+				"k8s.cluster.name": "test-cluster",
+				"cloud.provider":   "azure",
+				"cloud.platform":   "azure.openshift",
+				"cloud.region":     "azurepubliccloud",
+			},
+		},
+		{
+			name:      "gcp",
+			infraName: "test-cluster",
+			platformStatus: ocp.InfrastructurePlatformStatus{
+				Type: "GCP",
+				GCP:  ocp.InfrastructureStatusGCP{Region: "US-Central1"},
+			},
+			expected: map[string]any{
+				"k8s.cluster.name": "test-cluster",
+				"cloud.provider":   "gcp",
+				"cloud.platform":   "gcp_openshift",
+				"cloud.region":     "us-central1",
+			},
+		},
+		{
+			name:      "ibmcloud",
+			infraName: "test-cluster",
+			platformStatus: ocp.InfrastructurePlatformStatus{
+				Type:     "IBMCloud",
+				IBMCloud: ocp.InfrastructureStatusIBMCloud{Location: "EU-DE"},
+			},
+			expected: map[string]any{
+				"k8s.cluster.name": "test-cluster",
+				"cloud.provider":   "ibm_cloud",
+				"cloud.platform":   "ibm_cloud_openshift",
+				"cloud.region":     "eu-de",
+			},
+		},
+		{
+			name:      "openstack sets only region",
+			infraName: "test-cluster",
+			platformStatus: ocp.InfrastructurePlatformStatus{
+				Type:      "OpenStack",
+				OpenStack: ocp.InfrastructureStatusOpenStack{CloudName: "MyCloud"},
+			},
+			expected: map[string]any{
+				"k8s.cluster.name": "test-cluster",
+				"cloud.region":     "mycloud",
+			},
+		},
+		{
+			name:      "unknown platform sets only cluster name",
+			infraName: "test-cluster",
+			platformStatus: ocp.InfrastructurePlatformStatus{
+				Type: "BareMetal",
+			},
+			expected: map[string]any{
+				"k8s.cluster.name": "test-cluster",
+			},
+		},
+		{
+			name:     "empty infrastructure name and platform",
+			expected: map[string]any{},
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			d := newTestDetector(t, &providerResponse{
+				InfrastructureAPIResponse: ocp.InfrastructureAPIResponse{
+					Status: ocp.InfrastructureStatus{
+						InfrastructureName: tc.infraName,
+						PlatformStatus:     tc.platformStatus,
+					},
+				},
+			}, nil, nil, nil)
+			res, schemaURL, err := d.Detect(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, res.Attributes().AsRaw())
+			assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+		})
+	}
+}
+
+func TestDetectFailOnMissingMetadata(t *testing.T) {
+	infraErr := errors.New("connection refused")
+	d := &detector{
+		logger:                zaptest.NewLogger(t),
+		provider:              &mockProvider{res: &providerResponse{}, infraErr: infraErr},
+		rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+		failOnMissingMetadata: true,
+	}
+	res, schemaURL, err := d.Detect(t.Context())
+	require.ErrorIs(t, err, infraErr)
+	assert.Equal(t, 0, res.Attributes().Len())
+	assert.Empty(t, schemaURL)
+}
+
+func TestNewDetector(t *testing.T) {
+	tt := []struct {
+		name    string
+		cfg     Config
+		wantErr bool
+	}{
+		{
+			name: "explicit address and token",
+			cfg: Config{
+				Address: "https://api.example.com:6443",
+				Token:   "token",
+				TLSs:    configtls.ClientConfig{Insecure: true},
+			},
+		},
+		{
+			name: "invalid CA file",
+			cfg: Config{
+				Address: "https://api.example.com:6443",
+				Token:   "token",
+				TLSs:    configtls.ClientConfig{Config: configtls.Config{CAFile: "/non/existent/ca.crt"}},
+			},
+			wantErr: true,
+		},
+		{
+			name:    "missing token and no in-cluster token file",
+			cfg:     Config{Address: "https://api.example.com:6443"},
+			wantErr: true,
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.cfg.ResourceAttributes = metadata.DefaultResourceAttributesConfig()
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), tc.cfg, false)
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, d)
+				return
+			}
+			require.NoError(t, err)
+			assert.NotNil(t, d)
 		})
 	}
 }
