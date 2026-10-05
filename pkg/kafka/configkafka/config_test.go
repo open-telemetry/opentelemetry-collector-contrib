@@ -58,16 +58,8 @@ func TestClientConfig(t *testing.T) {
 				ConnIdleTimeout: 5 * time.Minute,
 			},
 		},
-		"sasl_aws_msk_iam_oauthbearer": {
-			expected: func() ClientConfig {
-				cfg := NewDefaultClientConfig()
-				cfg.Authentication.SASL = &SASLConfig{
-					Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
-				}
-				return cfg
-			}(),
-		},
-		"sasl_aws_msk_iam_oauthbearer_with_region": {
+
+		"sasl_aws_msk_iam_oauthbearer_valid_region": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()
 				cfg.Authentication.SASL = &SASLConfig{
@@ -104,6 +96,24 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"metadata_retry_backoff": {
+			// Only backoff is configured, so the retry defaults must match the
+			// franz-go defaults these fields were unwired to.
+			expected: ClientConfig{
+				Brokers:  []string{"localhost:9092"},
+				ClientID: "otel-collector",
+				Metadata: MetadataConfig{
+					Full:            true,
+					RefreshInterval: 10 * time.Minute,
+					Retry: MetadataRetryConfig{
+						Max:     20,
+						Backoff: time.Second,
+					},
+				},
+				UseLeaderEpoch:  true,
+				ConnIdleTimeout: 9 * time.Minute,
+			},
+		},
 
 		// Invalid configurations
 		"brokers_required": {
@@ -113,13 +123,22 @@ func TestClientConfig(t *testing.T) {
 			expectedErr: `invalid protocol version: "none"`,
 		},
 		"sasl_invalid_mechanism": {
-			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
+			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
+		},
+		"sasl_aws_msk_iam_oauthbearer_missing_region": {
+			expectedErr: "auth::sasl: region is required for AWS_MSK_IAM_OAUTHBEARER mechanism",
 		},
 		"sasl_plain_username_required": {
 			expectedErr: "auth::sasl: username is required",
 		},
 		"sasl_plain_password_required": {
 			expectedErr: "auth::sasl: password is required",
+		},
+		"invalid_metadata_retry_max": {
+			expectedErr: "metadata::retry::max (-1) must be non-negative",
+		},
+		"invalid_metadata_retry_backoff": {
+			expectedErr: "metadata::retry::backoff (-1s) must be non-negative",
 		},
 		"sasl_and_kerberos": {
 			expectedErr: "auth: only one of sasl or kerberos authentication can be configured",
