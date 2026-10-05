@@ -307,6 +307,7 @@ func (p *Parser) Stop() error {
 	return errs
 }
 
+// detectFormat will detect the container log format
 func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 	value, ok := e.Get(p.ParseFrom)
 	if !ok {
@@ -367,25 +368,6 @@ func isContainerdTimestamp(s string) bool {
 	return len(prefix) >= 1 && !strings.ContainsAny(prefix, " Z")
 }
 
-// parseContainerd parses a containerd-format CRI log line into m.
-// Mirrors ^(?P<time>[^ Z]+(?:Z|[+-]\d{2}:\d{2})) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
-func parseContainerd(value any) (any, error) {
-	raw, ok := value.(string)
-	if !ok {
-		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
-	}
-
-	m := mapPool.Get().(map[string]any)
-	for k := range m {
-		delete(m, k)
-	}
-	if err := parseContainerdInto(m, raw); err != nil {
-		mapPool.Put(m)
-		return nil, err
-	}
-	return m, nil
-}
-
 // parseContainerdInto parses a raw containerd CRI log line into m without allocating.
 func parseContainerdInto(m map[string]any, raw string) error {
 	timePart, rest, ok := strings.Cut(raw, " ")
@@ -409,25 +391,6 @@ func parseContainerdInto(m map[string]any, raw string) error {
 	m["logtag"] = logtag
 	m["log"] = logPart
 	return nil
-}
-
-// parseCRIO parses a CRI-O format log line into m.
-// Mirrors ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
-func parseCRIO(value any) (any, error) {
-	raw, ok := value.(string)
-	if !ok {
-		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
-	}
-
-	m := mapPool.Get().(map[string]any)
-	for k := range m {
-		delete(m, k)
-	}
-	if err := parseCRIOInto(m, raw); err != nil {
-		mapPool.Put(m)
-		return nil, err
-	}
-	return m, nil
 }
 
 // parseCRIOInto parses a raw CRI-O log line into m without allocating.
@@ -640,23 +603,6 @@ func stripLogSuffix(raw string) (string, bool) {
 	default:
 		return "", false
 	}
-}
-
-// parseLogPath parses a Kubernetes pod log file path without regex.
-// The expected format is: .../<namespace>_<pod_name>_<uid>/<container_name>/<restart_count>.log[.<rotation>]
-// It returns the parsed fields keyed by OTel resource attribute names, and whether parsing succeeded.
-//
-// Validation rules (mirrors ^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$):
-func parseLogPath(raw string) (map[string]any, bool) {
-	m := pathMapPool.Get().(map[string]any)
-	for k := range m {
-		delete(m, k)
-	}
-	if !parseLogPathInto(m, raw) {
-		pathMapPool.Put(m)
-		return nil, false
-	}
-	return m, true
 }
 
 // parseLogPathInto parses a Kubernetes pod log file path into m without allocating.

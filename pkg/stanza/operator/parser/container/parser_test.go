@@ -74,6 +74,27 @@ func TestDockerParserInvalidType(t *testing.T) {
 	require.ErrorContains(t, err, "type '[]int' cannot be parsed as docker container logs")
 }
 
+func TestCrioParserInvalidType(t *testing.T) {
+	m := make(map[string]any, 4)
+	err := parseCRIOInto(m, "")
+	require.Error(t, err)
+}
+
+func TestContainerdParserInvalidType(t *testing.T) {
+	m := make(map[string]any, 4)
+	err := parseContainerdInto(m, "")
+	require.Error(t, err)
+}
+
+func TestFormatDetectionFailure(t *testing.T) {
+	parser := newTestParser(t)
+	e := &entry.Entry{
+		Body: `invalid container format`,
+	}
+	_, err := parser.detectFormat(e)
+	require.Error(t, err)
+}
+
 func TestInternalRecombineCfg(t *testing.T) {
 	cfg := createRecombineConfig(Config{MaxLogSize: 102400})
 	expected := recombine.NewConfigWithID(recombineInternalID)
@@ -1785,12 +1806,12 @@ func TestSplitLogPath(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, ok := parseLogPath(tc.input)
+			result := make(map[string]any, 5)
+			ok := parseLogPathInto(result, tc.input)
 			require.Equal(t, tc.wantOK, ok)
 			if !ok {
 				return
 			}
-			defer pathMapPool.Put(result)
 			if tc.wantNS != "" {
 				require.Equal(t, tc.wantNS, result["k8s.namespace.name"])
 			}
@@ -1912,15 +1933,18 @@ func TestParseContainerdFields(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := parseContainerd(tc.input)
+			raw, isString := tc.input.(string)
 			if !tc.wantOK {
-				require.Error(t, err)
+				if isString {
+					m := make(map[string]any, 4)
+					require.Error(t, parseContainerdInto(m, raw))
+				} else {
+					require.False(t, isString)
+				}
 				return
 			}
-			require.NoError(t, err)
-			m, ok := result.(map[string]any)
-			require.True(t, ok)
-			defer mapPool.Put(m)
+			m := make(map[string]any, 4)
+			require.NoError(t, parseContainerdInto(m, raw))
 			if tc.wantTime != "" {
 				require.Equal(t, tc.wantTime, m["time"])
 			}
@@ -1986,15 +2010,18 @@ func TestParseCRIOFields(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := parseCRIO(tc.input)
+			raw, isString := tc.input.(string)
 			if !tc.wantOK {
-				require.Error(t, err)
+				if isString {
+					m := make(map[string]any, 4)
+					require.Error(t, parseCRIOInto(m, raw))
+				} else {
+					require.False(t, isString)
+				}
 				return
 			}
-			require.NoError(t, err)
-			m, ok := result.(map[string]any)
-			require.True(t, ok)
-			defer mapPool.Put(m)
+			m := make(map[string]any, 4)
+			require.NoError(t, parseCRIOInto(m, raw))
 			if tc.wantTime != "" {
 				require.Equal(t, tc.wantTime, m["time"])
 			}
