@@ -1,6 +1,9 @@
 default:
 all_set:
   metrics:
+    rabbitmq.binding:
+      enabled: true
+      attributes: ["routing_key"]
     rabbitmq.consumer.count:
       enabled: true
     rabbitmq.exchange.messages.published_in:
@@ -181,6 +184,9 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    rabbitmq.binding:
+      enabled: true
+      attributes: []
     rabbitmq.consumer.count:
       enabled: true
     rabbitmq.exchange.messages.published_in:
@@ -361,6 +367,9 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    rabbitmq.binding:
+      enabled: false
+      attributes: ["routing_key"]
     rabbitmq.consumer.count:
       enabled: false
     rabbitmq.exchange.messages.published_in:

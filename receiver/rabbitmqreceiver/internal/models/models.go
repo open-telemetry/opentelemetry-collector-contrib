@@ -140,3 +140,12 @@ type ExchangeMessageStats struct {
 	PublishIn  int64 `json:"publish_in"`
 	PublishOut int64 `json:"publish_out"`
 }
+
+// Binding represents a binding between a RabbitMQ exchange and a queue or exchange.
+type Binding struct {
+	Source          string `json:"source"`
+	Vhost           string `json:"vhost"`
+	Destination     string `json:"destination"`
+	DestinationType string `json:"destination_type"`
+	RoutingKey      string `json:"routing_key"`
+}

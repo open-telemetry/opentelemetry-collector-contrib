@@ -1,0 +1,20 @@
+[
+    {
+        "source": "",
+        "vhost": "/",
+        "destination": "test.queue",
+        "destination_type": "queue",
+        "routing_key": "test.queue",
+        "arguments": {},
+        "properties_key": "test.queue"
+    },
+    {
+        "source": "test.direct",
+        "vhost": "/",
+        "destination": "test.queue",
+        "destination_type": "queue",
+        "routing_key": "test.queue",
+        "arguments": {},
+        "properties_key": "test.queue"
+    }
+]

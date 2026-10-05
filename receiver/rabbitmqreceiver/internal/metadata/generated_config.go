@@ -9,6 +9,54 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
+// RabbitmqBindingMetricAttributeKey specifies the key of an attribute for the rabbitmq.binding metric.
+type RabbitmqBindingMetricAttributeKey string
+
+const (
+	RabbitmqBindingMetricAttributeKeyRoutingKey RabbitmqBindingMetricAttributeKey = "routing_key"
+)
+
+// RabbitmqBindingMetricConfig provides config for the rabbitmq.binding metric.
+type RabbitmqBindingMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RabbitmqBindingMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RabbitmqBindingMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RabbitmqBindingMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RabbitmqBindingMetricAttributeKeyRoutingKey:
+		default:
+			return fmt.Errorf("metric rabbitmq.binding doesn't have an attribute %v, valid attributes: [routing_key]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // RabbitmqConsumerCountMetricConfig provides config for the rabbitmq.consumer.count metric.
 type RabbitmqConsumerCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1679,6 +1727,7 @@ func (ms *RabbitmqNodeUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error 
 
 // MetricsConfig provides config for rabbitmq metrics.
 type MetricsConfig struct {
+	RabbitmqBinding                             RabbitmqBindingMetricConfig                             `mapstructure:"rabbitmq.binding"`
 	RabbitmqConsumerCount                       RabbitmqConsumerCountMetricConfig                       `mapstructure:"rabbitmq.consumer.count"`
 	RabbitmqExchangeMessagesPublishedIn         RabbitmqExchangeMessagesPublishedInMetricConfig         `mapstructure:"rabbitmq.exchange.messages.published_in"`
 	RabbitmqExchangeMessagesPublishedOut        RabbitmqExchangeMessagesPublishedOutMetricConfig        `mapstructure:"rabbitmq.exchange.messages.published_out"`
@@ -1765,6 +1814,11 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		RabbitmqBinding: RabbitmqBindingMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []RabbitmqBindingMetricAttributeKey{RabbitmqBindingMetricAttributeKeyRoutingKey},
+		},
 		RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 			Enabled: true,
 		},

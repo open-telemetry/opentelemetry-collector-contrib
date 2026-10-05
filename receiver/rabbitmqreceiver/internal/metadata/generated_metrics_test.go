@@ -67,6 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["rabbitmq.binding"] = mb.metricRabbitmqBinding.config.AggregationStrategy
 			aggMap["rabbitmq.message.current"] = mb.metricRabbitmqMessageCurrent.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -76,6 +77,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
+
+			allMetricsCount++
+			mb.RecordRabbitmqBindingDataPoint(ts, 1, "routing_key-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqBindingDataPoint(ts, 3, "routing_key-val-2")
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
@@ -339,6 +346,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricRabbitmqBinding.aggDataPoints)
 				assert.Empty(t, mb.metricRabbitmqMessageCurrent.aggDataPoints)
 			}
 
@@ -367,6 +375,46 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
+				case "rabbitmq.binding":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.binding"], "Found a duplicate in the metrics slice: rabbitmq.binding")
+						validatedMetrics["rabbitmq.binding"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Indicates a binding exists between a RabbitMQ exchange and a queue. The resource carries both the exchange and queue names, letting queue and exchange metrics be correlated through this metric.", mi.Description())
+						assert.Equal(t, "{binding}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						routingKeyAttrVal, ok := dp.Attributes().Get("routing_key")
+						assert.True(t, ok)
+						assert.Equal(t, "routing_key-val", routingKeyAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.binding"], "Found a duplicate in the metrics slice: rabbitmq.binding")
+						validatedMetrics["rabbitmq.binding"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Indicates a binding exists between a RabbitMQ exchange and a queue. The resource carries both the exchange and queue names, letting queue and exchange metrics be correlated through this metric.", mi.Description())
+						assert.Equal(t, "{binding}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.binding"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("routing_key")
+						assert.False(t, ok)
+					}
 				case "rabbitmq.consumer.count":
 					assert.False(t, validatedMetrics["rabbitmq.consumer.count"], "Found a duplicate in the metrics slice: rabbitmq.consumer.count")
 					validatedMetrics["rabbitmq.consumer.count"] = true

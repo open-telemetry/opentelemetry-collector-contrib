@@ -28,6 +28,9 @@ const (
 
 	// clusterNamePath is the endpoint for the RabbitMQ cluster name.
 	clusterNamePath = "/api/cluster-name"
+
+	// bindingsPath is the endpoint for RabbitMQ bindings.
+	bindingsPath = "/api/bindings"
 )
 
 type client interface {
@@ -39,6 +42,8 @@ type client interface {
 	GetExchanges(ctx context.Context) ([]*models.Exchange, error)
 	// GetClusterName calls "/api/cluster-name" endpoint to get the cluster name.
 	GetClusterName(ctx context.Context) (string, error)
+	// GetBindings calls "/api/bindings" endpoint to get list of bindings for the target node
+	GetBindings(ctx context.Context) ([]*models.Binding, error)
 }
 
 var _ client = (*rabbitmqClient)(nil)
@@ -103,6 +108,17 @@ func (c *rabbitmqClient) GetExchanges(ctx context.Context) ([]*models.Exchange, 
 	}
 
 	return exchanges, nil
+}
+
+func (c *rabbitmqClient) GetBindings(ctx context.Context) ([]*models.Binding, error) {
+	var bindings []*models.Binding
+
+	if err := c.get(ctx, bindingsPath, &bindings); err != nil {
+		c.logger.Debug("Failed to retrieve bindings", zap.Error(err))
+		return nil, err
+	}
+
+	return bindings, nil
 }
 
 func (c *rabbitmqClient) GetClusterName(ctx context.Context) (string, error) {

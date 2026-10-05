@@ -99,6 +99,11 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect exchange metrics: %w", err))
 	}
 
+	// Collect binding metrics
+	if err := r.collectBindingMetrics(ctx, now, clusterName); err != nil {
+		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect binding metrics: %w", err))
+	}
+
 	// Emit collected metrics
 	metrics := r.mb.Emit()
 
@@ -144,6 +149,17 @@ func (r *rabbitmqScraper) collectExchangeMetrics(ctx context.Context, now pcommo
 	}
 	for _, exchange := range exchanges {
 		r.collectExchange(exchange, now, clusterName)
+	}
+	return nil
+}
+
+func (r *rabbitmqScraper) collectBindingMetrics(ctx context.Context, now pcommon.Timestamp, clusterName *string) error {
+	bindings, err := r.client.GetBindings(ctx)
+	if err != nil {
+		return err
+	}
+	for _, binding := range bindings {
+		r.collectBinding(binding, now, clusterName)
 	}
 	return nil
 }
@@ -299,6 +315,23 @@ func (r *rabbitmqScraper) collectExchange(exchange *models.Exchange, now pcommon
 	rb.SetRabbitmqExchangeName(exchange.Name)
 	rb.SetRabbitmqExchangeType(exchange.Type)
 	rb.SetRabbitmqVhostName(exchange.VHost)
+	setClusterName(rb, clusterName)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+// collectBinding collects a metric linking a RabbitMQ exchange to a queue it is bound to.
+// Exchange-to-exchange bindings are skipped since this metric only correlates exchanges with queues.
+func (r *rabbitmqScraper) collectBinding(binding *models.Binding, now pcommon.Timestamp, clusterName *string) {
+	if binding.DestinationType != "queue" {
+		return
+	}
+
+	r.mb.RecordRabbitmqBindingDataPoint(now, 1, binding.RoutingKey)
+
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRabbitmqExchangeName(binding.Source)
+	rb.SetRabbitmqQueueName(binding.Destination)
+	rb.SetRabbitmqVhostName(binding.Vhost)
 	setClusterName(rb, clusterName)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
