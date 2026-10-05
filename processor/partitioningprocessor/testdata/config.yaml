@@ -3,15 +3,8 @@ partitioning:
   keys:
     tenant_id: 'resource.attributes["tenant.id"]'
     severity: 'log.severity_text'
-  # Optional. Maximum number of concurrent partition deliveries.
-  # Defaults to runtime.GOMAXPROCS(0) when unset or 0.
-  max_concurrent_partitions: 4
 partitioning/no_keys:
-  max_concurrent_partitions: 4
+  keys: {}
 partitioning/empty_expression:
   keys:
     tenant_id: ""
-partitioning/negative_concurrency:
-  keys:
-    tenant_id: 'resource.attributes["tenant.id"]'
-  max_concurrent_partitions: -1

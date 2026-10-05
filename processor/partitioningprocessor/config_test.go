@@ -25,27 +25,11 @@ func TestConfig_Validate_EmptyValue(t *testing.T) {
 	assert.Error(t, cfg.Validate())
 }
 
-func TestConfig_Validate_NegativeMaxConcurrentPartitions(t *testing.T) {
-	cfg := &Config{
-		Keys:                    map[string]string{"tenant_id": `resource.attributes["tenant.id"]`},
-		MaxConcurrentPartitions: -1,
-	}
-	assert.Error(t, cfg.Validate())
-}
-
 func TestConfig_Validate_OK(t *testing.T) {
 	cfg := &Config{Keys: map[string]string{
 		"tenant_id": `resource.attributes["tenant.id"]`,
 	}}
 	assert.NoError(t, cfg.Validate())
-}
-
-func TestConfiguredMaxConcurrentPartitions_Default(t *testing.T) {
-	assert.Equal(t, defaultMaxConcurrentPartitions(), configuredMaxConcurrentPartitions(&Config{}))
-}
-
-func TestConfiguredMaxConcurrentPartitions_Explicit(t *testing.T) {
-	assert.Equal(t, 7, configuredMaxConcurrentPartitions(&Config{MaxConcurrentPartitions: 7}))
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -64,7 +48,6 @@ func TestLoadConfig(t *testing.T) {
 					"tenant_id": `resource.attributes["tenant.id"]`,
 					"severity":  "log.severity_text",
 				},
-				MaxConcurrentPartitions: 4,
 			},
 		},
 		{
@@ -74,10 +57,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:          component.NewIDWithName(metadata.Type, "empty_expression"),
 			expectedErr: `key "tenant_id" has an empty value expression`,
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "negative_concurrency"),
-			expectedErr: "max_concurrent_partitions must be greater than or equal to 0",
 		},
 	}
 	for _, tt := range tests {

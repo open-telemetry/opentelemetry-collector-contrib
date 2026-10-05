@@ -16,7 +16,7 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
-	assert.Equal(t, &Config{MaxConcurrentPartitions: defaultMaxConcurrentPartitions()}, cfg)
+	assert.Equal(t, &Config{}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 

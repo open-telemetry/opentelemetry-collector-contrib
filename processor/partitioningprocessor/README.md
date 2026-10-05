@@ -38,7 +38,6 @@ processors:
     keys:
       <key-name>: <OTTL value expression>
       ...
-    max_concurrent_partitions: 8
 ```
 
 ### `keys`
@@ -47,10 +46,6 @@ Required. A map from **partition key name** to an [OTTL value expression](https:
 
 Expressions must evaluate to `string`, or `nil`. In case of a `nil` result (e.g. a missing attribute), the item is partitioned with other items that also produce `nil` for that key, and the key will be omitted from the metadata.
 This allows you to partition by optional attributes without losing those items entirely.
-
-### `max_concurrent_partitions`
-
-Optional. Limits how many partition deliveries may run at once. If unset or set to `0`, the processor uses `runtime.GOMAXPROCS(0)`.
 
 ### Supported OTTL contexts per signal
 
@@ -77,7 +72,7 @@ client.Metadata["<key-name>"] = ["<evaluated-value>"]
 
 Any metadata already present on the inbound context is preserved. If a partition key name collides with an existing metadata key, the partition value takes precedence (the downstream consumer needs a deterministic value for the key).
 
-Partition deliveries are started concurrently, up to `max_concurrent_partitions`. If any downstream `Consume*` call returns an error, the processor cancels the remaining in-flight partition deliveries and returns that error.
+Partition deliveries run concurrently, one per partition. If any downstream `Consume*` call returns an error, the processor cancels the remaining in-flight partition deliveries and returns that error.
 
 ## Examples
 

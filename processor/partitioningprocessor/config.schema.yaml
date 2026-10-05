@@ -6,6 +6,3 @@ properties:
     type: object
     additionalProperties:
       type: string
-  max_concurrent_partitions:
-    description: MaxConcurrentPartitions limits how many partition deliveries may run at once. A value of 0 uses the default limit (runtime.GOMAXPROCS(0)).
-    type: integer

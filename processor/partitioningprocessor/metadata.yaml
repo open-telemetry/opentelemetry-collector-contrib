@@ -19,4 +19,3 @@ tests:
   config:
     keys:
       service: 'resource.attributes["service.name"]'
-    max_concurrent_partitions: 2

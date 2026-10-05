@@ -34,7 +34,7 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{MaxConcurrentPartitions: defaultMaxConcurrentPartitions()}
+	return &Config{}
 }
 
 // NOTE: this is the initial skeleton donation PR. The processors below are

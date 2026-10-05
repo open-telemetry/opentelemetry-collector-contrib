@@ -6,7 +6,6 @@ package partitioningprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
-	"runtime"
 )
 
 // Config is the configuration for the partitioning processor.
@@ -17,10 +16,6 @@ type Config struct {
 	// which is forwarded downstream with the key/value pairs added to the
 	// outgoing request metadata.
 	Keys map[string]string `mapstructure:"keys"`
-
-	// MaxConcurrentPartitions limits how many partition deliveries may run at
-	// once. A value of 0 uses the default limit (runtime.GOMAXPROCS(0)).
-	MaxConcurrentPartitions int `mapstructure:"max_concurrent_partitions"`
 }
 
 // Validate returns an error if the configuration is invalid.
@@ -33,19 +28,5 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("key %q has an empty value expression", name)
 		}
 	}
-	if c.MaxConcurrentPartitions < 0 {
-		return errors.New("max_concurrent_partitions must be greater than or equal to 0")
-	}
 	return nil
-}
-
-func defaultMaxConcurrentPartitions() int {
-	return runtime.GOMAXPROCS(0)
-}
-
-func configuredMaxConcurrentPartitions(c *Config) int {
-	if c.MaxConcurrentPartitions > 0 {
-		return c.MaxConcurrentPartitions
-	}
-	return defaultMaxConcurrentPartitions()
 }
