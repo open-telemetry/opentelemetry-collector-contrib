@@ -160,7 +160,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches, err = builder.meter.Int64Histogram(
 		"otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches",
 		metric.WithDescription("Distribution of root span condition matches for traces where the condition matched at least once. [Development]"),
-		metric.WithUnit("{matches}"),
+		metric.WithUnit("{spans}"),
 		metric.WithExplicitBucketBoundaries([]float64{2, 3, 5, 10, 25, 100}...),
 	)
 	errs = errors.Join(errs, err)

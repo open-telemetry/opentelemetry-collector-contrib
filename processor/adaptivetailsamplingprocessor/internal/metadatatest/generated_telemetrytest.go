@@ -103,7 +103,7 @@ func AssertEqualProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches(t 
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches",
 		Description: "Distribution of root span condition matches for traces where the condition matched at least once. [Development]",
-		Unit:        "{matches}",
+		Unit:        "{spans}",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints:  dps,

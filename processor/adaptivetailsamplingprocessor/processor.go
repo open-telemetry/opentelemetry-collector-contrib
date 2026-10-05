@@ -825,16 +825,20 @@ func (p *adaptiveTailSamplingProcessor) decide(id pcommon.TraceID) {
 	p.decideTrace(ctx, pt)
 }
 
-// decideTrace evaluates rules for an already-popped pending trace and either
-// forwards or drops its spans. Shared by the timer-driven decide path and the
-// evaluate eviction policy.
-func (p *adaptiveTailSamplingProcessor) decideTrace(ctx context.Context, pt *pendingTrace) {
-	if pt.rootSpanConditionMatches > 0 {
+func (p *adaptiveTailSamplingProcessor) recordRootSpanConditionMatches(ctx context.Context, pt *pendingTrace) {
+	if pt.rootSpanConditionMatches > 1 {
 		p.telemetry.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches.Record(
 			ctx,
 			int64(pt.rootSpanConditionMatches),
 		)
 	}
+}
+
+// decideTrace evaluates rules for an already-popped pending trace and either
+// forwards or drops its spans. Shared by the timer-driven decide path and the
+// evaluate eviction policy.
+func (p *adaptiveTailSamplingProcessor) decideTrace(ctx context.Context, pt *pendingTrace) {
+	p.recordRootSpanConditionMatches(ctx, pt)
 	matchedRule, rate, key := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
@@ -945,6 +949,7 @@ func (p *adaptiveTailSamplingProcessor) decideEvictedProbabilistic(ctx context.C
 	}
 	// Probabilistic eviction bypasses rule evaluation, so there is no
 	// fingerprint to record.
+	p.recordRootSpanConditionMatches(ctx, pt)
 	p.finishDecision(ctx, pt, evictionRuleLabel, evAttr, effectiveTh, randomness, "")
 }
 

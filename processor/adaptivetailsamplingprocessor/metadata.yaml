@@ -60,7 +60,7 @@ telemetry:
     processor_adaptive_tail_sampling_root_span_condition_multiple_matches:
       enabled: true
       description: Distribution of root span condition matches for traces where the condition matched at least once.
-      unit: "{matches}"
+      unit: "{spans}"
       histogram:
         value_type: int
         bucket_boundaries: [2, 3, 5, 10, 25, 100]

@@ -48,11 +48,11 @@ Number of OTTL condition evaluation errors, labelled by the rule the condition b
 
 ### otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches
 
-Distribution of root span condition matches for traces where the condition matched at least once.
+Distribution of root span condition matches for traces where the condition matched more than once.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {matches} | Histogram | Int | Development |
+| {spans} | Histogram | Int | Development |
 
 ### otelcol_processor_adaptive_tail_sampling_sampler_burst_count
 
