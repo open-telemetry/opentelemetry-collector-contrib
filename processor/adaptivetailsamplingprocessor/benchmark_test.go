@@ -126,6 +126,21 @@ func setBenchTraceID(td ptrace.Traces, traceID pcommon.TraceID) {
 	}
 }
 
+// refillBenchWindow rebuilds every slot in batches from template, stamping slot
+// i with benchTraceID(base+i). ConsumeTraces moves spans out of its input,
+// which leaves the source spans zeroed while the slice keeps its length, so a
+// consumed window has to be rebuilt rather than reused in place. Reusing it
+// would benchmark empty spans. Pass base 0 to keep the same traceIDs on every
+// refill, or a rising base to make each refill a fresh set of traces.
+func refillBenchWindow(batches []ptrace.Traces, template ptrace.Traces, base uint64) {
+	for i := range batches {
+		td := ptrace.NewTraces()
+		template.CopyTo(td)
+		setBenchTraceID(td, benchTraceID(base+uint64(i)))
+		batches[i] = td
+	}
+}
+
 // BenchmarkConsumeTraces_Accumulate measures the buffering path: per-span
 // bucketing, the per-span root-span OTTL evaluation, span copy into the
 // pending buffer, and the trace_timeout timer arm for new traces. Timers use
@@ -175,29 +190,19 @@ func BenchmarkConsumeTraces_Accumulate(b *testing.B) {
 
 			// Pre-build a rotating window of batches so input construction is
 			// outside the timed loop and traceIDs stay unique per iteration.
-			// ConsumeTraces moves spans out of its input, which leaves the
-			// source spans zeroed while the slice keeps its length, so the
-			// window is rebuilt from a template whenever it wraps rather than
-			// reused in place. Reusing it would benchmark empty spans.
+			// The window is refilled whenever it wraps, with a rising base so
+			// every iteration is a new trace.
 			const window = 512
 			template := benchTrace(benchTraceID(0), bc.spansPerTrace, "")
 			batches := make([]ptrace.Traces, window)
-			refillWindow := func(base uint64) {
-				for i := range batches {
-					td := ptrace.NewTraces()
-					template.CopyTo(td)
-					setBenchTraceID(td, benchTraceID(base+uint64(i)))
-					batches[i] = td
-				}
-			}
-			refillWindow(0)
+			refillBenchWindow(batches, template, 0)
 
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				if i > 0 && i%window == 0 {
 					b.StopTimer()
-					refillWindow(uint64(i))
+					refillBenchWindow(batches, template, uint64(i))
 					b.StartTimer()
 				}
 				if err := p.ConsumeTraces(ctx, batches[i%window]); err != nil {
@@ -225,27 +230,17 @@ func BenchmarkConsumeTraces_AppendToPending(b *testing.B) {
 	// Seed a window of pending traces so every iteration hits an existing
 	// entry. Child spans only, so nothing triggers a decision.
 	//
-	// ConsumeTraces moves spans out of its input, so a consumed batch is left
-	// with zeroed spans. refillWindow rebuilds the window from a template,
-	// keeping each slot's traceID so iterations keep appending to the pending
-	// entries seeded here.
+	// The window is refilled with base 0 so each slot keeps its traceID and
+	// iterations keep appending to the pending entries seeded here.
 	template := benchTrace(benchTraceID(0), spansPerBatch, "")
 	batches := make([]ptrace.Traces, window)
-	refillWindow := func() {
-		for i := range batches {
-			td := ptrace.NewTraces()
-			template.CopyTo(td)
-			setBenchTraceID(td, benchTraceID(uint64(i)))
-			batches[i] = td
-		}
-	}
-	refillWindow()
+	refillBenchWindow(batches, template, 0)
 	for i := range batches {
 		if err := p.ConsumeTraces(ctx, batches[i]); err != nil {
 			b.Fatal(err)
 		}
 	}
-	refillWindow()
+	refillBenchWindow(batches, template, 0)
 
 	// resetPending clears the accumulated span buffers without touching the
 	// traces map or timers, keeping the benchmark's memory bounded.
@@ -264,7 +259,7 @@ func BenchmarkConsumeTraces_AppendToPending(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if i > 0 && i%window == 0 {
 			b.StopTimer()
-			refillWindow()
+			refillBenchWindow(batches, template, 0)
 			b.StartTimer()
 		}
 		if i > 0 && i%resetEvery == 0 {
