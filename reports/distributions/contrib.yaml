@@ -101,6 +101,7 @@ components:
         - text_encoding
         - zipkin_encoding
     processor:
+        - adaptive_tail_sampling
         - attributes
         - cardinality_guardian
         - cumulative_to_delta

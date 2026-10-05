@@ -92,72 +92,108 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordChassisPowerstateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordChassisPowerstateDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordChassisPowerstateDataPoint(ts+1, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+				assert.Equal(t, 2, mb.metricChassisPowerstate.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordChassisStatusHealthDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordChassisStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordChassisStatusHealthDataPoint(ts+1, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+				assert.Equal(t, 2, mb.metricChassisStatusHealth.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordChassisStatusStateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordChassisStatusStateDataPoint(ts, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordChassisStatusStateDataPoint(ts+1, 3, "chassis.id-val-2", "chassis.asset_tag-val-2", "chassis.model-val-2", "chassis.name-val-2", "chassis.manufacturer-val-2", "chassis.serial_number-val-2", "chassis.sku-val-2", "chassis.chassis_type-val-2")
+				assert.Equal(t, 2, mb.metricChassisStatusState.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanReadingDataPoint(ts, 1, "chassis.id-val", "fan.name-val", "fan.reading_units-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFanReadingDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2", "fan.reading_units-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordFanReadingDataPoint(ts+1, 3, "chassis.id-val-2", "fan.name-val-2", "fan.reading_units-val-2")
+				assert.Equal(t, 2, mb.metricFanReading.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanStatusHealthDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFanStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordFanStatusHealthDataPoint(ts+1, 3, "chassis.id-val-2", "fan.name-val-2")
+				assert.Equal(t, 2, mb.metricFanStatusHealth.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFanStatusStateDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFanStatusStateDataPoint(ts, 3, "chassis.id-val-2", "fan.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordFanStatusStateDataPoint(ts+1, 3, "chassis.id-val-2", "fan.name-val-2")
+				assert.Equal(t, 2, mb.metricFanStatusState.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemPowerstateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemPowerstateDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemPowerstateDataPoint(ts+1, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+				assert.Equal(t, 2, mb.metricSystemPowerstate.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemStatusHealthDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemStatusHealthDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemStatusHealthDataPoint(ts+1, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+				assert.Equal(t, 2, mb.metricSystemStatusHealth.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemStatusStateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemStatusStateDataPoint(ts, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemStatusStateDataPoint(ts+1, 3, "system.id-val-2", "system.asset_tag-val-2", "system.bios_version-val-2", "system.model-val-2", "system.name-val-2", "system.manufacturer-val-2", "system.serial_number-val-2", "system.sku-val-2", "system.system_type-val-2")
+				assert.Equal(t, 2, mb.metricSystemStatusState.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureReadingDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordTemperatureReadingDataPoint(ts, 3, "chassis.id-val-2", "temperature.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordTemperatureReadingDataPoint(ts+1, 3, "chassis.id-val-2", "temperature.name-val-2")
+				assert.Equal(t, 2, mb.metricTemperatureReading.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureStatusHealthDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordTemperatureStatusHealthDataPoint(ts, 3, "chassis.id-val-2", "temperature.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordTemperatureStatusHealthDataPoint(ts+1, 3, "chassis.id-val-2", "temperature.name-val-2")
+				assert.Equal(t, 2, mb.metricTemperatureStatusHealth.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTemperatureStatusStateDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordTemperatureStatusStateDataPoint(ts, 3, "chassis.id-val-2", "temperature.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordTemperatureStatusStateDataPoint(ts+1, 3, "chassis.id-val-2", "temperature.name-val-2")
+				assert.Equal(t, 2, mb.metricTemperatureStatusState.data.Gauge().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -246,7 +282,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["chassis.powerstate"], "Found a duplicate in the metrics slice: chassis.powerstate")
 						validatedMetrics["chassis.powerstate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the power state of a chassis (-1 unknown, 0 off, 1 on).", mi.Description())
 						assert.Equal(t, "{powerstate}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -321,7 +359,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["chassis.status.health"], "Found a duplicate in the metrics slice: chassis.status.health")
 						validatedMetrics["chassis.status.health"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
 						assert.Equal(t, "{statushealth}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -396,7 +436,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["chassis.status.state"], "Found a duplicate in the metrics slice: chassis.status.state")
 						validatedMetrics["chassis.status.state"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
 						assert.Equal(t, "{statusstate}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -456,7 +498,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["fan.reading"], "Found a duplicate in the metrics slice: fan.reading")
 						validatedMetrics["fan.reading"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the reading of a chassis fan.", mi.Description())
 						assert.Equal(t, "{}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -503,7 +547,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["fan.status.health"], "Found a duplicate in the metrics slice: fan.status.health")
 						validatedMetrics["fan.status.health"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
 						assert.Equal(t, "{statushealth}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -548,7 +594,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["fan.status.state"], "Found a duplicate in the metrics slice: fan.status.state")
 						validatedMetrics["fan.status.state"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
 						assert.Equal(t, "{statusstate}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -614,7 +662,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.powerstate"], "Found a duplicate in the metrics slice: system.powerstate")
 						validatedMetrics["system.powerstate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the power state of a system (-1 unknown, 0 off, 1 on).", mi.Description())
 						assert.Equal(t, "{powerstate}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -694,7 +744,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.status.health"], "Found a duplicate in the metrics slice: system.status.health")
 						validatedMetrics["system.status.health"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
 						assert.Equal(t, "{statushealth}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -774,7 +826,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.status.state"], "Found a duplicate in the metrics slice: system.status.state")
 						validatedMetrics["system.status.state"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
 						assert.Equal(t, "{statusstate}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -833,7 +887,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["temperature.reading"], "Found a duplicate in the metrics slice: temperature.reading")
 						validatedMetrics["temperature.reading"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the reading of a chassis temperature.", mi.Description())
 						assert.Equal(t, "Cel", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -878,7 +934,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["temperature.status.health"], "Found a duplicate in the metrics slice: temperature.status.health")
 						validatedMetrics["temperature.status.health"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).", mi.Description())
 						assert.Equal(t, "{statushealth}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -923,7 +981,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["temperature.status.state"], "Found a duplicate in the metrics slice: temperature.status.state")
 						validatedMetrics["temperature.status.state"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).", mi.Description())
 						assert.Equal(t, "{statusstate}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
