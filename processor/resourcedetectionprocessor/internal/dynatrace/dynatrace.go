@@ -6,6 +6,8 @@
 // the /var/lib/dynatrace/enrichment (on *nix systems) and %ProgramData%\dynatrace\enrichment
 // (on Windows) directories.
 
+//go:build !omit_detector_dynatrace
+
 package dynatrace // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace"
 import (
 	"bufio"
@@ -22,8 +24,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
-
-const TypeStr = "dynatrace"
 
 const dtHostMetadataProperties = "dt_host_metadata.properties"
 
