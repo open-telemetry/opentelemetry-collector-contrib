@@ -11,6 +11,7 @@ internal/common
 internal/coreinternal
 pkg/ottl
 pkg/ottl/contexts/xprofile
+pkg/ottl/xottl
 connector/routingconnector
 internal/pdatautil
 pkg/sampling
@@ -135,6 +136,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
@@ -238,6 +240,7 @@ processor/lookupprocessor
 processor/metricsgenerationprocessor
 processor/metricstarttimeprocessor
 processor/metricstransformprocessor
+processor/partitioningprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
@@ -343,7 +346,6 @@ receiver/tlscheckreceiver
 receiver/udplogreceiver
 receiver/vcenterreceiver
 receiver/vcrreceiver
-receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver

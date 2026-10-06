@@ -4,7 +4,6 @@
 package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -13,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -248,34 +246,11 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 }
 
 func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	replDoc := doc
-	var highestInsertCount int64 = -1
-
-	if len(s.secondaryClients) > 0 {
-		ctx := context.Background()
-		for _, secondaryClient := range s.secondaryClients {
-			status, err := secondaryClient.ServerStatus(ctx, "admin")
-			if err != nil {
-				s.logger.Debug("Failed to get secondary server status", zap.Error(err))
-				continue
-			}
-
-			if opcountersRepl, ok := status["opcountersRepl"].(bson.M); ok {
-				if insertCount, ok := opcountersRepl["insert"].(int64); ok {
-					if insertCount > highestInsertCount {
-						highestInsertCount = insertCount
-						replDoc = status
-					}
-				}
-			}
-		}
-	}
-
 	currentCounts := make(map[string]int64)
 	for operationVal, operation := range metadata.MapAttributeOperation {
 		metricPath := []string{"opcountersRepl", operationVal}
 		metricName := "mongodb.operation.repl.count"
-		val, err := collectMetric(replDoc, metricPath)
+		val, err := collectMetric(doc, metricPath)
 		if err != nil {
 			if s.config.MetricsBuilderConfig.Metrics.MongodbOperationReplCount.Enabled {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
@@ -993,6 +968,36 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 		}
 		s.mb.RecordMongodbOperationTimeDataPoint(now, operationValue, metadataOperationName)
 	}
+}
+
+func (s *mongodbScraper) recordQueryExecutorIndexKeysScanned(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.index_key.scanned.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "scanned"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorIndexKeyScannedCountDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordQueryExecutorDocumentsScanned(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.document.scanned.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "scannedObjects"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorDocumentScannedCountDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordQueryExecutorCollectionScans(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.collection_scan.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "collectionScans", "total"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(now, val)
 }
 
 func aggregateOperationTimeValues(document bson.M, collectionPathNames []string, operationMap map[string]metadata.AttributeOperation) (map[string]int64, error) {

@@ -68,6 +68,86 @@ func newWTScraper(t *testing.T) *mongodbScraper {
 	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 }
 
+// newQueryExecutorScraper builds a scraper with all three query executor metrics enabled.
+func newQueryExecutorScraper(t *testing.T) *mongodbScraper {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorIndexKeyScannedCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorDocumentScannedCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled = true
+	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+}
+
+func TestRecordQueryExecutorIndexKeysScanned(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorIndexKeysScanned(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.index_key.scanned.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// queryExecutor.scanned counts index keys.
+	require.Equal(t, int64(123456), m.Sum().DataPoints().At(0).IntValue())
+}
+
+func TestRecordQueryExecutorDocumentsScanned(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorDocumentsScanned(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.document.scanned.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// queryExecutor.scannedObjects counts documents.
+	require.Equal(t, int64(234567), m.Sum().DataPoints().At(0).IntValue())
+}
+
+func TestRecordQueryExecutorCollectionScans(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorCollectionScans(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.collection_scan.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// collectionScans.total as the server reports it. The fixture also carries
+	// collectionScans.nonTailable 900, which this metric does not read.
+	require.Equal(t, int64(1200), m.Sum().DataPoints().At(0).IntValue())
+}
+
+// TestRecordQueryExecutorMissingSubdocument covers a server that does not report queryExecutor at
+// all: the scrape records partial errors rather than failing, and emits no data points.
+func TestRecordQueryExecutorMissingSubdocument(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorIndexKeysScanned(now, bson.M{}, errs)
+	s.recordQueryExecutorDocumentsScanned(now, bson.M{}, errs)
+	s.recordQueryExecutorCollectionScans(now, bson.M{}, errs)
+
+	var partial scrapererror.PartialScrapeError
+	require.ErrorAs(t, errs.Combine(), &partial)
+	// One failure per metric: index keys, documents, and collection scans.
+	require.Equal(t, 3, partial.Failed)
+	require.Equal(t, 0, s.mb.Emit().MetricCount())
+}
+
 func TestRecordWTLogWrite(t *testing.T) {
 	s := newWTScraper(t)
 	doc, err := loadAdminStatusAsMap()

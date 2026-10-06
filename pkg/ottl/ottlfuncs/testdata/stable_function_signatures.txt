@@ -2,7 +2,7 @@ Base64Encode(Target ottl.StringGetter[interface {}], Variant ottl.Optional[ottl.
 Bool(Target ottl.BoolLikeGetter[interface {}])
 Coalesce(Values []ottl.Getter[interface {}])
 CommunityID(SourceIP ottl.StringGetter[interface {}], SourcePort ottl.IntGetter[interface {}], DestinationIP ottl.StringGetter[interface {}], DestinationPort ottl.IntGetter[interface {}], Protocol ottl.Optional[ottl.StringGetter[interface {}]], Seed ottl.Optional[ottl.IntGetter[interface {}]])
-Concat(Vals ottl.SliceGetter[interface {},ottl.StringLikeGetter[interface {}]], Delimiter ottl.StringGetter[interface {}])
+Concat(Vals slicegetter.SliceGetter[interface {},ottl.StringLikeGetter[interface {}]], Delimiter ottl.StringGetter[interface {}])
 ContainsValue(Target ottl.PSliceGetter[interface {}], Item ottl.Getter[interface {}])
 ConvertAttributesToElementsXML(Target ottl.StringGetter[interface {}], XPath ottl.Optional[string])
 ConvertCase(Target ottl.StringGetter[interface {}], ToCase string)
