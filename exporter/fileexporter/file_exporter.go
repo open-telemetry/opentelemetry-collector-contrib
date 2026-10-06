@@ -67,12 +67,11 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 
 	// Optionally ensure the output directory exists.
 	if e.conf.CreateDirectory {
-		dir := filepath.Dir(e.conf.Path)
-		perm := os.FileMode(0o755)
-		if e.conf.directoryPermissionsParsed != 0 {
-			perm = os.FileMode(e.conf.directoryPermissionsParsed)
+		perm, permErr := e.conf.dirPermissions()
+		if permErr != nil {
+			return permErr
 		}
-		if mkdirErr := os.MkdirAll(dir, perm); mkdirErr != nil {
+		if mkdirErr := os.MkdirAll(filepath.Dir(e.conf.Path), perm); mkdirErr != nil {
 			return mkdirErr
 		}
 	}
