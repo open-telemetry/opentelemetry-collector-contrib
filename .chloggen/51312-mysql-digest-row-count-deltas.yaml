@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add row-count and database namespace context to the top query event
+
+issues: [51312]
+
+subtext:
+
+change_logs: [user]

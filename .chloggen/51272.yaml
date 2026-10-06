@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add missing metrics to top minute transaction stats in `googlecloudspannerreceiver`.
+issues: [51272]
+subtext: ""
+change_logs: []
