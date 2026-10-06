@@ -20,7 +20,7 @@ subtext: |
   inner errors that didn't already carry one, are still returned without one. The exact
   wording and position of statement, condition, and value expression parse error messages
   has changed as a result. The position is exposed programmatically via the new experimental
-  `xottl.Error` and `xottl.Position` types.
+  `xottl.Error` type.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

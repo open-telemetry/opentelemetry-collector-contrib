@@ -9,6 +9,3 @@ import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/inter
 // and value expressions. It provides a message and optionally a position in the input where
 // the error occurred.
 type Error = ottlerror.Error
-
-// Position represents the position in the input where an error occurred.
-type Position = ottlerror.Position
