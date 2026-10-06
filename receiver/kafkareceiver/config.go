@@ -215,6 +215,7 @@ type MaxInFlightConfig struct {
 	Records int `mapstructure:"records"`
 
 	// TODO: add Bytes to cap the fetched payload size of in-flight records.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51804
 	// Bytes int `mapstructure:"bytes"`
 
 	_ struct{} // avoids unkeyed_literal_initialization.

@@ -127,7 +127,7 @@ The following settings can be optionally configured:
   - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
   - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
   - `max_in_flight`:
-    - `records` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
+    - `records` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Applies only when `independent` is true. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
