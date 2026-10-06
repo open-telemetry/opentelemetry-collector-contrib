@@ -1,6 +1,6 @@
 change_type: breaking
 
-component: receiver/sqlserver
+component: receiver/sql_server
 
 note: Performance counters read from the SQL Server `Databases` object on a direct database connection now carry the `sqlserver.database.name` resource attribute and no longer emit an unlabeled `_Total` aggregate, which changes the series identity of `sqlserver.database.backup_or_restore.rate`.
 
