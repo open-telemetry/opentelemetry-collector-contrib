@@ -393,6 +393,88 @@ func TestSuccessfulScrape(t *testing.T) {
 	}
 }
 
+// The Databases object reports a counter once per database plus a _Total aggregate
+// that is their sum. Assert the emitted series directly rather than relying on the
+// golden file: each database is named, the aggregate is dropped so that aggregating
+// across sqlserver.database.name cannot double-count, and a database that happens to
+// be called Total is kept.
+func TestDatabasesObjectSeriesIdentity(t *testing.T) {
+	row := func(instance, raw, value string) sqlquery.StringMap {
+		return sqlquery.StringMap{
+			"measurement": "sqlserver_performance", "sql_instance": "instance",
+			"computer_name": "computer", "object": "SQLServer:Databases",
+			"counter": "Transactions/sec", "instance": instance, instanceRawKey: raw,
+			"value": value, "raw_value": value, "counter_type": perfCounterBulkCountType,
+		}
+	}
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionRate.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	t.Cleanup(func() { assert.NoError(t, provider.close()) })
+	var perf *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerPerformanceCounterQuery(cfg.InstanceName) {
+			perf = s
+			break
+		}
+	}
+	require.NotNil(t, perf)
+	require.NoError(t, perf.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, perf.Shutdown(t.Context())) }()
+
+	// Two samples: the rate is derived from the change between them.
+	call := 0
+	perf.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		call++
+		v := map[bool]string{true: "0", false: "1000"}[call == 1]
+		return []sqlquery.StringMap{
+			row("Total", "_Total", v), // the aggregate
+			row("master", "master", v),
+			row("Total", "Total", v), // a database actually named Total
+		}, nil
+	}}
+	_, err := perf.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	md, err := perf.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	var named []string
+	unlabeled := 0
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		has := false
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ms := rm.ScopeMetrics().At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				if ms.At(k).Name() == "sqlserver.transaction.rate" {
+					has = true
+				}
+			}
+		}
+		if !has {
+			continue
+		}
+		if db, ok := rm.Resource().Attributes().Get("sqlserver.database.name"); ok {
+			named = append(named, db.AsString())
+		} else {
+			unlabeled++
+		}
+	}
+	sort.Strings(named)
+
+	assert.Equal(t, []string{"Total", "master"}, named,
+		"every per-database row is named, including a database called Total")
+	assert.Zero(t, unlabeled,
+		"the _Total aggregate must not be emitted, or aggregating by database would double-count")
+}
+
 func TestIsPerformanceCounterAverageBulk(t *testing.T) {
 	assert.True(t, isPerformanceCounterAverageBulk(perfCounterAverageBulkType, "Average Wait Time (ms)"))
 	assert.False(t, isPerformanceCounterAverageBulk(perfCounterBulkCountType, "Average Wait Time (ms)"),
