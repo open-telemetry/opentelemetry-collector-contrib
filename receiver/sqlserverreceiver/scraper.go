@@ -70,7 +70,6 @@ type sqlServerScraperHelper struct {
 	id                        component.ID
 	config                    *Config
 	sqlQuery                  string
-	instanceName              string
 	clientProviderFunc        sqlquery.ClientProviderFunc
 	dbProviderFunc            sqlquery.DbProviderFunc
 	logger                    *zap.Logger
@@ -205,23 +204,23 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 	var err error
 
 	switch s.sqlQuery {
-	case getSQLServerAvailabilityGroupQuery(s.config.InstanceName):
+	case getSQLServerAvailabilityGroupQuery():
 		err = s.recordAvailabilityGroupMetrics(ctx)
-	case getSQLServerDatabaseIOQuery(s.config.InstanceName):
+	case getSQLServerDatabaseIOQuery():
 		err = s.recordDatabaseIOMetrics(ctx)
-	case getSQLServerPerformanceCounterQuery(s.config.InstanceName):
+	case getSQLServerPerformanceCounterQuery():
 		err = s.recordDatabasePerfCounterMetrics(ctx)
-	case getSQLServerPropertiesQuery(s.config.InstanceName):
+	case getSQLServerPropertiesQuery():
 		err = s.recordDatabaseStatusMetrics(ctx)
-	case getSQLServerWaitStatsQuery(s.config.InstanceName):
+	case getSQLServerWaitStatsQuery():
 		err = s.recordDatabaseWaitMetrics(ctx)
-	case getSQLServerWorkerThreadsQuery(s.config.InstanceName):
+	case getSQLServerWorkerThreadsQuery():
 		err = s.recordWorkerThreadMetrics(ctx)
-	case getSQLServerIndexPhysicalStatsQuery(s.config.InstanceName):
+	case getSQLServerIndexPhysicalStatsQuery():
 		err = s.recordIndexPhysicalMetrics(ctx)
-	case getSQLServerCPUMemoryQuery(s.config.InstanceName):
+	case getSQLServerCPUMemoryQuery():
 		err = s.recordCPUMemoryMetrics(ctx)
-	case getSQLServerDiskIOQuery(s.config.InstanceName):
+	case getSQLServerDiskIOQuery():
 		err = s.recordDiskIOMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
@@ -250,7 +249,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	case getSQLServerQuerySamplesQuery():
 		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
-	case getSQLServerTopProcedureQuery(s.config.InstanceName):
+	case getSQLServerTopProcedureQuery():
 		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopProcedureCollection.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top procedures because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
@@ -869,6 +868,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const fullScansPerSec = "Full Scans/sec"
 	const guidedPlanExecutionsPerSec = "Guided plan executions/sec"
 	const indexSearchesPerSec = "Index Searches/sec"
+	const lazyWritesPerSec = "Lazy writes/sec"
 	const lockBlocks = "Lock Blocks"
 	const lockBlocksAllocated = "Lock Blocks Allocated"
 	const lockMemoryKB = "Lock Memory (KB)"
@@ -878,25 +878,23 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const lockTimeoutsNonzeroPerSec = "Lock Timeouts (timeout > 0)/sec"
 	const lockTimeoutsPerSec = "Lock Timeouts/sec"
 	const lockWaitCount = "Lock Wait Count"
+	const lockWaitTimeAvgMS = "Average Wait Time (ms)"
 	const lockWaitTimeMS = "Lock Wait Time (ms)"
 	const lockWaits = "Lock Waits/sec"
+	const logGrowths = "Log Growths"
 	const loginsPerSec = "Logins/sec"
 	const logoutPerSec = "Logouts/sec"
 	const misguidedPlanExecutionsPerSec = "Misguided plan executions/sec"
 	const numberOfDeadlocksPerSec = "Number of Deadlocks/sec"
 	const mirrorWritesTransactionPerSec = "Mirrored Write Transactions/sec"
-	const transactionsPerSec = "Transactions/sec"
-	const lazyWritesPerSec = "Lazy writes/sec"
-	const pageReadsPerSec = "Page reads/sec"
-	const pageWritesPerSec = "Page writes/sec"
-	const logGrowths = "Log Growths"
-	const lockWaitTimeAvgMS = "Average Wait Time (ms)"
 	const memoryGrantsPending = "Memory Grants Pending"
 	const mixedPageAllocationsPerSec = "Mixed page allocations/sec"
 	const pageCompressionAttemptsPerSec = "Page Compression Attempts/sec"
 	const pageDeallocationsPerSec = "Page Deallocations/sec"
 	const pageLifeExpectancy = "Page life expectancy"
 	const pageLookupsPerSec = "Page lookups/sec"
+	const pageReadsPerSec = "Page reads/sec"
+	const pageWritesPerSec = "Page writes/sec"
 	const pagesAllocatedPerSec = "Pages Allocated/sec"
 	const pagesCompressedPerSec = "Pages Compressed/sec"
 	const probeScansPerSec = "Probe Scans/sec"
@@ -911,6 +909,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const sqlReCompilationsRate = "SQL Re-Compilations/sec"
 	const tableLockEscalationsPerSec = "Table Lock Escalations/sec"
 	const transactionDelay = "Transaction Delay"
+	const transactionsPerSec = "Transactions/sec"
 	const unsafeAutoParamsPerSec = "Unsafe Auto-Params/sec"
 	const userConnCount = "User Connections"
 	const usedMemory = "Used memory (KB)"
@@ -1324,6 +1323,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverLatchWaitRateDataPoint(now, val.(float64))
 			}
+		case lazyWritesPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lazyWritesPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageLazyWriteRateDataPoint(now, val.(float64))
+			}
 		case lockBlocks:
 			val, err := retrieveInt(row, valueKey)
 			if err != nil {
@@ -1396,14 +1403,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverLockWaitCountDataPoint(now, val.(int64))
 			}
-		case lockWaitTimeMS:
-			val, err := retrieveFloat(row, valueKey)
-			if err != nil {
-				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeMS)
-				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverLockWaitTimeTotalDataPoint(now, val.(float64)/1000.0)
-			}
 		case lockWaitTimeAvgMS:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
@@ -1412,6 +1411,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverLockWaitTimeAvgDataPoint(now, val.(float64))
 			}
+		case lockWaitTimeMS:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeMS)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLockWaitTimeTotalDataPoint(now, val.(float64)/1000.0)
+			}
 		case lockWaits:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
@@ -1419,6 +1426,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverLockWaitRateDataPoint(now, val.(float64))
+			}
+		case logGrowths:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, logGrowths)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverTransactionLogGrowthCountDataPoint(now, int64(val.(float64)))
 			}
 		case loginsPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1555,14 +1570,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsWrite)
-			}
-		case lazyWritesPerSec:
-			val, err := retrieveFloat(row, valueKey)
-			if err != nil {
-				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lazyWritesPerSec)
-				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverPageLazyWriteRateDataPoint(now, val.(float64))
 			}
 		case pagesAllocatedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1805,14 +1812,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverTransactionRateDataPoint(now, val.(float64))
-			}
-		case logGrowths:
-			val, err := retrieveFloat(row, valueKey)
-			if err != nil {
-				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, logGrowths)
-				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverTransactionLogGrowthCountDataPoint(now, int64(val.(float64)))
 			}
 		case unsafeAutoParamsPerSec:
 			val, err := retrieveFloat(row, valueKey)

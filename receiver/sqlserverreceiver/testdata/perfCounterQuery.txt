@@ -265,5 +265,4 @@ WHERE
 		-- counter, so it has to survive the filter that drops the other bases.
 		OR pc.[counter_name] = 'Average Wait Time Base'
 	)
-
 OPTION(RECOMPILE)
