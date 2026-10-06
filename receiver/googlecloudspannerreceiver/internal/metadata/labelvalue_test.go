@@ -325,6 +325,11 @@ func TestNewIntSliceLabelValue(t *testing.T) {
 			expectedValue: "1,2,3",
 		},
 		{
+			name:          "Many duplicates and out of order",
+			value:         []int64{8, 3, 5, 7, 4, 4, 3, 5, 10, 1},
+			expectedValue: "1,3,4,5,7,8,10",
+		},
+		{
 			name:          "Full int64 values",
 			value:         []int64{math.MaxInt64, 0, math.MinInt64},
 			expectedValue: "-9223372036854775808,0,9223372036854775807",
