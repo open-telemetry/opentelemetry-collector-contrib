@@ -47,23 +47,22 @@ type router[C any] struct {
 // newRouter creates a new router instance with based on type parameters C and K.
 // see router struct definition for the allowed types.
 func newRouter[C any](
-	table []RoutingTableItem,
-	defaultPipelineIDs []pipeline.ID,
+	cfg *Config,
 	provider consumerProvider[C],
 	settings component.TelemetrySettings,
 ) (*router[C], error) {
 	r := &router[C]{
 		logger:           settings.Logger,
-		table:            table,
+		table:            cfg.Table,
 		routes:           make(map[string]routingItem[C]),
 		consumerProvider: provider,
 	}
 
-	if err := r.buildParsers(table, settings); err != nil {
+	if err := r.buildParsers(cfg, settings); err != nil {
 		return nil, err
 	}
 
-	if err := r.registerConsumers(defaultPipelineIDs); err != nil {
+	if err := r.registerConsumers(cfg.DefaultPipelines); err != nil {
 		return nil, err
 	}
 
@@ -84,9 +83,16 @@ type routingItem[C any] struct {
 	action             Action
 }
 
-func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.TelemetrySettings) error {
+func parserFunctions[T any](functions map[string]ottl.Factory[T], defaultFunc func() map[string]ottl.Factory[T]) map[string]ottl.Factory[T] {
+	if functions == nil {
+		return defaultFunc()
+	}
+	return functions
+}
+
+func (r *router[C]) buildParsers(cfg *Config, settings component.TelemetrySettings) error {
 	otelcolParser, err := ottlotelcol.NewParser(
-		standardFunctions[*ottlotelcol.TransformContext](),
+		parserFunctions(cfg.otelColFunctions, defaultOtelColFunctionsMap),
 		settings,
 		ottlotelcol.EnablePathContextNames(),
 	)
@@ -94,7 +100,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		return err
 	}
 	resourceParser, err := ottlresource.NewParser(
-		standardFunctions[*ottlresource.TransformContext](),
+		parserFunctions(cfg.resourceFunctions, defaultResourceFunctionsMap),
 		settings,
 		ottlresource.EnablePathContextNames(),
 	)
@@ -102,7 +108,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		return err
 	}
 	spanParser, err := ottlspan.NewParser(
-		spanFunctions(),
+		parserFunctions(cfg.spanFunctions, defaultSpanFunctionsMap),
 		settings,
 		ottlspan.EnablePathContextNames(),
 	)
@@ -110,7 +116,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		return err
 	}
 	metricParser, err := ottlmetric.NewParser(
-		standardFunctions[*ottlmetric.TransformContext](),
+		parserFunctions(cfg.metricFunctions, defaultMetricFunctionsMap),
 		settings,
 		ottlmetric.EnablePathContextNames(),
 	)
@@ -118,7 +124,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		return err
 	}
 	dataPointParser, err := ottldatapoint.NewParser(
-		standardFunctions[*ottldatapoint.TransformContext](),
+		parserFunctions(cfg.dataPointFunctions, defaultDataPointFunctionsMap),
 		settings,
 		ottldatapoint.EnablePathContextNames(),
 	)
@@ -126,7 +132,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 		return err
 	}
 	logParser, err := ottllog.NewParser(
-		standardFunctions[*ottllog.TransformContext](),
+		parserFunctions(cfg.logFunctions, defaultLogFunctionsMap),
 		settings,
 		ottllog.EnablePathContextNames(),
 	)
