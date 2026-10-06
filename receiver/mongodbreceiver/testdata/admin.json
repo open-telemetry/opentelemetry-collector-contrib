@@ -379,6 +379,22 @@
                     "$numberLong": "0"
                 }
             }
+        },
+        "queryExecutor": {
+            "scanned": {
+                "$numberLong": "123456"
+            },
+            "scannedObjects": {
+                "$numberLong": "234567"
+            },
+            "collectionScans": {
+                "nonTailable": {
+                    "$numberLong": "900"
+                },
+                "total": {
+                    "$numberLong": "1200"
+                }
+            }
         }
 	},
 	"process": "mongod",

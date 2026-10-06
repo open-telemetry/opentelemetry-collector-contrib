@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/receiver v1.68.1-0.20261002061526-adaf75eebce7
 	go.uber.org/zap v1.28.0
-	google.golang.org/grpc v1.83.2
+	google.golang.org/grpc v1.84.0
 )
 
 require (
@@ -62,7 +62,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.31 // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
-	github.com/prometheus/common v0.71.0 // indirect
+	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/prometheus/prometheus v0.315.0 // indirect

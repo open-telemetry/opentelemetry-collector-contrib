@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.162.0
-	github.com/open-telemetry/otel-arrow/go v0.57.0
+	github.com/open-telemetry/otel-arrow/go v0.59.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/component v1.68.1-0.20261002061526-adaf75eebce7
@@ -36,7 +36,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/net v0.59.0
-	google.golang.org/grpc v1.83.2
+	google.golang.org/grpc v1.84.0
 )
 
 require (
