@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/awsecscontainermetrics
+note: Fix a panic in getResourceFromARN when the TaskARN has fewer colon-separated segments than expected.
+issues: [51810]
+subtext:
+change_logs: [user]
