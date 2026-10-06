@@ -334,6 +334,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbQueriesRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMongodbQueryExecutorDocumentScannedCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMongodbQueryExecutorIndexKeyScannedCountDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordMongodbReplCommandsPerSecDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -1692,6 +1701,48 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "mongodb.query_executor.collection_scan.count":
+					assert.False(t, validatedMetrics["mongodb.query_executor.collection_scan.count"], "Found a duplicate in the metrics slice: mongodb.query_executor.collection_scan.count")
+					validatedMetrics["mongodb.query_executor.collection_scan.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of queries that performed a collection scan.", mi.Description())
+					assert.Equal(t, "{query}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.query_executor.document.scanned.count":
+					assert.False(t, validatedMetrics["mongodb.query_executor.document.scanned.count"], "Found a duplicate in the metrics slice: mongodb.query_executor.document.scanned.count")
+					validatedMetrics["mongodb.query_executor.document.scanned.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of documents scanned by the query executor.", mi.Description())
+					assert.Equal(t, "{document}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.query_executor.index_key.scanned.count":
+					assert.False(t, validatedMetrics["mongodb.query_executor.index_key.scanned.count"], "Found a duplicate in the metrics slice: mongodb.query_executor.index_key.scanned.count")
+					validatedMetrics["mongodb.query_executor.index_key.scanned.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of index keys scanned by the query executor.", mi.Description())
+					assert.Equal(t, "{index_key}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mongodb.repl_commands_per_sec":
 					assert.False(t, validatedMetrics["mongodb.repl_commands_per_sec"], "Found a duplicate in the metrics slice: mongodb.repl_commands_per_sec")
 					validatedMetrics["mongodb.repl_commands_per_sec"] = true

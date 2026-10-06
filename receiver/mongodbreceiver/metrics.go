@@ -970,6 +970,36 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 	}
 }
 
+func (s *mongodbScraper) recordQueryExecutorIndexKeysScanned(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.index_key.scanned.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "scanned"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorIndexKeyScannedCountDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordQueryExecutorDocumentsScanned(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.document.scanned.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "scannedObjects"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorDocumentScannedCountDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordQueryExecutorCollectionScans(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.collection_scan.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "collectionScans", "total"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(now, val)
+}
+
 func aggregateOperationTimeValues(document bson.M, collectionPathNames []string, operationMap map[string]metadata.AttributeOperation) (map[string]int64, error) {
 	operationTotals := map[string]int64{}
 	for _, collectionPathName := range collectionPathNames {

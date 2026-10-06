@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_consul
+
 package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 
 import (
@@ -18,14 +20,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr = "consul"
-
-	// metaAttributePrefix namespaces consul node metadata keys when the
-	// processor.resourcedetection.consul.prefixMetaAttributes feature gate is enabled.
-	metaAttributePrefix = "consul.meta."
-)
+// metaAttributePrefix namespaces consul node metadata keys when the
+// processor.resourcedetection.consul.prefixMetaAttributes feature gate is enabled.
+const metaAttributePrefix = "consul.meta."
 
 var _ internal.Detector = (*Detector)(nil)
 
