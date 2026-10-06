@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,6 +72,7 @@ func TestToLabelValue(t *testing.T) {
 		"String slice label value metadata":       {StringSliceValueType, stringSliceLabelValue{}, []string{stringValue, stringValue}, stringValue + "," + stringValue},
 		"Byte slice label value metadata":         {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
 		"Lock request slice label value metadata": {LockRequestSliceValueType, lockRequestSliceLabelValue{}, []*lockRequest{{"lockMode", "column", "transactionTag"}}, "{lockMode,column,transactionTag}"},
+		"Date label value metadata":               {DateValueType, dateLabelValue{}, spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true}, "2023-10-01"},
 	}
 
 	for name, testCase := range testCases {
@@ -99,6 +101,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 	stringSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringSliceValueType)
 	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType)
 	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
+	dateLabelValueMetadata, _ := NewLabelValueMetadata("dateLabelName", "dateLabelColumnName", DateValueType)
 	queryLabelValuesMetadata := []LabelValueMetadata{
 		stringLabelValueMetadata,
 		boolLabelValueMetadata,
@@ -106,6 +109,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		stringSliceLabelValueMetadata,
 		byteSliceLabelValueMetadata,
 		lockRequestSliceLabelValueMetadata,
+		dateLabelValueMetadata,
 	}
 	metadata := MetricsMetadata{QueryLabelValuesMetadata: queryLabelValuesMetadata}
 	row, _ := spanner.NewRow(
@@ -116,6 +120,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			stringSliceLabelValueMetadata.ColumnName(),
 			byteSliceLabelValueMetadata.ColumnName(),
 			lockRequestSliceLabelValueMetadata.ColumnName(),
+			dateLabelValueMetadata.ColumnName(),
 		},
 		[]any{
 			stringValue,
@@ -124,6 +129,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			[]string{stringValue, stringValue},
 			[]byte(stringValue),
 			[]*lockRequest{{}},
+			spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true},
 		},
 	)
 
@@ -138,6 +144,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		stringSliceLabelValue{},
 		byteSliceLabelValue{},
 		lockRequestSliceLabelValue{},
+		dateLabelValue{},
 	}
 
 	for i, expectedType := range expectedTypes {

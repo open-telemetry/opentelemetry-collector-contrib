@@ -28,6 +28,7 @@ func TestLabel_ToLabelValueMetadata(t *testing.T) {
 		"Value type is string slice":       {metadata.StringSliceValueType, false},
 		"Value type is byte slice":         {metadata.ByteSliceValueType, false},
 		"Value type is lock request slice": {metadata.LockRequestSliceValueType, false},
+		"Value type is date":               {metadata.DateValueType, false},
 		"Value type is unknown":            {metadata.UnknownValueType, true},
 	}
 

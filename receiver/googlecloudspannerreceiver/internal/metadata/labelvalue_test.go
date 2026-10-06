@@ -6,6 +6,8 @@ package metadata
 import (
 	"testing"
 
+	"cloud.google.com/go/civil"
+	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -285,4 +287,57 @@ func TestNewLockRequestSliceLabelValue(t *testing.T) {
 
 	assert.Equal(t, LockRequestSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, expectedValue, labelValue.Value())
+}
+
+func TestDateLabelValueMetadata(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+
+	assert.Equal(t, DateValueType, metadata.ValueType())
+	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, labelColumnName, metadata.ColumnName())
+
+	var expectedType *spanner.NullDate
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
+func TestDateLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+	labelValue := dateLabelValue{
+		metadata: metadata,
+		value:    "2023-10-01",
+	}
+
+	assert.Equal(t, DateValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, "2023-10-01", labelValue.Value())
+
+	attributes := pcommon.NewMap()
+	labelValue.SetValueTo(attributes)
+
+	attributeValue, exists := attributes.Get(labelName)
+
+	assert.True(t, exists)
+	assert.Equal(t, "2023-10-01", attributeValue.Str())
+
+	labelValue.ModifyValue("2023-10-02")
+	assert.Equal(t, "2023-10-02", labelValue.Value())
+}
+
+func TestNewDateLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+	d, _ := civil.ParseDate("2023-10-01")
+	value := spanner.NullDate{
+		Date:  d,
+		Valid: true,
+	}
+	valueHolder := &value
+
+	labelValue := newDateLabelValue(metadata, valueHolder)
+
+	assert.Equal(t, DateValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, "2023-10-01", labelValue.Value())
+
+	invalidValue := spanner.NullDate{Valid: false}
+	labelValueInvalid := newDateLabelValue(metadata, &invalidValue)
+	assert.Empty(t, labelValueInvalid.Value())
 }

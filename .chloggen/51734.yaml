@@ -1,0 +1,4 @@
+change_type: "enhancement"
+component: "receiver/google_cloud_spanner"
+note: "Add date value type for labels to support Spanner DATE columns & add Supported Optimizer Version table"
+issues: [51734]
