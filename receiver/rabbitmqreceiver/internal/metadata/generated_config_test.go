@@ -29,7 +29,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RabbitmqBinding: RabbitmqBindingMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []RabbitmqBindingMetricAttributeKey{RabbitmqBindingMetricAttributeKeyRoutingKey},
+						EnabledAttributes:   []RabbitmqBindingMetricAttributeKey{RabbitmqBindingMetricAttributeKeyPropertiesKey, RabbitmqBindingMetricAttributeKeyRoutingKey},
 					},
 					RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 						Enabled: true,
@@ -297,7 +297,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RabbitmqBinding: RabbitmqBindingMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []RabbitmqBindingMetricAttributeKey{RabbitmqBindingMetricAttributeKeyRoutingKey},
+						EnabledAttributes:   []RabbitmqBindingMetricAttributeKey{RabbitmqBindingMetricAttributeKeyPropertiesKey, RabbitmqBindingMetricAttributeKeyRoutingKey},
 					},
 					RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 						Enabled: false,
@@ -572,7 +572,7 @@ func TestRabbitmqBindingMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []RabbitmqBindingMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric rabbitmq.binding doesn't have an attribute invalid, valid attributes: [routing_key]")
+	require.ErrorContains(t, cfg.Validate(), "metric rabbitmq.binding doesn't have an attribute invalid, valid attributes: [properties_key, routing_key]")
 
 	cfg = DefaultMetricsConfig().RabbitmqBinding
 	cfg.AggregationStrategy = "invalid"

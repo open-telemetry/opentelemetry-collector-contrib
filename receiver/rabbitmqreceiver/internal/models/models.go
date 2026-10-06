@@ -148,4 +148,5 @@ type Binding struct {
 	Destination     string `json:"destination"`
 	DestinationType string `json:"destination_type"`
 	RoutingKey      string `json:"routing_key"`
+	PropertiesKey   string `json:"properties_key"`
 }

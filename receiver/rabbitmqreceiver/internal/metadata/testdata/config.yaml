@@ -3,7 +3,7 @@ all_set:
   metrics:
     rabbitmq.binding:
       enabled: true
-      attributes: ["routing_key"]
+      attributes: ["properties_key","routing_key"]
     rabbitmq.consumer.count:
       enabled: true
     rabbitmq.exchange.messages.published_in:
@@ -369,7 +369,7 @@ none_set:
   metrics:
     rabbitmq.binding:
       enabled: false
-      attributes: ["routing_key"]
+      attributes: ["properties_key","routing_key"]
     rabbitmq.consumer.count:
       enabled: false
     rabbitmq.exchange.messages.published_in:

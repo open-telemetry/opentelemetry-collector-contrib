@@ -79,9 +79,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordRabbitmqBindingDataPoint(ts, 1, "routing_key-val")
+			mb.RecordRabbitmqBindingDataPoint(ts, 1, "properties_key-val", "routing_key-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordRabbitmqBindingDataPoint(ts, 3, "routing_key-val-2")
+				mb.RecordRabbitmqBindingDataPoint(ts, 3, "properties_key-val-2", "routing_key-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordRabbitmqBindingDataPoint(ts+1, 3, "properties_key-val-2", "routing_key-val-2")
+				assert.Equal(t, 2, mb.metricRabbitmqBinding.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -388,6 +391,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
+						propertiesKeyAttrVal, ok := dp.Attributes().Get("properties_key")
+						assert.True(t, ok)
+						assert.Equal(t, "properties_key-val", propertiesKeyAttrVal.Str())
 						routingKeyAttrVal, ok := dp.Attributes().Get("routing_key")
 						assert.True(t, ok)
 						assert.Equal(t, "routing_key-val", routingKeyAttrVal.Str())
@@ -395,7 +401,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["rabbitmq.binding"], "Found a duplicate in the metrics slice: rabbitmq.binding")
 						validatedMetrics["rabbitmq.binding"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Indicates a binding exists between a RabbitMQ exchange and a queue. The resource carries both the exchange and queue names, letting queue and exchange metrics be correlated through this metric.", mi.Description())
 						assert.Equal(t, "{binding}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -412,7 +420,9 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("routing_key")
+						_, ok := dp.Attributes().Get("properties_key")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("routing_key")
 						assert.False(t, ok)
 					}
 				case "rabbitmq.consumer.count":

@@ -13,7 +13,8 @@ import (
 type RabbitmqBindingMetricAttributeKey string
 
 const (
-	RabbitmqBindingMetricAttributeKeyRoutingKey RabbitmqBindingMetricAttributeKey = "routing_key"
+	RabbitmqBindingMetricAttributeKeyPropertiesKey RabbitmqBindingMetricAttributeKey = "properties_key"
+	RabbitmqBindingMetricAttributeKeyRoutingKey    RabbitmqBindingMetricAttributeKey = "routing_key"
 )
 
 // RabbitmqBindingMetricConfig provides config for the rabbitmq.binding metric.
@@ -42,9 +43,9 @@ func (ms *RabbitmqBindingMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *RabbitmqBindingMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case RabbitmqBindingMetricAttributeKeyRoutingKey:
+		case RabbitmqBindingMetricAttributeKeyPropertiesKey, RabbitmqBindingMetricAttributeKeyRoutingKey:
 		default:
-			return fmt.Errorf("metric rabbitmq.binding doesn't have an attribute %v, valid attributes: [routing_key]", val)
+			return fmt.Errorf("metric rabbitmq.binding doesn't have an attribute %v, valid attributes: [properties_key, routing_key]", val)
 		}
 	}
 
@@ -1817,7 +1818,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		RabbitmqBinding: RabbitmqBindingMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []RabbitmqBindingMetricAttributeKey{RabbitmqBindingMetricAttributeKeyRoutingKey},
+			EnabledAttributes:   []RabbitmqBindingMetricAttributeKey{RabbitmqBindingMetricAttributeKeyPropertiesKey, RabbitmqBindingMetricAttributeKeyRoutingKey},
 		},
 		RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 			Enabled: true,

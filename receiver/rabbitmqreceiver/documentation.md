@@ -88,6 +88,7 @@ Indicates a binding exists between a RabbitMQ exchange and a queue. The resource
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
+| properties_key | The key RabbitMQ uses to distinguish bindings that share a source, destination and routing key but have different arguments. | Any Str | Recommended | - |
 | routing_key | The routing key of a RabbitMQ binding. | Any Str | Recommended | - |
 
 ### rabbitmq.exchange.messages.published_in

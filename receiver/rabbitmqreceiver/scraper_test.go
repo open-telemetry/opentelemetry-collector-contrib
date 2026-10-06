@@ -300,6 +300,9 @@ func TestScraperScrape(t *testing.T) {
 			cfg.MetricsBuilderConfig.Metrics.RabbitmqExchangeMessagesPublishedIn.Enabled = true
 			cfg.MetricsBuilderConfig.Metrics.RabbitmqExchangeMessagesPublishedOut.Enabled = true
 
+			// Enable binding metrics so the bindings API is queried
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqBinding.Enabled = true
+
 			scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 
@@ -338,7 +341,6 @@ func TestClusterNameResourceAttribute(t *testing.T) {
 	mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{queue}, nil).Once()
 	mockClient.On("GetNodes", mock.Anything).Return([]*models.Node{node}, nil).Once()
 	mockClient.On("GetExchanges", mock.Anything).Return([]*models.Exchange{exchange}, nil).Once()
-	mockClient.On("GetBindings", mock.Anything).Return(nil, nil).Once()
 
 	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 	scraper.client = &mockClient
@@ -361,7 +363,6 @@ func TestClusterNameResourceAttributeDisabled(t *testing.T) {
 	mockClient.On("GetQueues", mock.Anything).Return(nil, nil).Once()
 	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
 	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
-	mockClient.On("GetBindings", mock.Anything).Return(nil, nil).Once()
 
 	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 	scraper.client = &mockClient
@@ -382,7 +383,6 @@ func TestClusterNameResourceAttributeFailure(t *testing.T) {
 	mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{{Name: "queue"}}, nil).Once()
 	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
 	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
-	mockClient.On("GetBindings", mock.Anything).Return(nil, nil).Once()
 
 	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 	scraper.client = &mockClient
@@ -400,8 +400,10 @@ func TestBindingMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.RabbitmqBinding.Enabled = true
 
 	bindings := []*models.Binding{
-		{Source: "", Vhost: "/", Destination: "queue", DestinationType: "queue", RoutingKey: "queue"},
-		{Source: "exchange", Vhost: "/", Destination: "queue", DestinationType: "queue", RoutingKey: "routing-key"},
+		{Source: "", Vhost: "/", Destination: "queue", DestinationType: "queue", RoutingKey: "queue", PropertiesKey: "queue"},
+		{Source: "exchange", Vhost: "/", Destination: "queue", DestinationType: "queue", RoutingKey: "routing-key", PropertiesKey: "routing-key"},
+		// Same exchange, queue and routing key as above, distinguished only by properties_key (different arguments).
+		{Source: "exchange", Vhost: "/", Destination: "queue", DestinationType: "queue", RoutingKey: "routing-key", PropertiesKey: "routing-key~abc123"},
 		{Source: "exchange", Vhost: "/", Destination: "other-exchange", DestinationType: "exchange", RoutingKey: "routing-key"},
 	}
 
@@ -417,8 +419,11 @@ func TestBindingMetrics(t *testing.T) {
 	metrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
 
-	// The exchange-to-exchange binding is skipped, leaving 2 binding resources.
-	require.Equal(t, 2, metrics.ResourceMetrics().Len())
+	// The exchange-to-exchange binding is skipped, leaving 3 binding resources.
+	require.Equal(t, 3, metrics.ResourceMetrics().Len())
+
+	// Bindings differing only by arguments must emit distinct series.
+	seen := map[string]struct{}{}
 
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		attrs := metrics.ResourceMetrics().At(i).Resource().Attributes()
@@ -427,6 +432,14 @@ func TestBindingMetrics(t *testing.T) {
 		require.Equal(t, "queue", queueName.Str())
 		_, ok = attrs.Get("rabbitmq.exchange.name")
 		require.True(t, ok)
+
+		dp := metrics.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+		exchangeName, _ := attrs.Get("rabbitmq.exchange.name")
+		routingKey, _ := dp.Attributes().Get("routing_key")
+		propsKey, ok := dp.Attributes().Get("properties_key")
+		require.True(t, ok)
+		seen[exchangeName.Str()+"|"+routingKey.Str()+"|"+propsKey.Str()] = struct{}{}
 	}
+	require.Len(t, seen, 3)
 	mockClient.AssertExpectations(t)
 }

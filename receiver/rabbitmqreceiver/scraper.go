@@ -99,9 +99,11 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect exchange metrics: %w", err))
 	}
 
-	// Collect binding metrics
-	if err := r.collectBindingMetrics(ctx, now, clusterName); err != nil {
-		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect binding metrics: %w", err))
+	// Collect binding metrics. The bindings API is not paginated, so only query it when the metric is enabled.
+	if r.cfg.MetricsBuilderConfig.Metrics.RabbitmqBinding.Enabled {
+		if err := r.collectBindingMetrics(ctx, now, clusterName); err != nil {
+			scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect binding metrics: %w", err))
+		}
 	}
 
 	// Emit collected metrics
@@ -326,7 +328,7 @@ func (r *rabbitmqScraper) collectBinding(binding *models.Binding, now pcommon.Ti
 		return
 	}
 
-	r.mb.RecordRabbitmqBindingDataPoint(now, 1, binding.RoutingKey)
+	r.mb.RecordRabbitmqBindingDataPoint(now, 1, binding.PropertiesKey, binding.RoutingKey)
 
 	rb := r.mb.NewResourceBuilder()
 	rb.SetRabbitmqExchangeName(binding.Source)
