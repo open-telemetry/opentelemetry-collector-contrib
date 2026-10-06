@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/pdata v1.68.1-0.20261002061526-adaf75eebce7
-	go.opentelemetry.io/otel v1.46.0
+	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/genproto v0.0.0-20250728155136-f173205681a0
 	google.golang.org/protobuf v1.36.12
@@ -44,10 +44,11 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.1-0.20261002061526-adaf75eebce7 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20261002061526-adaf75eebce7 // indirect
-	go.opentelemetry.io/otel/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/log v1.47.0 // indirect
+	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
-	go.opentelemetry.io/otel/trace v1.46.0 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
