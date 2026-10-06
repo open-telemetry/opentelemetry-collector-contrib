@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/component v1.68.1-0.20261006161151-f1390ab88c07
 	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261006161151-f1390ab88c07
 	go.opentelemetry.io/collector/config/configcompression v1.68.1-0.20261006161151-f1390ab88c07
+	go.opentelemetry.io/collector/config/configoptional v1.68.1-0.20261006161151-f1390ab88c07
 	go.opentelemetry.io/collector/confmap v1.68.1-0.20261006161151-f1390ab88c07
 	go.opentelemetry.io/collector/consumer v1.68.1-0.20261006161151-f1390ab88c07
 	go.opentelemetry.io/collector/consumer/consumererror v0.162.1-0.20261006161151-f1390ab88c07
@@ -49,7 +50,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.162.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.68.1-0.20261006161151-f1390ab88c07 // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.68.1-0.20261006161151-f1390ab88c07 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.68.1-0.20261006161151-f1390ab88c07 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.162.1-0.20261006161151-f1390ab88c07 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.1-0.20261006161151-f1390ab88c07 // indirect

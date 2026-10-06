@@ -3,11 +3,15 @@
 package kafkaexporter
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var typ = component.MustNewType("kafka")
@@ -18,4 +22,25 @@ func TestComponentFactoryType(t *testing.T) {
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+func TestComponentDefaultQueueBatchSender(t *testing.T) {
+	optionalQueueType := reflect.TypeOf(configoptional.None[exporterhelper.QueueBatchConfig]())
+	queueType := reflect.TypeOf(exporterhelper.QueueBatchConfig{})
+
+	checkConfig := func(t *testing.T) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+		cfg := reflect.Indirect(reflect.ValueOf(NewFactory().CreateDefaultConfig()))
+		require.Equal(t, reflect.Struct, cfg.Kind(), "exporter default config must be a struct or pointer to a struct")
+
+		var queueConfig configoptional.Optional[exporterhelper.QueueBatchConfig]
+		for i := 0; i < cfg.NumField(); i++ {
+			fieldType := cfg.Type().Field(i)
+			tag := strings.Split(fieldType.Tag.Get("mapstructure"), ",")[0]
+			require.NotEqual(t, "sending_queue", tag, "exporter default config must not define sending_queue")
+			require.NotEqual(t, optionalQueueType, fieldType.Type, "exporter default config must not contain an optional queue config")
+			require.NotEqual(t, queueType, fieldType.Type, "exporter default config must not contain a queue config")
+		}
+		return queueConfig
+	}
+	checkConfig(t)
 }
