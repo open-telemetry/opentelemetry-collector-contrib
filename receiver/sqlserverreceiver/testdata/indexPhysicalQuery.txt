@@ -99,7 +99,6 @@ BEGIN
 		END
 	END CATCH
 
-	SELECT * FROM #IndexPhysStats
-	;
+	SELECT * FROM #IndexPhysStats;
 	DROP TABLE #IndexPhysStats;
 END
