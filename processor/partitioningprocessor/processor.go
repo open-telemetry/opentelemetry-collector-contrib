@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"maps"
-	"runtime"
 	"sync"
 
 	"go.opentelemetry.io/collector/client"
@@ -42,7 +41,7 @@ func (p *partitioningProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) e
 	return consumePartitions(ctx, p.keyNames, parts, p.nextLogs.ConsumeLogs)
 }
 
-// consumePartitions forwards partitions concurrently, up to GOMAXPROCS at a time.
+// consumePartitions forwards all partitions concurrently.
 //
 // Every partition is delivered even if a sibling fails; all errors are
 // joined. The parent context is passed through unchanged (no derived
@@ -59,12 +58,9 @@ func consumePartitions[T any](ctx context.Context, keyNames []string, parts []pa
 	}
 
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, runtime.GOMAXPROCS(0))
 	errs := make([]error, len(parts))
 	for i, part := range parts {
-		sem <- struct{}{}
 		wg.Go(func() {
-			defer func() { <-sem }()
 			errs[i] = consume(withPartitionMetadata(ctx, info, base, keyNames, part.values), part.data)
 		})
 	}
