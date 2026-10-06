@@ -56,6 +56,23 @@ func newFakeClient(t *testing.T, objects ...*unstructured.Unstructured) (*fake.F
 	return client, addObj
 }
 
+// blockPodList makes pod List calls on the fake client block until the
+// returned release func is called, so the informer cache cannot sync. Call it
+// after registering reg.Shutdown with t.Cleanup: cleanups run in reverse
+// order, and Shutdown waits for the informer goroutine stuck in List.
+func blockPodList(t *testing.T, client *fake.FakeDynamicClient) (release func()) {
+	t.Helper()
+	unblock := make(chan struct{})
+	var once sync.Once
+	release = func() { once.Do(func() { close(unblock) }) }
+	client.PrependReactor("list", "pods", func(clienttesting.Action) (bool, runtime.Object, error) {
+		<-unblock
+		return false, nil, nil
+	})
+	t.Cleanup(release)
+	return release
+}
+
 // newFakeClientWithMutations is like newFakeClient but also returns update and delete helpers.
 func newFakeClientWithMutations(t *testing.T, objects ...*unstructured.Unstructured) (
 	*fake.FakeDynamicClient,
@@ -367,6 +384,9 @@ func TestStartCacheSyncContextCancelled(t *testing.T) {
 	client, _ := newFakeClient(t, makePod("pod1"))
 	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
+	// Keep the cache unsynced: cache.WaitForCacheSync checks HasSynced before
+	// the stop channel, so a fast fake client could otherwise win the race.
+	blockPodList(t, client)
 
 	obs, err := NewPull(reg, PullConfig{
 		Config:           k8sinventory.Config{Gvr: podsGVR},
@@ -697,21 +717,11 @@ func TestWatchModeDeduplicatesNamespaces(t *testing.T) {
 func TestWatchModeStartFailureUnregistersHandlers(t *testing.T) {
 	t.Parallel()
 	client, addObj := newFakeClient(t)
-
-	// Block the informer's initial List so the cache cannot sync before the
-	// timeout. Relying on a tiny timeout alone races with the fake client,
-	// which can sync before WaitForCacheSync first checks its stop channel.
-	releaseList := make(chan struct{})
-	var releaseOnce sync.Once
-	release := func() { releaseOnce.Do(func() { close(releaseList) }) }
-	client.PrependReactor("list", "pods", func(clienttesting.Action) (bool, runtime.Object, error) {
-		<-releaseList
-		return false, nil, nil
-	})
-
 	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
-	t.Cleanup(release)
+	// Block the initial List so the sync always times out, instead of relying
+	// on a tiny timeout losing a race with the fake client.
+	release := blockPodList(t, client)
 
 	var calls atomic.Int32
 	obs, err := NewWatch(reg, WatchConfig{
