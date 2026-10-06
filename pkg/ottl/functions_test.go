@@ -3589,6 +3589,7 @@ func Test_PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate(t *testing.T) {
 
 	t.Run("disabled", func(t *testing.T) {
 		defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true)()
 		_, err := p.newParseContext().newFunctionCall(pathArg("testing_slicegetter"))
 		require.ErrorIs(t, err, errDynamicSliceArgumentsDisabled)
 

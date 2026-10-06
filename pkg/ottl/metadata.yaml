@@ -29,3 +29,9 @@ feature_gates:
     stage: beta
     from_version: v0.163.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27821
+
+  - id: "pkg.ottl.functions.enableExperimental"
+    description: Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected.
+    stage: alpha
+    from_version: v0.163.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927

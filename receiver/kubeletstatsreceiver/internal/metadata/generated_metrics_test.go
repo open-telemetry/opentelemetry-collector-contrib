@@ -170,6 +170,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts, 1, AttributeFsTypeRootfs)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts, 3, AttributeFsTypeLogs)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts+1, 3, AttributeFsTypeLogs)
+				assert.Equal(t, 2, mb.metricK8sContainerEphemeralStorageUsage.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -224,12 +227,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeNetworkErrorsDataPoint(ts+1, 3, "interface-val-2", AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricK8sNodeNetworkErrors.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeNetworkIoDataPoint(ts+1, 3, "interface-val-2", AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricK8sNodeNetworkIo.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -302,12 +311,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodNetworkErrorsDataPoint(ts+1, 3, "interface-val-2", AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricK8sPodNetworkErrors.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodNetworkIoDataPoint(ts+1, 3, "interface-val-2", AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricK8sPodNetworkIo.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -589,7 +604,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.container.ephemeral_storage.usage"], "Found a duplicate in the metrics slice: k8s.container.ephemeral_storage.usage")
 						validatedMetrics["k8s.container.ephemeral_storage.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Ephemeral storage used by the container.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -834,7 +851,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
 						validatedMetrics["k8s.node.network.errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Node network errors", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -883,7 +902,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
 						validatedMetrics["k8s.node.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Node network IO", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1202,7 +1223,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
 						validatedMetrics["k8s.pod.network.errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Pod network errors", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1251,7 +1274,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
 						validatedMetrics["k8s.pod.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Pod network IO", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

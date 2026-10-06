@@ -166,7 +166,8 @@ tidylist:
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
 		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION) && $(GOCMD) get toolchain@none) || exit $?; \
+		$(call retry,(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION))); \
+		(cd $$mod && $(GOCMD) get toolchain@none) || exit 1; \
 	done
 
 .PHONY: bump-go-version
@@ -492,20 +493,14 @@ chlog-preview:
 chlog-update:
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
-# OCB's `go mod tidy` reads sum.golang.org directly, so GOPROXY fallbacks don't cover its transient errors.
-define gen-collector-sources
-	@for i in 1 2 3; do \
-		$(BUILDER) --skip-compilation --config cmd/$(1)/builder-config-replaced.yaml && exit 0; \
-		[ $$i -lt 3 ] && echo "builder failed for $(1) (attempt $$i/3), retrying in $$((i*10))s..." && sleep $$((i*10)); \
-	done; \
-	echo "builder failed for $(1) after 3 attempts"; \
-	exit 1
-endef
+# OCB keeps an existing go.sum, so seeding it with the repo's verified sums leaves only collector-only modules for sum.golang.org to verify.
+seed-collector-go-sum = git ls-files -z '*go.sum' | xargs -0 cat | sort -u > cmd/$(1)/go.sum
 
 .PHONY: genotelcontribcol
 genotelcontribcol:
 	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
-	$(call gen-collector-sources,otelcontribcol)
+	$(call seed-collector-go-sum,otelcontribcol)
+	@$(call retry,$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -522,7 +517,8 @@ otelcontribcollite: genotelcontribcol
 .PHONY: genoteltestbedcol
 genoteltestbedcol:
 	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
-	$(call gen-collector-sources,oteltestbedcol)
+	$(call seed-collector-go-sum,oteltestbedcol)
+	@$(call retry,$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml)
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -730,6 +726,27 @@ CERT_DIRS := receiver/signalfxreceiver/testdata \
 certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
 
+# Extract the relative path of every module listed between "stable-base:" and "contrib-base:" in versions.yaml
+STABLE_MODULES := $(shell sed -n -e '/stable-base:/,/contrib-base:/ s/.*- github.com\/open-telemetry\/opentelemetry-collector-contrib/./p' versions.yaml)
+
+.PHONY: for-all-stable-target
+for-all-stable-target: $(STABLE_MODULES)
+
+# Construct new API state snapshots
+.PHONY: apidiff-build
+apidiff-build:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-build-mod"
+
+# Compare API state snapshots and log differences
+.PHONY: apidiff-compare
+apidiff-compare:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-compare-mod"
+
+# Compare API state snapshots and fail if there are differences
+.PHONY: apidiff-check
+apidiff-check:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-check-mod"
+
 .PHONY: multimod-verify
 multimod-verify:
 	@echo "Validating versions.yaml"
@@ -778,7 +795,7 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 
 .PHONY: generate-schemas
 generate-schemas:
-	@$(foreach dir,$(SCHEMA_DIRS), go run $(SCHEMAGEN_PKG) $(abspath $(dir)) -o $(abspath $(dir));)
+	@$(foreach dir,$(SCHEMA_DIRS), $(SCHEMAGEN) $(abspath $(dir)) -o $(abspath $(dir));)
 
 .PHONY: checks
 checks:
