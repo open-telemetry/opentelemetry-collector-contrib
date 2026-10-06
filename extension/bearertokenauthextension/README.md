@@ -83,3 +83,39 @@ service:
       processors: []
       exporters: [otlp_grpc/withauth, otlp_http/withauth]
 ```
+
+## Use as an OAuth2 token source
+
+This extension also exposes the configured token as an OAuth2 token, so it can be referenced
+by components that take a token source rather than an authenticator. This is useful when the
+token is obtained out of band and made available to the collector as a file, such as a
+Kubernetes projected service account token.
+
+For example, the [Kafka exporter](../../exporter/kafkaexporter/README.md) and
+[Kafka receiver](../../receiver/kafkareceiver/README.md) can use it as the
+`oauthbearer_token_source` for SASL/OAUTHBEARER:
+
+```yaml
+extensions:
+  bearertokenauth:
+    filename: /var/run/secrets/tokens/kafka-token
+
+exporters:
+  kafka:
+    brokers: ["localhost:9092"]
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_source: bearertokenauth
+
+service:
+  extensions: [bearertokenauth]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [kafka]
+```
+
+The first token is used when `tokens` or a multi-line `filename` is configured, and the
+`scheme` is not included in the token. Tokens are not given an expiry; a file-backed token is
+picked up as the file changes.
