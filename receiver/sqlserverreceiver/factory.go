@@ -191,6 +191,8 @@ type dbProvider struct {
 	closeErr           error
 	dbEdition          *string
 	editionErrReported bool
+	dbVersion          *string
+	versionErrReported bool
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -282,6 +284,47 @@ func (p *dbProvider) detectEdition(ctx context.Context, logger *zap.Logger) (str
 	return "", false
 }
 
+// detectVersion lazily queries SERVERPROPERTY('ProductVersion') and caches the
+// result. Returns (version, resolved): resolved=true means a definitive answer
+// was reached (success or confirmed NULL) and the caller should nil out its
+// versionFunc. resolved=false means a transient error; the caller should retry
+// next interval. The first error is logged at WARN; subsequent ones at DEBUG so
+// a permanent failure does not spam the log every interval. Safe for concurrent
+// use; all scrapers on this provider share the cached result.
+func (p *dbProvider) detectVersion(ctx context.Context, logger *zap.Logger) (string, bool) {
+	p.mu.Lock()
+	if p.dbVersion != nil {
+		v := *p.dbVersion
+		p.mu.Unlock()
+		return v, true
+	}
+	db := p.db
+	errReported := p.versionErrReported
+	p.mu.Unlock()
+
+	v, err := detectSQLServerVersion(ctx, db)
+	if v != nil {
+		if *v == "" {
+			logger.Warn("failed to detect SQL Server version: SERVERPROPERTY returned NULL; db.system.version will not be set")
+		}
+		p.mu.Lock()
+		p.dbVersion = v
+		p.mu.Unlock()
+		return *v, true
+	}
+	if err != nil {
+		if !errReported {
+			logger.Warn("failed to detect SQL Server version; db.system.version will not be set; will retry", zap.Error(err))
+			p.mu.Lock()
+			p.versionErrReported = true
+			p.mu.Unlock()
+		} else {
+			logger.Debug("failed to detect SQL Server version; retrying next interval", zap.Error(err))
+		}
+	}
+	return "", false
+}
+
 // setConnectionPoolSettings applies the configured pool settings, falling back
 // to defaults derived from the number of scrapers that share the pool. The Go
 // driver defaults (unlimited open connections, two idle connections) are
@@ -352,6 +395,9 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 		if isDbEditionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
 			sqlServerScraper.editionFunc = provider.detectEdition
 		}
+		if isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.versionFunc = provider.detectVersion
+		}
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}
@@ -411,6 +457,9 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 
 		if isDbEditionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
 			sqlServerScraper.editionFunc = provider.detectEdition
+		}
+		if isDbSystemVersionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.versionFunc = provider.detectVersion
 		}
 
 		scrapers = append(scrapers, sqlServerScraper)
@@ -616,4 +665,11 @@ func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {
 		return false
 	}
 	return resourceAttrs.SqlserverDbEdition.Enabled
+}
+
+func isDbSystemVersionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {
+	if resourceAttrs == nil {
+		return false
+	}
+	return resourceAttrs.DbSystemVersion.Enabled
 }

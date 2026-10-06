@@ -16,6 +16,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetHostName("host.name-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
@@ -34,12 +35,17 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 11, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
 			}
 			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
@@ -99,6 +105,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
 	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetHostName("host.name-val")
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
@@ -111,6 +118,13 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 
 	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("db.system.version")
+		assert.True(t, ok, "db.system.version should be present")
+		if ok {
+			assert.Equal(t, "override-db.system.version", val.Str())
+		}
+	}
 	{
 		val, ok := res.Attributes().Get("host.name")
 		assert.True(t, ok, "host.name should be present")
@@ -191,6 +205,13 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 
 	res := rb.Emit()
 	{
+		val, ok := res.Attributes().Get("db.system.version")
+		assert.True(t, ok, "db.system.version should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-db.system.version", val.Str())
+		}
+	}
+	{
 		val, ok := res.Attributes().Get("host.name")
 		assert.True(t, ok, "host.name should be present even without calling Set")
 		if ok {
@@ -265,6 +286,7 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 // TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
 func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.DbSystemVersion.Enabled = false
 	cfg.HostName.Enabled = false
 	cfg.ServerAddress.Enabled = false
 	cfg.ServerPort.Enabled = false
@@ -286,6 +308,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
 	require.NoError(t, confmap.Validate(cfg))
+	assert.Nil(t, cfg.DbSystemVersion.OverrideValue, "OverrideValue should be nil for db.system.version")
 	assert.Nil(t, cfg.HostName.OverrideValue, "OverrideValue should be nil for host.name")
 	assert.Nil(t, cfg.ServerAddress.OverrideValue, "OverrideValue should be nil for server.address")
 	assert.Nil(t, cfg.ServerPort.OverrideValue, "OverrideValue should be nil for server.port")
@@ -297,6 +320,7 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.Nil(t, cfg.SqlserverDbEdition.OverrideValue, "OverrideValue should be nil for sqlserver.db.edition")
 	assert.Nil(t, cfg.SqlserverInstanceName.OverrideValue, "OverrideValue should be nil for sqlserver.instance.name")
 	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetHostName("host.name-val")
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
@@ -309,7 +333,12 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 10, res.Attributes().Len())
+	assert.Equal(t, 11, res.Attributes().Len())
+	dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
+	}
 	hostNameAttrVal, ok := res.Attributes().Get("host.name")
 	assert.True(t, ok)
 	if ok {
