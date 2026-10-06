@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/translator/faro
+component: pkg/faro
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Return an error instead of panicking when a log record contains a malformed `browser_brand_<N>` key
