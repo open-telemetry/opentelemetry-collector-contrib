@@ -302,3 +302,9 @@ func Test_cpuTimeByCpu(t *testing.T) {
 		})
 	}
 }
+
+func Test_NilZapLoggerFallback(t *testing.T) {
+	// We're making codecov happy!
+	u := NewCPUUtilizationCalculator(nil)
+	assert.Equal(t, u.logger, zap.NewNop())
+}

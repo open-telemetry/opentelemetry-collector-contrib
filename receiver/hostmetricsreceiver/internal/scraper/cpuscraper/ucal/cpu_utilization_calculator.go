@@ -68,7 +68,7 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, cpu
 			if err != nil {
 				c.logger.Warn(
 					"could not get time for cpu, utilization will not be recorded",
-					zap.Error(fmt.Errorf("%s: %w", previousCPUTime.CPU, err)),
+					zap.Error(err),
 				)
 				continue
 			}
