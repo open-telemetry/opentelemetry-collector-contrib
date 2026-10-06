@@ -236,7 +236,7 @@ jobs:
           # is resolved.
           go-version: oldstable
       - name: Run `govulncheck`
-        run: GOMEMLIMIT=2GiB make -j4 gogovulncheck GROUP=${{ matrix.group }}
+        run: GOMEMLIMIT=2GiB make -j2 gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks-matrix:
     runs-on: ubuntu-24.04

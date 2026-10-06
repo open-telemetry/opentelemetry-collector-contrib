@@ -93,6 +93,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageStateReady)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRabbitmqMessageCurrentDataPoint(ts, 3, AttributeMessageStateUnacknowledged)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordRabbitmqMessageCurrentDataPoint(ts+1, 3, AttributeMessageStateUnacknowledged)
+				assert.Equal(t, 2, mb.metricRabbitmqMessageCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -442,7 +445,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["rabbitmq.message.current"], "Found a duplicate in the metrics slice: rabbitmq.message.current")
 						validatedMetrics["rabbitmq.message.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The total number of messages currently in the queue.", mi.Description())
 						assert.Equal(t, "{messages}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

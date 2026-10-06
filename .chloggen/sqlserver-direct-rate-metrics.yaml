@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: receiver/sqlserver
+component: receiver/sql_server
 
 note: Fix direct-connection performance counter rate metrics to emit per-second rates instead of cumulative counter values.
 
