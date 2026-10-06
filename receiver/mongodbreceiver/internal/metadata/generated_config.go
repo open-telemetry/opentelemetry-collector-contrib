@@ -1334,6 +1334,66 @@ func (ms *MongodbQueriesRateMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
+// MongodbQueryExecutorCollectionScanCountMetricConfig provides config for the mongodb.query_executor.collection_scan.count metric.
+type MongodbQueryExecutorCollectionScanCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbQueryExecutorCollectionScanCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbQueryExecutorDocumentScannedCountMetricConfig provides config for the mongodb.query_executor.document.scanned.count metric.
+type MongodbQueryExecutorDocumentScannedCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbQueryExecutorDocumentScannedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbQueryExecutorIndexKeyScannedCountMetricConfig provides config for the mongodb.query_executor.index_key.scanned.count metric.
+type MongodbQueryExecutorIndexKeyScannedCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbQueryExecutorIndexKeyScannedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MongodbReplCommandsPerSecMetricConfig provides config for the mongodb.repl_commands_per_sec metric.
 type MongodbReplCommandsPerSecMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1972,6 +2032,9 @@ type MetricsConfig struct {
 	MongodbOplogWindow                        MongodbOplogWindowMetricConfig                        `mapstructure:"mongodb.oplog.window"`
 	MongodbPageFaults                         MongodbPageFaultsMetricConfig                         `mapstructure:"mongodb.page_faults"`
 	MongodbQueriesRate                        MongodbQueriesRateMetricConfig                        `mapstructure:"mongodb.queries.rate"`
+	MongodbQueryExecutorCollectionScanCount   MongodbQueryExecutorCollectionScanCountMetricConfig   `mapstructure:"mongodb.query_executor.collection_scan.count"`
+	MongodbQueryExecutorDocumentScannedCount  MongodbQueryExecutorDocumentScannedCountMetricConfig  `mapstructure:"mongodb.query_executor.document.scanned.count"`
+	MongodbQueryExecutorIndexKeyScannedCount  MongodbQueryExecutorIndexKeyScannedCountMetricConfig  `mapstructure:"mongodb.query_executor.index_key.scanned.count"`
 	MongodbReplCommandsPerSec                 MongodbReplCommandsPerSecMetricConfig                 `mapstructure:"mongodb.repl_commands_per_sec"`
 	MongodbReplDeletesPerSec                  MongodbReplDeletesPerSecMetricConfig                  `mapstructure:"mongodb.repl_deletes_per_sec"`
 	MongodbReplGetmoresPerSec                 MongodbReplGetmoresPerSecMetricConfig                 `mapstructure:"mongodb.repl_getmores_per_sec"`
@@ -2149,6 +2212,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MongodbQueriesRate: MongodbQueriesRateMetricConfig{
+			Enabled: false,
+		},
+		MongodbQueryExecutorCollectionScanCount: MongodbQueryExecutorCollectionScanCountMetricConfig{
+			Enabled: false,
+		},
+		MongodbQueryExecutorDocumentScannedCount: MongodbQueryExecutorDocumentScannedCountMetricConfig{
+			Enabled: false,
+		},
+		MongodbQueryExecutorIndexKeyScannedCount: MongodbQueryExecutorIndexKeyScannedCountMetricConfig{
 			Enabled: false,
 		},
 		MongodbReplCommandsPerSec: MongodbReplCommandsPerSecMetricConfig{
@@ -2493,7 +2565,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServerPort: ServerPortResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
 			Enabled: true,

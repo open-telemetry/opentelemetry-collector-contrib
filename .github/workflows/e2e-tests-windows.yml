@@ -121,7 +121,11 @@ jobs:
       - name: Install supervisor as a service
         run: |
           New-Service -Name "opampsupervisor" -StartupType "Manual" -BinaryPathName "`"${PWD}\cmd\opampsupervisor`" --config `"${PWD}\cmd\opampsupervisor\supervisor\testdata\supervisor_windows_service_test_config.yaml`""
-          eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'opampsupervisor'" /so opampsupervisor
+          # eventcreate.exe intermittently fails writing its sample event ("Access is denied"), so register the source directly.
+          $key = New-Item -Path HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\opampsupervisor -Force
+          New-ItemProperty -Path $key.PSPath -Name EventMessageFile -PropertyType ExpandString -Value '%SystemRoot%\System32\EventCreate.exe' | Out-Null
+          New-ItemProperty -Path $key.PSPath -Name TypesSupported -PropertyType DWord -Value 7 | Out-Null
+          New-ItemProperty -Path $key.PSPath -Name CustomSource -PropertyType DWord -Value 1 | Out-Null
       - name: Test supervisor service
         working-directory: ${{ github.workspace }}/cmd/opampsupervisor
         run: |
