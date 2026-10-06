@@ -36,17 +36,15 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 
 func keepKeys[K any](target ottl.PMapGetSetter[K], keys *slicegetter.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	var literalKeySet map[string]struct{}
-	// Len differentiates a literal nil slice from an empty literal slice
-	staticLen, hasStaticLen := keys.Len()
-
+	keySetCapacity, _ := keys.Len()
 	if literalValues, allLiteral := slicegetter.GetLiteralValues(keys, func(key ottl.StringGetter[K]) (string, bool) {
 		return ottl.GetLiteralValue[K, string](key)
 	}); allLiteral {
-		if !hasStaticLen {
+		if literalValues == nil {
 			return nil, errors.New("keys cannot be nil")
 		}
 
-		literalKeySet = make(map[string]struct{}, staticLen)
+		literalKeySet = make(map[string]struct{}, len(literalValues))
 		for _, key := range literalValues {
 			literalKeySet[key] = struct{}{}
 		}
@@ -60,7 +58,7 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys *slicegetter.SliceGetter
 
 		keySet := literalKeySet
 		if keySet == nil {
-			keySet = make(map[string]struct{}, staticLen)
+			keySet = make(map[string]struct{}, keySetCapacity)
 
 			var keyErr error
 			nonNil, err := keys.Range(ctx, tCtx, func(key ottl.StringGetter[K]) bool {
