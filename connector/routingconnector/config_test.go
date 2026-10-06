@@ -114,7 +114,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, confmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -479,7 +479,7 @@ func withDefault(pipelines ...pipeline.ID) testConfigOption {
 }
 
 func testConfig(opts ...testConfigOption) *Config {
-	cfg := createDefaultConfig().(*Config)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	for _, opt := range opts {
 		opt(cfg)
 	}
