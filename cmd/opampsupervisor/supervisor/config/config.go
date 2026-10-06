@@ -292,6 +292,12 @@ func (a Agent) Validate() error {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
 	}
 
+	// TODO: remove once the supervisor downloads and verifies packages.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	if a.Package.Verifier.Type != VerifierTypeNone {
+		return errors.New("agent::package::verifier is not yet supported")
+	}
+
 	if err := a.validateFallbackConfigs(); err != nil {
 		return err
 	}
