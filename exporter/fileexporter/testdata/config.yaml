@@ -63,6 +63,10 @@ file/flush_interval_negative_value:
   path: ./flushed
   flush_interval: "-1s"
 
+file/file_permissions:
+  path: ./filename
+  file_permissions: "0600"
+
 file/group_by:
   path: ./group_by/*.json
   group_by:

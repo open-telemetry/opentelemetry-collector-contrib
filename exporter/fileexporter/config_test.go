@@ -166,6 +166,34 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "path must be non-empty",
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "file_permissions"),
+			expected: &Config{
+				Path:                  "./filename",
+				FormatType:            formatTypeJSON,
+				FilePermissions:       "0600",
+				filePermissionsParsed: 0o600,
+				FlushInterval:         time.Second,
+				GroupBy: &GroupBy{
+					MaxOpenFiles:      defaultMaxOpenFiles,
+					ResourceAttribute: defaultResourceAttribute,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "file_permissions"),
+			expected: &Config{
+				Path:                  "./filename",
+				FormatType:            formatTypeJSON,
+				FilePermissions:       "0600",
+				filePermissionsParsed: 0o600,
+				FlushInterval:         time.Second,
+				GroupBy: &GroupBy{
+					MaxOpenFiles:      defaultMaxOpenFiles,
+					ResourceAttribute: defaultResourceAttribute,
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "group_by"),
 			expected: &Config{
 				Path:          "./group_by/*.json",
@@ -236,4 +264,52 @@ func TestDirectoryPermissionsWithoutCreateDirectory(t *testing.T) {
 	err := cfg.Validate()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "directory_permissions requires create_directory")
+}
+
+func TestFilePermissionsValidation(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name            string
+		filePermissions string
+		wantErr         error
+		wantParsed      int64
+	}{
+		{
+			name:            "valid value requires no other settings",
+			filePermissions: "0640",
+			wantParsed:      0o640,
+		},
+		{
+			name:       "unset value is left empty",
+			wantParsed: 0,
+		},
+		{
+			name:            "invalid octal value",
+			filePermissions: "0999",
+			wantErr:         errInvalidFilePermissionsOctal,
+		},
+		{
+			name:            "value contains bits beyond file access bits",
+			filePermissions: "7777",
+			wantErr:         errInvalidFilePermissionsBits,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := &Config{
+				Path:            "./foo",
+				FormatType:      formatTypeJSON,
+				FilePermissions: tt.filePermissions,
+			}
+			err := cfg.Validate()
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.filePermissions, cfg.FilePermissions)
+			assert.Equal(t, tt.wantParsed, cfg.filePermissionsParsed)
+		})
+	}
 }
