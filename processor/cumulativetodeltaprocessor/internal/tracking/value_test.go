@@ -51,7 +51,7 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 			name: "subtract previous counts on overlapping buckets",
 			current: ExponentialBuckets{
 				Offset:       2,
-				BucketCounts: []uint64{5, 0, 9, 1},
+				BucketCounts: []uint64{5, 7, 9, 1},
 			},
 			old: ExponentialBuckets{
 				Offset:       1,
@@ -59,7 +59,7 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 			},
 			want: ExponentialBuckets{
 				Offset:       2,
-				BucketCounts: []uint64{5, 0, 8},
+				BucketCounts: []uint64{5, 1, 8},
 			},
 		},
 		{
@@ -102,7 +102,7 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 			name: "negative offsets",
 			current: ExponentialBuckets{
 				Offset:       -3,
-				BucketCounts: []uint64{2, 0, 4},
+				BucketCounts: []uint64{2, 4, 4},
 			},
 			old: ExponentialBuckets{
 				Offset:       -4,
@@ -110,7 +110,7 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 			},
 			want: ExponentialBuckets{
 				Offset:       -3,
-				BucketCounts: []uint64{1, 0, 3},
+				BucketCounts: []uint64{1, 1, 3},
 			},
 		},
 		{
@@ -127,6 +127,30 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 				Offset:       102,
 				BucketCounts: []uint64{9},
 			},
+		},
+		{
+			name: "reset when non-zero old bucket drops to zero within current range",
+			current: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{5, 0, 9},
+			},
+			old: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{5, 3, 8},
+			},
+			reset: true,
+		},
+		{
+			name: "reset when non-zero old bucket follows current range",
+			current: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{6, 3},
+			},
+			old: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{5, 3, 8},
+			},
+			reset: true,
 		},
 	}
 
