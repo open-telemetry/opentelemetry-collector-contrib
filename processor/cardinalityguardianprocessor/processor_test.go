@@ -670,10 +670,12 @@ func TestTrackerRotateReusesPreviousSketch(t *testing.T) {
 func TestTrackerRotateResetsDenseSketch(t *testing.T) {
 	tracker := newTracker()
 	for value := range 20000 {
-		hashValue := uint64(value)
+		hashValue := rotationBenchmarkHash(0, value)
 		tracker.current.InsertHash(hashValue)
 		tracker.previous.InsertHash(hashValue)
 	}
+	verifyRotationBenchmarkSketch(t, tracker.current, true)
+	verifyRotationBenchmarkSketch(t, tracker.previous, true)
 
 	oldCurrent := tracker.current
 	oldPrevious := tracker.previous
