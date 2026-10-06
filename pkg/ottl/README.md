@@ -50,7 +50,7 @@ To see a list of available Paths for each context, checkout the links below.
 | `Instrumentation Scope` | [Instrumentation Scope](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope/README.md)  |
 | `Span`                  | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan/README.md)                    |
 | `Span Event`            | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent/README.md)          |
-| `Span Link`             | [SpanLink](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanlink/README.md)            |
+| `Span Link`             | [SpanLink](contexts/ottlspanlink/README.md)                                                                                                  |
 | `Metric`                | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric/README.md)                |
 | `Datapoint`             | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint/README.md)          |
 | `Exemplar`              | [Exemplar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlexemplar/README.md)            |
