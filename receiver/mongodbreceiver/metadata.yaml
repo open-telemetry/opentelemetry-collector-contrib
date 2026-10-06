@@ -719,6 +719,33 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
+  mongodb.query_executor.collection_scan.count:
+    description: The number of queries that performed a collection scan.
+    stability: development
+    unit: "{query}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  mongodb.query_executor.document.scanned.count:
+    description: The number of documents scanned by the query executor.
+    stability: development
+    unit: "{document}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  mongodb.query_executor.index_key.scanned.count:
+    description: The number of index keys scanned by the query executor.
+    stability: development
+    unit: "{index_key}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
   mongodb.repl_commands_per_sec:
     description: The number of replicated commands executed per second.
     stability: development

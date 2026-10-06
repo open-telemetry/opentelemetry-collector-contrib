@@ -726,6 +726,27 @@ CERT_DIRS := receiver/signalfxreceiver/testdata \
 certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
 
+# Extract the relative path of every module listed between "stable-base:" and "contrib-base:" in versions.yaml
+STABLE_MODULES := $(shell sed -n -e '/stable-base:/,/contrib-base:/ s/.*- github.com\/open-telemetry\/opentelemetry-collector-contrib/./p' versions.yaml)
+
+.PHONY: for-all-stable-target
+for-all-stable-target: $(STABLE_MODULES)
+
+# Construct new API state snapshots
+.PHONY: apidiff-build
+apidiff-build:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-build-mod"
+
+# Compare API state snapshots and log differences
+.PHONY: apidiff-compare
+apidiff-compare:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-compare-mod"
+
+# Compare API state snapshots and fail if there are differences
+.PHONY: apidiff-check
+apidiff-check:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-check-mod"
+
 .PHONY: multimod-verify
 multimod-verify:
 	@echo "Validating versions.yaml"
