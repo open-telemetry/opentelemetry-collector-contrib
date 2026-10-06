@@ -150,6 +150,41 @@ func TestGetLiteralValues(t *testing.T) {
 	assert.Nil(t, vals)
 }
 
+func TestLiteralValues_nilVsEmpty(t *testing.T) {
+	identity := func(v string) (string, bool) { return v, true }
+	for _, tt := range []struct {
+		name  string
+		slice func() *SliceGetter[any, string]
+		empty bool
+	}{
+		{name: "typed nil", slice: func() *SliceGetter[any, string] { return NewTestingSliceGetter[any](true, []string(nil)) }},
+		{name: "typed empty", slice: func() *SliceGetter[any, string] { return NewTestingSliceGetter[any](true, []string{}) }, empty: true},
+		{name: "folded nil", slice: func() *SliceGetter[any, string] { return newTestSliceGetter[string](&testGetter{}, true) }},
+		{name: "folded empty", slice: func() *SliceGetter[any, string] {
+			return newTestSliceGetter[string](&testGetter{value: []any{}}, true)
+		}, empty: true},
+		{name: "folded empty pcommon slice", slice: func() *SliceGetter[any, string] {
+			return newTestSliceGetter[string](&testGetter{value: pcommon.NewSlice()}, true)
+		}, empty: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			scalar, ok := GetScalarLiteralValues(tt.slice())
+			require.True(t, ok)
+			literal, ok := GetLiteralValues(tt.slice(), identity)
+			require.True(t, ok)
+
+			for _, vals := range [][]string{scalar, literal} {
+				if tt.empty {
+					require.NotNil(t, vals)
+					assert.Empty(t, vals)
+				} else {
+					assert.Nil(t, vals)
+				}
+			}
+		})
+	}
+}
+
 func TestNewTestingSliceGetter(t *testing.T) {
 	for _, literal := range []bool{true, false} {
 		sg := NewTestingSliceGetter[any](literal, []int64{1, 2})

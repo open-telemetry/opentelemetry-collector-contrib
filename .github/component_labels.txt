@@ -206,6 +206,7 @@ processor/lookupprocessor processor/lookup
 processor/metricsgenerationprocessor processor/metricsgeneration
 processor/metricstarttimeprocessor processor/metricstarttime
 processor/metricstransformprocessor processor/metricstransform
+processor/partitioningprocessor processor/partitioning
 processor/probabilisticsamplerprocessor processor/probabilisticsampler
 processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
