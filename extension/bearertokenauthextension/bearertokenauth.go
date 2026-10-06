@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
@@ -54,6 +55,9 @@ type bearerTokenAuth struct {
 	header                    string
 	scheme                    string
 	authorizationValuesAtomic atomic.Value
+	// tokensAtomic holds the same tokens as authorizationValuesAtomic, without
+	// the scheme prefix, for consumers that need the bare token.
+	tokensAtomic atomic.Value
 
 	tokenResolver credentialsfile.ValueResolver
 	logger        *zap.Logger
@@ -186,6 +190,7 @@ func (b *bearerTokenAuth) setAuthorizationValues(tokens []string) {
 		}
 	}
 	b.authorizationValuesAtomic.Store(values)
+	b.tokensAtomic.Store(tokens)
 }
 
 // authorizationValues returns the Authorization header/metadata values
@@ -202,6 +207,22 @@ func (b *bearerTokenAuth) authorizationValue() string {
 		return values[0] // Return the first token
 	}
 	return ""
+}
+
+// Token returns the current bearer token, without the scheme prefix, as an
+// OAuth2 token. This lets the extension be referenced as a token source by
+// components that authenticate with a bearer token obtained out of band, such
+// as the Kafka exporter's and receiver's SASL/OAUTHBEARER mechanism.
+//
+// The returned token has no expiry: the token is whatever the configuration or
+// the token file currently holds, and a file-backed token is refreshed in place
+// as the file changes.
+func (b *bearerTokenAuth) Token(context.Context) (*oauth2.Token, error) {
+	tokens, _ := b.tokensAtomic.Load().([]string)
+	if len(tokens) == 0 || tokens[0] == "" {
+		return nil, errors.New("no bearer token available")
+	}
+	return &oauth2.Token{AccessToken: tokens[0]}, nil
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
