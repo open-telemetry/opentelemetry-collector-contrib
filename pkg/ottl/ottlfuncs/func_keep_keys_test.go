@@ -378,14 +378,6 @@ func BenchmarkKeepKeys(b *testing.B) {
 			return nil
 		},
 	}
-	keyGetters := []ottl.StringGetter[pcommon.Map]{
-		ottl.StandardStringGetter[pcommon.Map]{
-			Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
-				return "test", nil
-			},
-		},
-	}
-
 	for _, tt := range []struct {
 		name      string
 		isLiteral bool
@@ -394,7 +386,20 @@ func BenchmarkKeepKeys(b *testing.B) {
 		{name: "dynamic", isLiteral: false},
 	} {
 		b.Run(tt.name, func(b *testing.B) {
-			keys := slicegetter.NewTestingSliceGetter[pcommon.Map, ottl.StringGetter[pcommon.Map]](tt.isLiteral, keyGetters)
+			keyGetter := ottl.StringGetter[pcommon.Map](ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+					return "test", nil
+				},
+			})
+			if tt.isLiteral {
+				literalKeyGetter, err := ottl.NewTestingLiteralGetter[pcommon.Map, string](true, keyGetter)
+				if err != nil {
+					b.Fatal(err)
+				}
+				keyGetter = literalKeyGetter
+			}
+
+			keys := slicegetter.NewTestingSliceGetter[pcommon.Map](tt.isLiteral, []ottl.StringGetter[pcommon.Map]{keyGetter})
 			exprFunc, err := keepKeys(target, keys)
 			if err != nil {
 				b.Fatal(err)
