@@ -18,6 +18,5 @@ SELECT
 FROM sys.dm_os_schedulers s
 CROSS JOIN sys.dm_os_sys_info si
 WHERE s.status = 'VISIBLE ONLINE'
-
 GROUP BY si.max_workers_count
 OPTION(RECOMPILE)
