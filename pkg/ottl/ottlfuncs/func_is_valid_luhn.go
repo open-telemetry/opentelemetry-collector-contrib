@@ -15,6 +15,8 @@ type isValidLuhnArguments[K any] struct {
 	Target ottl.StringLikeGetter[K]
 }
 
+// NewIsValidLuhnFactory returns a factory for the IsValidLuhn OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#isvalidluhn
 func NewIsValidLuhnFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("IsValidLuhn", &isValidLuhnArguments[K]{}, createIsValidLuhnFunction[K])
 }

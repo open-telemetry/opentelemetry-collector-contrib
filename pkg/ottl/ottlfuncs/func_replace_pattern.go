@@ -30,6 +30,8 @@ type replacePatternFuncArgs[K any] struct {
 	Input ottl.StringGetter[K]
 }
 
+// NewReplacePatternFactory returns a factory for the replace_pattern OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#replace_pattern
 func NewReplacePatternFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("replace_pattern", &replacePatternArguments[K]{}, createReplacePatternFunction[K])
 }

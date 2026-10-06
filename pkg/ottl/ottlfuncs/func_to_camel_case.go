@@ -16,6 +16,8 @@ type toCamelCaseArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewToCamelCaseFactory returns a factory for the ToCamelCase OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#tocamelcase
 func NewToCamelCaseFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ToCamelCase", &toCamelCaseArguments[K]{}, createToCamelCaseFunction[K])
 }

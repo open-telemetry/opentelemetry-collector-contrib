@@ -583,6 +583,44 @@ func TestAzureScraperGetResources(t *testing.T) {
 	assert.Empty(t, s.resources["subscriptionId1"])
 }
 
+func TestAzureScraperGetResourcesWithTags(t *testing.T) {
+	s := getNominalTestScraper()
+	s.resources["subscriptionId1"] = map[string]*azureResource{}
+	s.subscriptions["subscriptionId1"] = &azureSubscription{}
+	s.cfg.CacheResources = 0
+
+	tagValue := "tagValue1"
+	s.cfg.ResourceTags = []ResourceTagFilter{
+		{
+			Name:  "tagName1",
+			Value: &tagValue,
+		},
+	}
+
+	s.loadResources(t.Context(), "subscriptionId1")
+
+	assert.Len(t, s.resources["subscriptionId1"], 1)
+	assert.Contains(t, s.resources["subscriptionId1"], "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1")
+}
+
+func TestAzureScraperGetResourcesWithTagName(t *testing.T) {
+	s := getNominalTestScraper()
+	s.resources["subscriptionId1"] = map[string]*azureResource{}
+	s.subscriptions["subscriptionId1"] = &azureSubscription{}
+	s.cfg.CacheResources = 0
+
+	s.cfg.ResourceTags = []ResourceTagFilter{
+		{
+			Name: "tagName1",
+		},
+	}
+
+	s.loadResources(t.Context(), "subscriptionId1")
+
+	assert.Len(t, s.resources["subscriptionId1"], 1)
+	assert.Contains(t, s.resources["subscriptionId1"], "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1")
+}
+
 func TestAzureScraperProcessResources(t *testing.T) {
 	cfgWithSubTypes := createDefaultTestConfig()
 	cfgWithoutSubTypes := createDefaultTestConfig()

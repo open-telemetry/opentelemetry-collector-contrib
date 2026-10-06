@@ -33,12 +33,11 @@ func Test_FNV(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := FNVHashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := fnvHashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
@@ -70,13 +69,12 @@ func Test_FNVError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := FNVHashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := fnvHashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
-			_, err = exprFunc(nil, nil)
+			_, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -119,12 +117,11 @@ func Test_FnvFactory(t *testing.T) {
 }
 
 func BenchmarkFNVHashString(b *testing.B) {
-	exprFunc, err := FNVHashString[any](&ottl.StandardStringGetter[any]{
+	exprFunc := fnvHashString[any](&ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return "hello world this is a benchmark string", nil
 		},
 	})
-	require.NoError(b, err)
 
 	ctx := b.Context()
 	b.ReportAllocs()

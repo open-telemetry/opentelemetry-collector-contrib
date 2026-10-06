@@ -26,6 +26,8 @@ type replaceAllMatchesFuncArgs[K any] struct {
 	Input ottl.StringGetter[K]
 }
 
+// NewReplaceAllMatchesFactory returns a factory for the replace_all_matches OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#replace_all_matches
 func NewReplaceAllMatchesFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("replace_all_matches", &replaceAllMatchesArguments[K]{}, createReplaceAllMatchesFunction[K])
 }

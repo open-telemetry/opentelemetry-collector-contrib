@@ -13,9 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func hello() (ExprFunc[any], error) {
@@ -135,8 +132,6 @@ func returnsBoolKey() (ExprFunc[any], error) {
 }
 
 func Test_newGetter(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
-
 	tests := []struct {
 		name        string
 		val         value
@@ -872,37 +867,6 @@ func Test_newGetter(t *testing.T) {
 				"byteAttr":   []byte{1, 2, 3, 4, 5, 6, 7, 8},
 			},
 		},
-		{
-			name: "lambda",
-			val: value{
-				Lambda: &lambdaExpr{
-					Params: []localIdentifierDecl{"value"},
-					Body: lambdaBody{
-						Value: &value{
-							Literal: &mathExprLiteral{
-								Path: &path{Fields: []field{{Name: "value"}}},
-							},
-						},
-					},
-				},
-			},
-			wantLiteral: true,
-			assertValue: func(t *testing.T, a any) bool {
-				expected := newLambdaExpression[any](
-					makeLocalIdentifiers("value"),
-					&localIdentifierGetter[any]{identifier: &basePath[any]{name: "value", localIdentifier: true, fetched: true, originalText: "value"}},
-					nil,
-				)
-				assert.NotNil(t, expected.activationPool)
-				expected.activationPool = nil
-				if v, ok := a.(*LambdaExpression[any]); ok {
-					assert.NotNil(t, v.activationPool)
-					v.activationPool = nil
-					return assert.Equal(t, expected, v)
-				}
-				return assert.Fail(t, "expected LambdaExpression")
-			},
-		},
 	}
 
 	functions := CreateFactoryMap(
@@ -962,6 +926,31 @@ func Test_newGetter(t *testing.T) {
 	t.Run("empty value", func(t *testing.T) {
 		_, err := p.newParseContext().newGetter(value{})
 		assert.Error(t, err)
+	})
+
+	t.Run("lambda", func(t *testing.T) {
+		lambdaValue := value{
+			Lambda: &lambdaExpr{
+				Params: []localIdentifierDecl{"value"},
+				Body: lambdaBody{
+					Value: &value{
+						Literal: &mathExprLiteral{
+							Path: &path{Fields: []field{{Name: "value"}}},
+						},
+					},
+				},
+			},
+		}
+		for name, val := range map[string]value{
+			"bare":    lambdaValue,
+			"in list": {List: &list{Values: []value{lambdaValue}}},
+			"in map":  {Map: &mapValue{Values: []mapItem{{Key: new("key"), Value: &lambdaValue}}}},
+		} {
+			t.Run(name, func(t *testing.T) {
+				_, err := p.newParseContext().newGetter(val)
+				assert.EqualError(t, err, "lambda expressions can only be passed to function arguments that accept them")
+			})
+		}
 	})
 }
 

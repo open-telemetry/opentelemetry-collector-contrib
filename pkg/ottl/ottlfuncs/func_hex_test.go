@@ -68,7 +68,7 @@ func TestHex(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expressionFunc, _ := Hex(tt.args.target)
+			expressionFunc := hexString(tt.args.target)
 			got, err := expressionFunc(t.Context(), tt.args)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantFunc(), got)
@@ -113,12 +113,11 @@ func Test_HexFactory(t *testing.T) {
 }
 
 func BenchmarkHex(b *testing.B) {
-	exprFunc, err := Hex[any](&ottl.StandardByteSliceLikeGetter[any]{
+	exprFunc := hexString[any](&ottl.StandardByteSliceLikeGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return []byte("hello world"), nil
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

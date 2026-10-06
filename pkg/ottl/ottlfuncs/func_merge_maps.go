@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	INSERT = "insert"
-	UPDATE = "update"
-	UPSERT = "upsert"
+	insert = "insert"
+	update = "update"
+	upsert = "upsert"
 )
 
 type mergeMapsArguments[K any] struct {
@@ -23,6 +23,8 @@ type mergeMapsArguments[K any] struct {
 	Strategy string
 }
 
+// NewMergeMapsFactory returns a factory for the merge_maps OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#merge_maps
 func NewMergeMapsFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("merge_maps", &mergeMapsArguments[K]{}, createMergeMapsFunction[K])
 }
@@ -44,7 +46,7 @@ func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 //	update: Update the entry in `target` with the value from `source` where the key does exist
 //	upsert: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
 func mergeMaps[K any](target ottl.PMapGetSetter[K], source ottl.PMapGetter[K], strategy string) (ottl.ExprFunc[K], error) {
-	if strategy != INSERT && strategy != UPDATE && strategy != UPSERT {
+	if strategy != insert && strategy != update && strategy != upsert {
 		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
 	}
 
@@ -58,20 +60,20 @@ func mergeMaps[K any](target ottl.PMapGetSetter[K], source ottl.PMapGetter[K], s
 			return nil, err
 		}
 		switch strategy {
-		case INSERT:
+		case insert:
 			for k, v := range valueMap.All() {
 				if _, ok := targetMap.Get(k); !ok {
 					tv := targetMap.PutEmpty(k)
 					v.CopyTo(tv)
 				}
 			}
-		case UPDATE:
+		case update:
 			for k, v := range valueMap.All() {
 				if tv, ok := targetMap.Get(k); ok {
 					v.CopyTo(tv)
 				}
 			}
-		case UPSERT:
+		case upsert:
 			for k, v := range valueMap.All() {
 				tv := targetMap.PutEmpty(k)
 				v.CopyTo(tv)

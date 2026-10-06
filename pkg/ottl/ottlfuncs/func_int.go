@@ -14,6 +14,8 @@ type intArguments[K any] struct {
 	Target ottl.IntLikeGetter[K]
 }
 
+// NewIntFactory returns a factory for the Int OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#int
 func NewIntFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Int", &intArguments[K]{}, createIntFunction[K])
 }

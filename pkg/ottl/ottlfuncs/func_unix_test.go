@@ -34,8 +34,7 @@ func Test_Unix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Unix(tt.seconds, tt.nanoseconds)
-			require.NoError(t, err)
+			exprFunc := unix(tt.seconds, tt.nanoseconds)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := time.Unix(tt.expected, 0)
@@ -81,11 +80,10 @@ func Test_UnixFactory(t *testing.T) {
 }
 
 func BenchmarkUnix(b *testing.B) {
-	exprFunc, err := Unix[any](
+	exprFunc := unix[any](
 		&ottl.StandardIntGetter[any]{Getter: func(context.Context, any) (any, error) { return int64(1672527600), nil }},
 		ottl.Optional[ottl.IntGetter[any]]{},
 	)
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

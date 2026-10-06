@@ -659,3 +659,22 @@ func getTestExponentialHistogramMetricMultipleAggregateOnAttributeValue() pmetri
 	input2.Attributes().PutStr("test", "test2")
 	return metricInput
 }
+
+func BenchmarkAggregateOnAttributeValue(b *testing.B) {
+	expr, err := AggregateOnAttributeValue(aggregateutil.Sum, "test", []string{"test1", "test2"}, "test_new")
+	if err != nil {
+		b.Fatal(err)
+	}
+	template := getTestSumMetricMultipleAggregateOnAttributeValue()
+	metric := pmetric.NewMetric()
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		_, err = expr(b.Context(), transformContext)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

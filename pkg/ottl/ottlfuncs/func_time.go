@@ -19,6 +19,8 @@ type timeArguments[K any] struct {
 	Locale   ottl.Optional[string]
 }
 
+// NewTimeFactory returns a factory for the Time OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#time
 func NewTimeFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Time", &timeArguments[K]{}, createTimeFunction[K])
 }
@@ -30,10 +32,10 @@ func createTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, errors.New("TimeFactory args must be of type *timeArguments[K]")
 	}
 
-	return Time(args.Time, args.Format, args.Location, args.Locale)
+	return parseTime(args.Time, args.Format, args.Location, args.Locale)
 }
 
-func Time[K any](inputTime ottl.StringGetter[K], format string, location, locale ottl.Optional[string]) (ottl.ExprFunc[K], error) {
+func parseTime[K any](inputTime ottl.StringGetter[K], format string, location, locale ottl.Optional[string]) (ottl.ExprFunc[K], error) {
 	if format == "" {
 		return nil, errors.New("format cannot be nil")
 	}
