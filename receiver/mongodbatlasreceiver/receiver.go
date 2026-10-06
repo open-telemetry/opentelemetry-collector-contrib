@@ -200,24 +200,24 @@ type providerValues struct {
 }
 
 func clusterProviderValues(cluster *mongodbatlas.AdvancedCluster) providerValues {
-	var primary *mongodbatlas.AdvancedRegionConfig
+	var pv providerValues
+	first := true
 	for _, spec := range cluster.ReplicationSpecs {
-		if spec == nil {
-			continue
-		}
 		for _, rc := range spec.RegionConfigs {
-			if rc == nil {
+			if first {
+				pv = providerValues{RegionName: rc.RegionName, ProviderName: rc.ProviderName}
+				first = false
 				continue
 			}
-			if primary == nil || (rc.Priority != nil && (primary.Priority == nil || *rc.Priority > *primary.Priority)) {
-				primary = rc
+			if rc.RegionName != pv.RegionName {
+				pv.RegionName = ""
+			}
+			if rc.ProviderName != pv.ProviderName {
+				pv.ProviderName = ""
 			}
 		}
 	}
-	if primary == nil {
-		return providerValues{}
-	}
-	return providerValues{RegionName: primary.RegionName, ProviderName: primary.ProviderName}
+	return pv
 }
 
 func (s *mongodbatlasreceiver) getNodeClusterNameMap(

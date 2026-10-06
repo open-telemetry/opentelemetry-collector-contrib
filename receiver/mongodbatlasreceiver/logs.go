@@ -103,7 +103,7 @@ func parseHostNames(s string, logger *zap.Logger) []string {
 		// separate hostname from scheme and port
 		host, _, err := net.SplitHostPort(strings.TrimPrefix(t, "mongodb://"))
 		if err != nil {
-			logger.Error("Could not parse out hostname: " + t)
+			logger.Error("Could not parse out hostname: " + host)
 			continue
 		}
 		hostnames = append(hostnames, host)

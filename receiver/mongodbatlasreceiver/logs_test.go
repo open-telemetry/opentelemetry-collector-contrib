@@ -70,21 +70,21 @@ func TestNoLoggingEnabled(t *testing.T) {
 }
 
 func TestClusterProviderValues(t *testing.T) {
-	low, high := 6, 7
-	cluster := &mongodbatlas.AdvancedCluster{
-		ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
-			nil,
-			{
-				RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
-					nil,
-					{ProviderName: "AWS", RegionName: "US_WEST_2", Priority: &low},
-					{ProviderName: "GCP", RegionName: "CENTRAL_US", Priority: &high},
-				},
-			},
-		},
+	spec := func(rcs ...*mongodbatlas.AdvancedRegionConfig) *mongodbatlas.AdvancedReplicationSpec {
+		return &mongodbatlas.AdvancedReplicationSpec{RegionConfigs: rcs}
 	}
-	require.Equal(t, providerValues{RegionName: "CENTRAL_US", ProviderName: "GCP"}, clusterProviderValues(cluster))
-	require.Equal(t, providerValues{}, clusterProviderValues(&mongodbatlas.AdvancedCluster{}))
+	cluster := func(specs ...*mongodbatlas.AdvancedReplicationSpec) *mongodbatlas.AdvancedCluster {
+		return &mongodbatlas.AdvancedCluster{ReplicationSpecs: specs}
+	}
+	awsEast := &mongodbatlas.AdvancedRegionConfig{ProviderName: "AWS", RegionName: "US_EAST_1"}
+	awsWest := &mongodbatlas.AdvancedRegionConfig{ProviderName: "AWS", RegionName: "US_WEST_2"}
+	gcpCentral := &mongodbatlas.AdvancedRegionConfig{ProviderName: "GCP", RegionName: "CENTRAL_US"}
+
+	require.Equal(t, providerValues{RegionName: "US_EAST_1", ProviderName: "AWS"}, clusterProviderValues(cluster(spec(awsEast))))
+	require.Equal(t, providerValues{ProviderName: "AWS"}, clusterProviderValues(cluster(spec(awsEast, awsWest))))
+	require.Equal(t, providerValues{}, clusterProviderValues(cluster(spec(awsEast, gcpCentral))))
+	require.Equal(t, providerValues{ProviderName: "AWS"}, clusterProviderValues(cluster(spec(awsEast), spec(awsWest, awsEast))))
+	require.Equal(t, providerValues{}, clusterProviderValues(cluster()))
 }
 
 func TestClusterHostNames(t *testing.T) {
