@@ -19,7 +19,6 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/processor/xprocessor v0.162.1-0.20261002061526-adaf75eebce7
 	go.uber.org/goleak v1.3.0
-	golang.org/x/sync v0.23.0
 )
 
 require (
@@ -53,8 +52,8 @@ require (
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260610212136-7ab31c22f7ad // indirect
-	google.golang.org/grpc v1.83.2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800 // indirect
+	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

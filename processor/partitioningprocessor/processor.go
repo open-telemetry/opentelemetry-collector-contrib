@@ -8,12 +8,12 @@ import (
 	"errors"
 	"maps"
 	"runtime"
+	"sync"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"golang.org/x/sync/errgroup"
 )
 
 // partitioningProcessor is the consumer wrapped by processorhelper; it
@@ -58,16 +58,17 @@ func consumePartitions[T any](ctx context.Context, keyNames []string, parts []pa
 		return consume(withPartitionMetadata(ctx, info, base, keyNames, parts[0].values), parts[0].data)
 	}
 
-	var g errgroup.Group
-	g.SetLimit(runtime.GOMAXPROCS(0))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, runtime.GOMAXPROCS(0))
 	errs := make([]error, len(parts))
 	for i, part := range parts {
-		g.Go(func() error {
+		sem <- struct{}{}
+		wg.Go(func() {
+			defer func() { <-sem }()
 			errs[i] = consume(withPartitionMetadata(ctx, info, base, keyNames, part.values), part.data)
-			return nil
 		})
 	}
-	_ = g.Wait()
+	wg.Wait()
 	return errors.Join(errs...)
 }
 
