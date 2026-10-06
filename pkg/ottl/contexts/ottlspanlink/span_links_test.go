@@ -143,6 +143,17 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*TransformContext]{
+				N: "attributes",
+			},
+			orig:   refSpanLink.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(spanLink ptrace.SpanLink, _ pcommon.Map) {
+				_ = spanLink.Attributes().FromRaw(newAttrs.AsRaw())
+			},
+		},
+		{
 			name: "attributes string",
 			path: &pathtest.Path[*TransformContext]{
 				N: "attributes",
@@ -156,6 +167,22 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: "newVal",
 			modified: func(spanLink ptrace.SpanLink, _ pcommon.Map) {
 				spanLink.Attributes().PutStr("str", "newVal")
+			},
+		},
+		{
+			name: "attributes int",
+			path: &pathtest.Path[*TransformContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*TransformContext]{
+					&pathtest.Key[*TransformContext]{
+						S: new("int"),
+					},
+				},
+			},
+			orig:   int64(10),
+			newVal: int64(20),
+			modified: func(spanLink ptrace.SpanLink, _ pcommon.Map) {
+				spanLink.Attributes().PutInt("int", 20)
 			},
 		},
 		{
@@ -228,6 +255,16 @@ func Test_newPathGetSetter(t *testing.T) {
 }
 
 var spanID2Trace = [16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
+
+func Test_newPathGetSetter_InvalidPath(t *testing.T) {
+	_, err := pathExpressionParser(getCache)(&pathtest.Path[*TransformContext]{N: "unknown_field"})
+	assert.Error(t, err)
+}
+
+func Test_newPathGetSetter_NilPath(t *testing.T) {
+	_, err := pathExpressionParser(getCache)(nil)
+	assert.Error(t, err)
+}
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	rs := ptrace.NewResourceSpans()
@@ -422,6 +459,7 @@ func createTelemetry() (ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span, pt
 	spanLink.SetFlags(1)
 
 	spanLink.Attributes().PutStr("str", "val")
+	spanLink.Attributes().PutInt("int", 10)
 
 	ss.Scope().SetName("library")
 	ss.Scope().SetVersion("version")
