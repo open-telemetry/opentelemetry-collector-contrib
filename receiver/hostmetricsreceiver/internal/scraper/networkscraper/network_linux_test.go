@@ -43,5 +43,10 @@ func TestGetTCPConnectionStatusCountsMatchesGopsutilLinuxStateNames(t *testing.T
 	assert.False(t, hasUnderscoreVariant1, "FIN_WAIT_1 (Windows spelling) should not appear in Linux TCP state counts")
 	assert.False(t, hasUnderscoreVariant2, "FIN_WAIT_2 (Windows spelling) should not appear in Linux TCP state counts")
 
+	// "DELETE" is a Windows-only state (see gopsutil's net_windows.go); gopsutil's
+	// Linux tcpStatuses map never produces it, so it must not be pre-seeded either.
+	_, hasDelete := counts["DELETE"]
+	assert.False(t, hasDelete, "DELETE (Windows-only state) should not appear in Linux TCP state counts")
+
 	assert.Len(t, counts, len(allTCPStates), "no extra, unexpected keys should be present")
 }

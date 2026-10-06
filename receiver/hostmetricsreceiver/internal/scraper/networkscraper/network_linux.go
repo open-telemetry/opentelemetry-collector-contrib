@@ -24,7 +24,6 @@ var allTCPStates = []string{
 	"CLOSE_WAIT",
 	"CLOSE",
 	"CLOSING",
-	"DELETE",
 	"ESTABLISHED",
 	"FIN_WAIT1",
 	"FIN_WAIT2",
