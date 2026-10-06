@@ -41,13 +41,16 @@ func TestAccessLogsIntegration(t *testing.T) {
 		OrgID: testOrgID,
 	}, nil)
 	mockClient.On("GetClusters", mock.Anything, testProjectID).Return(
-		[]mongodbatlas.Cluster{
+		[]*mongodbatlas.AdvancedCluster{
 			{
 				GroupID: testProjectID,
 				Name:    testClusterName,
-				ProviderSettings: &mongodbatlas.ProviderSettings{
-					ProviderName: testProviderName,
-					RegionName:   testRegionName,
+				ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
+							{ProviderName: testProviderName, RegionName: testRegionName},
+						},
+					},
 				},
 			},
 		},

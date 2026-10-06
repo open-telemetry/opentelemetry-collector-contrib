@@ -103,13 +103,20 @@ func parseHostNames(s string, logger *zap.Logger) []string {
 		// separate hostname from scheme and port
 		host, _, err := net.SplitHostPort(strings.TrimPrefix(t, "mongodb://"))
 		if err != nil {
-			logger.Error("Could not parse out hostname: " + host)
+			logger.Error("Could not parse out hostname: " + t)
 			continue
 		}
 		hostnames = append(hostnames, host)
 	}
 
 	return hostnames
+}
+
+func clusterHostNames(cluster *mongodbatlas.AdvancedCluster, logger *zap.Logger) []string {
+	if cluster.ConnectionStrings == nil {
+		return nil
+	}
+	return parseHostNames(cluster.ConnectionStrings.Standard, logger)
 }
 
 // collect spins off functionality of the receiver from the Start function
@@ -140,7 +147,7 @@ func (s *logsReceiver) collect(ctx context.Context) {
 	}
 }
 
-func (s *logsReceiver) processClusters(ctx context.Context, projectCfg LogsProjectConfig, projectID string) ([]mongodbatlas.Cluster, error) {
+func (s *logsReceiver) processClusters(ctx context.Context, projectCfg LogsProjectConfig, projectID string) ([]*mongodbatlas.AdvancedCluster, error) {
 	clusters, err := s.client.GetClusters(ctx, projectID)
 	if err != nil {
 		s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
@@ -157,17 +164,17 @@ type clusterInfo struct {
 	MongoDBMajorVersion string
 }
 
-func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg LogsProjectConfig, pc projectContext) {
-	for i := range clusters {
-		cluster := &clusters[i]
+func (s *logsReceiver) collectClusterLogs(clusters []*mongodbatlas.AdvancedCluster, projectCfg LogsProjectConfig, pc projectContext) {
+	for _, cluster := range clusters {
+		pv := clusterProviderValues(cluster)
 		c := clusterInfo{
 			ClusterName:         cluster.Name,
-			RegionName:          cluster.ProviderSettings.RegionName,
-			ProviderName:        cluster.ProviderSettings.ProviderName,
+			RegionName:          pv.RegionName,
+			ProviderName:        pv.ProviderName,
 			MongoDBMajorVersion: cluster.MongoDBMajorVersion,
 		}
 
-		hostnames := parseHostNames(cluster.ConnectionStrings.Standard, s.log)
+		hostnames := clusterHostNames(cluster, s.log)
 		for _, hostname := range hostnames {
 			// Defaults to true if not specified
 			if projectCfg.EnableHostLogs == nil || *projectCfg.EnableHostLogs {
@@ -186,7 +193,7 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 	}
 }
 
-func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) ([]mongodbatlas.Cluster, error) {
+func filterClusters(clusters []*mongodbatlas.AdvancedCluster, projectCfg ProjectConfig) ([]*mongodbatlas.AdvancedCluster, error) {
 	include, exclude := projectCfg.IncludeClusters, projectCfg.ExcludeClusters
 	var allowed bool
 	var clusterNameSet map[string]struct{}
@@ -208,9 +215,8 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 		return nil, errors.New("both Include and Exclude clusters configured")
 	}
 
-	var filtered []mongodbatlas.Cluster
-	for i := range clusters {
-		cluster := clusters[i]
+	var filtered []*mongodbatlas.AdvancedCluster
+	for _, cluster := range clusters {
 		if _, ok := clusterNameSet[cluster.Name]; (!ok && !allowed) || (ok && allowed) {
 			filtered = append(filtered, cluster)
 		}

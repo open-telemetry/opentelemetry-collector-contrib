@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -200,6 +199,27 @@ type providerValues struct {
 	ProviderName string
 }
 
+func clusterProviderValues(cluster *mongodbatlas.AdvancedCluster) providerValues {
+	var primary *mongodbatlas.AdvancedRegionConfig
+	for _, spec := range cluster.ReplicationSpecs {
+		if spec == nil {
+			continue
+		}
+		for _, rc := range spec.RegionConfigs {
+			if rc == nil {
+				continue
+			}
+			if primary == nil || (rc.Priority != nil && (primary.Priority == nil || *rc.Priority > *primary.Priority)) {
+				primary = rc
+			}
+		}
+	}
+	if primary == nil {
+		return providerValues{}
+	}
+	return providerValues{RegionName: primary.RegionName, ProviderName: primary.ProviderName}
+}
+
 func (s *mongodbatlasreceiver) getNodeClusterNameMap(
 	ctx context.Context,
 	projectID string,
@@ -211,19 +231,12 @@ func (s *mongodbatlasreceiver) getNodeClusterNameMap(
 		return nil, nil, err
 	}
 
-	for i := range clusters {
-		cluster := &clusters[i]
-		// URI in the form mongodb://host1.mongodb.net:27017,host2.mongodb.net:27017,host3.mongodb.net:27017
-		for node := range strings.SplitSeq(strings.TrimPrefix(cluster.MongoURI, "mongodb://"), ",") {
-			// Remove the port from the node
-			n, _, _ := strings.Cut(node, ":")
+	for _, cluster := range clusters {
+		for _, n := range clusterHostNames(cluster, s.log) {
 			clusterMap[n] = cluster.Name
 		}
 
-		providerMap[cluster.Name] = providerValues{
-			RegionName:   cluster.ProviderSettings.RegionName,
-			ProviderName: cluster.ProviderSettings.ProviderName,
-		}
+		providerMap[cluster.Name] = clusterProviderValues(cluster)
 	}
 
 	return clusterMap, providerMap, nil
