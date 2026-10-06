@@ -3805,6 +3805,7 @@ func (rac *SqlserverDatabaseNameResourceAttributeConfig) Unmarshal(parser *confm
 type SqlserverDbEditionResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	// OverrideValue allows users to override the value of this resource attribute.
+	// Must be one of: standard, enterprise, express, azure_sql_database, managed_instance, unknown.
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
@@ -3833,6 +3834,17 @@ func (rac *SqlserverDbEditionResourceAttributeConfig) Unmarshal(parser *confmap.
 		return err
 	}
 	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (rac *SqlserverDbEditionResourceAttributeConfig) Validate() error {
+	if rac.OverrideValue != nil {
+		switch *rac.OverrideValue {
+		case "standard", "enterprise", "express", "azure_sql_database", "managed_instance", "unknown":
+		default:
+			return fmt.Errorf("override_value for sqlserver.db.edition must be one of [standard, enterprise, express, azure_sql_database, managed_instance, unknown], got %q", *rac.OverrideValue)
+		}
+	}
 	return nil
 }
 

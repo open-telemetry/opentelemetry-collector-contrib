@@ -252,6 +252,17 @@ sqlserver:
 > **Note:** On Azure SQL Database and Azure SQL Managed Instance, `SERVERPROPERTY('ProductVersion')`
 > returns a fixed legacy version string rather than the actual engine version.
 
+`sqlserver.db.edition` reports the installed SQL Server edition (e.g. `enterprise`, `standard`, `express`). It is disabled by default and only available in direct connection mode. Enable it via:
+
+```yaml
+sqlserver:
+  resource_attributes:
+    sqlserver.db.edition:
+      enabled: true
+```
+
+> **Note:** This attribute requires a direct database connection and is not available in Windows Performance Counter mode.
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)

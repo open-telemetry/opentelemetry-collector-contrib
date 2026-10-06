@@ -44,8 +44,6 @@ const (
 
 	defaultServiceName = "unknown_service:microsoft.sql_server"
 
-	// editionQueryTimeout bounds the EngineEdition detection query.
-	editionQueryTimeout = 10 * time.Second
 	versionQueryTimeout = 5 * time.Second
 )
 
@@ -81,10 +79,9 @@ type sqlServerScraperHelper struct {
 	serviceInstanceID         string
 	serverAddress             string
 	serverPort                int64
-	dbEdition                 string
-	editionFunc               func(context.Context, *zap.Logger) (string, bool)
-	dbVersion                 string
-	versionFunc               func(context.Context, *zap.Logger) (string, bool)
+	dbEdition        string
+	dbVersion        string
+	instanceInfoFunc func(context.Context, *zap.Logger) (version, edition string, resolved bool)
 }
 
 var (
@@ -157,103 +154,70 @@ func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) erro
 	return nil
 }
 
-// engineEditionToString maps SERVERPROPERTY('EngineEdition') integers to readable strings
-// for the editions supported by this receiver (2, 3, 4, 5, 8).
-func engineEditionToString(edition int) string {
-	switch edition {
-	case 2:
-		return "Standard"
-	case 3:
-		return "Enterprise"
-	case 4:
-		return "Express"
-	case 5:
-		return "AzureSQLDatabase"
-	case 8:
-		return "ManagedInstance"
+// engineEditionToString maps SERVERPROPERTY('Edition') strings to the lowercase
+// enum values declared in metadata.yaml.
+func engineEditionToString(edition string) string {
+	switch {
+	case strings.HasPrefix(edition, "Enterprise"):
+		return "enterprise"
+	case strings.HasPrefix(edition, "Standard"):
+		return "standard"
+	case strings.HasPrefix(edition, "Express"):
+		return "express"
+	case strings.HasPrefix(edition, "Azure SQL Database"):
+		return "azure_sql_database"
+	case strings.HasPrefix(edition, "SQL Azure"):
+		return "azure_sql_database"
+	case strings.HasPrefix(edition, "Azure SQL Managed Instance"):
+		return "managed_instance"
 	default:
-		return ""
+		return "unknown"
 	}
 }
 
-// detectSQLServerEdition queries SERVERPROPERTY('EngineEdition') and maps the integer
-// to a readable string. Declared as a var so tests can stub it.
-// Returns (*string, nil) on success — non-nil pointer means resolved.
-// Returns (&"", nil) if NULL or unknown edition — permanent, latch it.
-// Returns (nil, err) on transient error — caller may retry.
-// Returns (nil, nil) if db is nil — silently skip.
-var detectSQLServerEdition = func(ctx context.Context, db *sql.DB) (*string, error) {
-	if db == nil {
-		return nil, nil
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, editionQueryTimeout)
-	defer cancel()
-
-	var edition sql.NullInt64
-	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('EngineEdition') AS INT)")
-	if err := row.Scan(&edition); err != nil {
-		return nil, err
-	}
-	if !edition.Valid {
-		v := ""
-		return &v, nil
-	}
-	name := engineEditionToString(int(edition.Int64))
-	return &name, nil
-}
-
-func (s *sqlServerScraperHelper) ensureDBEdition(ctx context.Context) {
-	if s.editionFunc != nil {
-		v, resolved := s.editionFunc(ctx, s.logger)
-		s.dbEdition = v
-		if resolved {
-			s.editionFunc = nil
-		}
-	}
-}
-
-// detectSQLServerVersion queries SERVERPROPERTY('ProductVersion').
-// Returns (*string, error):
-//   - (&"15.0", nil): success — non-nil pointer means resolved, latch it.
-//   - (&"", nil):     SERVERPROPERTY returned NULL — permanent empty, latch it.
-//   - (nil, err):     transient scan error — caller may retry.
-//   - (nil, nil):     db is nil, not yet connected — silently skip.
-//
+// detectSQLServerInstanceInfo queries ProductVersion and Edition in a single round-trip.
+// Returns (version, edition *string, error) — both non-nil when resolved (empty string
+// for NULL), nil on transient error (caller may retry), nil+nil when db is not yet connected.
 // Declared as a var so tests can stub it.
-var detectSQLServerVersion = func(ctx context.Context, db *sql.DB) (*string, error) {
+var detectSQLServerInstanceInfo = func(ctx context.Context, db *sql.DB) (*string, *string, error) {
 	if db == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
 	defer cancel()
 
-	var version sql.NullString
-	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128))")
-	if err := row.Scan(&version); err != nil {
-		return nil, err
+	var version, edition sql.NullString
+	row := db.QueryRowContext(ctx,
+		"SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128)), CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128))")
+	if err := row.Scan(&version, &edition); err != nil {
+		return nil, nil, err
 	}
-	if !version.Valid {
-		v := ""
-		return &v, nil
+
+	var v, e string
+	if version.Valid {
+		v = version.String
 	}
-	return &version.String, nil
+	if edition.Valid {
+		e = engineEditionToString(edition.String)
+	}
+	return &v, &e, nil
 }
 
-func (s *sqlServerScraperHelper) ensureDBVersion(ctx context.Context) {
-	if s.versionFunc != nil {
-		v, resolved := s.versionFunc(ctx, s.logger)
-		s.dbVersion = v
+// ensureInstanceInfo resolves version and edition lazily in a single DB round-trip.
+func (s *sqlServerScraperHelper) ensureInstanceInfo(ctx context.Context) {
+	if s.instanceInfoFunc != nil {
+		version, edition, resolved := s.instanceInfoFunc(ctx, s.logger)
+		s.dbVersion = version
+		s.dbEdition = edition
 		if resolved {
-			s.versionFunc = nil
+			s.instanceInfoFunc = nil
 		}
 	}
 }
 
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
-	s.ensureDBEdition(ctx)
-	s.ensureDBVersion(ctx)
+	s.ensureInstanceInfo(ctx)
 
 	var err error
 
@@ -288,8 +252,7 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
-	s.ensureDBEdition(ctx)
-	s.ensureDBVersion(ctx)
+	s.ensureInstanceInfo(ctx)
 
 	var err error
 	var resources pcommon.Resource
@@ -524,8 +487,19 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceNamespace("")
 	rb.SetServerAddress(s.serverAddress)
 	rb.SetServerPort(s.serverPort)
-	if s.dbEdition != "" {
-		rb.SetSqlserverDbEdition(s.dbEdition)
+	switch s.dbEdition {
+	case "standard":
+		rb.SetSqlserverDbEditionStandard()
+	case "enterprise":
+		rb.SetSqlserverDbEditionEnterprise()
+	case "express":
+		rb.SetSqlserverDbEditionExpress()
+	case "azure_sql_database":
+		rb.SetSqlserverDbEditionAzureSQLDatabase()
+	case "managed_instance":
+		rb.SetSqlserverDbEditionManagedInstance()
+	case "unknown":
+		rb.SetSqlserverDbEditionUnknown()
 	}
 	if s.dbVersion != "" {
 		rb.SetDbSystemVersion(s.dbVersion)

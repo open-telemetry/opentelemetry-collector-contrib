@@ -84,10 +84,45 @@ func (rb *ResourceBuilder) SetSqlserverDatabaseName(val string) {
 	}
 }
 
-// SetSqlserverDbEdition sets provided value as "sqlserver.db.edition" attribute.
-func (rb *ResourceBuilder) SetSqlserverDbEdition(val string) {
+// SetSqlserverDbEditionStandard sets "sqlserver.db.edition=standard" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionStandard() {
 	if rb.config.SqlserverDbEdition.Enabled {
-		rb.res.Attributes().PutStr("sqlserver.db.edition", val)
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "standard")
+	}
+}
+
+// SetSqlserverDbEditionEnterprise sets "sqlserver.db.edition=enterprise" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionEnterprise() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "enterprise")
+	}
+}
+
+// SetSqlserverDbEditionExpress sets "sqlserver.db.edition=express" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionExpress() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "express")
+	}
+}
+
+// SetSqlserverDbEditionAzureSQLDatabase sets "sqlserver.db.edition=azure_sql_database" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionAzureSQLDatabase() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "azure_sql_database")
+	}
+}
+
+// SetSqlserverDbEditionManagedInstance sets "sqlserver.db.edition=managed_instance" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionManagedInstance() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "managed_instance")
+	}
+}
+
+// SetSqlserverDbEditionUnknown sets "sqlserver.db.edition=unknown" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionUnknown() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "unknown")
 	}
 }
 

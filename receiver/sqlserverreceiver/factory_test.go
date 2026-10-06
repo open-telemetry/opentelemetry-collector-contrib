@@ -407,15 +407,15 @@ func TestDBProviderCloseIsSafe(t *testing.T) {
 	})
 }
 
-func TestDBProviderDetectEdition(t *testing.T) {
+func TestDBProviderDetectInstanceInfo(t *testing.T) {
 	t.Run("returns cached value on second call without re-querying", func(t *testing.T) {
 		calls := 0
-		orig := detectSQLServerEdition
-		t.Cleanup(func() { detectSQLServerEdition = orig })
-		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
+		orig := detectSQLServerInstanceInfo
+		t.Cleanup(func() { detectSQLServerInstanceInfo = orig })
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
 			calls++
-			v := "Enterprise"
-			return &v, nil
+			v, e := "15.0.4261.1", "enterprise"
+			return &v, &e, nil
 		}
 
 		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
@@ -424,22 +424,24 @@ func TestDBProviderDetectEdition(t *testing.T) {
 		defer db.Close()
 		provider.db = db
 
-		v1, resolved1 := provider.detectEdition(t.Context(), zap.NewNop())
+		v1, e1, resolved1 := provider.detectInstanceInfo(t.Context(), zap.NewNop())
 		require.True(t, resolved1)
-		require.Equal(t, "Enterprise", v1)
+		require.Equal(t, "15.0.4261.1", v1)
+		require.Equal(t, "enterprise", e1)
 
-		v2, resolved2 := provider.detectEdition(t.Context(), zap.NewNop())
+		v2, e2, resolved2 := provider.detectInstanceInfo(t.Context(), zap.NewNop())
 		require.True(t, resolved2)
-		require.Equal(t, "Enterprise", v2)
-		require.Equal(t, 1, calls, "detectSQLServerEdition should only be called once")
+		require.Equal(t, "15.0.4261.1", v2)
+		require.Equal(t, "enterprise", e2)
+		require.Equal(t, 1, calls, "detectSQLServerInstanceInfo should only be called once")
 	})
 
-	t.Run("NULL EngineEdition latches so subsequent intervals do not retry", func(t *testing.T) {
-		orig := detectSQLServerEdition
-		t.Cleanup(func() { detectSQLServerEdition = orig })
+	t.Run("NULL result latches so subsequent intervals do not retry", func(t *testing.T) {
+		orig := detectSQLServerInstanceInfo
+		t.Cleanup(func() { detectSQLServerInstanceInfo = orig })
 		nullStr := ""
-		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
-			return &nullStr, nil
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
+			return &nullStr, &nullStr, nil
 		}
 
 		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
@@ -448,27 +450,30 @@ func TestDBProviderDetectEdition(t *testing.T) {
 		defer db.Close()
 		provider.db = db
 
-		result, resolved := provider.detectEdition(t.Context(), zap.NewNop())
+		v, e, resolved := provider.detectInstanceInfo(t.Context(), zap.NewNop())
 		require.True(t, resolved)
-		require.Empty(t, result)
+		require.Empty(t, v)
+		require.Empty(t, e)
+		require.NotNil(t, provider.dbVersion)
 		require.NotNil(t, provider.dbEdition)
 
-		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
-			t.Fatal("detectSQLServerEdition called again after NULL was latched")
-			return nil, nil
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
+			t.Fatal("detectSQLServerInstanceInfo called again after NULL was latched")
+			return nil, nil, nil
 		}
-		result, resolved = provider.detectEdition(t.Context(), zap.NewNop())
+		v, e, resolved = provider.detectInstanceInfo(t.Context(), zap.NewNop())
 		require.True(t, resolved)
-		require.Empty(t, result)
+		require.Empty(t, v)
+		require.Empty(t, e)
 	})
 
 	t.Run("transient error returns unresolved and retries next interval", func(t *testing.T) {
 		calls := 0
-		orig := detectSQLServerEdition
-		t.Cleanup(func() { detectSQLServerEdition = orig })
-		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
+		orig := detectSQLServerInstanceInfo
+		t.Cleanup(func() { detectSQLServerInstanceInfo = orig })
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
 			calls++
-			return nil, errors.New("connection refused")
+			return nil, nil, errors.New("connection refused")
 		}
 
 		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
@@ -477,15 +482,15 @@ func TestDBProviderDetectEdition(t *testing.T) {
 		defer db.Close()
 		provider.db = db
 
-		_, resolved1 := provider.detectEdition(t.Context(), zap.NewNop())
+		_, _, resolved1 := provider.detectInstanceInfo(t.Context(), zap.NewNop())
 		require.False(t, resolved1)
-		_, resolved2 := provider.detectEdition(t.Context(), zap.NewNop())
+		_, _, resolved2 := provider.detectInstanceInfo(t.Context(), zap.NewNop())
 		require.False(t, resolved2)
 		require.Equal(t, 2, calls, "should retry on transient errors")
 	})
 }
 
-func TestSetupSQLServerScrapersEditionWiring(t *testing.T) {
+func TestSetupSQLServerScrapersInstanceInfoWiring(t *testing.T) {
 	cfg := &Config{
 		Server:   "0.0.0.0",
 		Username: "sa",
@@ -494,104 +499,37 @@ func TestSetupSQLServerScrapersEditionWiring(t *testing.T) {
 	}
 	require.NoError(t, cfg.Validate())
 
-	t.Run("editionFunc is nil when edition disabled", func(t *testing.T) {
+	t.Run("instanceInfoFunc is nil when both disabled", func(t *testing.T) {
 		cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 		cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverDbEdition.Enabled = false
+		cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = false
 		scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 		for _, s := range scrapers {
-			require.Nil(t, s.editionFunc, "editionFunc should be nil when edition is disabled")
+			require.Nil(t, s.instanceInfoFunc)
 		}
 	})
 
-	t.Run("editionFunc is set when edition enabled", func(t *testing.T) {
+	t.Run("instanceInfoFunc is set when edition enabled", func(t *testing.T) {
 		cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 		cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverDbEdition.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 		scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 		require.NotEmpty(t, scrapers)
 		for _, s := range scrapers {
-			require.NotNil(t, s.editionFunc, "editionFunc should be set when edition is enabled")
+			require.NotNil(t, s.instanceInfoFunc)
 		}
 	})
-}
 
-func TestDBProviderDetectVersionCaches(t *testing.T) {
-	// Open a real *sql.DB then close it so queries fail — we only need the
-	// provider's caching behavior, not a live SQL Server.
-	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
-	require.NoError(t, err)
-	defer db.Close()
-
-	provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
-	provider.db = db
-	provider.opened = true
-
-	// Manually inject a version to simulate a successful prior detection.
-	v := "15.0.4261.1"
-	provider.dbVersion = &v
-
-	// All subsequent calls must return the cached value without touching the DB.
-	got, resolved := provider.detectVersion(t.Context(), zap.NewNop())
-	require.Equal(t, "15.0.4261.1", got)
-	require.True(t, resolved)
-	got, resolved = provider.detectVersion(t.Context(), zap.NewNop())
-	require.Equal(t, "15.0.4261.1", got)
-	require.True(t, resolved)
-}
-
-func TestDBProviderDetectVersionRetriesOnFailure(t *testing.T) {
-	provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
-	// db is nil — first call must return "" and leave dbVersion nil.
-	result, resolved := provider.detectVersion(t.Context(), zap.NewNop())
-	require.Empty(t, result)
-	require.False(t, resolved)
-	require.Nil(t, provider.dbVersion)
-
-	// After a real (closed) DB is injected, the next call should retry.
-	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
-	require.NoError(t, err)
-	require.NoError(t, db.Close())
-	provider.db = db
-
-	// Query will fail on a closed DB, so result is still "" — but the retry
-	// path was exercised and dbVersion remains nil.
-	result, resolved = provider.detectVersion(t.Context(), zap.NewNop())
-	require.Empty(t, result)
-	require.False(t, resolved)
-	require.Nil(t, provider.dbVersion)
-}
-
-func TestDBProviderDetectVersionNullLatches(t *testing.T) {
-	// When SERVERPROPERTY returns NULL, detectVersion must latch dbVersion so
-	// subsequent intervals do not retry.
-	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
-	require.NoError(t, err)
-	defer db.Close()
-
-	provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
-	provider.db = db
-
-	// Inject a stub that returns the NULL signal.
-	orig := detectSQLServerVersion
-	t.Cleanup(func() { detectSQLServerVersion = orig })
-	nullStr := ""
-	detectSQLServerVersion = func(_ context.Context, _ *sql.DB) (*string, error) {
-		return &nullStr, nil // NULL: non-nil pointer to empty string
-	}
-
-	result, resolved := provider.detectVersion(t.Context(), zap.NewNop())
-	require.Empty(t, result)
-	require.True(t, resolved)
-	require.NotNil(t, provider.dbVersion) // latched — will not retry
-
-	// Second call must return "" from cache, not re-query.
-	detectSQLServerVersion = func(_ context.Context, _ *sql.DB) (*string, error) {
-		t.Fatal("detectSQLServerVersion called again after NULL was latched")
-		return nil, nil
-	}
-	result, resolved = provider.detectVersion(t.Context(), zap.NewNop())
-	require.Empty(t, result)
-	require.True(t, resolved)
+	t.Run("instanceInfoFunc is set when version enabled", func(t *testing.T) {
+		cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
+		cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
+		scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		require.NotEmpty(t, scrapers)
+		for _, s := range scrapers {
+			require.NotNil(t, s.instanceInfoFunc)
+		}
+	})
 }
 
 func TestSetupQueries(t *testing.T) {

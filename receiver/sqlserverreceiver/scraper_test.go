@@ -2057,16 +2057,17 @@ func TestSetupResourceBuilder(t *testing.T) {
 	}
 }
 
-func TestDetectSQLServerVersion_WarnOnScanFailure(t *testing.T) {
+func TestDetectSQLServerInstanceInfo_WarnOnScanFailure(t *testing.T) {
 	// Open a real *sql.DB, then close it before querying so that
 	// QueryRowContext returns an error — triggering the warning path.
 	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
 	require.NoError(t, err)
 	require.NoError(t, db.Close())
 
-	v, err := detectSQLServerVersion(t.Context(), db)
+	v, e, err := detectSQLServerInstanceInfo(t.Context(), db)
 
 	assert.Nil(t, v)
+	assert.Nil(t, e)
 	assert.Error(t, err)
 }
 
@@ -2751,53 +2752,44 @@ func TestProcedureLookbackSeconds(t *testing.T) {
 
 func TestEngineEditionToString(t *testing.T) {
 	tests := []struct {
-		edition  int
+		edition  string
 		expected string
 	}{
-		{2, "Standard"},
-		{3, "Enterprise"},
-		{4, "Express"},
-		{5, "AzureSQLDatabase"},
-		{8, "ManagedInstance"},
-		{0, ""},
-		{1, ""},
-		{99, ""},
+		{"Standard Edition", "standard"},
+		{"Enterprise Edition", "enterprise"},
+		{"Express Edition", "express"},
+		{"Azure SQL Database", "azure_sql_database"},
+		{"SQL Azure", "azure_sql_database"},
+		{"Azure SQL Managed Instance", "managed_instance"},
+		{"", "unknown"},
+		{"Unknown Edition", "unknown"},
 	}
 	for _, tc := range tests {
-		require.Equal(t, tc.expected, engineEditionToString(tc.edition), "edition %d", tc.edition)
+		require.Equal(t, tc.expected, engineEditionToString(tc.edition), "edition %q", tc.edition)
 	}
 }
 
-func TestDetectSQLServerEdition(t *testing.T) {
-	t.Run("db nil returns nil nil", func(t *testing.T) {
-		v, err := detectSQLServerEdition(t.Context(), nil)
+func TestDetectSQLServerInstanceInfo(t *testing.T) {
+	t.Run("db nil returns nil nil nil", func(t *testing.T) {
+		v, e, err := detectSQLServerInstanceInfo(t.Context(), nil)
 		require.NoError(t, err)
 		require.Nil(t, v)
+		require.Nil(t, e)
 	})
 
-	t.Run("stub returns enterprise", func(t *testing.T) {
-		orig := detectSQLServerEdition
-		t.Cleanup(func() { detectSQLServerEdition = orig })
-		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
-			v := "Enterprise"
-			return &v, nil
+	t.Run("stub returns version and edition", func(t *testing.T) {
+		orig := detectSQLServerInstanceInfo
+		t.Cleanup(func() { detectSQLServerInstanceInfo = orig })
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
+			ver := "15.0.4261.1"
+			ed := "enterprise"
+			return &ver, &ed, nil
 		}
-		v, err := detectSQLServerEdition(t.Context(), &sql.DB{})
+		v, e, err := detectSQLServerInstanceInfo(t.Context(), &sql.DB{})
 		require.NoError(t, err)
 		require.NotNil(t, v)
-		require.Equal(t, "Enterprise", *v)
-	})
-
-	t.Run("stub returns empty string for unknown edition", func(t *testing.T) {
-		orig := detectSQLServerEdition
-		t.Cleanup(func() { detectSQLServerEdition = orig })
-		detectSQLServerEdition = func(_ context.Context, _ *sql.DB) (*string, error) {
-			v := ""
-			return &v, nil
-		}
-		v, err := detectSQLServerEdition(t.Context(), &sql.DB{})
-		require.NoError(t, err)
-		require.NotNil(t, v)
-		require.Empty(t, *v)
+		require.NotNil(t, e)
+		require.Equal(t, "15.0.4261.1", *v)
+		require.Equal(t, "enterprise", *e)
 	})
 }

@@ -831,7 +831,7 @@ override_set:
       override_value: "override-sqlserver.database.name"
     sqlserver.db.edition:
       enabled: true
-      override_value: "override-sqlserver.db.edition"
+      override_value: "standard"
     sqlserver.instance.name:
       enabled: true
       override_value: "override-sqlserver.instance.name"
@@ -962,9 +962,9 @@ filter_set_exclude:
     sqlserver.db.edition:
       enabled: true
       metrics_exclude:
-        - strict: "sqlserver.db.edition-val"
+        - strict: "standard"
       events_exclude:
-        - strict: "sqlserver.db.edition-val"
+        - strict: "standard"
     sqlserver.instance.name:
       enabled: true
       metrics_exclude:

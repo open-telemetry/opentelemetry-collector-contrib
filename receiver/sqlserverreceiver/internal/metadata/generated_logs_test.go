@@ -39,7 +39,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 	rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
-	rb.SetSqlserverDbEdition("sqlserver.db.edition-val")
+	rb.SetSqlserverDbEditionStandard()
 	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 	res := rb.Emit()
 
@@ -159,7 +159,7 @@ func TestLogsBuilder(t *testing.T) {
 			rb.SetServiceNamespace("service.namespace-val")
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
-			rb.SetSqlserverDbEdition("sqlserver.db.edition-val")
+			rb.SetSqlserverDbEditionStandard()
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
