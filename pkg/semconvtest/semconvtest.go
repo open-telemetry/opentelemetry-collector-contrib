@@ -45,7 +45,7 @@ const (
 	// does not select one with WithVersion. Renovate watches the line below
 	// and opens an update PR when a new Weaver release appears.
 	// renovate: datasource=docker depName=otel/weaver
-	defaultWeaverVersion = "v0.26.1"
+	defaultWeaverVersion = "v0.27.0"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
