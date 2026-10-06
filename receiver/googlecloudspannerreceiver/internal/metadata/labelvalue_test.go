@@ -4,6 +4,7 @@
 package metadata
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -292,14 +293,53 @@ func TestNewStringSliceLabelValue(t *testing.T) {
 
 func TestNewIntSliceLabelValue(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, IntSliceValueType)
-	value := []int64{2, 1, 3}
-	expectedValue := "1,2,3"
-	valueHolder := &value
 
-	labelValue := newIntSliceLabelValue(metadata, valueHolder)
+	tests := []struct {
+		name          string
+		value         []int64
+		expectedValue string
+	}{
+		{
+			name:          "Sorting check",
+			value:         []int64{2, 10, 1, 3},
+			expectedValue: "1,2,3,10",
+		},
+		{
+			name:          "With single value",
+			value:         []int64{42},
+			expectedValue: "42",
+		},
+		{
+			name:          "With empty array",
+			value:         []int64{},
+			expectedValue: "",
+		},
+		{
+			name:          "NULL array",
+			value:         nil,
+			expectedValue: "",
+		},
+		{
+			name:          "Duplicates",
+			value:         []int64{2, 1, 2, 3, 1},
+			expectedValue: "1,2,3",
+		},
+		{
+			name:          "Full int64 values",
+			value:         []int64{math.MaxInt64, 0, math.MinInt64},
+			expectedValue: "-9223372036854775808,0,9223372036854775807",
+		},
+	}
 
-	assert.Equal(t, IntSliceValueType, labelValue.Metadata().ValueType())
-	assert.Equal(t, expectedValue, labelValue.Value())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			valueHolder := &tt.value
+			labelValue := newIntSliceLabelValue(metadata, valueHolder)
+
+			assert.Equal(t, IntSliceValueType, labelValue.Metadata().ValueType())
+			assert.Equal(t, tt.expectedValue, labelValue.Value())
+		})
+	}
 }
 
 func TestNewByteSliceLabelValue(t *testing.T) {

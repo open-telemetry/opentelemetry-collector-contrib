@@ -190,11 +190,20 @@ func (v *intSliceLabelValue) ModifyValue(s string) {
 func newIntSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
 	value := *valueHolder.(*[]int64)
 
+	// Copy the slice to avoid modifying the original array from the database driver
+	sortedValue := make([]int64, len(value))
+	copy(sortedValue, value)
+	sort.Slice(sortedValue, func(i, j int) bool { return sortedValue[i] < sortedValue[j] })
+
 	var stringSlice []string
-	for _, v := range value {
-		stringSlice = append(stringSlice, strconv.FormatInt(v, 10))
+	var lastVal *int64
+	for _, v := range sortedValue {
+		if lastVal == nil || *lastVal != v {
+			stringSlice = append(stringSlice, strconv.FormatInt(v, 10))
+			val := v
+			lastVal = &val
+		}
 	}
-	sort.Strings(stringSlice)
 	sortedAndConstructedValue := strings.Join(stringSlice, ",")
 
 	return intSliceLabelValue{
