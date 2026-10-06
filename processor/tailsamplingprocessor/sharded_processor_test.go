@@ -5,6 +5,7 @@ package tailsamplingprocessor
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -324,18 +325,93 @@ func TestShardedProcessorMultiTraceResourceSpans(t *testing.T) {
 }
 
 func TestShardedProcessorCapabilities(t *testing.T) {
+	for _, mutatesData := range []bool{false, true} {
+		t.Run(fmt.Sprintf("mutates_data=%t", mutatesData), func(t *testing.T) {
+			cfg := Config{
+				SamplingStrategy: samplingStrategyTraceComplete,
+				DecisionWait:     defaultTestDecisionWait,
+				NumTraces:        100,
+				NumShards:        2,
+				PolicyCfgs:       testPolicy,
+				MutatesData:      mutatesData,
+			}
+
+			p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+			require.NoError(t, err)
+
+			assert.Equal(t, mutatesData, p.Capabilities().MutatesData)
+		})
+	}
+}
+
+// TestMutatesData checks that moving spans out of the input samples
+// the same spans as copying them, and only moving consumes the input.
+func TestMutatesData(t *testing.T) {
+	template := cloneWithNewTraceIDs(generateBenchBatch(64), 1)
+	// The test controller drives a single shard, so this sticks to one.
+	for _, strategy := range []samplingStrategy{samplingStrategyTraceComplete, samplingStrategySpanIngest} {
+		for _, mutatesData := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/mutates_data=%t", strategy, mutatesData), func(t *testing.T) {
+				testMutatesData(t, template, strategy, mutatesData)
+			})
+		}
+	}
+}
+
+func testMutatesData(t *testing.T, template ptrace.Traces, strategy samplingStrategy, mutatesData bool) {
+	controller := newTestTSPController()
 	cfg := Config{
-		SamplingStrategy: samplingStrategyTraceComplete,
+		SamplingStrategy: strategy,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        100,
-		NumShards:        2,
 		PolicyCfgs:       testPolicy,
+		MutatesData:      mutatesData,
+		Options:          []Option{withTestController(controller)},
 	}
-
-	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	sink := new(consumertest.TracesSink)
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), sink, cfg)
 	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, p.Shutdown(t.Context())) }()
 
-	assert.False(t, p.Capabilities().MutatesData)
+	input := ptrace.NewTraces()
+	template.CopyTo(input)
+	require.NoError(t, p.ConsumeTraces(t.Context(), input))
+	// The first tick won't do anything.
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Equal(t, spansByID(t, template), spansByID(t, sink.AllTraces()...))
+	for _, rs := range input.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				assert.Equal(t, mutatesData, span.SpanID().IsEmpty())
+			}
+		}
+	}
+}
+
+// spansByID flattens traces into a map from span ID to the span with its
+// resource and scope, so traces can be compared regardless of how they were
+// split into batches.
+func spansByID(t *testing.T, tds ...ptrace.Traces) map[pcommon.SpanID]ptrace.ResourceSpans {
+	out := make(map[pcommon.SpanID]ptrace.ResourceSpans)
+	for _, td := range tds {
+		for _, rs := range td.ResourceSpans().All() {
+			for _, ss := range rs.ScopeSpans().All() {
+				for _, span := range ss.Spans().All() {
+					flat := ptrace.NewResourceSpans()
+					rs.Resource().CopyTo(flat.Resource())
+					flatScope := flat.ScopeSpans().AppendEmpty()
+					ss.Scope().CopyTo(flatScope.Scope())
+					span.CopyTo(flatScope.Spans().AppendEmpty())
+					require.NotContains(t, out, span.SpanID())
+					out[span.SpanID()] = flat
+				}
+			}
+		}
+	}
+	return out
 }
 
 func TestTraceIDToShard(t *testing.T) {

@@ -85,6 +85,14 @@ The following configuration options can also be modified:
   enforcement is approximate: limits smaller than `num_shards` can be exceeded in aggregate, and a shard can
   reach its share of `num_traces` before the aggregate does. Values greater than 1 are not supported together
   with `tail_storage`.
+- `mutates_data` (default = false): Move spans out of incoming batches instead of copying them, which
+  saves allocations and CPU on ingest. Resources and scopes are still copied per trace. The processor then reports that it mutates data, and the Collector clones a
+  batch before handing it to the processor if the batch is shared with a consumer that doesn't mutate data. Enable
+  it when the processor's pipeline already contains a component that mutates data (for example `batch`,
+  `k8sattributes`, `resource` or `transform`), or when nothing else consumes the same batches. Leave it disabled
+  when this processor is the only component in its pipeline that mutates data and the pipeline shares a receiver
+  or connector with a pipeline that doesn't: the Collector then clones every batch, which costs more than the copy
+  it replaces.
 
 ## Sampling Strategies
 

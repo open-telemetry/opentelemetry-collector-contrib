@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -258,6 +259,14 @@ func TestTraceIntegrity(t *testing.T) {
 }
 
 func TestSplitResourceSpansByTrace(t *testing.T) {
+	for _, move := range []bool{false, true} {
+		t.Run(fmt.Sprintf("move=%t", move), func(t *testing.T) {
+			testSplitResourceSpansByTrace(t, move)
+		})
+	}
+}
+
+func testSplitResourceSpansByTrace(t *testing.T, move bool) {
 	rss := ptrace.NewResourceSpans()
 	rss.SetSchemaUrl("https://example.com/resource")
 	rss.Resource().Attributes().PutStr("service.name", "frontend")
@@ -292,7 +301,7 @@ func TestSplitResourceSpansByTrace(t *testing.T) {
 	span.SetSpanID(uInt64ToSpanID(3))
 	span.SetParentSpanID(uInt64ToSpanID(1))
 
-	batches := splitResourceSpansByTrace(rss)
+	batches := splitResourceSpansByTrace(rss, move)
 	require.Len(t, batches, 2)
 	byID := make(map[pcommon.TraceID]traceBatch, len(batches))
 	for _, batch := range batches {
@@ -323,6 +332,16 @@ func TestSplitResourceSpansByTrace(t *testing.T) {
 	require.Equal(t, 1, b.rss.ScopeSpans().Len())
 	require.Equal(t, "lib-a", b.rss.ScopeSpans().At(0).Scope().Name())
 	require.Equal(t, uInt64ToSpanID(2), b.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
+
+	// Moving consumes the source spans; copying leaves them as they were.
+	// The resource and scopes are always copied.
+	for _, ss := range rss.ScopeSpans().All() {
+		for _, span := range ss.Spans().All() {
+			require.Equal(t, move, span.SpanID().IsEmpty())
+		}
+	}
+	require.Equal(t, "frontend", rss.Resource().Attributes().AsRaw()["service.name"])
+	require.Equal(t, "lib-a", rss.ScopeSpans().At(0).Scope().Name())
 }
 
 func TestSequentialTraceArrival(t *testing.T) {

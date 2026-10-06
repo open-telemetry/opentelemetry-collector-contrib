@@ -27,9 +27,10 @@ import (
 // decision evaluation under high load. It is the single code path for all
 // configurations: num_shards of 1 (the default) simply creates one shard.
 type shardedProcessor struct {
-	tracer    trace.Tracer
-	shards    []*tailSamplingSpanProcessor
-	numShards uint32
+	tracer      trace.Tracer
+	shards      []*tailSamplingSpanProcessor
+	numShards   uint32
+	mutatesData bool
 }
 
 // shardShared holds the dependencies all shards of one processor have in
@@ -78,9 +79,10 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 	}
 
 	return &shardedProcessor{
-		tracer:    shared.tracer,
-		shards:    shards,
-		numShards: numShards,
+		tracer:      shared.tracer,
+		shards:      shards,
+		numShards:   numShards,
+		mutatesData: cfg.MutatesData,
 	}, nil
 }
 
@@ -157,8 +159,8 @@ func divideRate[T int | int64](v T, numShards uint32) T {
 	return max(1, v/T(numShards))
 }
 
-func (*shardedProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+func (sp *shardedProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: sp.mutatesData}
 }
 
 func (sp *shardedProcessor) Start(ctx context.Context, host component.Host) error {
@@ -188,9 +190,11 @@ func (sp *shardedProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 
 	shardBatches := make([][]traceBatch, sp.numShards)
 
+	// With mutatesData the split moves spans out of td, so returning an
+	// error after it would make a retry resend empty spans.
 	for _, rss := range td.ResourceSpans().All() {
 		totalResourceSpans++
-		for _, batch := range splitResourceSpansByTrace(rss) {
+		for _, batch := range splitResourceSpansByTrace(rss, sp.mutatesData) {
 			shardIdx := sp.traceIDToShard(batch.id)
 			shardBatches[shardIdx] = append(shardBatches[shardIdx], batch)
 			totalSpans += batch.spanCount

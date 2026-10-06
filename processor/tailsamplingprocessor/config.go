@@ -381,6 +381,11 @@ type Config struct {
 	// and values greater than 1 are not supported with tail_storage.
 	// Defaults to 1 (single event loop, original behavior).
 	NumShards uint32 `mapstructure:"num_shards"`
+	// MutatesData moves spans out of incoming batches instead of copying them.
+	// The processor then reports that it mutates data, so the Collector clones
+	// a batch before handing it over if the batch is shared with a consumer
+	// that doesn't mutate data.
+	MutatesData bool `mapstructure:"mutates_data"`
 }
 
 // maxNumShards bounds num_shards to catch configuration mistakes: each shard

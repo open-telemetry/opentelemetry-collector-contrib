@@ -60,20 +60,34 @@ func BenchmarkSampling(b *testing.B) {
 
 // BenchmarkProcessorThroughput measures concurrent ingest while the decision
 // loop ticks as fast as it can, for one and several shards.
+//
+// A processor that takes ownership of its input needs a fresh batch per
+// ConsumeTraces call, so those runs clone the batch first, as the Collector
+// does when the batch is shared with a consumer that doesn't mutate data.
+// input=cloned without ownership measures the clone alone, to compare against.
 func BenchmarkProcessorThroughput(b *testing.B) {
 	for _, numShards := range []uint32{1, 4} {
-		b.Run(fmt.Sprintf("shards=%d", numShards), func(b *testing.B) {
-			benchmarkProcessorThroughput(b, numShards)
-		})
+		for _, tc := range []struct {
+			mutatesData, clone bool
+		}{{false, false}, {false, true}, {true, true}} {
+			input := "reused"
+			if tc.clone {
+				input = "cloned"
+			}
+			b.Run(fmt.Sprintf("shards=%d/mutates_data=%t/input=%s", numShards, tc.mutatesData, input), func(b *testing.B) {
+				benchmarkProcessorThroughput(b, numShards, tc.mutatesData, tc.clone)
+			})
+		}
 	}
 }
 
-func benchmarkProcessorThroughput(b *testing.B, numShards uint32) {
+func benchmarkProcessorThroughput(b *testing.B, numShards uint32, mutatesData, clone bool) {
 	cfg := Config{
 		SamplingStrategy: samplingStrategyTraceComplete,
 		DecisionWait:     defaultTestDecisionWait,
 		NumTraces:        1024,
 		NumShards:        numShards,
+		MutatesData:      mutatesData,
 		// Create a handful of reasonable policies to not only test batching.
 		PolicyCfgs: []PolicyCfg{
 			{sharedPolicyCfg: sharedPolicyCfg{Name: "always-sample", Type: AlwaysSample}},
@@ -129,12 +143,16 @@ func benchmarkProcessorThroughput(b *testing.B, numShards uint32) {
 	b.ResetTimer()
 	b.SetParallelism(4)
 	b.RunParallel(func(pb *testing.PB) {
-		// ConsumeTraces copies its input before returning (MutatesData is
-		// false), so each goroutine can reuse one batch and only give it new
-		// trace IDs to avoid hitting the cache. Clone per iteration instead
-		// if the processor ever takes ownership of its input.
-		batch := generateBenchBatch(128)
+		// Without ownership ConsumeTraces copies its input before returning,
+		// so each goroutine can reuse one batch and only give it new trace IDs
+		// to avoid hitting the cache.
+		template := generateBenchBatch(128)
 		for pb.Next() {
+			batch := template
+			if clone {
+				batch = ptrace.NewTraces()
+				template.CopyTo(batch)
+			}
 			setIterTraceIDs(batch, iter.Add(1))
 			err := p.ConsumeTraces(b.Context(), batch)
 			require.NoError(b, err)
@@ -148,6 +166,14 @@ func benchmarkProcessorThroughput(b *testing.B, numShards uint32) {
 // a decision, which limits the processor in production. Only the retained-*
 // metrics are meaningful: the time and allocations include setup and GC.
 func BenchmarkProcessorMemory(b *testing.B) {
+	for _, mutatesData := range []bool{false, true} {
+		b.Run(fmt.Sprintf("mutates_data=%t", mutatesData), func(b *testing.B) {
+			benchmarkProcessorMemory(b, mutatesData)
+		})
+	}
+}
+
+func benchmarkProcessorMemory(b *testing.B, mutatesData bool) {
 	// One batch per tick for DecisionWait ticks fills the processor to its
 	// steady state just before the first decision.
 	const numBatches, tracesPerBatch = 30, 128
@@ -161,6 +187,7 @@ func BenchmarkProcessorMemory(b *testing.B) {
 			NumTraces:                   50000,
 			PolicyCfgs:                  testPolicy,
 			DropPendingTracesOnShutdown: true,
+			MutatesData:                 mutatesData,
 			Options:                     []Option{withTestController(controller), withIDBatcher()},
 		}
 		p, err := newTracesProcessor(b.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)

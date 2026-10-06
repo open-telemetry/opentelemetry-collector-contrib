@@ -38,6 +38,7 @@ func TestLoadConfig(t *testing.T) {
 			NumTraces:               100,
 			NumShards:               1,
 			ExpectedNewTracesPerSec: 10,
+			MutatesData:             true,
 			SamplingStrategy:        samplingStrategyTraceComplete,
 			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1_000, NonSampledCacheSize: 10_000},
 			PolicyCfgs: []PolicyCfg{
