@@ -16,8 +16,28 @@ import (
 type QuerySample struct {
 	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
 
+	// CollectFullQueryText makes db.query.text carry the whole SQL batch the
+	// statement came from, rather than just the statement, for the
+	// db.server.query_sample event.
+	CollectFullQueryText bool `mapstructure:"collect_full_query_text"`
+	// AllowedCommentKeys lists the keys to extract from the key=value pairs in the
+	// leading comments of the batch text of the db.server.query_sample event.
+	// Empty extracts nothing.
+	AllowedCommentKeys []string `mapstructure:"allowed_comment_keys,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// needsBatchText reports whether this collection needs the batch-text column: to
+// put it in db.query.text, to read comment tags out of it, or both.
+//
+// Both the query text and the scraper dispatch depend on this answer, so they must
+// all derive it from here: the column is only selected when it is true, and
+// ScrapeLogs picks the scrape to run by comparing its query string against the
+// ones built in setupLogQueries.
+func (q QuerySample) needsBatchText() bool {
+	return q.CollectFullQueryText || len(q.AllowedCommentKeys) > 0
 }
 
 // ConnectionPool configures the shared database connection pool used by all
@@ -63,6 +83,21 @@ type TopQueryCollection struct {
 	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
 	TopQueryCount       uint          `mapstructure:"top_query_count"`
 	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
+
+	// CollectFullQueryText makes db.query.text carry the whole SQL batch the
+	// statement came from, rather than just the statement, for the
+	// db.server.top_query event.
+	CollectFullQueryText bool `mapstructure:"collect_full_query_text"`
+	// AllowedCommentKeys lists the keys to extract from the key=value pairs in the
+	// leading comments of the batch text of the db.server.top_query event.
+	// Empty extracts nothing.
+	AllowedCommentKeys []string `mapstructure:"allowed_comment_keys,omitempty"`
+}
+
+// needsBatchText reports whether this collection needs the batch-text column.
+// See QuerySample.needsBatchText.
+func (t TopQueryCollection) needsBatchText() bool {
+	return t.CollectFullQueryText || len(t.AllowedCommentKeys) > 0
 }
 
 // Config defines configuration for a sqlserver receiver.

@@ -119,13 +119,13 @@ func setupLogQueries(cfg *Config) []string {
 	var queries []string
 
 	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
-		queries = append(queries, getSQLServerQuerySamplesQuery())
+		queries = append(queries, getSQLServerQuerySamplesQuery(cfg.QuerySample.needsBatchText()))
 	}
 
 	// db.server.query_plan is sourced from the same query as db.server.top_query and only splits the
 	// plan out of it, so it is collected as part of top query collection rather than on its own.
 	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
-		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
+		queries = append(queries, getSQLServerQueryTextAndPlanQuery(cfg.TopQueryCollection.needsBatchText()))
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
@@ -391,12 +391,12 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 
 		cache := newCache(1)
 
-		if query == getSQLServerQueryTextAndPlanQuery() {
+		if query == getSQLServerQueryTextAndPlanQuery(cfg.TopQueryCollection.needsBatchText()) {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
 			cache = newCache(int(cfg.TopQueryCollection.MaxQuerySampleCount * 8 * 2))
 		}
 
-		if query == getSQLServerQuerySamplesQuery() {
+		if query == getSQLServerQuerySamplesQuery(cfg.QuerySample.needsBatchText()) {
 			cache = newCache(1)
 		}
 

@@ -157,6 +157,7 @@ Top-Query collection specific options (only useful when top-query collection are
       - However, the top queries collection will only run after 60 seconds have passed since the last collection.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
       - In this case, `top_query_collection.collection_internal` will make no effects to the collection
+- `collect_full_query_text`, `allowed_comment_keys` (optional): See [full query text and comment tags](#full-query-text-and-comment-tags) below.
 
 By default, `db.server.top_query` carries the query's execution plan in its `sqlserver.query_plan`
 attribute. Execution plans can be large, so an oversized plan can push its record past a
@@ -173,6 +174,58 @@ plan out of it, so it collects nothing unless `db.server.top_query` is enabled t
 
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
+- `collect_full_query_text`, `allowed_comment_keys` (optional): See [full query text and comment tags](#full-query-text-and-comment-tags) below.
+
+### Full query text and comment tags
+
+`db.query.text` is extracted from SQL Server's DMVs by byte offset, so by default it covers only the
+statement that ran. Anything else the surrounding batch carried is dropped, including the `key=value`
+pairs applications and ORM frameworks inject as a leading SQL comment — how
+[sqlcommenter](https://google.github.io/sqlcommenter/) marks the code that issued a query. Two
+options recover that, configured inside `top_query_collection` and/or `query_sample_collection` so
+each event opts in independently:
+
+- `collect_full_query_text` (optional, default = `false`): Report the whole SQL batch the statement
+  came from in `db.query.text`, instead of just the statement. No separate attribute is added; this
+  changes what `db.query.text` holds for that collection.
+- `allowed_comment_keys` (optional, default = unset): The comment keys to export as
+  `db.query.comment_tags`, a comma-separated `key=value` string, letting a query be attributed to the
+  application that ran it. Only the keys listed here are exported, so no comment content leaves the
+  receiver until you name the keys you consider safe. Leaving it unset opts the collection out, and
+  `db.query.comment_tags` is then present but empty on its events.
+
+The two are independent — either can be used without the other.
+
+```yaml
+    receivers:
+      sqlserver:
+        top_query_collection:
+          collect_full_query_text: true
+          allowed_comment_keys:
+            - application
+        query_sample_collection:
+          collect_full_query_text: true
+          allowed_comment_keys:
+            - application
+```
+
+> [!WARNING]
+> List only **low-cardinality** keys. `db.server.top_query` aggregates by query, so a key whose
+> value differs per execution — a W3C `traceparent`, a request or session id — turns every execution
+> into its own row and defeats that aggregation. Prefer values that are stable for a deployment, such
+> as an application or service name.
+
+`db.query.text` is obfuscated either way, and obfuscation strips comments — so even with
+`collect_full_query_text` the comment itself is not readable there, and `db.query.comment_tags` is
+the only place that metadata survives. Tags are harvested from the raw batch text before obfuscation,
+which is also why they are read from the batch rather than from the statement: a comment preceding the
+statement falls outside the statement offsets. The batch-text column is only added to the underlying
+query when a collection sets one of these options, so using neither costs nothing. If the DMV returns
+no batch text, `db.query.text` falls back to the statement.
+
+Extraction uses the shared extractor in `internal/common/sqlcomments`, the same one the `oracledb`
+receiver uses, which reads only **leading** `/* */` block comments — a trailing comment, a `--` line
+comment, or a comment placed after `sp_executesql` parameter declarations is not recognized.
 Example:
 
 ```yaml

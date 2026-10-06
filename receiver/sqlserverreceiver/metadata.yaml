@@ -91,8 +91,12 @@ attributes:
     description: The database name.
     type: string
     requirement_level: recommended
+  db.query.comment_tags:
+    description: Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlating a query with the application that issued it. Only low-cardinality keys belong here. Empty unless allowed_comment_keys is set for the collection emitting this event.
+    type: string
+    requirement_level: opt_in
   db.query.text:
-    description: The text of the database query being executed.
+    description: The text of the database query being executed. This is the statement that ran, unless collect_full_query_text is set for the collection emitting this event, in which case it is the whole SQL batch the statement came from.
     type: string
     requirement_level: recommended
   db.system.name:
@@ -539,6 +543,7 @@ events:
       - user.name
       - sqlserver.procedure_id
       - sqlserver.procedure_name
+      - db.query.comment_tags
 
   db.server.top_procedure:
     enabled: false
@@ -583,6 +588,7 @@ events:
       - sqlserver.procedure_name
       - sqlserver.query.last_started
       - sqlserver.query.plan.creation_time
+      - db.query.comment_tags
 
 metrics:
   sqlserver.access.scan.rate:
