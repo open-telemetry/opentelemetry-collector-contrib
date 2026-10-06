@@ -186,6 +186,53 @@ func Test_extractBrowserBrandsFromKeyVal(t *testing.T) {
 				return brands
 			}(t),
 		},
+		{
+			name: "brand key without field suffix",
+			kv: map[string]string{
+				"browser_brand_0": "foo",
+			},
+			wantErr: assert.Error,
+			wantBrands: func(_ *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				return brands
+			}(t),
+		},
+		{
+			name: "brand key without index",
+			kv: map[string]string{
+				"browser_brand_brand": "foo",
+			},
+			wantErr: assert.Error,
+			wantBrands: func(_ *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				return brands
+			}(t),
+		},
+		{
+			name: "brands as array with non-contiguous indexes",
+			kv: map[string]string{
+				"browser_brand_3_brand":   "brand1",
+				"browser_brand_3_version": "0.1.0",
+				"browser_brand_7_brand":   "brand2",
+				"browser_brand_7_version": "0.2.0",
+			},
+			wantErr: assert.NoError,
+			wantBrands: func(t *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				err := brands.FromBrandsArray(faroTypes.BrandsArray{
+					{
+						Brand:   "brand1",
+						Version: "0.1.0",
+					},
+					{
+						Brand:   "brand2",
+						Version: "0.2.0",
+					},
+				})
+				require.NoError(t, err)
+				return brands
+			}(t),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
