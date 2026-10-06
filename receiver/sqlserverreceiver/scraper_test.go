@@ -429,6 +429,17 @@ func TestDatabasesObjectSeriesIdentity(t *testing.T) {
 	require.NoError(t, perf.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, perf.Shutdown(t.Context())) }()
 
+	// Drive the clock so the two samples are a fixed interval apart. Relying on
+	// wall-clock time makes this flaky where the timer granularity is coarse enough
+	// for both scrapes to land in the same tick, leaving no elapsed time to divide by.
+	scrapeTimes := []time.Time{time.Unix(100, 0), time.Unix(101, 0)}
+	timeCall := 0
+	perf.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
 	// Two samples: the rate is derived from the change between them.
 	call := 0
 	perf.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
