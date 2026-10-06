@@ -872,6 +872,18 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordGlobalLockTime(now, document, errs)
 	}
 
+	if s.config.MetricsBuilderConfig.Metrics.MongodbAssertCount.Enabled {
+		s.recordAsserts(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbGlobalLockQueueCount.Enabled {
+		s.recordGlobalLockQueue(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWriteConcernWaitTime.Enabled {
+		s.recordWriteConcernWaitTime(now, document, errs)
+	}
+
 	if s.config.MetricsBuilderConfig.Metrics.MongodbNetworkRequestCount.Enabled {
 		s.recordNetworkCount(now, document, errs)
 	}
@@ -930,6 +942,18 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.Enabled {
 		s.recordWTConcurrentTransactionsOut(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorIndexKeyScannedCount.Enabled {
+		s.recordQueryExecutorIndexKeysScanned(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorDocumentScannedCount.Enabled {
+		s.recordQueryExecutorDocumentsScanned(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled {
+		s.recordQueryExecutorCollectionScans(now, document, errs)
 	}
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbPageFaults.Enabled {
