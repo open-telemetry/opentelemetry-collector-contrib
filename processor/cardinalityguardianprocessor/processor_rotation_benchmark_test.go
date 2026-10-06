@@ -114,7 +114,7 @@ func verifyRotationBenchmarkSketch(tb testing.TB, sketch *hyperloglog.Sketch, wa
 	}
 	require.Equal(tb, wantRepresentation, data[3], "benchmark sketch representation")
 	if wantDense {
-		require.Equal(tb, 8+(1<<14), len(data), "dense benchmark sketch marshal size")
+		require.Len(tb, data, 8+(1<<14), "dense benchmark sketch marshal size")
 	}
 }
 
