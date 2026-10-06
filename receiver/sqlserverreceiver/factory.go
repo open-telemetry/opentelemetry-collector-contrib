@@ -326,6 +326,9 @@ func setConnectionPoolSettings(db *sql.DB, pool ConnectionPool, numScrapers int)
 func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServerScraperHelper, *dbProvider) {
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
+		if isDbEditionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			params.Logger.Warn("sqlserver.db.edition is enabled but requires a direct database connection; it will not be set in Windows Performance Counter mode")
+		}
 		return nil, nil
 	}
 
@@ -371,6 +374,9 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlServerScraperHelper, *dbProvider) {
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
+		if isDbEditionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
+			params.Logger.Warn("sqlserver.db.edition is enabled but requires a direct database connection; it will not be set in Windows Performance Counter mode")
+		}
 		return nil, nil
 	}
 

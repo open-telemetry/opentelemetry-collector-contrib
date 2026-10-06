@@ -2125,6 +2125,60 @@ func TestDetectSQLServerVersion_NotEmittedWhenEmpty(t *testing.T) {
 	assert.False(t, exists, "db.system.version should not be emitted when version detection failed")
 }
 
+func TestDetectSQLServerEdition_EmittedInResourceBuilder(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Server = "testserver.example.com"
+	cfg.Port = 1433
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverDbEdition.Enabled = true
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	scraper := newSQLServerScraper(
+		settings.ID,
+		"SELECT 1",
+		sqlquery.TelemetryConfig{},
+		func() (*sql.DB, error) { return nil, nil },
+		func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient { return nil },
+		settings,
+		cfg,
+		nil,
+	)
+	scraper.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+	scraper.dbEdition = "enterprise"
+
+	row := sqlquery.StringMap{computerNameKey: "test-computer", instanceNameKey: "test-instance"}
+	resource := scraper.setupResourceBuilder(scraper.mb.NewResourceBuilder(), row).Emit()
+
+	edition, exists := resource.Attributes().Get("sqlserver.db.edition")
+	assert.True(t, exists)
+	assert.Equal(t, "enterprise", edition.AsString())
+}
+
+func TestDetectSQLServerEdition_NotEmittedWhenEmpty(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Server = "testserver.example.com"
+	cfg.Port = 1433
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	scraper := newSQLServerScraper(
+		settings.ID,
+		"SELECT 1",
+		sqlquery.TelemetryConfig{},
+		func() (*sql.DB, error) { return nil, nil },
+		func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient { return nil },
+		settings,
+		cfg,
+		nil,
+	)
+	scraper.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+	// dbEdition deliberately left as ""
+
+	row := sqlquery.StringMap{computerNameKey: "test-computer", instanceNameKey: "test-instance"}
+	resource := scraper.setupResourceBuilder(scraper.mb.NewResourceBuilder(), row).Emit()
+
+	_, exists := resource.Attributes().Get("sqlserver.db.edition")
+	assert.False(t, exists, "sqlserver.db.edition should not be emitted when edition detection failed")
+}
+
 func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
