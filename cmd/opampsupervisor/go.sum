@@ -222,8 +222,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/open-telemetry/opamp-go v0.24.0 h1:PLPZoCa9myOl2iUBVQYnAToi7Xa+MF0DF/XPcC3gFls=
 github.com/open-telemetry/opamp-go v0.24.0/go.mod h1:xgYySBY286Bei9/0gFH0X+l6h51fQnvZcLvglDQf9DI=
-github.com/open-telemetry/otel-arrow/go v0.57.0 h1:EuV1VYbChURhsfuDZYKyoKT4oXqR9DEpqpVFHRagHUg=
-github.com/open-telemetry/otel-arrow/go v0.57.0/go.mod h1:YI2mY+xXNAH/xTjOhfeGOwBrh52EO+p/KNVk9ynb7/E=
+github.com/open-telemetry/otel-arrow/go v0.59.0 h1:pmzTzwXugqKHp+zutWbQNbnejxDEI2vlB4c+9+wSBhg=
+github.com/open-telemetry/otel-arrow/go v0.59.0/go.mod h1:YI2mY+xXNAH/xTjOhfeGOwBrh52EO+p/KNVk9ynb7/E=
 github.com/openzipkin/zipkin-go v0.4.3 h1:9EGwpqkgnwdEIJ+Od7QVSEIH+ocmm5nPat0G7sjsSdg=
 github.com/openzipkin/zipkin-go v0.4.3/go.mod h1:M9wCJZFWCo2RiY+o1eBCEMe0Dp2S5LDHcMZmk3RmK7c=
 github.com/pierrec/lz4/v4 v4.1.31 h1:TI8ck6XSudzSzotzAmy0+kh/KpRHaVsKLPzS97gRyNg=
