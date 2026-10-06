@@ -333,7 +333,10 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 		return "", errors.New("could not split stream from log to detect format")
 	}
 
-	if strings.HasSuffix(timePart, "Z") {
+	// Use isContainerdTimestamp instead of HasSuffix("Z") so that timezone-offset
+	// timestamps (e.g. +02:00, -05:00) are correctly classified as containerd rather
+	// than falling through to CRIO.
+	if isContainerdTimestamp(timePart) {
 		return containerdFormat, nil
 	}
 
