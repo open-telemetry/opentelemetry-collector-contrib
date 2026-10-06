@@ -18,6 +18,7 @@ require (
 	github.com/twmb/franz-go v1.22.1
 	github.com/twmb/franz-go/pkg/kadm v1.19.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
+	github.com/twmb/franz-go/pkg/kmsg v1.14.0
 	go.opentelemetry.io/collector/client v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/component v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/component/componentstatus v0.162.1-0.20261002061526-adaf75eebce7
@@ -93,7 +94,6 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.30 // indirect
 	github.com/relvacode/iso8601 v1.8.0 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.14.0 // indirect
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
 	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
