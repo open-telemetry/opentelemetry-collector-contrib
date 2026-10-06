@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: receiver/sqlserver
+component: receiver/sql_server
 
 note: Fix direct connection queries returning no data when `instance_name` is set to a named instance
 
