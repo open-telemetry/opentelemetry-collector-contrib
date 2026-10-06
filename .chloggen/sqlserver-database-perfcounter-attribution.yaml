@@ -8,8 +8,8 @@ issues: [51384]
 
 subtext: |
   `sqlserver.database.backup_or_restore.rate` splits from one series into one per database, and the
-  unlabeled series it previously reported is gone. On a direct database connection, aggregate across
-  `sqlserver.database.name` instead. The Windows performance counter path is unchanged and still reports
-  a `_Total` instance alongside the per-database ones, so aggregating there would double-count.
+  unlabeled series it previously reported is gone. Aggregate across `sqlserver.database.name` instead.
+  This brings the direct database connection in line with the Windows performance counter path, which
+  already discards the aggregate instance before recording.
 
 change_logs: [user]
