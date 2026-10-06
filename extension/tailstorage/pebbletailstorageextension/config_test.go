@@ -29,6 +29,28 @@ func TestConfigValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "valid drop_trace",
+			cfg: Config{
+				Directory:   "test-storage",
+				OnReadError: ReadErrorPolicyDropTrace,
+			},
+		},
+		{
+			name: "valid return_partial",
+			cfg: Config{
+				Directory:   "test-storage",
+				OnReadError: ReadErrorPolicyReturnPartial,
+			},
+		},
+		{
+			name: "invalid on_read_error",
+			cfg: Config{
+				Directory:   "test-storage",
+				OnReadError: "ignore",
+			},
+			wantErr: "on_read_error must be one of",
+		},
+		{
 			name:    "missing directory",
 			cfg:     Config{},
 			wantErr: "directory must be set",
