@@ -12,15 +12,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.162.0
 	github.com/parquet-go/parquet-go v0.32.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.68.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/component v1.68.1-0.20261006161151-f1390ab88c07
 	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261002061526-adaf75eebce7
-	go.opentelemetry.io/collector/confmap v1.68.1-0.20261002061526-adaf75eebce7
-	go.opentelemetry.io/collector/extension v1.68.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/confmap v1.68.1-0.20261006161151-f1390ab88c07
+	go.opentelemetry.io/collector/extension v1.68.1-0.20261006161151-f1390ab88c07
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/extension/extensiontest v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/extension/xextension v0.162.1-0.20261002061526-adaf75eebce7
-	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261002061526-adaf75eebce7
-	go.opentelemetry.io/collector/pdata v1.68.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261006161151-f1390ab88c07
+	go.opentelemetry.io/collector/pdata v1.68.1-0.20261006161151-f1390ab88c07
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
