@@ -39,7 +39,7 @@ func readSVCAddressFromENV() (string, error) {
 }
 
 // Config can contain user-specified inputs to overwrite default values.
-// See `openshift.go#NewDetector` for more information.
+// Unset fields are resolved by the SDK detector from the pod environment.
 type Config struct {
 	// Address is the address of the openshift api server
 	Address string `mapstructure:"address"`
@@ -52,30 +52,6 @@ type Config struct {
 	TLSs configtls.ClientConfig `mapstructure:"tls"`
 
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
-// MergeWithDefaults fills unset fields with default values.
-func (c *Config) MergeWithDefaults() error {
-	if c.Token == "" {
-		token, err := readK8STokenFromFile()
-		if err != nil {
-			return err
-		}
-		c.Token = token
-	}
-
-	if c.Address == "" {
-		addr, err := readSVCAddressFromENV()
-		if err != nil {
-			return err
-		}
-		c.Address = addr
-	}
-
-	if !c.TLSs.Insecure && c.TLSs.CAFile == "" {
-		c.TLSs.CAFile = defaultCAPath
-	}
-	return nil
 }
 
 func CreateDefaultConfig() Config {
