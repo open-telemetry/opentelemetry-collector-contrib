@@ -183,12 +183,12 @@ type dbProvider struct {
 	pool        ConnectionPool
 	numScrapers int
 
-	mu                 sync.Mutex
-	db                 *sql.DB
-	openErr            error
-	opened             bool
-	closed             bool
-	closeErr           error
+	mu                      sync.Mutex
+	db                      *sql.DB
+	openErr                 error
+	opened                  bool
+	closed                  bool
+	closeErr                error
 	dbVersion               *string
 	dbEdition               *string
 	instanceInfoErrReported bool

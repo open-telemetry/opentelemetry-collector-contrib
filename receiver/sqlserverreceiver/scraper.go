@@ -79,9 +79,9 @@ type sqlServerScraperHelper struct {
 	serviceInstanceID         string
 	serverAddress             string
 	serverPort                int64
-	dbEdition        string
-	dbVersion        string
-	instanceInfoFunc func(context.Context, *zap.Logger) (version, edition string, resolved bool)
+	dbEdition                 string
+	dbVersion                 string
+	instanceInfoFunc          func(context.Context, *zap.Logger) (version, edition string, resolved bool)
 }
 
 var (
