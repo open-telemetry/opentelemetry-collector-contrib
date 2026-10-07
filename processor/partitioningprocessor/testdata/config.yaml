@@ -8,3 +8,7 @@ partitioning/no_keys:
 partitioning/empty_expression:
   keys:
     tenant_id: ""
+partitioning/case_collision:
+  keys:
+    Tenant: 'resource.attributes["a"]'
+    tenant: 'resource.attributes["b"]'
