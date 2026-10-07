@@ -256,9 +256,9 @@ func TestExtension(t *testing.T) {
 				return
 			}
 			require.NoError(t, hf.Start(ctx, componenttest.NewNopHost()))
-			t.Cleanup(func() {
+			defer func() {
 				require.NoError(t, hf.Shutdown(ctx))
-			})
+			}()
 			listenAt = hf.(*httpForwarder).server.Addr
 			if test.clientRequestArgs != nil {
 				cra = test.clientRequestArgs(listenAt)
