@@ -38,6 +38,10 @@ feature_gates:
     description: "When enabled, it rejects top-level HTTP client settings (e.g. endpoint, tls, proxy_url); configure them under the http block instead."
     from_version: v0.158.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209
+sending_queue:
+  support: omitted
+  rationale: "The exporter uses a dedicated remote_write_queue configuration."
+
 tests:
   expect_consumer_error: true
   goleak:
