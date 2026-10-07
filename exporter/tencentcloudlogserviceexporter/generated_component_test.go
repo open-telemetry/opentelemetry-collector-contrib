@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var typ = component.MustNewType("tencentcloud_logservice")
+var typ = component.MustNewType("tencent_cloud_log_service")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
@@ -36,7 +36,6 @@ func TestComponentLifecycle(t *testing.T) {
 		createFn func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error)
 		name     string
 	}{
-
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
