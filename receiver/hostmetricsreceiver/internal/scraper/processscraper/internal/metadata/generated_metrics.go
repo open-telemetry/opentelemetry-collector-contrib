@@ -2264,44 +2264,48 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordProcessContextSwitchesDataPoint adds a data point to process.context_switches metric.
 func (mb *MetricsBuilder) RecordProcessContextSwitchesDataPoint(ts pcommon.Timestamp, val int64, contextSwitchTypeAttributeValue AttributeContextSwitchType, processContextSwitchTypeAttributeValue AttributeProcessContextSwitchType) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricProcessContextSwitches.recordDataPoint(mb.startTime, ts, val, contextSwitchTypeAttributeValue.String())
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricProcessContextSwitchesV1.recordDataPoint(mb.startTime, ts, val, processContextSwitchTypeAttributeValue.String(), contextSwitchTypeAttributeValue.String(), true)
+		mb.metricProcessContextSwitchesV1.recordDataPoint(mb.startTime, ts, val, processContextSwitchTypeAttributeValue.String(), contextSwitchTypeAttributeValue.String(), emitLegacy)
 	}
 }
 
 // RecordProcessCPUTimeDataPoint adds a data point to process.cpu.time metric.
 func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState, cpuModeAttributeValue AttributeCPUMode) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricProcessCPUTimeV1.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String(), stateAttributeValue.String(), true)
+		mb.metricProcessCPUTimeV1.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String(), stateAttributeValue.String(), emitLegacy)
 	}
 }
 
 // RecordProcessCPUUtilizationDataPoint adds a data point to process.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordProcessCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState, cpuModeAttributeValue AttributeCPUMode) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricProcessCPUUtilization.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricProcessCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String(), stateAttributeValue.String(), true)
+		mb.metricProcessCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String(), stateAttributeValue.String(), emitLegacy)
 	}
 }
 
 // RecordProcessDiskIoDataPoint adds a data point to process.disk.io metric.
 func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, diskIoDirectionAttributeValue AttributeDiskIoDirection) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricProcessDiskIoV1.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), directionAttributeValue.String(), true)
+		mb.metricProcessDiskIoV1.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), directionAttributeValue.String(), emitLegacy)
 	}
 }
 
@@ -2313,7 +2317,8 @@ func (mb *MetricsBuilder) RecordProcessDiskOperationsDataPoint(ts pcommon.Timest
 // RecordProcessHandlesDataPoint adds a data point to process.handles metric.
 func (mb *MetricsBuilder) RecordProcessHandlesDataPoint(ts pcommon.Timestamp, val int64) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricProcessHandles.recordDataPoint(mb.startTime, ts, val)
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
@@ -2339,7 +2344,8 @@ func (mb *MetricsBuilder) RecordProcessMemoryVirtualDataPoint(ts pcommon.Timesta
 // RecordProcessOpenFileDescriptorsDataPoint adds a data point to process.open_file_descriptors metric.
 func (mb *MetricsBuilder) RecordProcessOpenFileDescriptorsDataPoint(ts pcommon.Timestamp, val int64) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricProcessOpenFileDescriptors.recordDataPoint(mb.startTime, ts, val)
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
@@ -2350,11 +2356,12 @@ func (mb *MetricsBuilder) RecordProcessOpenFileDescriptorsDataPoint(ts pcommon.T
 // RecordProcessPagingFaultsDataPoint adds a data point to process.paging.faults metric.
 func (mb *MetricsBuilder) RecordProcessPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, pagingFaultTypeAttributeValue AttributePagingFaultType, systemPagingFaultTypeAttributeValue AttributeSystemPagingFaultType) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricProcessPagingFaults.recordDataPoint(mb.startTime, ts, val, pagingFaultTypeAttributeValue.String())
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricProcessPagingFaultsV1.recordDataPoint(mb.startTime, ts, val, systemPagingFaultTypeAttributeValue.String(), pagingFaultTypeAttributeValue.String(), true)
+		mb.metricProcessPagingFaultsV1.recordDataPoint(mb.startTime, ts, val, systemPagingFaultTypeAttributeValue.String(), pagingFaultTypeAttributeValue.String(), emitLegacy)
 	}
 }
 
@@ -2366,7 +2373,8 @@ func (mb *MetricsBuilder) RecordProcessSignalsPendingDataPoint(ts pcommon.Timest
 // RecordProcessThreadsDataPoint adds a data point to process.threads metric.
 func (mb *MetricsBuilder) RecordProcessThreadsDataPoint(ts pcommon.Timestamp, val int64) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricProcessThreads.recordDataPoint(mb.startTime, ts, val)
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
