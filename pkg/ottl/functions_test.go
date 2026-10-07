@@ -3601,6 +3601,70 @@ func Test_PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate(t *testing.T) {
 	})
 }
 
+func Test_NewFunctionCall_sliceGetterLiteralNotSlice(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, true)()
+
+	p, err := NewParser(
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		function string
+		arg      value
+		wantErr  string
+	}{
+		{
+			name:     "string",
+			function: "testing_slicegetter",
+			arg:      value{String: new("a")},
+			wantErr:  "invalid argument at position 0: expected a slice, got string",
+		},
+		{
+			name:     "int",
+			function: "testing_slicegetter",
+			arg:      value{Literal: &mathExprLiteral{Int: new(int64(1))}},
+			wantErr:  "invalid argument at position 0: expected a slice, got int64",
+		},
+		{
+			name:     "bool",
+			function: "testing_slicegetter",
+			arg:      value{Bool: (*boolean)(new(true))},
+			wantErr:  "invalid argument at position 0: expected a slice, got bool",
+		},
+		{
+			name:     "optional",
+			function: "testing_optional_slicegetter",
+			arg:      value{String: new("a")},
+			wantErr:  "invalid argument at position 0: expected a slice, got string",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := p.newParseContext().newFunctionCall(editor{
+				Function:  tt.function,
+				Arguments: []argument{{Value: tt.arg}},
+			})
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+
+	t.Run("nil literal is a nil slice", func(t *testing.T) {
+		expr, err := p.newParseContext().newFunctionCall(editor{
+			Function:  "testing_slicegetter",
+			Arguments: []argument{{Value: value{IsNil: (*isNil)(new(true))}}},
+		})
+		require.NoError(t, err)
+		got, err := expr.Eval(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, 0, got)
+	})
+}
+
 type stubBoolExpr[K any] struct {
 	eval func(context.Context, K) (bool, error)
 }
