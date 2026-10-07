@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.26.0
 
 require (
-	github.com/apache/thrift v0.24.0
+	github.com/apache/thrift v0.25.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger-idl v0.13.1
 	github.com/kr/pretty v0.3.1
@@ -13,8 +13,8 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/pdata v1.68.1-0.20261002061526-adaf75eebce7
-	go.opentelemetry.io/otel v1.46.0
-	go.opentelemetry.io/otel/trace v1.46.0
+	go.opentelemetry.io/otel v1.47.0
+	go.opentelemetry.io/otel/trace v1.47.0
 	go.uber.org/goleak v1.3.0
 )
 

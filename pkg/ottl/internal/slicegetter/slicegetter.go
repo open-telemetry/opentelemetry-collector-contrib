@@ -124,6 +124,8 @@ func getRuntimeSliceLiterals[K, V any](slice *runtimeSliceSource[K]) ([]V, bool)
 
 // GetScalarLiteralValues retrieves the literal values from the given slice of scalars.
 // If the values cannot be retrieved, it returns the zero value of []V and false.
+// A nil slice returns a nil result and true, while an empty slice returns an empty
+// non-nil result and true.
 // [V] must be a scalar type supported by OTTL slice arguments.
 func GetScalarLiteralValues[
 	K any,
@@ -133,7 +135,7 @@ func GetScalarLiteralValues[
 		return nil, false
 	}
 	var result []V
-	_, err := slice.Range(
+	nonNil, err := slice.Range(
 		context.Background(),
 		*new(K),
 		func(value V) bool {
@@ -144,19 +146,25 @@ func GetScalarLiteralValues[
 	if err != nil {
 		return nil, false
 	}
+	// An empty non-nil slice must not collapse to nil.
+	if nonNil && result == nil {
+		return []V{}, true
+	}
 	return result, true
 }
 
 // GetLiteralValues retrieves the literal values from the given slice of getters, using
 // literalValue to read each item. If an item is not a literal, it returns the zero value
 // of []V and false.
+// A nil slice returns a nil result and true, while an empty slice returns an empty
+// non-nil result and true.
 func GetLiteralValues[K, V, G any](slice *SliceGetter[K, G], literalValue func(G) (V, bool)) ([]V, bool) {
 	if slice.runtimeSlice != nil {
 		return nil, false
 	}
 	var result []V
 	allLiterals := true
-	_, err := slice.Range(context.Background(), *new(K), func(value G) bool {
+	nonNil, err := slice.Range(context.Background(), *new(K), func(value G) bool {
 		val, ok := literalValue(value)
 		if !ok {
 			allLiterals = false
@@ -170,6 +178,10 @@ func GetLiteralValues[K, V, G any](slice *SliceGetter[K, G], literalValue func(G
 	}
 	if !allLiterals {
 		return nil, false
+	}
+	// An empty non-nil slice must not collapse to nil.
+	if nonNil && result == nil {
+		return []V{}, true
 	}
 	return result, true
 }
