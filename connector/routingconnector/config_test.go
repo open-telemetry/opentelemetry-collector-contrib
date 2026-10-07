@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -457,6 +458,66 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateConfigRejectsInvalidOTTL(t *testing.T) {
+	t.Run("inferred context", func(t *testing.T) {
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		cfg.Table = []RoutingTableItem{
+			{
+				Condition: `resource.attributes["attr"] ==`,
+				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+			},
+		}
+
+		require.Error(t, confmap.Validate(cfg))
+	})
+
+	for _, contextName := range []string{"resource", "span", "metric", "datapoint", "log", "otelcol"} {
+		t.Run(contextName+" condition", func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.Table = []RoutingTableItem{
+				{
+					Context:   contextName,
+					Condition: `UnknownFunction()`,
+					Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+				},
+			}
+
+			require.ErrorContains(t, confmap.Validate(cfg), `undefined function "UnknownFunction"`)
+		})
+
+		t.Run(contextName+" statement", func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.Table = []RoutingTableItem{
+				{
+					Context:   contextName,
+					Statement: `route() where UnknownFunction()`,
+					Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+				},
+			}
+
+			require.ErrorContains(t, confmap.Validate(cfg), `undefined function "UnknownFunction"`)
+		})
+	}
+}
+
+func TestValidateConfigUsesCustomFunctions(t *testing.T) {
+	factory := NewFactoryWithOptions(
+		WithSpanFunctions([]ottl.Factory[*ottlspan.TransformContext]{
+			createTestFuncFactory[*ottlspan.TransformContext]("TestSpanFunc"),
+		}),
+	)
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Table = []RoutingTableItem{
+		{
+			Context:   "span",
+			Condition: `TestSpanFunc()`,
+			Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+		},
+	}
+
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 type testConfigOption func(*Config)
