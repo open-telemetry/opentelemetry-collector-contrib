@@ -26,22 +26,22 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
 		if err != nil {
 			return err
 		}
-		if !metadata.ReceiverAwsxrayreceiverDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
+		if !metadata.ReceiverAwsxrayDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
 			attrs.PutStr("db.connection_string", dbURL)
 			attrs.PutStr("db.name", dbName)
 		}
-		if metadata.ReceiverAwsxrayreceiverEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+		if metadata.ReceiverAwsxrayEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
 			attrs.PutStr(string(conventions.DBNamespaceKey), dbName)
 		}
 	}
 	// not handling sql.ConnectionString for now because the X-Ray exporter
 	// does not support it
-	if !metadata.ReceiverAwsxrayreceiverDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
+	if !metadata.ReceiverAwsxrayDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
 		addString(sql.DatabaseType, "db.system", attrs)
 		addString(sql.SanitizedQuery, "db.statement", attrs)
 		addString(sql.User, "db.user", attrs)
 	}
-	if metadata.ReceiverAwsxrayreceiverEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+	if metadata.ReceiverAwsxrayEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
 		addString(sql.DatabaseType, string(conventions.DBSystemNameKey), attrs)
 		addString(sql.SanitizedQuery, string(conventions.DBQueryTextKey), attrs)
 	}

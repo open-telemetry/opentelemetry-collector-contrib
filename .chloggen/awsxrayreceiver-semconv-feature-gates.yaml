@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/awsxray
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add feature gates for semconv migration of HTTP and database attributes
+note: Add feature gates for semconv migration of database attributes
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [22095]
@@ -16,12 +16,10 @@ issues: [22095]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Four feature gates (all disabled by default) provide a migration path from deprecated
-  semconv attributes to their v1.40.0 replacements:
-  - receiver.awsxrayreceiver.DontEmitV0HTTPConventions: stop emitting http.method, http.client_ip, etc.
-  - receiver.awsxrayreceiver.EmitV1HTTPConventions: emit http.request.method, client.address, etc.
-  - receiver.awsxrayreceiver.DontEmitV0DatabaseConventions: stop emitting db.system, db.name, etc.
-  - receiver.awsxrayreceiver.EmitV1DatabaseConventions: emit db.system.name, db.namespace, etc.
+  Two feature gates (both disabled by default) provide a migration path from deprecated
+  database attributes to their v1.40.0 replacements:
+  - receiver.awsxray.DontEmitV0DatabaseConventions: stop emitting db.system, db.name, etc.
+  - receiver.awsxray.EmitV1DatabaseConventions: emit db.system.name, db.namespace, etc.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
