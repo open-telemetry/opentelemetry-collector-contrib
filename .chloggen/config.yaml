@@ -77,7 +77,7 @@ components:
     - exporter/tinybird
     - exporter/zipkin
     - extension/ack
-    - extension/asapclient
+    - extension/asap_client
     - extension/avro_log_encoding
     - extension/aws_iam_db_auth
     - extension/aws_logs_encoding
