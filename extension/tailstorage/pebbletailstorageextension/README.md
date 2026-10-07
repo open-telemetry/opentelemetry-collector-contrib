@@ -35,6 +35,7 @@ them from the database.
 | ----- | -------- | ------- | ----------- |
 | `directory` | yes | | Directory used to store the Pebble database files. The extension creates the directory if it does not exist and writes the database in a versioned subdirectory. |
 | `max_storage_size_mib` | no | `0` | Maximum on-disk size of the Pebble database, in MiB. `0` means no limit. See [Size limit](#size-limit). |
+| `on_read_error` | no | `drop_trace` | What happens when a stored batch of a trace cannot be read or decoded. One of `drop_trace` or `return_partial`. See [Read errors](#read-errors). |
 
 ### Minimal example
 
@@ -151,6 +152,33 @@ The limit is best-effort:
 Set the limit lower than the free space on the volume, and leave headroom for the
 Pebble write-ahead log and compaction output.
 
+## Read errors
+
+When the Tail Sampling processor asks for a pending trace, the extension reads
+every stored batch for that trace ID. A batch can fail to read or decode, for
+example after a disk error. `on_read_error` selects what happens next:
+
+- `drop_trace` (default): the extension deletes the stored trace, returns an
+  error, and increments
+  `otelcol_extension_pebble_tail_storage_read_error_trace_drops`. The Tail
+  Sampling processor drops the trace without making a sampling decision. Use
+  this when a decision made on an incomplete trace is worse than no decision.
+- `return_partial`: the extension deletes the stored trace, returns the batches
+  that could still be read, and increments
+  `otelcol_extension_pebble_tail_storage_read_error_partial_returns`. The Tail
+  Sampling processor makes its decision on the partial trace. Use this when a
+  best-effort decision is better than losing the trace.
+
+Both policies increment `otelcol_extension_pebble_tail_storage_read_errors` once
+per failed batch and log a warning with the trace ID and the policy that ran.
+
+```yaml
+extensions:
+  pebble_tail_storage:
+    directory: /var/lib/otelcol/pebble-tail-storage
+    on_read_error: return_partial
+```
+
 ## Deployment guidance
 
 - Use a local disk. Pebble is a log-structured storage engine and expects local
@@ -177,9 +205,12 @@ Pebble write-ahead log and compaction output.
   size limit is reached, the Tail Sampling processor logs the error and continues.
   The spans in that batch are not stored and are not exported. The trace stays
   pending and the final decision is made on the spans that were stored.
-- **Read failures drop the trace.** When the processor cannot read a pending
-  trace back from storage, it logs the error and drops the trace from its state
-  without making a sampling decision.
+- **Read failures drop the trace by default.** When a stored batch cannot be
+  read or decoded, the extension deletes the whole trace from storage. With the
+  default `on_read_error: drop_trace`, the processor logs the error and drops the
+  trace from its state without making a sampling decision. With
+  `return_partial`, the decision is made on the batches that could still be
+  read. See [Read errors](#read-errors).
 - **Not supported with `num_shards` greater than 1.** The Tail Sampling processor
   rejects a configuration that sets both `tail_storage` and `num_shards > 1`.
 - **Unsupported platforms.** The extension is not built on AIX and Solaris.
@@ -193,10 +224,18 @@ for the full definition of each metric.
 | ------ | ---------- | ----------- |
 | `otelcol_extension_pebble_tail_storage_operations` | `operation` (`append`, `take`, `delete`), `outcome` (`success`, `failure`) | Count of storage operations by operation and outcome. |
 | `otelcol_extension_pebble_tail_storage_read_errors` | | Count of read-path errors: iterator creation, value read, payload decode, and iterator terminal errors. |
+| `otelcol_extension_pebble_tail_storage_read_error_trace_drops` | | Count of traces dropped by `Take` because of a read-path error while `on_read_error` is `drop_trace`. |
+| `otelcol_extension_pebble_tail_storage_read_error_partial_returns` | | Count of traces returned with partial data by `Take` because of a read-path error while `on_read_error` is `return_partial`. |
 
 Alert on a growing `outcome="failure"` count for `append`, which usually means the
 size limit was reached or the disk is full, and on any increase of
-`otelcol_extension_pebble_tail_storage_read_errors`.
+`otelcol_extension_pebble_tail_storage_read_errors`. With `on_read_error:
+drop_trace`, each dropped trace also counts as a `take` operation with
+`outcome="failure"` and increments
+`otelcol_extension_pebble_tail_storage_read_error_trace_drops`. With
+`return_partial`, the `take` operation succeeds, so watch
+`otelcol_extension_pebble_tail_storage_read_error_partial_returns` to see how
+many sampling decisions were made on incomplete traces.
 
 The extension does not emit traces, metrics, or logs of its own into the
 pipeline, so no resource attributes are defined.

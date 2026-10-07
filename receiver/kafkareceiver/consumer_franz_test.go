@@ -5,7 +5,10 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
+	"fmt"
+	"hash/crc32"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -15,8 +18,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/kversion"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -27,6 +33,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
@@ -1956,4 +1963,114 @@ func TestFranzConsumerBrokerCacheEvictOnDisconnect(t *testing.T) {
 	// Disconnect should evict both entries.
 	c.OnBrokerDisconnect(meta, nil)
 	require.Empty(t, c.brokerReadOpts)
+}
+
+// TestFetchErrorDoesNotDropOtherPartitions verifies that a fetch error on one
+// partition does not discard records polled for other partitions in the same
+// fetch. franz-go advances the cursor of every partition returned by a poll,
+// so dropped records would be skipped once later offsets are committed.
+func TestFetchErrorDoesNotDropOtherPartitions(t *testing.T) {
+	for _, independent := range []bool{false, true} {
+		t.Run(fmt.Sprintf("independent=%t", independent), func(t *testing.T) {
+			const (
+				topic   = "otlp_spans"
+				records = 20
+			)
+			// A single broker returns both partitions in the same fetch response.
+			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(2, topic), kfake.NumBrokers(1))
+			cfg.ConsumerConfig.GroupID = t.Name()
+			cfg.ConsumerConfig.AutoCommit.Interval = 100 * time.Millisecond
+			cfg.PartitionProcessing.Independent = independent
+
+			producer, err := kgo.NewClient(
+				kgo.SeedBrokers(cfg.ClientConfig.Brokers...),
+				kgo.RecordPartitioner(kgo.ManualPartitioner()),
+				kgo.ProducerBatchCompression(kgo.NoCompression()),
+				kgo.MaxVersions(kversion.V2_3_0()),
+			)
+			require.NoError(t, err)
+			t.Cleanup(producer.Close)
+
+			// Partition 0 fails to decompress on every fetch.
+			produceUndecodableBatch(t, producer, topic, 0)
+
+			var processed atomic.Int64
+			settings, _, logs := mustNewSettings(t)
+			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+				return func(_ context.Context, r *kgo.Record, _ attribute.Set) error {
+					if r.Partition == 1 {
+						processed.Add(1)
+					}
+					return nil
+				}, nil
+			}
+			c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+			require.NoError(t, err)
+			require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+			for range records {
+				require.NoError(t, producer.ProduceSync(t.Context(),
+					&kgo.Record{Topic: topic, Partition: 1, Value: []byte("x")}).FirstErr())
+			}
+
+			require.Eventually(t, func() bool {
+				return logs.FilterMessage("consumer fetch error").
+					FilterField(zap.Int64("partition", 0)).Len() > 0
+			}, 5*time.Second, 10*time.Millisecond, "expected a fetch error on partition 0")
+
+			assert.Eventually(t, func() bool {
+				return processed.Load() == records
+			}, 5*time.Second, 10*time.Millisecond,
+				"records for partition 1 were dropped: processed %d of %d", processed.Load(), records)
+
+			adm := kadm.NewClient(producer)
+			assert.EventuallyWithT(t, func(ct *assert.CollectT) {
+				committed, err := adm.FetchOffsets(t.Context(), cfg.ConsumerConfig.GroupID)
+				require.NoError(ct, err)
+				off, ok := committed.Lookup(topic, 1)
+				require.True(ct, ok)
+				assert.Equal(ct, processed.Load(), off.At)
+			}, 5*time.Second, 50*time.Millisecond)
+		})
+	}
+}
+
+// produceUndecodableBatch writes a gzip-flagged batch whose payload is not
+// gzip. kfake stores it as-is, and franz-go returns a non-retriable
+// decompression error for the partition on every fetch.
+func produceUndecodableBatch(t *testing.T, client *kgo.Client, topic string, partition int32) {
+	t.Helper()
+	now := time.Now().UnixMilli()
+	b := kmsg.RecordBatch{
+		PartitionLeaderEpoch: -1,
+		Magic:                2,
+		Attributes:           int16(kgo.CodecGzip),
+		FirstTimestamp:       now,
+		MaxTimestamp:         now,
+		ProducerID:           -1,
+		ProducerEpoch:        -1,
+		FirstSequence:        -1,
+		NumRecords:           1,
+		Records:              []byte("not gzip"),
+	}
+	raw := b.AppendTo(nil)
+	// Length excludes FirstOffset and Length; CRC covers everything after it.
+	binary.BigEndian.PutUint32(raw[8:], uint32(len(raw)-12))
+	binary.BigEndian.PutUint32(raw[17:], crc32.Checksum(raw[21:], crc32.MakeTable(crc32.Castagnoli)))
+
+	rp := kmsg.NewProduceRequestTopicPartition()
+	rp.Partition = partition
+	rp.Records = raw
+	rt := kmsg.NewProduceRequestTopic()
+	rt.Topic = topic
+	rt.Partitions = append(rt.Partitions, rp)
+	req := kmsg.NewPtrProduceRequest()
+	req.Acks = -1
+	req.TimeoutMillis = 5000
+	req.Topics = append(req.Topics, rt)
+
+	resp, err := req.RequestWith(t.Context(), client)
+	require.NoError(t, err)
+	require.NoError(t, kerr.ErrorForCode(resp.Topics[0].Partitions[0].ErrorCode))
 }

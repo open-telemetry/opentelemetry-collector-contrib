@@ -114,9 +114,10 @@ func createLogsReceiver(
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
-		// we have 2 updated only attributes. so we set the cache size accordingly.
+		// we have 4 updated only attributes (sum_timer_wait, count_star, sum_rows_examined,
+		// sum_rows_sent), so we size the cache for 4 columns with 2x headroom.
 		// TODO: parameterize this cache size.
-		ns, err := newMySQLScraper(params, cfg, clientFactory, newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)), sharedPlanCache)
+		ns, err := newMySQLScraper(params, cfg, clientFactory, newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*4*2)), sharedPlanCache)
 		if err != nil {
 			return nil, err
 		}

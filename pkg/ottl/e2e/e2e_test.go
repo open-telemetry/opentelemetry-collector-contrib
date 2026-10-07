@@ -2156,6 +2156,18 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 			},
 		},
 		{
+			name: "keep keys from cache slice",
+			statements: []string{
+				`set(cache["x"], ["flags"])`,
+				`keep_keys(attributes, cache["x"])`,
+			},
+			want: func(tCtx *ottllog.TransformContext) {
+				attributes := tCtx.GetLogRecord().Attributes()
+				attributes.Clear()
+				attributes.PutStr("flags", "A|B|C")
+			},
+		},
+		{
 			name: "IsInCIDR with networks from cache",
 			statements: []string{
 				`set(cache["networks"], ["198.51.100.0/24", "192.168.0.0/16"])`,
@@ -3191,4 +3203,34 @@ func Test_e2e_dynamic_slice_arguments_feature_gate(t *testing.T) {
 	got, ok := tCtx.GetLogRecord().Attributes().Get("test")
 	require.True(t, ok)
 	assert.Equal(t, "A:A|B|C", got.Str())
+}
+
+func Test_e2e_slice_arguments_reject_non_slice_literals(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, true))
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	tests := []struct {
+		statement string
+		wantErr   string
+	}{
+		{
+			statement: `keep_keys(attributes, "http.method")`,
+			wantErr:   `call to "keep_keys": invalid argument at position 1: expected a slice, got string`,
+		},
+		{
+			statement: `set(attributes["test"], Concat("a", "-"))`,
+			wantErr:   `call to "Concat": invalid argument at position 0: expected a slice, got string`,
+		},
+		{
+			statement: `set(attributes["test"], Concat(1, "-"))`,
+			wantErr:   `call to "Concat": invalid argument at position 0: expected a slice, got int64`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			_, err := parser.ParseStatement(tt.statement)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
 }

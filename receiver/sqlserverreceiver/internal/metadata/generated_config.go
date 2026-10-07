@@ -2967,7 +2967,7 @@ func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-// MetricsConfig provides config for sqlserver metrics.
+// MetricsConfig provides config for sql_server metrics.
 type MetricsConfig struct {
 	SqlserverAccessScanRate                               SqlserverAccessScanRateMetricConfig                               `mapstructure:"sqlserver.access.scan.rate"`
 	SqlserverAttentionRate                                SqlserverAttentionRateMetricConfig                                `mapstructure:"sqlserver.attention.rate"`
@@ -3461,7 +3461,7 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// EventsConfig provides config for sqlserver events.
+// EventsConfig provides config for sql_server events.
 type EventsConfig struct {
 	DbServerQueryPlan    EventConfig `mapstructure:"db.server.query_plan"`
 	DbServerQuerySample  EventConfig `mapstructure:"db.server.query_sample"`
@@ -3836,7 +3836,7 @@ func (rac *SqlserverInstanceNameResourceAttributeConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// ResourceAttributesConfig provides config for sqlserver resource attributes.
+// ResourceAttributesConfig provides config for sql_server resource attributes.
 type ResourceAttributesConfig struct {
 	DbSystemVersion       DbSystemVersionResourceAttributeConfig       `mapstructure:"db.system.version"`
 	HostName              HostNameResourceAttributeConfig              `mapstructure:"host.name"`
@@ -3921,7 +3921,7 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for sqlserver metrics builder.
+// MetricsBuilderConfig is a configuration for sql_server metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
@@ -3934,7 +3934,7 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	}
 }
 
-// LogsBuilderConfig is a configuration for sqlserver logs builder.
+// LogsBuilderConfig is a configuration for sql_server logs builder.
 type LogsBuilderConfig struct {
 	Events             EventsConfig             `mapstructure:"events"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
