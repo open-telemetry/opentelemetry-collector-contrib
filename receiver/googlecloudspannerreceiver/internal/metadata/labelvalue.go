@@ -5,6 +5,7 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -190,10 +191,9 @@ func (v *intSliceLabelValue) ModifyValue(s string) {
 func newIntSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
 	value := *valueHolder.(*[]int64)
 
-	// Copy the slice to avoid modifying the original array from the database driver
 	sortedValue := make([]int64, len(value))
 	copy(sortedValue, value)
-	sort.Slice(sortedValue, func(i, j int) bool { return sortedValue[i] < sortedValue[j] })
+	slices.Sort(sortedValue)
 
 	var stringSlice []string
 	var lastVal *int64
