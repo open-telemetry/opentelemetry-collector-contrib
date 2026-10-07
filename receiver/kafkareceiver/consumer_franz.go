@@ -315,7 +315,6 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	// There's a variety of errors that are returned by fetch.Errors(). We
 	// handle the errors that require a client restart above. The rest can
 	// simply be logged and keep fetching.
-	var hasError bool
 	fetch.EachError(func(topic string, partition int32, err error) {
 		if c.config.PartitionProcessing.Independent && errors.Is(err, context.Canceled) {
 			return
@@ -326,13 +325,15 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		)
 		// Report recoverable error while consuming.
 		c.reportRecoverable(err)
-		hasError = true
 	})
-	if hasError || fetch.Empty() {
+	// Fetch errors are per partition. Records polled for other partitions
+	// have already advanced their fetch cursors, so they must be processed
+	// or they are lost once later offsets are committed.
+	if fetch.Empty() {
 		if c.config.PartitionProcessing.Independent {
 			c.processControls()
 		}
-		return true // Return right away after errors or empty fetch.
+		return true
 	}
 
 	// Acquire the read lock on each consume to ensure the client is not closed

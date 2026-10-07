@@ -10,6 +10,12 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlotelcol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 type Action string
@@ -47,8 +53,14 @@ type Config struct {
 	// Table contains the routing table for this processor.
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
-	// prevent unkeyed literal initialization
-	_ struct{}
+
+	// OTTL functions set by the factory when creating the processor.
+	otelColFunctions   map[string]ottl.Factory[*ottlotelcol.TransformContext]
+	resourceFunctions  map[string]ottl.Factory[*ottlresource.TransformContext]
+	spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
+	metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
+	dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
+	logFunctions       map[string]ottl.Factory[*ottllog.TransformContext]
 }
 
 // UnmarshalText unmarshalls text to an Action.
