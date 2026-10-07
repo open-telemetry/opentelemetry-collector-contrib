@@ -16,7 +16,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.83.0
 	github.com/DataDog/datadog-agent/pkg/metrics v0.83.0
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.0
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260930220258-a8c2777f7050
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.83.0
 	github.com/DataDog/datadog-agent/pkg/serializer v0.83.0
@@ -255,7 +255,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/atomic v1.12.0 // indirect
 	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/fx v1.24.0 // indirect
 	go.uber.org/mock v0.6.0 // indirect
