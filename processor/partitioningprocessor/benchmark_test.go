@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Batch shape shared by all benchmarks: benchResources x benchScopes scopes,
@@ -87,6 +88,30 @@ func genBenchLogs(lvl level, parts, items int) plog.Logs {
 	return ld
 }
 
+func genBenchTraces(parts int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	si := 0
+	for range benchResources {
+		rs := td.ResourceSpans().AppendEmpty()
+		putBenchAttrs(rs.Resource().Attributes())
+		for range benchScopes {
+			ss := rs.ScopeSpans().AppendEmpty()
+			ss.Scope().SetName("scope")
+			ss.Spans().EnsureCapacity(benchItems)
+			for range benchItems {
+				span := ss.Spans().AppendEmpty()
+				span.SetName("span-name")
+				span.SetTraceID(pcommon.TraceID{1, 2, 3})
+				span.SetSpanID(pcommon.SpanID{4, 5, 6})
+				putBenchAttrs(span.Attributes())
+				span.Attributes().PutStr("part", partValue(si, parts))
+				si++
+			}
+		}
+	}
+	return td
+}
+
 // cloneable is implemented by the top-level pdata containers.
 type cloneable[T any] interface{ CopyTo(T) }
 
@@ -138,4 +163,16 @@ func BenchmarkLogs(b *testing.B) {
 		ctx := benchCtx(1)
 		runBench(b, ld, plog.NewLogs, func(in plog.Logs) error { return p.ConsumeLogs(ctx, in) })
 	})
+}
+
+func BenchmarkTraces(b *testing.B) {
+	for _, parts := range []int{1, 10, 1000} {
+		b.Run(fmt.Sprintf("span/%dpartitions", parts), func(b *testing.B) {
+			p, err := createTracesProcessor(b.Context(), nopSettings(),
+				newBenchConfig(`span.attributes["part"]`), consumertest.NewNop())
+			require.NoError(b, err)
+			td := genBenchTraces(parts)
+			runBench(b, td, ptrace.NewTraces, func(in ptrace.Traces) error { return p.ConsumeTraces(b.Context(), in) })
+		})
+	}
 }
