@@ -3,7 +3,6 @@ ignored_paths:
   - cmd/telemetrygen
   - cmd/opampsupervisor
   - config/configdbauth
-  - exporter/datadogexporter/integrationtest
   - extension/observer
   - extension/encoding
   - extension/dbauth

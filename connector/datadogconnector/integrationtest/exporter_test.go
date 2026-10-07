@@ -3,7 +3,7 @@
 
 //go:build !aix && !solaris
 
-package integrationtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest"
+package integrationtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/integrationtest"
 
 import (
 	"bytes"
