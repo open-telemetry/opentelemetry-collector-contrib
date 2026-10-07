@@ -67,7 +67,11 @@ func (s *SliceGetter[K, V]) setReflectValue(val reflect.Value) error {
 	case []V:
 		s.typedValues = v
 	case runtimeSliceSource[K]:
-		if typedValues, ok := getRuntimeSliceLiterals[K, V](&v); ok {
+		typedValues, ok, err := getRuntimeSliceLiterals[K, V](&v)
+		if err != nil {
+			return err
+		}
+		if ok {
 			s.typedValues = typedValues
 		} else {
 			s.runtimeSlice = &v
@@ -81,20 +85,21 @@ func (s *SliceGetter[K, V]) setReflectValue(val reflect.Value) error {
 // getRuntimeSliceLiterals extracts slice literals from a runtimeSliceSource. It returns the
 // slice and a boolean indicating if the extraction was successful. The returned values can be
 // either scalar or typed getters, which might not hold literal values. In this context, literals
-// mean items can be retrieved from the slice without evaluating it.
-func getRuntimeSliceLiterals[K, V any](slice *runtimeSliceSource[K]) ([]V, bool) {
+// mean items can be retrieved from the slice without evaluating it. A literal source that does
+// not evaluate to a slice returns an error, since evaluating it at runtime would always fail.
+func getRuntimeSliceLiterals[K, V any](slice *runtimeSliceSource[K]) ([]V, bool, error) {
 	if !slice.isLiteral {
-		return nil, false
+		return nil, false, nil
 	}
 	sliceValues, err := slice.Get(context.Background(), *new(K))
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
 	if sliceValues == nil {
-		return nil, true
+		return nil, true, nil
 	}
 	if typedValues, ok := sliceValues.([]V); ok {
-		return typedValues, true
+		return typedValues, true, nil
 	}
 
 	var result []V
@@ -111,15 +116,15 @@ func getRuntimeSliceLiterals[K, V any](slice *runtimeSliceSource[K]) ([]V, bool)
 		return false
 	})
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
 	if !nonNil {
-		return nil, true
+		return nil, true, nil
 	}
 	if !complete {
-		return nil, false
+		return nil, false, nil
 	}
-	return result, complete
+	return result, true, nil
 }
 
 // GetScalarLiteralValues retrieves the literal values from the given slice of scalars.
