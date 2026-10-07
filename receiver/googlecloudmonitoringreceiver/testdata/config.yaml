@@ -1,4 +1,4 @@
-googlecloudmonitoring:
+google_cloud_monitoring:
   collection_interval: 2m # Can be specified in seconds (s), minutes (m), or hours (h)
   project_id: my-project-id
   metrics_list:
@@ -6,14 +6,14 @@ googlecloudmonitoring:
     - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
     - metric_descriptor_filter: "metric.type = starts_with(\"compute.googleapis.com\")"
 
-googlecloudmonitoring/endpoint:
+google_cloud_monitoring/endpoint:
   collection_interval: 2m
   project_id: my-project-id
   endpoint: monitoring.example.com:443
   metrics_list:
     - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
 
-googlecloudmonitoring/sovereign:
+google_cloud_monitoring/sovereign:
   collection_interval: 2m
   project_id: my-sovereign-project-id
   universe_domain: monitoring.example.com

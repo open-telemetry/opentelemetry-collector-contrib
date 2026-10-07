@@ -1,0 +1,4 @@
+change_type: deprecation
+component: receiver/google_cloud_monitoring
+note: "Rename the googlecloudmonitoring receiver to google_cloud_monitoring. The old name remains available as a deprecated alias."
+issues: [45339]

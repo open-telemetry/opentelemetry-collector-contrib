@@ -173,8 +173,8 @@ components:
         - fluent_forward
         - github
         - gitlab
+        - google_cloud_monitoring
         - google_cloud_spanner
-        - googlecloudmonitoring
         - googlecloudpubsub
         - googlecloudpubsubpush
         - haproxy
