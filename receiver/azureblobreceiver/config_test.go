@@ -121,6 +121,37 @@ func TestConfigValidate(t *testing.T) {
 				`traces.encoding "" is not a supported built-in encoding`,
 			},
 		},
+		{
+			name: "invalid compression",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				cfg.Compression = "snappy"
+			},
+			expectedErr: []string{
+				`compression "snappy" is not supported`,
+			},
+		},
+		{
+			name: "valid compression none",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				cfg.Compression = CompressionNone
+			},
+		},
+		{
+			name: "valid compression gzip",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				cfg.Compression = CompressionGzip
+			},
+		},
+		{
+			name: "valid compression auto",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				cfg.Compression = CompressionAuto
+			},
+		},
 	}
 
 	for _, tt := range tests {

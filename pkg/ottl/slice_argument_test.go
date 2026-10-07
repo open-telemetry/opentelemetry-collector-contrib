@@ -811,16 +811,12 @@ func TestSliceGetter_foldsLiteralSources(t *testing.T) {
 			},
 		)
 		source := newTestRuntimeSliceSourceWithCoercer[any](newLiteral[any, any]([]any{"x"}), coercer)
-		vals, ok := foldLiterals[string](t, source)
-		require.False(t, ok)
-		require.Nil(t, vals)
+		require.EqualError(t, foldLiteralsErr[string](source), "expected slice item of type string, got struct {}")
 	})
 
 	t.Run("rangeSlice error", func(t *testing.T) {
 		source := newTestRuntimeSliceSource[any, string](newLiteral[any, any]("not-a-slice"))
-		vals, ok := foldLiterals[string](t, source)
-		require.False(t, ok)
-		require.Nil(t, vals)
+		require.EqualError(t, foldLiteralsErr[string](source), "expected a slice, got string")
 	})
 
 	t.Run("coercion buildSliceItemGetter error", func(t *testing.T) {
@@ -831,9 +827,7 @@ func TestSliceGetter_foldsLiteralSources(t *testing.T) {
 			},
 		)
 		source := newTestRuntimeSliceSourceWithCoercer[any](newLiteral[any, any]([]any{"x"}), coercer)
-		vals, ok := foldLiterals[string](t, source)
-		require.False(t, ok)
-		require.Nil(t, vals)
+		require.EqualError(t, foldLiteralsErr[string](source), "build during literals")
 	})
 }
 
@@ -847,6 +841,11 @@ func foldLiterals[V any](t *testing.T, source *testRuntimeSliceSource[any]) ([]V
 	vals, err := sg.Get(t.Context(), nil)
 	require.NoError(t, err)
 	return vals, true
+}
+
+func foldLiteralsErr[V any](source *testRuntimeSliceSource[any]) error {
+	var sg slicegetter.SliceGetter[any, V]
+	return slicegetter.SetReflectValue(&sg, reflect.ValueOf(source.value()))
 }
 
 type errSliceGetter struct {
