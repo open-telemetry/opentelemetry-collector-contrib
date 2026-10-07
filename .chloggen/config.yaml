@@ -50,9 +50,9 @@ components:
     - exporter/faro
     - exporter/file
     - exporter/google_cloud_storage
+    - exporter/google_managed_prometheus
     - exporter/googlecloud
     - exporter/googlecloudpubsub
-    - exporter/googlemanagedprometheus
     - exporter/honeycomb_marker
     - exporter/influxdb
     - exporter/kafka

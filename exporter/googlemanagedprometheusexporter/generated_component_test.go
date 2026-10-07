@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var typ = component.MustNewType("googlemanagedprometheus")
+var typ = component.MustNewType("google_managed_prometheus")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
@@ -36,7 +36,6 @@ func TestComponentLifecycle(t *testing.T) {
 		createFn func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error)
 		name     string
 	}{
-
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {

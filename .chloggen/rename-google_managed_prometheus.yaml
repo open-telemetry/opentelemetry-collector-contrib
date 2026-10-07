@@ -1,0 +1,4 @@
+change_type: deprecation
+component: exporter/google_managed_prometheus
+note: "Rename the googlemanagedprometheus exporter to google_managed_prometheus. The old name remains available as a deprecated alias."
+issues: [45339]

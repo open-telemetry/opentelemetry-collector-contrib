@@ -36,9 +36,9 @@ components:
         - faro
         - file
         - google_cloud_storage
+        - google_managed_prometheus
         - googlecloud
         - googlecloudpubsub
-        - googlemanagedprometheus
         - honeycomb_marker
         - influxdb
         - kafka
