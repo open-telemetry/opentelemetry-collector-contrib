@@ -128,18 +128,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "circuit_breaker_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 3, "circuit_breaker_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts+1, 3, "circuit_breaker_name-val-2")
+				assert.Equal(t, 2, mb.metricElasticsearchBreakerMemoryEstimated.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "circuit_breaker_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 3, "circuit_breaker_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts+1, 3, "circuit_breaker_name-val-2")
+				assert.Equal(t, 2, mb.metricElasticsearchBreakerMemoryLimit.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "circuit_breaker_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 3, "circuit_breaker_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchBreakerTrippedDataPoint(ts+1, 3, "circuit_breaker_name-val-2")
+				assert.Equal(t, 2, mb.metricElasticsearchBreakerTripped.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -149,6 +158,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatusGreen)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterHealthDataPoint(ts, 3, AttributeHealthStatusYellow)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchClusterHealthDataPoint(ts+1, 3, AttributeHealthStatusYellow)
+				assert.Equal(t, 2, mb.metricElasticsearchClusterHealth.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -158,6 +170,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 3, AttributeCacheNameQuery)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts+1, 3, AttributeCacheNameQuery)
+				assert.Equal(t, 2, mb.metricElasticsearchClusterIndicesCacheEvictions.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -170,6 +185,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceStateIncompatible)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 3, AttributeClusterPublishedDifferenceStateCompatible)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts+1, 3, AttributeClusterPublishedDifferenceStateCompatible)
+				assert.Equal(t, 2, mb.metricElasticsearchClusterPublishedStatesDifferences.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -179,114 +197,171 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterShardsDataPoint(ts, 3, AttributeShardStateActivePrimary)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchClusterShardsDataPoint(ts+1, 3, AttributeShardStateActivePrimary)
+				assert.Equal(t, 2, mb.metricElasticsearchClusterShards.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueStatePending)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 3, AttributeClusterStateQueueStateCommitted)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchClusterStateQueueDataPoint(ts+1, 3, AttributeClusterStateQueueStateCommitted)
+				assert.Equal(t, 2, mb.metricElasticsearchClusterStateQueue.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "cluster_state_update_state-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 3, "cluster_state_update_state-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts+1, 3, "cluster_state_update_state-val-2")
+				assert.Equal(t, 2, mb.metricElasticsearchClusterStateUpdateCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "cluster_state_update_state-val", AttributeClusterStateUpdateTypeComputation)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 3, "cluster_state_update_state-val-2", AttributeClusterStateUpdateTypeContextConstruction)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts+1, 3, "cluster_state_update_state-val-2", AttributeClusterStateUpdateTypeContextConstruction)
+				assert.Equal(t, 2, mb.metricElasticsearchClusterStateUpdateTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 3, AttributeCacheNameQuery, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts+1, 3, AttributeCacheNameQuery, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexCacheEvictions.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 3, AttributeCacheNameQuery, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts+1, 3, AttributeCacheNameQuery, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexCacheMemoryUsage.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexCacheSizeDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexCacheSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentStateActive, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 3, AttributeDocumentStateDeleted, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexDocumentsDataPoint(ts+1, 3, AttributeDocumentStateDeleted, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexDocuments.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 3, AttributeOperationDelete, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts+1, 3, AttributeOperationDelete, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexOperationsCompleted.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsMergeCurrentDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexOperationsMergeCurrentDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexOperationsMergeCurrentDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexOperationsMergeCurrent.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexOperationsMergeDocsCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexOperationsMergeSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 3, AttributeOperationDelete, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts+1, 3, AttributeOperationDelete, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexOperationsTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexSegmentsCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards, AttributeSegmentsMemoryObjectTypeTerm)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 3, AttributeIndexAggregationTypeTotal, AttributeSegmentsMemoryObjectTypeDocValue)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal, AttributeSegmentsMemoryObjectTypeDocValue)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexSegmentsMemory.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexSegmentsSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexShardsSizeDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexShardsSize.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexTranslogOperations.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 3, AttributeIndexAggregationTypeTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts+1, 3, AttributeIndexAggregationTypeTotal)
+				assert.Equal(t, 2, mb.metricElasticsearchIndexTranslogSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -302,24 +377,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStageCoordinating)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 3, AttributeIndexingPressureStagePrimary)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts+1, 3, AttributeIndexingPressureStagePrimary)
+				assert.Equal(t, 2, mb.metricElasticsearchMemoryIndexingPressure.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountTypeHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 3, AttributeQueryCacheCountTypeMiss)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeCacheCountDataPoint(ts+1, 3, AttributeQueryCacheCountTypeMiss)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeCacheCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 3, AttributeCacheNameQuery)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts+1, 3, AttributeCacheNameQuery)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeCacheEvictions.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 3, AttributeCacheNameQuery)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts+1, 3, AttributeCacheNameQuery)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeCacheMemoryUsage.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -332,6 +419,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirectionReceived)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 3, AttributeDirectionSent)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeClusterIoDataPoint(ts+1, 3, AttributeDirectionSent)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeClusterIo.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -344,6 +434,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 3, AttributeDocumentStateDeleted)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeDocumentsDataPoint(ts+1, 3, AttributeDocumentStateDeleted)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeDocuments.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -374,48 +467,72 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 3, AttributeOperationDelete)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts+1, 3, AttributeOperationDelete)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeOperationsCompleted.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperationIndex)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 3, AttributeOperationDelete)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts+1, 3, AttributeOperationDelete)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeOperationsCurrent.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResultHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 3, AttributeGetResultMiss)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts+1, 3, AttributeGetResultMiss)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeOperationsGetCompleted.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResultHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 3, AttributeGetResultMiss)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts+1, 3, AttributeGetResultMiss)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeOperationsGetTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperationIndex)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 3, AttributeOperationDelete)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts+1, 3, AttributeOperationDelete)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeOperationsTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "ingest_pipeline_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 3, "ingest_pipeline_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts+1, 3, "ingest_pipeline_name-val-2")
+				assert.Equal(t, 2, mb.metricElasticsearchNodePipelineIngestDocumentsCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "ingest_pipeline_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 3, "ingest_pipeline_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts+1, 3, "ingest_pipeline_name-val-2")
+				assert.Equal(t, 2, mb.metricElasticsearchNodePipelineIngestDocumentsPreprocessed.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "ingest_pipeline_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 3, "ingest_pipeline_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts+1, 3, "ingest_pipeline_name-val-2")
+				assert.Equal(t, 2, mb.metricElasticsearchNodePipelineIngestOperationsFailed.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -431,6 +548,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectTypeTerm)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 3, AttributeSegmentsMemoryObjectTypeDocValue)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts+1, 3, AttributeSegmentsMemoryObjectTypeDocValue)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeSegmentsMemory.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -446,18 +566,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "thread_pool_name-val", AttributeTaskStateRejected)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 3, "thread_pool_name-val-2", AttributeTaskStateCompleted)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts+1, 3, "thread_pool_name-val-2", AttributeTaskStateCompleted)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeThreadPoolTasksFinished.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "thread_pool_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 3, "thread_pool_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts+1, 3, "thread_pool_name-val-2")
+				assert.Equal(t, 2, mb.metricElasticsearchNodeThreadPoolTasksQueued.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "thread_pool_name-val", AttributeThreadStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 3, "thread_pool_name-val-2", AttributeThreadStateIdle)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts+1, 3, "thread_pool_name-val-2", AttributeThreadStateIdle)
+				assert.Equal(t, 2, mb.metricElasticsearchNodeThreadPoolThreads.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -485,6 +614,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryStateFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordElasticsearchOsMemoryDataPoint(ts, 3, AttributeMemoryStateUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordElasticsearchOsMemoryDataPoint(ts+1, 3, AttributeMemoryStateUsed)
+				assert.Equal(t, 2, mb.metricElasticsearchOsMemory.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -503,12 +635,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "collector_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordJvmGcCollectionsCountDataPoint(ts, 3, "collector_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordJvmGcCollectionsCountDataPoint(ts+1, 3, "collector_name-val-2")
+				assert.Equal(t, 2, mb.metricJvmGcCollectionsCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "collector_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 3, "collector_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordJvmGcCollectionsElapsedDataPoint(ts+1, 3, "collector_name-val-2")
+				assert.Equal(t, 2, mb.metricJvmGcCollectionsElapsed.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -533,12 +671,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "memory_pool_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordJvmMemoryPoolMaxDataPoint(ts, 3, "memory_pool_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordJvmMemoryPoolMaxDataPoint(ts+1, 3, "memory_pool_name-val-2")
+				assert.Equal(t, 2, mb.metricJvmMemoryPoolMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "memory_pool_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordJvmMemoryPoolUsedDataPoint(ts, 3, "memory_pool_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordJvmMemoryPoolUsedDataPoint(ts+1, 3, "memory_pool_name-val-2")
+				assert.Equal(t, 2, mb.metricJvmMemoryPoolUsed.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -648,7 +792,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.breaker.memory.estimated"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.estimated")
 						validatedMetrics["elasticsearch.breaker.memory.estimated"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Estimated memory used for the operation.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -690,7 +836,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.breaker.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.limit")
 						validatedMetrics["elasticsearch.breaker.memory.limit"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Memory limit for the circuit breaker.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -734,7 +882,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.breaker.tripped"], "Found a duplicate in the metrics slice: elasticsearch.breaker.tripped")
 						validatedMetrics["elasticsearch.breaker.tripped"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of times the circuit breaker has been triggered and prevented an out of memory error.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -792,7 +942,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.cluster.health"], "Found a duplicate in the metrics slice: elasticsearch.cluster.health")
 						validatedMetrics["elasticsearch.cluster.health"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The health status of the cluster.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -850,7 +1002,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.cluster.indices.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.cluster.indices.cache.evictions")
 						validatedMetrics["elasticsearch.cluster.indices.cache.evictions"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of evictions from the cache for indices in cluster.", mi.Description())
 						assert.Equal(t, "{evictions}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -922,7 +1076,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.cluster.published_states.differences"], "Found a duplicate in the metrics slice: elasticsearch.cluster.published_states.differences")
 						validatedMetrics["elasticsearch.cluster.published_states.differences"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of differences between published cluster states.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -980,7 +1136,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.cluster.shards"], "Found a duplicate in the metrics slice: elasticsearch.cluster.shards")
 						validatedMetrics["elasticsearch.cluster.shards"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of shards in the cluster.", mi.Description())
 						assert.Equal(t, "{shards}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1024,7 +1182,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.cluster.state_queue"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_queue")
 						validatedMetrics["elasticsearch.cluster.state_queue"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of cluster states in queue.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1068,7 +1228,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.count"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.count")
 						validatedMetrics["elasticsearch.cluster.state_update.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of cluster state update attempts that changed the cluster state since the node started.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1115,7 +1277,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.time"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.time")
 						validatedMetrics["elasticsearch.cluster.state_update.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The cumulative amount of time updating the cluster state since the node started.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1164,7 +1328,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.evictions")
 						validatedMetrics["elasticsearch.index.cache.evictions"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of evictions from the cache for an index.", mi.Description())
 						assert.Equal(t, "{evictions}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1213,7 +1379,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.memory.usage")
 						validatedMetrics["elasticsearch.index.cache.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size in bytes of the cache for an index.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1259,7 +1427,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.size")
 						validatedMetrics["elasticsearch.index.cache.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of elements of the query cache for an index.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1306,7 +1476,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.documents"], "Found a duplicate in the metrics slice: elasticsearch.index.documents")
 						validatedMetrics["elasticsearch.index.documents"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of documents for an index.", mi.Description())
 						assert.Equal(t, "{documents}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1355,7 +1527,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.completed")
 						validatedMetrics["elasticsearch.index.operations.completed"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations completed for an index.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1399,7 +1573,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.current"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.current")
 						validatedMetrics["elasticsearch.index.operations.merge.current"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of currently active segment merges", mi.Description())
 						assert.Equal(t, "{merges}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1441,7 +1617,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.docs_count"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.docs_count")
 						validatedMetrics["elasticsearch.index.operations.merge.docs_count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The total number of documents in merge operations for an index.", mi.Description())
 						assert.Equal(t, "{documents}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1485,7 +1663,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.size"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.size")
 						validatedMetrics["elasticsearch.index.operations.merge.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The total size of merged segments for an index.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1532,7 +1712,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.time")
 						validatedMetrics["elasticsearch.index.operations.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent on operations for an index.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1578,7 +1760,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.segments.count"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.count")
 						validatedMetrics["elasticsearch.index.segments.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of segments of an index.", mi.Description())
 						assert.Equal(t, "{segments}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1625,7 +1809,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.memory")
 						validatedMetrics["elasticsearch.index.segments.memory"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of memory for segment object of an index.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1671,7 +1857,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.segments.size"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.size")
 						validatedMetrics["elasticsearch.index.segments.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of segments of an index.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1715,7 +1903,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.shards.size"], "Found a duplicate in the metrics slice: elasticsearch.index.shards.size")
 						validatedMetrics["elasticsearch.index.shards.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size of the shards assigned to this index.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1759,7 +1949,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.operations")
 						validatedMetrics["elasticsearch.index.translog.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of transaction log operations for an index.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1803,7 +1995,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.index.translog.size"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.size")
 						validatedMetrics["elasticsearch.index.translog.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of the transaction log for an index.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1887,7 +2081,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.memory.indexing_pressure"], "Found a duplicate in the metrics slice: elasticsearch.memory.indexing_pressure")
 						validatedMetrics["elasticsearch.memory.indexing_pressure"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Memory consumed, in bytes, by indexing requests in the specified stage.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1931,7 +2127,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.cache.count"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.count")
 						validatedMetrics["elasticsearch.node.cache.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total count of query cache misses across all shards assigned to selected nodes.", mi.Description())
 						assert.Equal(t, "{count}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1975,7 +2173,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.evictions")
 						validatedMetrics["elasticsearch.node.cache.evictions"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of evictions from the cache on a node.", mi.Description())
 						assert.Equal(t, "{evictions}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2019,7 +2219,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.memory.usage")
 						validatedMetrics["elasticsearch.node.cache.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size in bytes of the cache on a node.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2091,7 +2293,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.cluster.io"], "Found a duplicate in the metrics slice: elasticsearch.node.cluster.io")
 						validatedMetrics["elasticsearch.node.cluster.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of bytes sent and received on the network for internal cluster communication.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2163,7 +2367,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.documents"], "Found a duplicate in the metrics slice: elasticsearch.node.documents")
 						validatedMetrics["elasticsearch.node.documents"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of documents on the node.", mi.Description())
 						assert.Equal(t, "{documents}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2319,7 +2525,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.completed")
 						validatedMetrics["elasticsearch.node.operations.completed"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations completed by a node.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2361,7 +2569,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.operations.current"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.current")
 						validatedMetrics["elasticsearch.node.operations.current"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of query operations currently running.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2403,7 +2613,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.operations.get.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.completed")
 						validatedMetrics["elasticsearch.node.operations.get.completed"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of hits and misses resulting from GET operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2447,7 +2659,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.operations.get.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.time")
 						validatedMetrics["elasticsearch.node.operations.get.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The time spent on hits and misses resulting from GET operations.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2491,7 +2705,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.time")
 						validatedMetrics["elasticsearch.node.operations.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent on operations by a node.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2535,7 +2751,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.current")
 						validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of documents currently being ingested by a pipeline.", mi.Description())
 						assert.Equal(t, "{documents}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2579,7 +2797,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.preprocessed")
 						validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of documents preprocessed by the ingest pipeline.", mi.Description())
 						assert.Equal(t, "{documents}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2623,7 +2843,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.operations.failed")
 						validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of failed operations for the ingest pipeline.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2709,7 +2931,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.node.segments.memory")
 						validatedMetrics["elasticsearch.node.segments.memory"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of memory for segment object of a node.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2798,7 +3022,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.finished")
 						validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of tasks finished by the thread pool.", mi.Description())
 						assert.Equal(t, "{tasks}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2844,7 +3070,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.queued")
 						validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of queued tasks in the thread pool.", mi.Description())
 						assert.Equal(t, "{tasks}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2891,7 +3119,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.threads"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.threads")
 						validatedMetrics["elasticsearch.node.thread_pool.threads"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of threads in the thread pool.", mi.Description())
 						assert.Equal(t, "{threads}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -3025,7 +3255,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["elasticsearch.os.memory"], "Found a duplicate in the metrics slice: elasticsearch.os.memory")
 						validatedMetrics["elasticsearch.os.memory"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of physical memory.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3119,7 +3351,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["jvm.gc.collections.count"], "Found a duplicate in the metrics slice: jvm.gc.collections.count")
 						validatedMetrics["jvm.gc.collections.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The total number of garbage collections that have occurred", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3163,7 +3397,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["jvm.gc.collections.elapsed"], "Found a duplicate in the metrics slice: jvm.gc.collections.elapsed")
 						validatedMetrics["jvm.gc.collections.elapsed"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The approximate accumulated collection elapsed time", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3277,7 +3513,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["jvm.memory.pool.max"], "Found a duplicate in the metrics slice: jvm.memory.pool.max")
 						validatedMetrics["jvm.memory.pool.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The maximum amount of memory can be used for the memory pool", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3317,7 +3555,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["jvm.memory.pool.used"], "Found a duplicate in the metrics slice: jvm.memory.pool.used")
 						validatedMetrics["jvm.memory.pool.used"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current memory pool memory usage", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

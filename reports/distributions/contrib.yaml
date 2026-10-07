@@ -101,6 +101,7 @@ components:
         - text_encoding
         - zipkin_encoding
     processor:
+        - adaptive_tail_sampling
         - attributes
         - cardinality_guardian
         - cumulative_to_delta
@@ -124,6 +125,7 @@ components:
         - remotetap
         - resource
         - resource_detection
+        - rolling_span_latency
         - schema
         - span
         - span_pruning
@@ -225,7 +227,7 @@ components:
         - splunk_enterprise
         - splunk_hec
         - sql_query
-        - sqlserver
+        - sql_server
         - ssh_check
         - statsd
         - stef
@@ -236,7 +238,6 @@ components:
         - tls_check
         - udp_log
         - vcenter
-        - wavefront
         - webhook_event
         - windows_event_log
         - windows_perf_counters
