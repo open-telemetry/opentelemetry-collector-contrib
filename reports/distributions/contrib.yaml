@@ -96,7 +96,7 @@ components:
         - pprof
         - redis_storage
         - sd_notify
-        - sigv4auth
+        - sigv4_auth
         - skywalking_encoding
         - text_encoding
         - zipkin_encoding

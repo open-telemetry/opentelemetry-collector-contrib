@@ -1,0 +1,4 @@
+change_type: deprecation
+component: extension/sigv4_auth
+note: "Rename the sigv4auth extension to sigv4_auth. The old name remains available as a deprecated alias."
+issues: [45339]

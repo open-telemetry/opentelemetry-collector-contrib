@@ -7,8 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -35,4 +39,19 @@ func TestCreate(t *testing.T) {
 	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
+}
+
+func TestFactoryTypeAlias(t *testing.T) {
+	factory := NewFactory()
+	require.Equal(t, component.MustNewType("sigv4_auth"), factory.Type())
+
+	for _, typ := range []component.Type{metadata.Type, component.MustNewType("sigv4auth")} {
+		t.Run(typ.String(), func(t *testing.T) {
+			cfg := factory.CreateDefaultConfig()
+			comp, err := factory.Create(t.Context(), extensiontest.NewNopSettings(typ), cfg)
+			require.NoError(t, err)
+			require.NotNil(t, comp)
+			require.NoError(t, comp.Shutdown(t.Context()))
+		})
+	}
 }
