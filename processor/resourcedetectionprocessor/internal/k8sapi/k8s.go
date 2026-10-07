@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_k8s_api
+
 package k8sapi // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi"
 
 import (
@@ -19,21 +21,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi/internal/metadata"
 )
 
-const (
-	TypeStr      = "k8s_api"
-	TypeStrAlias = "k8snode" // Deprecated: use TypeStr
-)
-
 var _ internal.Detector = (*detector)(nil)
 
 type detector struct {
-	provider k8snode.Provider
-	logger   *zap.Logger
-	ra       *metadata.ResourceAttributesConfig
-	rb       *metadata.ResourceBuilder
+	provider              k8snode.Provider
+	logger                *zap.Logger
+	ra                    *metadata.ResourceAttributesConfig
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	if err := cfg.UpdateDefaults(); err != nil {
 		return nil, err
@@ -44,25 +42,30 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		return nil, fmt.Errorf("failed creating k8snode detector: %w", err)
 	}
 	return &detector{
-		provider: k8snodeProvider,
-		logger:   set.Logger,
-		ra:       &cfg.ResourceAttributes,
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		provider:              k8snodeProvider,
+		logger:                set.Logger,
+		ra:                    &cfg.ResourceAttributes,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // NewDeprecatedDetector logs a deprecation warning and then delegates to NewDetector.
 // Use this for the k8snode alias so users are notified to migrate to k8s_api.
-func NewDeprecatedDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDeprecatedDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	set.Logger.Warn("the k8snode detector name is deprecated, use k8s_api instead")
-	return NewDetector(set, dcfg)
+	return NewDetector(set, dcfg, failOnMissingMetadata)
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if d.ra.K8sNodeUID.Enabled {
 		nodeUID, err := d.provider.NodeUID(ctx)
 		if err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node UID: %w", err)
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node UID: %w", err)
+			}
+			d.logger.Debug("k8snode metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
 		}
 		d.rb.SetK8sNodeUID(nodeUID)
 	}
@@ -70,7 +73,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.ra.K8sNodeName.Enabled {
 		nodeName, err := d.provider.NodeName(ctx)
 		if err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node name: %w", err)
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node name: %w", err)
+			}
+			d.logger.Debug("k8snode metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
 		}
 		d.rb.SetK8sNodeName(nodeName)
 	}

@@ -5,6 +5,7 @@ package consul
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
@@ -29,6 +32,17 @@ func (m *mockMetadata) Metadata(context.Context) (*consul.Metadata, error) {
 	args := m.MethodCalled("Metadata")
 
 	return args.Get(0).(*consul.Metadata), args.Error(1)
+}
+
+// setPrefixMetaAttributesGate forces the state of the meta attribute prefix gate
+// for the duration of the test.
+func setPrefixMetaAttributesGate(t *testing.T, enabled bool) {
+	gate := metadata.ProcessorResourcedetectionConsulPrefixMetaAttributesFeatureGate
+	originalValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
+	})
 }
 
 func TestDetect(t *testing.T) {
@@ -57,6 +71,39 @@ func TestDetect(t *testing.T) {
 		"cloud.region": "dc1",
 		"host.id":      "00000000-0000-0000-0000-000000000000",
 		"test":         "test",
+	}
+
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
+
+func TestDetectPrefixedMetaAttributes(t *testing.T) {
+	setPrefixMetaAttributesGate(t, true)
+
+	md := &mockMetadata{}
+	md.On("Metadata").Return(
+		&consul.Metadata{
+			Hostname:     "hostname",
+			Datacenter:   "dc1",
+			NodeID:       "00000000-0000-0000-0000-000000000000",
+			HostMetadata: map[string]string{"test": "test"},
+		},
+		nil,
+	)
+	detector := &Detector{
+		provider: md,
+		logger:   zap.NewNop(),
+		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+	}
+	res, schemaURL, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	md.AssertExpectations(t)
+
+	expected := map[string]any{
+		"host.name":        "hostname",
+		"cloud.region":     "dc1",
+		"host.id":          "00000000-0000-0000-0000-000000000000",
+		"consul.meta.test": "test",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -121,4 +168,60 @@ func TestBuildConsulAPIConfig_Defaults(t *testing.T) {
 	defaultCfg := api.DefaultConfig()
 	require.Equal(t, defaultCfg.Address, apiCfg.Address)
 	require.Equal(t, defaultCfg.Datacenter, apiCfg.Datacenter)
+}
+
+func TestDetectError(t *testing.T) {
+	someErr := errors.New("connection refused")
+	tt := []struct {
+		name                  string
+		failOnMissingMetadata bool
+	}{
+		{name: "error ignored"},
+		{name: "error returned", failOnMissingMetadata: true},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			md := &mockMetadata{}
+			md.On("Metadata").Return((*consul.Metadata)(nil), someErr)
+			detector := &Detector{
+				provider:              md,
+				logger:                zap.NewNop(),
+				rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+				failOnMissingMetadata: tc.failOnMissingMetadata,
+			}
+
+			res, schemaURL, err := detector.Detect(t.Context())
+			if tc.failOnMissingMetadata {
+				require.ErrorIs(t, err, someErr)
+				assert.ErrorContains(t, err, "failed to get consul metadata")
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Empty(t, schemaURL)
+			assert.Equal(t, 0, res.Attributes().Len())
+			md.AssertExpectations(t)
+		})
+	}
+}
+
+func TestNewDetector(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.Address = "localhost:8500"
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	assert.NotNil(t, d)
+}
+
+func TestNewDetectorMissingTokenFile(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.TokenFile = filepath.Join(t.TempDir(), "missing-token")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.ErrorContains(t, err, "failed creating consul client")
+	assert.Nil(t, d)
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	assert.Equal(t, Config{ResourceAttributes: metadata.DefaultResourceAttributesConfig()}, CreateDefaultConfig())
 }

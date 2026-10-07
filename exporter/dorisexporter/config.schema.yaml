@@ -51,6 +51,9 @@ properties:
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  table:
+    description: TableNames is the table name for logs, traces and metrics.
+    $ref: table
   timezone:
     description: Timezone is the timezone of the doris.
     type: string
@@ -59,4 +62,3 @@ properties:
     type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
-  - $ref: table

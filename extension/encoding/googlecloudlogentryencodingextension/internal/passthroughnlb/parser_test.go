@@ -11,14 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func int64Ptr(v int64) *int64 {
-	return &v
-}
-
-func timePtr(t time.Time) *time.Time {
-	return &t
-}
-
 func TestHandleConnection(t *testing.T) {
 	t.Parallel()
 
@@ -29,10 +21,10 @@ func TestHandleConnection(t *testing.T) {
 		"tcp connection": {
 			conn: &connection{
 				ClientIP:   "68.168.189.182",
-				ClientPort: int64Ptr(52900),
-				Protocol:   int64Ptr(6),
+				ClientPort: new(int64(52900)),
+				Protocol:   new(int64(6)),
 				ServerIP:   "35.209.164.189",
-				ServerPort: int64Ptr(80),
+				ServerPort: new(int64(80)),
 			},
 			expectedAttr: map[string]any{
 				"client.address":    "68.168.189.182",
@@ -70,10 +62,10 @@ func TestHandleConnectionServerAddressAlreadySet(t *testing.T) {
 		"tcp connection": {
 			conn: &connection{
 				ClientIP:   "68.168.189.182",
-				ClientPort: int64Ptr(52900),
-				Protocol:   int64Ptr(6),
+				ClientPort: new(int64(52900)),
+				Protocol:   new(int64(6)),
 				ServerIP:   "35.209.164.189",
-				ServerPort: int64Ptr(80),
+				ServerPort: new(int64(80)),
 			},
 			expectedErr: errServerAddress,
 			expectedAttr: map[string]any{
@@ -105,7 +97,7 @@ func TestHandleTimestamps(t *testing.T) {
 	end := time.Date(2025, 11, 17, 22, 21, 57, 500505000, time.UTC)
 
 	attr := pcommon.NewMap()
-	handleTimestamps(timePtr(start), timePtr(end), attr)
+	handleTimestamps(new(start), new(end), attr)
 
 	require.Equal(t, map[string]any{
 		gcpPassthroughNLBPacketsStartTime: start.Format(time.RFC3339Nano),

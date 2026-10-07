@@ -15,7 +15,7 @@ import (
 
 // Config defines configuration for kubernetes events receiver.
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// List of ‘namespaces’ to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`

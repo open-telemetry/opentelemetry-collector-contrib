@@ -1,10 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_aws_lambda
+
 package lambda // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,9 +20,6 @@ import (
 )
 
 const (
-	// TypeStr is type of detector.
-	TypeStr = "lambda"
-
 	// Environment variables that are set when running on AWS Lambda.
 	// https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
 	awsRegionEnvVar                   = "AWS_REGION"
@@ -33,20 +33,24 @@ const (
 var _ internal.Detector = (*detector)(nil)
 
 type detector struct {
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
+	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)
 	if !ok || functionName == "" {
-		d.logger.Debug("Unable to identify AWS Lambda environment", zap.Error(err))
-		return pcommon.NewResource(), "", err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("lambda metadata unavailable: " + awsLambdaFunctionNameEnvVar + " env var not set")
+		}
+		d.logger.Debug("Unable to identify AWS Lambda environment")
+		return pcommon.NewResource(), "", nil
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md

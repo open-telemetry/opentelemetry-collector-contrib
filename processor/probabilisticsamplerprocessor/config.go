@@ -85,7 +85,7 @@ type Config struct {
 
 	// AttributeSource (logs only) defines where to look for the attribute in from_attribute. The allowed values are
 	// `traceID` or `record`. Default is `traceID`.
-	AttributeSource `mapstructure:"attribute_source"`
+	AttributeSource AttributeSource `mapstructure:"attribute_source"`
 
 	// FromAttribute (logs only) The optional name of a log record attribute used for sampling purposes, such as a
 	// unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.

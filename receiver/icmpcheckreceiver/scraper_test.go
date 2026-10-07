@@ -226,8 +226,8 @@ func TestAddMetrics(t *testing.T) {
 				"ping.rtt.stddev": float64(5),
 			},
 			customizeConfig: func(cfg *Config) {
-				cfg.Metrics.PingRttAvg.Enabled = false
-				cfg.Metrics.PingLossRatio.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttAvg.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingLossRatio.Enabled = false
 			},
 		},
 		{
@@ -245,11 +245,11 @@ func TestAddMetrics(t *testing.T) {
 			},
 			expected: map[string]any{},
 			customizeConfig: func(cfg *Config) {
-				cfg.Metrics.PingRttMin.Enabled = false
-				cfg.Metrics.PingRttMax.Enabled = false
-				cfg.Metrics.PingRttAvg.Enabled = false
-				cfg.Metrics.PingLossRatio.Enabled = false
-				cfg.Metrics.PingRttStddev.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttMin.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttMax.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttAvg.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingLossRatio.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttStddev.Enabled = false
 			},
 		},
 	}

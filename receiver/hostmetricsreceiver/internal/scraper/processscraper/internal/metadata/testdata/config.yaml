@@ -4,15 +4,23 @@ all_set:
     process.context_switches:
       enabled: true
       attributes: ["type"]
+    process.context_switches@v1:
+      enabled: true
     process.cpu.time:
       enabled: true
       attributes: ["state"]
+    process.cpu.time@v1:
+      enabled: true
     process.cpu.utilization:
       enabled: true
       attributes: ["state"]
+    process.cpu.utilization@v1:
+      enabled: true
     process.disk.io:
       enabled: true
       attributes: ["direction"]
+    process.disk.io@v1:
+      enabled: true
     process.disk.operations:
       enabled: true
       attributes: ["direction"]
@@ -29,11 +37,20 @@ all_set:
     process.paging.faults:
       enabled: true
       attributes: ["type"]
+    process.paging.faults@v1:
+      enabled: true
+      attributes: ["system.paging.fault.type"]
     process.signals_pending:
+      enabled: true
+    process.thread.count@v1:
       enabled: true
     process.threads:
       enabled: true
+    process.unix.file_descriptor.count@v1:
+      enabled: true
     process.uptime:
+      enabled: true
+    process.windows.handle.count@v1:
       enabled: true
   resource_attributes:
     process.cgroup:
@@ -45,6 +62,8 @@ all_set:
     process.executable.name:
       enabled: true
     process.executable.path:
+      enabled: true
+    process.linux.cgroup:
       enabled: true
     process.owner:
       enabled: true
@@ -57,15 +76,23 @@ reaggregate_set:
     process.context_switches:
       enabled: true
       attributes: []
+    process.context_switches@v1:
+      enabled: true
     process.cpu.time:
       enabled: true
       attributes: []
+    process.cpu.time@v1:
+      enabled: true
     process.cpu.utilization:
       enabled: true
       attributes: []
+    process.cpu.utilization@v1:
+      enabled: true
     process.disk.io:
       enabled: true
       attributes: []
+    process.disk.io@v1:
+      enabled: true
     process.disk.operations:
       enabled: true
       attributes: []
@@ -82,11 +109,20 @@ reaggregate_set:
     process.paging.faults:
       enabled: true
       attributes: []
+    process.paging.faults@v1:
+      enabled: true
+      attributes: []
     process.signals_pending:
+      enabled: true
+    process.thread.count@v1:
       enabled: true
     process.threads:
       enabled: true
+    process.unix.file_descriptor.count@v1:
+      enabled: true
     process.uptime:
+      enabled: true
+    process.windows.handle.count@v1:
       enabled: true
   resource_attributes:
     process.cgroup:
@@ -98,6 +134,8 @@ reaggregate_set:
     process.executable.name:
       enabled: true
     process.executable.path:
+      enabled: true
+    process.linux.cgroup:
       enabled: true
     process.owner:
       enabled: true
@@ -110,15 +148,23 @@ none_set:
     process.context_switches:
       enabled: false
       attributes: ["type"]
+    process.context_switches@v1:
+      enabled: false
     process.cpu.time:
       enabled: false
       attributes: ["state"]
+    process.cpu.time@v1:
+      enabled: false
     process.cpu.utilization:
       enabled: false
       attributes: ["state"]
+    process.cpu.utilization@v1:
+      enabled: false
     process.disk.io:
       enabled: false
       attributes: ["direction"]
+    process.disk.io@v1:
+      enabled: false
     process.disk.operations:
       enabled: false
       attributes: ["direction"]
@@ -135,11 +181,20 @@ none_set:
     process.paging.faults:
       enabled: false
       attributes: ["type"]
+    process.paging.faults@v1:
+      enabled: false
+      attributes: ["system.paging.fault.type"]
     process.signals_pending:
+      enabled: false
+    process.thread.count@v1:
       enabled: false
     process.threads:
       enabled: false
+    process.unix.file_descriptor.count@v1:
+      enabled: false
     process.uptime:
+      enabled: false
+    process.windows.handle.count@v1:
       enabled: false
   resource_attributes:
     process.cgroup:
@@ -151,6 +206,8 @@ none_set:
     process.executable.name:
       enabled: false
     process.executable.path:
+      enabled: false
+    process.linux.cgroup:
       enabled: false
     process.owner:
       enabled: false
@@ -177,6 +234,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     process.executable.path:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    process.linux.cgroup:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -214,6 +275,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "process.executable.path-val"
+    process.linux.cgroup:
+      enabled: true
+      metrics_exclude:
+        - strict: "process.linux.cgroup-val"
     process.owner:
       enabled: true
       metrics_exclude:

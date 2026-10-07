@@ -22,7 +22,7 @@ import (
 func newTestScraper(t *testing.T, fc *fakeClient) *mongodbScraper {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.QueryPlanCacheTTL = 0
 	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	s.planCache = buildPlanCache(cfg, zap.NewNop())
@@ -485,7 +485,7 @@ func TestProcessTopQueryEntries_EmitsTopQueryEvent(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, now, defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, "localhost", 27017)
+	setResourceAttributes(rb, "localhost", 27017, nil)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()
@@ -541,7 +541,7 @@ func TestProcessTopQueryEntries_EmitsCommentAndTruncated(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, "localhost", 27017)
+	setResourceAttributes(rb, "localhost", 27017, nil)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()
@@ -577,7 +577,7 @@ func TestProcessTopQueryEntries_EmitsCursorAndOriginatingCommand(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, "localhost", 27017)
+	setResourceAttributes(rb, "localhost", 27017, nil)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()
@@ -720,7 +720,7 @@ func TestScrapeTopQueryLogsResourceAttributes(t *testing.T) {
 	fc.On("GetLog", mock.Anything).Return(bson.A{string(logEntry)}, nil)
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.MaxExplainEachInterval = 0
 	cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 	cfg.LogsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true

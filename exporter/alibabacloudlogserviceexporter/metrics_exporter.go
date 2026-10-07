@@ -28,7 +28,8 @@ func newMetricsExporter(set exporter.Settings, cfg component.Config) (exporter.M
 		context.TODO(),
 		set,
 		cfg,
-		l.pushMetricsData)
+		l.pushMetricsData,
+	)
 }
 
 type logServiceMetricsSender struct {

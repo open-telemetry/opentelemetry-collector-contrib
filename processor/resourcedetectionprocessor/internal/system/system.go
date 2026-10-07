@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_system
+
 package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 
 import (
@@ -21,11 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr = "system"
-)
-
 var hostnameSourcesMap = map[string]func(*Detector) (string, error){
 	"os":     getHostname,
 	"dns":    getFQDN,
@@ -44,7 +41,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, _ bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	if len(cfg.HostnameSources) == 0 {
 		cfg.HostnameSources = []string{"dns", "os"}

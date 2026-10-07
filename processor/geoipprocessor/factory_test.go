@@ -74,15 +74,21 @@ func TestCreateProcessor_ProcessorKeyConfigError(t *testing.T) {
 }
 
 func TestCreateProcessor_FailedProvider(t *testing.T) {
-	baseMockFactory.CreateGeoIPProviderF = func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error) {
-		return nil, errors.New("error creating provider")
+	mockFactory := providerFactoryMock{
+		CreateDefaultConfigF: func() provider.Config {
+			return &providerConfigMock{ValidateF: func() error { return nil }}
+		},
+		CreateGeoIPProviderF: func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error) {
+			return nil, errors.New("error creating provider")
+		},
 	}
-
 	const providerKey string = "mock"
-	providerFactories[providerKey] = &baseMockFactory
 
 	factory := NewFactory()
-	cfg := &Config{Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}}
+	cfg := &Config{
+		Providers:         map[string]provider.Config{providerKey: &providerConfigMock{}},
+		providerFactories: map[string]provider.GeoIPProviderFactory{providerKey: &mockFactory},
+	}
 
 	_, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.EqualError(t, err, fmt.Errorf("failed to create provider for key %q: %w", providerKey, errors.New("error creating provider")).Error())

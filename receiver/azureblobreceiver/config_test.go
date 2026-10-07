@@ -41,7 +41,8 @@ func TestLoadConfig(t *testing.T) {
 			Traces:           TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 			Cloud:            defaultCloud,
 		},
-		receiver)
+		receiver,
+	)
 
 	receiver = cfg.Receivers[component.NewIDWithName(metadata.Type, "2")].(*Config)
 	assert.NoError(t, componenttest.CheckConfigStruct(receiver))
@@ -59,7 +60,8 @@ func TestLoadConfig(t *testing.T) {
 			Traces:            TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 			Cloud:             defaultCloud,
 		},
-		receiver)
+		receiver,
+	)
 }
 
 func TestMissingConnectionString(t *testing.T) {
@@ -90,6 +92,28 @@ func TestInvalidEncoding(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `logs.encoding "not a valid id" is not a supported built-in encoding`)
 	assert.Contains(t, err.Error(), `traces.encoding "also not valid" is not a supported built-in encoding`)
+}
+
+func TestInvalidCompression(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.ConnectionString = goodConnectionString
+
+	cfg.Compression = "snappy"
+
+	err := cfg.Validate()
+	assert.Contains(t, err.Error(), `compression "snappy" is not supported`)
+}
+
+func TestValidCompression(t *testing.T) {
+	for _, compression := range []string{CompressionNone, CompressionGzip, CompressionAuto} {
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.ConnectionString = goodConnectionString
+		cfg.Compression = compression
+
+		assert.NoError(t, cfg.Validate())
+	}
 }
 
 func TestEncodingExtensionIDAcceptedByValidation(t *testing.T) {

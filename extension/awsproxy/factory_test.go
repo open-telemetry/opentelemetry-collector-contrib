@@ -80,7 +80,8 @@ func TestFactory_Create(t *testing.T) {
 		resp, err = http.Post(
 			"http://"+address+"/GetSamplingRules",
 			"application/json",
-			strings.NewReader(`{"NextToken": null}`))
+			strings.NewReader(`{"NextToken": null}`),
+		)
 		return err == nil
 	}, 3*time.Second, 10*time.Millisecond)
 

@@ -381,7 +381,7 @@ func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
 
 			entries := complexEntriesForNDifferentHostsMDifferentScopes(100, 1, tc.numberOFScopes)
 
-			pLogs := ConvertEntries(entries)
+			pLogs := ConvertEntries(entries, "", "")
 
 			rLogs := pLogs.ResourceLogs()
 			rLog := rLogs.At(0)
@@ -750,11 +750,13 @@ func TestConvertTrace(t *testing.T) {
 	require.Equal(t, pcommon.TraceID(
 		[16]byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
-		}), record.TraceID())
+		},
+	), record.TraceID())
 	require.Equal(t, pcommon.SpanID(
 		[8]byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
-		}), record.SpanID())
+		},
+	), record.SpanID())
 	require.Equal(t, uint32(0x01), uint32(record.Flags()))
 }
 
@@ -772,11 +774,13 @@ func TestConvertTraceEmptyFlags(t *testing.T) {
 	require.Equal(t, pcommon.TraceID(
 		[16]byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
-		}), record.TraceID())
+		},
+	), record.TraceID())
 	require.Equal(t, pcommon.SpanID(
 		[8]byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
-		}), record.SpanID())
+		},
+	), record.SpanID())
 	require.Equal(t, uint32(0x00), uint32(record.Flags()))
 }
 
@@ -799,7 +803,7 @@ func BenchmarkConverter(b *testing.B) {
 
 				for from := 0; from < entryCount; from += int(batchSize) {
 					to := min(from+int(batchSize), entryCount)
-					pLogs := ConvertEntries(entries[from:to])
+					pLogs := ConvertEntries(entries[from:to], "", "")
 					rLogs := pLogs.ResourceLogs()
 					require.Equal(b, hostsCount, rLogs.Len())
 				}
@@ -965,4 +969,47 @@ func convert(ent *entry.Entry) plog.LogRecord {
 	dest := plog.NewLogRecord()
 	convertInto(ent, dest)
 	return dest
+}
+
+func TestConvertedEntriesDefaultScopeGrouping(t *testing.T) {
+	entries := complexEntriesForNDifferentHostsMDifferentScopes(100, 1, 2)
+
+	for i := range 50 {
+		entries[i].ScopeName = ""
+	}
+
+	defaultScope := "defaultScopeName"
+	defaultVersion := "defaultScopeVersion"
+
+	pLogs := ConvertEntries(entries, defaultScope, defaultVersion)
+
+	rLogs := pLogs.ResourceLogs()
+	require.Equal(t, 1, rLogs.Len())
+
+	rLog := rLogs.At(0)
+	ills := rLog.ScopeLogs()
+
+	expectedScopes := map[string]int{}
+	for _, e := range entries {
+		scopeName := e.ScopeName
+		if scopeName == "" {
+			scopeName = defaultScope
+		}
+		expectedScopes[scopeName]++
+	}
+
+	require.Equal(t, len(expectedScopes), ills.Len())
+
+	for i := 0; i < ills.Len(); i++ {
+		sl := ills.At(i)
+		name := sl.Scope().Name()
+		require.Contains(t, expectedScopes, name)
+		require.Equal(t, expectedScopes[name], sl.LogRecords().Len())
+
+		if name == defaultScope {
+			require.Equal(t, defaultVersion, sl.Scope().Version())
+		} else {
+			require.Empty(t, sl.Scope().Version())
+		}
+	}
 }

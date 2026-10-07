@@ -32,7 +32,7 @@ func TestDefaultConfig(t *testing.T) {
 	require.Equal(t, defaultDB, cfg.Database)
 	require.Equal(t, defaultRole, cfg.Role)
 	require.Equal(t, defaultSchema, cfg.Schema)
-	require.Equal(t, defaultInterval, cfg.CollectionInterval)
+	require.Equal(t, defaultInterval, cfg.ControllerConfig.CollectionInterval)
 }
 
 func TestCreateMetrics(t *testing.T) {

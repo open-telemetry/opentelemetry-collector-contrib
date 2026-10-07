@@ -26,7 +26,8 @@ func newK8sLeaderElector(
 		client.CoordinationV1(),
 		resourcelock.ResourceLockConfig{
 			Identity: identity,
-		})
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

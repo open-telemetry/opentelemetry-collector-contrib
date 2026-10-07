@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_alibaba_ecs
+
 package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
 
 import (
@@ -16,11 +18,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs/internal/metadata"
 )
 
-const (
-	// TypeStr is the detector type id.
-	TypeStr = "alibaba_ecs"
-)
-
 var _ internal.Detector = (*Detector)(nil)
 
 // Detector queries the Alibaba Cloud ECS metadata service and emits resource attributes.
@@ -32,14 +29,14 @@ type Detector struct {
 }
 
 // NewDetector creates an Alibaba Cloud ECS detector.
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	return &Detector{
 		logger:                set.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		metadataProvider:      ecsprovider.NewProvider(),
-		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 

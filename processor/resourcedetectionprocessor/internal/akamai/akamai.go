@@ -1,10 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_akamai
+
 package akamai // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	linodemeta "github.com/linode/go-metadata"
@@ -15,11 +18,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai/internal/metadata"
-)
-
-const (
-	// TypeStr is type of detector.
-	TypeStr = "akamai"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -35,13 +33,14 @@ type akamaiAPI interface {
 
 // Detector is a Akamai metadata detector.
 type Detector struct {
-	client akamaiAPI
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	client                akamaiAPI
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Akamai metadata detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	cli, err := newAkamaiClient(context.Background())
@@ -50,9 +49,10 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	}
 
 	return &Detector{
-		client: cli,
-		logger: p.Logger,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		client:                cli,
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
@@ -62,6 +62,9 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	inst, err := d.client.GetInstance(ctx)
 	if err != nil {
 		d.logger.Debug("Akamai detector: not running on Akamai or metadata unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("akamai metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

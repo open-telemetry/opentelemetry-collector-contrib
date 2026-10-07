@@ -22,9 +22,9 @@ const (
 type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
+	AccessTokenPassthroughConfig splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
-	Ack `mapstructure:"ack"`
+	Ack Ack `mapstructure:"ack"`
 
 	// RawPath for raw data collection, default is '/services/collector/raw'
 	RawPath string `mapstructure:"raw_path"`

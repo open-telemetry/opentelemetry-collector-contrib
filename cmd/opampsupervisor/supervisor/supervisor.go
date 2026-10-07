@@ -69,6 +69,9 @@ var (
 	//go:embed templates/owntelemetry.yaml
 	ownTelemetryTpl string
 
+	//go:embed templates/nooptelemetry.yaml
+	noopTelemetry string
+
 	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
 	lastWorkingRemoteConfigFile    = "last_working_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
@@ -148,7 +151,9 @@ type Supervisor struct {
 	// Internal config state for agent use. See the [configState] struct for more details.
 	cfgState *atomic.Value
 
-	// Final effective config of the Collector.
+	// Final effective config of the Collector, as reported by the agent.
+	// Stores the full *protobufs.EffectiveConfig so all named config files
+	// are preserved when forwarding to the OpAMP server.
 	effectiveConfig *atomic.Value
 
 	// Last received remote config.
@@ -166,6 +171,18 @@ type Supervisor struct {
 	configApplyTimeout time.Duration
 	// lastHealthFromClient is the last health status of the agent received from the client.
 	lastHealthFromClient atomic.Pointer[protobufs.ComponentHealth]
+
+	// healthMu guards lastReportedHealth and its publication, so that a health
+	// update and an OpAMP client replacement cannot interleave and lose the
+	// newer value.
+	healthMu sync.Mutex
+	// lastReportedHealth is the last health the Supervisor published to the OpAMP
+	// server, whether it originated from the agent or from process supervision.
+	// A replacement OpAMP client is seeded from it, so that accepting connection
+	// settings does not report a running agent as unhealthy. It is deliberately
+	// distinct from lastHealthFromClient, which holds agent-reported health only
+	// and takes part in config apply timeout decisions.
+	lastReportedHealth *protobufs.ComponentHealth
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -281,7 +298,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	resourceCfg, err := buildSupervisorResourceConfig(&cfg.Resource)
+	resourceCfg, err := buildSupervisorResourceConfig(ctx, logger, &cfg.Resource)
 	if err != nil {
 		return telemetrySettings{}, err
 	}
@@ -377,6 +394,15 @@ func (s *Supervisor) Start(ctx context.Context) error {
 				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
 		)
 		return errors.New("accepts_packages capability is not yet fully implemented")
+	}
+
+	if s.config.Capabilities.ReportsRemoteConfig { //nolint:staticcheck // SA1019: deprecated field is read only to warn about its use
+		s.telemetrySettings.Logger.Error(
+			"The reports_remote_config capability is deprecated and has no effect. " +
+				"Remote config status is reported whenever accepts_remote_config is enabled. " +
+				"Remove reports_remote_config from the supervisor config; it will be removed in a future release. " +
+				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763 for details.",
+		)
 	}
 
 	if err = s.getFeatureGates(); err != nil {
@@ -744,7 +770,12 @@ func (s *Supervisor) startOpAMPClient() error {
 		return err
 	}
 
-	if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
+	// Replacing the client must not reset the agent's health. The agent reports
+	// aggregate status changes only, so health published here is not corrected
+	// until the agent's health changes again, which for a healthy agent means not
+	// until its process restarts. When no health has been published yet this is
+	// the initial client, and unhealthy is published as before.
+	if err := s.publishLastReportedHealth(); err != nil {
 		return err
 	}
 
@@ -894,19 +925,18 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	}
 
 	if message.EffectiveConfig != nil {
-		span.AddEvent("Received effectiveConfig")
-		if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
+		configMap := message.EffectiveConfig.GetConfigMap()
+		if configMap == nil || len(configMap.GetConfigMap()) == 0 {
+			s.telemetrySettings.Logger.Debug("Received effective config with empty config map, skipping")
+		} else {
+			span.AddEvent("Received effectiveConfig")
 			s.telemetrySettings.Logger.Debug("Received effective config from agent")
-			s.effectiveConfig.Store(string(cfg.Body))
+			s.effectiveConfig.Store(message.EffectiveConfig)
 			err := s.opampClient.UpdateEffectiveConfig(ctx)
 			if err != nil {
 				span.SetStatus(codes.Error, fmt.Sprintf("Could not update effective config: %s", err.Error()))
 				s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
 			}
-		} else {
-			msg := "Got effective config message, but the instance config was not present. Ignoring effective config."
-			span.SetStatus(codes.Error, msg)
-			s.telemetrySettings.Logger.Error(msg)
 		}
 	}
 
@@ -1113,8 +1143,13 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		return err
 	}
 
-	// Update the heartbeat interval if the agent supports it
-	if s.config.Capabilities.ReportsHeartbeat {
+	// Update the heartbeat interval if the agent supports it.
+	// Ignore non-positive intervals from the server and keep the current value.
+	// This avoids passing a zero duration to the opamp-go sender, which rejects
+	// it for HTTP transport and silently disables heartbeats for WebSocket
+	// transport.
+	oldHeartbeatIntervalSeconds := s.heartbeatIntervalSeconds
+	if s.config.Capabilities.ReportsHeartbeat && settings.HeartbeatIntervalSeconds > 0 {
 		s.heartbeatIntervalSeconds = settings.HeartbeatIntervalSeconds
 	}
 
@@ -1130,8 +1165,9 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 
 	if err := s.startOpAMPClient(); err != nil {
 		s.telemetrySettings.Logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
-		// revert the OpAMP server config
+		// revert the OpAMP server config and heartbeat interval
 		s.config.Server = oldServerConfig
+		s.heartbeatIntervalSeconds = oldHeartbeatIntervalSeconds
 		// start the OpAMP client with the old settings
 		if err := s.startOpAMPClient(); err != nil {
 			s.telemetrySettings.Logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
@@ -1237,6 +1273,13 @@ func (s *Supervisor) composeNoopConfig() ([]byte, error) {
 		return nil, err
 	}
 	if err := config.MergeConfFromYAML(conf, s.composeOpAMPExtensionConfig()); err != nil {
+		return nil, err
+	}
+	// The bootstrap Collector is stopped as soon as it has reported its
+	// AgentDescription, so its internal metrics are never collected. Disabling
+	// them keeps the Collector's default reader from binding localhost:8888,
+	// which fails the bootstrap when that port is already in use.
+	if err := config.MergeConfFromYAML(conf, []byte(noopTelemetry)); err != nil {
 		return nil, err
 	}
 
@@ -1685,25 +1728,24 @@ func (s *Supervisor) loadLastReceivedOwnTelemetryConfig() {
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
 // current effective config.
 func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
-	cfgStr, ok := s.effectiveConfig.Load().(string)
-	if !ok {
-		cfgState, ok := s.cfgState.Load().(*configState)
-		if !ok {
-			cfgStr = ""
-		} else {
-			cfgStr = cfgState.mergedConfig
-		}
+	if cfg, ok := s.effectiveConfig.Load().(*protobufs.EffectiveConfig); ok && cfg != nil {
+		return cfg
 	}
 
-	cfg := &protobufs.EffectiveConfig{
+	// Fallback: construct a single-file EffectiveConfig from the merged config
+	// (used when the agent has not yet reported its effective config).
+	cfgState, ok := s.cfgState.Load().(*configState)
+	if !ok {
+		return nil
+	}
+
+	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {Body: []byte(cfgStr)},
+			ConfigMap: map[string]*protobufs.AgentConfigObject{
+				"": {Body: []byte(cfgState.mergedConfig)},
 			},
 		},
 	}
-
-	return cfg
 }
 
 func (*Supervisor) updateOwnTelemetryData(data map[string]any, signal string, settings *protobufs.TelemetryConnectionSettings) map[string]any {
@@ -2025,7 +2067,7 @@ func (s *Supervisor) runAgentProcess() {
 				s.telemetrySettings.Logger.Debug("No config present, nothing to apply")
 				configApplyTimeoutTimer.Stop()
 				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
-				if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
+				if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
 					s.telemetrySettings.Logger.Error("Could not report healthy status to OpAMP server", zap.Error(err))
 				}
 				// need to clear exit channel to avoid triggering `s.commander.Exited()` case
@@ -2263,7 +2305,7 @@ func (s *Supervisor) validateConfig(configContent string) error {
 	ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
 	defer cancel()
 
-	if err := s.commander.ValidateConfig(ctx, tempFile.Name()); err != nil {
+	if err := s.commander.ValidateConfig(ctx, tempFile.Name(), s.getFeatureGateFlag()...); err != nil {
 		return fmt.Errorf("configuration validation failed: %w", err)
 	}
 
@@ -2323,7 +2365,7 @@ func (s *Supervisor) Shutdown() {
 	}
 
 	if s.opampClient != nil {
-		err := s.opampClient.SetHealth(
+		err := s.SetHealth(
 			&protobufs.ComponentHealth{
 				Healthy: false, LastError: "Supervisor is shutdown",
 			},
@@ -2420,7 +2462,7 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Connect
 
 // saveAndReportConfigStatus saves the config status to the persistent state and reports it to the server.
 func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
-	if !s.config.Capabilities.ReportsRemoteConfig {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return
 	}
@@ -2450,7 +2492,7 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 // the status is reported without overwriting the persisted status of the
 // config that triggered the rollback, and true is returned.
 func (s *Supervisor) reportActiveConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) bool {
-	if !s.config.Capabilities.ReportsRemoteConfig {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return false
 	}
@@ -2475,7 +2517,36 @@ func (s *Supervisor) reportLastWorkingRemoteConfigStatus(status protobufs.Remote
 	}
 }
 
+// SetHealth publishes the agent's health to the OpAMP server and records it as
+// the health a replacement client is given. All health publication goes through
+// it, whether the health came from the agent or from process supervision, so
+// that replacing the client preserves what the server was last told.
 func (s *Supervisor) SetHealth(componentHealth *protobufs.ComponentHealth) error {
+	s.healthMu.Lock()
+	defer s.healthMu.Unlock()
+
+	return s.setHealthLocked(componentHealth)
+}
+
+// publishLastReportedHealth publishes the health last reported to the OpAMP
+// server, so that a newly created client reports it instead of resetting it. It
+// publishes unhealthy when no health has been reported yet.
+func (s *Supervisor) publishLastReportedHealth() error {
+	s.healthMu.Lock()
+	defer s.healthMu.Unlock()
+
+	componentHealth := s.lastReportedHealth
+	if componentHealth == nil {
+		componentHealth = &protobufs.ComponentHealth{Healthy: false}
+	}
+	return s.setHealthLocked(componentHealth)
+}
+
+// setHealthLocked publishes health to the OpAMP server and records it. s.healthMu
+// must be held: the read and the publication in publishLastReportedHealth have to
+// exclude a concurrent update, otherwise health reported while the client is being
+// replaced would be overwritten by the older value being republished.
+func (s *Supervisor) setHealthLocked(componentHealth *protobufs.ComponentHealth) error {
 	s.telemetrySettings.Logger.Debug(
 		"Setting health",
 		zap.Bool("healthy", componentHealth.Healthy),
@@ -2487,6 +2558,8 @@ func (s *Supervisor) SetHealth(componentHealth *protobufs.ComponentHealth) error
 	if err != nil {
 		return fmt.Errorf("failed to set health to OpAMP server: %w", err)
 	}
+	// Cloned because the caller retains ownership of the message it passed.
+	s.lastReportedHealth = proto.Clone(componentHealth).(*protobufs.ComponentHealth)
 	return nil
 }
 

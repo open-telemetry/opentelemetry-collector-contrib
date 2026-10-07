@@ -368,7 +368,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", udppoller.Transport)),
+							attribute.String("transport", udppoller.Transport),
+						),
 						Value: accepted,
 					},
 				},
@@ -402,7 +403,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", udppoller.Transport)),
+							attribute.String("transport", udppoller.Transport),
+						),
 						Value: refused,
 					},
 				},

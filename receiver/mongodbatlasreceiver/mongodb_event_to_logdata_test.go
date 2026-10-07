@@ -298,14 +298,14 @@ func getTestAuditEvent5_0() model.AuditLog {
 			Binary: "binary",
 		},
 		Local: model.Address{
-			IP:         strp("0.0.0.0"),
-			Port:       intp(3000),
-			SystemUser: boolp(true),
-			UnixSocket: strp("/var/run/mongodb/mongodb-27017.sock"),
+			IP:         new("0.0.0.0"),
+			Port:       new(3000),
+			SystemUser: new(true),
+			UnixSocket: new("/var/run/mongodb/mongodb-27017.sock"),
 		},
 		Remote: model.Address{
-			IP:   strp("192.168.1.237"),
-			Port: intp(4000),
+			IP:   new("192.168.1.237"),
+			Port: new(4000),
 		},
 		Roles: []model.AuditRole{
 			{
@@ -336,12 +336,12 @@ func getTestAuditEvent4_2() model.AuditLog {
 		},
 		Type: "authenticate",
 		Local: model.Address{
-			IP:   strp("0.0.0.0"),
-			Port: intp(3000),
+			IP:   new("0.0.0.0"),
+			Port: new(3000),
 		},
 		Remote: model.Address{
-			IP:   strp("192.168.1.237"),
-			Port: intp(4000),
+			IP:   new("192.168.1.237"),
+			Port: new(4000),
 		},
 		Roles: []model.AuditRole{
 			{

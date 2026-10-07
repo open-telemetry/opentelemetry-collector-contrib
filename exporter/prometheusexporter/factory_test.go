@@ -36,7 +36,8 @@ func TestCreateMetrics(t *testing.T) {
 	exp, err := createMetricsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	require.Equal(t, errBlankPrometheusAddress, err)
 	require.Nil(t, exp)
 }

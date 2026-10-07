@@ -60,7 +60,7 @@ type ArrowConfig struct {
 // Config defines configuration for OTel Arrow receiver.
 type Config struct {
 	// Protocols is the configuration for gRPC and Arrow.
-	Protocols `mapstructure:"protocols"`
+	Protocols Protocols `mapstructure:"protocols"`
 	// Admission is the configuration for controlling amount of request memory entering the receiver.
 	Admission AdmissionConfig `mapstructure:"admission"`
 
@@ -81,10 +81,10 @@ func (cfg *ArrowConfig) Validate() error {
 }
 
 func (cfg *Config) Validate() error {
-	if err := cfg.GRPC.Validate(); err != nil {
+	if err := cfg.Protocols.GRPC.Validate(); err != nil {
 		return err
 	}
-	if err := cfg.Arrow.Validate(); err != nil {
+	if err := cfg.Protocols.Arrow.Validate(); err != nil {
 		return err
 	}
 	return nil
@@ -95,8 +95,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
-	if cfg.Admission.RequestLimitMiB == 0 && cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
-		cfg.Admission.RequestLimitMiB = cfg.Arrow.DeprecatedAdmissionLimitMiB
+	if cfg.Admission.RequestLimitMiB == 0 && cfg.Protocols.Arrow.DeprecatedAdmissionLimitMiB != 0 {
+		cfg.Admission.RequestLimitMiB = cfg.Protocols.Arrow.DeprecatedAdmissionLimitMiB
 	}
 	return nil
 }

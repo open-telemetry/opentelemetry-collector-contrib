@@ -304,6 +304,20 @@ The number of write operations currently being processed.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | false | Development |
 
+### mongodb.assert.count
+
+The number of assertions raised since the server process started.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {assert} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.assert.type | The type of assertion raised by the server. | Str: ``msg``, ``regular``, ``user``, ``warning``, ``tripwire`` | Recommended | - |
+
 ### mongodb.commands.rate
 
 The number of commands executed per second.
@@ -335,6 +349,20 @@ The number of getmores executed per second.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {getmore}/s | Gauge | Double | Development |
+
+### mongodb.global_lock.queue.count
+
+The number of operations queued waiting for the global lock.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.global_lock.queue.type | The type of operation waiting for the global lock. | Str: ``read``, ``write`` | Recommended | - |
 
 ### mongodb.health
 
@@ -446,6 +474,30 @@ The number of replicated operations executed.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended | - |
 
+### mongodb.oplog.limit
+
+The maximum amount of storage the oplog is allowed to use.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### mongodb.oplog.usage
+
+The amount of storage the oplog is using.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### mongodb.oplog.window
+
+The time span between the oldest and the newest entry retained in the oplog.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
 ### mongodb.page_faults
 
 The number of page faults.
@@ -461,6 +513,30 @@ The number of queries executed per second.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {query}/s | Gauge | Double | Development |
+
+### mongodb.query_executor.collection_scan.count
+
+The number of queries that performed a collection scan.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {query} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.query_executor.document.scanned.count
+
+The number of documents scanned by the query executor.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {document} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.query_executor.index_key.scanned.count
+
+The number of index keys scanned by the query executor.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {index_key} | Sum | Int | Cumulative | true | Development |
 
 ### mongodb.repl_commands_per_sec
 
@@ -510,6 +586,65 @@ The number of replicated updates executed per second.
 | ---- | ----------- | ---------- | --------- |
 | {update}/s | Gauge | Double | Development |
 
+### mongodb.replica.status
+
+The current state of the scraped replica.
+
+A timeseries is produced for every possible state. The value is 1 for the state the instance is currently in, and 0 for all others.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.state | The state of a replica within the replica set. | Str: ``startup``, ``primary``, ``secondary``, ``recovering``, ``startup2``, ``unknown``, ``arbiter``, ``down``, ``rollback``, ``removed`` | Recommended | - |
+
+### mongodb.replica_set.headroom
+
+The time margin a replica set member has before it falls off the end of the oplog.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.name | The name of the replica, in host:port form. | Any Str | Recommended | - |
+
+### mongodb.replica_set.lag
+
+The time a replica set member is behind the primary.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.name | The name of the replica, in host:port form. | Any Str | Recommended | - |
+| mongodb.replica_set.lag.type | The replication progress that the lag is measured against. | Str: ``applied``, ``durable`` | Recommended | - |
+
+### mongodb.replica_set.member.count
+
+The number of members in the replica set.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {member} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.state | The state of a replica within the replica set. | Str: ``startup``, ``primary``, ``secondary``, ``recovering``, ``startup2``, ``unknown``, ``arbiter``, ``down``, ``rollback``, ``removed`` | Recommended | - |
+
 ### mongodb.updates.rate
 
 The number of updates executed per second.
@@ -525,6 +660,71 @@ The amount of time that the server has been running.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
+
+### mongodb.write_concern.wait.time
+
+The cumulative time spent waiting for write concern acknowledgement.
+
+Increments for write operations that specify a write concern greater than w:1, which includes
+the w:"majority" default applied to replica sets since MongoDB 5.0. Accumulates under an
+ordinary replica set workload and stays at zero on a standalone deployment and for writes that
+specify w:1.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### mongodb.wt.concurrent_transaction.ticket.in_use
+
+The number of in-flight WiredTiger read/write concurrent-transaction tickets.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {ticket} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.wt.concurrent_transaction.ticket.type | The WiredTiger concurrent-transaction ticket type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mongodb.wt.fsync.count
+
+The total number of fsync I/Os issued by the WiredTiger storage engine.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {fsync} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.wt.log.operation.count
+
+The total number of WiredTiger journal operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.wt.log.operation.type | The WiredTiger journal operation type. | Str: ``write``, ``sync``, ``flush`` | Recommended | - |
+
+### mongodb.wt.log.sync.time
+
+The cumulative time spent syncing the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### mongodb.wt.log.write
+
+The total number of bytes written to the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### mongodb.wtcache.bytes.read
 
@@ -600,7 +800,6 @@ query sample
 Emits one event per slow query execution. The top N slowest executions per scrape window are emitted.
 Note: when database profiling is disabled, the receiver falls back to MongoDB's diagnostic log (`getLog`), a fixed-size ring buffer (~1024 entries) that may rotate slow-query entries out before the next scrape on busy servers; enable the profiler for reliable capture.
 
-
 #### Attributes
 
 | Name | Description | Values | Semantic Convention |
@@ -629,8 +828,9 @@ Note: when database profiling is disabled, the receiver falls back to MongoDB's 
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| server.address | The address of the MongoDB host. | Any Str | true | - | - |
-| server.port | The port of the MongoDB host. | Any Int | false | - | - |
-| service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true | - | - |
+| db.system.version | The database version of the instance. Examples include "5.0.0", "6.0.4". | Any Str | false | - | - |
+| server.address | The address of the monitored MongoDB instance. A loopback address (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. | Any Str | true | - | - |
+| server.port | The port of the monitored MongoDB instance, defaulting to 27017 when the instance does not report one. | Any Int | true | - | - |
+| service.instance.id | A unique identifier of the MongoDB instance as a UUID v5, derived from the address and port using the OTel namespace. The address is resolved the same way as server.address. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:mongodb. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

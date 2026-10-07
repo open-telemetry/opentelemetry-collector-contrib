@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_aws_ec2
+
 package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 
 import (
@@ -25,11 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr   = "ec2"
-	tagPrefix = "ec2.tag."
-)
+const tagPrefix = "ec2.tag."
 
 var _ internal.Detector = (*Detector)(nil)
 
@@ -61,7 +59,7 @@ type Detector struct {
 	tagsFromIMDS          bool
 }
 
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	awsConfig, err := config.LoadDefaultConfig(context.Background())
 	awsConfig.Retryer = func() aws.Retryer {
@@ -84,7 +82,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		logger:                set.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		ec2ClientBuilder:      &ec2ClientBuilder{},
-		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 		tagsFromIMDS:          cfg.TagsFromIMDS,
 	}, nil
 }

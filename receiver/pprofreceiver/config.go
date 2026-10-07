@@ -13,8 +13,8 @@ import (
 
 // RemoteConfig configures a scraper that pulls pprof from a remote HTTP endpoint.
 type RemoteConfig struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig     confighttp.ClientConfig        `mapstructure:",squash"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -22,7 +22,7 @@ type RemoteConfig struct {
 
 // FileConfig configures a scraper that reads pprof files matching a glob pattern.
 type FileConfig struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// Include is the glob pattern for pprof files to scrape.
 	Include string `mapstructure:"include"`
@@ -33,7 +33,7 @@ type FileConfig struct {
 
 // SelfConfig configures a scraper that profiles the running collector.
 type SelfConfig struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// Fraction of blocking events that are profiled. A value <= 0 disables
 	// profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.

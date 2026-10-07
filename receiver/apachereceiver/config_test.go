@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.ClientConfig.Endpoint = "http://localhost:8080/server-status?auto"
-	expected.CollectionInterval = 10 * time.Second
+	expected.ControllerConfig.CollectionInterval = 10 * time.Second
 
 	require.Equal(t, expected, cfg)
 }

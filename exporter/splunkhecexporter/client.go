@@ -62,6 +62,7 @@ type client struct {
 	bufferPool        bufferPool
 	exporterName      string
 	meter             metric.Meter
+	telemetryBuilder  *metadata.TelemetryBuilder
 }
 
 func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
@@ -368,7 +369,8 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped log event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthLogs)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthLogs),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors,
@@ -415,11 +417,13 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-					"error writing the event: %w", err)))
+					"error writing the event: %w", err,
+				)))
 			}
 		}
 	}
@@ -447,14 +451,16 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*translator.Event, buf b
 			}
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-					" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics)))
+					" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics),
+			))
 			return iterState{
 				record: i + 1,
 				done:   i+1 != len(events),
 			}, permanentErrors
 		} else if err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-				"error writing the event: %w", err)))
+				"error writing the event: %w", err,
+			)))
 		}
 	}
 
@@ -493,11 +499,13 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped span event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthTraces)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthTraces),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-					"error writing the event: %w", err)))
+					"error writing the event: %w", err,
+				)))
 			}
 		}
 	}
@@ -739,6 +747,9 @@ func (c *client) stop(context.Context) error {
 	if c.heartbeater != nil {
 		c.heartbeater.shutdown()
 	}
+	if c.telemetryBuilder != nil {
+		c.telemetryBuilder.Shutdown()
+	}
 	return nil
 }
 
@@ -757,7 +768,12 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 	}
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger}
-	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.meter)
+	telemetryBuilder, tbErr := metadata.NewTelemetryBuilder(c.telemetrySettings)
+	if tbErr != nil {
+		return tbErr
+	}
+	c.telemetryBuilder = telemetryBuilder
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.telemetryBuilder, c.meter)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
 			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)

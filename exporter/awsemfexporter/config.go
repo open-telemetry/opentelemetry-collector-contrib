@@ -4,11 +4,13 @@
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
+	"errors"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -22,7 +24,7 @@ var eMFSupportedUnits = newEMFSupportedUnits()
 type Config struct {
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
-	awsutil.AWSSessionSettings `mapstructure:",squash"`
+	AWSSessionSettings awsutil.AWSSessionSettings `mapstructure:",squash"`
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.
 	LogGroupName string `mapstructure:"log_group_name"`
@@ -105,6 +107,14 @@ var _ component.Config = (*Config)(nil)
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
 func (config *Config) Validate() error {
+	//nolint:staticcheck // check deprecated fields
+	if metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() &&
+		(config.ResourceToTelemetrySettings.Enabled || config.ResourceToTelemetrySettings.ExcludeServiceAttributes) {
+		return errors.New("legacy enabled and exclude_service_attributes fields in resource_to_telemetry_conversion are disabled by the exporter.awsemf.DisableLegacyResourceToTelemetryConversion feature gate; use included and excluded patterns instead")
+	}
+	if err := config.ResourceToTelemetrySettings.Validate(); err != nil {
+		return err
+	}
 	var validDeclarations []*MetricDeclaration
 	for _, declaration := range config.MetricDeclarations {
 		err := declaration.init(config.logger)

@@ -20,17 +20,9 @@ Round-trip duration of the DNS query.
 | ---- | ----------- | ---------- | --------- |
 | ms | Gauge | Int | Development |
 
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| dns.domain | Domain name queried. | Any Str | Recommended | - |
-| dns.record.type | Record type queried. | Any Str | Recommended | - |
-| dns.server | Address of the DNS server queried. | Any Str | Recommended | - |
-
 ### dnscheck.status
 
-1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1. The dns.rcode attribute is present whenever a response was received from the server, including non-success responses such as NXDOMAIN, SERVFAIL, or REFUSED; it is absent only when no response was received at all (e.g. timeout or network unreachable).
+1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1 and the record type is A or AAAA.  The dns.rcode attribute is present whenever a response was received  from the server, including non-success responses such as NXDOMAIN,  SERVFAIL, or REFUSED; it is absent only when no response was received  at all (e.g. timeout or network unreachable).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -40,12 +32,9 @@ Round-trip duration of the DNS query.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| dns.domain | Domain name queried. | Any Str | Recommended | - |
 | dns.rcode | DNS response code (RCODE) returned for the query. Only present when a response was received from the server, including non-success responses such as NXDOMAIN, SERVFAIL, or REFUSED. Absent when no response was received at all (e.g. timeout or network unreachable). See the RCODE Reference table in the README for the meaning of each value, based on the IANA DNS Parameters registry (https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-6). | Any Int | Recommended | - |
-| dns.record.type | Record type queried. | Any Str | Recommended | - |
 | dns.resolved.all.ips | All resolved IP addresses. | Any Str | Recommended | - |
 | dns.resolved.ip | First/primary resolved IP address. | Any Str | Recommended | - |
-| dns.server | Address of the DNS server queried. | Any Str | Recommended | - |
 
 ## Optional Metrics
 
@@ -69,7 +58,12 @@ Number of errors recorded during the DNS check.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| dns.domain | Domain name queried. | Any Str | Recommended | - |
-| dns.record.type | Record type queried. | Any Str | Recommended | - |
-| dns.server | Address of the DNS server queried. | Any Str | Recommended | - |
 | error.message | Error message recorded when the DNS check fails. | Any Str | Recommended | - |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| dns.domain | Domain name queried. | Any Str | true | - | - |
+| dns.record.type | Record type queried. | Any Str | true | - | - |
+| dns.server | Address of the DNS server queried. | Any Str | true | - | - |

@@ -12,8 +12,8 @@ import (
 )
 
 type Config struct {
-	TCPAddrConfig                 confignet.TCPAddrConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	TCPAddrConfig        confignet.TCPAddrConfig       `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (cfg *Config) Validate() error {

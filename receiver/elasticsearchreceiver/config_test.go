@@ -201,7 +201,8 @@ func TestLoadConfig(t *testing.T) {
 				),
 				// Allow go-cmp to read unexported fields instead of panicking on them, so new
 				// upstream fields can't break this (https://pkg.go.dev/github.com/google/go-cmp/cmp#Exporter).
-				cmp.Exporter(func(reflect.Type) bool { return true })); diff != "" {
+				cmp.Exporter(func(reflect.Type) bool { return true }),
+			); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

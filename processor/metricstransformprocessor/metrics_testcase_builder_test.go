@@ -60,7 +60,8 @@ func (b builder) setAttrs(attrs pcommon.Map, attrValues []string) {
 			fmt.Sprintf(
 				"not enough attributes, expected %d attributes but got %s",
 				len(b.attrs),
-				attrValues),
+				attrValues,
+			),
 		)
 	}
 	for i, a := range b.attrs {

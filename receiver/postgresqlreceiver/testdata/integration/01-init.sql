@@ -9,6 +9,7 @@ CREATE TABLE table1 (
 CREATE TABLE table2 (
     id serial PRIMARY KEY
 );
+GRANT SELECT ON table1, table2 TO otelu;
 
 CREATE DATABASE otel2;
 \c otel2

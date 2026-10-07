@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package httpserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 
@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -53,7 +53,7 @@ type Server struct {
 }
 
 // NewServer creates a new HTTP server instance.
-// It should be called after NotifyConfig has received full configuration.
+// It should be called after NotifyConfigSnapshot has received full configuration.
 // TODO: support generic payloads
 func NewServer(
 	logger *zap.Logger,
@@ -154,7 +154,7 @@ func (s *Server) SendPayload() (marshaler.JSONMarshaler, error) {
 		payloadCopy = s.payload
 	}
 
-	if s.serializer.State() != defaultforwarder.Started {
+	if s.serializer.State() != defaultforwarderimpl.Started {
 		return nil, errors.New("forwarder is not started, extension cannot send payloads to Datadog")
 	}
 

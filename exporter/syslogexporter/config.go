@@ -17,7 +17,7 @@ import (
 var (
 	errUnsupportedPort     = errors.New("unsupported port: port is required, must be in the range 1-65535")
 	errInvalidEndpoint     = errors.New("invalid endpoint: endpoint is required but it is not configured")
-	errUnsupportedNetwork  = errors.New("unsupported network: network is required, only tcp/udp/unix supported")
+	errUnsupportedNetwork  = errors.New("unsupported network: network is required, only tcp/udp/unix/unixgram supported")
 	errUnsupportedProtocol = errors.New("unsupported protocol: Only rfc5424 and rfc3164 supported")
 	errOctetCounting       = errors.New("octet counting is only supported for rfc5424 protocol")
 )
@@ -29,7 +29,7 @@ type Config struct {
 	// Syslog server port (ignored for Unix sockets)
 	Port int `mapstructure:"port"`
 	// Network for syslog communication
-	// options: tcp, udp, unix
+	// options: tcp, udp, unix, unixgram
 	Network string `mapstructure:"network"`
 	// Protocol of syslog messages
 	// options: rfc5424, rfc3164
@@ -56,7 +56,7 @@ func (cfg *Config) Validate() error {
 		if cfg.Port < 1 || cfg.Port > 65535 {
 			invalidFields = append(invalidFields, errUnsupportedPort)
 		}
-	case string(confignet.TransportTypeUnix):
+	case string(confignet.TransportTypeUnix), string(confignet.TransportTypeUnixgram):
 	default:
 		invalidFields = append(invalidFields, errUnsupportedNetwork)
 	}

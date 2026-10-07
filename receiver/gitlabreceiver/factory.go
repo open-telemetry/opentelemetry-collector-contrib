@@ -27,5 +27,6 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment))
+		receiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
+	)
 }

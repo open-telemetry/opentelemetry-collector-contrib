@@ -144,7 +144,8 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 				if err != nil {
 					kr.settings.Logger.Error("shutdown receiver error:", zap.Error(err))
 				}
-			})
+			},
+		)
 		return nil
 	}
 

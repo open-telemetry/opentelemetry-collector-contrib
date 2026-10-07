@@ -147,7 +147,7 @@ func TestNewDetector(t *testing.T) {
 		return api
 	}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	require.NotNil(t, det)
 }
@@ -172,7 +172,7 @@ func TestScalewayDetector_Detect_OK(t *testing.T) {
 		return api
 	}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := det.Detect(t.Context())
@@ -209,7 +209,7 @@ func TestScalewayDetector_NotOnScaleway(t *testing.T) {
 		return api
 	}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := det.Detect(t.Context())

@@ -36,4 +36,18 @@ var ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate = featuregate.Global
 	featuregate.WithRegisterDescription("When enabled, the receiver emits new HTTP semconv attributes (http.request.method, client.address, user_agent.original, url.full, http.response.status_code, http.response.body.size) alongside or instead of deprecated equivalents."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),
+var ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.awsxray.DontEmitV0HttpConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, semconv legacy HTTP attributes are disabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
+)
+
+var ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.awsxray.EmitV1HttpConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, semconv stable HTTP attributes are enabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )

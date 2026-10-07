@@ -102,7 +102,7 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		RetryOnDocumentStatus:   config.Retry.RetryOnDocumentStatus,
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
-		PopulateFailedDocsInput: config.LogFailedDocsInput,
+		PopulateFailedDocsInput: config.TelemetrySettings.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
 		QueryParams:             getQueryParamsFromEndpoint(config, logger),
 		FilterPath:              config.BulkResponseFilterPath,
@@ -393,7 +393,8 @@ func flushBulkIndexer(
 		if resp.Error.Type == "version_conflict_engine_exception" {
 			if suppressConflictErrors ||
 				strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
-				strings.HasPrefix(resp.Index, ".profiling-stacktraces-") {
+				strings.HasPrefix(resp.Index, ".profiling-stacktraces-") ||
+				strings.HasPrefix(resp.Index, ".ds-profiling-") {
 				// Rejection of duplicates are either expected (Profiling indices)
 				// or globally suppressed by the user. Do not log them.
 				continue
@@ -511,10 +512,10 @@ func getErrorHint(mode MappingMode, index, errorType string) string {
 }
 
 func newFailedDocsInputLogger(logger *zap.Logger, config *Config) *zap.Logger {
-	if !config.LogFailedDocsInput {
+	if !config.TelemetrySettings.LogFailedDocsInput {
 		return zap.NewNop()
 	}
-	return logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsInputRateLimit))
+	return logger.WithOptions(logging.WithRateLimit(config.TelemetrySettings.LogFailedDocsInputRateLimit))
 }
 
 type bulkIndexers struct {
@@ -554,6 +555,10 @@ func (b *bulkIndexers) start(
 	esClient, err := newElasticsearchClient(ctx, cfg, host, set.TelemetrySettings, userAgent)
 	if err != nil {
 		return err
+	}
+
+	if cfg.VersionDetection.Enabled {
+		logElasticsearchVersions(ctx, cfg, set, host)
 	}
 
 	for _, mode := range allowedMappingModes {

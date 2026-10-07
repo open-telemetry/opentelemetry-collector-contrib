@@ -6,6 +6,10 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventionsv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
+	conventionsv120 "go.opentelemetry.io/otel/semconv/v1.20.0"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -32,6 +36,20 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 				attrs.PutStr("http.client_ip", *req.ClientIP)
 			}
 			if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.Method, string(conventions.HTTPRequestMethodKey), attrs)
+		}
+		if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.Method, string(conventionsv125.HTTPMethodKey), attrs)
+		}
+
+		if req.ClientIP != nil {
+			// since the ClientIP is not nil, this means that this segment is generated
+			// by a server serving an incoming request
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutStr(string(conventionsv120.HTTPClientIPKey), *req.ClientIP)
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
 				attrs.PutStr(string(conventions.ClientAddressKey), *req.ClientIP)
 			}
 		}
@@ -43,6 +61,13 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 		if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
 			addString(req.UserAgent, string(conventions.UserAgentOriginalKey), attrs)
 			addString(req.URL, string(conventions.URLFullKey), attrs)
+		}
+		addString(req.UserAgent, string(conventionsv118.HTTPUserAgentKey), attrs)
+		if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.URL, string(conventions.URLFullKey), attrs)
+		}
+		if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			addString(req.URL, string(conventionsv125.HTTPURLKey), attrs)
 		}
 		addBool(req.XForwardedFor, awsxray.AWSXRayXForwardedForAttribute, attrs)
 	}
@@ -56,6 +81,12 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 			}
 			if metadata.ReceiverAwsxrayreceiverEmitV1HTTPConventionsFeatureGate.IsEnabled() {
 				attrs.PutInt(string(conventions.HTTPResponseStatusCodeKey), *resp.Status)
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutInt(string(conventions.HTTPResponseStatusCodeKey), *resp.Status)
+			}
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				attrs.PutInt(string(conventionsv125.HTTPStatusCodeKey), *resp.Status)
 			}
 		}
 

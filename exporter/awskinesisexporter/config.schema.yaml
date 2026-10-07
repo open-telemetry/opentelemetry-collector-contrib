@@ -23,6 +23,8 @@ type: object
 properties:
   aws:
     $ref: aws_config
+  encoding:
+    $ref: encoding
   max_record_size:
     type: integer
   max_records_per_batch:
@@ -34,4 +36,3 @@ properties:
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
 allOf:
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
-  - $ref: encoding

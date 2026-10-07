@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
@@ -114,7 +114,8 @@ func newMetricsExporter(
 	apiClient := clientutil.CreateAPIClient(
 		params.BuildInfo,
 		cfg.Metrics.Endpoint,
-		cfg.ClientConfig)
+		cfg.ClientConfig,
+	)
 	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {

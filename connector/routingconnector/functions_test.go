@@ -12,6 +12,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
 
 func TestStandardFunctions(t *testing.T) {
@@ -22,7 +23,7 @@ func TestSpanFunctions(t *testing.T) {
 	funcs := spanFunctions()
 	assertStandardFunctions(t, funcs)
 
-	isRouteFuncName := ottlfuncs.NewIsRootSpanFactoryNew().Name()
+	isRouteFuncName := ottlfuncs.NewIsRootSpanFactory().Name()
 	val, ok := funcs[isRouteFuncName]
 
 	require.True(t, ok)
@@ -35,7 +36,7 @@ func assertStandardFunctions[K any](t *testing.T, funcs map[string]ottl.Factory[
 		ottlfuncs.NewDeleteKeyFactory[any]().Name(),
 		ottlfuncs.NewDeleteMatchingKeysFactory[any]().Name(),
 		"route",
-	}, maps.Keys(ottlfuncs.StandardConverters[K]()))
+	}, maps.Keys(xottlfuncs.WithExperimentalConverters(ottlfuncs.StandardConverters[K]())))
 
 	for _, fn := range expectedFunctions {
 		val, ok := funcs[fn]

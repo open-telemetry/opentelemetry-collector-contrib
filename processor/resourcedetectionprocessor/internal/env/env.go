@@ -5,6 +5,9 @@
 // the OTEL_RESOURCE environment variable. A list of labels of the form
 // `<key1>=<value1>,<key2>=<value2>,...` is accepted. Domain names and
 // paths are accepted as label keys.
+
+//go:build !omit_detector_env
+
 package env // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 
 import (
@@ -21,9 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-// TypeStr is type of detector.
-const TypeStr = "env"
-
 // Environment variable used by "env" to decode a resource.
 const envVar = "OTEL_RESOURCE_ATTRIBUTES"
 
@@ -37,11 +37,11 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 
-func NewDetector(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 
-func (*Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (*Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))

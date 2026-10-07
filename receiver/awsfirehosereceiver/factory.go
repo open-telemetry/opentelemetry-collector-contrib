@@ -26,7 +26,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 // createDefaultConfig creates a default config with the endpoint set
@@ -36,11 +37,6 @@ func createDefaultConfig() component.Config {
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultEndpoint
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
 	serverConfig.NetAddr = netAddr
 	return &Config{
 		ServerConfig: serverConfig,
