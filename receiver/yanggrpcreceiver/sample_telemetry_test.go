@@ -259,6 +259,11 @@ func sendInterfaceTelemetryData(conn *grpc.ClientConn, nodeID, subscription, enc
 	}
 
 	err = stream.Send(args)
+	if errors.Is(err, io.EOF) {
+		// The server already ended the stream; its status is only available via Recv.
+		_, err = stream.Recv()
+		return err
+	}
 	if err != nil {
 		return fmt.Errorf("failed to send telemetry data: %w", err)
 	}

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natsexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
 const (
@@ -43,19 +44,31 @@ func createDefaultConfig() component.Config {
 	}
 }
 
+// exporters caches one natsExporter per configuration so the logs, metrics, and
+// traces pipelines share a single instance (and a single NATS connection)
+// instead of creating one per signal.
+var exporters = sharedcomponent.NewSharedComponents()
+
+func getOrCreateExporter(set exporter.Settings, cfg component.Config) *sharedcomponent.SharedComponent {
+	return exporters.GetOrAdd(cfg, func() component.Component {
+		return newExporter(set, cfg.(*Config))
+	})
+}
+
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	exp := newExporter(set, cfg.(*Config))
+	sc := getOrCreateExporter(set, cfg)
+	exp := sc.Unwrap().(*natsExporter)
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		exp.pushLogs,
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.shutdown),
+		exporterhelper.WithStart(sc.Start),
+		exporterhelper.WithShutdown(sc.Shutdown),
 	)
 }
 
@@ -64,14 +77,15 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	exp := newExporter(set, cfg.(*Config))
+	sc := getOrCreateExporter(set, cfg)
+	exp := sc.Unwrap().(*natsExporter)
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		exp.pushMetrics,
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.shutdown),
+		exporterhelper.WithStart(sc.Start),
+		exporterhelper.WithShutdown(sc.Shutdown),
 	)
 }
 
@@ -80,13 +94,14 @@ func createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	exp := newExporter(set, cfg.(*Config))
+	sc := getOrCreateExporter(set, cfg)
+	exp := sc.Unwrap().(*natsExporter)
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
 		exp.pushTraces,
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.shutdown),
+		exporterhelper.WithStart(sc.Start),
+		exporterhelper.WithShutdown(sc.Shutdown),
 	)
 }

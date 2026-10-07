@@ -20,8 +20,16 @@ func TestSetupTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	defer tb.Shutdown()
 	tb.ExtensionPebbleTailStorageOperations.Add(context.Background(), 1)
+	tb.ExtensionPebbleTailStorageReadErrorPartialReturns.Add(context.Background(), 1)
+	tb.ExtensionPebbleTailStorageReadErrorTraceDrops.Add(context.Background(), 1)
 	tb.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
 	AssertEqualExtensionPebbleTailStorageOperations(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExtensionPebbleTailStorageReadErrorPartialReturns(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExtensionPebbleTailStorageReadErrorTraceDrops(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExtensionPebbleTailStorageReadErrors(t, testTel,

@@ -673,6 +673,10 @@ component_management:
     name: processor_metricstransform
     paths:
     - processor/metricstransformprocessor/**
+  - component_id: processor_partitioning
+    name: processor_partitioning
+    paths:
+    - processor/partitioningprocessor/**
   - component_id: processor_probabilisticsampler
     name: processor_probabilisticsampler
     paths:

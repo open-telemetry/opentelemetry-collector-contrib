@@ -32,6 +32,13 @@ const (
 
 	// traceID to be removed
 	traceRemoved
+
+	// Subtrace event. Only used when EmitStrategy == EmitStrategyService:
+
+	// the worker's subtrace timer has gone off. The event carries no payload:
+	// what is due is whatever the worker's own deadlines say is due when it gets
+	// here, which is the only account of it that can't be out of date.
+	subtraceTick
 )
 
 var (
@@ -56,6 +63,22 @@ type (
 	}
 )
 
+func (t eventType) String() string {
+	switch t {
+	case traceReceived:
+		return "onTraceReceived"
+	case traceExpired:
+		return "onTraceExpired"
+	case traceReleased:
+		return "onTraceReleased"
+	case traceRemoved:
+		return "onTraceRemoved"
+	case subtraceTick:
+		return "subtrace_tick"
+	}
+	return "unknown"
+}
+
 type tracesWithID struct {
 	id pcommon.TraceID
 	td ptrace.Traces
@@ -71,6 +94,7 @@ type eventMachine struct {
 	close                     chan struct{}
 	metricsCollectionInterval time.Duration
 	shutdownTimeout           time.Duration
+	eventTimeout              time.Duration
 
 	logger          *zap.Logger
 	telemetry       *metadata.TelemetryBuilder
@@ -79,11 +103,18 @@ type eventMachine struct {
 	onTraceReleased func(rss []ptrace.ResourceSpans) error
 	onTraceRemoved  func(traceID pcommon.TraceID) error
 
+	onSubtraceTick func(worker *eventMachineWorker) error
+
 	onError func(event)
 
 	// shutdown sync
 	shutdownLock *sync.RWMutex
 	closed       bool
+
+	// workersWG tracks the running worker goroutines, so that shutdown can wait
+	// for a handler that is still in progress instead of returning while it is
+	// touching worker state or starting asynchronous work.
+	workersWG sync.WaitGroup
 }
 
 func newEventMachine(logger *zap.Logger, bufferSize, numWorkers, numTraces int, telemetry *metadata.TelemetryBuilder) *eventMachine {
@@ -95,6 +126,7 @@ func newEventMachine(logger *zap.Logger, bufferSize, numWorkers, numTraces int, 
 		shutdownLock:              &sync.RWMutex{},
 		metricsCollectionInterval: time.Second,
 		shutdownTimeout:           10 * time.Second,
+		eventTimeout:              time.Second,
 	}
 	for i := range em.workers {
 		em.workers[i] = &eventMachineWorker{
@@ -124,6 +156,16 @@ func (em *eventMachine) periodicMetrics() {
 	em.logger.Debug("recording current state of the queue", zap.Int("num-events", numEvents))
 	em.telemetry.ProcessorGroupbytraceNumEventsInQueue.Record(context.Background(), int64(numEvents))
 
+	if em.onSubtraceTick != nil {
+		var numSubtraces int
+		for _, w := range em.workers {
+			if w.subSt != nil {
+				numSubtraces += w.subSt.count()
+			}
+		}
+		em.telemetry.ProcessorGroupbytraceNumTracesInMemory.Record(context.Background(), int64(numSubtraces))
+	}
+
 	em.shutdownLock.RLock()
 	closed := em.closed
 	em.shutdownLock.RUnlock()
@@ -138,7 +180,7 @@ func (em *eventMachine) periodicMetrics() {
 
 func (em *eventMachine) startWorkers() {
 	for _, worker := range em.workers {
-		go worker.start()
+		em.workersWG.Go(worker.start)
 	}
 }
 
@@ -146,7 +188,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 	switch e.typ {
 	case traceReceived:
 		if em.onTraceReceived == nil {
-			em.logger.Debug("onTraceReceived not set, skipping event")
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
@@ -157,12 +199,12 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceReceived", func() error {
+		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceReceived(payload, w)
 		})
 	case traceExpired:
 		if em.onTraceExpired == nil {
-			em.logger.Debug("onTraceExpired not set, skipping event")
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
@@ -173,12 +215,12 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceExpired", func() error {
+		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceExpired(payload, w)
 		})
 	case traceReleased:
 		if em.onTraceReleased == nil {
-			em.logger.Debug("onTraceReleased not set, skipping event")
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
@@ -189,12 +231,12 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceReleased", func() error {
+		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceReleased(payload)
 		})
 	case traceRemoved:
 		if em.onTraceRemoved == nil {
-			em.logger.Debug("onTraceRemoved not set, skipping event")
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
 			em.callOnError(e)
 			return
 		}
@@ -205,11 +247,20 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceRemoved", func() error {
+		em.handleEventWithObservability(e.typ, func() error {
 			return em.onTraceRemoved(payload)
 		})
+	case subtraceTick:
+		if em.onSubtraceTick == nil {
+			em.logger.Debug("event callback not set, skipping event", zap.Stringer("event", e.typ))
+			em.callOnError(e)
+			return
+		}
+		em.handleEventWithObservability(e.typ, func() error {
+			return em.onSubtraceTick(w)
+		})
 	default:
-		em.logger.Info("unknown event type", zap.Any("event", e.typ))
+		em.logger.Info("unknown event type", zap.Stringer("event", e.typ))
 		em.callOnError(e)
 		return
 	}
@@ -282,6 +333,11 @@ func (em *eventMachine) shutdown() {
 		em.logger.Info("forcing the shutdown of the event manager", zap.Int("pending-events", em.numEvents()))
 	}
 	close(em.close)
+
+	// Returning while a handler is still running would let it start work the
+	// caller has no way left to wait for. A handler is abandoned after a second,
+	// so this waits at most that long.
+	em.workersWG.Wait()
 }
 
 func (em *eventMachine) callOnError(e event) {
@@ -292,29 +348,81 @@ func (em *eventMachine) callOnError(e event) {
 
 // handleEventWithObservability uses the given function to process and event,
 // recording the event's latency and timing out if it doesn't finish within a reasonable duration
-func (em *eventMachine) handleEventWithObservability(event string, do func() error) {
+func (em *eventMachine) handleEventWithObservability(typ eventType, do func() error) {
+	name := typ.String()
 	start := time.Now()
-	succeeded, err := doWithTimeout(time.Second, do)
+	var succeeded bool
+	var err error
+
+	// subtraceTick has a bounded completion time and is not meant to be called concurrently;
+	// long-running calls should complete instead of being cancelled.
+	if typ != subtraceTick {
+		succeeded, err = doWithTimeout(em.eventTimeout, do)
+	} else {
+		err = do()
+		succeeded = true
+	}
 	duration := time.Since(start)
-	em.telemetry.ProcessorGroupbytraceEventLatency.Record(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attribute.NewSet(attribute.String("event", event))))
+	em.telemetry.ProcessorGroupbytraceEventLatency.Record(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attribute.NewSet(attribute.String("event", name))))
 
 	if err != nil {
-		em.logger.Error("failed to process event", zap.Error(err), zap.String("event", event))
+		em.logger.Error("failed to process event", zap.Error(err), zap.String("event", name))
 	}
 	if succeeded {
-		em.logger.Debug("event finished", zap.String("event", event))
+		em.logger.Debug("event finished", zap.String("event", name))
 	} else {
-		em.logger.Debug("event aborted", zap.String("event", event))
+		em.logger.Debug("event aborted", zap.String("event", name))
 	}
 }
 
 type eventMachineWorker struct {
 	machine *eventMachine
 
-	// the ring buffer holds the IDs for all the in-flight traces
+	// buffer holds the IDs for all in-flight traces (EmitStrategyTrace).
 	buffer *ringBuffer
 
+	// subtraceBuffer holds the IDs for all in-flight subtraces (EmitStrategyService).
+	subtraceBuffer *subtraceRingBuffer
+
+	// deadlines says when each buffered subtrace next falls due, and
+	// subtraceTimer wakes the worker for the earliest of them. Both belong to
+	// the worker and are only ever touched from a worker turn.
+	deadlines     *subtraceDeadlines
+	subtraceTimer *time.Timer
+
+	// subSt holds the spans buffered for this worker's subtraces
+	// (EmitStrategyService). Traces are routed to a worker by trace ID, so a
+	// worker is the only one to touch its own storage, and workers do not
+	// contend with each other for it.
+	subSt subtraceStorage
+
 	events chan event
+}
+
+// armSubtraceTimer points the worker's timer at the earliest deadline it holds.
+// Only a worker turn should call it.
+func (w *eventMachineWorker) armSubtraceTimer() {
+	next, held := w.deadlines.next()
+	if !held {
+		w.stopSubtraceTimer()
+		return
+	}
+
+	wait := max(time.Until(next), 0)
+	if w.subtraceTimer == nil {
+		w.subtraceTimer = time.AfterFunc(wait, func() {
+			// if the event machine has stopped, it will just discard the event
+			w.fire(event{typ: subtraceTick})
+		})
+		return
+	}
+	w.subtraceTimer.Reset(wait)
+}
+
+func (w *eventMachineWorker) stopSubtraceTimer() {
+	if w.subtraceTimer != nil {
+		w.subtraceTimer.Stop()
+	}
 }
 
 func (w *eventMachineWorker) start() {

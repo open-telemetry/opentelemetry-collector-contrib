@@ -56,6 +56,113 @@ func sumIntByAttr(t *testing.T, m pmetric.Metric, attrKey string) map[string]int
 	return out
 }
 
+// newAssertQueueScraper builds a scraper with the assert, global-lock queue and write-concern
+// metrics enabled.
+func newAssertQueueScraper(t *testing.T) *mongodbScraper {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbAssertCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbGlobalLockQueueCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbWriteConcernWaitTime.Enabled = true
+	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+}
+
+func TestRecordAsserts(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordAsserts(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.assert.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	// The fixture has no tripwire field, so no tripwire point is emitted and no error is raised.
+	// asserts.rollovers is 9 in the fixture and must not appear: it is not a kind of assertion.
+	require.Equal(t, map[string]int64{
+		"msg":     1,
+		"regular": 2,
+		"user":    3,
+		"warning": 4,
+	}, sumIntByAttr(t, m, "mongodb.assert.type"))
+}
+
+// TestRecordAssertsWithTripwire covers a newer server that does report asserts.tripwire.
+func TestRecordAssertsWithTripwire(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	doc := bson.M{"asserts": bson.M{
+		"msg": int64(1), "regular": int64(2), "user": int64(3), "warning": int64(4),
+		"tripwire": int64(5), "rollovers": int64(9),
+	}}
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordAsserts(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.assert.count")
+	require.Equal(t, map[string]int64{
+		"msg":      1,
+		"regular":  2,
+		"user":     3,
+		"warning":  4,
+		"tripwire": 5,
+	}, sumIntByAttr(t, m, "mongodb.assert.type"))
+}
+
+// TestRecordAssertsMissingSubdocument covers a server that reports no asserts at all: the four
+// long-standing counters are reported as failures, while the version-dependent tripwire is not.
+func TestRecordAssertsMissingSubdocument(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordAsserts(now, bson.M{}, errs)
+
+	var partial scrapererror.PartialScrapeError
+	require.ErrorAs(t, errs.Combine(), &partial)
+	require.Equal(t, 4, partial.Failed)
+	require.Equal(t, 0, s.mb.Emit().MetricCount())
+}
+
+func TestRecordGlobalLockQueue(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordGlobalLockQueue(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.global_lock.queue.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.False(t, m.Sum().IsMonotonic(), "queue depth rises and falls, so it is not monotonic")
+	byType := sumIntByAttr(t, m, "mongodb.global_lock.queue.type")
+	// The fixture reports readers 5, writers 7, total 12. Only the two parts are emitted.
+	require.Equal(t, map[string]int64{"read": 5, "write": 7}, byType)
+	require.Equal(t, int64(12), byType["read"]+byType["write"], "read + write must equal the server's total")
+}
+
+func TestRecordWriteConcernWaitTime(t *testing.T) {
+	s := newAssertQueueScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordWriteConcernWaitTime(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.write_concern.wait.time")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// The fixture reports 2500 ms; the metric is emitted in seconds.
+	require.InDelta(t, 2.5, m.Sum().DataPoints().At(0).DoubleValue(), 1e-9)
+}
+
 // newWTScraper builds a scraper with all five WiredTiger metrics enabled.
 func newWTScraper(t *testing.T) *mongodbScraper {
 	t.Helper()
@@ -66,6 +173,86 @@ func newWTScraper(t *testing.T) *mongodbScraper {
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.Enabled = true
 	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+}
+
+// newQueryExecutorScraper builds a scraper with all three query executor metrics enabled.
+func newQueryExecutorScraper(t *testing.T) *mongodbScraper {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorIndexKeyScannedCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorDocumentScannedCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled = true
+	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+}
+
+func TestRecordQueryExecutorIndexKeysScanned(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorIndexKeysScanned(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.index_key.scanned.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// queryExecutor.scanned counts index keys.
+	require.Equal(t, int64(123456), m.Sum().DataPoints().At(0).IntValue())
+}
+
+func TestRecordQueryExecutorDocumentsScanned(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorDocumentsScanned(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.document.scanned.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// queryExecutor.scannedObjects counts documents.
+	require.Equal(t, int64(234567), m.Sum().DataPoints().At(0).IntValue())
+}
+
+func TestRecordQueryExecutorCollectionScans(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorCollectionScans(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.collection_scan.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// collectionScans.total as the server reports it. The fixture also carries
+	// collectionScans.nonTailable 900, which this metric does not read.
+	require.Equal(t, int64(1200), m.Sum().DataPoints().At(0).IntValue())
+}
+
+// TestRecordQueryExecutorMissingSubdocument covers a server that does not report queryExecutor at
+// all: the scrape records partial errors rather than failing, and emits no data points.
+func TestRecordQueryExecutorMissingSubdocument(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorIndexKeysScanned(now, bson.M{}, errs)
+	s.recordQueryExecutorDocumentsScanned(now, bson.M{}, errs)
+	s.recordQueryExecutorCollectionScans(now, bson.M{}, errs)
+
+	var partial scrapererror.PartialScrapeError
+	require.ErrorAs(t, errs.Combine(), &partial)
+	// One failure per metric: index keys, documents, and collection scans.
+	require.Equal(t, 3, partial.Failed)
+	require.Equal(t, 0, s.mb.Emit().MetricCount())
 }
 
 func TestRecordWTLogWrite(t *testing.T) {

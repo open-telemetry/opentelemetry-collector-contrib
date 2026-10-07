@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -144,6 +145,94 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// cfg.QuerySample.Enabled = enabled
 }
 
+func gaugeDoubleValues(metrics pmetric.Metrics, name string) []float64 {
+	var values []float64
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() != name {
+					continue
+				}
+
+				dps := metric.Gauge().DataPoints()
+				for d := 0; d < dps.Len(); d++ {
+					values = append(values, dps.At(d).DoubleValue())
+				}
+			}
+		}
+	}
+	return values
+}
+
+func gaugeIntValues(metrics pmetric.Metrics, name string) []int64 {
+	var values []int64
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() != name {
+					continue
+				}
+
+				dps := metric.Gauge().DataPoints()
+				for d := 0; d < dps.Len(); d++ {
+					values = append(values, dps.At(d).IntValue())
+				}
+			}
+		}
+	}
+	return values
+}
+
+func sumDoubleValues(metrics pmetric.Metrics, name string) []float64 {
+	var values []float64
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() != name {
+					continue
+				}
+
+				dps := metric.Sum().DataPoints()
+				for d := 0; d < dps.Len(); d++ {
+					values = append(values, dps.At(d).DoubleValue())
+				}
+			}
+		}
+	}
+	return values
+}
+
+func setupPerformanceCounterTestScraper(
+	t *testing.T,
+	enableMetric func(*Config),
+) *sqlServerScraperHelper {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	enableMetric(cfg)
+	assert.NoError(t, cfg.Validate())
+
+	scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.Len(t, scrapers, 1)
+
+	return scrapers[0]
+}
+
 func enableSQLServerResourceAttributesForTests(resourceAttributes *metadata.ResourceAttributesConfig) {
 	resourceAttributes.SqlserverComputerName.Enabled = true
 	resourceAttributes.SqlserverInstanceName.Enabled = true
@@ -219,34 +308,70 @@ func TestSuccessfulScrape(t *testing.T) {
 				defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 				scraper.client = mockClient{
-					instanceName:          scraper.config.InstanceName,
 					SQL:                   scraper.sqlQuery,
 					maxQuerySampleCount:   1000,
 					lookbackTime:          20,
 					propertiesFixtureFile: test.propertiesFixtureFile,
 				}
 
+				if scraper.sqlQuery == getSQLServerPerformanceCounterQuery() {
+					scrapeTimes := []time.Time{
+						time.Unix(100, 0),
+						time.Unix(101, 0),
+					}
+					timeCall := 0
+					scraper.now = func() time.Time {
+						now := scrapeTimes[timeCall]
+						timeCall++
+						return now
+					}
+
+					queryCall := 0
+					scraper.client = queryRowsFuncClient{
+						queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+							rows, readErr := readFile("perfCounterQueryData.txt")
+							if readErr != nil {
+								return nil, readErr
+							}
+
+							if queryCall == 0 {
+								for _, row := range rows {
+									if isPerformanceCounterRate(row["counter_type"], row["counter"]) {
+										row["value"] = "0"
+										row["raw_value"] = "0"
+									}
+								}
+							}
+							queryCall++
+							return rows, nil
+						},
+					}
+
+					_, scrapeErr := scraper.ScrapeMetrics(t.Context())
+					assert.NoError(t, scrapeErr)
+				}
+
 				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
 				assert.NoError(t, err)
 				var expectedFile string
 				switch scraper.sqlQuery {
-				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
+				case getSQLServerAvailabilityGroupQuery():
 					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics.yaml")
-				case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
+				case getSQLServerDatabaseIOQuery():
 					expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
-				case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
+				case getSQLServerPerformanceCounterQuery():
 					expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
-				case getSQLServerPropertiesQuery(scraper.config.InstanceName):
+				case getSQLServerPropertiesQuery():
 					expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
-				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
+				case getSQLServerWaitStatsQuery():
 					expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
-				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
+				case getSQLServerIndexPhysicalStatsQuery():
 					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics.yaml")
-				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
+				case getSQLServerWorkerThreadsQuery():
 					expectedFile = filepath.Join("testdata", "expectedWorkerThreads.yaml")
-				case getSQLServerCPUMemoryQuery(scraper.config.InstanceName):
+				case getSQLServerCPUMemoryQuery():
 					expectedFile = filepath.Join("testdata", "expectedCPUMemory.yaml")
-				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
+				case getSQLServerDiskIOQuery():
 					expectedFile = filepath.Join("testdata", "expectedDiskIO.yaml")
 				}
 
@@ -263,6 +388,517 @@ func TestSuccessfulScrape(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsPerformanceCounterRate(t *testing.T) {
+	tests := []struct {
+		name        string
+		counterType string
+		counterName string
+		expected    bool
+	}{
+		{
+			name:        "bulk rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Batch Requests/sec",
+			expected:    true,
+		},
+		{
+			name:        "counter rate counter",
+			counterType: perfCounterCounterType,
+			counterName: "Batch Requests/sec",
+			expected:    true,
+		},
+		{
+			name:        "bulk cumulative counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Lock Wait Time (ms)",
+			expected:    false,
+		},
+		{
+			name:        "counter cumulative counter",
+			counterType: perfCounterCounterType,
+			counterName: "Lock Wait Time (ms)",
+			expected:    false,
+		},
+		{
+			name:        "latch wait cumulative counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Total Latch Wait Time (ms)",
+			expected:    false,
+		},
+		{
+			name:        "CLR cumulative counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "CLR Execution",
+			expected:    false,
+		},
+		{
+			name:        "transaction delay cumulative counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Transaction Delay",
+			expected:    false,
+		},
+		{
+			name:        "non-rate counter type",
+			counterType: "65792",
+			counterName: "Batch Requests/sec",
+			expected:    false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, isPerformanceCounterRate(test.counterType, test.counterName))
+		})
+	}
+}
+
+func TestPerformanceCounterRateFirstSampleDoesNotEmit(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	})
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Statistics",
+					"counter":       "Batch Requests/sec",
+					"instance":      "",
+					"counter_type":  "272696576",
+					"value":         "431",
+					"raw_value":     "431",
+				},
+			}, nil
+		},
+	}
+
+	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, actualMetrics.ResourceMetrics().Len())
+}
+
+func TestPerformanceCounterRateUsesDeltaOverElapsedTime(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	rawValues := []string{"431", "481"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			rawValue := rawValues[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Statistics",
+					"counter":       "Batch Requests/sec",
+					"instance":      "",
+					"counter_type":  "272696576",
+					"value":         "400",
+					"raw_value":     rawValue,
+				},
+			}, nil
+		},
+	}
+
+	_, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	assert.Equal(t, []float64{5}, gaugeDoubleValues(
+		actualMetrics,
+		metadata.MetricsInfo.SqlserverBatchRequestRate.Name,
+	))
+}
+
+func TestPerformanceCounterCumulativeMetricEmitsRawValue(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitTimeTotal.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	rawValues := []string{"1000", "1300"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			rawValue := rawValues[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:Locks",
+					"counter":       "Lock Wait Time (ms)",
+					"instance":      "Total",
+					"counter_type":  perfCounterBulkCountType,
+					"value":         rawValue,
+					"raw_value":     rawValue,
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{1}, sumDoubleValues(
+		firstMetrics,
+		metadata.MetricsInfo.SqlserverLockWaitTimeTotal.Name,
+	))
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{1.3}, sumDoubleValues(
+		secondMetrics,
+		metadata.MetricsInfo.SqlserverLockWaitTimeTotal.Name,
+	))
+}
+
+func TestPerformanceCounterCLRCumulativeMetricEmitsRawValue(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverClrExecutionTime.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	rawValues := []string{"1000000", "1000005"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			rawValue := rawValues[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:CLR",
+					"counter":       "CLR Execution",
+					"instance":      "",
+					"counter_type":  perfCounterBulkCountType,
+					"value":         rawValue,
+					"raw_value":     rawValue,
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{1}, sumDoubleValues(
+		firstMetrics,
+		metadata.MetricsInfo.SqlserverClrExecutionTime.Name,
+	))
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{1.000005}, sumDoubleValues(
+		secondMetrics,
+		metadata.MetricsInfo.SqlserverClrExecutionTime.Name,
+	))
+}
+
+func TestPerformanceCounterRateResetEstablishesNewBaseline(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+		time.Unix(120, 0),
+		time.Unix(130, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	values := []string{"431", "481", "100", "130"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			value := values[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Statistics",
+					"counter":       "Batch Requests/sec",
+					"instance":      "",
+					"counter_type":  "272696576",
+					"value":         value,
+					"raw_value":     value,
+				},
+			}, nil
+		},
+	}
+
+	_, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	assert.Equal(t, []float64{5}, gaugeDoubleValues(
+		secondMetrics,
+		metadata.MetricsInfo.SqlserverBatchRequestRate.Name,
+	))
+
+	resetMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, resetMetrics.ResourceMetrics().Len())
+
+	fourthMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	assert.Equal(t, []float64{3}, gaugeDoubleValues(
+		fourthMetrics,
+		metadata.MetricsInfo.SqlserverBatchRequestRate.Name,
+	))
+}
+
+func TestPerformanceCounterNonRateFirstSampleEmitsUnchanged(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = true
+	})
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:General Statistics",
+					"counter":       "User Connections",
+					"instance":      "",
+					"counter_type":  "65792",
+					"value":         "42",
+				},
+			}, nil
+		},
+	}
+
+	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	assert.Equal(t, []int64{42}, gaugeIntValues(
+		actualMetrics,
+		metadata.MetricsInfo.SqlserverUserConnectionCount.Name,
+	))
+}
+
+func TestPerformanceCounterIntegerRateMetricSupportsFractionalRate(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(102, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	rawValues := []string{"10", "15"}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			rawValue := rawValues[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:Buffer Manager",
+					"counter":       "Free list stalls/sec",
+					"instance":      "",
+					"counter_type":  perfCounterBulkCountType,
+					"value":         rawValue,
+					"raw_value":     rawValue,
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, firstMetrics.ResourceMetrics().Len())
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, []float64{2.5}, gaugeDoubleValues(
+		secondMetrics,
+		metadata.MetricsInfo.SqlserverPageBufferCacheFreeListStallsRate.Name,
+	))
+}
+
+func TestPerformanceCounterRateKeepsStreamsIndependent(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverErrorRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	values := [][]string{
+		{"100", "1000"},
+		{"150", "1200"},
+	}
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			current := values[queryCall]
+			queryCall++
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Errors",
+					"counter":       "Errors/sec",
+					"instance":      "DB Offline Errors",
+					"counter_type":  "272696576",
+					"value":         current[0],
+					"raw_value":     current[0],
+				},
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Errors",
+					"counter":       "Errors/sec",
+					"instance":      "Info Errors",
+					"counter_type":  "272696576",
+					"value":         current[1],
+					"raw_value":     current[1],
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, firstMetrics.ResourceMetrics().Len())
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	rates := gaugeDoubleValues(secondMetrics, metadata.MetricsInfo.SqlserverErrorRate.Name)
+	sort.Float64s(rates)
+	assert.Equal(t, []float64{5, 20}, rates)
+}
+
+func TestPerformanceCounterRateReappearingStreamEstablishesNewBaseline(t *testing.T) {
+	scraper := setupPerformanceCounterTestScraper(t, func(cfg *Config) {
+		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = true
+	})
+
+	scrapeTimes := []time.Time{
+		time.Unix(100, 0),
+		time.Unix(110, 0),
+		time.Unix(120, 0),
+	}
+	timeCall := 0
+	scraper.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	queryCall := 0
+	scraper.client = queryRowsFuncClient{
+		queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			queryCall++
+
+			if queryCall == 2 {
+				return nil, nil
+			}
+
+			value := "100"
+			if queryCall == 3 {
+				value = "160"
+			}
+
+			return []sqlquery.StringMap{
+				{
+					"computer_name": "abcde",
+					"sql_instance":  "d26d40521426",
+					"object":        "SQLServer:SQL Statistics",
+					"counter":       "Batch Requests/sec",
+					"instance":      "",
+					"counter_type":  "272696576",
+					"value":         value,
+					"raw_value":     value,
+				},
+			}, nil
+		},
+	}
+
+	firstMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, firstMetrics.ResourceMetrics().Len())
+
+	secondMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, secondMetrics.ResourceMetrics().Len())
+
+	thirdMetrics, err := scraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, thirdMetrics.ResourceMetrics().Len())
 }
 
 func TestScrapeInvalidQuery(t *testing.T) {
@@ -288,8 +924,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 		defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 		scraper.client = mockClient{
-			instanceName: scraper.config.InstanceName,
-			SQL:          "Invalid SQL query",
+			SQL: "Invalid SQL query",
 		}
 
 		actualMetrics, err := scraper.ScrapeMetrics(t.Context())
@@ -387,7 +1022,6 @@ var (
 
 type mockClient struct {
 	SQL                 string
-	instanceName        string
 	maxQuerySampleCount uint
 	lookbackTime        uint
 	topQueryCount       uint
@@ -493,33 +1127,33 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 	var err error
 
 	switch mc.SQL {
-	case getSQLServerAvailabilityGroupQuery(mc.instanceName):
+	case getSQLServerAvailabilityGroupQuery():
 		queryResults, err = readFile("availabilityGroupQueryData.txt")
-	case getSQLServerDatabaseIOQuery(mc.instanceName):
+	case getSQLServerDatabaseIOQuery():
 		queryResults, err = readFile("database_io_scraped_data.txt")
-	case getSQLServerPerformanceCounterQuery(mc.instanceName):
+	case getSQLServerPerformanceCounterQuery():
 		queryResults, err = readFile("perfCounterQueryData.txt")
-	case getSQLServerPropertiesQuery(mc.instanceName):
+	case getSQLServerPropertiesQuery():
 		fixture := "propertyQueryData.txt"
 		if mc.propertiesFixtureFile != "" {
 			fixture = mc.propertiesFixtureFile
 		}
 		queryResults, err = readFile(fixture)
-	case getSQLServerWaitStatsQuery(mc.instanceName):
+	case getSQLServerWaitStatsQuery():
 		queryResults, err = readFile("waitStatsQueryData.txt")
-	case getSQLServerWorkerThreadsQuery(mc.instanceName):
+	case getSQLServerWorkerThreadsQuery():
 		queryResults, err = readFile("workerThreadsQueryData.txt")
-	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
+	case getSQLServerIndexPhysicalStatsQuery():
 		queryResults, err = readFile("indexPhysicalQueryData.txt")
-	case getSQLServerCPUMemoryQuery(mc.instanceName):
+	case getSQLServerCPUMemoryQuery():
 		queryResults, err = readFile("cpuMemoryQueryData.txt")
-	case getSQLServerDiskIOQuery(mc.instanceName):
+	case getSQLServerDiskIOQuery():
 		queryResults, err = readFile("diskIOQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
-	case getSQLServerTopProcedureQuery(mc.instanceName):
+	case getSQLServerTopProcedureQuery():
 		fixture := "topProcedureQueryData.txt"
 		if mc.procedureFixtureFile != "" {
 			fixture = mc.procedureFixtureFile
@@ -593,7 +1227,6 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	const procedureExecutionCount = "procedure_execution_count"
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -687,7 +1320,6 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -752,7 +1384,6 @@ func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -852,7 +1483,6 @@ func TestQueryTextAndPlanQueryDbServerQueryPlanEventDisabled(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -944,7 +1574,6 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 
 	scraper.client = mockInvalidClient{
 		mockClient: mockClient{
-			instanceName:        scraper.config.InstanceName,
 			SQL:                 scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,
@@ -960,14 +1589,13 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 func TestRecordDatabaseSampleQuery(t *testing.T) {
 	tests := map[string]struct {
 		expectedFile string
-		mockClient   func(instance, sql string) sqlquery.DbClient
+		mockClient   func(sql string) sqlquery.DbClient
 		errors       bool
 	}{
 		"valid data": {
 			expectedFile: "expectedRecordDatabaseSampleQuery.yaml",
-			mockClient: func(instance, sql string) sqlquery.DbClient {
+			mockClient: func(sql string) sqlquery.DbClient {
 				return mockClient{
-					instanceName:    instance,
 					SQL:             sql,
 					maxRowsPerQuery: 100,
 				}
@@ -976,10 +1604,9 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 		},
 		"invalid data": {
 			expectedFile: "expectedRecordDatabaseSampleQueryWithInvalidData.yaml",
-			mockClient: func(instance, sql string) sqlquery.DbClient {
+			mockClient: func(sql string) sqlquery.DbClient {
 				return mockInvalidClient{
 					mockClient{
-						instanceName:    instance,
 						SQL:             sql,
 						maxRowsPerQuery: 100,
 					},
@@ -1008,7 +1635,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			scraper := scrapers[0]
 			assert.NotNil(t, scraper.cache)
 
-			scraper.client = tc.mockClient(scraper.instanceName, scraper.sqlQuery)
+			scraper.client = tc.mockClient(scraper.sqlQuery)
 
 			actualLogs, err := scraper.ScrapeLogs(t.Context())
 			if tc.errors {
@@ -1121,7 +1748,7 @@ func buildQuerySampleRow(sessionID, blockingSessionID, command, statement string
 		"username":                    "sa",
 		"client_app_name":             "SSMS",
 		"session_start_time":          "2025-02-12T15:00:00.000+08:00",
-		"session_duration":            "720456",
+		"session_duration":            "720",
 		"procedure_id":                "0",
 		"procedure_name":              "",
 		"blocking_start_time":         "",
@@ -1178,6 +1805,39 @@ func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
 		}
 	}
 	assert.True(t, foundIdleBlocker)
+}
+
+func TestSessionDurationSecondsAndZeroClamp(t *testing.T) {
+	tests := []struct {
+		name             string
+		sessionDuration  string
+		expectedDuration float64
+	}{
+		{"seconds passthrough", "720", 720},
+		{"zero clamp", "0", 0},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			scraper := setupQuerySampleScraper(t, nil)
+			scraper.db = &sql.DB{}
+
+			row := buildQuerySampleRow("60", "0", "SELECT", "SELECT 1")
+			row["session_duration"] = tc.sessionDuration
+			scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+				return []sqlquery.StringMap{row}, nil
+			}}
+
+			actualLogs, err := scraper.ScrapeLogs(t.Context())
+			assert.NoError(t, err)
+			assert.Equal(t, 1, actualLogs.LogRecordCount())
+
+			attrs := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			duration, ok := attrs.Get("sqlserver.session.duration")
+			assert.True(t, ok)
+			assert.Equal(t, tc.expectedDuration, duration.Double())
+		})
+	}
 }
 
 func TestRecordDatabaseSampleQueryDoesNotFetchIdleBlockersWhenNoneMissing(t *testing.T) {
@@ -1282,7 +1942,6 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 
 	scraper.client = mockMultiStatementProcClient{
 		mockClient: mockClient{
-			instanceName:        scraper.config.InstanceName,
 			SQL:                 scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,
@@ -1502,7 +2161,6 @@ func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 
 	scraper := scrapers[0]
 	scraper.client = mockClient{
-		instanceName:    scraper.config.InstanceName,
 		SQL:             scraper.sqlQuery,
 		maxRowsPerQuery: 100,
 	}
@@ -1566,7 +2224,6 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -1618,7 +2275,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 
 	var workerScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerWorkerThreadsQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerWorkerThreadsQuery() {
 			workerScraper = s
 			break
 		}
@@ -1634,8 +2291,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 	}()
 
 	workerScraper.client = mockClient{
-		instanceName: workerScraper.config.InstanceName,
-		SQL:          workerScraper.sqlQuery,
+		SQL: workerScraper.sqlQuery,
 	}
 
 	actualMetrics, err := workerScraper.ScrapeMetrics(t.Context())
@@ -1690,8 +2346,7 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 
 	scraper := scrapers[0]
 	scraper.client = mockClient{
-		instanceName: scraper.config.InstanceName,
-		SQL:          scraper.sqlQuery,
+		SQL: scraper.sqlQuery,
 	}
 
 	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
@@ -1741,7 +2396,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 
 	var cpuMemScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerCPUMemoryQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerCPUMemoryQuery() {
 			cpuMemScraper = s
 			break
 		}
@@ -1753,8 +2408,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 	defer assert.NoError(t, cpuMemScraper.Shutdown(t.Context()))
 
 	cpuMemScraper.client = mockClient{
-		instanceName: cpuMemScraper.config.InstanceName,
-		SQL:          cpuMemScraper.sqlQuery,
+		SQL: cpuMemScraper.sqlQuery,
 	}
 
 	actualMetrics, err := cpuMemScraper.ScrapeMetrics(t.Context())
@@ -1830,7 +2484,7 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 
 	var diskScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerDiskIOQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerDiskIOQuery() {
 			diskScraper = s
 			break
 		}
@@ -1842,8 +2496,7 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	defer assert.NoError(t, diskScraper.Shutdown(t.Context()))
 
 	diskScraper.client = mockClient{
-		instanceName: diskScraper.config.InstanceName,
-		SQL:          diskScraper.sqlQuery,
+		SQL: diskScraper.sqlQuery,
 	}
 
 	actualMetrics, err := diskScraper.ScrapeMetrics(t.Context())
@@ -1922,8 +2575,7 @@ func newTopProcedureScraper(t *testing.T) *sqlServerScraperHelper {
 	scraper := scrapers[0]
 	require.NotNil(t, scraper.cache)
 	scraper.client = mockClient{
-		instanceName: scraper.config.InstanceName,
-		SQL:          scraper.sqlQuery,
+		SQL: scraper.sqlQuery,
 	}
 	return scraper
 }

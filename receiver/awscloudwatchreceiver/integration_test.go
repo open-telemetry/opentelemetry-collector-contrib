@@ -105,6 +105,7 @@ func TestMetricsIntegration_Summary(t *testing.T) {
 
 	scr := newCloudWatchMetricsScraper(cfg, receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+		BuildInfo:         component.BuildInfo{Version: "test"},
 	})
 	scr.client = mc
 
@@ -151,6 +152,7 @@ func TestMetricsIntegration_Gauge(t *testing.T) {
 
 	scr := newCloudWatchMetricsScraper(cfg, receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+		BuildInfo:         component.BuildInfo{Version: "test"},
 	})
 	scr.client = mc
 
