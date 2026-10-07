@@ -84,7 +84,7 @@ var container2StatusRunning = v1.ContainerStatus{
 	},
 	Ready:       true,
 	Image:       "container-image-1",
-	Started:     pointerBool(true),
+	Started:     new(true),
 	ContainerID: "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
 }
 
@@ -103,10 +103,6 @@ var podWithNamedPorts = func() *v1.Pod {
 	}
 	return pod
 }()
-
-func pointerBool(val bool) *bool {
-	return &val
-}
 
 // newService is a helper function for creating Services for testing.
 func newService(name string) *v1.Service {
@@ -267,7 +263,6 @@ func newNode(name, hostname string) *v1.Node {
 				BootID:                  "boot-id",
 				ContainerRuntimeVersion: "runtime-version",
 				KernelVersion:           "kernel-version",
-				KubeProxyVersion:        "kube-proxy-version",
 				KubeletVersion:          "kubelet-version",
 				MachineID:               "machine-id",
 				OperatingSystem:         "operating-system",

@@ -415,14 +415,16 @@ func BenchmarkConvertBucketLayoutV2(b *testing.B) {
 }
 
 func TestExplicitToNHCBHistogramV2(t *testing.T) {
+	startTimestamp := testHistTimestamp - pcommon.Timestamp(time.Hour)
 	tests := []struct {
-		name        string
-		hist        func() pmetric.HistogramDataPoint
-		wantValues  []float64
-		wantCount   uint64
-		wantSum     float64
-		wantBuckets []nhcbBucket
-		stale       bool
+		name               string
+		hist               func() pmetric.HistogramDataPoint
+		wantValues         []float64
+		wantCount          uint64
+		wantSum            float64
+		wantBuckets        []nhcbBucket
+		wantStartTimestamp int64
+		stale              bool
 	}{
 		{
 			name:        "consistent count and buckets",
@@ -431,6 +433,19 @@ func TestExplicitToNHCBHistogramV2(t *testing.T) {
 			wantCount:   10,
 			wantSum:     42.5,
 			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+		},
+		{
+			name: "start timestamp",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.SetStartTimestamp(startTimestamp)
+				return pt
+			},
+			wantValues:         []float64{1, 2, 3},
+			wantCount:          10,
+			wantSum:            42.5,
+			wantBuckets:        []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+			wantStartTimestamp: convertTimeStamp(startTimestamp),
 		},
 		{
 			// Count below the bucket sum is clamped up so the +Inf bucket stays non-negative.
@@ -510,6 +525,7 @@ func TestExplicitToNHCBHistogramV2(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, histogram.CustomBucketsSchema, h.Schema, "must be NHCB schema -53")
 			assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
+			assert.Equal(t, tt.wantStartTimestamp, h.StartTimestamp, "start timestamp")
 
 			if tt.stale {
 				assert.True(t, math.IsNaN(h.Sum), "stale marker signaled by stale-NaN sum")
@@ -567,6 +583,7 @@ func TestExponentialToNativeHistogramV2(t *testing.T) {
 					PositiveSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
 					PositiveDeltas: []int64{1, 0},
 					Timestamp:      500,
+					StartTimestamp: 100,
 				}
 			},
 		},
@@ -600,6 +617,7 @@ func TestExponentialToNativeHistogramV2(t *testing.T) {
 					PositiveSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
 					PositiveDeltas: []int64{1, 0},
 					Timestamp:      500,
+					StartTimestamp: 100,
 				}
 			},
 		},

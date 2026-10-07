@@ -8,10 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"math/rand/v2"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	krb5client "github.com/jcmturner/gokrb5/v8/client"
 	krb5config "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -164,12 +167,7 @@ func NewFranzConsumerGroup(
 		opts = append(opts, kgo.InstanceID(consumerCfg.GroupInstanceID))
 	}
 
-	// Configure rebalance strategy
-	if consumerCfg.GroupRebalanceStrategy != "" {
-		logger.Warn("group_rebalance_strategy is deprecated, use group_rebalance_strategies instead")
-	}
 	balancerOpt, err := balancerOptFromStrategies(
-		consumerCfg.GroupRebalanceStrategy,
 		consumerCfg.GroupRebalanceStrategies,
 		host,
 	)
@@ -217,19 +215,11 @@ func NewFranzClusterAdminClient(
 // singular strategy and the strategies list are mutually exclusive (enforced by
 // ConsumerConfig.Validate).
 func balancerOptFromStrategies(
-	strategy configkafka.GroupRebalanceStrategy,
 	strategies []configkafka.GroupRebalanceStrategy,
 	host component.Host,
 ) (kgo.Opt, error) {
-	if strategy == "" && len(strategies) == 0 {
-		return nil, nil
-	}
 	if len(strategies) == 0 {
-		balancer, err := balancerFromStrategy(strategy, "group_rebalance_strategy", host)
-		if err != nil {
-			return nil, err
-		}
-		return kgo.Balancers(balancer), nil
+		return nil, nil
 	}
 
 	balancers, err := balancersFromStrategies(strategies, host)
@@ -305,9 +295,6 @@ func commonOpts(
 		kgo.DisableClientMetrics(),
 	)
 	tlsConfig := clientCfg.TLS
-	if tlsConfig == nil {
-		tlsConfig = clientCfg.Authentication.TLS
-	}
 	// Configure TLS if needed
 	if tlsConfig != nil {
 		tlsCfg, err := tlsConfig.LoadTLSConfig(ctx)
@@ -318,16 +305,8 @@ func commonOpts(
 			opts = append(opts, kgo.DialTLSConfig(tlsCfg))
 		}
 	}
-	// Configure authentication
-	if clientCfg.Authentication.PlainText != nil {
-		auth := plain.Auth{
-			User: clientCfg.Authentication.PlainText.Username,
-			Pass: clientCfg.Authentication.PlainText.Password,
-		}
-		opts = append(opts, kgo.SASL(auth.AsMechanism()))
-	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
+		saslOpt, err := configureKgoSASL(ctx, clientCfg.Authentication.SASL, host)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -352,6 +331,12 @@ func commonOpts(
 	if clientCfg.Metadata.RefreshInterval > 0 {
 		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
 	}
+	// Applied unconditionally so an explicit zero disables retries.
+	opts = append(opts, kgo.RequestRetries(clientCfg.Metadata.Retry.Max))
+	// A zero backoff would busy-retry an unhealthy broker, so treat it as unset.
+	if clientCfg.Metadata.Retry.Backoff > 0 {
+		opts = append(opts, kgo.RetryBackoffFn(newRetryBackoffFn(clientCfg.Metadata.Retry.Backoff)))
+	}
 	// Configure connection idle timeout
 	if clientCfg.ConnIdleTimeout > 0 {
 		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
@@ -374,7 +359,46 @@ func commonOpts(
 	return opts, nil
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
+// retryBackoffCap is franz-go's default maximum wait between retries.
+const retryBackoffCap = 5 * time.Second
+
+// newRetryBackoffFn mirrors franz-go's default jittered exponential backoff,
+// taking the minimum from metadata::retry::backoff. At the 250ms default it is
+// equivalent to the franz-go default.
+func newRetryBackoffFn(minBackoff time.Duration) func(int) time.Duration {
+	maxBackoff := max(retryBackoffCap, minBackoff)
+	return func(fails int) time.Duration {
+		if fails <= 0 {
+			return minBackoff
+		}
+		backoff := minBackoff << (fails - 1)
+		// Overflow means the doubling is far past the cap.
+		if backoff>>(fails-1) != minBackoff {
+			return maxBackoff
+		}
+		jittered := time.Duration(float64(backoff) * (0.8 + 0.4*rand.Float64()))
+		if jittered <= 0 {
+			return maxBackoff
+		}
+		return min(jittered, maxBackoff)
+	}
+}
+
+// loadAWSCredentialsProvider resolves the default AWS credentials provider.
+// LoadDefaultConfig wraps it in an aws.CredentialsCache. It is a variable so
+// tests can replace it.
+var loadAWSCredentialsProvider = func(ctx context.Context, region string) (aws.CredentialsProvider, error) {
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region),
+		awsconfig.WithCredentialsCacheOptions(func(o *aws.CredentialsCacheOptions) {
+			o.ExpiryWindow = time.Minute
+		}))
+	if err != nil {
+		return nil, err
+	}
+	return awsCfg.Credentials, nil
+}
+
+func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -384,8 +408,14 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt
 	case SCRAMSHA512:
 		m = scram.Auth{User: cfg.Username, Pass: cfg.Password}.AsSha512Mechanism()
 	case AWSMSKIAMOAUTHBEARER:
+		// Resolve the credentials provider once per client so cached
+		// credentials are reused across SASL authentications.
+		credsProvider, err := loadAWSCredentialsProvider(ctx, cfg.AWSMSK.Region)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config: %w", err)
+		}
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			token, _, err := signer.GenerateAuthToken(ctx, cfg.AWSMSK.Region)
+			token, _, err := signer.GenerateAuthTokenFromCredentialsProvider(ctx, cfg.AWSMSK.Region, credsProvider)
 			return oauth.Auth{Token: token}, err
 		})
 	case OAUTHBEARER:

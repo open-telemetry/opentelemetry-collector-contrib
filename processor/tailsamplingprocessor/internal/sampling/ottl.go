@@ -86,7 +86,7 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 
 				// Span evaluation
 				if ocf.sampleSpanExpr != nil {
-					tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+					tCtx := ottlspan.NewTransformContext(rs, ss, span)
 					ok, err = ocf.sampleSpanExpr.Eval(ctx, tCtx)
 					tCtx.Close()
 					if err != nil {
@@ -101,7 +101,7 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 				if ocf.sampleSpanEventExpr != nil {
 					spanEvents := span.Events()
 					for l := 0; l < spanEvents.Len(); l++ {
-						tCtx := ottlspanevent.NewTransformContextPtr(rs, ss, span, spanEvents.At(l))
+						tCtx := ottlspanevent.NewTransformContext(rs, ss, span, spanEvents.At(l))
 						ok, err = ocf.sampleSpanEventExpr.Eval(ctx, tCtx)
 						tCtx.Close()
 						if err != nil {

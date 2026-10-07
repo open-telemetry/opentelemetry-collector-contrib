@@ -13,3 +13,11 @@ var AwsemfNodimrollupdefaultFeatureGate = featuregate.GlobalRegistry().MustRegis
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997"),
 	featuregate.WithRegisterFromVersion("v0.83.0"),
 )
+
+var ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.awsemf.DisableLegacyResourceToTelemetryConversion",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the deprecated enabled and exclude_service_attributes fields in resource_to_telemetry_conversion are disabled, and included/excluded patterns must be used instead"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861"),
+	featuregate.WithRegisterFromVersion("v0.160.0"),
+)

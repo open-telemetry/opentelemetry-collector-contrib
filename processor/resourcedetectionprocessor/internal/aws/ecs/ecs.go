@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_aws_ecs
+
 package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 
 import (
@@ -20,11 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr = "ecs"
-)
-
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
@@ -38,8 +35,7 @@ func NewDetector(params processor.Settings, dcfg internal.DetectorConfig, failOn
 	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
-		var errNTMED endpoints.ErrNoTaskMetadataEndpointDetected
-		if errors.As(err, &errNTMED) {
+		if _, ok := errors.AsType[endpoints.ErrNoTaskMetadataEndpointDetected](err); ok {
 			return &Detector{provider: nil, failOnMissingMetadata: failOnMissingMetadata}, nil
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)

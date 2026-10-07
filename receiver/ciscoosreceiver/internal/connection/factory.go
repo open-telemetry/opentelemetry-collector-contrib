@@ -90,8 +90,7 @@ func publicKeyAuth(keyFile string) (cryptossh.AuthMethod, error) {
 
 	signer, err := cryptossh.ParsePrivateKey(key)
 	if err != nil {
-		var passphraseErr *cryptossh.PassphraseMissingError
-		if errors.As(err, &passphraseErr) {
+		if _, ok := errors.AsType[*cryptossh.PassphraseMissingError](err); ok {
 			return nil, fmt.Errorf("SSH key is encrypted but passphrase is not supported: %w", err)
 		}
 		return nil, fmt.Errorf("unable to parse private key: %w", err)

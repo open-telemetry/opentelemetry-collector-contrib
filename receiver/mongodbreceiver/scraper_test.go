@@ -495,71 +495,13 @@ func TestTopMetricsAggregation(t *testing.T) {
 	require.EqualValues(t, expectedCommandValues, actualOperationTimeValues["commands"])
 }
 
-func TestServerAddressAndPort(t *testing.T) {
-	tests := []struct {
-		name            string
-		serverStatus    bson.M
-		expectedAddress string
-		expectedPort    int64
-		expectedErr     error
-	}{
-		{
-			name: "address_only",
-			serverStatus: bson.M{
-				"host": "localhost",
-			},
-			expectedAddress: "localhost",
-			expectedPort:    defaultMongoDBPort,
-		},
-		{
-			name: "address_and_port",
-			serverStatus: bson.M{
-				"host": "localhost:27018",
-			},
-			expectedAddress: "localhost",
-			expectedPort:    27018,
-		},
-		{
-			name:         "missing_host",
-			serverStatus: bson.M{},
-			expectedErr:  errors.New("host field not found in server status"),
-		},
-		{
-			name: "invalid_port",
-			serverStatus: bson.M{
-				"host": "localhost:invalid",
-			},
-			expectedErr: errors.New("failed to parse port: strconv.ParseInt: parsing \"invalid\": invalid syntax"),
-		},
-		{
-			name: "invalid_host_format",
-			serverStatus: bson.M{
-				"host": "localhost:27018:extra",
-			},
-			expectedErr: errors.New("unexpected host format: localhost:27018:extra"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			address, port, err := serverAddressAndPort(tt.serverStatus)
-			if tt.expectedErr != nil {
-				require.EqualError(t, err, tt.expectedErr.Error())
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.expectedAddress, address)
-				require.Equal(t, tt.expectedPort, port)
-			}
-		})
-	}
-}
-
 func TestReceiverMetricsDisabled(t *testing.T) {
 	scraperCfg := createDefaultConfig().(*Config)
 
 	// disable all metrics
 	v := reflect.ValueOf(&scraperCfg.MetricsBuilderConfig.Metrics).Elem()
-	for i := 0; i < v.NumField(); i++ {
-		v.Field(i).FieldByName("Enabled").SetBool(false)
+	for _, field := range v.Fields() {
+		field.FieldByName("Enabled").SetBool(false)
 	}
 
 	fc := &fakeClient{}
@@ -883,6 +825,50 @@ func TestScrapeLogs(t *testing.T) {
 	}
 }
 
+// TestSecondaryDiscoverySkipReason covers when replica set secondary discovery is skipped. The
+// mongodb+srv case matters because the driver enables TLS implicitly for the configured host from
+// the URI, while secondary connections are built from a host list and would not inherit it.
+func TestSecondaryDiscoverySkipReason(t *testing.T) {
+	tests := []struct {
+		name       string
+		configure  func(*Config)
+		wantSkip   bool
+		wantReason string
+	}{
+		{
+			name:      "default replica set config discovers secondaries",
+			configure: func(*Config) {},
+			wantSkip:  false,
+		},
+		{
+			name:       "direct connection pins the client to one member",
+			configure:  func(c *Config) { c.DirectConnection = true },
+			wantSkip:   true,
+			wantReason: "direct_connection is enabled",
+		},
+		{
+			name:       "mongodb+srv cannot pass its implicit TLS to secondaries",
+			configure:  func(c *Config) { c.Scheme = "mongodb+srv" },
+			wantSkip:   true,
+			wantReason: "the mongodb+srv scheme applies TLS that secondary connections cannot inherit",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			tt.configure(cfg)
+
+			reason := cfg.secondaryDiscoverySkipReason()
+			if !tt.wantSkip {
+				require.Empty(t, reason)
+				return
+			}
+			require.Equal(t, tt.wantReason, reason)
+		})
+	}
+}
+
 func TestScrapeLogsWithSecondaries(t *testing.T) {
 	testCases := []struct {
 		desc                  string
@@ -1028,6 +1014,79 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 				require.True(t, ok, "resource %d should have server.address", i)
 				require.NotEmpty(t, addr.Str())
 			}
+		})
+	}
+}
+
+func TestFindSecondaryHosts(t *testing.T) {
+	// The driver decodes an embedded document held in a bson.M as a bson.D, so this is the
+	// shape replSetGetStatus members actually arrive in.
+	bsonDMembers := bson.A{
+		bson.D{bson.E{Key: "name", Value: "mongo-0:27017"}, bson.E{Key: "stateStr", Value: "PRIMARY"}},
+		bson.D{bson.E{Key: "name", Value: "mongo-1:27017"}, bson.E{Key: "stateStr", Value: "SECONDARY"}},
+		bson.D{bson.E{Key: "name", Value: "mongo-2:27017"}, bson.E{Key: "stateStr", Value: "ARBITER"}},
+		bson.D{bson.E{Key: "name", Value: "mongo-3:27017"}, bson.E{Key: "stateStr", Value: "SECONDARY"}},
+	}
+
+	testCases := []struct {
+		desc          string
+		result        bson.M
+		resultErr     error
+		expectedHosts []string
+		expectedErr   string
+	}{
+		{
+			desc:          "members decoded as bson.D",
+			result:        bson.M{"members": bsonDMembers},
+			expectedHosts: []string{"mongo-1:27017", "mongo-3:27017"},
+		},
+		{
+			desc: "members decoded as bson.M",
+			result: bson.M{"members": bson.A{
+				bson.M{"name": "mongo-0:27017", "stateStr": "PRIMARY"},
+				bson.M{"name": "mongo-1:27017", "stateStr": "SECONDARY"},
+			}},
+			expectedHosts: []string{"mongo-1:27017"},
+		},
+		{
+			desc: "member without a name",
+			result: bson.M{"members": bson.A{
+				bson.D{bson.E{Key: "stateStr", Value: "SECONDARY"}},
+			}},
+			expectedHosts: nil,
+		},
+		{
+			desc:        "members missing",
+			result:      bson.M{"set": "rs0"},
+			expectedErr: "invalid members format",
+		},
+		{
+			desc:        "command failed",
+			resultErr:   errors.New("not authorized"),
+			expectedErr: "failed to get replica set status",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			fc := &fakeClient{}
+			if tc.resultErr != nil {
+				fc.On("RunCommand", mock.Anything, "admin", bson.M{"replSetGetStatus": 1}).Return(nil, tc.resultErr)
+			} else {
+				fc.On("RunCommand", mock.Anything, "admin", bson.M{"replSetGetStatus": 1}).Return(tc.result, nil)
+			}
+
+			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
+			scraper.client = fc
+
+			hosts, err := scraper.findSecondaryHosts(t.Context())
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+				require.Nil(t, hosts)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedHosts, hosts)
 		})
 	}
 }
@@ -1691,4 +1750,44 @@ func TestCollectIndexStatsSkipsViews(t *testing.T) {
 	errs := &scrapererror.ScrapeErrors{}
 	scraper.collectIndexStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), "fakedatabase", "someview", errs)
 	require.NoError(t, errs.Combine())
+}
+
+func TestResourceAttributeDbSystemVersion(t *testing.T) {
+	// Test the setResourceAttributes function directly
+	// Test with enabled db.system.version
+	cfg := metadata.DefaultResourceAttributesConfig()
+	cfg.DbSystemVersion.Enabled = true
+	rb := metadata.NewResourceBuilder(cfg)
+
+	mongo50, err := version.NewVersion("5.0.0")
+	require.NoError(t, err)
+
+	setResourceAttributes(rb, "localhost", 27017, mongo50)
+	res := rb.Emit()
+
+	dbSystemVersion, ok := res.Attributes().Get("db.system.version")
+	require.True(t, ok, "db.system.version should be present when enabled")
+	require.Equal(t, "5.0.0", dbSystemVersion.Str())
+
+	// Test with disabled db.system.version
+	cfg2 := metadata.DefaultResourceAttributesConfig()
+	cfg2.DbSystemVersion.Enabled = false
+	rb2 := metadata.NewResourceBuilder(cfg2)
+
+	setResourceAttributes(rb2, "localhost", 27017, mongo50)
+	res2 := rb2.Emit()
+
+	_, ok = res2.Attributes().Get("db.system.version")
+	require.False(t, ok, "db.system.version should not be present when disabled")
+
+	// Test with unknown version
+	cfg3 := metadata.DefaultResourceAttributesConfig()
+	cfg3.DbSystemVersion.Enabled = true
+	rb3 := metadata.NewResourceBuilder(cfg3)
+
+	setResourceAttributes(rb3, "localhost", 27017, nil)
+	res3 := rb3.Emit()
+
+	_, ok = res3.Attributes().Get("db.system.version")
+	require.False(t, ok, "db.system.version should not be present when version is unknown")
 }

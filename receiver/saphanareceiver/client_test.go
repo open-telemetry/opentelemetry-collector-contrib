@@ -89,10 +89,6 @@ func (m *testConnectionFactory) getConnection(_ driver.Connector) dbWrapper {
 	return m.dbWrapper
 }
 
-func str(str string) *string {
-	return &str
-}
-
 func TestBasicConnectAndClose(t *testing.T) {
 	dbWrapper := &testDBWrapper{}
 	dbWrapper.On("PingContext").Return(nil)
@@ -123,8 +119,8 @@ func TestSimpleQueryOutput(t *testing.T) {
 	dbWrapper.On("Close").Return(nil)
 
 	dbWrapper.mockQueryResult("SELECT 1=1", [][]*string{
-		{str("my_id"), str("dead"), str("1"), str("8.044")},
-		{str("your_id"), str("alive"), str("2"), str("600.1")},
+		{new("my_id"), new("dead"), new("1"), new("8.044")},
+		{new("your_id"), new("alive"), new("2"), new("600.1")},
 	}, nil)
 
 	client := newSapHanaClient(createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
@@ -181,8 +177,8 @@ func TestNullOutput(t *testing.T) {
 	dbWrapper.On("Close").Return(nil)
 
 	dbWrapper.mockQueryResult("SELECT 1=1", [][]*string{
-		{str("my_id"), str("dead"), str("1"), nil},
-		{nil, str("live"), str("3"), str("123.123")},
+		{new("my_id"), new("dead"), new("1"), nil},
+		{nil, new("live"), new("3"), new("123.123")},
 	}, nil)
 
 	client := newSapHanaClient(createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})

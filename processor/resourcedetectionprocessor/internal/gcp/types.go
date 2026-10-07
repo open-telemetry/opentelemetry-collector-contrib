@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_gcp
+
 package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 
 import "github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
@@ -15,6 +17,7 @@ type gcpDetector interface {
 	GKEAvailabilityZoneOrRegion() (string, gcp.LocationType, error)
 	GKEClusterName() (string, error)
 	GKEHostID() (string, error)
+	GKEHostType() (string, error)
 	FaaSName() (string, error)
 	FaaSVersion() (string, error)
 	FaaSID() (string, error)

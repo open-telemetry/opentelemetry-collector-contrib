@@ -10,6 +10,19 @@
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
 | cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
-| deployment.environment | The deployment.environment | Any Str | true | - | - |
-| service.instance.id | The service.instance.id | Any Str | true | [service.instance.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-instance-id) | - |
+| deployment.environment | The deployment.environment. Deprecated, use deployment.environment.name instead. | Any Str | true | - | - |
+| deployment.environment.name | The name of the deployment environment. | Any Str | true | [deployment.environment.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/deployment.md#deployment-environment-name) | - |
+| deployment.id | The id of the deployment. | Any Str | true | [deployment.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/deployment.md#deployment-id) | - |
+| service.instance.id | The Elastic Beanstalk deployment ID. Superseded by deployment.id. | Any Str | true | [service.instance.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-instance-id) | - |
 | service.version | The service.version | Any Str | true | [service.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-version) | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.resourcedetection.elasticbeanstalk.DontEmitV0DeploymentConventions` | alpha | When enabled, the detector no longer emits the deprecated deployment.environment and service.instance.id resource attributes. Requires processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions to also be enabled. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50130) |
+| `processor.resourcedetection.elasticbeanstalk.EmitV1DeploymentConventions` | alpha | When enabled, the detector emits deployment.environment.name and deployment.id instead of the deprecated deployment.environment and service.instance.id. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50130) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

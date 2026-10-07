@@ -17,13 +17,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
@@ -44,6 +46,66 @@ func Test_e2e_editors(t *testing.T) {
 		statement string
 		want      func(tCtx *ottllog.TransformContext)
 	}{
+		{
+			statement: `clear(attributes)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().Clear()
+			},
+		},
+		{
+			statement: `clear(attributes["http.method"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.method", "")
+			},
+		},
+		{
+			statement: `clear(body)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("")
+			},
+		},
+		{
+			statement: `clear(attributes["foo"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
+			},
+		},
+		{
+			statement: `clear(attributes["slice2"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("slice2")
+			},
+		},
+		{
+			statement: `clear(span_id)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetSpanID(pcommon.NewSpanIDEmpty())
+			},
+		},
+		{
+			statement: `clear(trace_id)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetTraceID(pcommon.NewTraceIDEmpty())
+			},
+		},
+		{
+			statement: `clear(time)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
+			},
+		},
+		{
+			statement: `clear(severity_number)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetSeverityNumber(0)
+			},
+		},
+		{
+			statement: `clear(dropped_attributes_count)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetDroppedAttributesCount(0)
+			},
+		},
 		{
 			statement: `delete_key(attributes, "http.method")`,
 			want: func(tCtx *ottllog.TransformContext) {
@@ -351,7 +413,9 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], nil)`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			statement: `set(attributes["test"], "nil")`,
@@ -361,7 +425,9 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], attributes["unknown"])`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			statement: `set(attributes["foo"]["test"], "pass")`,
@@ -495,8 +561,6 @@ func Test_e2e_editors(t *testing.T) {
 }
 
 func Test_e2e_converters(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
-
 	tests := []struct {
 		statement string
 		want      func(tCtx *ottllog.TransformContext)
@@ -613,7 +677,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
+			statement: `set(attributes["test"], Decode("cGFzcw==", "base64"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -652,6 +716,18 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Concat(Split(attributes["flags"], "|"), ":"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B:C")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Concat(attributes["primitiveValuesSlice"], ":"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "value1:42:true")
 			},
 		},
 		{
@@ -1252,12 +1328,6 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], "pass") where String(ProfileID(0x00000000000000000000000000000001)) == "[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]"`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
-			},
-		},
-		{
 			statement: `set(attributes["test"], Split(attributes["flags"], "|"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
@@ -1625,140 +1695,6 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutBool("in_cidr", true)
 			},
 		},
-		{
-			statement: `set(attributes["filtered_slice"], Filter(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				filtered := tCtx.GetLogRecord().Attributes().PutEmptySlice("filtered_slice")
-				filtered.AppendEmpty().SetStr("value1")
-			},
-		},
-		{
-			statement: `set(attributes["filtered_map"], Filter(attributes["foo"], (k, _) => k == "bar"))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				filtered := tCtx.GetLogRecord().Attributes().PutEmptyMap("filtered_map")
-				filtered.PutStr("bar", "pass")
-			},
-		},
-		{
-			statement: `set(attributes["mapped_slice"], MapEach(attributes["primitiveValuesSlice"], (i, v) => Concat([String(i), ":", String(v)], "")))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				mapped := tCtx.GetLogRecord().Attributes().PutEmptySlice("mapped_slice")
-				mapped.AppendEmpty().SetStr("0:value1")
-				mapped.AppendEmpty().SetStr("1:42")
-				mapped.AppendEmpty().SetStr("2:true")
-			},
-		},
-		{
-			statement: `set(attributes["mapped_map"], MapEach(attributes["foo"], (k, v) => Concat([k, ":", String(v)], "")))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				mapped := tCtx.GetLogRecord().Attributes().PutEmptyMap("mapped_map")
-				mapped.PutStr("bar", "bar:pass")
-				mapped.PutStr("flags", "flags:pass")
-				mapped.PutStr("slice", `slice:["val"]`)
-				mapped.PutStr("nested", `nested:{"test":"pass"}`)
-			},
-		},
-		{
-			statement: `set(attributes["pdata"], MapEach(["things"], (_, v) => {"result":v}))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				mapped := tCtx.GetLogRecord().Attributes().PutEmptySlice("pdata")
-				mapped.AppendEmpty().SetEmptyMap().PutStr("result", "things")
-			},
-		},
-		{
-			statement: `set(attributes["pdata"], MapEach({"key":"val"}, (_, _) => attributes))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				orig := pcommon.NewMap()
-				tCtx.GetLogRecord().Attributes().CopyTo(orig)
-				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("pdata")
-				v := m.PutEmptyMap("key")
-				orig.CopyTo(v)
-			},
-		},
-		{
-			statement: `set(attributes["all_slice"], All(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutBool("all_slice", false)
-			},
-		},
-		{
-			statement: `set(attributes["all_map"], All(attributes["foo"], (k, _) => k != "missing"))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutBool("all_map", true)
-			},
-		},
-		{
-			statement: `set(attributes["any_slice"], Any(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutBool("any_slice", true)
-			},
-		},
-		{
-			statement: `set(attributes["any_map"], Any(attributes["foo"], (k, _) => k == "bar"))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutBool("any_map", true)
-			},
-		},
-		{
-			statement: `set(attributes["found_slice"], Find(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("found_slice", "value1")
-			},
-		},
-		{
-			statement: `set(attributes["found_map"], Find(attributes["foo"], (k, _) => k == "bar"))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("found_map", "pass")
-			},
-		},
-		{
-			statement: `set(attributes["found_map_mapped"], Find(attributes["foo"], (k, _) => k == "bar", (k, v) => Concat([k, ":", String(v)], "")))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("found_map_mapped", "bar:pass")
-			},
-		},
-		{
-			statement: `set(attributes["found_slice_mapped"], Find(attributes["primitiveValuesSlice"], (_, v) => v == "value1", (i, v) => Concat([String(i), ":", String(v)], "")))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("found_slice_mapped", "0:value1")
-			},
-		},
-		{
-			statement: `set(attributes["slice_sum"], Reduce([1, 2, 3], 0, (acc, _, v) => acc + Int(v)))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutInt("slice_sum", 6)
-			},
-		},
-		{
-			statement: `set(attributes["labels_str"], Reduce({"env": "prod"}, "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], "")))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("labels_str", "env=prod;")
-			},
-		},
-		{
-			statement: `set(attributes["prefixed_foo"], MapKeys(attributes["foo"], (k, _) => Concat(["http.", k], "")))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				prefixed := tCtx.GetLogRecord().Attributes().PutEmptyMap("prefixed_foo")
-				prefixed.PutStr("http.bar", "pass")
-				prefixed.PutStr("http.flags", "pass")
-				s := prefixed.PutEmptySlice("http.slice")
-				s.AppendEmpty().SetStr("val")
-				nested := prefixed.PutEmptyMap("http.nested")
-				nested.PutStr("test", "pass")
-			},
-		},
-		{
-			statement: `set(attributes["renamed_foo"], MapKeys(attributes["foo"], (k, v) => Concat([k, ":", String(v)], "")))`,
-			want: func(tCtx *ottllog.TransformContext) {
-				renamed := tCtx.GetLogRecord().Attributes().PutEmptyMap("renamed_foo")
-				renamed.PutStr("bar:pass", "pass")
-				renamed.PutStr("flags:pass", "pass")
-				s := renamed.PutEmptySlice(`slice:["val"]`)
-				s.AppendEmpty().SetStr("val")
-				nested := renamed.PutEmptyMap(`nested:{"test":"pass"}`)
-				nested.PutStr("test", "pass")
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -1787,8 +1723,6 @@ func Test_e2e_converters(t *testing.T) {
 }
 
 func Test_e2e_ottl_features(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate,
-		true))
 	tests := []struct {
 		name      string
 		statement string
@@ -1921,7 +1855,9 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			name:      "map value",
@@ -2051,21 +1987,58 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], When(() => attributes["int_value"] > 0, "positive", "negative"))`,
+			statement: `set(attributes["test"], SliceGetter([1,"two"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "negative")
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("1")
+				sl.AppendEmpty().SetStr("two")
 			},
 		},
 		{
-			statement: `set(attributes["test"], When(() => IsMap(attributes["foo"]), attributes["foo"]["bar"], "fail"))`,
+			statement: `set(attributes["test"], SliceGetter([], ["scalar","values"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("scalar")
+				sl.AppendEmpty().SetStr("values")
 			},
 		},
 		{
-			statement: `set(attributes["test"], When(() => IsMap(attributes["foo"]), When(() => attributes["foo"]["bar"] == "pass", "pass", "fail"), "fail"))`,
+			statement: `set(attributes["test"], SliceGetter([attributes["int_value"], 1, "two"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("0")
+				sl.AppendEmpty().SetStr("1")
+				sl.AppendEmpty().SetStr("two")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(attributes["primitiveValuesSlice"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("value1")
+				sl.AppendEmpty().SetStr("42")
+				sl.AppendEmpty().SetStr("true")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(Split("A|B|C", "|")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("A")
+				sl.AppendEmpty().SetStr("B")
+				sl.AppendEmpty().SetStr("C")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(nil))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(attributes["empty_value"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
 			},
 		},
 	}
@@ -2097,6 +2070,22 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 		statements []string
 		want       func(tCtx *ottllog.TransformContext)
 	}{
+		{
+			name: "clear primitive types",
+			statements: []string{
+				`set(attributes["int_val"], 42)`,
+				`set(attributes["double_val"], 3.14)`,
+				`set(attributes["bool_val"], true)`,
+				`clear(attributes["int_val"])`,
+				`clear(attributes["double_val"])`,
+				`clear(attributes["bool_val"])`,
+			},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("int_val", 0)
+				tCtx.GetLogRecord().Attributes().PutDouble("double_val", 0.0)
+				tCtx.GetLogRecord().Attributes().PutBool("bool_val", false)
+			},
+		},
 		{
 			name: "delete key of map literal",
 			statements: []string{
@@ -2164,6 +2153,18 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutStr("foo", "bar")
 				m.PutStr("list.0.test", "hello")
+			},
+		},
+		{
+			name: "keep keys from cache slice",
+			statements: []string{
+				`set(cache["x"], ["flags"])`,
+				`keep_keys(attributes, cache["x"])`,
+			},
+			want: func(tCtx *ottllog.TransformContext) {
+				attributes := tCtx.GetLogRecord().Attributes()
+				attributes.Clear()
+				attributes.PutStr("flags", "A|B|C")
 			},
 		},
 	}
@@ -2310,7 +2311,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 }
 
 func Test_e2e_lambda_expression(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 
 	wantValue := func(val any) func(tCtx *ottllog.TransformContext) any {
 		return func(*ottllog.TransformContext) any {
@@ -2714,9 +2715,47 @@ func Test_ProcessSpanEvents(t *testing.T) {
 	}
 }
 
+func Test_e2e_shared_cache(t *testing.T) {
+	execute := func(tCtx *ottllog.TransformContext, statement string) {
+		statements, err := parseStatementWithAndWithoutPathContext(statement)
+		require.NoError(t, err)
+		for _, s := range statements {
+			_, _, err = s.Execute(t.Context(), tCtx)
+			require.NoError(t, err)
+		}
+	}
+
+	rLogs := plog.NewResourceLogs()
+	sLogs := rLogs.ScopeLogs().AppendEmpty()
+	first := sLogs.LogRecords().AppendEmpty()
+	first.Attributes().PutStr("name", "first")
+	second := sLogs.LogRecords().AppendEmpty()
+	third := sLogs.LogRecords().AppendEmpty()
+
+	cache := pcommon.NewMap()
+
+	firstCtx := ottllog.NewTransformContext(rLogs, sLogs, first, ottllog.WithCache(&cache))
+	execute(firstCtx, `set(cache["name"], attributes["name"])`)
+	firstCtx.Close()
+
+	secondCtx := ottllog.NewTransformContext(rLogs, sLogs, second, ottllog.WithCache(&cache))
+	execute(secondCtx, `set(attributes["name"], cache["name"])`)
+	secondCtx.Close()
+
+	thirdCtx := ottllog.NewTransformContext(rLogs, sLogs, third)
+	execute(thirdCtx, `set(attributes["name"], cache["name"]) where cache["name"] != nil`)
+	thirdCtx.Close()
+
+	assert.Equal(t, map[string]any{"name": "first"}, second.Attributes().AsRaw())
+	assert.Empty(t, third.Attributes().AsRaw())
+	assert.Equal(t, map[string]any{"name": "first"}, cache.AsRaw())
+}
+
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[*ottllog.TransformContext], error) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parserWithoutPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings)
+	functions := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
+	functions["SliceGetter"] = newSliceGetterFactory[*ottllog.TransformContext]()
+	parserWithoutPathCtx, err := ottllog.NewParser(functions, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -2726,7 +2765,7 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 		return nil, err
 	}
 
-	parserWithPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	parserWithPathCtx, err := ottllog.NewParser(functions, settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		return nil, err
 	}
@@ -2784,6 +2823,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	logRecord.Attributes().PutInt("int_value", 0)
 	logRecord.Attributes().PutStr("int_value_str", "0")
 	logRecord.Attributes().PutStr("nil_string", "nil")
+	logRecord.Attributes().PutEmpty("empty_value")
 	logRecord.Attributes().PutStr("server.ip", "192.168.0.1")
 	arr := logRecord.Attributes().PutEmptySlice("array")
 	arr0 := arr.AppendEmpty()
@@ -2817,7 +2857,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	s4.AppendEmpty().SetInt(42)
 	s4.AppendEmpty().SetBool(true)
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructLogTransformContextEditors() *ottllog.TransformContext {
@@ -2870,7 +2910,7 @@ func constructLogTransformContextEditors() *ottllog.TransformContext {
 	s3.AppendEmpty().SetStr("bar")
 	s3.AppendEmpty().SetStr("baz")
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
@@ -2922,7 +2962,7 @@ func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
 	thing2 := s2.AppendEmpty().SetEmptyMap()
 	thing2.PutStr("name", "bar")
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructSpanTransformContext() *ottlspan.TransformContext {
@@ -2934,7 +2974,7 @@ func constructSpanTransformContext() *ottlspan.TransformContext {
 	span := ss.Spans().AppendEmpty()
 	fillSpanOne(span)
 
-	return ottlspan.NewTransformContextPtr(rs, ss, span)
+	return ottlspan.NewTransformContext(rs, ss, span)
 }
 
 func constructSpanEventTransformContext() *ottlspanevent.TransformContext {
@@ -2949,7 +2989,7 @@ func constructSpanEventTransformContext() *ottlspanevent.TransformContext {
 	ev1 := span.Events().AppendEmpty()
 	ev1.SetName("event-1")
 
-	return ottlspanevent.NewTransformContextPtr(rs, ss, span, ev1, ottlspanevent.WithEventIndex(0))
+	return ottlspanevent.NewTransformContext(rs, ss, span, ev1, ottlspanevent.WithEventIndex(0))
 }
 
 func newResourceLogs(tCtx *ottllog.TransformContext) plog.ResourceLogs {
@@ -2990,7 +3030,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 		rLogs := plog.NewResourceLogs()
 		logRecord := rLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(testXML)
-		return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+		return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 	}
 
 	settings := componenttest.NewNopTelemetrySettings()
@@ -3025,7 +3065,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 }
 
 type lambdaEvalArguments[K any] struct {
-	Expr   *ottl.LambdaExpression[K]
+	Expr   *lambda.LambdaExpression[K]
 	Params []ottl.Getter[K]
 }
 
@@ -3061,4 +3101,126 @@ func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 		}
 		return lambda.Eval(tCtx)
 	}, nil
+}
+
+func Test_e2e_clear_bytes_value(t *testing.T) {
+	statement := `clear(attributes["byte_val"])`
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings)
+	require.NoError(t, err)
+
+	parsedStatement, err := parser.ParseStatement(statement)
+	require.NoError(t, err)
+
+	tCtx := constructLogTransformContext()
+	tCtx.GetLogRecord().Attributes().PutEmptyBytes("byte_val").FromRaw([]byte{1, 2, 3})
+
+	_, _, err = parsedStatement.Execute(t.Context(), tCtx)
+	require.NoError(t, err)
+
+	val, ok := tCtx.GetLogRecord().Attributes().Get("byte_val")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeBytes, val.Type())
+	assert.Empty(t, val.Bytes().AsRaw(), "byte array should be cleared to empty")
+}
+
+type sliceGetterArguments[K any] struct {
+	Values       slicegetter.SliceGetter[K, ottl.StringLikeGetter[K]]
+	ScalarValues ottl.Optional[slicegetter.SliceGetter[K, string]]
+}
+
+func newSliceGetterFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("SliceGetter", &sliceGetterArguments[K]{}, createSliceGetterFunction[K])
+}
+
+func createSliceGetterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*sliceGetterArguments[K])
+	if !ok {
+		return nil, errors.New("sliceGetterArguments args must be of type *sliceGetterArguments[K]")
+	}
+	return func(ctx context.Context, tCtx K) (any, error) {
+		vals, err := args.Values.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+
+		sl := pcommon.NewSlice()
+		sl.EnsureCapacity(len(vals))
+		for _, g := range vals {
+			val, hasValue, err := g.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			sv := sl.AppendEmpty()
+			if hasValue {
+				err = sv.FromRaw(val)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		if !args.ScalarValues.IsEmpty() {
+			s := args.ScalarValues.Get()
+			scalars, err := s.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range scalars {
+				err := sl.AppendEmpty().FromRaw(v)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		return sl, nil
+	}, nil
+}
+
+func Test_e2e_dynamic_slice_arguments_feature_gate(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, false))
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	_, err = parser.ParseStatement(`set(attributes["test"], Concat(Split(attributes["flags"], "|"), ":"))`)
+	require.ErrorContains(t, err, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate.ID())
+
+	statement, err := parser.ParseStatement(`set(attributes["test"], Concat(["A", attributes["flags"]], ":"))`)
+	require.NoError(t, err)
+	tCtx := constructLogTransformContext()
+	_, _, err = statement.Execute(t.Context(), tCtx)
+	require.NoError(t, err)
+	got, ok := tCtx.GetLogRecord().Attributes().Get("test")
+	require.True(t, ok)
+	assert.Equal(t, "A:A|B|C", got.Str())
+}
+
+func Test_e2e_slice_arguments_reject_non_slice_literals(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, true))
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	tests := []struct {
+		statement string
+		wantErr   string
+	}{
+		{
+			statement: `keep_keys(attributes, "http.method")`,
+			wantErr:   `call to "keep_keys": invalid argument at position 1: expected a slice, got string`,
+		},
+		{
+			statement: `set(attributes["test"], Concat("a", "-"))`,
+			wantErr:   `call to "Concat": invalid argument at position 0: expected a slice, got string`,
+		},
+		{
+			statement: `set(attributes["test"], Concat(1, "-"))`,
+			wantErr:   `call to "Concat": invalid argument at position 0: expected a slice, got int64`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			_, err := parser.ParseStatement(tt.statement)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
 }

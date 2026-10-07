@@ -1,0 +1,8 @@
+telemetry_policy:
+  providers:
+    - file_telemetry_policy
+
+telemetry_policy/custom:
+  providers:
+    - file_telemetry_policy
+    - custom_policy_provider/prod

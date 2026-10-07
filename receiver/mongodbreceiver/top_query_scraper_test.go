@@ -485,7 +485,7 @@ func TestProcessTopQueryEntries_EmitsTopQueryEvent(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, now, defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, "localhost", 27017)
+	setResourceAttributes(rb, "localhost", 27017, nil)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()
@@ -541,7 +541,7 @@ func TestProcessTopQueryEntries_EmitsCommentAndTruncated(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, "localhost", 27017)
+	setResourceAttributes(rb, "localhost", 27017, nil)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()
@@ -577,7 +577,7 @@ func TestProcessTopQueryEntries_EmitsCursorAndOriginatingCommand(t *testing.T) {
 	s.processTopQueryEntries(t.Context(), entries, pcommon.NewTimestampFromTime(time.Now()), defaultMaxExplainEachInterval)
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, "localhost", 27017)
+	setResourceAttributes(rb, "localhost", 27017, nil)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	logs := s.lb.Emit()

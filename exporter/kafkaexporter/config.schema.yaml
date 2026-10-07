@@ -87,6 +87,9 @@ properties:
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  signal_header:
+    description: SignalHeader adds the "otelcol.signal" header to every outgoing Kafka record.
+    type: boolean
   topic_from_attribute:
     description: TopicFromAttribute is the name of the attribute to use as the topic name.
     type: string

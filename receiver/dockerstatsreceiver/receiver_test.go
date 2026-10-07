@@ -104,8 +104,10 @@ var (
 		cfg.ContainerNetworkIoUsageTxPackets.Enabled = true
 		cfg.ContainerPidsCount.Enabled = true
 		cfg.ContainerPidsLimit.Enabled = true
+		cfg.ContainerStateHealthStatus.Enabled = true
 		cfg.ContainerRestarts.Enabled = true
 		cfg.ContainerUptime.Enabled = true
+		cfg.ContainerStateStatus.Enabled = true
 		return cfg
 	}()
 

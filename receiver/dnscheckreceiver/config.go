@@ -6,8 +6,10 @@ package dnscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/miekg/dns"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -28,12 +30,13 @@ var (
 	errInvalidDNSServerNetwork = errors.New("dns server 'network' must be one of udp, tcp, tcp-tls")
 	errMissingHostnames        = errors.New("at least one 'hostnames' entry must be specified")
 	errMissingHostname         = errors.New("hostname 'name' is required")
+	errInvalidRecordType       = errors.New("hostname 'record_type' must be a valid DNS record type")
 )
 
 // Config defines the configuration for the DNS check receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 
 	// DNSServers is the list of DNS servers to query.
 	DNSServers []DNSServerConfig `mapstructure:"dns_servers"`
@@ -90,6 +93,12 @@ func (c *Config) Validate() error {
 	for _, hostname := range c.Hostnames {
 		if hostname.Name == "" {
 			err = multierr.Append(err, errMissingHostname)
+		}
+
+		if hostname.RecordType != "" {
+			if _, ok := dns.StringToType[strings.ToUpper(hostname.RecordType)]; !ok {
+				err = multierr.Append(err, fmt.Errorf("%w: got %q for hostname %q", errInvalidRecordType, hostname.RecordType, hostname.Name))
+			}
 		}
 	}
 
