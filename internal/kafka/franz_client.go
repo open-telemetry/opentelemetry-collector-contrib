@@ -119,6 +119,7 @@ func NewFranzConsumerGroup(
 		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
 		kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize),
 		kgo.FetchMaxWait(consumerCfg.MaxFetchWait),
+		kgo.MaxDecompressBatchBytes(consumerCfg.MaxDecompressBatchBytes),
 	}, opts...)...)
 	if err != nil {
 		return nil, err

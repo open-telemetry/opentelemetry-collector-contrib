@@ -164,10 +164,11 @@ func TestConsumerConfig(t *testing.T) {
 					Enable:   false,
 					Interval: 10 * time.Minute,
 				},
-				MinFetchSize:          10,
-				MaxFetchSize:          4096,
-				MaxFetchWait:          1 * time.Second,
-				MaxPartitionFetchSize: 4096,
+				MinFetchSize:            10,
+				MaxFetchSize:            4096,
+				MaxFetchWait:            1 * time.Second,
+				MaxPartitionFetchSize:   4096,
+				MaxDecompressBatchBytes: 536870912, // 512 MiB
 			},
 		},
 		"group_rebalance_strategies": {
@@ -190,10 +191,11 @@ func TestConsumerConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
-				MinFetchSize:          0,
-				MaxFetchSize:          1048576,
-				MaxFetchWait:          250 * time.Millisecond,
-				MaxPartitionFetchSize: 1048576,
+				MinFetchSize:            0,
+				MaxFetchSize:            1048576,
+				MaxFetchWait:            250 * time.Millisecond,
+				MaxPartitionFetchSize:   1048576,
+				MaxDecompressBatchBytes: 1073741824, // 1 GiB default
 			},
 		},
 
@@ -206,6 +208,9 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"negative_min_fetch_size": {
 			expectedErr: "min_fetch_size (-100) must be non-negative",
+		},
+		"negative_max_decompress_batch_bytes": {
+			expectedErr: "max_decompress_batch_bytes (-100) must be non-negative",
 		},
 		"empty_group_rebalance_strategies_entry": {
 			expectedErr: "group_rebalance_strategies entries cannot be empty",
