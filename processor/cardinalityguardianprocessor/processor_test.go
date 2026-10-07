@@ -667,13 +667,15 @@ func TestTrackerRotateReusesPreviousSketch(t *testing.T) {
 	require.GreaterOrEqual(t, prev, uint64(2))
 }
 
-func TestTrackerRotateResetsDenseSketch(t *testing.T) {
+func TestTrackerRotateReplacesDenseSketch(t *testing.T) {
 	tracker := newTracker()
 	for value := range 20000 {
 		hashValue := rotationBenchmarkHash(0, value)
 		tracker.current.InsertHash(hashValue)
 		tracker.previous.InsertHash(hashValue)
 	}
+	tracker.insertCount = 20000
+	tracker.previousInsertCount = 20000
 	verifyRotationBenchmarkSketch(t, tracker.current, true)
 	verifyRotationBenchmarkSketch(t, tracker.previous, true)
 
@@ -681,7 +683,8 @@ func TestTrackerRotateResetsDenseSketch(t *testing.T) {
 	oldPrevious := tracker.previous
 	tracker.rotate()
 
-	require.Same(t, oldPrevious, tracker.current)
+	require.NotSame(t, oldPrevious, tracker.current)
+	verifyRotationBenchmarkSketch(t, tracker.current, false)
 	require.Same(t, oldCurrent, tracker.previous)
 	require.Zero(t, tracker.current.Estimate())
 	require.Positive(t, tracker.previous.Estimate())
@@ -690,7 +693,7 @@ func TestTrackerRotateResetsDenseSketch(t *testing.T) {
 	require.GreaterOrEqual(t, tracker.current.Estimate(), uint64(1))
 
 	tracker.rotate()
-	require.Same(t, oldCurrent, tracker.current)
+	require.NotSame(t, oldCurrent, tracker.current)
 	require.Zero(t, tracker.current.Estimate())
 }
 

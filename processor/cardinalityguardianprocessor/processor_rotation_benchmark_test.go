@@ -60,6 +60,8 @@ func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool) {
 			tracker.current.InsertHash(hashValue)
 			tracker.previous.InsertHash(hashValue)
 		}
+		tracker.insertCount = uint64(valuesPerSketch)
+		tracker.previousInsertCount = uint64(valuesPerSketch)
 		verifyRotationBenchmarkSketch(b, tracker.current, dense)
 		verifyRotationBenchmarkSketch(b, tracker.previous, dense)
 
@@ -73,10 +75,12 @@ func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool) {
 	}
 	p.trackerCount.Store(int64(len(trackers)))
 
-	// Align the initial state so the measured iterations start after a complete
-	// epoch boundary. For the dense case this also makes both alternating
-	// sketches dense, so Reset's dense clear path is exercised consistently.
-	p.rotate()
+	// Keep the sparse case aligned so repeated iterations remain sparse. The
+	// dense benchmark measures one rotation with a dense previous sketch; run it
+	// with -benchtime=1x so later iterations cannot silently become sparse.
+	if !dense {
+		p.rotate()
+	}
 
 	b.ReportAllocs()
 	b.ResetTimer()
