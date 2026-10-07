@@ -789,10 +789,6 @@ func TestEncodeSpanECSModeDBSystemName(t *testing.T) {
 	assert.Equal(t, "sql", gjson.GetBytes(buf.Bytes(), "span.db.type").String())
 }
 
-func TestEncodeLogECSMode(t *testing.T) {
-	logs := plog.NewLogs()
-	resource := logs.ResourceLogs().AppendEmpty().Resource()
-	err := resource.Attributes().FromRaw(map[string]any{
 func ecsModeResourceAttributes() map[string]any {
 	return map[string]any{
 		"agent.name":                  "custom-agent",
