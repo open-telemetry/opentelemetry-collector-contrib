@@ -7,7 +7,7 @@ change_type: enhancement
 component: connector/service_graph
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Recognize current semantic-convention attributes (`db.namespace`, `db.system.name`) in addition to the legacy `db.name`/`db.system` keys when deriving peer and database-name dimensions.
+note: "Recognize current semantic-convention attributes (`peer.service.name`, `db.namespace`, `db.system.name`) alongside legacy keys when deriving peer and database-name dimensions."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [22095]

@@ -49,12 +49,11 @@ var (
 	// in priority order (higher = higher priority). It supports both the current
 	// semantic conventions and their legacy predecessors so spans emitted with
 	// either convention are matched:
-	//   - "peer.service": legacy key (PeerServiceKey), removed from semconv with
-	//     no direct replacement, kept as a string literal.
+	//   - peer.service.name (current) / "peer.service" (legacy PeerServiceKey).
 	//   - "db.name" (legacy) / db.namespace (DBNamespaceKey, current).
 	//   - "db.system" (legacy) / db.system.name (DBSystemNameKey, current).
 	defaultPeerAttributes = []string{
-		"peer.service",
+		"peer.service.name", "peer.service",
 		"db.name", string(conventions.DBNamespaceKey),
 		"db.system", string(conventions.DBSystemNameKey),
 	}

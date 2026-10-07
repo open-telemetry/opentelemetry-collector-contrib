@@ -64,7 +64,8 @@ func TestDefaultAttributesSupportLegacyAndCurrentSemconv(t *testing.T) {
 		{name: "database name - legacy db.name", keys: defaultDatabaseNameAttributes, attr: "db.name"},
 		{name: "database name - current db.namespace", keys: defaultDatabaseNameAttributes, attr: "db.namespace"},
 		// defaultPeerAttributes
-		{name: "peer - peer.service", keys: defaultPeerAttributes, attr: "peer.service"},
+		{name: "peer - current peer.service.name", keys: defaultPeerAttributes, attr: "peer.service.name"},
+		{name: "peer - legacy peer.service", keys: defaultPeerAttributes, attr: "peer.service"},
 		{name: "peer - legacy db.name", keys: defaultPeerAttributes, attr: "db.name"},
 		{name: "peer - current db.namespace", keys: defaultPeerAttributes, attr: "db.namespace"},
 		{name: "peer - legacy db.system", keys: defaultPeerAttributes, attr: "db.system"},
@@ -93,4 +94,11 @@ func TestDefaultAttributesLegacyPrecedence(t *testing.T) {
 	got, found := getFirstMatchingValue(defaultDatabaseNameAttributes, attrs)
 	assert.True(t, found)
 	assert.Equal(t, "legacy", got)
+
+	attrs.PutStr("peer.service.name", "current-peer")
+	attrs.PutStr("peer.service", "legacy-peer")
+
+	got, found = getFirstMatchingValue(defaultPeerAttributes, attrs)
+	assert.True(t, found)
+	assert.Equal(t, "current-peer", got)
 }
