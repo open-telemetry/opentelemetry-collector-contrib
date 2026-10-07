@@ -77,8 +77,8 @@ components:
         - docker_observer
         - ecs_observer
         - file_storage
+        - google_client_auth
         - google_cloud_logentry_encoding
-        - googleclientauth
         - headers_setter
         - health_check
         - host_observer
