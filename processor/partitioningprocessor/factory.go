@@ -60,18 +60,30 @@ func createLogsProcessor(ctx context.Context, set processor.Settings, cfg compon
 	)
 }
 
+func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Traces) (processor.Traces, error) {
+	c := cfg.(*Config)
+	keyNames, expressions := sortedPartitionKeys(c.Keys)
+	p, err := newTracesPartitioner(expressions, set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	pp := &partitioningProcessor{
+		nextTraces:        next,
+		tracesPartitioner: p,
+		keyNames:          keyNames,
+	}
+	return processorhelper.NewTraces(ctx, set, cfg, pp,
+		func(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) { return td, nil },
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
+}
+
 // NOTE: the processors below are no-op passthroughs that forward telemetry
 // unchanged. Partitioning for these signals will follow in a subsequent PR.
 
 func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Metrics) (processor.Metrics, error) {
 	return processorhelper.NewMetrics(ctx, set, cfg, next,
 		func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) { return md, nil },
-	)
-}
-
-func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Traces) (processor.Traces, error) {
-	return processorhelper.NewTraces(ctx, set, cfg, next,
-		func(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) { return td, nil },
 	)
 }
 
