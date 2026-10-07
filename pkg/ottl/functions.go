@@ -17,7 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 // PathExpressionParser is how a context provides OTTL access to all its Paths.
@@ -476,29 +475,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value, allowDynam
 			} else {
 				fieldAddr = field.Addr().Interface()
 			}
-			sliceItemType, ok := slicegetter.ReflectTypeParam(fieldAddr)
-			if !ok {
-				return errors.New("slice getter type is not manageable by the OTTL parser. This is a bug in OTTL")
-			}
-
-			var gv any
-			gv, err = buildSliceGetterValue[K](
-				arg.Value,
-				sliceItemType,
-				allowDynamicSlices,
-				p.buildSliceArg,
-				p.buildStandardGetSetter,
-				p.newGetter,
-			)
-			if err != nil {
-				return err
-			}
-
-			err = slicegetter.SetReflectValue(fieldAddr, reflect.ValueOf(gv))
-			if err != nil {
-				return err
-			}
-			val = reflect.ValueOf(fieldAddr).Elem().Interface()
+			val, err = p.buildSliceGetterArg(fieldAddr, arg.Value, allowDynamicSlices)
 		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(arg.Value, fieldType)
 		case fieldType.Kind() == reflect.Pointer:
