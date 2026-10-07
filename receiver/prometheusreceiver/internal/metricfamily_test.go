@@ -297,7 +297,7 @@ func TestMetricGroupData_toDistributionDropsNegativeOverflow(t *testing.T) {
 	mg := metricGroup{
 		hasCount: true,
 		count:    10,
-		complexValue: []*dataPoint{
+		complexValue: []dataPoint{
 			{boundary: 1, value: 5},
 			{boundary: 2, value: 11},
 		},
@@ -315,7 +315,7 @@ func TestMetricGroupData_toDistributionDropsNegativeBucketDelta(t *testing.T) {
 	mg := metricGroup{
 		hasCount: true,
 		count:    12,
-		complexValue: []*dataPoint{
+		complexValue: []dataPoint{
 			{boundary: 1, value: 10},
 			{boundary: 2, value: 9},
 		},
@@ -331,7 +331,7 @@ func TestMetricGroupData_toDistributionDropsNaNBucketValue(t *testing.T) {
 	mg := metricGroup{
 		hasCount: true,
 		count:    12,
-		complexValue: []*dataPoint{
+		complexValue: []dataPoint{
 			{boundary: 1, value: math.NaN()},
 			{boundary: 2, value: 12},
 		},
@@ -347,7 +347,7 @@ func TestMetricGroupData_toDistributionDropsNaNCount(t *testing.T) {
 	mg := metricGroup{
 		hasCount: true,
 		count:    math.NaN(),
-		complexValue: []*dataPoint{
+		complexValue: []dataPoint{
 			{boundary: 1, value: 5},
 			{boundary: 2, value: 10},
 		},

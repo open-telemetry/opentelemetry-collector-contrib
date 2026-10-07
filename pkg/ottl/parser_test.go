@@ -19,6 +19,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 func Test_parse(t *testing.T) {
@@ -2542,6 +2545,8 @@ func Test_String(t *testing.T) {
 }
 
 func Test_Parser_experimentalFunctionWarning(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true)()
+
 	type mockSetArguments[K any] struct {
 		Target Setter[K]
 		Value  Getter[K]
@@ -2614,6 +2619,157 @@ func Test_Parser_experimentalFunctionWarning(t *testing.T) {
 		_, err := p.ParseValueExpressions([]string{`ExpConverter()`})
 		require.NoError(t, err)
 		assertWarning(t, logs, []string{"ExpConverter"})
+	})
+}
+
+func Test_Parser_experimentalFunctionFeatureGate(t *testing.T) {
+	type mockSetArguments[K any] struct {
+		Target Setter[K]
+		Value  Getter[K]
+	}
+
+	noop := func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+		return func(context.Context, any) (any, error) {
+			return "value", nil
+		}, nil
+	}
+
+	p, err := NewParser(
+		CreateFactoryMap[any](
+			NewFactory("set", &mockSetArguments[any]{}, noop),
+			NewFactory("fnGetter", &functionGetterArguments{}, noop),
+			NewFactory("StableConverter", &struct{}{}, noop),
+			NewFactory("expEditor", &struct{}{}, noop, WithExperimental[any]()),
+			NewFactory("ExpConverter", &struct{}{}, noop, WithExperimental[any]()),
+		),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		parse    func() error
+		function string
+	}{
+		{
+			name: "editor",
+			parse: func() error {
+				_, err := p.ParseStatement(`expEditor()`)
+				return err
+			},
+			function: "expEditor",
+		},
+		{
+			name: "converter argument",
+			parse: func() error {
+				_, err := p.ParseStatement(`set(name, ExpConverter())`)
+				return err
+			},
+			function: "ExpConverter",
+		},
+		{
+			name: "function getter argument",
+			parse: func() error {
+				_, err := p.ParseStatement(`fnGetter(ExpConverter)`)
+				return err
+			},
+			function: "ExpConverter",
+		},
+		{
+			name: "condition",
+			parse: func() error {
+				_, err := p.ParseCondition(`ExpConverter() == "value"`)
+				return err
+			},
+			function: "ExpConverter",
+		},
+		{
+			name: "value expression",
+			parse: func() error {
+				_, err := p.ParseValueExpression(`ExpConverter()`)
+				return err
+			},
+			function: "ExpConverter",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name+" disabled", func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, false)()
+			err := tt.parse()
+			require.Error(t, err)
+			assert.ErrorContains(t, err, fmt.Sprintf(
+				"function %q is experimental and requires the `%s` feature gate to be enabled",
+				tt.function,
+				metadata.PkgOttlFunctionsEnableExperimentalFeatureGate.ID(),
+			))
+		})
+		t.Run(tt.name+" enabled", func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true)()
+			require.NoError(t, tt.parse())
+		})
+	}
+
+	t.Run("stable functions disabled", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, false)()
+		_, err := p.ParseStatement(`set(name, StableConverter())`)
+		require.NoError(t, err)
+		_, err = p.ParseStatement(`fnGetter(StableConverter)`)
+		require.NoError(t, err)
+	})
+}
+
+func Test_Parser_experimentalFunctionFeatureGate_legacy(t *testing.T) {
+	type mockSetArguments[K any] struct {
+		Target Setter[K]
+		Value  Getter[K]
+	}
+
+	noop := func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+		return func(context.Context, any) (any, error) {
+			return "value", nil
+		}, nil
+	}
+
+	p, err := NewParser(
+		CreateFactoryMap[any](
+			NewFactory("set", &mockSetArguments[any]{}, noop),
+			NewFactory("When", &struct{}{}, noop, WithExperimental[any]()),
+			NewFactory("Find", &struct{}{}, noop, WithExperimental[any]()),
+			NewFactory("ProfileID", &struct{}{}, noop, WithExperimental[any]()),
+		),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+	defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, false)()
+
+	lambdaStatements := map[string]string{
+		"When": `set(name, When())`,
+		"Find": `set(name, Find())`,
+	}
+	for name, statement := range lambdaStatements {
+		t.Run(name+" lambda gate enabled", func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true)()
+			_, err := p.ParseStatement(statement)
+			require.NoError(t, err)
+		})
+		t.Run(name+" lambda gate disabled", func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false)()
+			_, err := p.ParseStatement(statement)
+			assert.ErrorContains(t, err, fmt.Sprintf(
+				"function %q is experimental and requires the `%s` feature gate to be enabled",
+				name,
+				metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
+			))
+		})
+	}
+
+	t.Run("ProfileID", func(t *testing.T) {
+		_, err := p.ParseStatement(`set(name, ProfileID())`)
+		require.NoError(t, err)
 	})
 }
 

@@ -33,6 +33,9 @@ feature_gates:
     from_version: v0.122.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/37930
 
+sending_queue:
+  support: default
+
 tests:
   config:
     hostname: customhostname
