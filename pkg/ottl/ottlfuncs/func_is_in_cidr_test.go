@@ -394,19 +394,42 @@ func Test_IsInCIDRFactory(t *testing.T) {
 }
 
 func BenchmarkIsInCIDR(b *testing.B) {
-	exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
+	target := ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) { return "192.0.2.1", nil },
-	}, slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](true, []ottl.StringGetter[any]{
-		ottl.StandardStringGetter[any]{
-			Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
-		},
-	}))
-	require.NoError(b, err)
-	ctx := b.Context()
-	b.ReportAllocs()
-	for b.Loop() {
-		if _, err := exprFunc(ctx, nil); err != nil {
-			b.Fatal(err)
-		}
+	}
+
+	for _, tt := range []struct {
+		name      string
+		isLiteral bool
+	}{
+		{name: "literal", isLiteral: true},
+		{name: "dynamic", isLiteral: false},
+	} {
+		b.Run(tt.name, func(b *testing.B) {
+			networkGetter := ottl.StringGetter[any](ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
+			})
+			if tt.isLiteral {
+				literalNetworkGetter, err := ottl.NewTestingLiteralGetter[any, string](true, networkGetter)
+				if err != nil {
+					b.Fatal(err)
+				}
+				networkGetter = literalNetworkGetter
+			}
+
+			networks := slicegetter.NewTestingSliceGetter[any](tt.isLiteral, []ottl.StringGetter[any]{networkGetter})
+			exprFunc, err := isInCIDR[any](target, networks)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			ctx := b.Context()
+			b.ReportAllocs()
+			for b.Loop() {
+				if _, err := exprFunc(ctx, nil); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
 }
