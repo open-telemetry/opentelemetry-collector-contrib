@@ -33,15 +33,14 @@ func createIsInCIDRFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 
 func isInCIDR[K any](target ottl.StringGetter[K], networks *slicegetter.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	var literalNetworks []*net.IPNet
-	staticLen, hasStaticLen := networks.Len()
 	if literalValues, allLiteral := slicegetter.GetLiteralValues(networks, func(network ottl.StringGetter[K]) (string, bool) {
 		return ottl.GetLiteralValue[K, string](network)
 	}); allLiteral {
-		if !hasStaticLen {
+		if literalValues == nil {
 			return nil, errors.New("networks cannot be nil")
 		}
 
-		literalNetworks = make([]*net.IPNet, 0, staticLen)
+		literalNetworks = make([]*net.IPNet, 0, len(literalValues))
 		for _, literal := range literalValues {
 			_, subnet, err := net.ParseCIDR(literal)
 			if err != nil {
