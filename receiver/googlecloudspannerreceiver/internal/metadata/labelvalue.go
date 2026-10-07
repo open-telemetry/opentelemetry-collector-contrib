@@ -319,9 +319,7 @@ func (v dateLabelValue) Value() any {
 }
 
 func (v dateLabelValue) SetValueTo(attributes pcommon.Map) {
-	if v.value != "" {
-		attributes.PutStr(v.metadata.Name(), v.value)
-	}
+	attributes.PutStr(v.metadata.Name(), v.value)
 }
 
 func (v *dateLabelValue) ModifyValue(s string) {
