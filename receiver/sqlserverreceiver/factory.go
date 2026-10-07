@@ -16,6 +16,7 @@ import (
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
@@ -40,11 +41,12 @@ func newCache(size int) *lru.Cache[string, int64] {
 
 // NewFactory creates a factory for SQL Server receiver.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
@@ -75,39 +77,39 @@ func setupQueries(cfg *Config) []string {
 	var queries []string
 
 	if isAvailabilityGroupQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerAvailabilityGroupQuery())
 	}
 
 	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerDatabaseIOQuery())
 	}
 
 	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerPerformanceCounterQuery())
 	}
 
 	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled {
-		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerPropertiesQuery())
 	}
 
 	if isWaitStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerWaitStatsQuery())
 	}
 
 	if isWorkerThreadsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerWorkerThreadsQuery())
 	}
 
 	if isIndexPhysicalStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerIndexPhysicalStatsQuery())
 	}
 
 	if isCPUMemoryQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerCPUMemoryQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerCPUMemoryQuery())
 	}
 
 	if isDiskIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerDiskIOQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerDiskIOQuery())
 	}
 
 	return queries
@@ -127,7 +129,7 @@ func setupLogQueries(cfg *Config) []string {
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
-		queries = append(queries, getSQLServerTopProcedureQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerTopProcedureQuery())
 	}
 
 	return queries
@@ -398,7 +400,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			cache = newCache(1)
 		}
 
-		if query == getSQLServerTopProcedureQuery(cfg.InstanceName) {
+		if query == getSQLServerTopProcedureQuery() {
 			// every candidate row caches 7 counters, and multiply by 2 so that a procedure
 			// dropping out of one scrape's sample still has its previous values on the next.
 			cache = newCache(int(cfg.TopProcedureCollection.MaxProcedureSampleCount * 7 * 2))
