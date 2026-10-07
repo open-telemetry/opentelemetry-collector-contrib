@@ -9,6 +9,9 @@ status:
   codeowners:
     active: [yotamloe]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     endpoint: "172.0.0.1:8080:"
