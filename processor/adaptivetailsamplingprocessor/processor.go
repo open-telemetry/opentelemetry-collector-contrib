@@ -623,9 +623,10 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 	}
 
 	// Decide evicted traces outside the lock. Bounded work: at most one
-	// eviction per new trace in the batch.
+	// eviction per new trace in the batch. No ctx is passed: an evicted trace
+	// belongs to earlier requests, not this one, so decideEvicted detaches.
 	for _, pt := range evicted {
-		p.decideEvicted(ctx, pt)
+		p.decideEvicted(pt)
 	}
 
 	for _, lf := range lateForwards {
@@ -903,7 +904,14 @@ func (p *adaptiveTailSamplingProcessor) finishDecision(ctx context.Context, pt *
 // decideEvicted decides a trace displaced by buffer pressure, per the
 // configured eviction policy. The trace may be incomplete; decision_delay is
 // deliberately skipped because there is no room to wait.
-func (p *adaptiveTailSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
+func (p *adaptiveTailSamplingProcessor) decideEvicted(pt *pendingTrace) {
+	// Detached deliberately, the same as a timer-driven decision in decide.
+	// Eviction is triggered by whichever request happened to need the buffer
+	// slot, and the evicted trace's spans arrived on earlier requests. Using
+	// the triggering request's context would attribute those spans to an
+	// unrelated client for anything reading client.Info downstream, and would
+	// tie the forward to that request's deadline and cancellation.
+	ctx := context.Background()
 	// Same rule as the shutdown drain: a trace already in its decision_delay
 	// window was counted when its trigger fired, so eviction of a mid-delay
 	// trace must not count the decision twice. The trigger attribute is
