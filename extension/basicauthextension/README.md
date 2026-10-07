@@ -27,12 +27,12 @@ The following are the configuration options:
 
 - `htpasswd.file`:  The path to the htpasswd file.
 - `htpasswd.inline`: The htpasswd file inline content.
-- `htpasswd.secret_provider.id`: Component ID of a secret provider extension (e.g., `awssecretsmanagerprovider/server`). The secret value must be htpasswd-formatted content.
+- `htpasswd.secret_provider.id`: Component ID of a secret provider extension (e.g., `mysecretprovider/server`). The secret value must be htpasswd-formatted content.
 - `client_auth.username`: Username to use for client authentication.
 - `client_auth.username_file`: Path to a file containing the username. If set, takes precedence over `username`. The file is watched for changes, allowing rotation without restarting the collector.
 - `client_auth.password`: Password to use for client authentication.
 - `client_auth.password_file`: Path to a file containing the password. If set, takes precedence over `password`. The file is watched for changes, allowing rotation without restarting the collector.
-- `client_auth.secret_provider.id`: Component ID of a secret provider extension (e.g., `awssecretsmanagerprovider/client`). The secret value must be a JSON object.
+- `client_auth.secret_provider.id`: Component ID of a secret provider extension (e.g., `mysecretprovider/client`). The secret value must be a JSON object.
 - `client_auth.secret_provider.username_key`: JSON key for the username (required with `secret_provider`).
 - `client_auth.secret_provider.password_key`: JSON key for the password (required with `secret_provider`).
 
@@ -48,7 +48,9 @@ If both `htpasswd` and `client_auth` are configured, the extension will throw an
 
 The `secret_provider` option delegates credential management to a separate extension that implements the `SecretProvider` interface (`GetSecret` + `OnChange`). This allows credentials to be fetched from external systems and automatically rotated without restarting the collector.
 
-The referenced extension must be listed in `service.extensions` and will be started before `basicauth` automatically.
+The referenced extension must be listed in `service.extensions` and will be started before `basicauth` automatically. A provider extension may be shared by several `basicauth` instances; it notifies every registered `OnChange` callback when the secret changes.
+
+The examples below use `mysecretprovider` as a placeholder for any extension that implements the `SecretProvider` interface.
 
 ## Configuration
 
@@ -98,15 +100,14 @@ service:
 
 ```yaml
 extensions:
-  awssecretsmanagerprovider/server:
-    secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-htpasswd"
-    region: "us-east-1"
-    refresh_interval: 5m
+  # Any extension that implements the SecretProvider interface.
+  mysecretprovider/server:
+    # Provider-specific settings, such as the secret's location and refresh interval.
 
   basicauth/server:
     htpasswd:
       secret_provider:
-        id: awssecretsmanagerprovider/server
+        id: mysecretprovider/server
 
 receivers:
   otlp:
@@ -121,7 +122,7 @@ exporters:
   debug:
 
 service:
-  extensions: [awssecretsmanagerprovider/server, basicauth/server]
+  extensions: [mysecretprovider/server, basicauth/server]
   pipelines:
     traces:
       receivers: [otlp]
@@ -133,15 +134,14 @@ service:
 
 ```yaml
 extensions:
-  awssecretsmanagerprovider/client:
-    secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-creds"
-    region: "us-east-1"
-    refresh_interval: 5m
+  # Any extension that implements the SecretProvider interface.
+  mysecretprovider/client:
+    # Provider-specific settings, such as the secret's location and refresh interval.
 
   basicauth/client:
     client_auth:
       secret_provider:
-        id: awssecretsmanagerprovider/client
+        id: mysecretprovider/client
         username_key: "username"
         password_key: "password"
 
@@ -159,7 +159,7 @@ exporters:
       authenticator: basicauth/client
 
 service:
-  extensions: [awssecretsmanagerprovider/client, basicauth/client]
+  extensions: [mysecretprovider/client, basicauth/client]
   pipelines:
     traces:
       receivers: [otlp]
