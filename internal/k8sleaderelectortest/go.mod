@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.162.0
-	go.opentelemetry.io/collector/component v1.68.1-0.20261002061526-adaf75eebce7
-	go.opentelemetry.io/collector/pipeline v1.68.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/component v1.68.1-0.20261006173156-20487f801913
+	go.opentelemetry.io/collector/pipeline v1.68.1-0.20261006173156-20487f801913
 )
 
 require (
@@ -42,10 +42,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.opentelemetry.io/collector/extension v1.68.1-0.20261002061526-adaf75eebce7 // indirect
-	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261002061526-adaf75eebce7 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.162.1-0.20261002061526-adaf75eebce7 // indirect
-	go.opentelemetry.io/collector/pdata v1.68.1-0.20261002061526-adaf75eebce7 // indirect
+	go.opentelemetry.io/collector/extension v1.68.1-0.20261006173156-20487f801913 // indirect
+	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261006173156-20487f801913 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.162.1-0.20261006173156-20487f801913 // indirect
+	go.opentelemetry.io/collector/pdata v1.68.1-0.20261006173156-20487f801913 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
