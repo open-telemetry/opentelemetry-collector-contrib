@@ -4,6 +4,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -153,6 +154,27 @@ func Test_isInCIDR_parser_slice_arguments(t *testing.T) {
 			assert.Equal(t, tt.want, result.Bool())
 		})
 	}
+}
+
+func Test_isInCIDR_dynamic_network_error(t *testing.T) {
+	getErr := errors.New("get dynamic network")
+	networks := slicegetter.NewTestingSliceGetter[any, ottl.StringGetter[any]](false, []ottl.StringGetter[any]{
+		ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return nil, getErr
+			},
+		},
+	})
+
+	exprFunc, err := isInCIDR[any](ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "192.0.2.1", nil
+		},
+	}, networks)
+	require.NoError(t, err)
+
+	_, err = exprFunc(t.Context(), nil)
+	require.ErrorIs(t, err, getErr)
 }
 
 func Test_isInCIDR_literal_nil_fails_during_parsing(t *testing.T) {
