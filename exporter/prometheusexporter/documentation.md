@@ -6,7 +6,7 @@
 
 **Support:** This component overrides the default QueueBatch configuration.
 
-**Rationale:** Sending queue is disabled by default.
+**Rationale:** The exporter is pull-based and does not use a sending queue.
 
 ```yaml
 sending_queue:
