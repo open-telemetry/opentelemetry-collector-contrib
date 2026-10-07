@@ -111,6 +111,12 @@ func Test_isInCIDR_parser_slice_arguments(t *testing.T) {
 			want:      true,
 		},
 		{
+			name:      "empty inline literal list",
+			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], []))`,
+			target:    "192.0.2.1",
+			want:      false,
+		},
+		{
 			name:      "invalid target short-circuits invalid network source",
 			statement: `set(attributes["result"], IsInCIDR(attributes["client.address"], cache["networks"]))`,
 			target:    "not an IP address",
@@ -399,17 +405,19 @@ func BenchmarkIsInCIDR(b *testing.B) {
 	}
 
 	for _, tt := range []struct {
-		name      string
-		isLiteral bool
+		name           string
+		literalSlice   bool
+		literalNetwork bool
 	}{
-		{name: "literal", isLiteral: true},
-		{name: "dynamic", isLiteral: false},
+		{name: "literal", literalSlice: true, literalNetwork: true},
+		{name: "inline_dynamic", literalSlice: true},
+		{name: "dynamic", literalSlice: false},
 	} {
 		b.Run(tt.name, func(b *testing.B) {
 			networkGetter := ottl.StringGetter[any](ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) { return "192.0.2.0/24", nil },
 			})
-			if tt.isLiteral {
+			if tt.literalNetwork {
 				literalNetworkGetter, err := ottl.NewTestingLiteralGetter[any, string](true, networkGetter)
 				if err != nil {
 					b.Fatal(err)
@@ -417,7 +425,7 @@ func BenchmarkIsInCIDR(b *testing.B) {
 				networkGetter = literalNetworkGetter
 			}
 
-			networks := slicegetter.NewTestingSliceGetter[any](tt.isLiteral, []ottl.StringGetter[any]{networkGetter})
+			networks := slicegetter.NewTestingSliceGetter[any](tt.literalSlice, []ottl.StringGetter[any]{networkGetter})
 			exprFunc, err := isInCIDR[any](target, networks)
 			if err != nil {
 				b.Fatal(err)
