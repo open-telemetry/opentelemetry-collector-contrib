@@ -98,6 +98,9 @@ $defs:
         description: MaxPartitionFetchSize defines the maximum number of bytes to fetch per partition (default "1048576")
         type: integer
         x-customType: int32
+      max_decompress_batch_bytes:
+        description: MaxDecompressBatchBytes defines the maximum number of bytes to allow for decompressing a single Kafka record batch. This limit is applied after compression, so it bounds the memory required to decompress highly compressible batches. The default is 1 GiB (1073741824 bytes). This setting is independent of MaxFetchSize and MaxPartitionFetchSize, which limit compressed bytes on the wire.
+        type: integer
       min_fetch_size:
         description: The minimum bytes per fetch from Kafka (default "1")
         type: integer
