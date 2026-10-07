@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Attach exemplars once, to the series that sent them, rather than to every metric built from the same labels.
+
+issues: [50334, 50546]
+
+change_logs: [user]
