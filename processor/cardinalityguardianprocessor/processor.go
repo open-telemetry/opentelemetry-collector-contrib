@@ -38,9 +38,9 @@ const numShards = 256
 // "the whole datapoint was marked overflow".
 const overflowSentinel = "otel.cardinality_overflow"
 
-// mustGetSketch returns a new HLL++ sketch for tracker initialization
-// (p=14 → ~0.81% standard error). Existing tracker sketches are reset and
-// reused during epoch rotation.
+// mustGetSketch returns a new sparse HLL++ sketch for tracker initialization
+// and for replacing dense sketches during epoch rotation (p=14 → ~0.81%
+// standard error).
 func mustGetSketch() *hyperloglog.Sketch {
 	return hyperloglog.New14()
 }
@@ -61,6 +61,13 @@ type trackerKey struct {
 // accurate while the sketch grows through the configured limit.
 const estimateInterval = 64
 
+// maxSparseSketchInsertCount is the largest number of insert calls guaranteed
+// to leave a precision-14 HLL++ sketch sparse. hyperloglog v0.3.0 switches to
+// dense after more than 1<<14 distinct sparse codes; insert calls can only
+// produce that many or fewer distinct codes. Above this conservative bound,
+// rotation replaces the sketch instead of clearing a potentially dense one.
+const maxSparseSketchInsertCount = 1 << 14
+
 // tracker holds two HLL++ sketches for a (metric_name, label_key) pair plus
 // a fine-grained mutex so the shard-level lock can be released before HLL
 // work begins. Hot fields are at the front for cache-line locality.
@@ -73,6 +80,9 @@ type tracker struct {
 	cachedCurr  uint64
 	cachedPrev  uint64
 	insertCount uint64
+	// previousInsertCount tracks insert calls into previous, so rotation can
+	// avoid clearing the dense register array when reusing a sketch.
+	previousInsertCount uint64
 	// idleEpochs counts consecutive zero-insert rotations; eviction at staleSweepEpochs.
 	idleEpochs int
 }
@@ -96,10 +106,11 @@ func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
 	return t.cachedCurr, t.cachedPrev
 }
 
-// rotate promotes current → previous, resets the old previous sketch for reuse
-// as the new current, and carries cachedCurr forward as cachedPrev so the new
-// epoch has its baseline without another Estimate() call. Returns true when
-// this tracker received zero inserts during the epoch that just ended.
+// rotate promotes current → previous, reuses the old previous sketch when it
+// is guaranteed sparse, and replaces it otherwise. It carries cachedCurr
+// forward as cachedPrev so the new epoch has its baseline without another
+// Estimate() call. Returns true when this tracker received zero inserts during
+// the epoch that just ended.
 func (t *tracker) rotate() (idle bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -110,15 +121,23 @@ func (t *tracker) rotate() (idle bool) {
 	} else {
 		t.idleEpochs = 0
 	}
+	currentInsertCount := t.insertCount
 	t.cachedPrev = t.cachedCurr
 	t.cachedCurr = 0
-	t.insertCount = 0
 
 	oldCurrent := t.current
-	t.previous.Reset()
-	t.current = t.previous
+	oldPrevious := t.previous
+	if t.previousInsertCount <= maxSparseSketchInsertCount {
+		oldPrevious.Reset()
+	} else {
+		// Reset clears all 1<<14 dense registers; replace dense sketches to
+		// avoid making that work part of every epoch rotation.
+		oldPrevious = mustGetSketch()
+	}
+	t.current = oldPrevious
 	t.previous = oldCurrent
-
+	t.previousInsertCount = currentInsertCount
+	t.insertCount = 0
 	return idle
 }
 
