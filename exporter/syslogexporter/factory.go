@@ -26,7 +26,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	qs := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 
 	return &Config{
 		Port:            DefaultPort,
