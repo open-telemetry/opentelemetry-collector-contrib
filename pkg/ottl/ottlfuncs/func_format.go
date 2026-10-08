@@ -16,6 +16,8 @@ type formatArguments[K any] struct {
 	Vals   []ottl.Getter[K]
 }
 
+// NewFormatFactory returns a factory for the Format OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#format
 func NewFormatFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Format", &formatArguments[K]{}, createFormatFunction[K])
 }

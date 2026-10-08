@@ -17,6 +17,8 @@ type xXH128Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewXXH128Factory returns a factory for the XXH128 OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#xxh128
 func NewXXH128Factory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("XXH128", &xXH128Arguments[K]{}, createXXH128Function[K])
 }

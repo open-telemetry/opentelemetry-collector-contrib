@@ -16,6 +16,8 @@ type keepMatchingKeysArguments[K any] struct {
 	Pattern ottl.StringGetter[K]
 }
 
+// NewKeepMatchingKeysFactory returns a factory for the keep_matching_keys OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#keep_matching_keys
 func NewKeepMatchingKeysFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("keep_matching_keys", &keepMatchingKeysArguments[K]{}, createKeepMatchingKeysFunction[K])
 }

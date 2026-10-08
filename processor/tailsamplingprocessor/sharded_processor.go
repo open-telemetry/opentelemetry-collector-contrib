@@ -190,18 +190,10 @@ func (sp *shardedProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 
 	for _, rss := range td.ResourceSpans().All() {
 		totalResourceSpans++
-		idToSpansAndScope := groupSpansByTraceKey(rss)
-
-		for traceID, spans := range idToSpansAndScope {
-			newRSS, rootSpan := newResourceSpanFromSpanAndScopes(rss, spans)
-			shardIdx := sp.traceIDToShard(traceID)
-			shardBatches[shardIdx] = append(shardBatches[shardIdx], traceBatch{
-				id:        traceID,
-				rootSpan:  rootSpan,
-				rss:       newRSS,
-				spanCount: int64(len(spans)),
-			})
-			totalSpans += int64(len(spans))
+		for _, batch := range splitResourceSpansByTrace(rss) {
+			shardIdx := sp.traceIDToShard(batch.id)
+			shardBatches[shardIdx] = append(shardBatches[shardIdx], batch)
+			totalSpans += batch.spanCount
 			totalTraces++
 		}
 	}

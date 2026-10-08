@@ -16,6 +16,8 @@ type trimArguments[K any] struct {
 	Replacement ottl.Optional[string]
 }
 
+// NewTrimFactory returns a factory for the Trim OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#trim
 func NewTrimFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Trim", &trimArguments[K]{}, createTrimFunction[K])
 }

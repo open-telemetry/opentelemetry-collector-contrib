@@ -11,17 +11,22 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/sasl"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -588,7 +593,7 @@ func TestFranzClient_ProtocolVersion(t *testing.T) {
 	}
 	tests := map[string]testcase{
 		"without protocol version": {
-			expectedVersion: 4, // maximum
+			expectedVersion: 5, // maximum
 		},
 		"with protocol version": {
 			protocolVersion: "2.1.0",
@@ -648,6 +653,112 @@ func TestNewFranzClient_And_Admin(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestFranzClient_MetadataRetryMax(t *testing.T) {
+	for _, maxRetries := range []int{0, 2} {
+		t.Run(fmt.Sprintf("max_%d", maxRetries), func(t *testing.T) {
+			cluster, clientConfig := kafkatest.NewCluster(t)
+			clientConfig.Metadata.Retry.Max = maxRetries
+			clientConfig.Metadata.Retry.Backoff = time.Millisecond
+
+			// CreateTopics answered with NOT_CONTROLLER is a request franz-go
+			// retries. Metadata is unusable here because franz-go serves it
+			// from its own cache rather than retrying against the broker.
+			var attempts atomic.Int64
+			cluster.ControlKey(int16(kmsg.CreateTopics), func(req kmsg.Request) (kmsg.Response, error, bool) {
+				cluster.KeepControl()
+				attempts.Add(1)
+				resp := req.ResponseKind().(*kmsg.CreateTopicsResponse)
+				resp.Topics = append(resp.Topics, kmsg.CreateTopicsResponseTopic{
+					Topic:     "retry-topic",
+					ErrorCode: kerr.NotController.Code,
+				})
+				return resp, nil, true
+			})
+
+			tl := zaptest.NewLogger(t, zaptest.Level(zap.ErrorLevel))
+			client, err := NewFranzClient(t.Context(), componenttest.NewNopHost(), clientConfig, tl)
+			require.NoError(t, err)
+			t.Cleanup(client.Close)
+
+			ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+			defer cancel()
+			createReq := kmsg.NewPtrCreateTopicsRequest()
+			topic := kmsg.NewCreateTopicsRequestTopic()
+			topic.Topic = "retry-topic"
+			topic.NumPartitions = 1
+			topic.ReplicationFactor = 1
+			createReq.Topics = append(createReq.Topics, topic)
+			_, err = createReq.RequestWith(ctx, client)
+			require.NoError(t, err)
+			assert.Equal(t, int64(maxRetries+1), attempts.Load())
+		})
+	}
+}
+
+func TestNewRetryBackoffFn(t *testing.T) {
+	t.Run("default_matches_franz_go", func(t *testing.T) {
+		fn := newRetryBackoffFn(250 * time.Millisecond)
+		assert.Equal(t, 250*time.Millisecond, fn(0))
+		// Bounds are the unjittered backoff scaled by the +/-20% jitter range.
+		for fails, unjittered := range map[int]time.Duration{
+			1: 250 * time.Millisecond,
+			2: 500 * time.Millisecond,
+			3: time.Second,
+			4: 2 * time.Second,
+		} {
+			got := fn(fails)
+			assert.GreaterOrEqual(t, got, time.Duration(float64(unjittered)*0.8))
+			assert.LessOrEqual(t, got, time.Duration(float64(unjittered)*1.2))
+		}
+		assert.Equal(t, 5*time.Second, fn(11))
+	})
+
+	t.Run("caps_at_five_seconds", func(t *testing.T) {
+		fn := newRetryBackoffFn(250 * time.Millisecond)
+		for fails := range 100 {
+			assert.LessOrEqual(t, fn(fails), 5*time.Second)
+		}
+	})
+
+	t.Run("small_backoff_keeps_doubling_past_ten_failures", func(t *testing.T) {
+		// 1ms is still under the cap at failure 11, so it must keep doubling.
+		fn := newRetryBackoffFn(time.Millisecond)
+		for fails, unjittered := range map[int]time.Duration{
+			10: 512 * time.Millisecond,
+			11: 1024 * time.Millisecond,
+			12: 2048 * time.Millisecond,
+		} {
+			got := fn(fails)
+			assert.GreaterOrEqual(t, got, time.Duration(float64(unjittered)*0.8))
+			assert.LessOrEqual(t, got, time.Duration(float64(unjittered)*1.2))
+		}
+		// Clamps only once the doubling passes the cap.
+		assert.Equal(t, 5*time.Second, fn(20))
+	})
+
+	t.Run("extreme_backoff_does_not_overflow", func(t *testing.T) {
+		// 100000h passes validation but overflows when doubled.
+		minBackoff := 100000 * time.Hour
+		fn := newRetryBackoffFn(minBackoff)
+		for fails := range 100 {
+			got := fn(fails)
+			assert.Positive(t, got)
+			assert.LessOrEqual(t, got, minBackoff)
+		}
+	})
+
+	t.Run("cap_raised_to_backoff", func(t *testing.T) {
+		// A minimum above the 5s default cap raises the cap rather than
+		// being truncated down to it.
+		fn := newRetryBackoffFn(30 * time.Second)
+		for fails := range 100 {
+			got := fn(fails)
+			assert.GreaterOrEqual(t, got, 24*time.Second)
+			assert.LessOrEqual(t, got, 30*time.Second)
+		}
+	})
+}
+
 func TestConfigureKgoKerberos(t *testing.T) {
 	for name, tc := range map[string]struct {
 		cfg         configkafka.KerberosConfig
@@ -702,20 +813,125 @@ func TestConfigureKgoKerberos(t *testing.T) {
 	}
 }
 
-func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER(t *testing.T) {
-	opt, err := configureKgoSASL(&configkafka.SASLConfig{
+func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		lifetime  time.Duration
+		wantCalls int32
+		wantKey   string
+	}{
+		{name: "reuse valid credentials", lifetime: 5 * time.Minute, wantCalls: 1, wantKey: "AKID1"},
+		{name: "refresh near-expiry credentials", lifetime: 30 * time.Second, wantCalls: 2, wantKey: "AKID2"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given a real web identity provider backed by a local STS endpoint.
+			var calls atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := r.ParseForm(); err != nil {
+					t.Error(err)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if r.Form.Get("Action") != "AssumeRoleWithWebIdentity" {
+					t.Errorf("unexpected STS action: %s", r.Form.Get("Action"))
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				call := calls.Add(1)
+				lifetime := tt.lifetime
+				if call > 1 {
+					lifetime = time.Hour
+				}
+				w.Header().Set("Content-Type", "text/xml")
+				_, err := fmt.Fprintf(w, `<AssumeRoleWithWebIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><AssumeRoleWithWebIdentityResult><Credentials><AccessKeyId>AKID%d</AccessKeyId><SecretAccessKey>SECRET</SecretAccessKey><SessionToken>TOKEN</SessionToken><Expiration>%s</Expiration></Credentials></AssumeRoleWithWebIdentityResult></AssumeRoleWithWebIdentityResponse>`, call, time.Now().Add(lifetime).UTC().Format(time.RFC3339))
+				if err != nil {
+					t.Error(err)
+				}
+			}))
+			t.Cleanup(server.Close)
+
+			dir := t.TempDir()
+			tokenFile := filepath.Join(dir, "token")
+			require.NoError(t, os.WriteFile(tokenFile, []byte("test-web-identity-token"), 0o600))
+			for _, name := range []string{"AWS_ACCESS_KEY_ID", "AWS_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY", "AWS_SECRET_KEY", "AWS_SESSION_TOKEN", "AWS_PROFILE", "AWS_DEFAULT_PROFILE"} {
+				t.Setenv(name, "")
+			}
+			t.Setenv("AWS_CONFIG_FILE", filepath.Join(dir, "config"))
+			t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(dir, "credentials"))
+			t.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFile)
+			t.Setenv("AWS_ROLE_ARN", "arn:aws:iam::123456789012:role/test")
+			t.Setenv("AWS_ROLE_SESSION_NAME", "test-session")
+			t.Setenv("AWS_ENDPOINT_URL_STS", server.URL)
+			t.Setenv("AWS_IGNORE_CONFIGURED_ENDPOINT_URLS", "false")
+			provider, err := loadAWSCredentialsProvider(t.Context(), "us-west-2")
+			require.NoError(t, err)
+			_, err = provider.Retrieve(t.Context())
+			require.NoError(t, err)
+
+			// When credentials are requested again without waiting for expiration.
+			creds, err := provider.Retrieve(t.Context())
+
+			// Then only credentials inside the expiry window are refreshed.
+			require.NoError(t, err)
+			require.Equal(t, tt.wantKey, creds.AccessKeyID)
+			require.Equal(t, tt.wantCalls, calls.Load())
+		})
+	}
+}
+
+func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
+	var loads, retrievals atomic.Int32
+	orig := loadAWSCredentialsProvider
+	t.Cleanup(func() { loadAWSCredentialsProvider = orig })
+	loadAWSCredentialsProvider = func(_ context.Context, region string) (aws.CredentialsProvider, error) {
+		loads.Add(1)
+		assert.Equal(t, "us-west-2", region)
+		// Mirror LoadDefaultConfig, which wraps the provider in a cache.
+		return aws.NewCredentialsCache(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+			retrievals.Add(1)
+			return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET"}, nil
+		})), nil
+	}
+
+	opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: AWSMSKIAMOAUTHBEARER,
 		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
 	}, componenttest.NewNopHost())
 	require.NoError(t, err)
-	require.NotNil(t, opt)
+
+	cl, err := kgo.NewClient(opt)
+	require.NoError(t, err)
+	defer cl.Close()
+	mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
+	require.Len(t, mechanisms, 1)
+	for range 3 {
+		_, msg, err := mechanisms[0].Authenticate(t.Context(), "broker:9098")
+		require.NoError(t, err)
+		assert.Contains(t, string(msg), "auth=Bearer ")
+	}
+	assert.Equal(t, int32(1), loads.Load())
+	assert.Equal(t, int32(1), retrievals.Load())
+}
+
+func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_LoadError(t *testing.T) {
+	orig := loadAWSCredentialsProvider
+	t.Cleanup(func() { loadAWSCredentialsProvider = orig })
+	loadAWSCredentialsProvider = func(context.Context, string) (aws.CredentialsProvider, error) {
+		return nil, errors.New("bad profile")
+	}
+
+	_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+		Mechanism: AWSMSKIAMOAUTHBEARER,
+		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+	}, componenttest.NewNopHost())
+	require.ErrorContains(t, err, "bad profile")
 }
 
 func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 	extID := component.MustNewID("oauth2client")
 
 	t.Run("missing_extension", func(t *testing.T) {
-		_, err := configureKgoSASL(&configkafka.SASLConfig{
+		_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
 		}, componenttest.NewNopHost())
@@ -727,7 +943,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		host := &mockHost{extensions: map[component.ID]component.Component{
 			extID: &mockTokenSource{token: "tok"},
 		}}
-		opt, err := configureKgoSASL(&configkafka.SASLConfig{
+		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
 		}, host)
@@ -737,7 +953,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 }
 
 func TestConfigureKgoSASL_UnsupportedMechanism(t *testing.T) {
-	_, err := configureKgoSASL(&configkafka.SASLConfig{
+	_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: "BOGUS",
 	}, componenttest.NewNopHost())
 	require.ErrorContains(t, err, "unsupported SASL mechanism")

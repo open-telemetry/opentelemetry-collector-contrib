@@ -16,6 +16,8 @@ type trimPrefixArguments[K any] struct {
 	Prefix ottl.StringGetter[K]
 }
 
+// NewTrimPrefixFactory returns a factory for the TrimPrefix OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#trimprefix
 func NewTrimPrefixFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("TrimPrefix", &trimPrefixArguments[K]{}, createTrimPrefixFunction[K])
 }

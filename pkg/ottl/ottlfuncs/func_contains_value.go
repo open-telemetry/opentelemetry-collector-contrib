@@ -17,6 +17,8 @@ type containsValueArguments[K any] struct {
 	Item   ottl.Getter[K]
 }
 
+// NewContainsValueFactory returns a factory for the ContainsValue OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#containsvalue
 func NewContainsValueFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ContainsValue", &containsValueArguments[K]{}, createContainsValueFunction[K])
 }

@@ -1,0 +1,12 @@
+change_type: bug_fix
+
+component: receiver/mysql
+
+note: Report `mysql.index.io.wait.count` and `mysql.index.io.wait.time` under the correct `operation` attribute
+
+issues: [49597]
+
+subtext: |
+  The `mysql.index.io.wait.count` and `mysql.index.io.wait.time` metrics were reported under the
+  wrong `operation` attribute (for example, delete counts appeared under `operation=update`). Each
+  datapoint is now reported under its correct operation.

@@ -14,6 +14,8 @@ type isIntArguments[K any] struct {
 	Target ottl.IntGetter[K]
 }
 
+// NewIsIntFactory returns a factory for the IsInt OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#isint
 func NewIsIntFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("IsInt", &isIntArguments[K]{}, createIsIntFunction[K])
 }
