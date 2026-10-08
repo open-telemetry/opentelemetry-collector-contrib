@@ -178,7 +178,7 @@ pkg/kafka/topic/                                                 @open-telemetry
 pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 pkg/ottl/contexts/xprofile/                                      @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 pkg/ottl/xottl/                                                  @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
-pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers
+pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers @dmitryax @singhvibhanshu
 pkg/resourcetotelemetry/                                         @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/sampling/                                                    @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
 pkg/semconvtest/                                                 @open-telemetry/collector-contrib-approvers @braydonk
