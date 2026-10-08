@@ -1012,7 +1012,7 @@ func BenchmarkReplaceAllPatternsKey(b *testing.B) {
 	}
 
 	for _, bm := range benchmarks {
-		for _, size := range []int{1000, 4000, 16000, 64000} {
+		for _, size := range []int{8, 32, 128, 1000, 4000, 16000, 64000} {
 			b.Run(fmt.Sprintf("%s/keys=%d", bm.name, size), func(b *testing.B) {
 				rawInput := make(map[string]any, size)
 				for i := range size {
