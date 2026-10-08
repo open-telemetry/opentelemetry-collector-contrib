@@ -154,9 +154,11 @@ func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) erro
 	return nil
 }
 
-// engineEditionToString maps SERVERPROPERTY('Edition') strings to the lowercase
-// enum values declared in metadata.yaml.
-func engineEditionToString(edition string) string {
+// engineEditionToString maps SERVERPROPERTY('Edition') and SERVERPROPERTY('EngineEdition')
+// to the lowercase enum values declared in metadata.yaml.
+// Both Azure SQL Database (EngineEdition=5) and Managed Instance (EngineEdition=8) return
+// "SQL Azure" from Edition, so engineEdition is required to distinguish them.
+func engineEditionToString(edition string, engineEdition int) string {
 	switch {
 	case strings.HasPrefix(edition, "Enterprise"):
 		return "enterprise"
@@ -164,18 +166,17 @@ func engineEditionToString(edition string) string {
 		return "standard"
 	case strings.HasPrefix(edition, "Express"):
 		return "express"
-	case strings.HasPrefix(edition, "Azure SQL Database"):
-		return "azure_sql_database"
 	case strings.HasPrefix(edition, "SQL Azure"):
+		if engineEdition == 8 {
+			return "managed_instance"
+		}
 		return "azure_sql_database"
-	case strings.HasPrefix(edition, "Azure SQL Managed Instance"):
-		return "managed_instance"
 	default:
 		return "unknown"
 	}
 }
 
-// detectSQLServerInstanceInfo queries ProductVersion and Edition in a single round-trip.
+// detectSQLServerInstanceInfo queries ProductVersion, Edition and EngineEdition in a single round-trip.
 // Returns (version, edition *string, error) — both non-nil when resolved (empty string
 // for NULL), nil on transient error (caller may retry), nil+nil when db is not yet connected.
 // Declared as a var so tests can stub it.
@@ -188,9 +189,10 @@ var detectSQLServerInstanceInfo = func(ctx context.Context, db *sql.DB) (*string
 	defer cancel()
 
 	var version, edition sql.NullString
+	var engineEdition sql.NullInt64
 	row := db.QueryRowContext(ctx,
-		"SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128)), CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128))")
-	if err := row.Scan(&version, &edition); err != nil {
+		"SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128)), CAST(SERVERPROPERTY('Edition') AS NVARCHAR(128)), CAST(SERVERPROPERTY('EngineEdition') AS INT)")
+	if err := row.Scan(&version, &edition, &engineEdition); err != nil {
 		return nil, nil, err
 	}
 
@@ -199,7 +201,11 @@ var detectSQLServerInstanceInfo = func(ctx context.Context, db *sql.DB) (*string
 		v = version.String
 	}
 	if edition.Valid {
-		e = engineEditionToString(edition.String)
+		ee := 0
+		if engineEdition.Valid {
+			ee = int(engineEdition.Int64)
+		}
+		e = engineEditionToString(edition.String, ee)
 	}
 	return &v, &e, nil
 }

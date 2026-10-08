@@ -4,14 +4,15 @@ package metadata
 
 import (
 	"fmt"
+	"slices"
+	"strconv"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"slices"
-	"strconv"
-	"time"
 )
 
 const (

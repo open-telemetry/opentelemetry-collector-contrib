@@ -2806,20 +2806,20 @@ func TestProcedureLookbackSeconds(t *testing.T) {
 
 func TestEngineEditionToString(t *testing.T) {
 	tests := []struct {
-		edition  string
-		expected string
+		edition       string
+		engineEdition int
+		expected      string
 	}{
-		{"Standard Edition", "standard"},
-		{"Enterprise Edition", "enterprise"},
-		{"Express Edition", "express"},
-		{"Azure SQL Database", "azure_sql_database"},
-		{"SQL Azure", "azure_sql_database"},
-		{"Azure SQL Managed Instance", "managed_instance"},
-		{"", "unknown"},
-		{"Unknown Edition", "unknown"},
+		{"Standard Edition", 2, "standard"},
+		{"Enterprise Edition", 3, "enterprise"},
+		{"Express Edition", 4, "express"},
+		{"SQL Azure", 5, "azure_sql_database"},
+		{"SQL Azure", 8, "managed_instance"},
+		{"", 0, "unknown"},
+		{"Unknown Edition", 0, "unknown"},
 	}
 	for _, tc := range tests {
-		require.Equal(t, tc.expected, engineEditionToString(tc.edition), "edition %q", tc.edition)
+		require.Equal(t, tc.expected, engineEditionToString(tc.edition, tc.engineEdition), "edition %q engineEdition %d", tc.edition, tc.engineEdition)
 	}
 }
 
