@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
@@ -24,6 +25,13 @@ import (
 func buildLogsProcessor(t *testing.T, cfg *Config, next consumer.Logs) processor.Logs {
 	t.Helper()
 	p, err := createLogsProcessor(t.Context(), nopSettings(), cfg, next)
+	require.NoError(t, err)
+	return p
+}
+
+func buildTracesProcessor(t *testing.T, cfg *Config, next consumer.Traces) processor.Traces {
+	t.Helper()
+	p, err := createTracesProcessor(t.Context(), nopSettings(), cfg, next)
 	require.NoError(t, err)
 	return p
 }
@@ -371,4 +379,117 @@ func TestConsumeLogs_RecordsProcessorTelemetry(t *testing.T) {
 		require.Len(t, sum.DataPoints, 1, name)
 		assert.Equal(t, int64(3), sum.DataPoints[0].Value, name)
 	}
+}
+
+func TestConsumeTraces_Basic(t *testing.T) {
+	var (
+		calls int
+		gotMD client.Metadata
+	)
+	next := &capturingTracesConsumer{fn: func(ctx context.Context, _ ptrace.Traces) error {
+		calls++
+		gotMD = client.FromContext(ctx).Metadata
+		return nil
+	}}
+
+	proc := buildTracesProcessor(t, &Config{Keys: map[string]string{
+		"tenant_id": `resource.attributes["tenant.id"]`,
+	}}, next)
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("tenant.id", "acme")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Spans().AppendEmpty().SetName("op")
+
+	require.NoError(t, proc.ConsumeTraces(t.Context(), traces))
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, []string{"acme"}, gotMD.Get("tenant_id"))
+}
+
+func TestConsumeTraces_OTelColContext_ClientMetadata(t *testing.T) {
+	var (
+		calls int
+		gotMD client.Metadata
+	)
+	next := &capturingTracesConsumer{fn: func(ctx context.Context, _ ptrace.Traces) error {
+		calls++
+		gotMD = client.FromContext(ctx).Metadata
+		return nil
+	}}
+
+	proc := buildTracesProcessor(t, &Config{Keys: map[string]string{
+		"trace_topic": `otelcol.client.metadata["x-tenant-id"][0]`,
+	}}, next)
+
+	ctx := client.NewContext(t.Context(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"x-tenant-id": {"acme"},
+		}),
+	})
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("op")
+
+	require.NoError(t, proc.ConsumeTraces(ctx, traces))
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, []string{"acme"}, gotMD.Get("x-tenant-id"))
+	assert.Equal(t, []string{"acme"}, gotMD.Get("trace_topic"))
+}
+
+func TestConsumeTraces_NonStringKeyIsPermanentError(t *testing.T) {
+	proc := buildTracesProcessor(t, &Config{Keys: map[string]string{
+		"count": `resource.attributes["count"]`,
+	}}, consumertest.NewNop())
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutInt("count", 1)
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	err := proc.ConsumeTraces(t.Context(), traces)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
+func TestConsumeTraces_RecordsProcessorTelemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+	set := nopSettings()
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	sink := &consumertest.TracesSink{}
+	proc, err := createTracesProcessor(t.Context(), set, validConfig(), sink)
+	require.NoError(t, err)
+
+	traces := ptrace.NewTraces()
+	for _, tenant := range []string{"t1", "t2", "t1"} {
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("tenant.id", tenant)
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	}
+	require.NoError(t, proc.ConsumeTraces(t.Context(), traces))
+	assert.Len(t, sink.AllTraces(), 2)
+
+	for _, name := range []string{"otelcol_processor_incoming_items", "otelcol_processor_outgoing_items"} {
+		m, err := tel.GetMetric(name)
+		require.NoError(t, err, name)
+		sum, ok := m.Data.(metricdata.Sum[int64])
+		require.True(t, ok, name)
+		require.Len(t, sum.DataPoints, 1, name)
+		assert.Equal(t, int64(3), sum.DataPoints[0].Value, name)
+	}
+}
+
+type capturingTracesConsumer struct {
+	fn func(ctx context.Context, td ptrace.Traces) error
+}
+
+func (*capturingTracesConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (c *capturingTracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	return c.fn(ctx, td)
 }

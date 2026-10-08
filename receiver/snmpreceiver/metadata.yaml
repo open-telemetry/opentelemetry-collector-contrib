@@ -12,7 +12,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [ajimenez1503]
+    active: [ajimenez1503, svencowart]
     emeritus: [StefanKurek, tamir-michaeli]
 
 tests:

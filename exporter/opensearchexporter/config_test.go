@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 				MappingsSettings: MappingsSettings{
 					Mode: "ss4o",
 				},
-				QueueConfig: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 			},
 			configValidateAssert: assert.NoError,
 		},

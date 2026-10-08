@@ -97,11 +97,16 @@ func (c *Config) Validate() error {
 	if err := validateExcludeTopic("profiles", c.Profiles.Topics, c.Profiles.ExcludeTopics); err != nil {
 		return err
 	}
-	if c.PartitionProcessing.Independent && c.PartitionProcessing.MaxBufferedBatches <= 0 {
-		return errors.New("partition_processing.max_buffered_batches must be greater than zero")
-	}
-	if c.PartitionProcessing.Independent && !c.ConsumerConfig.AutoCommit.Enable {
-		return errors.New("partition_processing.independent requires autocommit.enable")
+	if c.PartitionProcessing.Independent {
+		if c.PartitionProcessing.MaxBufferedBatches <= 0 {
+			return errors.New("partition_processing.max_buffered_batches must be greater than zero")
+		}
+		if c.PartitionProcessing.MaxInFlight.Records <= 0 {
+			return errors.New("partition_processing.max_in_flight.records must be greater than zero")
+		}
+		if !c.ConsumerConfig.AutoCommit.Enable {
+			return errors.New("partition_processing.independent requires autocommit.enable")
+		}
 	}
 	return nil
 }
@@ -187,15 +192,33 @@ type MessageMarking struct {
 	OnPermanentError bool `mapstructure:"on_permanent_error"`
 }
 
-// PartitionProcessing controls optional ordered, independent processing of
-// assigned Kafka partitions.
+// PartitionProcessing controls optional independent processing of assigned
+// Kafka partitions.
 type PartitionProcessing struct {
-	// Independent enables ordered processing by independent partition workers.
+	// Independent enables independent partition workers. Records stay ordered
+	// within a partition unless MaxInFlight.Records is above 1.
 	Independent bool `mapstructure:"independent"`
 
 	// MaxBufferedBatches bounds the number of fetched batches waiting for each
 	// partition worker.
 	MaxBufferedBatches int `mapstructure:"max_buffered_batches"`
+
+	// MaxInFlight limits concurrent unmarshal-plus-Consume calls for each
+	// independent partition worker.
+	MaxInFlight MaxInFlightConfig `mapstructure:"max_in_flight"`
+}
+
+// MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one
+// partition worker.
+type MaxInFlightConfig struct {
+	// Records is how many calls may run at once. Default 1.
+	Records int `mapstructure:"records"`
+
+	// TODO: add Bytes to cap the fetched payload size of in-flight records.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51804
+	// Bytes int `mapstructure:"bytes"`
+
+	_ struct{} // avoids unkeyed_literal_initialization.
 }
 
 type HeaderExtraction struct {

@@ -2,6 +2,31 @@
 
 # prometheus
 
+## Sending Queue
+
+**Support:** This component overrides the default QueueBatch configuration.
+
+**Rationale:** The exporter is pull-based and does not use a sending queue.
+
+```yaml
+sending_queue:
+    enabled: false             # OVERRIDE
+    wait_for_result: false     # default
+    sizer: requests            # default
+    queue_size: 1000           # default
+    block_on_overflow: false   # default
+    storage: null              # default
+    num_consumers: 10          # default
+    batch:
+        enabled: false         # OVERRIDE
+        flush_timeout: 200ms   # default
+        sizer: items           # default
+        min_size: 8192         # default
+        max_size: 0            # default
+        partition:
+            metadata_keys: []  # default
+```
+
 ## Feature Gates
 
 This component has the following feature gates:
