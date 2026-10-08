@@ -989,6 +989,10 @@ component_management:
     name: receiver_namedpipe
     paths:
     - receiver/namedpipereceiver/**
+  - component_id: receiver_nats
+    name: receiver_nats
+    paths:
+    - receiver/natsreceiver/**
   - component_id: receiver_netflow
     name: receiver_netflow
     paths:

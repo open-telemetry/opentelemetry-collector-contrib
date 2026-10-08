@@ -162,6 +162,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow
@@ -302,6 +303,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/natsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
