@@ -73,7 +73,12 @@
     -- Use CONVERT for MySQL 8.0+ which stores user variables as binary (VARBINARY);
     -- on MySQL 5.7 and MariaDB the value is VARCHAR, so CONVERT is a no-op.
     -- utf8mb4 is used instead of the deprecated utf8 alias.
-    COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8mb4), '') AS traceparent
+    COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8mb4), '') AS traceparent,
+    -- TIMER_START is an internal, monotonically increasing picosecond counter
+    -- (not wall-clock time) that changes only when a new statement begins on
+    -- this thread. Present unconditionally since Performance Schema statement
+    -- instrumentation was introduced (MySQL 5.6+, MariaDB), so no version gate.
+    COALESCE(statement.TIMER_START, 0) AS statement_timer_start
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
