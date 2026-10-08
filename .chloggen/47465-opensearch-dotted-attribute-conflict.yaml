@@ -1,0 +1,36 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: exporter/opensearch
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Avoid OpenSearch mapping conflicts (mapper_parsing_exception) when an attribute is used both as a value and as an object prefix.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [47465]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  OpenSearch expands dots in JSON field names into nested objects during dynamic
+  mapping, so a flat OTel attribute map containing both a concrete key (e.g.
+  `code.function`) and a longer key that uses it as an object prefix (e.g.
+  `code.function.name`) was rejected. The exporter now relocates the conflicting
+  concrete value under a `.value` sub-key (`code.function` -> `code.function.value`)
+  so the document is indexable. This applies to span, event, link, log-record,
+  metric data-point, exemplar and instrumentation-scope attributes in the ss4o
+  and otel-v1 mapping modes. Only documents that would otherwise be rejected are
+  changed.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

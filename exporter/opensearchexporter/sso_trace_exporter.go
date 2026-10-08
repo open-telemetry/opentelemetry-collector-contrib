@@ -72,7 +72,7 @@ func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) erro
 
 	if s.config.MappingsSettings.ManageIndexTemplate {
 		tm := newTemplateManager(client, s.telemetry.Logger)
-		tm.ensureTemplates(ctx)
+		tm.ensureTemplates(ctx, s.config.MappingsSettings.Mode)
 	}
 
 	return nil
