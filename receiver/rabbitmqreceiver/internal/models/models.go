@@ -24,6 +24,20 @@ type Queue struct {
 	MessageStats map[string]any `json:"message_stats"`
 }
 
+// Connection represents a RabbitMQ connection in the API response.
+type Connection struct {
+	User  string `json:"user"`
+	VHost string `json:"vhost"`
+}
+
+// Channel represents a RabbitMQ channel in the API response.
+type Channel struct {
+	User          string `json:"user"`
+	VHost         string `json:"vhost"`
+	PrefetchCount int64  `json:"prefetch_count"`
+	ConsumerCount int64  `json:"consumer_count"`
+}
+
 // Node represents a RabbitMQ node in the API response
 type Node struct {
 	// Identifiers

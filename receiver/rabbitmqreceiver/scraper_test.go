@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -14,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -364,6 +367,130 @@ func TestClusterNameResourceAttributeDisabled(t *testing.T) {
 	require.NoError(t, err)
 	mockClient.AssertNotCalled(t, "GetClusterName", mock.Anything)
 	mockClient.AssertExpectations(t)
+}
+
+func TestChannelAndConnectionCounts(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqChannelCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqConnectionCount.Enabled = true
+
+	var channels []*models.Channel
+	require.NoError(t, json.Unmarshal(loadAPIResponseData(t, channelsAPIResponseFile), &channels))
+	var connections []*models.Connection
+	require.NoError(t, json.Unmarshal(loadAPIResponseData(t, connectionsAPIResponseFile), &connections))
+
+	mockClient := mocks.MockClient{}
+	mockClient.On("GetQueues", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetChannels", mock.Anything).Return(channels, nil).Once()
+	mockClient.On("GetConnections", mock.Anything).Return(connections, nil).Once()
+
+	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+	scraper.client = &mockClient
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	expected := map[string]int64{
+		"rabbitmq.user.name=app-user,rabbitmq.vhost.name=dev":    2,
+		"rabbitmq.user.name=other-user,rabbitmq.vhost.name=prod": 1,
+	}
+	require.Equal(t, expected, dataPointsByAttributes(t, metrics, "rabbitmq.channel.count"))
+	require.Equal(t, expected, dataPointsByAttributes(t, metrics, "rabbitmq.connection.count"))
+	mockClient.AssertExpectations(t)
+}
+
+func TestChannelCountAttributes(t *testing.T) {
+	testCases := []struct {
+		desc       string
+		attributes []metadata.RabbitmqChannelCountMetricAttributeKey
+		expected   map[string]int64
+	}{
+		{
+			desc: "default attributes",
+			expected: map[string]int64{
+				"rabbitmq.user.name=app-user,rabbitmq.vhost.name=dev":    2,
+				"rabbitmq.user.name=other-user,rabbitmq.vhost.name=prod": 1,
+			},
+		},
+		{
+			desc: "all attributes enabled",
+			attributes: []metadata.RabbitmqChannelCountMetricAttributeKey{
+				metadata.RabbitmqChannelCountMetricAttributeKeyChannelConsuming,
+				metadata.RabbitmqChannelCountMetricAttributeKeyChannelPrefetchCount,
+				metadata.RabbitmqChannelCountMetricAttributeKeyUserName,
+				metadata.RabbitmqChannelCountMetricAttributeKeyVhostName,
+			},
+			expected: map[string]int64{
+				"rabbitmq.channel.consuming=true,rabbitmq.channel.prefetch_count=0,rabbitmq.user.name=app-user,rabbitmq.vhost.name=dev":     1,
+				"rabbitmq.channel.consuming=false,rabbitmq.channel.prefetch_count=0,rabbitmq.user.name=app-user,rabbitmq.vhost.name=dev":    1,
+				"rabbitmq.channel.consuming=true,rabbitmq.channel.prefetch_count=10,rabbitmq.user.name=other-user,rabbitmq.vhost.name=prod": 1,
+			},
+		},
+		{
+			desc:       "no attributes",
+			attributes: []metadata.RabbitmqChannelCountMetricAttributeKey{},
+			expected:   map[string]int64{"": 3},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqChannelCount.Enabled = true
+			if tc.attributes != nil {
+				cfg.MetricsBuilderConfig.Metrics.RabbitmqChannelCount.EnabledAttributes = tc.attributes
+			}
+
+			var channels []*models.Channel
+			require.NoError(t, json.Unmarshal(loadAPIResponseData(t, channelsAPIResponseFile), &channels))
+
+			mockClient := mocks.MockClient{}
+			mockClient.On("GetQueues", mock.Anything).Return(nil, nil).Once()
+			mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
+			mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
+			mockClient.On("GetChannels", mock.Anything).Return(channels, nil).Once()
+
+			scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+			scraper.client = &mockClient
+
+			metrics, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, dataPointsByAttributes(t, metrics, "rabbitmq.channel.count"))
+			mockClient.AssertExpectations(t)
+		})
+	}
+}
+
+// dataPointsByAttributes returns a sum metric's datapoint values keyed by their sorted
+// "key=value" attributes.
+func dataPointsByAttributes(t *testing.T, metrics pmetric.Metrics, name string) map[string]int64 {
+	t.Helper()
+	values := map[string]int64{}
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		sms := metrics.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				if ms.At(k).Name() != name {
+					continue
+				}
+				dps := ms.At(k).Sum().DataPoints()
+				for l := 0; l < dps.Len(); l++ {
+					var attrs []string
+					dps.At(l).Attributes().Range(func(k string, v pcommon.Value) bool {
+						attrs = append(attrs, k+"="+v.AsString())
+						return true
+					})
+					sort.Strings(attrs)
+					values[strings.Join(attrs, ",")] += dps.At(l).IntValue()
+				}
+			}
+		}
+	}
+	return values
 }
 
 func TestClusterNameResourceAttributeFailure(t *testing.T) {
