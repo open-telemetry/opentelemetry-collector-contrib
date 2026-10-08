@@ -23,6 +23,14 @@ feature_gates:
     from_version: "v0.132.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-specification/pull/4533
 
+sending_queue:
+  support: has_overrides
+  rationale: "The exporter is pull-based and does not use a sending queue."
+  overrides:
+    enabled: false
+    batch:
+      enabled: false
+
 tests:
   config:
     endpoint: "127.0.0.1:1234"
