@@ -131,15 +131,16 @@ func (c *Config) Validate() error {
 	if err != nil {
 		return err
 	}
-	for _, item := range c.Table {
+	var parseErrors []error
+	for i, item := range c.Table {
 		if item.Context == "request" {
 			continue
 		}
-		if _, err = parseRoutingStatement(parserCollection, item.Context, item.ottlStatement(), settings.Logger); err != nil {
-			return err
+		if _, err := parseRoutingStatement(parserCollection, item.Context, item.ottlStatement(), settings.Logger); err != nil {
+			parseErrors = append(parseErrors, fmt.Errorf("table[%d]: %w", i, err))
 		}
 	}
-	return nil
+	return errors.Join(parseErrors...)
 }
 
 // RoutingTableItem specifies how data should be routed to the different pipelines

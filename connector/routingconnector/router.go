@@ -226,9 +226,7 @@ func (r *router[C]) registerDefaultConsumer(pipelineIDs []pipeline.ID) error {
 func (r *router[C]) normalizeConditions() {
 	for i := range r.table {
 		item := &r.table[i]
-		if item.Condition != "" {
-			item.Statement = item.ottlStatement()
-		}
+		item.Statement = item.ottlStatement()
 	}
 }
 

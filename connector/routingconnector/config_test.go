@@ -473,6 +473,28 @@ func TestValidateConfigRejectsInvalidOTTL(t *testing.T) {
 		require.Error(t, confmap.Validate(cfg))
 	})
 
+	t.Run("multiple invalid routes", func(t *testing.T) {
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		cfg.Table = []RoutingTableItem{
+			{
+				Context:   "span",
+				Condition: `UnknownFirst()`,
+				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+			},
+			{
+				Context:   "span",
+				Statement: `route() where UnknownSecond()`,
+				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+			},
+		}
+
+		err := confmap.Validate(cfg)
+		require.ErrorContains(t, err, "table[0]")
+		require.ErrorContains(t, err, `undefined function "UnknownFirst"`)
+		require.ErrorContains(t, err, "table[1]")
+		require.ErrorContains(t, err, `undefined function "UnknownSecond"`)
+	})
+
 	for _, contextName := range []string{"resource", "span", "metric", "datapoint", "log", "otelcol"} {
 		t.Run(contextName+" condition", func(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
