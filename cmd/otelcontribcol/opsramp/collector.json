@@ -1,0 +1,38 @@
+{
+  "receivers": {
+    "otlp": {
+      "protocols": {
+        "grpc": { "endpoint": "127.0.0.1:14317" },
+        "http": { "endpoint": "127.0.0.1:14318" }
+      }
+    }
+  },
+  "processors": {
+    "resourceuuid": {
+      "endpoint": "http://127.0.0.1:2301/api/v1/provider/graph?kind=Pod&edges=false",
+      "refresh_interval": "2m",
+      "retry_interval": "2m",
+      "cache_ttl": "10m"
+    }
+  },
+  "exporters": {
+    "file": { "path": "/var/log/otelcol/logs.json" }
+  },
+  "extensions": {
+    "health_check": { "endpoint": "127.0.0.1:13133" }
+  },
+  "service": {
+    "extensions": ["health_check"],
+    "telemetry": {
+      "logs": { "level": "info" },
+      "metrics": { "level": "none" }
+    },
+    "pipelines": {
+      "logs": {
+        "receivers": ["otlp"],
+        "processors": ["resourceuuid"],
+        "exporters": ["file"]
+      }
+    }
+  }
+}
