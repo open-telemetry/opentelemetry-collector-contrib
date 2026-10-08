@@ -138,6 +138,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.152.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.152.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.152.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceuuidprocessor v0.152.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.152.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor v0.152.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor v0.152.0
@@ -292,3 +293,4 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceuuidprocessor => ../../processor/resourceuuidprocessor

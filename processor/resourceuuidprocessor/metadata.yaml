@@ -1,0 +1,10 @@
+type: resourceuuid
+scope_name: otelcol/resourceuuid
+
+status:
+  class: processor
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [saivarma_hpeprod]
