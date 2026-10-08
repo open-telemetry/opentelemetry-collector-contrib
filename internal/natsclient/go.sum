@@ -46,8 +46,8 @@ go.opentelemetry.io/collector/config/configtls v1.68.1-0.20261006173156-20487f80
 go.opentelemetry.io/collector/config/configtls v1.68.1-0.20261006173156-20487f801913/go.mod h1:FHT1HEWVlfuJDQgw3tFJ4vAzTW3YC4MRcRueQlAuTk4=
 go.opentelemetry.io/collector/confmap v1.68.1-0.20261006173156-20487f801913 h1:oA8zrzCwvZSHJWorAOzUP0cwana9z0QF47TtrE6CT34=
 go.opentelemetry.io/collector/confmap v1.68.1-0.20261006173156-20487f801913/go.mod h1:VcI4KBRIHl7n+4knEwrkTQS8IF7ovJK2ogCiGCgCbJg=
-go.opentelemetry.io/collector/featuregate v1.68.0 h1:zCnq7dk2HP/xXRN9bFX9cBCuKQhX/XRmkGjVQIWEdSc=
-go.opentelemetry.io/collector/featuregate v1.68.0/go.mod h1:dRYifiJa2vQ6LWpPwHny4mL82mnGWsWEVeVWw+DhYJw=
+go.opentelemetry.io/collector/featuregate v1.68.1-0.20261006173156-20487f801913 h1:uPARgQal1Qr7x5RI7z4oVS9GjHYS03Bzsm+gl3rRbjA=
+go.opentelemetry.io/collector/featuregate v1.68.1-0.20261006173156-20487f801913/go.mod h1:dRYifiJa2vQ6LWpPwHny4mL82mnGWsWEVeVWw+DhYJw=
 go.opentelemetry.io/collector/internal/testutil v0.162.0 h1:WWliyTnsH6wqwoci9CDgK7jR6rwoW8u4C1dR+yVui1g=
 go.opentelemetry.io/collector/internal/testutil v0.162.0/go.mod h1:FV43FoAsh4fP615Sc5ZSh7iPMgZaSgha6ngavix9OEI=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
