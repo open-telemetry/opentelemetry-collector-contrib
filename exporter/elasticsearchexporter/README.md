@@ -355,10 +355,14 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (DEPRECATED, use `sending_queue::num_consumers` instead): This config is deprecated and will be used to configure `sending_queue::num_consumers` if `sending_queue::num_consumers` is not explicitly defined. Number of workers publishing bulk requests concurrently.
-- `flush` (DEPRECATED, use `sending_queue` instead): This config is deprecated and will be used to configure different options for `sending_queue` if `sending_queue` options are not explicitly defined. Event bulk indexer buffer flush settings
-  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if `sending_queue::batch::max_size` is not explicitly defined. See the `sending_queue::batch::max_size` for more details.
-  - `interval` (DEPRECATED, use `sending_queue::batch::flush_timeout` instead): This config is deprecated and will be used to configure `sending_queue::batch::flush_timeout` if `sending_queue::batch::flush_timeout` is not explicitly defined. See the `sending_queue::batch::flush_timeout` for more details.
+The deprecated `num_workers` and `flush` settings have been removed. Existing configurations should use these replacements:
+
+| Removed setting | Replacement |
+| --- | --- |
+| `num_workers` | `sending_queue::num_consumers` |
+| `flush::interval` | `sending_queue::batch::flush_timeout` |
+| `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
+
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
@@ -403,6 +407,24 @@ Settings related to node discovery are:
   - `interval` (optional): Interval to update the list of Elasticsearch nodes.
 
 Node discovery can be disabled by setting `discover.interval` to 0.
+
+### Elasticsearch version detection
+
+On startup, the Elasticsearch Exporter queries each configured endpoint for its
+version and build flavor and logs the result. This information is used to
+automatically enable features supported by the connected Elasticsearch version,
+so no per-feature configuration is required.
+
+- `version_detection`:
+  - `enabled` (default `true`): If enabled, the exporter queries Elasticsearch
+    at startup to detect its version and build flavor. When disabled, the
+    exporter does not query Elasticsearch and assumes only the baseline
+    capability set is available.
+
+The query is best-effort: if it fails (for example, when Elasticsearch is
+temporarily unreachable), startup is not blocked. Version detection cannot be
+performed when the endpoint is resolved at request time (for example, when a
+routing middleware rewrites the destination per request).
 
 ### Telemetry settings
 
@@ -502,11 +524,12 @@ Each profiling signal type is written to a dedicated backing index:
 | Stack frames   | `profiling-stackframes.otel-default`          |
 | Executables    | `profiling-executables.otel-default`          |
 | Trace events   | `profiling-events-all.otel-default`           |
+| Downsampled trace events | `profiling-events-5powNN.otel-default` (`NN` from `01` to `11`) |
 | Host metadata  | `profiling-hosts.otel-default`                |
 
 > [!NOTE]
 > Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations)
-> and downsampled event indices (`profiling-events-5powNN.otel-default`) are not yet supported in OTel profiling datastream mode.
+> is not yet supported in OTel profiling datastream mode.
 
 > [!WARNING]
 > The `.otel-default` profiling datastream index templates are only available in **Elasticsearch 9.6.0 and later**.

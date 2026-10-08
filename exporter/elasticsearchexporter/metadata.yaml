@@ -115,6 +115,19 @@ telemetry:
         value_type: int
         monotonic: true
 
+sending_queue:
+  support: has_overrides
+  overrides:
+    enabled: true
+    queue_size: 10
+    block_on_overflow: true
+    batch:
+      enabled: true
+      flush_timeout: 10s
+      sizer: bytes
+      min_size: 1000000
+      max_size: 5000000
+
 tests:
   config:
     endpoints: [http://localhost:9200]
