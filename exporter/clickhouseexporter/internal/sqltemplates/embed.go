@@ -82,6 +82,22 @@ var TracesInsert string
 //go:embed traces_json_insert.sql
 var TracesJSONInsert string
 
+// Parsed templates for traces (text/template).
+var (
+	TracesCreateTableTmpl   = newTemplate("traces_table", TracesCreateTable)
+	TracesCreateTsTableTmpl = newTemplate("traces_id_ts_lookup_table", TracesCreateTsTable)
+	TracesCreateTsViewTmpl  = newTemplate("traces_id_ts_lookup_mv", TracesCreateTsView)
+)
+
+// TracesTsMVData contains the template parameters for the trace ID timestamp materialized view.
+type TracesTsMVData struct {
+	Database        string
+	ViewName        string
+	TableName       string
+	SourceTableName string
+	ClusterString   string
+}
+
 // PROFILES
 
 //go:embed profiles_table.sql
