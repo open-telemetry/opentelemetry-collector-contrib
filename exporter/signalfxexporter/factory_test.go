@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -659,6 +660,54 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.Equal(t, 45, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Empty(t, dps)
+}
+
+func TestIncludeExcludeTranslatedCPUMetric(t *testing.T) {
+	tests := []struct {
+		name                string
+		includeMetric       string
+		expectedMetricNames []string
+	}{
+		{
+			name: "default excludes",
+			expectedMetricNames: []string{
+				"container.cpu.usage",
+			},
+		},
+		{
+			name:          "include overrides excludes",
+			includeMetric: "container_cpu_utilization",
+			expectedMetricNames: []string{
+				"container.cpu.usage",
+				"container_cpu_utilization",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := NewFactory()
+			cfg := f.CreateDefaultConfig().(*Config)
+			if tt.includeMetric != "" {
+				cfg.IncludeMetrics = []dpfilters.MetricFilter{{MetricNames: []string{tt.includeMetric}}}
+			}
+			require.NoError(t, setDefaultExcludes(cfg))
+
+			converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
+			require.NoError(t, err)
+
+			metrics := []map[string]string{
+				{"container.cpu.time": ""},
+				{"container.cpu.usage": ""},
+			}
+			dps := converter.MetricsToSignalFxV2(getMetrics(metrics))
+			metricNames := make([]string, 0, len(dps))
+			for _, dp := range dps {
+				metricNames = append(metricNames, dp.Metric)
+			}
+			require.ElementsMatch(t, tt.expectedMetricNames, metricNames)
+		})
+	}
 }
 
 func TestDefaultExcludesKubeletMemoryMetrics(t *testing.T) {
