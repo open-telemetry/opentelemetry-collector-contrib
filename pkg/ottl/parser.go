@@ -377,7 +377,7 @@ func formatParseError(kind, raw string, err error) error {
 		}
 	}
 	if near := nearParseError(raw, pos.Offset); near != "" {
-		return fmt.Errorf("%s has invalid syntax at %d:%d near `%s`:%s", kind, pos.Line, pos.Column, near, expected)
+		return fmt.Errorf("%s has invalid syntax at %d:%d near %#q:%s", kind, pos.Line, pos.Column, near, expected)
 	}
 	return fmt.Errorf("%s has invalid syntax at %d:%d:%s", kind, pos.Line, pos.Column, expected)
 }

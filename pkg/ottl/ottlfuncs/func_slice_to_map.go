@@ -59,7 +59,7 @@ func sliceToMap(v pcommon.Slice, keyPath, valuePath ottl.Optional[[]string]) (pc
 
 		if useKeyPath || useValuePath {
 			if elem.Type() != pcommon.ValueTypeMap {
-				return pcommon.Map{}, fmt.Errorf("slice elements must be maps when using `key_path` or `value_path`, but could not cast element of type `%s` to a map", elem.Type())
+				return pcommon.Map{}, fmt.Errorf("slice elements must be maps when using `key_path` or `value_path`, but could not cast element of type %#q to a map", elem.Type())
 			}
 		}
 
