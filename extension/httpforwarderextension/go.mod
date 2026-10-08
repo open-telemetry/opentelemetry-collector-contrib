@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpf
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.162.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.1-0.20261006173156-20487f801913
 	go.opentelemetry.io/collector/component/componentstatus v0.162.1-0.20261006173156-20487f801913
@@ -71,5 +70,3 @@ require (
 	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
