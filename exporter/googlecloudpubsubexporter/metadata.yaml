@@ -9,6 +9,14 @@ status:
   codeowners:
     active: [alexvanboxel]
 
+sending_queue:
+  support: has_overrides
+  rationale: "Sending queue is disabled by default."
+  overrides:
+    enabled: false
+    batch:
+      enabled: false
+
 tests:
   goleak:
     ignore:

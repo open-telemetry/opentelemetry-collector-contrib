@@ -1424,7 +1424,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
 			var healthReport atomic.Value
-			var agentConfig atomic.Value
+			var remoteConfigStatus atomic.Value
 			server := newOpAMPServer(
 				t,
 				defaultConnectingHandler,
@@ -1433,11 +1433,8 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 						if message.Health != nil {
 							healthReport.Store(message.Health)
 						}
-						if message.EffectiveConfig != nil {
-							config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
-							if config != nil {
-								agentConfig.Store(string(config.Body))
-							}
+						if message.RemoteConfigStatus != nil {
+							remoteConfigStatus.Store(message.RemoteConfigStatus)
 						}
 
 						return &protobufs.ServerToAgent{}
@@ -1473,18 +1470,12 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				},
 			})
 
-			require.Eventually(t, func() bool {
-				cfg, ok := agentConfig.Load().(string)
-				if ok {
-					// The effective config may be structurally different compared to what was sent,
-					// so just check that it includes some strings we know to be unique to the remote config.
-					return strings.Contains(cfg, "doesntexist")
-				}
-
-				return false
-			}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
-
 			unhealthyTimeout := supervisorCfg.Agent.BootstrapTimeout + 2*time.Second
+			require.Eventually(t, func() bool {
+				status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+				return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED && bytes.Equal(status.LastRemoteConfigHash, hash)
+			}, unhealthyTimeout, 250*time.Millisecond, "Supervisor never reported that the bad remote config failed")
+
 			require.Eventually(t, func() bool {
 				health := healthReport.Load().(*protobufs.ComponentHealth)
 

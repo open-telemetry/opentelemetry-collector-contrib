@@ -119,7 +119,17 @@ func TestValidate(t *testing.T) {
 					NkeyUserFile: &NkeyUserFileConfig{UserFilePath: "/creds"},
 				},
 			},
-			wantErr: "NKey auth configured more than once",
+			wantErr: "more than one auth method configured",
+		},
+		{
+			name: "multiple auth methods across families",
+			cfg: &Config{
+				Auth: AuthConfig{
+					Token: &TokenConfig{Token: "t"},
+					User:  &UserConfig{Username: "u", Password: "p"},
+				},
+			},
+			wantErr: "more than one auth method configured",
 		},
 		{
 			name: "negative jetstream timeout",

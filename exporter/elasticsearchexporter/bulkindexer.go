@@ -557,6 +557,10 @@ func (b *bulkIndexers) start(
 		return err
 	}
 
+	if cfg.VersionDetection.Enabled {
+		logElasticsearchVersions(ctx, cfg, set, host)
+	}
+
 	for _, mode := range allowedMappingModes {
 		requireDataStream := mode == MappingOTel || mode == MappingECS
 		modeSpecificErrorHintFunc := func(index, errorType string) string {

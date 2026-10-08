@@ -81,7 +81,7 @@ processors:
 
 
 > [!NOTE]
-> The deprecated coponent type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.
+> The deprecated component type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.
 
 
 ### System metadata
@@ -654,7 +654,7 @@ The list of the populated resource attributes can be found at [Consul Detector R
 
 In addition to:
 
-  * *exploded consul metadata* - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
+  * *exploded consul metadata* - reads the key:value pairs allowlisted in `meta` from [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
 
 ```yaml
 processors:
@@ -662,6 +662,30 @@ processors:
     detectors: [env, consul]
     timeout: 2s
     override: false
+```
+
+The `consul` detector accepts the following settings. Unset fields fall back to the Consul API client defaults, including the `CONSUL_HTTP_*` environment variables.
+
+| Name | Type | Required | Default | Docs |
+| ---- | ---- | -------- | ------- | ---- |
+| address | string | No | `127.0.0.1:8500` | Address of the Consul agent. |
+| datacenter | string | No | agent's datacenter | Datacenter to query. |
+| token | string | No | | Per-request ACL token that overrides the agent's default token. Only required when the [Consul ACL system](https://developer.hashicorp.com/consul/docs/security/acl) is enabled. |
+| token_file | string | No | | File containing the ACL token. Read once at startup. Only required when the Consul ACL system is enabled. |
+| namespace | string | No | | Namespace sent with each request. |
+| meta | map | No | | Allowlist of [node metadata](https://developer.hashicorp.com/consul/docs/agent/config/config-files#node_meta) keys to emit as resource attributes. Keys not listed here are dropped. |
+
+```yaml
+processors:
+  resource_detection/consul:
+    detectors: [consul]
+    consul:
+      address: "127.0.0.1:8500"
+      datacenter: "dc1"
+      token_file: /etc/consul/token
+      meta:
+        rack: ""
+        zone: ""
 ```
 
 Consul node metadata keys are emitted verbatim, without a namespace of their own. Enabling the `processor.resourcedetection.consul.prefixMetaAttributes` feature gate namespaces each key as `consul.meta.<key>`, consistent with the other detectors that expose user-defined key/value data (`ec2.tag.`, `azure.tag.`, `gcp.gce.instance.labels.`, `openstack.nova.meta.`):
@@ -964,7 +988,7 @@ Uses the [Digital Ocean metadata API](https://docs.digitalocean.com/reference/ap
 
 The list of the populated resource attributes can be found at [Digital Ocean Detector Resource Attributes](./internal/digitalocean/documentation.md).
 
-Akamai custom configuration example:
+Digital Ocean custom configuration example:
 
 ```yaml
 processors:
@@ -1094,7 +1118,13 @@ refresh_interval: <duration>
 # controls whether network-based detectors treat an unreachable metadata service as a hard failure;
 # supersedes the per-detector fail_on_missing_metadata fields (now deprecated). Default: false
 fail_on_missing_metadata: <bool>
+# bounds detection time (see Retry configuration); defaults to 5s
+timeout: <duration>
+# retry settings for failed detections, see Retry configuration
+retry: <configretry.BackOffConfig>
 ```
+
+The processor also accepts the [`confighttp` client settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) at the top level (for example `tls` or `headers`). `timeout` applies to every detector; the other HTTP client settings are currently used only by the `ec2` detector.
 
 You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
 
@@ -1146,11 +1176,12 @@ processors:
 
 ### Benchmark Tests
 
-This component includes comprehensive benchmark tests for all stable signals. The benchmarks measure the performance of the processor under different configurations:
+This component includes comprehensive benchmark tests for all supported signals. The benchmarks measure the performance of the processor under different configurations:
 
 - **Traces**: `BenchmarkConsumeTracesDefault` and `BenchmarkConsumeTracesAll`
 - **Metrics**: `BenchmarkConsumeMetricsDefault` and `BenchmarkConsumeMetricsAll`
 - **Logs**: `BenchmarkConsumeLogsDefault` and `BenchmarkConsumeLogsAll`
+- **Profiles**: `BenchmarkConsumeProfilesDefault` and `BenchmarkConsumeProfilesAll`
 
 To run the benchmarks locally:
 
@@ -1176,5 +1207,5 @@ Note that if multiple detectors are inserting the same attribute name, the first
 * ecs
 * ec2
 
-The full list of settings exposed for this extension are documented in [config.go](./config.go)
+The full list of settings exposed for this processor are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

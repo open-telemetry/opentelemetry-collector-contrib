@@ -177,6 +177,7 @@ body:
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
+      - pkg/ottl/xottl
       - pkg/pdatatest
       - pkg/resourcetotelemetry
       - pkg/sampling
@@ -224,6 +225,7 @@ body:
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
+      - processor/partitioning
       - processor/probabilisticsampler
       - processor/redaction
       - processor/remotetap
