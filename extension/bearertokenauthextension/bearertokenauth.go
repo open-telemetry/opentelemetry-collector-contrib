@@ -209,14 +209,8 @@ func (b *bearerTokenAuth) authorizationValue() string {
 	return ""
 }
 
-// Token returns the current bearer token, without the scheme prefix, as an
-// OAuth2 token. This lets the extension be referenced as a token source by
-// components that authenticate with a bearer token obtained out of band, such
-// as the Kafka exporter's and receiver's SASL/OAUTHBEARER mechanism.
-//
-// The returned token has no expiry: the token is whatever the configuration or
-// the token file currently holds, and a file-backed token is refreshed in place
-// as the file changes.
+// GetToken returns an access token with a valid token for authorization.
+// Implements tokenSource interface.
 func (b *bearerTokenAuth) Token(context.Context) (*oauth2.Token, error) {
 	tokens, _ := b.tokensAtomic.Load().([]string)
 	if len(tokens) == 0 || tokens[0] == "" {
