@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -1790,4 +1791,35 @@ func TestResourceAttributeDbSystemVersion(t *testing.T) {
 
 	_, ok = res3.Attributes().Get("db.system.version")
 	require.False(t, ok, "db.system.version should not be present when version is unknown")
+}
+
+func TestCollectTopStatsSkippedWhenMetricsDisabled(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbOperationTime.Enabled = false
+
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+	fc := &fakeClient{}
+	scraper.client = fc
+
+	errs := &scrapererror.ScrapeErrors{}
+
+	scraper.collectTopStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	fc.AssertNotCalled(t, "TopStats", mock.Anything)
+	require.NoError(t, errs.Combine())
+}
+
+func TestCollectTopStatsBSONObjectTooLarge(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	scraper := newMongodbScraper(settings, cfg)
+	fc := &fakeClient{}
+	fc.On("TopStats", mock.Anything).Return(bson.M{}, mongo.CommandError{Code: 10334, Name: "BSONObjectTooLarge"})
+	scraper.client = fc
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.collectTopStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
+	require.NoError(t, errs.Combine())
+	require.Equal(t, 1, logs.FilterMessageSnippet("disable the mongodb.operation.time").Len())
 }
