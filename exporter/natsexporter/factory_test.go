@@ -35,3 +35,20 @@ func TestCreateExporters(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }
+
+// The logs, metrics, and traces exporters built from one config must share a
+// single natsExporter (and so a single NATS connection) via sharedcomponent.
+func TestCreateExportersShareInstance(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+
+	first := getOrCreateExporter(set, cfg).Unwrap()
+	for range 2 {
+		assert.Same(t, first, getOrCreateExporter(set, cfg).Unwrap())
+	}
+
+	// A different config gets its own instance.
+	other := getOrCreateExporter(set, factory.CreateDefaultConfig()).Unwrap()
+	assert.NotSame(t, first, other)
+}
