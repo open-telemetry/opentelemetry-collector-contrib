@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -32,6 +33,13 @@ func buildLogsProcessor(t *testing.T, cfg *Config, next consumer.Logs) processor
 func buildTracesProcessor(t *testing.T, cfg *Config, next consumer.Traces) processor.Traces {
 	t.Helper()
 	p, err := createTracesProcessor(t.Context(), nopSettings(), cfg, next)
+	require.NoError(t, err)
+	return p
+}
+
+func buildMetricsProcessor(t *testing.T, cfg *Config, next consumer.Metrics) processor.Metrics {
+	t.Helper()
+	p, err := createMetricsProcessor(t.Context(), nopSettings(), cfg, next)
 	require.NoError(t, err)
 	return p
 }
@@ -492,4 +500,125 @@ func (*capturingTracesConsumer) Capabilities() consumer.Capabilities {
 
 func (c *capturingTracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return c.fn(ctx, td)
+}
+
+func TestConsumeMetrics_Basic(t *testing.T) {
+	var (
+		calls int
+		gotMD client.Metadata
+	)
+	next := &capturingMetricsConsumer{fn: func(ctx context.Context, _ pmetric.Metrics) error {
+		calls++
+		gotMD = client.FromContext(ctx).Metadata
+		return nil
+	}}
+
+	proc := buildMetricsProcessor(t, &Config{Keys: map[string]string{
+		"tenant_id": `resource.attributes["tenant.id"]`,
+	}}, next)
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("tenant.id", "acme")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("requests")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(1)
+
+	require.NoError(t, proc.ConsumeMetrics(t.Context(), metrics))
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, []string{"acme"}, gotMD.Get("tenant_id"))
+}
+
+func TestConsumeMetrics_OTelColContext_ClientMetadata(t *testing.T) {
+	var (
+		calls int
+		gotMD client.Metadata
+	)
+	next := &capturingMetricsConsumer{fn: func(ctx context.Context, _ pmetric.Metrics) error {
+		calls++
+		gotMD = client.FromContext(ctx).Metadata
+		return nil
+	}}
+
+	proc := buildMetricsProcessor(t, &Config{Keys: map[string]string{
+		"metrics_topic": `otelcol.client.metadata["x-tenant-id"][0]`,
+	}}, next)
+
+	ctx := client.NewContext(t.Context(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"x-tenant-id": {"acme"},
+		}),
+	})
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("requests")
+	m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+
+	require.NoError(t, proc.ConsumeMetrics(ctx, metrics))
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, []string{"acme"}, gotMD.Get("x-tenant-id"))
+	assert.Equal(t, []string{"acme"}, gotMD.Get("metrics_topic"))
+}
+
+func TestConsumeMetrics_NonStringKeyIsPermanentError(t *testing.T) {
+	proc := buildMetricsProcessor(t, &Config{Keys: map[string]string{
+		"count": `resource.attributes["count"]`,
+	}}, consumertest.NewNop())
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutInt("count", 1)
+	rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+
+	err := proc.ConsumeMetrics(t.Context(), metrics)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
+func TestConsumeMetrics_RecordsProcessorTelemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+	set := nopSettings()
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	sink := &consumertest.MetricsSink{}
+	proc, err := createMetricsProcessor(t.Context(), set, validConfig(), sink)
+	require.NoError(t, err)
+
+	metrics := pmetric.NewMetrics()
+	for _, tenant := range []string{"t1", "t2", "t1"} {
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("tenant.id", tenant)
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("m")
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+	}
+	require.NoError(t, proc.ConsumeMetrics(t.Context(), metrics))
+	assert.Len(t, sink.AllMetrics(), 2)
+
+	for _, name := range []string{"otelcol_processor_incoming_items", "otelcol_processor_outgoing_items"} {
+		m, err := tel.GetMetric(name)
+		require.NoError(t, err, name)
+		sum, ok := m.Data.(metricdata.Sum[int64])
+		require.True(t, ok, name)
+		require.Len(t, sum.DataPoints, 1, name)
+		assert.Equal(t, int64(3), sum.DataPoints[0].Value, name)
+	}
+}
+
+type capturingMetricsConsumer struct {
+	fn func(ctx context.Context, md pmetric.Metrics) error
+}
+
+func (*capturingMetricsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (c *capturingMetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	return c.fn(ctx, md)
 }
