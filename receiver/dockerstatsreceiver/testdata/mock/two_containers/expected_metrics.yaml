@@ -33,6 +33,13 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: ubuntu
+        - key: container.labels
+          value:
+            kvlistValue:
+              values:
+                - key: container.label
+                  value:
+                    stringValue: container-label
         - key: container.name
           value:
             stringValue: pensive_aryabhata
@@ -798,7 +805,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 1.2936487136369361e+08
+                - asDouble: 1.3390789982826354e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
@@ -820,6 +827,13 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: alpine
+        - key: container.labels
+          value:
+            kvlistValue:
+              values:
+                - key: container.label
+                  value:
+                    stringValue: container-label2
         - key: container.name
           value:
             stringValue: loving_torvalds
@@ -1585,7 +1599,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 1.2936481538907899e+08
+                - asDouble: 1.3390784385364893e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
