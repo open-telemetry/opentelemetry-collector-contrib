@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_aws_ec2
+
 package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 
 import (
@@ -25,11 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr   = "ec2"
-	tagPrefix = "ec2.tag."
-)
+const tagPrefix = "ec2.tag."
 
 var _ internal.Detector = (*Detector)(nil)
 
