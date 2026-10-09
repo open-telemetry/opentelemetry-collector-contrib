@@ -99,6 +99,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.162.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.162.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider v0.162.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.162.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.162.0 // indirect
@@ -342,3 +343,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/conte
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest => ../../pkg/semconvtest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl => ../../pkg/ottl/xottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider => ../../extension/internal/secretprovider
