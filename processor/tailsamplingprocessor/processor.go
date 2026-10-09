@@ -1017,9 +1017,9 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 	return samplingpolicy.Pending, "", pkgsampling.AlwaysSampleThreshold
 }
 
-// splitResourceSpansByTrace copies spans from rss into one ResourceSpans per
-// trace ID. MutatesData is false, so we can't move the source. We copy in one
-// pass instead of grouping into a slice first.
+// splitResourceSpansByTrace moves spans from rss into one ResourceSpans per
+// trace ID in one pass, instead of grouping into a slice first. The resource
+// and scopes are copied, since several traces may share them.
 //
 // We walk scopes in order and never go back, so lastScope is enough to open
 // dest scopes in first-seen order.
@@ -1054,7 +1054,7 @@ func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
 				b.lastScope = j
 			}
 			destSpan := b.destScope.Spans().AppendEmpty()
-			span.CopyTo(destSpan)
+			span.MoveTo(destSpan)
 			b.count++
 			if destSpan.ParentSpanID().IsEmpty() {
 				b.hasRoot = true

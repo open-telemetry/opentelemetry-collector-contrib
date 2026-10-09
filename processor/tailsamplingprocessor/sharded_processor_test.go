@@ -335,7 +335,7 @@ func TestShardedProcessorCapabilities(t *testing.T) {
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
-	assert.False(t, p.Capabilities().MutatesData)
+	assert.True(t, p.Capabilities().MutatesData)
 }
 
 func TestTraceIDToShard(t *testing.T) {
