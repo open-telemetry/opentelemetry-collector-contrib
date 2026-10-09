@@ -1,6 +1,6 @@
 change_type: breaking
 
-component: receiver/signalfx
+component: all
 
 note: Remove the deprecated SignalFx receiver. Use the OTLP receiver instead.
 
