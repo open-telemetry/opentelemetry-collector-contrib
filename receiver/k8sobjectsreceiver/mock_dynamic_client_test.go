@@ -23,8 +23,12 @@ func newMockDynamicClient() mockDynamicClient {
 	objs := []runtime.Object{}
 
 	gvrToListKind := map[schema.GroupVersionResource]string{
-		{Group: "", Version: "v1", Resource: "pods"}:       "PodList",
-		{Group: "", Version: "v1", Resource: "namespaces"}: "NamespaceList",
+		{Group: "", Version: "v1", Resource: "pods"}:                "PodList",
+		{Group: "", Version: "v1", Resource: "namespaces"}:          "NamespaceList",
+		{Group: "", Version: "v1", Resource: "events"}:              "EventList",
+		{Group: "events.k8s.io", Version: "v1", Resource: "events"}: "EventList",
+		{Group: "group1", Version: "v1", Resource: "myresources"}:   "MyResourceList",
+		{Group: "group2", Version: "v1", Resource: "myresources"}:   "MyResourceList",
 	}
 
 	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind, objs...)
