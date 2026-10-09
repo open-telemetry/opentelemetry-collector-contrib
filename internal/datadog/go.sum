@@ -42,8 +42,8 @@ github.com/DataDog/datadog-agent/pkg/fips v0.82.0 h1:JrHLxlnUr69XExJnsLLpU2I4r2d
 github.com/DataDog/datadog-agent/pkg/fips v0.82.0/go.mod h1:1t48EvAXnUSEba5GWeq5uB8iOs3FDhlj08EVrWu8Is0=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0-devel.0.20260714134811-fee4bbf7ff73 h1:DcH0iCTkFUCsTHmB9ru2fKmnDLcxU8z3ifqIkaK8TS8=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0-devel.0.20260714134811-fee4bbf7ff73/go.mod h1:ss7uy5zwPGDzWRdpG8EEQOgp6cf1XaotvXaQGqC+1Ss=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9 h1:7Y67wcAGNwLMbeSMLewuJtCeCwcqobINq+OW5kl9/fI=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260918174637-8e55c7f268f9/go.mod h1:STfiDM3cNuJJlNfLTXhm1kfZa888sF59g3wzikFBEmU=
+github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260930220258-a8c2777f7050 h1:dWjbcEPMu0Hi+4MkePIb1j4jBx16lnfpl9ntQtfEXKU=
+github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260930220258-a8c2777f7050/go.mod h1:LT/wiqizIe3MOgueYhP8ruewfUHOgDk7iXj9Y1Pflw0=
 github.com/DataDog/datadog-agent/pkg/proto v0.82.0 h1:3IniGYr5au2P1/EFFl1WvqnE37NT5OJEe22alQ8o2Jw=
 github.com/DataDog/datadog-agent/pkg/proto v0.82.0/go.mod h1:o59ZSwSu/xgqEo7w0+Fpp2TGZzkWeTsQij7bnEh55dE=
 github.com/DataDog/datadog-agent/pkg/serializer v0.82.0 h1:VCkcXwoEDy3b4XX//sALC7HyBOFDXPe+gPGUpY/4EF8=
@@ -428,8 +428,8 @@ go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.4.0 h1:m
 go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.4.0/go.mod h1:7UXaX/7uT+kumUHd3LIWyjMlklEp0mPlrE9xmtbG6/8=
 go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.4.0 h1:rLHkdB6eHDiRSIoz0cvNuTJsVJBxaL6IyS1e9BSaXLY=
 go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.4.0/go.mod h1:BrX0dmOGsMuWNXXbFafTD7Gb6F3yK+2czVQ6+c24Cnk=
-go.uber.org/atomic v1.11.0 h1:ZvwS0R+56ePWxUNi+Atn9dWONBPp/AUETXlHW0DxSjE=
-go.uber.org/atomic v1.11.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=
+go.uber.org/atomic v1.12.0 h1:BvcXdFKuviU4fTL/f+SxdQ5qJX/Jix8pAkgdUcb3XOE=
+go.uber.org/atomic v1.12.0/go.mod h1:I6c4cg+6HCxRjfjSsYtApoFILnpc0CGUdGkXVqbYVNk=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
