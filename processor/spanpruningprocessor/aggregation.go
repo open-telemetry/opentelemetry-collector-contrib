@@ -88,6 +88,8 @@ func (*spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationG
 func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *traceTree) int {
 	prunedCount := 0
 	prefix := p.config.AggregationAttributePrefix
+	// mergedInto maps a prior run's summary SpanID to the summary it merged into.
+	var mergedInto map[string]ptrace.Span
 
 	for i := range plan.groups {
 		group := &plan.groups[i]
@@ -103,7 +105,15 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 		}
 
 		// Create summary span with correct parent
-		p.createSummarySpanWithParent(*group, data, summaryParentID)
+		summary := p.createSummarySpanWithParent(*group, data, summaryParentID)
+		for _, node := range group.nodes {
+			if node.existingSummary != nil {
+				if mergedInto == nil {
+					mergedInto = make(map[string]ptrace.Span)
+				}
+				mergedInto[node.span.SpanID().String()] = summary
+			}
+		}
 
 		// Mark preserved outliers with reference to summary span.
 		for _, outlier := range group.preservedOutliers {
@@ -130,6 +140,9 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 		}
 		prunedCount += len(group.nodes)
 	}
+
+	// Must run before removal below, which invalidates the removed spans.
+	relinkPriorKept(tree.priorKept, mergedInto, prefix)
 
 	// Collect unique ScopeSpans that contain marked nodes, then remove in a
 	// single pass per ScopeSpans using the tree's flags set during analysis.

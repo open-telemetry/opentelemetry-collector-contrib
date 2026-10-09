@@ -27,6 +27,7 @@ type spanNode struct {
 	isPreservedOutlier bool             // true if this node is the root of a preserved outlier subtree
 	isExemplar         bool             // true if this node is the root of a sampled exemplar subtree
 	protected          bool             // true if this node is within a preserved outlier or exemplar subtree (never aggregated)
+	priorKept          bool             // true if this node is within a subtree an earlier run kept as a preserved outlier or exemplar
 }
 
 // traceTree holds span nodes indexed by ID plus quick leaf/orphan lists for
@@ -35,6 +36,9 @@ type traceTree struct {
 	nodeByID map[pcommon.SpanID]*spanNode
 	leaves   []*spanNode // nodes with no children, populated during build
 	orphans  []*spanNode // spans whose parent is not in the trace
+	// priorKept holds roots of subtrees an earlier run kept as preserved
+	// outliers or exemplars; populated only when merging existing summaries.
+	priorKept []*spanNode
 }
 
 // buildTraceTree constructs parent/child links for a trace and records
@@ -103,6 +107,10 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	sort.Slice(tree.leaves, func(i, j int) bool {
 		return nodeOrderLess(tree.leaves[i], tree.leaves[j])
 	})
+
+	if p.mergeSummaryPrefix != "" {
+		tree.priorKept = protectPriorKept(tree.nodeByID, p.mergeSummaryPrefix)
+	}
 
 	// Log warnings for incomplete traces
 	if rootCount > 1 {

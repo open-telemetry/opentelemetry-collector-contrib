@@ -611,6 +611,8 @@ What changes when it is enabled:
   configured ones, and are dropped instead of approximated when the two cannot
   be combined.
 - Outlier detection and exemplar sampling cover only the newly arrived spans.
+- Spans an earlier run kept as preserved outliers or exemplars stay kept, and
+  are relinked to the summary their own was merged into.
 - A span whose summary attributes are missing or inconsistent is left alone.
 
 A late span merges only when the summary it belongs beside is still present; one

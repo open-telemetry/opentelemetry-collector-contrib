@@ -4,6 +4,7 @@
 package spanpruningprocessor
 
 import (
+	"encoding/hex"
 	"testing"
 	"time"
 
@@ -1194,4 +1195,262 @@ func TestMerge_RoundTripsThisProcessorsOwnOutput(t *testing.T) {
 	// and adds the three late spans into the 10ms bucket.
 	assert.Equal(t, []float64{0.01, 0.05}, float64Slice(t, merged, "aggregation.histogram_bucket_bounds_s"))
 	assert.Equal(t, []int64{8, 8, 8}, int64Slice(t, merged, "aggregation.histogram_bucket_counts"))
+}
+
+// newKeptSpanTraces builds "parent" with seven 2ms SELECT leaves and one 50ms
+// SELECT leaf, which a first pass with outlier preservation keeps as an outlier.
+func newKeptSpanTraces() ptrace.Traces {
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	parent := ss.Spans().AppendEmpty()
+	parent.SetTraceID(testTraceID)
+	parent.SetSpanID(newSpanID(1))
+	parent.SetName("parent")
+	for i := range 8 {
+		d := 2 * msNs
+		if i == 7 {
+			d = 50 * msNs
+		}
+		appendLeafSpan(ss, newSpanID(byte(20+i)), newSpanID(1), "SELECT",
+			testStart+int64(i)*msNs, d, map[string]string{"db.operation": "select"})
+	}
+	return td
+}
+
+func outlierMergeConfig(t *testing.T) *Config {
+	t.Helper()
+	cfg := mergeTestConfig(t, true)
+	cfg.MinSpansToAggregate = 3
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis.PreserveOutliers = true
+	cfg.OutlierAnalysis.MinGroupSize = 4
+	require.NoError(t, cfg.Validate())
+	return cfg
+}
+
+func strSlice(t *testing.T, span ptrace.Span, key string) []string {
+	t.Helper()
+	v, ok := span.Attributes().Get(key)
+	require.True(t, ok, "attribute %q should exist", key)
+	out := make([]string, 0, v.Slice().Len())
+	for i := 0; i < v.Slice().Len(); i++ {
+		out = append(out, v.Slice().At(i).Str())
+	}
+	return out
+}
+
+func TestMerge_SecondPassKeepsPreservedOutlier(t *testing.T) {
+	cfg := outlierMergeConfig(t)
+
+	td := runProcessor(t, cfg, newKeptSpanTraces())
+	first, found := findSummarySpan(td)
+	require.True(t, found)
+	require.Equal(t, int64(7), intAttr(t, first, "aggregation.span_count"))
+	require.True(t, spanPresent(td, newSpanID(27)), "pass 1 keeps the 50ms outlier")
+	firstID := first.SpanID()
+	before := countSpans(td)
+
+	// Pass 2 over the same output, with nothing new to merge.
+	td = runProcessor(t, cfg, td)
+
+	assert.True(t, spanPresent(td, newSpanID(27)), "the outlier pass 1 kept survives pass 2")
+	assert.Equal(t, before, countSpans(td))
+	summary, found := findSummarySpan(td)
+	require.True(t, found)
+	assert.Equal(t, firstID, summary.SpanID(), "the untouched summary is not re-emitted")
+}
+
+func TestMerge_SecondPassKeepsExemplars(t *testing.T) {
+	cfg := mergeTestConfig(t, true)
+	cfg.MinSpansToAggregate = 3
+	cfg.EnableExemplarSampling = true
+	cfg.ExemplarSampling.PrecisionMultiplier = 1.0
+	require.NoError(t, cfg.Validate())
+
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	parent := ss.Spans().AppendEmpty()
+	parent.SetTraceID(testTraceID)
+	parent.SetSpanID(newSpanID(1))
+	parent.SetName("parent")
+	for i := range 9 {
+		appendLeafSpan(ss, newSpanID(byte(20+i)), newSpanID(1), "SELECT",
+			testStart+int64(i)*msNs, 2*msNs, map[string]string{"db.operation": "select"})
+	}
+
+	td = runProcessor(t, cfg, td)
+	first, found := findSummarySpan(td)
+	require.True(t, found)
+	exemplarIDs := strSlice(t, first, "aggregation.exemplar_span_ids")
+	require.Len(t, exemplarIDs, 3)
+	firstID := first.SpanID()
+	before := countSpans(td)
+
+	td = runProcessor(t, cfg, td)
+
+	assert.Equal(t, before, countSpans(td), "the exemplars pass 1 kept survive pass 2")
+	summary, found := findSummarySpan(td)
+	require.True(t, found)
+	assert.Equal(t, firstID, summary.SpanID(), "the untouched summary is not re-emitted")
+}
+
+func TestMerge_KeptOutlierFollowsMergedSummary(t *testing.T) {
+	cfg := outlierMergeConfig(t)
+
+	td := runProcessor(t, cfg, newKeptSpanTraces())
+	first, found := findSummarySpan(td)
+	require.True(t, found)
+	firstID := first.SpanID()
+
+	// Three 2ms spans of the same shape arrive beside the summary and outlier.
+	late := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	for i := range 3 {
+		appendLeafSpan(late, newSpanID(byte(40+i)), newSpanID(1), "SELECT",
+			testStart+int64(i)*msNs, 2*msNs, map[string]string{"db.operation": "select"})
+	}
+
+	td = runProcessor(t, cfg, td)
+
+	merged, found := findSummarySpan(td)
+	require.True(t, found)
+	require.NotEqual(t, firstID, merged.SpanID())
+	assert.Equal(t, int64(10), intAttr(t, merged, "aggregation.span_count"),
+		"the seven spans behind the first summary plus the three late ones")
+
+	outlier, found := findSpan(td, newSpanID(27))
+	require.True(t, found, "the outlier pass 1 kept survives the merge")
+	assert.Equal(t, newSpanID(1), outlier.ParentSpanID())
+	ref, ok := outlier.Attributes().Get("aggregation.summary_span_id")
+	require.True(t, ok)
+	assert.Equal(t, merged.SpanID().String(), ref.Str(), "the outlier points at the summary that replaced its own")
+	assert.Equal(t, []string{newSpanID(27).String()}, strSlice(t, merged, "aggregation.preserved_outlier_span_ids"))
+	assert.Equal(t, int64(1), intAttr(t, merged, "aggregation.preserved_outlier_count"))
+	_, hasMedian := merged.Attributes().Get("aggregation.duration_median_ns")
+	assert.False(t, hasMedian, "three late spans are below min_group_size once the kept outlier is left out")
+}
+
+func TestMerge_NewAndKeptOutliersShareOneSummary(t *testing.T) {
+	cfg := outlierMergeConfig(t)
+
+	td := runProcessor(t, cfg, newKeptSpanTraces())
+
+	// Seven more 2ms spans and one 60ms outlier arrive late.
+	late := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	for i := range 8 {
+		d := 2 * msNs
+		if i == 7 {
+			d = 60 * msNs
+		}
+		appendLeafSpan(late, newSpanID(byte(40+i)), newSpanID(1), "SELECT",
+			testStart+int64(i)*msNs, d, map[string]string{"db.operation": "select"})
+	}
+
+	td = runProcessor(t, cfg, td)
+
+	merged, found := findSummarySpan(td)
+	require.True(t, found)
+	assert.Equal(t, int64(14), intAttr(t, merged, "aggregation.span_count"))
+	assert.ElementsMatch(t, []string{newSpanID(27).String(), newSpanID(47).String()},
+		strSlice(t, merged, "aggregation.preserved_outlier_span_ids"))
+	assert.Equal(t, int64(2), intAttr(t, merged, "aggregation.preserved_outlier_count"))
+	assert.Equal(t, 2*msNs, intAttr(t, merged, "aggregation.duration_median_ns"))
+	for _, id := range []pcommon.SpanID{newSpanID(27), newSpanID(47)} {
+		outlier, found := findSpan(td, id)
+		require.True(t, found)
+		ref, _ := outlier.Attributes().Get("aggregation.summary_span_id")
+		assert.Equal(t, merged.SpanID().String(), ref.Str())
+	}
+}
+
+func TestMerge_KeptExemplarFollowsMergedSummary(t *testing.T) {
+	cfg := mergeTestConfig(t, true)
+	cfg.MinSpansToAggregate = 3
+	cfg.EnableExemplarSampling = true
+	cfg.ExemplarSampling.PrecisionMultiplier = 1.0
+	require.NoError(t, cfg.Validate())
+
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	parent := ss.Spans().AppendEmpty()
+	parent.SetTraceID(testTraceID)
+	parent.SetSpanID(newSpanID(1))
+	parent.SetName("parent")
+	for i := range 9 {
+		appendLeafSpan(ss, newSpanID(byte(20+i)), newSpanID(1), "SELECT",
+			testStart+int64(i)*msNs, 2*msNs, map[string]string{"db.operation": "select"})
+	}
+	td = runProcessor(t, cfg, td)
+	first, found := findSummarySpan(td)
+	require.True(t, found)
+	priorExemplars := strSlice(t, first, "aggregation.exemplar_span_ids")
+	require.Len(t, priorExemplars, 3)
+
+	late := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	for i := range 4 {
+		appendLeafSpan(late, newSpanID(byte(40+i)), newSpanID(1), "SELECT",
+			testStart+int64(i)*msNs, 2*msNs, map[string]string{"db.operation": "select"})
+	}
+	td = runProcessor(t, cfg, td)
+
+	merged, found := findSummarySpan(td)
+	require.True(t, found)
+	ids := strSlice(t, merged, "aggregation.exemplar_span_ids")
+	assert.Subset(t, ids, priorExemplars, "the exemplars pass 1 kept stay listed")
+	// ceil(sqrt(4)) = 2 new exemplars are drawn from the four late spans only.
+	assert.Len(t, ids, 5)
+	assert.Equal(t, int64(len(ids)), intAttr(t, merged, "aggregation.exemplar_count"))
+	// The six from pass 1 plus the two late spans not drawn.
+	assert.Equal(t, int64(8), intAttr(t, merged, "aggregation.span_count"))
+	for _, idStr := range priorExemplars {
+		var id pcommon.SpanID
+		_, err := hex.Decode(id[:], []byte(idStr))
+		require.NoError(t, err)
+		exemplar, found := findSpan(td, id)
+		require.True(t, found)
+		ref, _ := exemplar.Attributes().Get("aggregation.summary_span_id")
+		assert.Equal(t, merged.SpanID().String(), ref.Str())
+		_, isOutlier := exemplar.Attributes().Get("aggregation.is_preserved_outlier")
+		assert.False(t, isOutlier)
+	}
+}
+
+func TestMerge_KeptOutlierIsReparentedWhenItsParentAggregates(t *testing.T) {
+	cfg := outlierMergeConfig(t)
+
+	// root -> handler(2) -> seven 2ms SELECTs and one 50ms SELECT.
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(testTraceID)
+	root.SetSpanID(newSpanID(1))
+	root.SetName("root")
+	appendLeafSpan(ss, newSpanID(2), newSpanID(1), "handler", testStart, 100*msNs, nil)
+	for i := range 8 {
+		d := 2 * msNs
+		if i == 7 {
+			d = 50 * msNs
+		}
+		appendLeafSpan(ss, newSpanID(byte(20+i)), newSpanID(2), "SELECT",
+			testStart+int64(i)*msNs, d, map[string]string{"db.operation": "select"})
+	}
+	td = runProcessor(t, cfg, td)
+	require.True(t, spanPresent(td, newSpanID(27)))
+	require.True(t, spanPresent(td, newSpanID(2)), "a lone handler has nothing to aggregate with")
+
+	// A second handler subtree arrives late, so the two handlers now aggregate.
+	late := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	appendLeafSpan(late, newSpanID(3), newSpanID(1), "handler", testStart, 90*msNs, nil)
+	for i := range 3 {
+		appendLeafSpan(late, newSpanID(byte(40+i)), newSpanID(3), "SELECT",
+			testStart+int64(i)*msNs, 2*msNs, map[string]string{"db.operation": "select"})
+	}
+	td = runProcessor(t, cfg, td)
+
+	require.False(t, spanPresent(td, newSpanID(2)), "the handlers aggregated")
+	handlerSummary, found := findSummarySpanByLevel(td, 1)
+	require.True(t, found)
+	outlier, found := findSpan(td, newSpanID(27))
+	require.True(t, found)
+	assert.Equal(t, handlerSummary.SpanID(), outlier.ParentSpanID(),
+		"the kept outlier moves under the summary that replaced its parent")
 }

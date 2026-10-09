@@ -5,6 +5,8 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"math"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -250,18 +252,21 @@ func containsExistingSummary(nodes []*spanNode) bool {
 	return false
 }
 
-// rawNodes returns the members of a group that are not existing summaries.
+// rawNodes returns the members of a group that are new individual
+// observations: not existing summaries, and not spans an earlier run kept.
 // Sample-based analyses (outlier detection, exemplar sampling) need individual
 // duration observations, which a summary span does not have: its start/end
 // timestamps describe the envelope of a whole prior group, not one operation.
-// It returns the input slice unchanged when the group holds no summaries.
+// Prior-kept spans are left out so they are not counted again.
+// It returns the input slice unchanged when the group holds neither.
 func rawNodes(nodes []*spanNode) []*spanNode {
-	if !containsExistingSummary(nodes) {
+	skip := func(n *spanNode) bool { return n.existingSummary != nil || n.priorKept }
+	if !slices.ContainsFunc(nodes, skip) {
 		return nodes
 	}
 	out := make([]*spanNode, 0, len(nodes))
 	for _, n := range nodes {
-		if n.existingSummary == nil {
+		if !skip(n) {
 			out = append(out, n)
 		}
 	}
@@ -278,4 +283,73 @@ func (p *spanPruningProcessor) groupMeetsMinimum(nodes []*spanNode) bool {
 		return true
 	}
 	return len(nodes) >= 2 && containsExistingSummary(nodes)
+}
+
+// protectPriorKept protects the subtrees an earlier run kept as preserved
+// outliers or exemplars, so a later run does not fold them back into the summary
+// they were kept beside. It returns their roots in a stable order.
+func protectPriorKept(nodeByID map[pcommon.SpanID]*spanNode, prefix string) []*spanNode {
+	var roots []*spanNode
+	for _, n := range nodeByID {
+		attrs := n.span.Attributes()
+		switch {
+		case getTrue(attrs, prefix+"is_preserved_outlier"):
+			markOutlierSubtree(n)
+		case getTrue(attrs, prefix+"is_exemplar"):
+			markExemplarSubtree(n)
+		default:
+			continue
+		}
+		for _, d := range subtreeNodes(n) {
+			d.priorKept = true
+		}
+		roots = append(roots, n)
+	}
+	sort.Slice(roots, func(i, j int) bool {
+		return nodeOrderLess(roots[i], roots[j])
+	})
+	return roots
+}
+
+// relinkPriorKept keeps prior-kept spans attached to the summary they belong
+// beside: it reparents them when this run aggregated their parent, and moves
+// their summary_span_id, plus their entry in the summary's ID list, onto the
+// summary their own was merged into.
+func relinkPriorKept(roots []*spanNode, mergedInto map[string]ptrace.Span, prefix string) {
+	for _, n := range roots {
+		if n.parent != nil && !n.parent.replacementSpanID.IsEmpty() {
+			n.span.SetParentSpanID(n.parent.replacementSpanID)
+		}
+
+		attrs := n.span.Attributes()
+		ref, ok := attrs.Get(prefix + "summary_span_id")
+		if !ok || ref.Type() != pcommon.ValueTypeStr {
+			continue
+		}
+		summary, ok := mergedInto[ref.Str()]
+		if !ok {
+			continue
+		}
+		attrs.PutStr(prefix+"summary_span_id", summary.SpanID().String())
+
+		listKey, countKey := prefix+"exemplar_span_ids", prefix+"exemplar_count"
+		if n.isPreservedOutlier {
+			listKey, countKey = prefix+"preserved_outlier_span_ids", prefix+"preserved_outlier_count"
+		}
+		summaryAttrs := summary.Attributes()
+		var ids pcommon.Slice
+		if v, ok := summaryAttrs.Get(listKey); ok && v.Type() == pcommon.ValueTypeSlice {
+			ids = v.Slice()
+		} else {
+			ids = summaryAttrs.PutEmptySlice(listKey)
+		}
+		ids.AppendEmpty().SetStr(n.span.SpanID().String())
+		summaryAttrs.PutInt(countKey, int64(ids.Len()))
+	}
+}
+
+// getTrue reports whether key holds the bool true.
+func getTrue(attrs pcommon.Map, key string) bool {
+	v, ok := attrs.Get(key)
+	return ok && v.Type() == pcommon.ValueTypeBool && v.Bool()
 }
