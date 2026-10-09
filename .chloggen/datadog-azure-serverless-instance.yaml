@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Drop `instance` from the Azure App Service and Azure Functions running metrics, because the value used (`WEBSITE_INSTANCE_ID` / `faas.instance`) does not match the Azure Monitor `Instance` dimension."
+note: "Drop `instance` from the Azure App Service and Azure Functions running metrics in preparation for more accurate instance descriptions."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 # TODO: set to this PR's number once it is opened.
@@ -18,7 +18,6 @@ issues: []
 # Use pipe (|) for multiline entries.
 subtext: |
   `otel.datadog_exporter.metrics.running.azureappservices` and `otel.datadog_exporter.metrics.running.azurefunctions` are now tagged only with `name`, `subscription_id`, and `resource_group`, and App Service metrics no longer get an `instance` tag.
-  An instance value will come back once the Azure detectors emit the matching attribute.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
