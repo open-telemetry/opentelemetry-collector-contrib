@@ -293,14 +293,12 @@ $(ALL_MODS):
 	@echo "Running target '$(TARGET)' in module '$@' as part of group '$(GROUP)'"
 	$(MAKE) --no-print-directory -C $@ $(TARGET)
 
-# datadogexporter and its integrationtest are the two heaviest modules to
-# type-check. Under `make -jN` they can run concurrently and the combined
-# memory peak OOM-kills the CI runner, so serialize them relative to each
-# other (each may still run alongside a lighter module). A plain prerequisite
-# is used so it works on the runner's GNU Make 4.3 (`.WAIT`/`.NOTPARALLEL`
-# prereqs need 4.4+).
-exporter/datadogexporter/integrationtest: exporter/datadogexporter
-pkg/datadog: exporter/datadogexporter/integrationtest
+# The datadog modules are the heaviest to type-check. Under `make -jN` they
+# can run concurrently and the combined memory peak OOM-kills the CI runner,
+# so serialize them relative to each other (each may still run alongside a
+# lighter module). A plain prerequisite is used so it works on the runner's
+# GNU Make 4.3 (`.WAIT`/`.NOTPARALLEL` prereqs need 4.4+).
+pkg/datadog: exporter/datadogexporter
 extension/datadogextension: pkg/datadog
 connector/datadogconnector: extension/datadogextension
 exporter/datadogexporter: internal/datadog
@@ -725,6 +723,27 @@ CERT_DIRS := receiver/signalfxreceiver/testdata \
 .PHONY: certs
 certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
+
+# Extract the relative path of every module listed between "stable-base:" and "contrib-base:" in versions.yaml
+STABLE_MODULES := $(shell sed -n -e '/stable-base:/,/contrib-base:/ s/.*- github.com\/open-telemetry\/opentelemetry-collector-contrib/./p' versions.yaml)
+
+.PHONY: for-all-stable-target
+for-all-stable-target: $(STABLE_MODULES)
+
+# Construct new API state snapshots
+.PHONY: apidiff-build
+apidiff-build:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-build-mod"
+
+# Compare API state snapshots and log differences
+.PHONY: apidiff-compare
+apidiff-compare:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-compare-mod"
+
+# Compare API state snapshots and fail if there are differences
+.PHONY: apidiff-check
+apidiff-check:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-check-mod"
 
 .PHONY: multimod-verify
 multimod-verify:

@@ -603,7 +603,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -1995,7 +1995,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -2029,7 +2029,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -2090,7 +2090,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -2156,7 +2156,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value", "value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}, {Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -2190,7 +2190,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"_", "_"},
+								Params: []localIdentifierDecl{{Identifier: "_"}, {Identifier: "_"}},
 								Body: lambdaBody{
 									Value: &value{
 										String: new("ok"),
@@ -2225,7 +2225,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"a", "b"},
+								Params: []localIdentifierDecl{{Identifier: "a"}, {Identifier: "b"}},
 								Body: lambdaBody{
 									Expr: &booleanExpression{
 										Left: &term{
@@ -3513,7 +3513,7 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 			{
 				Value: value{
 					Lambda: &lambdaExpr{
-						Params: []localIdentifierDecl{"value"},
+						Params: []localIdentifierDecl{{Identifier: "value"}},
 						Body: lambdaBody{
 							Value: &value{
 								Literal: &mathExprLiteral{
@@ -3598,6 +3598,70 @@ func Test_PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate(t *testing.T) {
 
 		_, err = p.newParseContext().newFunctionCall(pathArg("testing_experimental_slicegetter"))
 		require.NoError(t, err)
+	})
+}
+
+func Test_NewFunctionCall_sliceGetterLiteralNotSlice(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, true)()
+
+	p, err := NewParser(
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		function string
+		arg      value
+		wantErr  string
+	}{
+		{
+			name:     "string",
+			function: "testing_slicegetter",
+			arg:      value{String: new("a")},
+			wantErr:  "invalid argument at position 0: expected a slice, got string",
+		},
+		{
+			name:     "int",
+			function: "testing_slicegetter",
+			arg:      value{Literal: &mathExprLiteral{Int: new(int64(1))}},
+			wantErr:  "invalid argument at position 0: expected a slice, got int64",
+		},
+		{
+			name:     "bool",
+			function: "testing_slicegetter",
+			arg:      value{Bool: (*boolean)(new(true))},
+			wantErr:  "invalid argument at position 0: expected a slice, got bool",
+		},
+		{
+			name:     "optional",
+			function: "testing_optional_slicegetter",
+			arg:      value{String: new("a")},
+			wantErr:  "invalid argument at position 0: expected a slice, got string",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := p.newParseContext().newFunctionCall(editor{
+				Function:  tt.function,
+				Arguments: []argument{{Value: tt.arg}},
+			})
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+
+	t.Run("nil literal is a nil slice", func(t *testing.T) {
+		expr, err := p.newParseContext().newFunctionCall(editor{
+			Function:  "testing_slicegetter",
+			Arguments: []argument{{Value: value{IsNil: (*isNil)(new(true))}}},
+		})
+		require.NoError(t, err)
+		got, err := expr.Eval(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, 0, got)
 	})
 }
 

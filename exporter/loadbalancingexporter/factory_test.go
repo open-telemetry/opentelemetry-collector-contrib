@@ -202,15 +202,16 @@ func TestWrappedExporterHasEndpointAttribute(t *testing.T) {
 }
 
 func TestBuildExporterResilienceOptions(t *testing.T) {
-	t.Run("Shouldn't have resilience options by default", func(t *testing.T) {
+	t.Run("Should only have queue option by default", func(t *testing.T) {
 		o := []exporterhelper.Option{}
 		cfg := createDefaultConfig().(*Config)
-		assert.Empty(t, buildExporterResilienceOptions(o, cfg))
+		assert.Len(t, buildExporterResilienceOptions(o, cfg), 1)
 	})
 	t.Run("Should have timeout option if defined", func(t *testing.T) {
 		o := []exporterhelper.Option{}
 		cfg := createDefaultConfig().(*Config)
 		cfg.TimeoutSettings = exporterhelper.NewDefaultTimeoutConfig()
+		cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 
 		assert.Len(t, buildExporterResilienceOptions(o, cfg), 1)
 	})
