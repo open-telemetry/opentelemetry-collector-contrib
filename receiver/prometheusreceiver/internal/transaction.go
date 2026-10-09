@@ -260,8 +260,16 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		mf, ok := t.families[key][scope][fnKey]
 		if !ok || mf.name != fn || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
-			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
-			if mfKey.name != curMf.name {
+			canonicalKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}
+			if prev, existed := t.families[key][scope][canonicalKey]; existed && prev != curMf && prev.name == canonicalKey.name {
+				for k, v := range t.families[key][scope] {
+					if v == prev && k.name != prev.name {
+						delete(t.families[key][scope], k)
+					}
+				}
+			}
+			t.families[key][scope][canonicalKey] = curMf
+			if mfKey.name != curMf.name && curMf.includesMetric(mn) {
 				if existing, exists := t.families[key][scope][mfKey]; !exists || existing.name != mfKey.name {
 					t.families[key][scope][mfKey] = curMf
 				}
@@ -275,12 +283,16 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 			}
 		}
 	}
-	t.lastMFRKey = key
-	t.lastMFScope = scope
-	t.lastMetricName = mn
-	t.lastIsExpHist = t.addingNativeHistogram
-	t.lastIsNHCB = t.addingNHCB
-	t.lastMF = curMf
+	if curMf.name == mn || curMf.includesMetric(mn) {
+		t.lastMFRKey = key
+		t.lastMFScope = scope
+		t.lastMetricName = mn
+		t.lastIsExpHist = t.addingNativeHistogram
+		t.lastIsNHCB = t.addingNHCB
+		t.lastMF = curMf
+	} else {
+		t.lastMF = nil
+	}
 	return curMf
 }
 
