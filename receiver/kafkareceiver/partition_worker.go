@@ -352,23 +352,24 @@ func (c *franzConsumer) maxInFlight() int {
 	return 1
 }
 
-// processRecordsConcurrent runs up to maxInFlight handleMessage calls at once
-// on one partition. It marks the contiguous accepted prefix as records finish.
-// That prefix includes failures message marking skips. After an unmarked
-// failure it starts no new calls and waits for the in-flight ones. It returns
-// that record, whether the error is permanent, and the last record of the
-// accepted prefix. Before a rewind it remembers the offsets it already finished
-// above the hole, so this worker skips Consume for them on the next fetch.
+// processRecordsConcurrent runs up to maxInFlight handleMessage calls, and
+// max_in_flight.bytes bytes of records, at once on one partition. It marks the
+// contiguous accepted prefix as records finish. That prefix includes failures
+// message marking skips. After an unmarked failure it starts no new calls and
+// waits for the in-flight ones. It returns that record, whether the error is
+// permanent, and the last record of the accepted prefix. Before a rewind it
+// remembers the offsets it already finished above the hole, so this worker
+// skips Consume for them on the next fetch.
 func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartition) (fatalRecord *kgo.Record, fatalIsPermanent bool, lastProcessed *kgo.Record) {
 	b := &inflightBatch{
 		c:             c,
 		pc:            pc,
 		p:             p,
-		sem:           make(chan struct{}, c.maxInFlight()),
 		errs:          make([]error, len(p.Records)),
 		done:          make([]bool, len(p.Records)),
 		markedThrough: -1,
 	}
+	b.room = sync.NewCond(&b.mu)
 	for i, msg := range p.Records {
 		if pc.ctx.Err() != nil {
 			break
@@ -378,10 +379,11 @@ func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartiti
 			b.complete(i, nil)
 			continue
 		}
-		if !b.acquire() {
+		size := len(msg.Key) + len(msg.Value)
+		if !b.acquire(size) {
 			break
 		}
-		b.start(i)
+		b.start(i, size)
 	}
 	b.wg.Wait()
 
@@ -408,13 +410,17 @@ func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartiti
 
 // inflightBatch holds the state of one batch in processRecordsConcurrent.
 type inflightBatch struct {
-	c   *franzConsumer
-	pc  *pc
-	p   kgo.FetchTopicPartition
-	sem chan struct{}
-	wg  sync.WaitGroup
+	c  *franzConsumer
+	pc *pc
+	p  kgo.FetchTopicPartition
+	wg sync.WaitGroup
 
 	mu sync.Mutex
+	// room is signaled when a call finishes.
+	room *sync.Cond
+	// inflight and inflightBytes count the calls between acquire and release.
+	inflight      int
+	inflightBytes int
 	// errs holds failures message marking does not skip. A non-nil entry is a
 	// hole the accepted prefix cannot pass.
 	errs []error
@@ -425,27 +431,39 @@ type inflightBatch struct {
 	markedThrough int
 }
 
-// acquire waits for a free slot. It returns false when a record has failed or
-// the partition context is done, so a revoked partition does not start another
-// Consume after this wait.
-func (b *inflightBatch) acquire() bool {
-	b.sem <- struct{}{}
+// acquire waits until a record of size bytes fits under both max_in_flight
+// limits. It returns false when a record has failed or the partition context is
+// done, so a revoked partition does not start another Consume after this wait.
+func (b *inflightBatch) acquire(size int) bool {
+	cfg := b.c.config.PartitionProcessing.MaxInFlight
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	// An empty window always admits one record, so a record above bytes runs alone
+	// instead of blocking the partition. A waiter is woken by a call finishing,
+	// so it sees a cancelled context at the next release.
+	for !b.failed && b.pc.ctx.Err() == nil &&
+		b.inflight > 0 && (b.inflight >= cfg.Records || (cfg.Bytes > 0 && b.inflightBytes+size > cfg.Bytes)) {
+		b.room.Wait()
+	}
 	if b.failed || b.pc.ctx.Err() != nil {
-		<-b.sem
 		return false
 	}
+	b.inflight++
+	b.inflightBytes += size
 	return true
 }
 
 // start runs handleMessage for record i on its own goroutine. The caller must
-// hold a slot from acquire.
-func (b *inflightBatch) start(i int) {
+// have called acquire with the same size.
+func (b *inflightBatch) start(i, size int) {
 	b.wg.Go(func() {
-		// Release after complete, so the next acquire sees failed.
-		defer func() { <-b.sem }()
 		b.complete(i, b.c.handleMessage(b.pc, b.p.Records[i]))
+		// Release after complete, so the next acquire sees failed.
+		b.mu.Lock()
+		b.inflight--
+		b.inflightBytes -= size
+		b.mu.Unlock()
+		b.room.Signal()
 	})
 }
 

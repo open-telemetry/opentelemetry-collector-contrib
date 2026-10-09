@@ -111,6 +111,7 @@ kafka/partition_processing_max_in_flight:
     max_buffered_batches: 1
     max_in_flight:
       records: 4
+      bytes: 33554432
 
 kafka/invalid_exclude_topics_logs_non_regex:
   logs:
@@ -202,3 +203,10 @@ kafka/invalid_partition_processing_zero_max_in_flight:
     independent: true
     max_in_flight:
       records: 0
+
+kafka/invalid_partition_processing_negative_max_in_flight_bytes:
+  partition_processing:
+    independent: true
+    max_in_flight:
+      records: 2
+      bytes: -1
