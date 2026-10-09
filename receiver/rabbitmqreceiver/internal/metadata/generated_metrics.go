@@ -57,6 +57,10 @@ var MapAttributeMessageState = map[string]AttributeMessageState{
 }
 
 var MetricsInfo = metricsInfo{
+	RabbitmqBinding: metricInfo{
+		Name:       "rabbitmq.binding",
+		Attributes: []string{"properties_key", "routing_key"},
+	},
 	RabbitmqConsumerCount: metricInfo{
 		Name: "rabbitmq.consumer.count",
 	},
@@ -307,6 +311,7 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
+	RabbitmqBinding                             metricInfo
 	RabbitmqConsumerCount                       metricInfo
 	RabbitmqExchangeMessagesPublishedIn         metricInfo
 	RabbitmqExchangeMessagesPublishedOut        metricInfo
@@ -394,6 +399,100 @@ type metricsInfo struct {
 type metricInfo struct {
 	Name       string
 	Attributes []string
+}
+
+type metricRabbitmqBinding struct {
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        RabbitmqBindingMetricConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int              // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills rabbitmq.binding metric with initial data.
+func (m *metricRabbitmqBinding) init() {
+	m.data.SetName("rabbitmq.binding")
+	m.data.SetDescription("Indicates a binding exists between a RabbitMQ exchange and a queue. The resource carries both the exchange and queue names, letting queue and exchange metrics be correlated through this metric.")
+	m.data.SetUnit("{binding}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricRabbitmqBinding) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, propertiesKeyAttributeValue string, routingKeyAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqBindingMetricAttributeKeyPropertiesKey) {
+		dp.Attributes().PutStr("properties_key", propertiesKeyAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqBindingMetricAttributeKeyRoutingKey) {
+		dp.Attributes().PutStr("routing_key", routingKeyAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRabbitmqBinding) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRabbitmqBinding) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRabbitmqBinding(cfg RabbitmqBindingMetricConfig) metricRabbitmqBinding {
+	m := metricRabbitmqBinding{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricRabbitmqConsumerCount struct {
@@ -4711,6 +4810,7 @@ type MetricsBuilder struct {
 	buildInfo                                         component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter                    map[string]filter.Filter
 	resourceAttributeExcludeFilter                    map[string]filter.Filter
+	metricRabbitmqBinding                             metricRabbitmqBinding
 	metricRabbitmqConsumerCount                       metricRabbitmqConsumerCount
 	metricRabbitmqExchangeMessagesPublishedIn         metricRabbitmqExchangeMessagesPublishedIn
 	metricRabbitmqExchangeMessagesPublishedOut        metricRabbitmqExchangeMessagesPublishedOut
@@ -4818,6 +4918,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		startTime:                   pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:               pmetric.NewMetrics(),
 		buildInfo:                   settings.BuildInfo,
+		metricRabbitmqBinding:       newMetricRabbitmqBinding(mbc.Metrics.RabbitmqBinding),
 		metricRabbitmqConsumerCount: newMetricRabbitmqConsumerCount(mbc.Metrics.RabbitmqConsumerCount),
 		metricRabbitmqExchangeMessagesPublishedIn:         newMetricRabbitmqExchangeMessagesPublishedIn(mbc.Metrics.RabbitmqExchangeMessagesPublishedIn),
 		metricRabbitmqExchangeMessagesPublishedOut:        newMetricRabbitmqExchangeMessagesPublishedOut(mbc.Metrics.RabbitmqExchangeMessagesPublishedOut),
@@ -5008,6 +5109,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricRabbitmqBinding.emit(ils.Metrics())
 	mb.metricRabbitmqConsumerCount.emit(ils.Metrics())
 	mb.metricRabbitmqExchangeMessagesPublishedIn.emit(ils.Metrics())
 	mb.metricRabbitmqExchangeMessagesPublishedOut.emit(ils.Metrics())
@@ -5119,6 +5221,11 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordRabbitmqBindingDataPoint adds a data point to rabbitmq.binding metric.
+func (mb *MetricsBuilder) RecordRabbitmqBindingDataPoint(ts pcommon.Timestamp, val int64, propertiesKeyAttributeValue string, routingKeyAttributeValue string) {
+	mb.metricRabbitmqBinding.recordDataPoint(mb.startTime, ts, val, propertiesKeyAttributeValue, routingKeyAttributeValue)
 }
 
 // RecordRabbitmqConsumerCountDataPoint adds a data point to rabbitmq.consumer.count metric.

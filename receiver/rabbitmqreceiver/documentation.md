@@ -76,6 +76,21 @@ metrics:
     enabled: true
 ```
 
+### rabbitmq.binding
+
+Indicates a binding exists between a RabbitMQ exchange and a queue. The resource carries both the exchange and queue names, letting queue and exchange metrics be correlated through this metric.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {binding} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| properties_key | The key RabbitMQ uses to distinguish bindings that share a source, destination and routing key but have different arguments. | Any Str | Recommended | - |
+| routing_key | The routing key of a RabbitMQ binding. | Any Str | Recommended | - |
+
 ### rabbitmq.exchange.messages.published_in
 
 The total number of messages published into an exchange from channels.
