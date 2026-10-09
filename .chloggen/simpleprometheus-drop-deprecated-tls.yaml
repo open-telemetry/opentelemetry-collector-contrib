@@ -1,0 +1,16 @@
+change_type: breaking
+
+component: receiver/prometheus_simple
+
+note: Remove the long-deprecated `tls_enabled` and `tls_config` settings; use `tls` instead
+
+issues: [51895]
+
+subtext: |
+  `tls_enabled`/`tls_config` were deprecated in v0.55.0 in favor of the standard
+  `tls` block (confighttp's TLS settings). Besides being long overdue, keeping both
+  was a footgun: setting `tls_enabled: true` silently overrode any `tls` block.
+  Migrate `tls_config` (`ca_file`/`cert_file`/`key_file`/`insecure_skip_verify`) to
+  the equivalent fields under `tls`.
+
+change_logs: []

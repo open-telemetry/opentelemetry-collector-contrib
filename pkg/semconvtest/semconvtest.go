@@ -41,11 +41,18 @@ const (
 	// live-check report in the /stop response.
 	minWeaverVersion = "v0.22.1"
 
+	// reportEndpointVersion is the otel/weaver version that changed the
+	// live-check HTTP lifecycle: POST /stop no longer returns the report or
+	// terminates the process. The report must be read separately from
+	// GET /report, and the process must be told to exit via POST /shutdown.
+	// See https://github.com/open-telemetry/weaver/releases/tag/v0.27.0.
+	reportEndpointVersion = "v0.27.0"
+
 	// defaultWeaverVersion is the otel/weaver image version used when a test
 	// does not select one with WithVersion. Renovate watches the line below
 	// and opens an update PR when a new Weaver release appears.
 	// renovate: datasource=docker depName=otel/weaver
-	defaultWeaverVersion = "v0.26.1"
+	defaultWeaverVersion = "v0.27.0"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
@@ -71,6 +78,17 @@ type weaverOptions struct {
 	registry string
 }
 
+// normalizeWeaverVersion converts a Docker tag into a "v"-prefixed string
+// for semver comparison. ok is false for tags that aren't valid semver
+// (e.g. "latest"), which Docker resolves on its own.
+func normalizeWeaverVersion(version string) (normalized string, ok bool) {
+	normalized = version
+	if !strings.HasPrefix(normalized, "v") {
+		normalized = "v" + normalized
+	}
+	return normalized, semver.IsValid(normalized)
+}
+
 // validateWeaverVersion rejects semver versions older than minWeaverVersion.
 // Tags that don't parse as semver (e.g. "latest") are passed through so
 // Docker can resolve them.
@@ -78,20 +96,30 @@ func validateWeaverVersion(version string) error {
 	if version == "" || version == "latest" {
 		return nil
 	}
-	// The semver package only accepts "v"-prefixed versions, but Docker
-	// tags come both ways; normalize a copy for the comparison while
-	// keeping the original for the error message.
-	normalized := version
-	if !strings.HasPrefix(normalized, "v") {
-		normalized = "v" + normalized
-	}
-	if !semver.IsValid(normalized) {
+	normalized, ok := normalizeWeaverVersion(version)
+	if !ok {
 		return nil
 	}
 	if semver.Compare(normalized, minWeaverVersion) < 0 {
 		return fmt.Errorf("weaver version %q is not supported: this package relies on --output=http, which requires %s or newer", version, minWeaverVersion)
 	}
 	return nil
+}
+
+// weaverUsesReportEndpoint reports whether version uses the GET /report +
+// POST /shutdown live-check lifecycle introduced in reportEndpointVersion,
+// as opposed to the older lifecycle where POST /stop alone returned the
+// report and ended the process. Non-semver tags (e.g. "latest") are assumed
+// to track the newest behavior.
+func weaverUsesReportEndpoint(version string) bool {
+	if version == "" || version == "latest" {
+		return true
+	}
+	normalized, ok := normalizeWeaverVersion(version)
+	if !ok {
+		return true
+	}
+	return semver.Compare(normalized, reportEndpointVersion) >= 0
 }
 
 // TestLogs validates the provided logs against semantic conventions using
@@ -197,9 +225,12 @@ func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context,
 // weaverSession holds the running Weaver container and the clients used to
 // talk to it.
 type weaverSession struct {
-	container    *testcontainers.DockerContainer
-	clients      *pdataClients
-	stopEndpoint string
+	container         *testcontainers.DockerContainer
+	clients           *pdataClients
+	stopEndpoint      string
+	reportEndpoint    string
+	shutdownEndpoint  string
+	useReportEndpoint bool
 }
 
 // startWeaver starts a Weaver live-check container and constructs the OTLP
@@ -241,48 +272,86 @@ func startWeaver(ctx context.Context, opts *weaverOptions) (*weaverSession, erro
 		return nil, err
 	}
 
+	useReportEndpoint := weaverUsesReportEndpoint(opts.version)
+
 	return &weaverSession{
-		container:    container,
-		clients:      clients,
-		stopEndpoint: fmt.Sprintf("http://%s:%s/stop", host, mappedStopPort.Port()),
+		container:         container,
+		clients:           clients,
+		stopEndpoint:      fmt.Sprintf("http://%s:%s/stop", host, mappedStopPort.Port()),
+		reportEndpoint:    fmt.Sprintf("http://%s:%s/report", host, mappedStopPort.Port()),
+		shutdownEndpoint:  fmt.Sprintf("http://%s:%s/shutdown", host, mappedStopPort.Port()),
+		useReportEndpoint: useReportEndpoint,
 	}, nil
 }
 
-// stop sends a POST request to Weaver's /stop endpoint to stop the listener.
-// With --output=http, Weaver returns the live-check report in the response
-// body.
-func (s *weaverSession) stop(ctx context.Context) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, stopTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.stopEndpoint, http.NoBody)
+// doRequest performs an HTTP request with no body against one of Weaver's
+// control endpoints and returns the response body, failing on a non-200
+// status.
+func doRequest(ctx context.Context, method, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stop request: %w", err)
+		return nil, fmt.Errorf("failed to create %s request: %w", method, err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call stop endpoint: %w", err)
+		return nil, fmt.Errorf("failed to call %s %s: %w", method, url, err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("stop endpoint returned status %d", resp.StatusCode)
-	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read stop response: %w", err)
+		return nil, fmt.Errorf("failed to read %s response: %w", method, err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s %s returned status %d: %s", method, url, resp.StatusCode, body)
 	}
 
 	return body, nil
 }
 
+// stop ends the Weaver live-check run and returns the report body.
+//
+// Before reportEndpointVersion, POST /stop returns the live-check report
+// directly. From reportEndpointVersion on, POST /stop only ends the run; the
+// report must be fetched separately from GET /report.
+func (s *weaverSession) stop(ctx context.Context) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, stopTimeout)
+	defer cancel()
+
+	stopBody, err := doRequest(ctx, http.MethodPost, s.stopEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call stop endpoint: %w", err)
+	}
+
+	if !s.useReportEndpoint {
+		return stopBody, nil
+	}
+
+	report, err := doRequest(ctx, http.MethodGet, s.reportEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch live-check report: %w", err)
+	}
+	return report, nil
+}
+
 // shutdown closes the OTLP clients and stops the Weaver container.
+//
+// From reportEndpointVersion on, the Weaver process no longer exits once
+// stop has read the report; it waits for an explicit POST /shutdown before
+// doing so, and --inactivity-timeout is ignored in this mode. Without that
+// call, the container.Stop below sends SIGTERM to a process that stays
+// idle, and testcontainers has to force-kill it once shutdownTimeout lapses.
 func (s *weaverSession) shutdown(ctx context.Context) error {
 	var errs []error
 	if s.clients != nil {
 		errs = append(errs, s.clients.close())
+	}
+	if s.useReportEndpoint {
+		if _, err := doRequest(ctx, http.MethodPost, s.shutdownEndpoint); err != nil {
+			errs = append(errs, fmt.Errorf("failed to call shutdown endpoint: %w", err))
+		}
 	}
 	timeout := shutdownTimeout
 	errs = append(errs, s.container.Stop(ctx, &timeout))
