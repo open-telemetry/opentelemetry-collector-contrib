@@ -86,7 +86,7 @@ type dnslog struct {
 	TargetName             string   `json:"target_name"`
 	TargetType             string   `json:"target_type"`
 	UnhealthyIps           string   `json:"unhealthyIps"`
-	VMInstanceID           *int64   `json:"vmInstanceId"`
+	VMInstanceIDString     string   `json:"vmInstanceIdString"`
 	VMInstanceName         string   `json:"vmInstanceName"`
 	VMProjectID            string   `json:"vmProjectId"`
 	VMZoneName             string   `json:"vmZoneName"`
@@ -129,8 +129,10 @@ func handleDNSFeatureAttributes(log *dnslog, attr pcommon.Map) {
 	shared.PutBool(gcpDNSDNS64Translated, log.DNS64Translated, attr)
 }
 
+// vmInstanceId is intentionally not decoded: it is a JSON double that can't represent
+// instance IDs exactly, and Cloud Logging may write it in exponent notation.
 func handleVMInstanceAttributes(log *dnslog, attr pcommon.Map) {
-	shared.PutInt(string(conventions.HostIDKey), log.VMInstanceID, attr)
+	shared.PutStr(string(conventions.HostIDKey), log.VMInstanceIDString, attr)
 	shared.PutStr(string(conventions.HostNameKey), log.VMInstanceName, attr)
 	shared.PutStr(gcpProjectID, log.VMProjectID, attr)
 	shared.PutStr(string(conventions.CloudAvailabilityZoneKey), log.VMZoneName, attr)

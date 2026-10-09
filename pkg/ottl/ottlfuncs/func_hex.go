@@ -15,6 +15,8 @@ type hexArguments[K any] struct {
 	Target ottl.ByteSliceLikeGetter[K]
 }
 
+// NewHexFactory returns a factory for the Hex OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#hex
 func NewHexFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Hex", &hexArguments[K]{}, createHexFunction[K])
 }

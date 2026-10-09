@@ -16,6 +16,8 @@ type trimSuffixArguments[K any] struct {
 	Suffix ottl.StringGetter[K]
 }
 
+// NewTrimSuffixFactory returns a factory for the TrimSuffix OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#trimsuffix
 func NewTrimSuffixFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("TrimSuffix", &trimSuffixArguments[K]{}, createTrimSuffixFunction[K])
 }

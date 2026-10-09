@@ -14,6 +14,8 @@ type stringArguments[K any] struct {
 	Target ottl.StringLikeGetter[K]
 }
 
+// NewStringFactory returns a factory for the String OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#string
 func NewStringFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("String", &stringArguments[K]{}, createStringFunction[K])
 }

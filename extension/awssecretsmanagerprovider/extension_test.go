@@ -24,7 +24,8 @@ type mockSMClient struct {
 }
 
 func (m *mockSMClient) GetSecretValue(_ context.Context, _ *secretsmanager.GetSecretValueInput,
-	_ ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error) {
+	_ ...func(*secretsmanager.Options),
+) (*secretsmanager.GetSecretValueOutput, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.err != nil {

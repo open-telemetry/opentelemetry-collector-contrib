@@ -14,6 +14,8 @@ type dayArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewDayFactory returns a factory for the Day OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#day
 func NewDayFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Day", &dayArguments[K]{}, createDayFunction[K])
 }

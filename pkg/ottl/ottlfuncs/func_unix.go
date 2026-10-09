@@ -16,6 +16,8 @@ type unixArguments[K any] struct {
 	Nanoseconds ottl.Optional[ottl.IntGetter[K]]
 }
 
+// NewUnixFactory returns a factory for the Unix OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#unix
 func NewUnixFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Unix", &unixArguments[K]{}, createUnixFunction[K])
 }

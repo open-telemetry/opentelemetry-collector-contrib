@@ -14,6 +14,8 @@ type unixMilliArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewUnixMilliFactory returns a factory for the UnixMilli OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#unixmilli
 func NewUnixMilliFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("UnixMilli", &unixMilliArguments[K]{}, createUnixMilliFunction[K])
 }

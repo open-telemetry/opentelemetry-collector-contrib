@@ -14,6 +14,8 @@ type unixSecondsArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewUnixSecondsFactory returns a factory for the UnixSeconds OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#unixseconds
 func NewUnixSecondsFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("UnixSeconds", &unixSecondsArguments[K]{}, createUnixSecondsFunction[K])
 }

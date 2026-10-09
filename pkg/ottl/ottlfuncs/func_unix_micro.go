@@ -14,6 +14,8 @@ type unixMicroArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewUnixMicroFactory returns a factory for the UnixMicro OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#unixmicro
 func NewUnixMicroFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("UnixMicro", &unixMicroArguments[K]{}, createUnixMicroFunction[K])
 }

@@ -15,6 +15,8 @@ type durationArguments[K any] struct {
 	Duration ottl.StringGetter[K]
 }
 
+// NewDurationFactory returns a factory for the Duration OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#duration
 func NewDurationFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Duration", &durationArguments[K]{}, createDurationFunction[K])
 }

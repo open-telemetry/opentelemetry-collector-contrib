@@ -16,6 +16,8 @@ type mD5Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewMD5Factory returns a factory for the MD5 OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#md5
 func NewMD5Factory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("MD5", &mD5Arguments[K]{}, createMD5Function[K])
 }

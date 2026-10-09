@@ -19,6 +19,8 @@ type appendArguments[K any] struct {
 	Values ottl.Optional[[]ottl.Getter[K]]
 }
 
+// NewAppendFactory returns a factory for the append OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#append
 func NewAppendFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("append", &appendArguments[K]{}, createAppendFunction[K])
 }

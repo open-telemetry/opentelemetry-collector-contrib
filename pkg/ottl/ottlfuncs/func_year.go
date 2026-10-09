@@ -14,6 +14,8 @@ type yearArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewYearFactory returns a factory for the Year OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#year
 func NewYearFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Year", &yearArguments[K]{}, createYearFunction[K])
 }

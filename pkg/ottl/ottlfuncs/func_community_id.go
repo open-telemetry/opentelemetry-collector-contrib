@@ -34,6 +34,8 @@ type communityIDArguments[K any] struct {
 	Seed            ottl.Optional[ottl.IntGetter[K]]
 }
 
+// NewCommunityIDFactory returns a factory for the CommunityID OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#communityid
 func NewCommunityIDFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("CommunityID", &communityIDArguments[K]{}, createCommunityIDFunction[K])
 }

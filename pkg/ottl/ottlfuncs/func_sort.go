@@ -26,6 +26,8 @@ type sortArguments[K any] struct {
 	Order  ottl.Optional[string]
 }
 
+// NewSortFactory returns a factory for the Sort OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#sort
 func NewSortFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Sort", &sortArguments[K]{}, createSortFunction[K])
 }

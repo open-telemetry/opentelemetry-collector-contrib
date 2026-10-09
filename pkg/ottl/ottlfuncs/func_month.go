@@ -14,6 +14,8 @@ type monthArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewMonthFactory returns a factory for the Month OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#month
 func NewMonthFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Month", &monthArguments[K]{}, createMonthFunction[K])
 }

@@ -16,6 +16,8 @@ type sHA512Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewSHA512Factory returns a factory for the SHA512 OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#sha512
 func NewSHA512Factory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("SHA512", &sHA512Arguments[K]{}, createSHA512Function[K])
 }

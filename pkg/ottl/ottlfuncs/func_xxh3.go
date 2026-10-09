@@ -17,6 +17,8 @@ type xXH3Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewXXH3Factory returns a factory for the XXH3 OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#xxh3
 func NewXXH3Factory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("XXH3", &xXH3Arguments[K]{}, createXXH3Function[K])
 }
