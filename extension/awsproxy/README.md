@@ -24,7 +24,7 @@ Example:
 
 ```yaml
 extensions:
-  awsproxy:
+  aws_proxy:
     endpoint: 0.0.0.0:2000
     proxy_address: ""
     tls:
