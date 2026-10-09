@@ -13,7 +13,6 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"k8s.io/client-go/rest"
@@ -38,7 +37,7 @@ func newPrometheusReceiverWrapper(params receiver.Settings, cfg *Config, consume
 func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	pFactory := prometheusreceiver.NewFactory()
 
-	pConfig, err := getPrometheusConfigWrapper(prw.config, prw.params)
+	pConfig, err := getPrometheusConfig(prw.config)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
@@ -55,23 +54,6 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 
 	prw.prometheusReceiver = pr
 	return prw.prometheusReceiver.Start(ctx, host)
-}
-
-// Deprecated: [v0.55.0] Use getPrometheusConfig instead.
-func getPrometheusConfigWrapper(cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
-	if cfg.TLSEnabled {
-		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
-		cfg.ClientConfig.TLS = configtls.ClientConfig{
-			Config: configtls.Config{
-				CAFile:   cfg.TLSConfig.CAFile,
-				CertFile: cfg.TLSConfig.CertFile,
-				KeyFile:  cfg.TLSConfig.KeyFile,
-			},
-			Insecure:           false,
-			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
-		}
-	}
-	return getPrometheusConfig(cfg)
 }
 
 func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
