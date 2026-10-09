@@ -76,6 +76,38 @@ metrics:
     enabled: true
 ```
 
+### rabbitmq.channel.count
+
+The number of open channels.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {channels} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| rabbitmq.channel.consuming | Whether the channel has at least one consumer. | Any Bool | Opt-In | - |
+| rabbitmq.channel.prefetch_count | The prefetch limit applied to consumers on the channel (0 means unlimited). | Any Int | Opt-In | - |
+| rabbitmq.user.name | The RabbitMQ user that owns the channel or connection. | Any Str | Recommended | - |
+| rabbitmq.vhost.name | The vHost of the channel or connection. | Any Str | Recommended | - |
+
+### rabbitmq.connection.count
+
+The number of open connections.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connections} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| rabbitmq.user.name | The RabbitMQ user that owns the channel or connection. | Any Str | Recommended | - |
+| rabbitmq.vhost.name | The vHost of the channel or connection. | Any Str | Recommended | - |
+
 ### rabbitmq.exchange.messages.published_in
 
 The total number of messages published into an exchange from channels.

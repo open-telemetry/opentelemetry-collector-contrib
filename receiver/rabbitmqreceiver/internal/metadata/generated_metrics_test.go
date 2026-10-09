@@ -67,6 +67,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["rabbitmq.channel.count"] = mb.metricRabbitmqChannelCount.config.AggregationStrategy
+			aggMap["rabbitmq.connection.count"] = mb.metricRabbitmqConnectionCount.config.AggregationStrategy
 			aggMap["rabbitmq.message.current"] = mb.metricRabbitmqMessageCurrent.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -76,6 +78,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
+
+			allMetricsCount++
+			mb.RecordRabbitmqChannelCountDataPoint(ts, 1, false, 22, "user.name-val", "vhost.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqChannelCountDataPoint(ts, 3, true, 23, "user.name-val-2", "vhost.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordRabbitmqChannelCountDataPoint(ts+1, 3, true, 23, "user.name-val-2", "vhost.name-val-2")
+				assert.Equal(t, 2, mb.metricRabbitmqChannelCount.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordRabbitmqConnectionCountDataPoint(ts, 1, "user.name-val", "vhost.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordRabbitmqConnectionCountDataPoint(ts, 3, "user.name-val-2", "vhost.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordRabbitmqConnectionCountDataPoint(ts+1, 3, "user.name-val-2", "vhost.name-val-2")
+				assert.Equal(t, 2, mb.metricRabbitmqConnectionCount.data.Sum().DataPoints().Len())
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
@@ -339,6 +359,8 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricRabbitmqChannelCount.aggDataPoints)
+				assert.Empty(t, mb.metricRabbitmqConnectionCount.aggDataPoints)
 				assert.Empty(t, mb.metricRabbitmqMessageCurrent.aggDataPoints)
 			}
 
@@ -367,6 +389,112 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
+				case "rabbitmq.channel.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.channel.count"], "Found a duplicate in the metrics slice: rabbitmq.channel.count")
+						validatedMetrics["rabbitmq.channel.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of open channels.", mi.Description())
+						assert.Equal(t, "{channels}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						userNameAttrVal, ok := dp.Attributes().Get("rabbitmq.user.name")
+						assert.True(t, ok)
+						assert.Equal(t, "user.name-val", userNameAttrVal.Str())
+						vhostNameAttrVal, ok := dp.Attributes().Get("rabbitmq.vhost.name")
+						assert.True(t, ok)
+						assert.Equal(t, "vhost.name-val", vhostNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.channel.count"], "Found a duplicate in the metrics slice: rabbitmq.channel.count")
+						validatedMetrics["rabbitmq.channel.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The number of open channels.", mi.Description())
+						assert.Equal(t, "{channels}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.channel.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("rabbitmq.channel.consuming")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("rabbitmq.channel.prefetch_count")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("rabbitmq.user.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("rabbitmq.vhost.name")
+						assert.False(t, ok)
+					}
+				case "rabbitmq.connection.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["rabbitmq.connection.count"], "Found a duplicate in the metrics slice: rabbitmq.connection.count")
+						validatedMetrics["rabbitmq.connection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of open connections.", mi.Description())
+						assert.Equal(t, "{connections}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						userNameAttrVal, ok := dp.Attributes().Get("rabbitmq.user.name")
+						assert.True(t, ok)
+						assert.Equal(t, "user.name-val", userNameAttrVal.Str())
+						vhostNameAttrVal, ok := dp.Attributes().Get("rabbitmq.vhost.name")
+						assert.True(t, ok)
+						assert.Equal(t, "vhost.name-val", vhostNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["rabbitmq.connection.count"], "Found a duplicate in the metrics slice: rabbitmq.connection.count")
+						validatedMetrics["rabbitmq.connection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The number of open connections.", mi.Description())
+						assert.Equal(t, "{connections}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["rabbitmq.connection.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("rabbitmq.user.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("rabbitmq.vhost.name")
+						assert.False(t, ok)
+					}
 				case "rabbitmq.consumer.count":
 					assert.False(t, validatedMetrics["rabbitmq.consumer.count"], "Found a duplicate in the metrics slice: rabbitmq.consumer.count")
 					validatedMetrics["rabbitmq.consumer.count"] = true

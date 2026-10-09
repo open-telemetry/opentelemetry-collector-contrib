@@ -1,0 +1,14 @@
+[
+    {
+        "user": "app-user",
+        "vhost": "dev"
+    },
+    {
+        "user": "app-user",
+        "vhost": "dev"
+    },
+    {
+        "user": "other-user",
+        "vhost": "prod"
+    }
+]
