@@ -1,0 +1,10 @@
+# TODO(before submitting): replace `issues: [0]` with the real upstream issue or PR number.
+change_type: enhancement
+
+component: extension/datadog
+
+note: Add `NewFactoryWithOptions` so a host embedding the collector can supply extra Agent-config options, for example to propagate an API key rotation into the extension's forwarder.
+
+issues: [0]
+
+change_logs: [api]
