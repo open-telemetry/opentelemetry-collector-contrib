@@ -73,6 +73,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval:     5 * time.Second,
 					ConfigApplyTimeout:          2 * time.Second,
 					BootstrapTimeout:            5 * time.Second,
+					StopGracePeriod:             10 * time.Second,
 					CollectorCrashLogSnippetKiB: 0,
 					UseHUPConfigReload:          false,
 				},
@@ -201,6 +202,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -226,6 +228,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -275,6 +278,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval:     5 * time.Second,
 					ConfigApplyTimeout:          2 * time.Second,
 					BootstrapTimeout:            5 * time.Second,
+					StopGracePeriod:             10 * time.Second,
 					CollectorCrashLogSnippetKiB: -1,
 				},
 				Capabilities: Capabilities{
@@ -301,6 +305,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval:     5 * time.Second,
 					ConfigApplyTimeout:          2 * time.Second,
 					BootstrapTimeout:            5 * time.Second,
+					StopGracePeriod:             10 * time.Second,
 					CollectorCrashLogSnippetKiB: 1025,
 				},
 				Capabilities: Capabilities{
@@ -327,6 +332,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -352,6 +358,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -377,6 +384,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        -5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -402,6 +410,7 @@ func TestValidate(t *testing.T) {
 					ConfigApplyTimeout:      2 * time.Second,
 					OpAMPServerPort:         65536,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -427,6 +436,7 @@ func TestValidate(t *testing.T) {
 					ConfigApplyTimeout:      2 * time.Second,
 					OpAMPServerPort:         0,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -452,6 +462,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					OpAMPServerPort:         8080,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -461,6 +472,60 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErrorFunc: simpleError("agent::config_apply_timeout must be valid duration"),
+		},
+		{
+			name: "Negative stop grace period",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					OpAMPServerPort:         8080,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         -1 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::stop_grace_period must be positive"),
+		},
+		{
+			name: "Zero stop grace period",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					OpAMPServerPort:         8080,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         0,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::stop_grace_period must be positive"),
 		},
 		{
 			name: "HUP config reload not supported on Windows",
@@ -477,6 +542,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					UseHUPConfigReload:      true,
 				},
 				Capabilities: Capabilities{
@@ -510,6 +576,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -536,6 +603,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -561,6 +629,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					ConfigFiles: []string{
 						"$DOESNTEXIST",
 					},
@@ -589,6 +658,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					UseHUPConfigReload:      false,
 				},
 				Capabilities: Capabilities{
@@ -615,6 +685,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					Package: AgentPackage{
 						Verifier: Verifier{Type: "cosign"},
 					},
@@ -1043,6 +1114,7 @@ agent:
 						OrphanDetectionInterval:     DefaultSupervisor().Agent.OrphanDetectionInterval,
 						ConfigApplyTimeout:          DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
+						StopGracePeriod:             DefaultSupervisor().Agent.StopGracePeriod,
 						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
 						Package:                     DefaultSupervisor().Agent.Package,
@@ -1088,6 +1160,7 @@ agent:
   orphan_detection_interval: 10s
   config_apply_timeout: 8s
   bootstrap_timeout: 8s
+  stop_grace_period: 20s
   opamp_server_port: 8090
   passthrough_logs: true
   automatic_config_rollback: true
@@ -1140,6 +1213,7 @@ telemetry:
 						OrphanDetectionInterval:     10 * time.Second,
 						ConfigApplyTimeout:          8 * time.Second,
 						BootstrapTimeout:            8 * time.Second,
+						StopGracePeriod:             20 * time.Second,
 						OpAMPServerPort:             8090,
 						PassthroughLogs:             true,
 						CollectorCrashLogSnippetKiB: 100,
@@ -1186,6 +1260,7 @@ agent:
 						OrphanDetectionInterval:     DefaultSupervisor().Agent.OrphanDetectionInterval,
 						ConfigApplyTimeout:          DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
+						StopGracePeriod:             DefaultSupervisor().Agent.StopGracePeriod,
 						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
 						Package:                     DefaultSupervisor().Agent.Package,
