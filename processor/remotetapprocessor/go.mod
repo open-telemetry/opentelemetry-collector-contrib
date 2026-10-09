@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.162.1-0.20261006173156-20487f801913
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/time v0.16.0
 )
 
