@@ -27,6 +27,9 @@ $defs:
       endpoint:
         description: Endpoint is the URL used for communicated with S3.
         type: string
+      external_id:
+        description: ExternalID is passed to STS when assuming RoleArn. Required when the role's trust policy has an sts:ExternalId condition.
+        type: string
       file_prefix:
         description: FilePrefix is the filename prefix used for the file to avoid any potential collisions.
         type: string

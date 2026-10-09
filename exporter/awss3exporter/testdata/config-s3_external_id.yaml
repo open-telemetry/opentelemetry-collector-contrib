@@ -1,0 +1,22 @@
+receivers:
+  nop:
+
+exporters:
+  awss3:
+    s3uploader:
+        region: 'us-east-1'
+        s3_bucket: 'foo'
+        s3_prefix: 'bar'
+        s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
+        role_arn: 'arn:aws:iam::123456789012:role/my_role'
+        external_id: 'my-external-id'
+
+processors:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awss3]

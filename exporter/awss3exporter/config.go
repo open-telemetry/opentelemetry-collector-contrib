@@ -42,6 +42,9 @@ type S3UploaderConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// RoleArn is the role policy to use when interacting with S3
 	RoleArn string `mapstructure:"role_arn"`
+	// ExternalID is passed to STS when assuming RoleArn. Required when the
+	// role's trust policy has an sts:ExternalId condition.
+	ExternalID string `mapstructure:"external_id"`
 	// S3ForcePathStyle sets the value for force path style.
 	S3ForcePathStyle bool `mapstructure:"s3_force_path_style"`
 	// DisableSLL forces communication to happen via HTTP instead of HTTPS.
@@ -132,6 +135,10 @@ func (c *Config) Validate() error {
 
 	if !validStorageClasses[s3types.StorageClass(c.S3Uploader.StorageClass)] {
 		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
+	}
+
+	if c.S3Uploader.ExternalID != "" && c.S3Uploader.RoleArn == "" {
+		errs = multierr.Append(errs, errors.New("external_id requires role_arn"))
 	}
 
 	if c.S3Uploader.ACL != "" && !validACLs[s3types.ObjectCannedACL(c.S3Uploader.ACL)] {
