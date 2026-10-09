@@ -24,7 +24,7 @@ import (
 func TestNewClient(t *testing.T) {
 	testCase := []struct {
 		desc        string
-		cfg         *Config
+		cfg         *PollConfig
 		host        component.Host
 		settings    component.TelemetrySettings
 		logger      *zap.Logger
@@ -32,7 +32,7 @@ func TestNewClient(t *testing.T) {
 	}{
 		{
 			desc: "Valid v2c configuration",
-			cfg: &Config{
+			cfg: &PollConfig{
 				Version:   "v2c",
 				Endpoint:  "udp://localhost:161",
 				Community: "public",
@@ -44,7 +44,7 @@ func TestNewClient(t *testing.T) {
 		},
 		{
 			desc: "Valid v3 configuration",
-			cfg: &Config{
+			cfg: &PollConfig{
 				Version:         "v3",
 				Endpoint:        "tcp://localhost:161",
 				User:            "user",
@@ -79,7 +79,7 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func compareConfigToClient(t *testing.T, client *snmpClient, cfg *Config) {
+func compareConfigToClient(t *testing.T, client *snmpClient, cfg *PollConfig) {
 	t.Helper()
 
 	require.Contains(t, cfg.Endpoint, client.client.GetTarget())

@@ -44,92 +44,92 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 		},
 	}
 	expectedConfigSimple := factory.CreateDefaultConfig().(*Config)
-	expectedConfigSimple.Metrics = metrics
+	expectedConfigSimple.LegacyPoll.Metrics = metrics
 
 	expectedConfigInvalidEndpoint := factory.CreateDefaultConfig().(*Config)
-	expectedConfigInvalidEndpoint.Endpoint = "udp://a:a:a:a:a:a"
-	expectedConfigInvalidEndpoint.Metrics = metrics
+	expectedConfigInvalidEndpoint.LegacyPoll.Endpoint = "udp://a:a:a:a:a:a"
+	expectedConfigInvalidEndpoint.LegacyPoll.Metrics = metrics
 
 	expectedConfigNoPort := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoPort.Endpoint = "udp://localhost"
-	expectedConfigNoPort.Metrics = metrics
+	expectedConfigNoPort.LegacyPoll.Endpoint = "udp://localhost"
+	expectedConfigNoPort.LegacyPoll.Metrics = metrics
 
 	expectedConfigNoPortTrailingColon := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoPortTrailingColon.Endpoint = "udp://localhost:"
-	expectedConfigNoPortTrailingColon.Metrics = metrics
+	expectedConfigNoPortTrailingColon.LegacyPoll.Endpoint = "udp://localhost:"
+	expectedConfigNoPortTrailingColon.LegacyPoll.Metrics = metrics
 
 	expectedConfigBadEndpointScheme := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadEndpointScheme.Endpoint = "http://localhost:161"
-	expectedConfigBadEndpointScheme.Metrics = metrics
+	expectedConfigBadEndpointScheme.LegacyPoll.Endpoint = "http://localhost:161"
+	expectedConfigBadEndpointScheme.LegacyPoll.Metrics = metrics
 
 	expectedConfigNoEndpointScheme := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoEndpointScheme.Endpoint = "localhost:161"
-	expectedConfigNoEndpointScheme.Metrics = metrics
+	expectedConfigNoEndpointScheme.LegacyPoll.Endpoint = "localhost:161"
+	expectedConfigNoEndpointScheme.LegacyPoll.Metrics = metrics
 
 	expectedConfigBadVersion := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadVersion.Version = "9999"
-	expectedConfigBadVersion.Metrics = metrics
+	expectedConfigBadVersion.LegacyPoll.Version = "9999"
+	expectedConfigBadVersion.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3NoUser := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3NoUser.Version = "v3"
-	expectedConfigV3NoUser.SecurityLevel = "no_auth_no_priv"
-	expectedConfigV3NoUser.Metrics = metrics
+	expectedConfigV3NoUser.LegacyPoll.Version = "v3"
+	expectedConfigV3NoUser.LegacyPoll.SecurityLevel = "no_auth_no_priv"
+	expectedConfigV3NoUser.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3NoSecurityLevel := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3NoSecurityLevel.Version = "v3"
-	expectedConfigV3NoSecurityLevel.User = "u"
-	expectedConfigV3NoSecurityLevel.Metrics = metrics
+	expectedConfigV3NoSecurityLevel.LegacyPoll.Version = "v3"
+	expectedConfigV3NoSecurityLevel.LegacyPoll.User = "u"
+	expectedConfigV3NoSecurityLevel.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3BadSecurityLevel := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3BadSecurityLevel.Version = "v3"
-	expectedConfigV3BadSecurityLevel.SecurityLevel = "super"
-	expectedConfigV3BadSecurityLevel.User = "u"
-	expectedConfigV3BadSecurityLevel.Metrics = metrics
+	expectedConfigV3BadSecurityLevel.LegacyPoll.Version = "v3"
+	expectedConfigV3BadSecurityLevel.LegacyPoll.SecurityLevel = "super"
+	expectedConfigV3BadSecurityLevel.LegacyPoll.User = "u"
+	expectedConfigV3BadSecurityLevel.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3NoAuthType := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3NoAuthType.Version = "v3"
-	expectedConfigV3NoAuthType.User = "u"
-	expectedConfigV3NoAuthType.SecurityLevel = "auth_no_priv"
-	expectedConfigV3NoAuthType.AuthPassword = "p"
-	expectedConfigV3NoAuthType.Metrics = metrics
+	expectedConfigV3NoAuthType.LegacyPoll.Version = "v3"
+	expectedConfigV3NoAuthType.LegacyPoll.User = "u"
+	expectedConfigV3NoAuthType.LegacyPoll.SecurityLevel = "auth_no_priv"
+	expectedConfigV3NoAuthType.LegacyPoll.AuthPassword = "p"
+	expectedConfigV3NoAuthType.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3BadAuthType := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3BadAuthType.Version = "v3"
-	expectedConfigV3BadAuthType.User = "u"
-	expectedConfigV3BadAuthType.SecurityLevel = "auth_no_priv"
-	expectedConfigV3BadAuthType.AuthType = "super"
-	expectedConfigV3BadAuthType.AuthPassword = "p"
-	expectedConfigV3BadAuthType.Metrics = metrics
+	expectedConfigV3BadAuthType.LegacyPoll.Version = "v3"
+	expectedConfigV3BadAuthType.LegacyPoll.User = "u"
+	expectedConfigV3BadAuthType.LegacyPoll.SecurityLevel = "auth_no_priv"
+	expectedConfigV3BadAuthType.LegacyPoll.AuthType = "super"
+	expectedConfigV3BadAuthType.LegacyPoll.AuthPassword = "p"
+	expectedConfigV3BadAuthType.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3NoAuthPassword := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3NoAuthPassword.Version = "v3"
-	expectedConfigV3NoAuthPassword.User = "u"
-	expectedConfigV3NoAuthPassword.SecurityLevel = "auth_no_priv"
-	expectedConfigV3NoAuthPassword.Metrics = metrics
+	expectedConfigV3NoAuthPassword.LegacyPoll.Version = "v3"
+	expectedConfigV3NoAuthPassword.LegacyPoll.User = "u"
+	expectedConfigV3NoAuthPassword.LegacyPoll.SecurityLevel = "auth_no_priv"
+	expectedConfigV3NoAuthPassword.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3Simple := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3Simple.Version = "v3"
-	expectedConfigV3Simple.User = "u"
-	expectedConfigV3Simple.SecurityLevel = "auth_priv"
-	expectedConfigV3Simple.AuthPassword = "p"
-	expectedConfigV3Simple.PrivacyPassword = "pp"
-	expectedConfigV3Simple.Metrics = metrics
+	expectedConfigV3Simple.LegacyPoll.Version = "v3"
+	expectedConfigV3Simple.LegacyPoll.User = "u"
+	expectedConfigV3Simple.LegacyPoll.SecurityLevel = "auth_priv"
+	expectedConfigV3Simple.LegacyPoll.AuthPassword = "p"
+	expectedConfigV3Simple.LegacyPoll.PrivacyPassword = "pp"
+	expectedConfigV3Simple.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3BadPrivacyType := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3BadPrivacyType.Version = "v3"
-	expectedConfigV3BadPrivacyType.User = "u"
-	expectedConfigV3BadPrivacyType.SecurityLevel = "auth_priv"
-	expectedConfigV3BadPrivacyType.AuthPassword = "p"
-	expectedConfigV3BadPrivacyType.PrivacyType = "super"
-	expectedConfigV3BadPrivacyType.PrivacyPassword = "pp"
-	expectedConfigV3BadPrivacyType.Metrics = metrics
+	expectedConfigV3BadPrivacyType.LegacyPoll.Version = "v3"
+	expectedConfigV3BadPrivacyType.LegacyPoll.User = "u"
+	expectedConfigV3BadPrivacyType.LegacyPoll.SecurityLevel = "auth_priv"
+	expectedConfigV3BadPrivacyType.LegacyPoll.AuthPassword = "p"
+	expectedConfigV3BadPrivacyType.LegacyPoll.PrivacyType = "super"
+	expectedConfigV3BadPrivacyType.LegacyPoll.PrivacyPassword = "pp"
+	expectedConfigV3BadPrivacyType.LegacyPoll.Metrics = metrics
 
 	expectedConfigV3NoPrivacyPassword := factory.CreateDefaultConfig().(*Config)
-	expectedConfigV3NoPrivacyPassword.Version = "v3"
-	expectedConfigV3NoPrivacyPassword.User = "u"
-	expectedConfigV3NoPrivacyPassword.SecurityLevel = "auth_priv"
-	expectedConfigV3NoPrivacyPassword.AuthPassword = "p"
-	expectedConfigV3NoPrivacyPassword.Metrics = metrics
+	expectedConfigV3NoPrivacyPassword.LegacyPoll.Version = "v3"
+	expectedConfigV3NoPrivacyPassword.LegacyPoll.User = "u"
+	expectedConfigV3NoPrivacyPassword.LegacyPoll.SecurityLevel = "auth_priv"
+	expectedConfigV3NoPrivacyPassword.LegacyPoll.AuthPassword = "p"
+	expectedConfigV3NoPrivacyPassword.LegacyPoll.Metrics = metrics
 
 	testCases := []testCase{
 		{
@@ -363,62 +363,62 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigNoMetricConfig := factory.CreateDefaultConfig().(*Config)
 
 	expectedConfigNoMetricUnit := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoMetricUnit.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoMetricUnit.Metrics["m3"].Unit = ""
+	expectedConfigNoMetricUnit.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigNoMetricUnit.LegacyPoll.Metrics["m3"].Unit = ""
 
 	expectedConfigNoMetricGaugeOrSum := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoMetricGaugeOrSum.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoMetricGaugeOrSum.Metrics["m3"].Gauge = nil
+	expectedConfigNoMetricGaugeOrSum.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigNoMetricGaugeOrSum.LegacyPoll.Metrics["m3"].Gauge = nil
 
 	expectedConfigNoMetricOIDs := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoMetricOIDs.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoMetricOIDs.Metrics["m3"].ScalarOIDs = nil
+	expectedConfigNoMetricOIDs.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigNoMetricOIDs.LegacyPoll.Metrics["m3"].ScalarOIDs = nil
 
 	expectedConfigNoMetricGaugeType := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoMetricGaugeType.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoMetricGaugeType.Metrics["m3"].Gauge.ValueType = ""
+	expectedConfigNoMetricGaugeType.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigNoMetricGaugeType.LegacyPoll.Metrics["m3"].Gauge.ValueType = ""
 
 	expectedConfigBadMetricGaugeType := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadMetricGaugeType.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigBadMetricGaugeType.Metrics["m3"].Gauge.ValueType = "Counter"
+	expectedConfigBadMetricGaugeType.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigBadMetricGaugeType.LegacyPoll.Metrics["m3"].Gauge.ValueType = "Counter"
 
 	expectedConfigNoMetricSumType := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoMetricSumType.Metrics = getBaseMetricConfig(false, true)
-	expectedConfigNoMetricSumType.Metrics["m3"].Sum.ValueType = ""
+	expectedConfigNoMetricSumType.LegacyPoll.Metrics = getBaseMetricConfig(false, true)
+	expectedConfigNoMetricSumType.LegacyPoll.Metrics["m3"].Sum.ValueType = ""
 
 	expectedConfigBadMetricSumType := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadMetricSumType.Metrics = getBaseMetricConfig(false, true)
-	expectedConfigBadMetricSumType.Metrics["m3"].Sum.ValueType = "Counter"
+	expectedConfigBadMetricSumType.LegacyPoll.Metrics = getBaseMetricConfig(false, true)
+	expectedConfigBadMetricSumType.LegacyPoll.Metrics["m3"].Sum.ValueType = "Counter"
 
 	expectedConfigNoMetricSumAggregation := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoMetricSumAggregation.Metrics = getBaseMetricConfig(false, true)
-	expectedConfigNoMetricSumAggregation.Metrics["m3"].Sum.Aggregation = ""
+	expectedConfigNoMetricSumAggregation.LegacyPoll.Metrics = getBaseMetricConfig(false, true)
+	expectedConfigNoMetricSumAggregation.LegacyPoll.Metrics["m3"].Sum.Aggregation = ""
 
 	expectedConfigBadMetricSumAggregation := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadMetricSumAggregation.Metrics = getBaseMetricConfig(false, true)
-	expectedConfigBadMetricSumAggregation.Metrics["m3"].Sum.Aggregation = "Counter"
+	expectedConfigBadMetricSumAggregation.LegacyPoll.Metrics = getBaseMetricConfig(false, true)
+	expectedConfigBadMetricSumAggregation.LegacyPoll.Metrics["m3"].Sum.Aggregation = "Counter"
 
 	expectedConfigNoScalarOIDOID := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoScalarOIDOID.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoScalarOIDOID.Metrics["m3"].ScalarOIDs[0].OID = ""
+	expectedConfigNoScalarOIDOID.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigNoScalarOIDOID.LegacyPoll.Metrics["m3"].ScalarOIDs[0].OID = ""
 
 	expectedConfigNoAttrOIDPrefixOrEnum := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoAttrOIDPrefixOrEnum.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoAttrOIDPrefixOrEnum.Attributes = getBaseAttrConfig("oid")
-	expectedConfigNoAttrOIDPrefixOrEnum.Attributes["a2"].OID = ""
+	expectedConfigNoAttrOIDPrefixOrEnum.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigNoAttrOIDPrefixOrEnum.LegacyPoll.Attributes = getBaseAttrConfig("oid")
+	expectedConfigNoAttrOIDPrefixOrEnum.LegacyPoll.Attributes["a2"].OID = ""
 
 	expectedConfigNoScalarOIDAttrName := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoScalarOIDAttrName.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigNoScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigNoScalarOIDAttrName.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigNoScalarOIDAttrName.LegacyPoll.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
 		{
 			Value: "val1",
 		},
 	}
 
 	expectedConfigBadScalarOIDAttrName := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadScalarOIDAttrName.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigBadScalarOIDAttrName.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadScalarOIDAttrName.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttrName.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigBadScalarOIDAttrName.LegacyPoll.Attributes = getBaseAttrConfig("enum")
+	expectedConfigBadScalarOIDAttrName.LegacyPoll.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
 		{
 			Name:  "a1",
 			Value: "val1",
@@ -426,9 +426,9 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 
 	expectedConfigBadScalarOIDAttr := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadScalarOIDAttr.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigBadScalarOIDAttr.Attributes = getBaseAttrConfig("oid")
-	expectedConfigBadScalarOIDAttr.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttr.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigBadScalarOIDAttr.LegacyPoll.Attributes = getBaseAttrConfig("oid")
+	expectedConfigBadScalarOIDAttr.LegacyPoll.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
 		{
 			Name:  "a2",
 			Value: "val1",
@@ -436,9 +436,9 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 
 	expectedConfigBadScalarOIDAttrValue := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadScalarOIDAttrValue.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigBadScalarOIDAttrValue.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadScalarOIDAttrValue.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigBadScalarOIDAttrValue.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigBadScalarOIDAttrValue.LegacyPoll.Attributes = getBaseAttrConfig("enum")
+	expectedConfigBadScalarOIDAttrValue.LegacyPoll.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
 		{
 			Name:  "a2",
 			Value: "val3",
@@ -446,26 +446,26 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 
 	expectedConfigNoColumnOIDOID := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoColumnOIDOID.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigNoColumnOIDOID.Metrics["m3"].ColumnOIDs[0].OID = ""
+	expectedConfigNoColumnOIDOID.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigNoColumnOIDOID.LegacyPoll.Metrics["m3"].ColumnOIDs[0].OID = ""
 
 	expectedConfigNoColumnOIDAttrName := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoColumnOIDAttrName.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigNoColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{{}}
+	expectedConfigNoColumnOIDAttrName.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigNoColumnOIDAttrName.LegacyPoll.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{{}}
 
 	expectedConfigBadColumnOIDAttrName := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadColumnOIDAttrName.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigBadColumnOIDAttrName.Attributes = getBaseAttrConfig("oid")
-	expectedConfigBadColumnOIDAttrName.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigBadColumnOIDAttrName.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigBadColumnOIDAttrName.LegacyPoll.Attributes = getBaseAttrConfig("oid")
+	expectedConfigBadColumnOIDAttrName.LegacyPoll.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
 		{
 			Name: "a1",
 		},
 	}
 
 	expectedConfigBadColumnOIDAttrValue := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadColumnOIDAttrValue.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigBadColumnOIDAttrValue.Attributes = getBaseAttrConfig("enum")
-	expectedConfigBadColumnOIDAttrValue.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigBadColumnOIDAttrValue.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigBadColumnOIDAttrValue.LegacyPoll.Attributes = getBaseAttrConfig("enum")
+	expectedConfigBadColumnOIDAttrValue.LegacyPoll.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
 		{
 			Name:  "a2",
 			Value: "val3",
@@ -473,14 +473,14 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 
 	expectedConfigBadColumnOIDResourceAttrName := factory.CreateDefaultConfig().(*Config)
-	expectedConfigBadColumnOIDResourceAttrName.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigBadColumnOIDResourceAttrName.ResourceAttributes = getBaseResourceAttrConfig("oid")
-	expectedConfigBadColumnOIDResourceAttrName.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"a2"}
+	expectedConfigBadColumnOIDResourceAttrName.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigBadColumnOIDResourceAttrName.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("oid")
+	expectedConfigBadColumnOIDResourceAttrName.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"a2"}
 
 	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute := factory.CreateDefaultConfig().(*Config)
-	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Attributes = getBaseAttrConfig("enum")
-	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.LegacyPoll.Attributes = getBaseAttrConfig("enum")
+	expectedConfigColumnOIDWithoutIndexAttributeOrResourceAttribute.LegacyPoll.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
 		{
 			Name:  "a2",
 			Value: "val1",
@@ -488,29 +488,29 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 
 	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.ResourceAttributes = getBaseResourceAttrConfig("oid")
-	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.ResourceAttributes["ra1"].OID = ""
-	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("oid")
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.LegacyPoll.ResourceAttributes["ra1"].OID = ""
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigComplexGood := factory.CreateDefaultConfig().(*Config)
-	expectedConfigComplexGood.ResourceAttributes = getBaseResourceAttrConfig("prefix")
-	expectedConfigComplexGood.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
-	expectedConfigComplexGood.Attributes = getBaseAttrConfig("enum")
-	expectedConfigComplexGood.Attributes["a1"] = &AttributeConfig{
+	expectedConfigComplexGood.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("prefix")
+	expectedConfigComplexGood.LegacyPoll.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
+	expectedConfigComplexGood.LegacyPoll.Attributes = getBaseAttrConfig("enum")
+	expectedConfigComplexGood.LegacyPoll.Attributes["a1"] = &AttributeConfig{
 		Value: "v",
 		Enum:  []string{"val1"},
 	}
-	expectedConfigComplexGood.Attributes["a3"] = &AttributeConfig{IndexedValuePrefix: "p"}
-	expectedConfigComplexGood.Attributes["a4"] = &AttributeConfig{OID: "1"}
-	expectedConfigComplexGood.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigComplexGood.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
+	expectedConfigComplexGood.LegacyPoll.Attributes["a3"] = &AttributeConfig{IndexedValuePrefix: "p"}
+	expectedConfigComplexGood.LegacyPoll.Attributes["a4"] = &AttributeConfig{OID: "1"}
+	expectedConfigComplexGood.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigComplexGood.LegacyPoll.Metrics["m3"].ScalarOIDs[0].Attributes = []Attribute{
 		{
 			Name:  "a1",
 			Value: "val1",
 		},
 	}
-	expectedConfigComplexGood.Metrics["m1"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m1"] = &MetricConfig{
 		Unit: "1",
 		Sum: &SumMetric{
 			Monotonic:   true,
@@ -528,7 +528,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m2"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m2"] = &MetricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -560,7 +560,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m4"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m4"] = &MetricConfig{
 		Unit: "{things}",
 		Sum: &SumMetric{
 			Aggregation: "cumulative",
@@ -573,7 +573,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m5"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m5"] = &MetricConfig{
 		Unit: "{things}",
 		Sum: &SumMetric{
 			Aggregation: "cumulative",
@@ -592,7 +592,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m6"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m6"] = &MetricConfig{
 		Unit: "1",
 		Sum: &SumMetric{
 			Aggregation: "delta",
@@ -620,7 +620,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m7"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m7"] = &MetricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -634,7 +634,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m8"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m8"] = &MetricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -648,7 +648,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m9"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m9"] = &MetricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -663,7 +663,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			},
 		},
 	}
-	expectedConfigComplexGood.Metrics["m10"] = &MetricConfig{
+	expectedConfigComplexGood.LegacyPoll.Metrics["m10"] = &MetricConfig{
 		Unit: "By",
 		Gauge: &GaugeMetric{
 			ValueType: "int",
@@ -692,86 +692,86 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	}
 
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Attributes = getBaseAttrConfig("oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.LegacyPoll.Attributes = getBaseAttrConfig("oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.LegacyPoll.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
 		{
 			Name: "a2",
 		},
 	}
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Attributes = getBaseAttrConfig("prefix")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.LegacyPoll.Attributes = getBaseAttrConfig("prefix")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.LegacyPoll.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
 		{
 			Name: "a2",
 		},
 	}
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.LegacyPoll.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes["ra2"] = &ResourceAttributeConfig{IndexedValuePrefix: "p"}
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.LegacyPoll.ResourceAttributes["ra2"] = &ResourceAttributeConfig{IndexedValuePrefix: "p"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	expectedConfigMultipleKeysOnResourceAttribute := factory.CreateDefaultConfig().(*Config)
-	expectedConfigMultipleKeysOnResourceAttribute.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigMultipleKeysOnResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigMultipleKeysOnResourceAttribute.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "0", OID: "1"}
-	expectedConfigMultipleKeysOnResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigMultipleKeysOnResourceAttribute.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigMultipleKeysOnResourceAttribute.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigMultipleKeysOnResourceAttribute.LegacyPoll.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "0", OID: "1"}
+	expectedConfigMultipleKeysOnResourceAttribute.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "1"}
-	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
-	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.LegacyPoll.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "1"}
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.LegacyPoll.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	expectedConfigColumnOIDResourceAttributeEndsInZero := factory.CreateDefaultConfig().(*Config)
-	expectedConfigColumnOIDResourceAttributeEndsInZero.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigColumnOIDResourceAttributeEndsInZero.ResourceAttributes = getBaseResourceAttrConfig("oid")
-	expectedConfigColumnOIDResourceAttributeEndsInZero.ResourceAttributes["ra1"] = &ResourceAttributeConfig{OID: "0"}
-	expectedConfigColumnOIDResourceAttributeEndsInZero.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigColumnOIDResourceAttributeEndsInZero.LegacyPoll.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigColumnOIDResourceAttributeEndsInZero.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("oid")
+	expectedConfigColumnOIDResourceAttributeEndsInZero.LegacyPoll.ResourceAttributes["ra1"] = &ResourceAttributeConfig{OID: "0"}
+	expectedConfigColumnOIDResourceAttributeEndsInZero.LegacyPoll.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDSingleScalarResourceAttributeIsValid := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDSingleScalarResourceAttributeIsValid.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigScalarOIDSingleScalarResourceAttributeIsValid.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDSingleScalarResourceAttributeIsValid.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigScalarOIDSingleScalarResourceAttributeIsValid.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigScalarOIDSingleScalarResourceAttributeIsValid.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDSingleScalarResourceAttributeIsValid.LegacyPoll.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.Metrics["m3"].ScalarOIDs[0].OID = "0"
-	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.ResourceAttributes["ra2"] = &ResourceAttributeConfig{ScalarOID: "0"}
-	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
+	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.LegacyPoll.Metrics["m3"].ScalarOIDs[0].OID = "0"
+	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.LegacyPoll.ResourceAttributes["ra2"] = &ResourceAttributeConfig{ScalarOID: "0"}
+	expectedConfigScalarOIDMultipleScalarResourceAttributeIsValid.LegacyPoll.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid.Metrics["m3"].ScalarOIDs[0].OID = "0"
-	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid.ResourceAttributes = getBaseResourceAttrConfig("oid")
-	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid.LegacyPoll.Metrics["m3"].ScalarOIDs[0].OID = "0"
+	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("oid")
+	expectedConfigScalarOIDWithCOIDResourceAttributeIsInvalid.LegacyPoll.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid.Metrics = getBaseMetricConfig(true, true)
-	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid.Metrics["m3"].ScalarOIDs[0].OID = "0"
-	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid.ResourceAttributes = getBaseResourceAttrConfig("prefix")
-	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid.LegacyPoll.Metrics = getBaseMetricConfig(true, true)
+	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid.LegacyPoll.Metrics["m3"].ScalarOIDs[0].OID = "0"
+	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid.LegacyPoll.ResourceAttributes = getBaseResourceAttrConfig("prefix")
+	expectedConfigScalarOIDWithIVPResourceAttributeIsInvalid.LegacyPoll.Metrics["m3"].ScalarOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	testCases := []testCase{
 		{
@@ -1022,17 +1022,19 @@ func TestValidate(t *testing.T) {
 		{
 			name: "NoEndpointErrors",
 			cfg: &Config{
-				Version:   "v2c",
-				Community: "public",
-				Metrics: map[string]*MetricConfig{
-					"m3": {
-						Unit: "By",
-						Gauge: &GaugeMetric{
-							ValueType: "double",
-						},
-						ScalarOIDs: []ScalarOID{
-							{
-								OID: "1",
+				LegacyPoll: PollConfig{
+					Version:   "v2c",
+					Community: "public",
+					Metrics: map[string]*MetricConfig{
+						"m3": {
+							Unit: "By",
+							Gauge: &GaugeMetric{
+								ValueType: "double",
+							},
+							ScalarOIDs: []ScalarOID{
+								{
+									OID: "1",
+								},
 							},
 						},
 					},
@@ -1043,17 +1045,19 @@ func TestValidate(t *testing.T) {
 		{
 			name: "NoVersionErrors",
 			cfg: &Config{
-				Endpoint:  "udp://localhost:161",
-				Community: "public",
-				Metrics: map[string]*MetricConfig{
-					"m3": {
-						Unit: "By",
-						Gauge: &GaugeMetric{
-							ValueType: "double",
-						},
-						ScalarOIDs: []ScalarOID{
-							{
-								OID: "1",
+				LegacyPoll: PollConfig{
+					Endpoint:  "udp://localhost:161",
+					Community: "public",
+					Metrics: map[string]*MetricConfig{
+						"m3": {
+							Unit: "By",
+							Gauge: &GaugeMetric{
+								ValueType: "double",
+							},
+							ScalarOIDs: []ScalarOID{
+								{
+									OID: "1",
+								},
 							},
 						},
 					},
@@ -1064,18 +1068,20 @@ func TestValidate(t *testing.T) {
 		{
 			name: "V3NoSecurityLevelErrors",
 			cfg: &Config{
-				Endpoint: "udp://localhost:161",
-				Version:  "v3",
-				User:     "u",
-				Metrics: map[string]*MetricConfig{
-					"m3": {
-						Unit: "By",
-						Gauge: &GaugeMetric{
-							ValueType: "double",
-						},
-						ScalarOIDs: []ScalarOID{
-							{
-								OID: "1",
+				LegacyPoll: PollConfig{
+					Endpoint: "udp://localhost:161",
+					Version:  "v3",
+					User:     "u",
+					Metrics: map[string]*MetricConfig{
+						"m3": {
+							Unit: "By",
+							Gauge: &GaugeMetric{
+								ValueType: "double",
+							},
+							ScalarOIDs: []ScalarOID{
+								{
+									OID: "1",
+								},
 							},
 						},
 					},
@@ -1086,20 +1092,22 @@ func TestValidate(t *testing.T) {
 		{
 			name: "V3NoAuthTypeErrors",
 			cfg: &Config{
-				Endpoint:      "udp://localhost:161",
-				Version:       "v3",
-				SecurityLevel: "auth_no_priv",
-				User:          "u",
-				AuthPassword:  "p",
-				Metrics: map[string]*MetricConfig{
-					"m3": {
-						Unit: "By",
-						Gauge: &GaugeMetric{
-							ValueType: "double",
-						},
-						ScalarOIDs: []ScalarOID{
-							{
-								OID: "1",
+				LegacyPoll: PollConfig{
+					Endpoint:      "udp://localhost:161",
+					Version:       "v3",
+					SecurityLevel: "auth_no_priv",
+					User:          "u",
+					AuthPassword:  "p",
+					Metrics: map[string]*MetricConfig{
+						"m3": {
+							Unit: "By",
+							Gauge: &GaugeMetric{
+								ValueType: "double",
+							},
+							ScalarOIDs: []ScalarOID{
+								{
+									OID: "1",
+								},
 							},
 						},
 					},
@@ -1110,22 +1118,24 @@ func TestValidate(t *testing.T) {
 		{
 			name: "V3NoPrivacyTypeErrors",
 			cfg: &Config{
-				Endpoint:        "udp://localhost:161",
-				Version:         "v3",
-				SecurityLevel:   "auth_priv",
-				User:            "u",
-				AuthType:        "md5",
-				AuthPassword:    "p",
-				PrivacyPassword: "pp",
-				Metrics: map[string]*MetricConfig{
-					"m3": {
-						Unit: "By",
-						Gauge: &GaugeMetric{
-							ValueType: "double",
-						},
-						ScalarOIDs: []ScalarOID{
-							{
-								OID: "1",
+				LegacyPoll: PollConfig{
+					Endpoint:        "udp://localhost:161",
+					Version:         "v3",
+					SecurityLevel:   "auth_priv",
+					User:            "u",
+					AuthType:        "md5",
+					AuthPassword:    "p",
+					PrivacyPassword: "pp",
+					Metrics: map[string]*MetricConfig{
+						"m3": {
+							Unit: "By",
+							Gauge: &GaugeMetric{
+								ValueType: "double",
+							},
+							ScalarOIDs: []ScalarOID{
+								{
+									OID: "1",
+								},
 							},
 						},
 					},

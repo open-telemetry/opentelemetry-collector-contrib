@@ -58,7 +58,7 @@ var _ client = (*snmpClient)(nil)
 
 // newClient creates an initialized client
 // Relies on config being validated thoroughly
-func newClient(cfg *Config, logger *zap.Logger) (client, error) {
+func newClient(cfg *PollConfig, logger *zap.Logger) (client, error) {
 	// Create goSNMP client
 	goSNMP := newGoSNMPWrapper()
 	goSNMP.SetTimeout(cfg.ControllerConfig.Timeout)
@@ -111,7 +111,7 @@ func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 }
 
 // setV3ClientConfigs sets SNMP v3 related configurations on gosnmp client based on config
-func setV3ClientConfigs(client goSNMPWrapper, cfg *Config) {
+func setV3ClientConfigs(client goSNMPWrapper, cfg *PollConfig) {
 	client.SetSecurityModel(gosnmp.UserSecurityModel)
 	// Set goSNMP user based on config
 	securityParams := &gosnmp.UsmSecurityParameters{

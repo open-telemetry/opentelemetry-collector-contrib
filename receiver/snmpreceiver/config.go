@@ -10,8 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config Defaults
@@ -73,65 +72,12 @@ var (
 
 // Config defines the configuration for the various elements of the receiver.
 type Config struct {
-	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	// LegacyPoll accepts polling settings at the top level during migration.
+	LegacyPoll PollConfig `mapstructure:",squash"`
 
-	// Endpoint is the SNMP target to request data from. Must be formatted as [udp|tcp|][4|6|]://{host}:{port}.
-	// Default: udp://localhost:161
-	// If no scheme is given, udp4 is assumed.
-	// If no port is given, 161 is assumed.
-	Endpoint string `mapstructure:"endpoint"`
-
-	// Version is the version of SNMP to use for this connection.
-	// Valid options: v1, v2c, v3.
-	// Default: v2c
-	Version string `mapstructure:"version"`
-
-	// Community is the SNMP community string to use.
-	// Only valid for versions "v1" and "v2c"
-	// Default: public
-	Community string `mapstructure:"community"`
-
-	// User is the SNMP User for this connection.
-	// Only valid for version “v3”
-	User string `mapstructure:"user"`
-
-	// SecurityLevel is the security level to use for this SNMP connection.
-	// Only valid for version “v3”
-	// Valid options: “no_auth_no_priv”, “auth_no_priv”, “auth_priv”
-	// Default: "no_auth_no_priv"
-	SecurityLevel string `mapstructure:"security_level"`
-
-	// AuthType is the type of authentication protocol to use for this SNMP connection.
-	// Only valid for version “v3” and if “no_auth_no_priv” is not selected for SecurityLevel
-	// Valid options: “md5”, “sha”, “sha224”, “sha256”, “sha384”, “sha512”
-	// Default: "md5"
-	AuthType string `mapstructure:"auth_type"`
-
-	// AuthPassword is the authentication password used for this SNMP connection.
-	// Only valid for version "v3" and if "no_auth_no_priv" is not selected for SecurityLevel
-	AuthPassword configopaque.String `mapstructure:"auth_password"`
-
-	// PrivacyType is the type of privacy protocol to use for this SNMP connection.
-	// Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
-	// Valid options: “des”, “aes”, “aes192”, “aes256”, “aes192c”, “aes256c”
-	// Default: "des"
-	PrivacyType string `mapstructure:"privacy_type"`
-
-	// PrivacyPassword is the authentication password used for this SNMP connection.
-	// Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
-	PrivacyPassword configopaque.String `mapstructure:"privacy_password"`
-
-	// ResourceAttributes defines what resource attributes will be used for this receiver and is composed
-	// of resource attribute names along with their resource attribute configurations
-	ResourceAttributes map[string]*ResourceAttributeConfig `mapstructure:"resource_attributes"`
-
-	// Attributes defines what attributes will be used on metrics for this receiver and is composed of
-	// attribute names along with their attribute configurations
-	Attributes map[string]*AttributeConfig `mapstructure:"attributes"`
-
-	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
-	// names along with their metric configurations
-	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
+	// Poll optionally groups polling settings. Existing top-level polling fields
+	// remain supported, but cannot be explicitly configured alongside Poll.
+	Poll *PollConfig `mapstructure:"poll"`
 }
 
 // ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
@@ -253,22 +199,25 @@ type Attribute struct {
 	Value string `mapstructure:"value"`
 }
 
+// Unmarshal applies defaults to the poll block when present. Detect mixed
+// polling forms from input keys, before defaults obscure their presence.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := cfg.unmarshalPollConfig(conf); err != nil {
+		return err
+	}
+	return conf.Unmarshal(cfg)
+}
+
 // Validate validates the given config, returning an error specifying any issues with the config.
 func (cfg *Config) Validate() error {
-	var combinedErr error
-
-	combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))
-	combinedErr = errors.Join(combinedErr, validateVersion(cfg))
-	if strings.EqualFold(cfg.Version, "V3") {
-		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
+	if cfg.Poll != nil {
+		return cfg.Poll.validate()
 	}
-	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
-
-	return combinedErr
+	return cfg.LegacyPoll.validate()
 }
 
 // validateEndpoint validates the Endpoint
-func validateEndpoint(cfg *Config) error {
+func validateEndpoint(cfg *PollConfig) error {
 	if cfg.Endpoint == "" {
 		return errEmptyEndpoint
 	}
@@ -293,7 +242,7 @@ func validateEndpoint(cfg *Config) error {
 }
 
 // validateVersion validates the Version
-func validateVersion(cfg *Config) error {
+func validateVersion(cfg *PollConfig) error {
 	if cfg.Version == "" {
 		return errEmptyVersion
 	}
@@ -309,7 +258,7 @@ func validateVersion(cfg *Config) error {
 }
 
 // validateSecurity validates all v3 related security configs
-func validateSecurity(cfg *Config) error {
+func validateSecurity(cfg *PollConfig) error {
 	var combinedErr error
 
 	// Ensure valid user
@@ -338,7 +287,7 @@ func validateSecurity(cfg *Config) error {
 }
 
 // validateAuth validates the AuthType and AuthPassword
-func validateAuth(cfg *Config) error {
+func validateAuth(cfg *PollConfig) error {
 	var combinedErr error
 
 	// Ensure valid auth password
@@ -361,7 +310,7 @@ func validateAuth(cfg *Config) error {
 }
 
 // validatePrivacy validates the PrivacyType and PrivacyPassword
-func validatePrivacy(cfg *Config) error {
+func validatePrivacy(cfg *PollConfig) error {
 	var combinedErr error
 
 	// Ensure valid privacy password
@@ -384,7 +333,7 @@ func validatePrivacy(cfg *Config) error {
 }
 
 // validateMetricConfigs validates all MetricConfigs, AttributeConfigs, and ResourceAttributeConfigs
-func validateMetricConfigs(cfg *Config) error {
+func validateMetricConfigs(cfg *PollConfig) error {
 	var combinedErr error
 
 	// Validate the Attribute and ResourceAttribute configs up front
@@ -432,7 +381,7 @@ func validateMetricConfigs(cfg *Config) error {
 }
 
 // validateColumnOID validates a ColumnOID
-func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) error {
+func validateColumnOID(metricName string, columnOID ColumnOID, cfg *PollConfig) error {
 	var combinedErr error
 
 	// Ensure that it contains an OID
@@ -491,7 +440,7 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 }
 
 // validateScalarOID validates a ScalarOID
-func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) error {
+func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *PollConfig) error {
 	var combinedErr error
 
 	// Ensure that it contains an OID
@@ -576,7 +525,7 @@ func validateSum(metricName string, sum *SumMetric) error {
 }
 
 // validateAttributeConfigs validates the AttributeConfigs
-func validateAttributeConfigs(cfg *Config) error {
+func validateAttributeConfigs(cfg *PollConfig) error {
 	var combinedErr error
 
 	attributes := cfg.Attributes
@@ -595,7 +544,7 @@ func validateAttributeConfigs(cfg *Config) error {
 }
 
 // validateResourceAttributeConfigs validates the ResourceAttributeConfigs
-func validateResourceAttributeConfigs(cfg *Config) error {
+func validateResourceAttributeConfigs(cfg *PollConfig) error {
 	var combinedErr error
 
 	resourceAttributes := cfg.ResourceAttributes

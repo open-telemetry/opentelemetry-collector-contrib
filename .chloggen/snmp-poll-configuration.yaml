@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/snmp
+note: Add a nested poll configuration with backward compatibility for existing polling settings.
+issues: [32358]
+subtext: Top-level polling settings are deprecated in favor of the poll block.

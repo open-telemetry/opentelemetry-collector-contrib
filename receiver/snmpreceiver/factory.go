@@ -22,6 +22,8 @@ import (
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
 
+const legacyPollingConfigWarning = "Top-level SNMP polling configuration is deprecated; move polling options under the poll block"
+
 // NewFactory creates a new receiver factory for SNMP
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -33,18 +35,7 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates a config for SNMP with as many default values as possible
 func createDefaultConfig() component.Config {
-	return &Config{
-		ControllerConfig: scraperhelper.ControllerConfig{
-			CollectionInterval: defaultCollectionInterval,
-			Timeout:            defaultTimeout,
-		},
-		Endpoint:      defaultEndpoint,
-		Version:       defaultVersion,
-		Community:     defaultCommunity,
-		SecurityLevel: defaultSecurityLevel,
-		AuthType:      defaultAuthType,
-		PrivacyType:   defaultPrivacyType,
-	}
+	return &Config{LegacyPoll: *defaultPollConfig()}
 }
 
 // createMetricsReceiver creates the metric receiver for SNMP
@@ -54,26 +45,37 @@ func createMetricsReceiver(
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	snmpConfig, ok := config.(*Config)
+	sourceConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errConfigNotSNMP
 	}
+	snmpPollConfig := sourceConfig.effectivePollConfig()
+	if len(snmpPollConfig.Metrics) == 0 {
+		return nil, errMetricRequired
+	}
 
-	if err := addMissingConfigDefaults(snmpConfig); err != nil {
+	if err := addMissingConfigDefaults(snmpPollConfig); err != nil {
 		return nil, fmt.Errorf("failed to validate added config defaults: %w", err)
 	}
 
-	snmpScraper := newScraper(params.Logger, snmpConfig, params)
+	snmpScraper := newScraper(params.Logger, snmpPollConfig, params)
 	s, err := scraper.NewMetrics(snmpScraper.scrape, scraper.WithStart(snmpScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
+	recv, err := scraperhelper.NewMetricsController(&snmpPollConfig.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
+	if err != nil {
+		return nil, err
+	}
+	if sourceConfig.Poll == nil {
+		params.Logger.Warn(legacyPollingConfigWarning)
+	}
+	return recv, nil
 }
 
 // addMissingConfigDefaults adds any missing config parameters that have defaults
-func addMissingConfigDefaults(cfg *Config) error {
+func addMissingConfigDefaults(cfg *PollConfig) error {
 	// Add the schema prefix to the endpoint if it doesn't contain one
 	if !strings.Contains(cfg.Endpoint, "://") {
 		cfg.Endpoint = "udp://" + cfg.Endpoint
@@ -107,5 +109,5 @@ func addMissingConfigDefaults(cfg *Config) error {
 		}
 	}
 
-	return confmap.Validate(cfg)
+	return errors.Join(cfg.validate(), confmap.Validate(cfg))
 }

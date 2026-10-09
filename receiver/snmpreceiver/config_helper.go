@@ -10,7 +10,7 @@ import (
 
 // configHelper contains many of the functions required to get various info from the SNMP config
 type configHelper struct {
-	cfg                         *Config
+	cfg                         *PollConfig
 	metricScalarOIDs            []string
 	metricColumnOIDs            []string
 	attributeColumnOIDs         []string
@@ -22,7 +22,7 @@ type configHelper struct {
 }
 
 // newConfigHelper returns a new configHelper with various pieces of static info saved for easy access
-func newConfigHelper(cfg *Config) *configHelper {
+func newConfigHelper(cfg *PollConfig) *configHelper {
 	ch := configHelper{
 		cfg:                         cfg,
 		metricScalarOIDs:            []string{},

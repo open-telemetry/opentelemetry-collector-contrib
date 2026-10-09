@@ -20,7 +20,9 @@ based upon different configurations in the config file.
 
 ## Purpose
 
-The purpose of this receiver is to allow users to generically monitor metrics using SNMP.
+The receiver polls SNMP devices for metrics. Use `poll` for metric collection.
+Existing top-level polling configurations remain supported through the migration
+described below.
 
 If one of the specified SNMP data values cannot be loaded on startup, a
 warning will be printed, but the application will not fail fast.
@@ -35,11 +37,20 @@ This receiver supports SNMP versions:
 
 ## Configuration
 
-### Connection Configuration
-These configuration options are for connecting to a SNMP host.
+### Polling Configuration
+
+The `poll` block contains all polling settings: connection and security options,
+`collection_interval`, `timeout`, `initial_delay`, `metrics`, `attributes`, and
+`resource_attributes`. Configure at least one metric and enable the receiver in
+a metrics pipeline to collect metrics.
+
+#### Connection Configuration
+
+These options are configured under `poll` for connecting to an SNMP host.
 
 - `collection_interval`: (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `timeout`: (default: `5s`): Timeout for each SNMP request. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay`: (default: `0s`): Delay before the first polling collection. Uses the same duration format as `collection_interval`.
 - `endpoint` (default: `udp://localhost:161`): SNMP endpoint to connect to in the form of `[udp|tcp][://]{host}[:{port}]`
   - If no scheme is supplied, a default of `udp` is assumed
   - If no port is supplied, a default of `161` is assumed
@@ -71,11 +82,13 @@ These configuration options are for connecting to a SNMP host.
 - `privacy_password`: The privacy password used for the SNMP connection. This is only available if `security_level` is set to `auth_priv`.
 
 ### Metric/Attribute Configuration
-These configuration options are for determining what metrics and attributes will be created with what SNMP data
+
+These options are configured under `poll` to determine which metrics and
+attributes are created from SNMP data.
 
 - `resource_attributes`: This may be configured with one or more key value pairs of resource attribute names and resource attribute configurations.
 - `attributes` This may be configured with one or more key value pairs of attribute names and attribute configurations
-- `metrics`: This is the only required parameter. The must be configured with one or more key value pairs of metric names and metric configuration.
+- `metrics`: Required when the receiver is used in a metrics pipeline. Configure one or more key value pairs of metric names and metric configuration.
 
 #### Resource Attribute Configuration
 Resource attribute configurations are used to define what resource attributes will be used in a collection.
@@ -147,108 +160,161 @@ Attribute configurations are used to define what resource attributes will be use
 
 ### Example Configuration
 
+The following example configures polling. See [poll.yaml](./examples/poll.yaml)
+for a complete configuration with a metrics pipeline.
+
 ```yaml
 receivers:
   snmp:
-    collection_interval: 60s
-    endpoint: udp://localhost:161
-    version: v3
-    security_level: auth_priv
-    user: otel
-    auth_type: "MD5"
-    auth_password: ${env:SNMP_AUTH_PASSWORD}
-    privacy_type: "DES"
-    privacy_password: ${env:SNMP_PRIVACY_PASSWORD}
+    poll:
+      collection_interval: 60s
+      endpoint: udp://localhost:161
+      version: v3
+      security_level: auth_priv
+      user: otel
+      auth_type: "MD5"
+      auth_password: ${env:SNMP_AUTH_PASSWORD}
+      privacy_type: "DES"
+      privacy_password: ${env:SNMP_PRIVACY_PASSWORD}
 
-    resource_attributes:
-      resource_attr.name.1:
-        indexed_value_prefix: probe
-      resource_attr.name.2:
-        oid: "1.1.1.1"
+      resource_attributes:
+        resource_attr.name.1:
+          indexed_value_prefix: probe
+        resource_attr.name.2:
+          oid: "1.1.1.1"
 
-    attributes:
-      attr.name.1:
-        value: a2_new_key
-        enum:
-          - in
-          - out
-      attr.name.2:
-        indexed_value_prefix: device
-      attr.name.3:
-        oid: "2.2.2.2"
+      attributes:
+        attr.name.1:
+          value: a2_new_key
+          enum:
+            - in
+            - out
+        attr.name.2:
+          indexed_value_prefix: device
+        attr.name.3:
+          oid: "2.2.2.2"
 
-    metrics:
-      # This metric will have multiple datapoints wil 1 attribute on each.
-      # Each datapoint will have a (hopefully) different attribute value
-      metric.name.1:
-        unit: "1"
-        sum:
-          aggregation: cumulative
-          monotonic: true
-          value_type: int
-        column_oids:
-          - oid: "2.2.2.1"
-            attributes:
-              - name: attr.name.3
-      # This metric will have multiple datapoints with 2 attributes on each.
-      # Each datapoint will have a guaranteed different attribute indexed value for 1 of the attributes.
-      # Half of the datapoints will have the other attribute with a value of "in".
-      # The other half will have the other attribute with a value of "out".
-      metric.name.2:
-        unit: "By"
-        gauge:
-          value_type: int
-        column_oids:
-          - oid: "3.3.3.3"
-            attributes:
-              - name: attr.name.2
-              - name: attr.name.1
-                value: in
-          - oid: "2"
-            attributes:
-              - name: attr.name.2
-              - name: attr.name.1
-                value: out
-      # This metric will have 2 datapoints with 1 attribute on each
-      # One datapoints will have an attribute value of "in".
-      # The other will have an attribute value of "out".
-      metric.name.3:
-        unit: "By"
-        sum:
-          aggregation: delta
-          monotonic: false
-          value_type: double
-        scalar_oids:
-          - oid: "4.4.4.4.0"
-            attributes:
-              - name: attr.name.1
-                value: in
-          - oid: "4.4.4.5.0"
-            attributes:
-              - name: attr.name.1
-                value: out
-      # This metric will have metrics created with each attached to a different resource.
-      # Each resource will have a resource attribute with a guaranteed unique value based on the index.
-      metric.name.4:
-        unit: "By"
-        gauge:
-          value_type: int
-        column_oids:
-          - oid: "5.5.5.5"
-            resource_attributes:
-              - resource_attr.name.1
-      # This metric will have metrics created with each attached to a different resource.
-      # Each resource will have a resource attribute with a hopefully unique value.
-      metric.name.5:
-        unit: "By"
-        gauge:
-          value_type: int
-        column_oids:
-          - oid: "1.1.1.2"
-            resource_attributes:
-              - resource_attr.name.2
+      metrics:
+        # This metric will have multiple datapoints wil 1 attribute on each.
+        # Each datapoint will have a (hopefully) different attribute value
+        metric.name.1:
+          unit: "1"
+          sum:
+            aggregation: cumulative
+            monotonic: true
+            value_type: int
+          column_oids:
+            - oid: "2.2.2.1"
+              attributes:
+                - name: attr.name.3
+        # This metric will have multiple datapoints with 2 attributes on each.
+        # Each datapoint will have a guaranteed different attribute indexed value for 1 of the attributes.
+        # Half of the datapoints will have the other attribute with a value of "in".
+        # The other half will have the other attribute with a value of "out".
+        metric.name.2:
+          unit: "By"
+          gauge:
+            value_type: int
+          column_oids:
+            - oid: "3.3.3.3"
+              attributes:
+                - name: attr.name.2
+                - name: attr.name.1
+                  value: in
+            - oid: "2"
+              attributes:
+                - name: attr.name.2
+                - name: attr.name.1
+                  value: out
+        # This metric will have 2 datapoints with 1 attribute on each
+        # One datapoints will have an attribute value of "in".
+        # The other will have an attribute value of "out".
+        metric.name.3:
+          unit: "By"
+          sum:
+            aggregation: delta
+            monotonic: false
+            value_type: double
+          scalar_oids:
+            - oid: "4.4.4.4.0"
+              attributes:
+                - name: attr.name.1
+                  value: in
+            - oid: "4.4.4.5.0"
+              attributes:
+                - name: attr.name.1
+                  value: out
+        # This metric will have metrics created with each attached to a different resource.
+        # Each resource will have a resource attribute with a guaranteed unique value based on the index.
+        metric.name.4:
+          unit: "By"
+          gauge:
+            value_type: int
+          column_oids:
+            - oid: "5.5.5.5"
+              resource_attributes:
+                - resource_attr.name.1
+        # This metric will have metrics created with each attached to a different resource.
+        # Each resource will have a resource attribute with a hopefully unique value.
+        metric.name.5:
+          unit: "By"
+          gauge:
+            value_type: int
+          column_oids:
+            - oid: "1.1.1.2"
+              resource_attributes:
+                - resource_attr.name.2
 
 ```
 
-The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+### Migrating Legacy Polling Configuration
 
+The previous top-level polling settings remain accepted with their existing
+defaults and behavior. When a metrics receiver uses this form, it logs a
+deprecation warning. No removal version has been assigned.
+
+Move all polling settings into `poll`, including metric definitions, attributes,
+resource attributes, credentials, and collection timing. Do not combine `poll`
+with any top-level polling option: the receiver rejects that combination even
+when the values are identical.
+
+Before:
+
+```yaml
+receivers:
+  snmp/device:
+    endpoint: udp://127.0.0.1:1161
+    collection_interval: 30s
+    metrics:
+      device.uptime:
+        unit: "1"
+        gauge:
+          value_type: int
+        scalar_oids:
+          - oid: "1.3.6.1.2.1.1.3.0"
+```
+
+After:
+
+```yaml
+receivers:
+  snmp/device:
+    poll:
+      endpoint: udp://127.0.0.1:1161
+      collection_interval: 30s
+      metrics:
+        device.uptime:
+          unit: "1"
+          gauge:
+            value_type: int
+          scalar_oids:
+            - oid: "1.3.6.1.2.1.1.3.0"
+```
+
+The service pipeline references remain unchanged. Older Collector builds that
+predate this configuration change do not support `poll`; retain the legacy
+form when using those builds.
+
+The full list of settings exposed for this receiver is documented in
+[config.go](./config.go). Complete configurations are available in
+[examples](./examples).

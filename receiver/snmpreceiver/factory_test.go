@@ -33,16 +33,18 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 
 				var expectedCfg component.Config = &Config{
-					ControllerConfig: scraperhelper.ControllerConfig{
-						CollectionInterval: defaultCollectionInterval,
-						Timeout:            defaultTimeout,
+					LegacyPoll: PollConfig{
+						ControllerConfig: scraperhelper.ControllerConfig{
+							CollectionInterval: defaultCollectionInterval,
+							Timeout:            defaultTimeout,
+						},
+						Endpoint:      defaultEndpoint,
+						Version:       defaultVersion,
+						Community:     defaultCommunity,
+						SecurityLevel: "no_auth_no_priv",
+						AuthType:      "MD5",
+						PrivacyType:   "DES",
 					},
-					Endpoint:      defaultEndpoint,
-					Version:       defaultVersion,
-					Community:     defaultCommunity,
-					SecurityLevel: "no_auth_no_priv",
-					AuthType:      "MD5",
-					PrivacyType:   "DES",
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
@@ -54,7 +56,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.LegacyPoll.Metrics = map[string]*MetricConfig{
 					"m1": {
 						Unit:  "1",
 						Gauge: &GaugeMetric{ValueType: "int"},
@@ -91,8 +93,8 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Endpoint = "localhost:161"
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.LegacyPoll.Endpoint = "localhost:161"
+				snmpCfg.LegacyPoll.Metrics = map[string]*MetricConfig{
 					"m1": {
 						Unit:  "1",
 						Gauge: &GaugeMetric{ValueType: "int"},
@@ -108,7 +110,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+				effective := snmpCfg.effectivePollConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "udp://localhost:161", effective.Endpoint)
+				require.Equal(t, "localhost:161", snmpCfg.LegacyPoll.Endpoint)
 			},
 		},
 		{
@@ -117,8 +122,8 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Endpoint = "udp://localhost"
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.LegacyPoll.Endpoint = "udp://localhost"
+				snmpCfg.LegacyPoll.Metrics = map[string]*MetricConfig{
 					"m1": {
 						Unit:  "1",
 						Gauge: &GaugeMetric{ValueType: "int"},
@@ -134,7 +139,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+				effective := snmpCfg.effectivePollConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "udp://localhost:161", effective.Endpoint)
+				require.Equal(t, "udp://localhost", snmpCfg.LegacyPoll.Endpoint)
 			},
 		},
 		{
@@ -143,8 +151,8 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Endpoint = "udp://localhost:"
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.LegacyPoll.Endpoint = "udp://localhost:"
+				snmpCfg.LegacyPoll.Metrics = map[string]*MetricConfig{
 					"m1": {
 						Unit:  "1",
 						Gauge: &GaugeMetric{ValueType: "int"},
@@ -160,7 +168,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+				effective := snmpCfg.effectivePollConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "udp://localhost:161", effective.Endpoint)
+				require.Equal(t, "udp://localhost:", snmpCfg.LegacyPoll.Endpoint)
 			},
 		},
 		{
@@ -169,7 +180,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.LegacyPoll.Metrics = map[string]*MetricConfig{
 					"m1": {
 						Gauge: &GaugeMetric{},
 						ScalarOIDs: []ScalarOID{{
@@ -184,7 +195,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "double", snmpCfg.Metrics["m1"].Gauge.ValueType)
+				effective := snmpCfg.effectivePollConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "double", effective.Metrics["m1"].Gauge.ValueType)
+				require.Empty(t, snmpCfg.LegacyPoll.Metrics["m1"].Gauge.ValueType)
 			},
 		},
 		{
@@ -193,7 +207,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.LegacyPoll.Metrics = map[string]*MetricConfig{
 					"m1": {
 						Sum: &SumMetric{},
 						ScalarOIDs: []ScalarOID{{
@@ -208,7 +222,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "double", snmpCfg.Metrics["m1"].Sum.ValueType)
+				effective := snmpCfg.effectivePollConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "double", effective.Metrics["m1"].Sum.ValueType)
+				require.Empty(t, snmpCfg.LegacyPoll.Metrics["m1"].Sum.ValueType)
 			},
 		},
 		{
@@ -217,7 +234,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.LegacyPoll.Metrics = map[string]*MetricConfig{
 					"m1": {
 						Sum: &SumMetric{},
 						ScalarOIDs: []ScalarOID{{
@@ -232,7 +249,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "cumulative", snmpCfg.Metrics["m1"].Sum.Aggregation)
+				effective := snmpCfg.effectivePollConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "cumulative", effective.Metrics["m1"].Sum.Aggregation)
+				require.Empty(t, snmpCfg.LegacyPoll.Metrics["m1"].Sum.Aggregation)
 			},
 		},
 		{
@@ -241,7 +261,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				snmpCfg := cfg.(*Config)
-				snmpCfg.Metrics = map[string]*MetricConfig{
+				snmpCfg.LegacyPoll.Metrics = map[string]*MetricConfig{
 					"m1": {
 						Gauge: &GaugeMetric{ValueType: "int"},
 						ScalarOIDs: []ScalarOID{{
@@ -256,7 +276,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "1", snmpCfg.Metrics["m1"].Unit)
+				effective := snmpCfg.effectivePollConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "1", effective.Metrics["m1"].Unit)
+				require.Empty(t, snmpCfg.LegacyPoll.Metrics["m1"].Unit)
 			},
 		},
 	}
