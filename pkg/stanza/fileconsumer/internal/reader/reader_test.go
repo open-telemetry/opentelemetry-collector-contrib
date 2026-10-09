@@ -4,6 +4,7 @@
 package reader
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -15,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -361,6 +364,47 @@ func TestFileCacheAdvise(t *testing.T) {
 		sink.ExpectToken(t, fmt.Appendf(nil, "log line %d", i))
 	}
 	sink.ExpectNoCalls(t)
+}
+
+func TestReadGzipIncompleteStream(t *testing.T) {
+	t.Parallel()
+
+	f, sink := testFactory(t, withCompression("gzip"))
+	core, logs := observer.New(zap.WarnLevel)
+	f.Logger = zap.New(core)
+
+	temp := filetest.OpenTemp(t, t.TempDir())
+	writer := gzip.NewWriter(temp)
+	_, err := writer.Write([]byte("testlog1\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+	require.NoError(t, err)
+	defer reader.Close()
+
+	// The incomplete gzip stream is not read, and the size of the file is remembered.
+	reader.ReadToEnd(t.Context())
+	sink.ExpectNoCalls(t)
+	info, err := temp.Stat()
+	require.NoError(t, err)
+	require.Equal(t, info.Size(), reader.incompleteGzipSize)
+	require.Zero(t, logs.Len())
+
+	// While the file does not grow, it is not decompressed again, and a warning is logged only once.
+	reader.incompleteGzipSince = time.Now().Add(-incompleteGzipWarnAfter)
+	reader.ReadToEnd(t.Context())
+	reader.ReadToEnd(t.Context())
+	sink.ExpectNoCalls(t)
+	require.Equal(t, 1, logs.FilterMessageSnippet("gzip stream is incomplete").Len())
+
+	// Once the gzip stream is complete, it is read.
+	require.NoError(t, writer.Close())
+	reader.ReadToEnd(t.Context())
+	sink.ExpectToken(t, []byte("testlog1"))
+	require.Zero(t, reader.incompleteGzipSize)
 }
 
 func BenchmarkFileRead(b *testing.B) {

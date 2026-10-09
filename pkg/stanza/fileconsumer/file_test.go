@@ -1637,6 +1637,84 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 	sink.ExpectToken(t, []byte("testlog4"))
 }
 
+// TestReadGzipCompressedLogsWhileBeingWritten tests that a gzip stream which is still being written is only
+// read once it is complete, instead of being read partially and then failing with "gzip: invalid header"
+// because the stored offset points into the middle of the compressed stream.
+func TestReadGzipCompressedLogsWhileBeingWritten(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzip()
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+	writer := gzip.NewWriter(temp)
+
+	// The first line is flushed to disk, but the gzip stream is not finished yet.
+	_, err := writer.Write([]byte("testlog1\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	operator.poll(t.Context())
+	sink.ExpectNoCalls(t)
+
+	_, err = writer.Write([]byte("testlog2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	operator.poll(t.Context())
+	sink.ExpectNoCalls(t)
+
+	// Once the stream is complete, all of its lines are read.
+	_, err = writer.Write([]byte("testlog3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	operator.poll(t.Context())
+	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"), []byte("testlog3"))
+
+	// A gzip member appended afterward is read from the correct offset.
+	writer = gzip.NewWriter(temp)
+	_, err = writer.Write([]byte("testlog4\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog4"))
+	sink.ExpectNoCalls(t)
+}
+
+// TestReadGzipCompressedLogsAfterRotationWhileBeingWritten tests that when a partially read plaintext file is
+// rotated into a gzip file that is still being written, already read lines are not emitted again once the gzip
+// stream is complete.
+func TestReadGzipCompressedLogsAfterRotationWhileBeingWritten(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.Compression = "auto"
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	plainPath := filepath.Join(tempDir, "test.log")
+	require.NoError(t, os.WriteFile(plainPath, []byte("testlog1\ntestlog2\n"), 0o600))
+	operator.poll(t.Context())
+	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
+
+	// Rotate: the plaintext file is replaced by a gzip file whose stream is not finished yet.
+	require.NoError(t, os.Remove(plainPath))
+	gzFile := filetest.OpenFile(t, plainPath+".gz")
+	writer := gzip.NewWriter(gzFile)
+	_, err := writer.Write([]byte("testlog1\ntestlog2\ntestlog3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	operator.poll(t.Context())
+	sink.ExpectNoCalls(t)
+
+	// Once the stream is complete, only the lines that were not read before are emitted.
+	require.NoError(t, writer.Close())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog3"))
+	sink.ExpectNoCalls(t)
+}
+
 func TestArchive(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
