@@ -58,7 +58,6 @@ internal/datadog
 pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
-receiver/signalfxreceiver
 pkg/translator/pprof
 pkg/translator/splunk
 exporter/splunkhecexporter

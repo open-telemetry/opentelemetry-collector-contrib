@@ -16,10 +16,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/otelarrowdatareceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/signalfxdatareceiver" //nolint:staticcheck // SA1019
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/stefdatareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/otelarrowdatasender"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/signalfxdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/stefdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -48,15 +46,6 @@ func TestMetric10kDPS(t *testing.T) {
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 100,
-			},
-		},
-		{
-			name:     "SignalFx",
-			sender:   signalfxdatasender.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
-			receiver: signalfxdatareceiver.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)), //nolint:staticcheck // SA1019
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 120,
-				ExpectedMaxRAM: 150,
 			},
 		},
 		{
