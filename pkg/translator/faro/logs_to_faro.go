@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -512,29 +513,32 @@ func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Bra
 		if !found {
 			continue
 		}
-		brandAsString := strings.Split(suffix, "_")
-		idx, err := strconv.ParseInt(brandAsString[0], 10, 64)
+		idxAsString, field, found := strings.Cut(suffix, "_")
+		if !found {
+			return brands, fmt.Errorf("invalid browser brand key %q: expected format %s<index>_<field>", key, faroBrowserBrandPrefix)
+		}
+		idx, err := strconv.ParseInt(idxAsString, 10, 64)
 		if err != nil {
 			return brands, err
 		}
-		brand, ok := brandsMap[idx]
-		if !ok {
-			brandsMap[idx] = faroTypes.Brand{}
-			brand = brandsMap[idx]
-		}
-		if brandAsString[1] == faroBrand {
+		brand := brandsMap[idx]
+		switch field {
+		case faroBrand:
 			brand.Brand = val
-		}
-		if brandAsString[1] == faroBrandVersion {
+		case faroBrandVersion:
 			brand.Version = val
 		}
 		brandsMap[idx] = brand
 	}
-	brandsMapLen := len(brandsMap)
-	if brandsMapLen != 0 {
-		brandsAsArray := make([]faroTypes.Brand, brandsMapLen)
-		for i, brand := range brandsMap {
-			brandsAsArray[i] = brand
+	if len(brandsMap) != 0 {
+		indexes := make([]int64, 0, len(brandsMap))
+		for idx := range brandsMap {
+			indexes = append(indexes, idx)
+		}
+		slices.Sort(indexes)
+		brandsAsArray := make([]faroTypes.Brand, 0, len(indexes))
+		for _, idx := range indexes {
+			brandsAsArray = append(brandsAsArray, brandsMap[idx])
 		}
 		if err := brands.FromBrandsArray(brandsAsArray); err != nil {
 			return brands, err
