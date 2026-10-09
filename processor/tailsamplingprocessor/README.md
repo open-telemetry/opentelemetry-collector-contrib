@@ -20,6 +20,10 @@ Before performing sampling, spans will be grouped by `trace_id`. Therefore, the 
 
 This processor must be placed in pipelines after any processors that rely on context, e.g. `k8sattributes`. It reassembles spans into new batches, causing them to lose their original context.
 
+Spans are moved (not copied) out of incoming batches, so the processor declares that it mutates data. If a batch is
+shared with a consumer that doesn't mutate data, such as the `spanmetrics` connector, the Collector clones it before it
+reaches this processor.
+
 ## Warnings
 
 - [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The processor keeps spans in memory while it waits to make a sampling decision. All spans for a given trace must be sent to the same Collector instance. See [Scaling collectors with the tail sampling processor](#scaling-collectors-with-the-tail-sampling-processor) for deployment guidance.
