@@ -1176,3 +1176,215 @@ func TestBuildSubTypeResource_PointersAreDistinct(t *testing.T) {
 	require.Equal(t, *orig.Location, *cloned.Location)
 	require.NotSame(t, orig.Location, cloned.Location)
 }
+
+func TestAzureScraperDefinitionsDiscoveryAvoidsInvalidProbes(t *testing.T) {
+	fakeSubID := "sub-id-1"
+	redisType := "Microsoft.Cache/redisEnterprise"
+	serviceBusType := "Microsoft.ServiceBus/namespaces"
+	storageType := "Microsoft.Storage/storageAccounts"
+	blobServicesType := "Microsoft.Storage/storageAccounts/blobServices"
+	nicType := "Microsoft.Network/networkInterfaces"
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Services = []string{redisType, serviceBusType, storageType, blobServicesType, nicType}
+	cfg.Metrics = NestedListAlias{
+		// Case variation: lowercase for redis
+		"microsoft.cache/redisenterprise": {
+			"usedmemory": {"Average"},
+		},
+		serviceBusType: {
+			"ActiveMessages": {"Total"},
+		},
+		storageType: {
+			"UsedCapacity": {"Average"},
+		},
+		blobServicesType: {
+			"BlobCount": {"Average"},
+		},
+	}
+
+	redisID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + redisType + "/my-redis"
+	serviceBusID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + serviceBusType + "/my-sb"
+	storageID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + storageType + "/my-storage"
+	blobServicesID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + storageType + "/my-storage/blobServices/default"
+	nicID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + nicType + "/my-nic"
+
+	location := "eastus"
+	redisName := "my-redis"
+	sbName := "my-sb"
+	storageName := "my-storage"
+	blobName := "default"
+	nicName := "my-nic"
+
+	subscriptionsByIDMockData := newSubscriptionsByIDMockData(map[string]string{
+		fakeSubID: "My Subscription",
+	})
+	resourceMockData := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
+		fakeSubID: {
+			{
+				{ID: &redisID, Location: &location, Name: &redisName, Type: &redisType},
+				{ID: &serviceBusID, Location: &location, Name: &sbName, Type: &serviceBusType},
+				{ID: &storageID, Location: &location, Name: &storageName, Type: &storageType},
+				{ID: &blobServicesID, Location: &location, Name: &blobName, Type: &blobServicesType},
+				{ID: &nicID, Location: &location, Name: &nicName, Type: &nicType},
+			},
+		},
+	})
+
+	timeGrain := "PT1M"
+	metricsDefinitionMockData := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
+		redisID: {
+			{namespace: redisType, name: "usedmemory", timeGrain: timeGrain},
+		},
+		serviceBusID: {
+			{namespace: serviceBusType, name: "ActiveMessages", timeGrain: timeGrain},
+		},
+		storageID: {
+			{namespace: storageType, name: "UsedCapacity", timeGrain: timeGrain},
+		},
+		blobServicesID: {
+			{namespace: blobServicesType, name: "BlobCount", timeGrain: timeGrain},
+		},
+		nicID: {
+			{namespace: nicType, name: "BytesReceivedRate", timeGrain: timeGrain},
+		},
+	})
+
+	type trackedCall struct {
+		resourceURI string
+		namespace   string
+	}
+	var mu sync.Mutex
+	var probedCalls []trackedCall
+
+	tracker := func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) {
+		mu.Lock()
+		defer mu.Unlock()
+		if options != nil && options.Metricnamespace != nil {
+			probedCalls = append(probedCalls, trackedCall{
+				resourceURI: resourceURI,
+				namespace:   *options.Metricnamespace,
+			})
+		}
+	}
+
+	optionsResolver := newMockClientOptionsResolverWithTracker(
+		subscriptionsByIDMockData,
+		getSubscriptionsMockData(),
+		resourceMockData,
+		metricsDefinitionMockData,
+		nil,
+		nil,
+		tracker,
+	)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	s := &azureScraper{
+		cfg:                          cfg,
+		settings:                     settings.TelemetrySettings,
+		mb:                           metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions: map[string]*azureSubscription{
+			fakeSubID: {},
+		},
+		resources: map[string]map[string]*azureResource{
+			fakeSubID: {},
+		},
+	}
+
+	s.loadResources(t.Context(), fakeSubID)
+	for resID := range s.resources[fakeSubID] {
+		s.loadMetricsDefinitions(t.Context(), fakeSubID, resID)
+	}
+
+	// Verify that NO incompatible namespace probes were made across any resources.
+	// Without the fix, every resource is probed with all other configured namespaces (16 invalid probes).
+	assert.Empty(t, probedCalls, "expected 0 invalid namespace probes, but got: %+v", probedCalls)
+}
+
+func TestIsNamespaceApplicable(t *testing.T) {
+	tests := []struct {
+		name            string
+		configNamespace string
+		resourceType    string
+		want            bool
+	}{
+		{
+			name:            "exact matching ARM resource type",
+			configNamespace: "Microsoft.Compute/virtualMachines",
+			resourceType:    "Microsoft.Compute/virtualMachines",
+			want:            true,
+		},
+		{
+			name:            "case-insensitive matching ARM resource type",
+			configNamespace: "microsoft.compute/virtualmachines",
+			resourceType:    "Microsoft.Compute/virtualMachines",
+			want:            true,
+		},
+		{
+			name:            "different ARM resource types",
+			configNamespace: "Microsoft.ServiceBus/namespaces",
+			resourceType:    "Microsoft.Cache/redisEnterprise",
+			want:            false,
+		},
+		{
+			name:            "parent namespace does not apply to child resource",
+			configNamespace: "Microsoft.Storage/storageAccounts",
+			resourceType:    "Microsoft.Storage/storageAccounts/blobServices",
+			want:            false,
+		},
+		{
+			name:            "child namespace does not apply to parent resource",
+			configNamespace: "Microsoft.Storage/storageAccounts/blobServices",
+			resourceType:    "Microsoft.Storage/storageAccounts",
+			want:            false,
+		},
+		{
+			name:            "parent website namespace does not apply to slot child resource",
+			configNamespace: "Microsoft.Web/sites",
+			resourceType:    "Microsoft.Web/sites/slots",
+			want:            false,
+		},
+		{
+			name:            "child slot namespace does not apply to parent website resource",
+			configNamespace: "Microsoft.Web/sites/slots",
+			resourceType:    "Microsoft.Web/sites",
+			want:            false,
+		},
+		{
+			name:            "custom metric namespace applies to resource",
+			configNamespace: "azure.vm.linux.guestmetrics",
+			resourceType:    "Microsoft.Compute/virtualMachines",
+			want:            true,
+		},
+		{
+			name:            "empty config namespace returns false",
+			configNamespace: "",
+			resourceType:    "Microsoft.Compute/virtualMachines",
+			want:            false,
+		},
+		{
+			name:            "empty resource type returns false",
+			configNamespace: "Microsoft.Compute/virtualMachines",
+			resourceType:    "",
+			want:            false,
+		},
+		{
+			name:            "whitespace strings return false",
+			configNamespace: "   ",
+			resourceType:    "   ",
+			want:            false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isNamespaceApplicable(tt.configNamespace, tt.resourceType)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

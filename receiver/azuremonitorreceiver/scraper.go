@@ -494,13 +494,25 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 
 	s.collectMetricDefinitions(ctx, subscriptionID, resourceID, clientMetricsDefinitions, nil, discoveredNamespaces)
 
+	var resourceType string
+	if res := s.resources[subscriptionID][resourceID]; res != nil {
+		if res.resourceType != nil {
+			resourceType = *res.resourceType
+		} else if t, ok := res.attributes[attributeResourceType]; ok && t != nil {
+			resourceType = *t
+		}
+	}
+
 	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
 	// definitions (e.g. "azure.vm.linux.guestmetrics" published by AMA/MetricsExtension)
 	// when the metricnamespace query parameter is set explicitly. Make additional calls
-	// for each namespace configured in the metrics filter that was not already returned
+	// only for namespaces applicable to this resource that were not already returned
 	// by the default call above.
 	for configNamespace := range s.cfg.Metrics {
 		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
+			continue
+		}
+		if !isNamespaceApplicable(configNamespace, resourceType) {
 			continue
 		}
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
@@ -865,4 +877,30 @@ func serializeArmMetadataValues(metadataValues []*armmonitor.MetadataValue) stri
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ",")
+}
+
+// isNamespaceApplicable returns true if the configured metric namespace applies to
+// the given Azure resource type.
+//
+// In Azure ARM, resource types always follow the format "<provider>/<type>" (e.g.
+// "Microsoft.Compute/virtualMachines", "Microsoft.Storage/storageAccounts/blobServices").
+// Metric namespaces for ARM resource types only apply to resources of that exact type
+// (case-insensitive). Querying a resource with another resource type's namespace
+// (including parent or child resource types) results in a 400 BadRequest error from Azure Monitor.
+//
+// Custom metric namespaces (e.g. "azure.vm.linux.guestmetrics") do not follow the ARM
+// resource type format and can be associated with any resource where custom metrics are emitted.
+func isNamespaceApplicable(configNamespace, resourceType string) bool {
+	configNamespace = strings.TrimSpace(configNamespace)
+	resourceType = strings.TrimSpace(resourceType)
+	if configNamespace == "" || resourceType == "" {
+		return false
+	}
+	if strings.EqualFold(configNamespace, resourceType) {
+		return true
+	}
+	if strings.Contains(configNamespace, "/") {
+		return false
+	}
+	return true
 }
