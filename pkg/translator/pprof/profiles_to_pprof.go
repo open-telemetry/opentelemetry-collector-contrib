@@ -105,14 +105,20 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			// Skip the zero-value mapping at index 0.
 			continue
 		}
-		populateMapping(dst, mappingMap,
+		filename, err := getStringFromIdx(src.Dictionary(), m.FilenameStrindex(), fmt.Sprintf("mapping[%d].filename_strindex", i))
+		if err != nil {
+			return nil, err
+		}
+		if _, err := populateMapping(dst, mappingMap,
 			m.MemoryStart(),
 			m.MemoryLimit(),
 			m.FileOffset(),
-			getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
+			filename,
 			src.Dictionary(),
 			m,
-		)
+		); err != nil {
+			return nil, err
+		}
 	}
 
 	// As all profiles hold the same number of samples,
@@ -125,6 +131,9 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	valuesByProfile := make([][]int64, numProfiles)
 	for sampleIdx, s := range p.Samples().All() {
 		si := s.StackIndex()
+		if err := checkProfileIndex(si, src.Dictionary().StackTable().Len(), "stack_index"); err != nil {
+			return nil, err
+		}
 		stack := src.Dictionary().StackTable().At(int(si))
 
 		// Collect per-observation values from each profile (sample type).
@@ -164,31 +173,37 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			valuesByProfile[i] = vals
 
 			for _, attrIdx := range otlpSample.AttributeIndices().All() {
+				if err := checkProfileIndex(attrIdx, src.Dictionary().AttributeTable().Len(), "attribute_indices"); err != nil {
+					return nil, err
+				}
 				attr := src.Dictionary().AttributeTable().At(int(attrIdx))
-				key := src.Dictionary().StringTable().At(int(attr.KeyStrindex()))
+				key, err := getStringFromIdx(src.Dictionary(), attr.KeyStrindex(), "attribute.key_strindex")
+				if err != nil {
+					return nil, err
+				}
 				t := attr.Value().Type()
 				switch t {
 				case pcommon.ValueTypeStr:
 					strValue := attr.Value().Str()
-					err := labelMerger.mergeStrLabel(key, strValue)
-					if err != nil {
-						return nil, err
+					if mergeErr := labelMerger.mergeStrLabel(key, strValue); mergeErr != nil {
+						return nil, mergeErr
 					}
 				case pcommon.ValueTypeInt:
 					unit := ""
 					numValue := attr.Value().Int()
 					if attr.UnitStrindex() != 0 {
-						unit = src.Dictionary().StringTable().At(int(attr.UnitStrindex()))
+						unit, err = getStringFromIdx(src.Dictionary(), attr.UnitStrindex(), "attribute.unit_strindex")
+						if err != nil {
+							return nil, err
+						}
 					}
-					err := labelMerger.mergeNumLabel(key, numValue, unit)
-					if err != nil {
-						return nil, err
+					if mergeErr := labelMerger.mergeNumLabel(key, numValue, unit); mergeErr != nil {
+						return nil, mergeErr
 					}
 				case pcommon.ValueTypeBool:
 					strValue := attr.Value().AsString()
-					err := labelMerger.mergeStrLabel(key, strValue)
-					if err != nil {
-						return nil, err
+					if mergeErr := labelMerger.mergeStrLabel(key, strValue); mergeErr != nil {
+						return nil, mergeErr
 					}
 				default:
 					return nil, fmt.Errorf("incompatible sample attribute type: %s", t.String())
@@ -200,19 +215,32 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		// this OTLP sample reference the same stack.
 		locations := make([]*profile.Location, 0, stack.LocationIndices().Len())
 		for _, li := range stack.LocationIndices().All() {
+			if err := checkProfileIndex(li, src.Dictionary().LocationTable().Len(), "location_indices"); err != nil {
+				return nil, err
+			}
 			loc := src.Dictionary().LocationTable().At(int(li))
 			var locMapping *profile.Mapping
 
 			if mi := loc.MappingIndex(); mi != 0 {
+				if err := checkProfileIndex(mi, src.Dictionary().MappingTable().Len(), "mapping_index"); err != nil {
+					return nil, err
+				}
 				m := src.Dictionary().MappingTable().At(int(mi))
-				locMapping = populateMapping(dst, mappingMap,
+				filename, err := getStringFromIdx(src.Dictionary(), m.FilenameStrindex(), "mapping.filename_strindex")
+				if err != nil {
+					return nil, err
+				}
+				locMapping, err = populateMapping(dst, mappingMap,
 					m.MemoryStart(),
 					m.MemoryLimit(),
 					m.FileOffset(),
-					getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
+					filename,
 					src.Dictionary(),
 					m,
 				)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			var lines []profile.Line
@@ -221,19 +249,37 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 					Line:   l.Line(),
 					Column: l.Column(),
 				}
+				if err := checkProfileIndex(l.FunctionIndex(), src.Dictionary().FunctionTable().Len(), "function_index"); err != nil {
+					return nil, err
+				}
 				fn := src.Dictionary().FunctionTable().At(int(l.FunctionIndex()))
+				name, err := getStringFromIdx(src.Dictionary(), fn.NameStrindex(), "function.name_strindex")
+				if err != nil {
+					return nil, err
+				}
+				systemName, err := getStringFromIdx(src.Dictionary(), fn.SystemNameStrindex(), "function.system_name_strindex")
+				if err != nil {
+					return nil, err
+				}
+				filename, err := getStringFromIdx(src.Dictionary(), fn.FilenameStrindex(), "function.filename_strindex")
+				if err != nil {
+					return nil, err
+				}
 
 				pprofLine.Function = populateFunction(dst, functionMap,
-					getStringFromIdx(src.Dictionary(), int(fn.NameStrindex())),
-					getStringFromIdx(src.Dictionary(), int(fn.SystemNameStrindex())),
-					getStringFromIdx(src.Dictionary(), int(fn.FilenameStrindex())),
+					name,
+					systemName,
+					filename,
 					fn.StartLine())
 
 				lines = append(lines, pprofLine)
 			}
 
-			locations = append(locations,
-				populateLocation(dst, locationMap, locMapping, loc.Address(), lines, src.Dictionary(), loc))
+			pprofLoc, err := populateLocation(dst, locationMap, locMapping, loc.Address(), lines, src.Dictionary(), loc)
+			if err != nil {
+				return nil, err
+			}
+			locations = append(locations, pprofLoc)
 		}
 
 		// Emit one pprof Sample per observation. Shapes 1 and 3 expand a single
@@ -266,10 +312,16 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		default:
 			mappedIdx = i
 		}
-		dst.SampleType = append(dst.SampleType, &profile.ValueType{
-			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().TypeStrindex())),
-			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().UnitStrindex())),
-		})
+		sampleType := pprofiles.At(mappedIdx).SampleType()
+		typ, err := getStringFromIdx(src.Dictionary(), sampleType.TypeStrindex(), "sample_type.type_strindex")
+		if err != nil {
+			return nil, err
+		}
+		unit, err := getStringFromIdx(src.Dictionary(), sampleType.UnitStrindex(), "sample_type.unit_strindex")
+		if err != nil {
+			return nil, err
+		}
+		dst.SampleType = append(dst.SampleType, &profile.ValueType{Type: typ, Unit: unit})
 	}
 
 	var commentStrs []string
@@ -298,10 +350,15 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	dst.Period = p.Period()
 
 	pt := p.PeriodType()
-	dst.PeriodType = &profile.ValueType{
-		Type: getStringFromIdx(src.Dictionary(), int(pt.TypeStrindex())),
-		Unit: getStringFromIdx(src.Dictionary(), int(pt.UnitStrindex())),
+	periodType, err := getStringFromIdx(src.Dictionary(), pt.TypeStrindex(), "period_type.type_strindex")
+	if err != nil {
+		return nil, err
 	}
+	periodUnit, err := getStringFromIdx(src.Dictionary(), pt.UnitStrindex(), "period_type.unit_strindex")
+	if err != nil {
+		return nil, err
+	}
+	dst.PeriodType = &profile.ValueType{Type: periodType, Unit: periodUnit}
 
 	if err := dst.CheckValid(); err != nil {
 		return nil, err
@@ -339,6 +396,30 @@ func sampleShapeOf(s pprofile.Sample) (sampleShape, error) {
 	default:
 		return 0, fmt.Errorf("invalid sample: %d value(s), %d timestamp(s)", nValues, nTimestamps)
 	}
+}
+
+const (
+	invalidProfileIndexFormat        = "%s index %d out of range (table length %d)"
+	invalidProfileCommentIndexFormat = "attribute index %d out of range for %d profile comments"
+	profileCommentKeyPrefix          = string(semconv.PprofProfileCommentKey)
+)
+
+// checkProfileIndex protects a table lookup at the point conversion uses it.
+// Full signal conformance checks belong in tests, so unused dictionary entries
+// are not scanned on the production path.
+func checkProfileIndex(index int32, length int, field string) error {
+	if index < 0 || int64(index) >= int64(length) {
+		return fmt.Errorf(invalidProfileIndexFormat, field, index, length)
+	}
+	return nil
+}
+
+// getStringFromIdx checks string references when conversion reads them.
+func getStringFromIdx(dic pprofile.ProfilesDictionary, index int32, field string) (string, error) {
+	if err := checkProfileIndex(index, dic.StringTable().Len(), field); err != nil {
+		return "", err
+	}
+	return dic.StringTable().At(int(index)), nil
 }
 
 // sampleToPprofValues maps the three valid OTel profiles Sample shapes to a
@@ -391,7 +472,10 @@ func allElementsSame[T cmp.Ordered](in []T) bool {
 // It returns errNotFound if the key can not be found in attribute_table.
 func getAttributeString(dic pprofile.ProfilesDictionary, key string) (string, error) {
 	for _, attr := range dic.AttributeTable().All() {
-		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		attrKey, err := getStringFromIdx(dic, attr.KeyStrindex(), "attribute.key_strindex")
+		if err != nil {
+			return "", err
+		}
 		if attrKey == key {
 			return attr.Value().AsString(), nil
 		}
@@ -404,11 +488,17 @@ func getAttributeString(dic pprofile.ProfilesDictionary, key string) (string, er
 // It returns errNotFound if the key can not be found in attribute_table.
 func getAttributeBool(dic pprofile.ProfilesDictionary, attrIndices []int32, key string) (bool, error) {
 	for _, idx := range attrIndices {
-		if idx == 0 || int(idx) >= dic.AttributeTable().Len() {
+		if idx == 0 {
 			continue
 		}
+		if err := checkProfileIndex(idx, dic.AttributeTable().Len(), "attribute_indices"); err != nil {
+			return false, err
+		}
 		attr := dic.AttributeTable().At(int(idx))
-		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		attrKey, err := getStringFromIdx(dic, attr.KeyStrindex(), "attribute.key_strindex")
+		if err != nil {
+			return false, err
+		}
 		if attrKey == key {
 			return attr.Value().Bool(), nil
 		}
@@ -421,11 +511,12 @@ func getAttributeBool(dic pprofile.ProfilesDictionary, attrIndices []int32, key 
 // It returns errNotFound if the key can not be found in attribute_table.
 func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary) ([]string, error) {
 	tmp := make(map[int]string)
-	keyprefix := string(semconv.PprofProfileCommentKey)
-
 	for _, attr := range dic.AttributeTable().All() {
-		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
-		attrIdxStr, found := strings.CutPrefix(attrKey, keyprefix+".")
+		attrKey, err := getStringFromIdx(dic, attr.KeyStrindex(), "attribute.key_strindex")
+		if err != nil {
+			return nil, err
+		}
+		attrIdxStr, found := strings.CutPrefix(attrKey, profileCommentKeyPrefix+".")
 		if !found {
 			continue
 		}
@@ -437,20 +528,18 @@ func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary) ([]string, er
 	}
 
 	if len(tmp) == 0 {
-		return []string{}, fmt.Errorf("attribute with prefix '%s': %w", keyprefix, errNotFound)
+		return []string{}, fmt.Errorf("attribute with prefix '%s': %w", profileCommentKeyPrefix, errNotFound)
 	}
 
 	result := make([]string, len(tmp))
 	for k, v := range tmp {
+		if k < 0 || k >= len(result) {
+			return nil, fmt.Errorf(invalidProfileCommentIndexFormat, k, len(result))
+		}
 		result[k] = v
 	}
 
 	return result, nil
-}
-
-// getStringFromIdx returns the string on idx.
-func getStringFromIdx(dic pprofile.ProfilesDictionary, idx int) string {
-	return dic.StringTable().At(idx)
 }
 
 // uint64Tobytes helps to convert uint64 to []byte.
@@ -513,10 +602,10 @@ func getMappingHash(start, limit, offset uint64, file string) uint64 {
 // populateMapping helps to populate deduplicated mappings.
 func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mapping,
 	start, limit, offset uint64, fileName string, dic pprofile.ProfilesDictionary, m pprofile.Mapping,
-) *profile.Mapping {
+) (*profile.Mapping, error) {
 	mHash := getMappingHash(start, limit, offset, fileName)
 	if existingMapping, ok := mappingMap[mHash]; ok {
-		return existingMapping
+		return existingMapping, nil
 	}
 
 	pprofM := &profile.Mapping{
@@ -535,11 +624,17 @@ func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mappin
 
 	// Extract BuildID from attributes
 	for _, idx := range attrIndices {
-		if idx == 0 || int(idx) >= dic.AttributeTable().Len() {
+		if idx == 0 {
 			continue
 		}
+		if err := checkProfileIndex(idx, dic.AttributeTable().Len(), "attribute_indices"); err != nil {
+			return nil, err
+		}
 		attr := dic.AttributeTable().At(int(idx))
-		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		attrKey, err := getStringFromIdx(dic, attr.KeyStrindex(), "attribute.key_strindex")
+		if err != nil {
+			return nil, err
+		}
 		if attrKey == string(semconv.ProcessExecutableBuildIDGNUKey) {
 			pprofM.BuildID = attr.Value().AsString()
 			break
@@ -548,26 +643,30 @@ func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mappin
 
 	// Extract boolean mapping flags
 	hasFunctions, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasFunctionsKey))
-	if err == nil {
-		pprofM.HasFunctions = hasFunctions
+	if err != nil && !errors.Is(err, errNotFound) {
+		return nil, err
 	}
+	pprofM.HasFunctions = hasFunctions
 	hasFilenames, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasFilenamesKey))
-	if err == nil {
-		pprofM.HasFilenames = hasFilenames
+	if err != nil && !errors.Is(err, errNotFound) {
+		return nil, err
 	}
+	pprofM.HasFilenames = hasFilenames
 	hasLineNumbers, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasLineNumbersKey))
-	if err == nil {
-		pprofM.HasLineNumbers = hasLineNumbers
+	if err != nil && !errors.Is(err, errNotFound) {
+		return nil, err
 	}
+	pprofM.HasLineNumbers = hasLineNumbers
 	hasInlineFrames, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasInlineFramesKey))
-	if err == nil {
-		pprofM.HasInlineFrames = hasInlineFrames
+	if err != nil && !errors.Is(err, errNotFound) {
+		return nil, err
 	}
+	pprofM.HasInlineFrames = hasInlineFrames
 
 	dst.Mapping = append(dst.Mapping, pprofM)
 	mappingMap[mHash] = pprofM
 
-	return pprofM
+	return pprofM, nil
 }
 
 // getLocationHash returns a non-cryptographic hash as identifier for a Location.
@@ -591,10 +690,10 @@ func getLocationHash(m *profile.Mapping, addr uint64, lines []profile.Line) uint
 // populateLocation helps to populate deduplicated locations.
 func populateLocation(dst *profile.Profile, locationMap map[uint64]*profile.Location,
 	m *profile.Mapping, addr uint64, lines []profile.Line, dic pprofile.ProfilesDictionary, loc pprofile.Location,
-) *profile.Location {
+) (*profile.Location, error) {
 	lHash := getLocationHash(m, addr, lines)
 	if existingLocation, ok := locationMap[lHash]; ok {
-		return existingLocation
+		return existingLocation, nil
 	}
 
 	pprofL := &profile.Location{
@@ -612,14 +711,15 @@ func populateLocation(dst *profile.Profile, locationMap map[uint64]*profile.Loca
 
 	// Extract IsFolded from attributes
 	isFolded, err := getAttributeBool(dic, attrIndices, string(semconv.PprofLocationIsFoldedKey))
-	if err == nil {
-		pprofL.IsFolded = isFolded
+	if err != nil && !errors.Is(err, errNotFound) {
+		return nil, err
 	}
+	pprofL.IsFolded = isFolded
 
 	dst.Location = append(dst.Location, pprofL)
 	locationMap[lHash] = pprofL
 
-	return pprofL
+	return pprofL, nil
 }
 
 func (p *pprofLabelMerger) mergeStrLabel(key, strValue string) error {
