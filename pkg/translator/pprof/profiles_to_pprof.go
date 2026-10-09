@@ -7,6 +7,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"iter"
 	"slices"
 	"strconv"
 	"strings"
@@ -58,6 +59,13 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 
 	pprofiles := sp.At(0).Profiles()
 	numProfiles := pprofiles.Len()
+	if numProfiles == 0 {
+		return nil, errors.New("no profiles to convert")
+	}
+
+	if err := validateProfileReferences(src); err != nil {
+		return nil, err
+	}
 
 	// Basic check that all profiles hold the same number of samples.
 	numSamples := []int{}
@@ -341,6 +349,122 @@ func sampleShapeOf(s pprofile.Sample) (sampleShape, error) {
 	}
 }
 
+const (
+	invalidProfileIndexFormat        = "%s index %d out of range (table length %d)"
+	invalidProfileCommentIndexFormat = "attribute index %d out of range for %d profile comments"
+	profileCommentKeyPrefix          = string(semconv.PprofProfileCommentKey)
+)
+
+func validateProfileReferences(src *pprofile.Profiles) error {
+	dic := src.Dictionary()
+	stringsLen := dic.StringTable().Len()
+	if stringsLen == 0 {
+		return errors.New("string table is empty")
+	}
+	checkIndex := func(index int32, length int, field string) error {
+		if index < 0 || int64(index) >= int64(length) {
+			return fmt.Errorf(invalidProfileIndexFormat, field, index, length)
+		}
+		return nil
+	}
+	checkString := func(index int32, field string) error {
+		return checkIndex(index, stringsLen, field)
+	}
+	checkAttributes := func(indices iter.Seq2[int, int32], field string) error {
+		for i, index := range indices {
+			if err := checkIndex(index, dic.AttributeTable().Len(), fmt.Sprintf("%s[%d]", field, i)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	for i, mapping := range dic.MappingTable().All() {
+		if err := checkString(mapping.FilenameStrindex(), fmt.Sprintf("mapping[%d].filename_strindex", i)); err != nil {
+			return err
+		}
+		if err := checkAttributes(mapping.AttributeIndices().All(), fmt.Sprintf("mapping[%d].attribute_indices", i)); err != nil {
+			return err
+		}
+	}
+	for i, fn := range dic.FunctionTable().All() {
+		for _, ref := range []struct {
+			field string
+			index int32
+		}{{"name_strindex", fn.NameStrindex()}, {"system_name_strindex", fn.SystemNameStrindex()}, {"filename_strindex", fn.FilenameStrindex()}} {
+			if err := checkString(ref.index, fmt.Sprintf("function[%d].%s", i, ref.field)); err != nil {
+				return err
+			}
+		}
+	}
+	for i, location := range dic.LocationTable().All() {
+		if mappingIndex := location.MappingIndex(); mappingIndex != 0 {
+			if err := checkIndex(mappingIndex, dic.MappingTable().Len(), fmt.Sprintf("location[%d].mapping_index", i)); err != nil {
+				return err
+			}
+		}
+		if err := checkAttributes(location.AttributeIndices().All(), fmt.Sprintf("location[%d].attribute_indices", i)); err != nil {
+			return err
+		}
+		for j, line := range location.Lines().All() {
+			if err := checkIndex(line.FunctionIndex(), dic.FunctionTable().Len(), fmt.Sprintf("location[%d].line[%d].function_index", i, j)); err != nil {
+				return err
+			}
+		}
+	}
+	for i, stack := range dic.StackTable().All() {
+		for j, index := range stack.LocationIndices().All() {
+			if err := checkIndex(index, dic.LocationTable().Len(), fmt.Sprintf("stack[%d].location_indices[%d]", i, j)); err != nil {
+				return err
+			}
+		}
+	}
+	for i, attr := range dic.AttributeTable().All() {
+		if err := checkString(attr.KeyStrindex(), fmt.Sprintf("attribute[%d].key_strindex", i)); err != nil {
+			return err
+		}
+		if attr.UnitStrindex() != 0 {
+			if err := checkString(attr.UnitStrindex(), fmt.Sprintf("attribute[%d].unit_strindex", i)); err != nil {
+				return err
+			}
+		}
+	}
+
+	for i, rp := range src.ResourceProfiles().All() {
+		for j, scope := range rp.ScopeProfiles().All() {
+			for k, prof := range scope.Profiles().All() {
+				prefix := fmt.Sprintf("resource_profile[%d].scope_profile[%d].profile[%d]", i, j, k)
+				for _, ref := range []struct {
+					field string
+					index int32
+				}{{"sample_type.type_strindex", prof.SampleType().TypeStrindex()}, {"sample_type.unit_strindex", prof.SampleType().UnitStrindex()}, {"period_type.type_strindex", prof.PeriodType().TypeStrindex()}, {"period_type.unit_strindex", prof.PeriodType().UnitStrindex()}} {
+					if err := checkString(ref.index, prefix+"."+ref.field); err != nil {
+						return err
+					}
+				}
+				if err := checkAttributes(prof.AttributeIndices().All(), prefix+".attribute_indices"); err != nil {
+					return err
+				}
+				for sampleIdx, sample := range prof.Samples().All() {
+					samplePrefix := fmt.Sprintf("%s.sample[%d]", prefix, sampleIdx)
+					if err := checkIndex(sample.StackIndex(), dic.StackTable().Len(), samplePrefix+".stack_index"); err != nil {
+						return err
+					}
+					if err := checkAttributes(sample.AttributeIndices().All(), samplePrefix+".attribute_indices"); err != nil {
+						return err
+					}
+					if linkIndex := sample.LinkIndex(); linkIndex != 0 {
+						if err := checkIndex(linkIndex, dic.LinkTable().Len(), samplePrefix+".link_index"); err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // sampleToPprofValues maps the three valid OTel profiles Sample shapes to a
 // slice of per-observation pprof values according to the profiles proto spec:
 //
@@ -421,11 +545,9 @@ func getAttributeBool(dic pprofile.ProfilesDictionary, attrIndices []int32, key 
 // It returns errNotFound if the key can not be found in attribute_table.
 func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary) ([]string, error) {
 	tmp := make(map[int]string)
-	keyprefix := string(semconv.PprofProfileCommentKey)
-
 	for _, attr := range dic.AttributeTable().All() {
 		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
-		attrIdxStr, found := strings.CutPrefix(attrKey, keyprefix+".")
+		attrIdxStr, found := strings.CutPrefix(attrKey, profileCommentKeyPrefix+".")
 		if !found {
 			continue
 		}
@@ -437,11 +559,14 @@ func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary) ([]string, er
 	}
 
 	if len(tmp) == 0 {
-		return []string{}, fmt.Errorf("attribute with prefix '%s': %w", keyprefix, errNotFound)
+		return []string{}, fmt.Errorf("attribute with prefix '%s': %w", profileCommentKeyPrefix, errNotFound)
 	}
 
 	result := make([]string, len(tmp))
 	for k, v := range tmp {
+		if k < 0 || k >= len(result) {
+			return nil, fmt.Errorf(invalidProfileCommentIndexFormat, k, len(result))
+		}
 		result[k] = v
 	}
 
