@@ -446,6 +446,20 @@ Number of times the lock acquisitions encountered deadlocks.
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended | - |
 | db.namespace | The name of a database. | Any Str | Recommended | - |
 
+### mongodb.operation.latency.count
+
+The number of operations included in the operation latency statistics.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | Recommended | - |
+
 ### mongodb.operation.latency.time
 
 The latency of operations.
@@ -517,6 +531,14 @@ The number of queries executed per second.
 ### mongodb.query_executor.collection_scan.count
 
 The number of queries that performed a collection scan.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {query} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.query_executor.collection_scan.non_tailable.count
+
+The number of queries that performed a collection scan without a tailable cursor.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
