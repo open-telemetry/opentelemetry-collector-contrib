@@ -144,6 +144,7 @@ components:
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
+    - internal/natsclient
     - internal/pdatautil
     - internal/rabbitmq
     - internal/sharedcomponent
@@ -309,6 +310,7 @@ components:
     - receiver/mongodb_atlas
     - receiver/mysql
     - receiver/named_pipe
+    - receiver/nats
     - receiver/netflow
     - receiver/nginx
     - receiver/nsxt

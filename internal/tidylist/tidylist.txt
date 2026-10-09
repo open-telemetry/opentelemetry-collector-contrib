@@ -135,6 +135,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+internal/natsclient
 exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
@@ -308,6 +309,7 @@ receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
 receiver/mysqlreceiver
 receiver/namedpipereceiver
+receiver/natsreceiver
 receiver/netflowreceiver
 receiver/nginxreceiver
 receiver/nsxtreceiver

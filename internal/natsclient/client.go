@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package natsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natsexporter"
+package natsclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient"
 
 import (
 	"context"
@@ -13,10 +13,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// connect opens a NATS connection using the exporter configuration. name labels
-// the connection on the server (connz), and logger records connection lifecycle
-// events (disconnect/reconnect/close).
-func connect(ctx context.Context, cfg *Config, name string, logger *zap.Logger) (*nats.Conn, error) {
+// Connect opens a NATS connection using cfg. name labels the connection on the
+// server (connz), and logger records connection lifecycle events
+// (disconnect/reconnect/close).
+func Connect(ctx context.Context, cfg *ClientConfig, name string, logger *zap.Logger) (*nats.Conn, error) {
 	var errs error
 	options := nats.GetDefaultOptions()
 	options.Url = cfg.Endpoint

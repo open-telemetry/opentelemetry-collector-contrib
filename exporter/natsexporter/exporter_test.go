@@ -46,7 +46,7 @@ func TestExporter_CoreNATS(t *testing.T) {
 	require.NoError(t, nc.Flush())
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = url
+	cfg.ClientConfig.Endpoint = url
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	exp := newExporter(set, cfg)
@@ -72,7 +72,7 @@ func TestExporter_PermanentError(t *testing.T) {
 	ctx := t.Context()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = url
+	cfg.ClientConfig.Endpoint = url
 	// Valid OTTL that evaluates to an int, so the subject is never a string.
 	cfg.Logs.Subject = "123"
 
@@ -97,7 +97,7 @@ func TestExporter_InvalidSubjectIsPermanent(t *testing.T) {
 	ctx := t.Context()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = url
+	cfg.ClientConfig.Endpoint = url
 	// Valid OTTL that yields an empty string; NATS rejects an empty subject.
 	cfg.Logs.Subject = `""`
 
