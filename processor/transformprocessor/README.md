@@ -145,6 +145,7 @@ transform:
     - context: string
       error_mode: propagate
       shared_cache: true
+      flatten: true
       conditions: 
         - string
         - string
@@ -163,6 +164,8 @@ transform:
 `error_mode`: allows overriding the top-level `error_mode`. See [General Config](#general-config) for details on how to configure `error_mode`.
 
 `shared_cache`: enables sharing per-context caches between all advanced statement groups with the option enabled in this Transform Processor instance. Use this when you want to hold state across multiple iterations over a set of data.
+
+`flatten`: provides each log record with a distinct copy of its resource and scope while the group's statements run, then regroups the log records by resource and scope. Requires the [`transform.flatten.logs`](#transformflattenlogs) feature gate and is only supported in `log_statements` groups using the `log` context.
 
 `conditions`: a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
 
@@ -1092,17 +1095,17 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the Transform Processor is NOOP.  To modify a data type you must use a function specific to that purpose.
 - [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs.
-- Other: Statements that modify a higher context (`resource` or `scope`) using values from a lower context (for example, `set(resource.attributes["to"], log.attributes["from"])`) may produce unexpected results. The statement runs once per span, metric, or log record, and every record that shares the same resource or scope writes to the same shared value, so the last record processed determines the final value. For logs, the [`flatten_data`](#transformflattenlogs) option can be used to avoid this. See [#32080](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080) for more details.
+- Other: Statements that modify a higher context (`resource` or `scope`) using values from a lower context (for example, `set(resource.attributes["to"], log.attributes["from"])`) may produce unexpected results. The statement runs once per span, metric, or log record, and every record that shares the same resource or scope writes to the same shared value, so the last record processed determines the final value. For logs, the [`flatten`](#transformflattenlogs) option can be used to avoid this. See [#32080](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080) for more details.
 
 ## Feature Gate
 
 ### `transform.flatten.logs`
 
-The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the `flatten_data` configuration option (default `false`). With `flatten_data: true`, the processor provides each log record with a distinct copy of its resource and scope. Then, after applying all transformations, the log records are regrouped by resource and scope.
+The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the `flatten` option of [Advanced Config](#advanced-config) statement groups (default `false`). With `flatten: true`, the processor provides each log record with a distinct copy of its resource and scope before running the group's statements. After the group's statements have run, the log records are regrouped by resource and scope.
 
 This option is useful when applying transformations which alter the resource or scope. e.g. `set(resource.attributes["to"], log.attributes["from"])`, which may otherwise result in unexpected behavior. Using this option typically incurs a performance penalty as the processor must compute many hashes and create copies of resource and scope information for every log record.
 
-The feature is currently only available for log processing.
+The option is currently only available for `log_statements` groups using the `log` context, and is not available in the [Basic Config](#basic-config) style.
 
 #### Example Usage
   
@@ -1110,9 +1113,10 @@ The feature is currently only available for log processing.
   
   ```yaml
   transform:
-    flatten_data: true
     log_statements:
-      - set(resource.attributes["to"], log.attributes["from"])
+      - flatten: true
+        statements:
+          - set(resource.attributes["to"], log.attributes["from"])
   ```
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
@@ -1146,7 +1150,7 @@ volume of telemetry flowing through the pipeline. To keep the processor efficien
 - Use conditions (statement-level `where` clauses or advanced [global conditions](#advanced-config))
   to skip statements for telemetry they don't apply to.
 - Prefer fewer, more targeted statements over broad transformations applied to all telemetry.
-- The [`flatten_data`](#transformflattenlogs) option incurs a performance penalty because the
+- The [`flatten`](#transformflattenlogs) option incurs a performance penalty because the
   processor must compute hashes and copy resource and scope information for every log record.
 
 The transform processor is tested as part of the project's load tests, with the results publicly

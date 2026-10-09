@@ -47,6 +47,9 @@ type ContextStatements struct {
 	// SharedCache enables sharing per-context caches between all statement groups
 	// with this option enabled in the same processor instance.
 	SharedCache bool `mapstructure:"shared_cache"`
+	// Flatten gives each log record a distinct copy of its resource and scope while this group runs.
+	// Requires the transform.flatten.logs feature gate and is only supported for log context groups.
+	Flatten bool `mapstructure:"flatten"`
 }
 
 func (c ContextStatements) GetStatements() []string {
