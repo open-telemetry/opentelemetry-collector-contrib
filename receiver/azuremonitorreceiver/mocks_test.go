@@ -64,7 +64,17 @@ func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse)
 // call is made and no namespace-specific key exists, an empty response is returned
 // rather than falling back to the plain-URI key, which prevents duplicate definitions.
 func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
+	return newMockMetricsDefinitionListPagerWithTracker(metricDefinitionsPagesByResourceURI, nil)
+}
+
+func newMockMetricsDefinitionListPagerWithTracker(
+	metricDefinitionsPagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse,
+	tracker func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions),
+) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
 	return func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
+		if tracker != nil {
+			tracker(resourceURI, options)
+		}
 		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
 		key := resourceURI
 		if options != nil && options.Metricnamespace != nil {
@@ -170,6 +180,26 @@ func newMockClientOptionsResolver(
 	metrics map[string]map[string]armmonitor.MetricsClientListResponse,
 	metricsQueryResponses []queryResourcesResponseMock,
 ) ClientOptionsResolver {
+	return newMockClientOptionsResolverWithTracker(
+		subscriptionsGetResponsesByID,
+		subscriptionsListResponse,
+		resources,
+		metricsDefinitions,
+		metrics,
+		metricsQueryResponses,
+		nil,
+	)
+}
+
+func newMockClientOptionsResolverWithTracker(
+	subscriptionsGetResponsesByID map[string]armsubscriptions.ClientGetResponse,
+	subscriptionsListResponse []armsubscriptions.ClientListResponse,
+	resources map[string][]armresources.ClientListResponse,
+	metricsDefinitions map[string][]armmonitor.MetricDefinitionsClientListResponse,
+	metrics map[string]map[string]armmonitor.MetricsClientListResponse,
+	metricsQueryResponses []queryResourcesResponseMock,
+	definitionsTracker func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions),
+) ClientOptionsResolver {
 	// Init resources client options from resources mock data
 	armResourcesClientOptions := make(map[string]*arm.ClientOptions)
 	for subID, pages := range resources {
@@ -199,7 +229,7 @@ func newMockClientOptionsResolver(
 	// Init arm monitor client options from subscriptions mock data
 	armMonitorServerFactory := armmonitorfake.ServerFactory{
 		MetricDefinitionsServer: armmonitorfake.MetricDefinitionsServer{
-			NewListPager: newMockMetricsDefinitionListPager(metricsDefinitions),
+			NewListPager: newMockMetricsDefinitionListPagerWithTracker(metricsDefinitions, definitionsTracker),
 		},
 		MetricsServer: armmonitorfake.MetricsServer{
 			List: newMockMetricList(metrics),
