@@ -50,6 +50,12 @@ This receiver supports SNMP versions:
 - v2c
 - v3
 
+## Local Simulation
+
+See the [local simulation guide](examples/simulation/README.md) to run polling
+and traps against SNMP Simulator, verify Inform acknowledgments with Net-SNMP,
+and check metrics and logs exported by a Collector built from your checkout.
+
 ## Configuration
 
 ### Polling Configuration
