@@ -26,9 +26,9 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261006173156-20487f801913
-	go.opentelemetry.io/collector/consumer/consumertest v0.162.1-0.20261006173156-20487f801913
-	go.opentelemetry.io/collector/processor/processortest v0.162.1-0.20261006173156-20487f801913
+	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261009162812-02beb4e3f10f
+	go.opentelemetry.io/collector/consumer/consumertest v0.162.1-0.20261009162812-02beb4e3f10f
+	go.opentelemetry.io/collector/processor/processortest v0.162.1-0.20261009162812-02beb4e3f10f
 	golang.org/x/time v0.16.0
 )
 
@@ -64,14 +64,14 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.68.1-0.20261009162812-02beb4e3f10f // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.162.1-0.20261006173156-20487f801913 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.162.1-0.20261006173156-20487f801913 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.162.1-0.20261006173156-20487f801913 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.162.1-0.20261006173156-20487f801913 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.162.1-0.20261006173156-20487f801913 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20261006173156-20487f801913 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.162.1-0.20261009162812-02beb4e3f10f // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.162.1-0.20261009162812-02beb4e3f10f // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.162.1-0.20261009162812-02beb4e3f10f // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.162.1-0.20261009162812-02beb4e3f10f // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.162.1-0.20261009162812-02beb4e3f10f // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.162.1-0.20261009162812-02beb4e3f10f // indirect
 	go.opentelemetry.io/collector/pipeline v1.68.1-0.20261009162812-02beb4e3f10f // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.162.1-0.20261006173156-20487f801913 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.162.1-0.20261009162812-02beb4e3f10f // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
