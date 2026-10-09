@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
@@ -132,6 +133,10 @@ type Config struct {
 	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
 	// names along with their metric configurations
 	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
+
+	// Poll optionally groups polling settings. Existing top-level polling fields
+	// remain supported, but cannot be explicitly configured alongside Poll.
+	Poll *PollConfig `mapstructure:"poll"`
 }
 
 // ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
@@ -253,8 +258,20 @@ type Attribute struct {
 	Value string `mapstructure:"value"`
 }
 
+// Unmarshal applies defaults to the poll block when present. Detect mixed
+// polling forms from input keys, before defaults obscure their presence.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := cfg.unmarshalPollConfig(conf); err != nil {
+		return err
+	}
+	return conf.Unmarshal(cfg)
+}
+
 // Validate validates the given config, returning an error specifying any issues with the config.
 func (cfg *Config) Validate() error {
+	if cfg.Poll != nil {
+		return cfg.effectivePollConfig().Validate()
+	}
 	var combinedErr error
 
 	combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))

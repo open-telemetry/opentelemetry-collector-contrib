@@ -80,6 +80,57 @@ $defs:
       unit:
         description: Unit is required
         type: string
+  poll_config:
+    description: PollConfig groups the SNMP polling settings supported by the legacy top-level Config fields. Credentials and metric mappings apply only to polling.
+    type: object
+    properties:
+      attributes:
+        description: Attributes defines attributes used by polling metrics.
+        type: object
+        additionalProperties:
+          x-pointer: true
+          $ref: attribute_config
+      auth_password:
+        description: AuthPassword is required for authenticated SNMPv3 polling.
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      auth_type:
+        description: AuthType is the SNMPv3 authentication protocol. Defaults to MD5.
+        type: string
+      community:
+        description: Community is the v1/v2c community. Defaults to public.
+        type: string
+      endpoint:
+        description: Endpoint is the SNMP target. Defaults to udp://localhost:161.
+        type: string
+      metrics:
+        description: Metrics defines the metric names and OID mappings to collect.
+        type: object
+        additionalProperties:
+          x-pointer: true
+          $ref: metric_config
+      privacy_password:
+        description: PrivacyPassword is required for private SNMPv3 polling.
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      privacy_type:
+        description: PrivacyType is the SNMPv3 privacy protocol. Defaults to DES.
+        type: string
+      resource_attributes:
+        description: ResourceAttributes defines resource attributes used by polling metrics.
+        type: object
+        additionalProperties:
+          x-pointer: true
+          $ref: resource_attribute_config
+      security_level:
+        description: SecurityLevel defaults to no_auth_no_priv.
+        type: string
+      user:
+        description: User identifies the SNMPv3 user.
+        type: string
+      version:
+        description: Version is v1, v2c, or v3. Defaults to v2c.
+        type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   resource_attribute_config:
     description: ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
     type: object
@@ -153,6 +204,10 @@ properties:
     additionalProperties:
       x-pointer: true
       $ref: metric_config
+  poll:
+    description: Poll optionally groups polling settings. Existing top-level polling fields remain supported, but cannot be explicitly configured alongside Poll.
+    x-pointer: true
+    $ref: poll_config
   privacy_password:
     description: PrivacyPassword is the authentication password used for this SNMP connection. Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
     $ref: go.opentelemetry.io/collector/config/configopaque.string
