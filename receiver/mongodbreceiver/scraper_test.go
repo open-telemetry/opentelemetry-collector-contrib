@@ -1816,7 +1816,7 @@ func TestCollectTopStatsBSONObjectTooLarge(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	scraper := newMongodbScraper(settings, cfg)
 	fc := &fakeClient{}
-	fc.On("TopStats", mock.Anything).Return(bson.M{}, mongo.CommandError{Code: 10334, Name: "BSONObjectTooLarge"})
+	fc.On("TopStats", mock.Anything).Return(bson.M{}, mongo.CommandError{Code: bsonObjectTooLargeCode, Name: "BSONObjectTooLarge"})
 	scraper.client = fc
 	errs := &scrapererror.ScrapeErrors{}
 	scraper.collectTopStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
