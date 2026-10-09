@@ -11,7 +11,7 @@ status:
 
 feature_gates:
   - id: receiver.awsecscontainermetrics.DontEmitV0ContainerConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the receiver no longer emits the deprecated semconv v1.21.0
       attribute container.image.tag.
@@ -19,7 +19,7 @@ feature_gates:
     from_version: v0.157.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45087
   - id: receiver.awsecscontainermetrics.EmitV1ContainerConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the receiver emits container.image.tags (semconv v1.42.0)
       instead of the deprecated container.image.tag (semconv v1.21.0).
