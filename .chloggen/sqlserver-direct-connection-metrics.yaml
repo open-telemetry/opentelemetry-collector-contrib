@@ -1,0 +1,13 @@
+change_type: bug_fix
+
+component: receiver/sql_server
+
+note: Fix missing metrics when using direct SQL Server connection - `sqlserver.lock.wait_time.avg`, `sqlserver.transaction.rate`, `sqlserver.page.operation.rate`, `sqlserver.page.lazy_write.rate`, and `sqlserver.transaction_log.growth.count` now emit values on non-Windows platforms and when the receiver is configured with a direct database connection.
+
+issues: [51384]
+
+subtext: |
+  All of these except `sqlserver.transaction_log.growth.count` report no
+  data point on the first scrape, since they are calculated from the change in their counters between scrapes.
+
+change_logs: [user]
