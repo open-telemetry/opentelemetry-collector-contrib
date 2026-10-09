@@ -86,6 +86,9 @@ func (cfg Config) Marshal(conf *confmap.Conf) error {
 			"metrics":             cfg.Metrics,
 		}
 	}
+	if cfg.Traps != nil {
+		input["traps"] = cfg.Traps
+	}
 	return conf.Merge(confmap.NewFromStringMap(input))
 }
 
@@ -135,6 +138,7 @@ func (cfg *Config) effectivePollConfig() *Config {
 		}
 	}
 	selected.Poll = nil
+	selected.Traps = nil
 	if selected.Metrics != nil {
 		copied := make(map[string]*MetricConfig, len(selected.Metrics))
 		for name, metric := range selected.Metrics {

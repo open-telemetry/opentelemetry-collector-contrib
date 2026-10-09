@@ -177,6 +177,47 @@ $defs:
       value_type:
         description: ValueType is required and can be either int or double
         type: string
+  trap_v_3_config:
+    description: TrapV3Config configures a USM user for incoming SNMPv3 traps.
+    type: object
+    properties:
+      auth_password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      auth_type:
+        type: string
+      privacy_password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      privacy_type:
+        type: string
+      security_level:
+        type: string
+      user:
+        type: string
+  traps_config:
+    description: TrapsConfig configures the optional SNMP notification logs receiver.
+    type: object
+    properties:
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+      communities:
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/config/configopaque.string
+      include_community:
+        type: boolean
+      listen_address:
+        type: string
+      queue_size:
+        type: integer
+      v3:
+        x-pointer: true
+        $ref: trap_v_3_config
+      versions:
+        type: array
+        items:
+          type: string
 description: Config defines the configuration for the various elements of the receiver.
 type: object
 properties:
@@ -223,6 +264,10 @@ properties:
   security_level:
     description: 'SecurityLevel is the security level to use for this SNMP connection. Only valid for version “v3” Valid options: “no_auth_no_priv”, “auth_no_priv”, “auth_priv” Default: "no_auth_no_priv"'
     type: string
+  traps:
+    description: Traps optionally enables SNMP notifications as logs.
+    x-pointer: true
+    $ref: traps_config
   user:
     description: User is the SNMP User for this connection. Only valid for version “v3”
     type: string

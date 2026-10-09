@@ -4,12 +4,14 @@ type: snmp
 description: |
   This receiver fetches stats from an SNMP enabled host using a [golang
   snmp client](https://github.com/gosnmp/gosnmp). Metrics are collected
-  based upon different configurations in the config file.
+  based upon different configurations in the config file. Optionally,
+  SNMP notifications are received over UDP and emitted as logs.
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [ajimenez1503, svencowart]
@@ -17,6 +19,8 @@ status:
 
 tests:
   config:
+    traps:
+      listen_address: 127.0.0.1:0
     poll:
       metrics:
         m1:
