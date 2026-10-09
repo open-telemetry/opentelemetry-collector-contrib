@@ -9,5 +9,6 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `exporter.awsxray.skiptimestampvalidation` | beta | Remove XRay's timestamp validation on first 32 bits of trace ID | v0.84.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737) |
+| `exporter.xray.allowDot` | beta | X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled.  | v0.97.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
