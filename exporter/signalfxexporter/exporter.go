@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sync"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
@@ -316,21 +317,9 @@ func (se *signalfxExporter) logDeprecatedMetricsWarnings() {
 		"be removed in a future release. Please use \"container.cpu.usage\" instead."
 
 	for _, include := range se.config.IncludeMetrics {
-		deprecatedMetricIncluded := false
 		for deprecatedMetric, deprecationWarning := range deprecatedMetrics {
-			if deprecatedMetric == include.MetricName {
-				deprecatedMetricIncluded = true
-			}
-			if !deprecatedMetricIncluded {
-				for _, metricName := range include.MetricNames {
-					if deprecatedMetric == metricName {
-						deprecatedMetricIncluded = true
-						break
-					}
-				}
-			}
-			if deprecatedMetricIncluded {
-				se.logger.Warn(fmt.Sprintf("%s", deprecationWarning))
+			if deprecatedMetric == include.MetricName || slices.Contains(include.MetricNames, deprecatedMetric) {
+				se.logger.Warn(deprecationWarning)
 			}
 		}
 	}

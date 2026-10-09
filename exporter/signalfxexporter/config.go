@@ -248,6 +248,7 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf(`"default_properties" contains an empty value under key %q`, k)
 		}
 	}
+
 	return nil
 }
 
