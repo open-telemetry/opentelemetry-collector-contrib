@@ -4,8 +4,10 @@
 package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
+	"bytes"
 	"encoding/binary"
-	"math/rand/v2"
+	"hash/fnv"
+	"slices"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -52,12 +54,42 @@ func findLongestDurationNode(nodes []*spanNode) *spanNode {
 	return longest
 }
 
-// generateSpanID produces a non-cryptographic span ID suitable for summary
-// spans; uniqueness is sufficient, not randomness strength.
-func generateSpanID() pcommon.SpanID {
-	var id [8]byte
-	binary.BigEndian.PutUint64(id[:], rand.Uint64())
-	return pcommon.SpanID(id)
+// summarySpanIDFor returns a summary SpanID that is stable across runs. A group
+// holding summaries from an earlier run keeps the earliest one's ID, so the
+// summary stays addressable as late spans fold into it. Otherwise the ID hashes
+// the trace ID and the sorted member SpanIDs, so repeating a run over the same
+// spans repeats the ID while disjoint batches of one trace get distinct ones.
+func summarySpanIDFor(nodes []*spanNode) pcommon.SpanID {
+	var reuse *spanNode
+	for _, n := range nodes {
+		if n.existingSummary != nil && (reuse == nil || nodeOrderLess(n, reuse)) {
+			reuse = n
+		}
+	}
+	if reuse != nil {
+		return reuse.span.SpanID()
+	}
+
+	ids := make([]pcommon.SpanID, len(nodes))
+	for i, n := range nodes {
+		ids[i] = n.span.SpanID()
+	}
+	slices.SortFunc(ids, func(a, b pcommon.SpanID) int {
+		return bytes.Compare(a[:], b[:])
+	})
+	h := fnv.New64a()
+	traceID := nodes[0].span.TraceID()
+	h.Write(traceID[:])
+	for _, id := range ids {
+		h.Write(id[:])
+	}
+	sum := h.Sum64()
+	if sum == 0 {
+		sum = 1 // an all-zero SpanID is invalid
+	}
+	var id pcommon.SpanID
+	binary.BigEndian.PutUint64(id[:], sum)
+	return id
 }
 
 // buildAggregationPlan sorts aggregation groups by depth (parents before
@@ -76,7 +108,7 @@ func (*spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationG
 
 	// Pre-assign SpanIDs for all summary spans
 	for i := range groupSlice {
-		groupSlice[i].summarySpanID = generateSpanID()
+		groupSlice[i].summarySpanID = summarySpanIDFor(groupSlice[i].nodes)
 	}
 
 	return aggregationPlan{groups: groupSlice}
@@ -90,6 +122,9 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 	prefix := p.config.AggregationAttributePrefix
 	// mergedInto maps a prior run's summary SpanID to the summary it merged into.
 	var mergedInto map[string]ptrace.Span
+	// created holds this run's summaries, one of which may reuse the SpanID of
+	// a prior summary that the removal pass below looks up by ID.
+	created := make(map[ptrace.Span]struct{}, len(plan.groups))
 
 	for i := range plan.groups {
 		group := &plan.groups[i]
@@ -106,6 +141,7 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 
 		// Create summary span with correct parent
 		summary := p.createSummarySpanWithParent(*group, data, summaryParentID)
+		created[summary] = struct{}{}
 		for _, node := range group.nodes {
 			if node.existingSummary != nil {
 				if mergedInto == nil {
@@ -154,6 +190,9 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 	}
 	for scopeSpans := range seen {
 		scopeSpans.Spans().RemoveIf(func(span ptrace.Span) bool {
+			if _, ok := created[span]; ok {
+				return false
+			}
 			n, ok := tree.nodeByID[span.SpanID()]
 			return ok && n.markedForRemoval
 		})

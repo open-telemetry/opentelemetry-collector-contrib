@@ -5,6 +5,7 @@ package spanpruningprocessor
 
 import (
 	"encoding/hex"
+	"slices"
 	"testing"
 	"time"
 
@@ -335,7 +336,7 @@ func TestLeafMerge_EndToEnd(t *testing.T) {
 	require.Equal(t, 2, countSpans(td), "parent plus one merged summary")
 	summary, found := findSummarySpan(td)
 	require.True(t, found)
-	assert.NotEqual(t, newSpanID(9), summary.SpanID(), "merged summary gets a fresh span ID")
+	assert.Equal(t, newSpanID(9), summary.SpanID(), "merged summary keeps the prior summary's span ID")
 
 	// 10 spans behind the old summary plus 2 new raw spans.
 	assert.Equal(t, int64(12), intAttr(t, summary, "aggregation.span_count"))
@@ -525,8 +526,10 @@ func TestLeafMerge_OutlierPreservationSkipsExistingSummary(t *testing.T) {
 		[]int64{2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs, 50 * msNs},
 	))
 
-	assert.False(t, spanPresent(td, newSpanID(9)),
-		"the prior summary merged away instead of being preserved as an outlier")
+	prior, found := findSpan(td, newSpanID(9))
+	require.True(t, found, "the merged summary keeps the prior summary's span ID")
+	_, preserved := prior.Attributes().Get("aggregation.is_preserved_outlier")
+	assert.False(t, preserved, "the prior summary merged instead of being preserved as an outlier")
 
 	outlier, found := findSpan(td, newSpanID(27))
 	require.True(t, found, "the 50ms span is preserved whole")
@@ -552,8 +555,10 @@ func TestLeafMerge_ExemplarSamplingSkipsExistingSummary(t *testing.T) {
 		[]int64{2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs, 2 * msNs},
 	))
 
-	assert.False(t, spanPresent(td, newSpanID(9)),
-		"the prior summary merged away instead of being drawn as an exemplar")
+	prior, found := findSpan(td, newSpanID(9))
+	require.True(t, found, "the merged summary keeps the prior summary's span ID")
+	_, drawn := prior.Attributes().Get("aggregation.is_exemplar")
+	assert.False(t, drawn, "the prior summary merged instead of being drawn as an exemplar")
 
 	summary, found := findSummarySpan(td)
 	require.True(t, found)
@@ -606,6 +611,7 @@ func TestParentMerge_EndToEnd(t *testing.T) {
 
 	parentSummary, found := findSummarySpanByLevel(td, 1)
 	require.True(t, found, "a level-1 summary should exist")
+	assert.Equal(t, newSpanID(9), parentSummary.SpanID(), "the merged summary keeps the prior summary's span ID")
 	assert.Equal(t, "handler", parentSummary.Name())
 	assert.Equal(t, newSpanID(1), parentSummary.ParentSpanID())
 	// 20 spans behind the old summary plus the one newly arrived handler.
@@ -1313,7 +1319,7 @@ func TestMerge_KeptOutlierFollowsMergedSummary(t *testing.T) {
 
 	merged, found := findSummarySpan(td)
 	require.True(t, found)
-	require.NotEqual(t, firstID, merged.SpanID())
+	require.Equal(t, firstID, merged.SpanID(), "the merged summary keeps the prior summary's span ID")
 	assert.Equal(t, int64(10), intAttr(t, merged, "aggregation.span_count"),
 		"the seven spans behind the first summary plus the three late ones")
 
@@ -1453,4 +1459,107 @@ func TestMerge_KeptOutlierIsReparentedWhenItsParentAggregates(t *testing.T) {
 	require.True(t, found)
 	assert.Equal(t, handlerSummary.SpanID(), outlier.ParentSpanID(),
 		"the kept outlier moves under the summary that replaced its parent")
+}
+
+// uniqueSpanIDs returns every SpanID in td, failing the test on a duplicate.
+func uniqueSpanIDs(t *testing.T, td ptrace.Traces) map[pcommon.SpanID]struct{} {
+	t.Helper()
+	seen := make(map[pcommon.SpanID]struct{})
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		sss := rss.At(i).ScopeSpans()
+		for j := 0; j < sss.Len(); j++ {
+			spans := sss.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				id := spans.At(k).SpanID()
+				_, dup := seen[id]
+				require.False(t, dup, "span ID %s appears twice", id)
+				seen[id] = struct{}{}
+			}
+		}
+	}
+	return seen
+}
+
+// newSelectBatch builds "parent" with five 2ms SELECT leaves starting at firstID.
+func newSelectBatch(firstID byte) ptrace.Traces {
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	parent := ss.Spans().AppendEmpty()
+	parent.SetTraceID(testTraceID)
+	parent.SetSpanID(newSpanID(1))
+	parent.SetName("parent")
+	for i := range 5 {
+		appendLeafSpan(ss, newSpanID(firstID+byte(i)), newSpanID(1), "SELECT",
+			testStart+int64(i)*msNs, 2*msNs, map[string]string{"db.operation": "select"})
+	}
+	return td
+}
+
+func TestSummarySpanID_RepeatsForTheSameSpans(t *testing.T) {
+	for _, merge := range []bool{false, true} {
+		cfg := mergeTestConfig(t, merge)
+		a, found := findSummarySpan(runProcessor(t, cfg, newSelectBatch(20)))
+		require.True(t, found)
+		b, found := findSummarySpan(runProcessor(t, cfg, newSelectBatch(20)))
+		require.True(t, found)
+		assert.Equal(t, a.SpanID(), b.SpanID(), "merge=%v", merge)
+
+		other, found := findSummarySpan(runProcessor(t, cfg, newSelectBatch(40)))
+		require.True(t, found)
+		assert.NotEqual(t, a.SpanID(), other.SpanID(), "disjoint batches of one trace get distinct IDs")
+	}
+}
+
+func TestSummarySpanIDFor_IgnoresMemberOrder(t *testing.T) {
+	td := newSelectBatch(20)
+	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+	var nodes []*spanNode
+	for i := 1; i < spans.Len(); i++ {
+		nodes = append(nodes, &spanNode{span: spans.At(i)})
+	}
+	want := summarySpanIDFor(nodes)
+	assert.False(t, want.IsEmpty())
+	slices.Reverse(nodes)
+	assert.Equal(t, want, summarySpanIDFor(nodes))
+}
+
+func TestMerge_TwoPriorSummariesKeepTheEarliestID(t *testing.T) {
+	cfg := mergeTestConfig(t, true)
+	td := newMergeTestTraces(0, nil)
+	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	// A second batch's summary for the same group, starting later.
+	appendSummarySpan(ss, summarySpec{
+		spanID:       newSpanID(8),
+		parentSpanID: newSpanID(1),
+		name:         "SELECT",
+		startNs:      testStart + 5*msNs,
+		endNs:        testStart + 25*msNs,
+		count:        4,
+		minNs:        2 * msNs,
+		maxNs:        3 * msNs,
+		totalNs:      10 * msNs,
+		attrs:        map[string]string{"db.operation": "select"},
+		boundsS:      []float64{0.01, 0.05},
+		counts:       []int64{4, 4, 4},
+	})
+
+	td = runProcessor(t, cfg, td)
+
+	ids := uniqueSpanIDs(t, td)
+	assert.Len(t, ids, 2, "the parent and one merged summary")
+	merged, found := findSpan(td, newSpanID(9))
+	require.True(t, found, "the summary that starts first keeps its ID")
+	assert.Equal(t, int64(14), intAttr(t, merged, "aggregation.span_count"))
+}
+
+func TestMerge_ReusedIDIsNotDuplicated(t *testing.T) {
+	cfg := mergeTestConfig(t, true)
+	td := runProcessor(t, cfg, newMergeTestTraces(3, nil))
+
+	ids := uniqueSpanIDs(t, td)
+	assert.Len(t, ids, 2, "the parent and the merged summary, with the prior summary removed")
+	merged, found := findSpan(td, newSpanID(9))
+	require.True(t, found)
+	assert.Equal(t, int64(13), intAttr(t, merged, "aggregation.span_count"))
 }

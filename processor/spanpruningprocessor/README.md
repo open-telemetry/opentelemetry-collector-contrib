@@ -246,7 +246,7 @@ When spans are aggregated, the summary span includes:
 ### Properties
 - **Name**: Original span name (e.g., `SELECT`)
 - **TraceID**: Same as original spans
-- **SpanID**: Newly generated unique ID
+- **SpanID**: Derived from the trace ID and the SpanIDs it replaces, so aggregating the same spans yields the same summary ID (exemplar sampling is random, so with it enabled the replaced spans can differ between runs)
 - **ParentSpanID**: Same as original spans (common parent)
 - **Kind**: Same as template span (inherited from slowest span)
 - **StartTimestamp**: Earliest start time of all spans in the group
@@ -613,6 +613,7 @@ What changes when it is enabled:
 - Outlier detection and exemplar sampling cover only the newly arrived spans.
 - Spans an earlier run kept as preserved outliers or exemplars stay kept, and
   are relinked to the summary their own was merged into.
+- A merged summary keeps the SpanID of the earliest summary it absorbed.
 - A span whose summary attributes are missing or inconsistent is left alone.
 
 A late span merges only when the summary it belongs beside is still present; one
