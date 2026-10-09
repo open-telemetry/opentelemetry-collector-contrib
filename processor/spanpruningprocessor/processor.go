@@ -279,7 +279,7 @@ func (p *spanPruningProcessor) traceMatchesConditions(ctx context.Context, spans
 func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInfo) {
 	// Build trace tree
 	tree := p.buildTraceTree(spans)
-	if len(tree.nodeByID) == 0 {
+	if len(tree.nodeByID) == 0 || tree.hasCycle {
 		return
 	}
 

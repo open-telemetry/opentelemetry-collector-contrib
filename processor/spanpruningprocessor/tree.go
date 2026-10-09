@@ -34,6 +34,7 @@ type traceTree struct {
 	nodeByID map[pcommon.SpanID]*spanNode
 	leaves   []*spanNode // nodes with no children, populated during build
 	orphans  []*spanNode // spans whose parent is not in the trace
+	hasCycle bool        // true if parent links form a cycle; the tree must not be walked
 }
 
 // buildTraceTree constructs parent/child links for a trace and records
@@ -82,6 +83,14 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 		}
 	}
 
+	// A span that is its own ancestor would make every upward walk loop
+	// forever, so flag the trace when some span is unreachable from the top.
+	if hasParentCycle(tree.nodeByID) {
+		tree.hasCycle = true
+		p.logger.Debug("parent cycle detected, skipping trace")
+		return tree
+	}
+
 	// Third pass: collect leaves (nodes still marked as leaf). nodeByID is a
 	// map, so iteration order is random; sort the leaves into a stable order
 	// (start time, then span ID) so downstream grouping, summary anchoring, and
@@ -110,6 +119,22 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	}
 
 	return tree
+}
+
+// hasParentCycle reports whether any span is unreachable from the spans with
+// no linked parent (roots and orphans), which happens exactly when it is in, or
+// beneath, a cycle of parent links.
+func hasParentCycle(nodeByID map[pcommon.SpanID]*spanNode) bool {
+	queue := make([]*spanNode, 0, len(nodeByID))
+	for _, n := range nodeByID {
+		if n.parent == nil {
+			queue = append(queue, n)
+		}
+	}
+	for i := 0; i < len(queue); i++ {
+		queue = append(queue, queue[i].children...)
+	}
+	return len(queue) < len(nodeByID)
 }
 
 // getLeaves returns the pre-computed leaf nodes (spans with no children).
