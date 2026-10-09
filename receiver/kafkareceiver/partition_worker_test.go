@@ -398,6 +398,83 @@ func TestProcessPartitionBatchMaxInFlight(t *testing.T) {
 	}
 }
 
+func TestProcessPartitionBatchMaxInFlightBytes(t *testing.T) {
+	cases := []struct {
+		name string
+		// sizes is the key plus value size of each record, by offset.
+		sizes []int
+		// bytes is the max_in_flight.bytes cap.
+		bytes int
+		// waves lists the offsets that must be in Consume together, in order.
+		waves [][]int64
+	}{
+		{
+			name:  "byte cap limits calls below the record cap",
+			sizes: []int{10, 10, 10, 10},
+			bytes: 20,
+			waves: [][]int64{{0, 1}, {2, 3}},
+		},
+		{
+			name:  "record above the byte cap runs alone",
+			sizes: []int{10, 10},
+			bytes: 9,
+			waves: [][]int64{{0}, {1}},
+		},
+		{
+			name:  "record above the byte cap waits for the window to drain and blocks later records",
+			sizes: []int{4, 20, 4},
+			bytes: 10,
+			waves: [][]int64{{0}, {1}, {2}},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// The record cap is above the batch size, so only bytes can limit.
+			consumer, _, partitionConsumer := newMaxInFlightConsumer(t, 2*len(tc.sizes))
+			consumer.config.PartitionProcessing.MaxInFlight.Bytes = tc.bytes
+			entered := make(chan int64, len(tc.sizes))
+			release := make([]chan struct{}, len(tc.sizes))
+			for i := range release {
+				release[i] = make(chan struct{})
+			}
+			consumer.consumeMessage = func(_ context.Context, r *kgo.Record, _ attribute.Set) error {
+				entered <- r.Offset
+				<-release[r.Offset]
+				return nil
+			}
+			batch := offsetBatch(len(tc.sizes))
+			for i, r := range batch.Records {
+				// Key and value both count towards the size.
+				r.Key = make([]byte, tc.sizes[i]/2)
+				r.Value = make([]byte, tc.sizes[i]-tc.sizes[i]/2)
+			}
+
+			done := make(chan partitionBatchResult, 1)
+			go func() { done <- consumer.processPartitionBatch(partitionConsumer, batch) }()
+
+			// Each wave must fill the cap again once the previous one releases. A
+			// leaked byte count would shrink the later waves.
+			for _, wave := range tc.waves {
+				got := make([]int64, 0, len(wave))
+				for range wave {
+					select {
+					case offset := <-entered:
+						got = append(got, offset)
+					case <-time.After(10 * time.Second):
+						t.Fatalf("calls for offsets %v did not all start, got %v", wave, got)
+					}
+				}
+				require.ElementsMatch(t, wave, got)
+				requireNoEntry(t, entered, "started more calls than the byte cap allows")
+				for _, offset := range wave {
+					close(release[offset])
+				}
+			}
+			require.Nil(t, (<-done).rewindRecord)
+		})
+	}
+}
+
 func TestProcessPartitionBatchPrefixMark(t *testing.T) {
 	const topic = "test"
 	const inFlight = 4
@@ -646,7 +723,7 @@ func TestProcessPartitionBatchCancelledSkipsExtraConsume(t *testing.T) {
 			t.Fatal("in-flight Consume calls did not start")
 		}
 	}
-	// The next acquire must already be waiting on the semaphore. A cancel
+	// The next acquire must already be waiting for room. A cancel
 	// before that wait ends at the loop's context check and never enters acquire.
 	waitAcquireBlocked(t)
 	partitionConsumer.cancel(context.Canceled)
@@ -724,7 +801,7 @@ func waitAcquireBlocked(t *testing.T) {
 }
 
 // requireNoEntry fails if a Consume call arrives within a short wait.
-func requireNoEntry(t *testing.T, entered <-chan struct{}, msg string) {
+func requireNoEntry[T any](t *testing.T, entered <-chan T, msg string) {
 	t.Helper()
 	select {
 	case <-entered:
