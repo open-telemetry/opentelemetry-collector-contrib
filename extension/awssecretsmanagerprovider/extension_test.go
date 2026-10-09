@@ -134,6 +134,37 @@ func TestOnChange_CalledOnRotation(t *testing.T) {
 	assert.Equal(t, "value2", val)
 }
 
+func TestOnChange_AllCallbacksCalledOnRotation(t *testing.T) {
+	mock := &mockSMClient{}
+	mock.setOutput("value1")
+
+	p := newAWSSecretProvider(&Config{
+		SecretARN:       "arn:aws:secretsmanager:us-east-1:123:secret:test",
+		Region:          "us-east-1",
+		RefreshInterval: time.Millisecond,
+	}, zaptest.NewLogger(t))
+	p.client = mock
+
+	var first, second atomic.Value
+	p.OnChange(func(newValue string) {
+		first.Store(newValue)
+	})
+	p.OnChange(func(newValue string) {
+		second.Store(newValue)
+	})
+
+	err := p.Start(context.Background(), nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+
+	mock.setOutput("value2")
+
+	assert.Eventually(t, func() bool {
+		v1, v2 := first.Load(), second.Load()
+		return v1 != nil && v1.(string) == "value2" && v2 != nil && v2.(string) == "value2"
+	}, 5*time.Second, time.Millisecond)
+}
+
 func TestOnChange_NotCalledWhenUnchanged(t *testing.T) {
 	mock := &mockSMClient{}
 	mock.setOutput("same-value")

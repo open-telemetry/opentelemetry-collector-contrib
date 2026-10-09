@@ -33,13 +33,15 @@ var (
 )
 
 type awsSecretProvider struct {
-	cfg      *Config
-	logger   *zap.Logger
-	client   secretsManagerClient
-	secret   atomic.Pointer[string]
-	onChange atomic.Pointer[func(string)]
-	cancel   context.CancelFunc
-	wg       sync.WaitGroup
+	cfg    *Config
+	logger *zap.Logger
+	client secretsManagerClient
+	secret atomic.Pointer[string]
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
+
+	callbacksMu sync.Mutex
+	callbacks   []func(string)
 }
 
 func newAWSSecretProvider(cfg *Config, logger *zap.Logger) *awsSecretProvider {
@@ -91,7 +93,18 @@ func (p *awsSecretProvider) GetSecret(_ context.Context) (string, error) {
 }
 
 func (p *awsSecretProvider) OnChange(fn func(string)) {
-	p.onChange.Store(&fn)
+	p.callbacksMu.Lock()
+	defer p.callbacksMu.Unlock()
+	p.callbacks = append(p.callbacks, fn)
+}
+
+func (p *awsSecretProvider) notify(newValue string) {
+	p.callbacksMu.Lock()
+	callbacks := append([]func(string){}, p.callbacks...)
+	p.callbacksMu.Unlock()
+	for _, cb := range callbacks {
+		cb(newValue)
+	}
 }
 
 func (p *awsSecretProvider) refreshLoop(ctx context.Context) {
@@ -114,9 +127,7 @@ func (p *awsSecretProvider) refreshLoop(ctx context.Context) {
 			}
 			p.secret.Store(&raw)
 			p.logger.Info("secret value rotated")
-			if cb := p.onChange.Load(); cb != nil {
-				(*cb)(raw)
-			}
+			p.notify(raw)
 		}
 	}
 }
