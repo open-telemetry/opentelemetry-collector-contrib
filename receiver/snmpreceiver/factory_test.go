@@ -37,12 +37,13 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: defaultCollectionInterval,
 						Timeout:            defaultTimeout,
 					},
-					Endpoint:      defaultEndpoint,
-					Version:       defaultVersion,
-					Community:     defaultCommunity,
-					SecurityLevel: "no_auth_no_priv",
-					AuthType:      "MD5",
-					PrivacyType:   "DES",
+					Endpoint:       defaultEndpoint,
+					Version:        defaultVersion,
+					Community:      defaultCommunity,
+					SecurityLevel:  "no_auth_no_priv",
+					AuthType:       "MD5",
+					PrivacyType:    "DES",
+					MaxRepetitions: defaultMaxRepetitions,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
@@ -257,6 +258,32 @@ func TestNewFactory(t *testing.T) {
 				)
 				require.NoError(t, err)
 				require.Equal(t, "1", snmpCfg.Metrics["m1"].Unit)
+			},
+		},
+		{
+			desc: "CreateMetrics adds missing max_repetitions as 25",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.MaxRepetitions = 0
+				snmpCfg.Metrics = map[string]*MetricConfig{
+					"m1": {
+						Unit:  "1",
+						Gauge: &GaugeMetric{ValueType: "int"},
+						ScalarOIDs: []ScalarOID{{
+							OID: ".1",
+						}},
+					},
+				}
+				_, err := factory.CreateMetrics(
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, uint32(25), snmpCfg.MaxRepetitions)
 			},
 		},
 	}

@@ -69,6 +69,7 @@ These configuration options are for connecting to a SNMP host.
   - `AES192c`
   - `AES256c`
 - `privacy_password`: The privacy password used for the SNMP connection. This is only available if `security_level` is set to `auth_priv`.
+- `max_repetitions`: (default = `25`): The maximum number of iterations over the repeating variable list for GETBULK requests. Only used for SNMP versions `v2c` and `v3`.
 
 ### Metric/Attribute Configuration
 These configuration options are for determining what metrics and attributes will be created with what SNMP data

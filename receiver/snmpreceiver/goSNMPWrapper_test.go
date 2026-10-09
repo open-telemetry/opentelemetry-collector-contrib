@@ -38,3 +38,10 @@ func TestCloseIsIdempotent(t *testing.T) {
 		require.NoError(t, w.Close())
 	})
 }
+
+func TestGoSNMPWrapperMaxRepetitions(t *testing.T) {
+	w := newGoSNMPWrapper()
+	require.Equal(t, uint32(defaultMaxRepetitions), w.GetMaxRepetitions())
+	w.SetMaxRepetitions(10)
+	require.Equal(t, uint32(10), w.GetMaxRepetitions())
+}

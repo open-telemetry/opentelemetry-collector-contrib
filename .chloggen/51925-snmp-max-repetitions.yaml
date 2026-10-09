@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/snmp
+note: Add `max_repetitions` configuration option (defaulting to 25) for GETBULK requests to prevent request timeouts on MTU boundaries.
+issues: [51925]
+subtext: ""
