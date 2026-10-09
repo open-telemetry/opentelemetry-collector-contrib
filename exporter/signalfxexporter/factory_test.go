@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -41,6 +42,61 @@ func TestCreateMetrics(t *testing.T) {
 
 	_, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
+}
+
+func TestLogDeprecatedMetricsWarnings(t *testing.T) {
+	deprecatedMetricName := "container_cpu_utilization"
+	deprecationWarning := "The metric \"container_cpu_utilization\" has been deprecated and will be removed in a future release. Please use \"container.cpu.usage\" instead."
+
+	tests := []struct {
+		name           string
+		includeMetrics []dpfilters.MetricFilter
+		wantWarning    bool
+	}{
+		{
+			name:           "metric is not included",
+			includeMetrics: []dpfilters.MetricFilter{},
+			wantWarning:    false,
+		},
+		{
+			name: "include_metrics:metric_name",
+			includeMetrics: []dpfilters.MetricFilter{{
+				MetricName: deprecatedMetricName,
+			}},
+			wantWarning: true,
+		},
+		{
+			name: "include_metrics:metric_names",
+			includeMetrics: []dpfilters.MetricFilter{{
+				MetricNames: []string{deprecatedMetricName},
+			}},
+			wantWarning: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.AccessToken = "access_token"
+			cfg.Realm = "us0"
+			cfg.IncludeMetrics = tt.includeMetrics
+
+			observedCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(observedCore)
+			settings := exportertest.NewNopSettings(metadata.Type)
+			settings.Logger = logger
+
+			_, err := NewFactory().CreateMetrics(t.Context(), settings, cfg)
+			require.NoError(t, err)
+
+			if tt.wantWarning {
+				require.Equal(t, 1, observedLogs.Len())
+				assert.Equal(t, deprecationWarning, observedLogs.All()[0].Message)
+				return
+			}
+			assert.Zero(t, observedLogs.Len())
+		})
+	}
 }
 
 func TestCreateTraces(t *testing.T) {

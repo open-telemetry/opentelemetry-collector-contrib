@@ -308,6 +308,34 @@ func (se *signalfxExporter) processEntityEvents(logs plog.LogRecordSlice) error 
 	return nil
 }
 
+// Log deprecation warning for any "include_metrics" entry that's deprecated on collector startup
+func (se *signalfxExporter) logDeprecatedMetricsWarnings() {
+	// Maps deprecated metric name to log message
+	deprecatedMetrics := make(map[string]string)
+	deprecatedMetrics["container_cpu_utilization"] = "The metric \"container_cpu_utilization\" has been deprecated and will " +
+		"be removed in a future release. Please use \"container.cpu.usage\" instead."
+
+	for _, include := range se.config.IncludeMetrics {
+		deprecatedMetricIncluded := false
+		for deprecatedMetric, deprecationWarning := range deprecatedMetrics {
+			if deprecatedMetric == include.MetricName {
+				deprecatedMetricIncluded = true
+			}
+			if !deprecatedMetricIncluded {
+				for _, metricName := range include.MetricNames {
+					if deprecatedMetric == metricName {
+						deprecatedMetricIncluded = true
+						break
+					}
+				}
+			}
+			if deprecatedMetricIncluded {
+				se.logger.Warn(fmt.Sprintf("%s", deprecationWarning))
+			}
+		}
+	}
+}
+
 func (se *signalfxExporter) shutdown(_ context.Context) error {
 	if se.dimClient != nil {
 		se.dimClient.Shutdown()
