@@ -1,0 +1,14 @@
+partitioning:
+  # Required. Map of partition key name to an OTTL value expression.
+  keys:
+    tenant_id: 'resource.attributes["tenant.id"]'
+    severity: 'log.severity_text'
+partitioning/no_keys:
+  keys: {}
+partitioning/empty_expression:
+  keys:
+    tenant_id: ""
+partitioning/case_collision:
+  keys:
+    Tenant: 'resource.attributes["a"]'
+    tenant: 'resource.attributes["b"]'

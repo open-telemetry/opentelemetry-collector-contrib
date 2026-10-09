@@ -4,9 +4,11 @@
     "counter": "Forwarded Records/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -14,9 +16,11 @@
     "counter": "Full Scans/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "1341",
     "value": "1341"
   },
   {
@@ -24,9 +28,11 @@
     "counter": "Index Searches/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "179630",
     "value": "179630"
   },
   {
@@ -34,9 +40,11 @@
     "counter": "Page Splits/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "274",
     "value": "274"
   },
   {
@@ -44,9 +52,11 @@
     "counter": "Table Lock Escalations/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -54,9 +64,11 @@
     "counter": "Workfiles Created/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "656",
     "value": "656"
   },
   {
@@ -64,9 +76,11 @@
     "counter": "Worktables Created/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "296",
     "value": "296"
   },
   {
@@ -74,9 +88,11 @@
     "counter": "Range Scans/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "120",
     "value": "120"
   },
   {
@@ -84,9 +100,11 @@
     "counter": "Probe Scans/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "37",
     "value": "37"
   },
   {
@@ -94,9 +112,11 @@
     "counter": "FreeSpace Scans/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "5",
     "value": "5"
   },
   {
@@ -104,9 +124,11 @@
     "counter": "Pages Allocated/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "812",
     "value": "812"
   },
   {
@@ -114,9 +136,11 @@
     "counter": "Page Deallocations/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "401",
     "value": "401"
   },
   {
@@ -124,9 +148,11 @@
     "counter": "Mixed page allocations/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "12",
     "value": "12"
   },
   {
@@ -134,9 +160,11 @@
     "counter": "Pages Compressed/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "60",
     "value": "60"
   },
   {
@@ -144,9 +172,11 @@
     "counter": "Page Compression Attempts/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "75",
     "value": "75"
   },
   {
@@ -154,9 +184,11 @@
     "counter": "Extents Allocated/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "30",
     "value": "30"
   },
   {
@@ -164,9 +196,11 @@
     "counter": "Extent Deallocations/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "11",
     "value": "11"
   },
   {
@@ -174,9 +208,11 @@
     "counter": "Skipped Ghosted Records/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "8",
     "value": "8"
   },
   {
@@ -184,9 +220,11 @@
     "counter": "Scan Point Revalidations/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "4",
     "value": "4"
   },
   {
@@ -194,9 +232,11 @@
     "counter": "Worktables From Cache Ratio",
     "counter_type": "537003264",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Access Methods",
     "sql_instance": "d26d40521426",
+    "raw_value": "97.5",
     "value": "97.5"
   },
   {
@@ -204,9 +244,11 @@
     "counter": "Bytes Received from Replica/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -214,9 +256,11 @@
     "counter": "Bytes Sent to Replica/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -224,9 +268,11 @@
     "counter": "Bytes Sent to Transport/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -234,9 +280,11 @@
     "counter": "Flow Control Time (ms/sec)",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -244,9 +292,11 @@
     "counter": "Flow Control/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -254,9 +304,11 @@
     "counter": "Receives from Replica/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -264,9 +316,11 @@
     "counter": "Resent Messages/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -274,9 +328,11 @@
     "counter": "Sends to Replica/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -284,9 +340,11 @@
     "counter": "Sends to Transport/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Availability Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -294,9 +352,11 @@
     "counter": "Batches >=000000ms & <000001ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "124",
     "value": "124"
   },
   {
@@ -304,9 +364,11 @@
     "counter": "Batches >=000001ms & <000002ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "60",
     "value": "60"
   },
   {
@@ -314,9 +376,11 @@
     "counter": "Batches >=000002ms & <000005ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "25",
     "value": "25"
   },
   {
@@ -324,9 +388,11 @@
     "counter": "Batches >=000005ms & <000010ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "56",
     "value": "56"
   },
   {
@@ -334,9 +400,11 @@
     "counter": "Batches >=000010ms & <000020ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "48",
     "value": "48"
   },
   {
@@ -344,9 +412,11 @@
     "counter": "Batches >=000020ms & <000050ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "65",
     "value": "65"
   },
   {
@@ -354,9 +424,11 @@
     "counter": "Batches >=000050ms & <000100ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "31",
     "value": "31"
   },
   {
@@ -364,9 +436,11 @@
     "counter": "Batches >=000100ms & <000200ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "15",
     "value": "15"
   },
   {
@@ -374,9 +448,11 @@
     "counter": "Batches >=000200ms & <000500ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "6",
     "value": "6"
   },
   {
@@ -384,9 +460,11 @@
     "counter": "Batches >=000500ms & <001000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -394,9 +472,11 @@
     "counter": "Batches >=001000ms & <002000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -404,9 +484,11 @@
     "counter": "Batches >=002000ms & <005000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -414,9 +496,11 @@
     "counter": "Batches >=005000ms & <010000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -424,9 +508,11 @@
     "counter": "Batches >=100000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -434,9 +520,11 @@
     "counter": "Batches >=010000ms & <020000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -444,9 +532,11 @@
     "counter": "Batches >=020000ms & <050000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -454,9 +544,11 @@
     "counter": "Batches >=050000ms & <100000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Requests",
+    "instance_raw": "CPU Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -464,9 +556,11 @@
     "counter": "Batches >=050000ms & <100000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -474,9 +568,11 @@
     "counter": "Batches >=020000ms & <050000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -484,9 +580,11 @@
     "counter": "Batches >=010000ms & <020000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -494,9 +592,11 @@
     "counter": "Batches >=100000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -504,9 +604,11 @@
     "counter": "Batches >=005000ms & <010000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -514,9 +616,11 @@
     "counter": "Batches >=002000ms & <005000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -524,9 +628,11 @@
     "counter": "Batches >=001000ms & <002000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -534,9 +640,11 @@
     "counter": "Batches >=000500ms & <001000ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -544,9 +652,11 @@
     "counter": "Batches >=000200ms & <000500ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "2030",
     "value": "2030"
   },
   {
@@ -554,9 +664,11 @@
     "counter": "Batches >=000100ms & <000200ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "2108",
     "value": "2108"
   },
   {
@@ -564,9 +676,11 @@
     "counter": "Batches >=000050ms & <000100ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "2155",
     "value": "2155"
   },
   {
@@ -574,9 +688,11 @@
     "counter": "Batches >=000020ms & <000050ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "2025",
     "value": "2025"
   },
   {
@@ -584,9 +700,11 @@
     "counter": "Batches >=000010ms & <000020ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "668",
     "value": "668"
   },
   {
@@ -594,9 +712,11 @@
     "counter": "Batches >=000005ms & <000010ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "394",
     "value": "394"
   },
   {
@@ -604,9 +724,11 @@
     "counter": "Batches >=000002ms & <000005ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "68",
     "value": "68"
   },
   {
@@ -614,9 +736,11 @@
     "counter": "Batches >=000001ms & <000002ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "60",
     "value": "60"
   },
   {
@@ -624,9 +748,11 @@
     "counter": "Batches >=000000ms & <000001ms",
     "counter_type": "65792",
     "instance": "CPU Time:Total(ms)",
+    "instance_raw": "CPU Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -634,9 +760,11 @@
     "counter": "Batches >=000000ms & <000001ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "154",
     "value": "154"
   },
   {
@@ -644,9 +772,11 @@
     "counter": "Batches >=000001ms & <000002ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "40",
     "value": "40"
   },
   {
@@ -654,9 +784,11 @@
     "counter": "Batches >=000002ms & <000005ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "14",
     "value": "14"
   },
   {
@@ -664,9 +796,11 @@
     "counter": "Batches >=000005ms & <000010ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "35",
     "value": "35"
   },
   {
@@ -674,9 +808,11 @@
     "counter": "Batches >=000010ms & <000020ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "57",
     "value": "57"
   },
   {
@@ -684,9 +820,11 @@
     "counter": "Batches >=000020ms & <000050ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "69",
     "value": "69"
   },
   {
@@ -694,9 +832,11 @@
     "counter": "Batches >=000050ms & <000100ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "31",
     "value": "31"
   },
   {
@@ -704,9 +844,11 @@
     "counter": "Batches >=000100ms & <000200ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "15",
     "value": "15"
   },
   {
@@ -714,9 +856,11 @@
     "counter": "Batches >=000200ms & <000500ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "6",
     "value": "6"
   },
   {
@@ -724,9 +868,11 @@
     "counter": "Batches >=000500ms & <001000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "1",
     "value": "1"
   },
   {
@@ -734,9 +880,11 @@
     "counter": "Batches >=001000ms & <002000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -744,9 +892,11 @@
     "counter": "Batches >=002000ms & <005000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -754,9 +904,11 @@
     "counter": "Batches >=005000ms & <010000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -764,9 +916,11 @@
     "counter": "Batches >=100000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -774,9 +928,11 @@
     "counter": "Batches >=010000ms & <020000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -784,9 +940,11 @@
     "counter": "Batches >=020000ms & <050000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -794,9 +952,11 @@
     "counter": "Batches >=050000ms & <100000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Requests",
+    "instance_raw": "Elapsed Time:Requests",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -804,9 +964,11 @@
     "counter": "Batches >=050000ms & <100000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -814,9 +976,11 @@
     "counter": "Batches >=020000ms & <050000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -824,9 +988,11 @@
     "counter": "Batches >=010000ms & <020000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -834,9 +1000,11 @@
     "counter": "Batches >=100000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -844,9 +1012,11 @@
     "counter": "Batches >=005000ms & <010000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -854,9 +1024,11 @@
     "counter": "Batches >=002000ms & <005000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -864,9 +1036,11 @@
     "counter": "Batches >=001000ms & <002000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -874,9 +1048,11 @@
     "counter": "Batches >=000500ms & <001000ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "501",
     "value": "501"
   },
   {
@@ -884,9 +1060,11 @@
     "counter": "Batches >=000200ms & <000500ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "1738",
     "value": "1738"
   },
   {
@@ -894,9 +1072,11 @@
     "counter": "Batches >=000100ms & <000200ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "2039",
     "value": "2039"
   },
   {
@@ -904,9 +1084,11 @@
     "counter": "Batches >=000050ms & <000100ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "2124",
     "value": "2124"
   },
   {
@@ -914,9 +1096,11 @@
     "counter": "Batches >=000020ms & <000050ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "2138",
     "value": "2138"
   },
   {
@@ -924,9 +1108,11 @@
     "counter": "Batches >=000010ms & <000020ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "757",
     "value": "757"
   },
   {
@@ -934,9 +1120,11 @@
     "counter": "Batches >=000005ms & <000010ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "243",
     "value": "243"
   },
   {
@@ -944,9 +1132,11 @@
     "counter": "Batches >=000002ms & <000005ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "41",
     "value": "41"
   },
   {
@@ -954,9 +1144,11 @@
     "counter": "Batches >=000001ms & <000002ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "40",
     "value": "40"
   },
   {
@@ -964,9 +1156,11 @@
     "counter": "Batches >=000000ms & <000001ms",
     "counter_type": "65792",
     "instance": "Elapsed Time:Total(ms)",
+    "instance_raw": "Elapsed Time:Total(ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Batch Resp Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -974,9 +1168,11 @@
     "counter": "Background writer pages/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "248",
     "value": "248"
   },
   {
@@ -984,9 +1180,11 @@
     "counter": "Buffer cache hit ratio",
     "counter_type": "537003264",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "100",
     "value": "100"
   },
   {
@@ -994,9 +1192,11 @@
     "counter": "Checkpoint pages/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "203",
     "value": "203"
   },
   {
@@ -1004,9 +1204,11 @@
     "counter": "Database pages",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "4626",
     "value": "4626"
   },
   {
@@ -1014,9 +1216,11 @@
     "counter": "Free list stalls/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1024,9 +1228,11 @@
     "counter": "Lazy writes/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1034,9 +1240,11 @@
     "counter": "Page life expectancy",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "16771",
     "value": "16771"
   },
   {
@@ -1044,9 +1252,11 @@
     "counter": "Page lookups/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "389865",
     "value": "389865"
   },
   {
@@ -1054,9 +1264,11 @@
     "counter": "Page reads/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "4298",
     "value": "4298"
   },
   {
@@ -1064,9 +1276,11 @@
     "counter": "Page writes/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "809",
     "value": "809"
   },
   {
@@ -1074,9 +1288,11 @@
     "counter": "Readahead pages/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "347",
     "value": "347"
   },
   {
@@ -1084,9 +1300,11 @@
     "counter": "Database pages",
     "counter_type": "65792",
     "instance": "000",
+    "instance_raw": "000",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Node",
     "sql_instance": "d26d40521426",
+    "raw_value": "4626",
     "value": "4626"
   },
   {
@@ -1094,9 +1312,11 @@
     "counter": "Page life expectancy",
     "counter_type": "65792",
     "instance": "000",
+    "instance_raw": "000",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Node",
     "sql_instance": "d26d40521426",
+    "raw_value": "16771",
     "value": "16771"
   },
   {
@@ -1104,9 +1324,11 @@
     "counter": "Group Commit Time",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1114,9 +1336,11 @@
     "counter": "Group Commits/Sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1124,9 +1348,11 @@
     "counter": "Log Apply Pending Queue",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1134,9 +1360,11 @@
     "counter": "Log Apply Ready Queue",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1144,9 +1372,11 @@
     "counter": "Log Bytes Received/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1154,9 +1384,11 @@
     "counter": "Log Send Queue",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1164,9 +1396,11 @@
     "counter": "Mirrored Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1174,9 +1408,11 @@
     "counter": "Recovery Queue",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1184,9 +1420,11 @@
     "counter": "Redone Bytes/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1194,9 +1432,11 @@
     "counter": "Transaction Delay",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Database Replica",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1204,9 +1444,11 @@
     "counter": "Active Transactions",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1214,9 +1456,11 @@
     "counter": "Backup/Restore Throughput/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1224,9 +1468,11 @@
     "counter": "Data File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "155648",
     "value": "155648"
   },
   {
@@ -1234,9 +1480,11 @@
     "counter": "Log Bytes Flushed/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "5.906432e+06",
     "value": "5.906432e+06"
   },
   {
@@ -1244,9 +1492,11 @@
     "counter": "XTP Memory Used (KB)",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1254,9 +1504,11 @@
     "counter": "Log File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "24264",
     "value": "24264"
   },
   {
@@ -1264,9 +1516,11 @@
     "counter": "Log File(s) Used Size (KB)",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "6124",
     "value": "6124"
   },
   {
@@ -1274,9 +1528,11 @@
     "counter": "Log Flush Wait Time",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "284",
     "value": "284"
   },
   {
@@ -1284,9 +1540,11 @@
     "counter": "Log Flushes/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "521",
     "value": "521"
   },
   {
@@ -1294,9 +1552,11 @@
     "counter": "Log Growths",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "18",
     "value": "18"
   },
   {
@@ -1304,9 +1564,11 @@
     "counter": "Percent Log Used",
     "counter_type": "65792",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "25",
     "value": "25"
   },
   {
@@ -1314,9 +1576,11 @@
     "counter": "Transactions/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "2166",
     "value": "2166"
   },
   {
@@ -1324,9 +1588,11 @@
     "counter": "Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "394",
     "value": "394"
   },
   {
@@ -1334,9 +1600,11 @@
     "counter": "Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "118",
     "value": "118"
   },
   {
@@ -1344,19 +1612,35 @@
     "counter": "Transactions/sec",
     "counter_type": "272696576",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "458",
     "value": "458"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Transactions/sec",
+    "counter_type": "272696576",
+    "instance": "Total",
+    "instance_raw": "Total",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Databases",
+    "sql_instance": "d26d40521426",
+    "raw_value": "77",
+    "value": "77"
   },
   {
     "computer_name": "abcde",
     "counter": "Percent Log Used",
     "counter_type": "65792",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "70",
     "value": "70"
   },
   {
@@ -1364,9 +1648,11 @@
     "counter": "Log Growths",
     "counter_type": "65792",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "6",
     "value": "6"
   },
   {
@@ -1374,9 +1660,11 @@
     "counter": "Log Flushes/sec",
     "counter_type": "272696576",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "169",
     "value": "169"
   },
   {
@@ -1384,9 +1672,11 @@
     "counter": "Log Flush Wait Time",
     "counter_type": "272696576",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "155",
     "value": "155"
   },
   {
@@ -1394,9 +1684,11 @@
     "counter": "Log File(s) Used Size (KB)",
     "counter_type": "65792",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "1434",
     "value": "1434"
   },
   {
@@ -1404,9 +1696,11 @@
     "counter": "Log File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "2040",
     "value": "2040"
   },
   {
@@ -1414,9 +1708,11 @@
     "counter": "XTP Memory Used (KB)",
     "counter_type": "65792",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1424,9 +1720,11 @@
     "counter": "Log Bytes Flushed/sec",
     "counter_type": "272696576",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "1.794048e+06",
     "value": "1.794048e+06"
   },
   {
@@ -1434,9 +1732,11 @@
     "counter": "Data File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "4800",
     "value": "4800"
   },
   {
@@ -1444,9 +1744,11 @@
     "counter": "Backup/Restore Throughput/sec",
     "counter_type": "272696576",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1454,9 +1756,11 @@
     "counter": "Active Transactions",
     "counter_type": "65792",
     "instance": "master",
+    "instance_raw": "master",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1464,9 +1768,11 @@
     "counter": "Active Transactions",
     "counter_type": "65792",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1474,9 +1780,11 @@
     "counter": "Backup/Restore Throughput/sec",
     "counter_type": "272696576",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1484,9 +1792,11 @@
     "counter": "Data File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "8192",
     "value": "8192"
   },
   {
@@ -1494,9 +1804,11 @@
     "counter": "Log Bytes Flushed/sec",
     "counter_type": "272696576",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "675840",
     "value": "675840"
   },
   {
@@ -1504,9 +1816,11 @@
     "counter": "XTP Memory Used (KB)",
     "counter_type": "65792",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1514,9 +1828,11 @@
     "counter": "Log File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "8184",
     "value": "8184"
   },
   {
@@ -1524,9 +1840,11 @@
     "counter": "Log File(s) Used Size (KB)",
     "counter_type": "65792",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "961",
     "value": "961"
   },
   {
@@ -1534,9 +1852,11 @@
     "counter": "Log Flush Wait Time",
     "counter_type": "272696576",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "48",
     "value": "48"
   },
   {
@@ -1544,9 +1864,11 @@
     "counter": "Log Flushes/sec",
     "counter_type": "272696576",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "74",
     "value": "74"
   },
   {
@@ -1554,9 +1876,11 @@
     "counter": "Log Growths",
     "counter_type": "65792",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1564,9 +1888,11 @@
     "counter": "Percent Log Used",
     "counter_type": "65792",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "11",
     "value": "11"
   },
   {
@@ -1574,9 +1900,11 @@
     "counter": "Transactions/sec",
     "counter_type": "272696576",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "430",
     "value": "430"
   },
   {
@@ -1584,9 +1912,11 @@
     "counter": "Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "model",
+    "instance_raw": "model",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "33",
     "value": "33"
   },
   {
@@ -1594,9 +1924,11 @@
     "counter": "Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "34",
     "value": "34"
   },
   {
@@ -1604,9 +1936,11 @@
     "counter": "Transactions/sec",
     "counter_type": "272696576",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "158",
     "value": "158"
   },
   {
@@ -1614,9 +1948,11 @@
     "counter": "Percent Log Used",
     "counter_type": "65792",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "37",
     "value": "37"
   },
   {
@@ -1624,9 +1960,11 @@
     "counter": "Log Growths",
     "counter_type": "65792",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "3",
     "value": "3"
   },
   {
@@ -1634,9 +1972,11 @@
     "counter": "Log Flushes/sec",
     "counter_type": "272696576",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "81",
     "value": "81"
   },
   {
@@ -1644,9 +1984,11 @@
     "counter": "Log Flush Wait Time",
     "counter_type": "272696576",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "18",
     "value": "18"
   },
   {
@@ -1654,9 +1996,11 @@
     "counter": "Log File(s) Used Size (KB)",
     "counter_type": "65792",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "473",
     "value": "473"
   },
   {
@@ -1664,9 +2008,11 @@
     "counter": "Log File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "1272",
     "value": "1272"
   },
   {
@@ -1674,9 +2020,11 @@
     "counter": "XTP Memory Used (KB)",
     "counter_type": "65792",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1684,9 +2032,11 @@
     "counter": "Log Bytes Flushed/sec",
     "counter_type": "272696576",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "704512",
     "value": "704512"
   },
   {
@@ -1694,9 +2044,11 @@
     "counter": "Data File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "15680",
     "value": "15680"
   },
   {
@@ -1704,9 +2056,11 @@
     "counter": "Backup/Restore Throughput/sec",
     "counter_type": "272696576",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1714,9 +2068,11 @@
     "counter": "Active Transactions",
     "counter_type": "65792",
     "instance": "model_msdb",
+    "instance_raw": "model_msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1724,9 +2080,11 @@
     "counter": "Active Transactions",
     "counter_type": "65792",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1734,9 +2092,11 @@
     "counter": "Backup/Restore Throughput/sec",
     "counter_type": "272696576",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1744,9 +2104,11 @@
     "counter": "Data File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "4800",
     "value": "4800"
   },
   {
@@ -1754,9 +2116,11 @@
     "counter": "Log Bytes Flushed/sec",
     "counter_type": "272696576",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "978944",
     "value": "978944"
   },
   {
@@ -1764,9 +2128,11 @@
     "counter": "XTP Memory Used (KB)",
     "counter_type": "65792",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1774,9 +2140,11 @@
     "counter": "Log File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "2040",
     "value": "2040"
   },
   {
@@ -1784,9 +2152,11 @@
     "counter": "Log File(s) Used Size (KB)",
     "counter_type": "65792",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "842",
     "value": "842"
   },
   {
@@ -1794,9 +2164,11 @@
     "counter": "Log Flush Wait Time",
     "counter_type": "272696576",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "49",
     "value": "49"
   },
   {
@@ -1804,9 +2176,11 @@
     "counter": "Log Flushes/sec",
     "counter_type": "272696576",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "89",
     "value": "89"
   },
   {
@@ -1814,9 +2188,11 @@
     "counter": "Log Growths",
     "counter_type": "65792",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "6",
     "value": "6"
   },
   {
@@ -1824,9 +2200,11 @@
     "counter": "Percent Log Used",
     "counter_type": "65792",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "41",
     "value": "41"
   },
   {
@@ -1834,9 +2212,11 @@
     "counter": "Transactions/sec",
     "counter_type": "272696576",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "161",
     "value": "161"
   },
   {
@@ -1844,9 +2224,11 @@
     "counter": "Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "model_replicatedmaster",
+    "instance_raw": "model_replicatedmaster",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "37",
     "value": "37"
   },
   {
@@ -1854,9 +2236,11 @@
     "counter": "Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "33",
     "value": "33"
   },
   {
@@ -1864,9 +2248,11 @@
     "counter": "Transactions/sec",
     "counter_type": "272696576",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "447",
     "value": "447"
   },
   {
@@ -1874,9 +2260,11 @@
     "counter": "Percent Log Used",
     "counter_type": "65792",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "38",
     "value": "38"
   },
   {
@@ -1884,9 +2272,11 @@
     "counter": "Log Growths",
     "counter_type": "65792",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "3",
     "value": "3"
   },
   {
@@ -1894,9 +2284,11 @@
     "counter": "Log Flushes/sec",
     "counter_type": "272696576",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "79",
     "value": "79"
   },
   {
@@ -1904,9 +2296,11 @@
     "counter": "Log Flush Wait Time",
     "counter_type": "272696576",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "14",
     "value": "14"
   },
   {
@@ -1914,9 +2308,11 @@
     "counter": "Log File(s) Used Size (KB)",
     "counter_type": "65792",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "493",
     "value": "493"
   },
   {
@@ -1924,9 +2320,11 @@
     "counter": "Log File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "1272",
     "value": "1272"
   },
   {
@@ -1934,9 +2332,11 @@
     "counter": "XTP Memory Used (KB)",
     "counter_type": "65792",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1944,9 +2344,11 @@
     "counter": "Log Bytes Flushed/sec",
     "counter_type": "272696576",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "724992",
     "value": "724992"
   },
   {
@@ -1954,9 +2356,11 @@
     "counter": "Data File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "15680",
     "value": "15680"
   },
   {
@@ -1964,9 +2368,11 @@
     "counter": "Backup/Restore Throughput/sec",
     "counter_type": "272696576",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1974,9 +2380,11 @@
     "counter": "Active Transactions",
     "counter_type": "65792",
     "instance": "msdb",
+    "instance_raw": "msdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1984,9 +2392,11 @@
     "counter": "Active Transactions",
     "counter_type": "65792",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -1994,9 +2404,11 @@
     "counter": "Backup/Restore Throughput/sec",
     "counter_type": "272696576",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2004,9 +2416,11 @@
     "counter": "Data File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "40960",
     "value": "40960"
   },
   {
@@ -2014,9 +2428,11 @@
     "counter": "Log Bytes Flushed/sec",
     "counter_type": "272696576",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2024,9 +2440,11 @@
     "counter": "XTP Memory Used (KB)",
     "counter_type": "65792",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2034,9 +2452,11 @@
     "counter": "Log File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "1272",
     "value": "1272"
   },
   {
@@ -2044,9 +2464,11 @@
     "counter": "Log File(s) Used Size (KB)",
     "counter_type": "65792",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "476",
     "value": "476"
   },
   {
@@ -2054,9 +2476,11 @@
     "counter": "Log Flush Wait Time",
     "counter_type": "272696576",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2064,9 +2488,11 @@
     "counter": "Log Flushes/sec",
     "counter_type": "272696576",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2074,9 +2500,11 @@
     "counter": "Log Growths",
     "counter_type": "65792",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2084,9 +2512,11 @@
     "counter": "Percent Log Used",
     "counter_type": "65792",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "37",
     "value": "37"
   },
   {
@@ -2094,9 +2524,11 @@
     "counter": "Transactions/sec",
     "counter_type": "272696576",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "6",
     "value": "6"
   },
   {
@@ -2104,9 +2536,11 @@
     "counter": "Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "mssqlsystemresource",
+    "instance_raw": "mssqlsystemresource",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2114,9 +2548,11 @@
     "counter": "Write Transactions/sec",
     "counter_type": "272696576",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "139",
     "value": "139"
   },
   {
@@ -2124,9 +2560,11 @@
     "counter": "Transactions/sec",
     "counter_type": "272696576",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "506",
     "value": "506"
   },
   {
@@ -2134,9 +2572,11 @@
     "counter": "Percent Log Used",
     "counter_type": "65792",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "17",
     "value": "17"
   },
   {
@@ -2144,9 +2584,11 @@
     "counter": "Log Growths",
     "counter_type": "65792",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2154,9 +2596,11 @@
     "counter": "Log Flushes/sec",
     "counter_type": "272696576",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "29",
     "value": "29"
   },
   {
@@ -2164,9 +2608,11 @@
     "counter": "Log Flush Wait Time",
     "counter_type": "272696576",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2174,9 +2620,11 @@
     "counter": "Log File(s) Used Size (KB)",
     "counter_type": "65792",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "1445",
     "value": "1445"
   },
   {
@@ -2184,9 +2632,11 @@
     "counter": "Log File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "8184",
     "value": "8184"
   },
   {
@@ -2194,9 +2644,11 @@
     "counter": "XTP Memory Used (KB)",
     "counter_type": "65792",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2204,9 +2656,11 @@
     "counter": "Log Bytes Flushed/sec",
     "counter_type": "272696576",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "1.028096e+06",
     "value": "1.028096e+06"
   },
   {
@@ -2214,9 +2668,11 @@
     "counter": "Data File(s) Size (KB)",
     "counter_type": "65792",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "65536",
     "value": "65536"
   },
   {
@@ -2224,9 +2680,11 @@
     "counter": "Backup/Restore Throughput/sec",
     "counter_type": "272696576",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2234,9 +2692,11 @@
     "counter": "Active Transactions",
     "counter_type": "65792",
     "instance": "tempdb",
+    "instance_raw": "tempdb",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Databases",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2244,9 +2704,11 @@
     "counter": "Distributed Query",
     "counter_type": "65792",
     "instance": "Average execution time (ms)",
+    "instance_raw": "Average execution time (ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Exec Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2254,9 +2716,11 @@
     "counter": "DTC calls",
     "counter_type": "65792",
     "instance": "Average execution time (ms)",
+    "instance_raw": "Average execution time (ms)",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Exec Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2264,9 +2728,11 @@
     "counter": "DTC calls",
     "counter_type": "65792",
     "instance": "Cumulative execution time (ms) per second",
+    "instance_raw": "Cumulative execution time (ms) per second",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Exec Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2274,9 +2740,11 @@
     "counter": "Distributed Query",
     "counter_type": "65792",
     "instance": "Cumulative execution time (ms) per second",
+    "instance_raw": "Cumulative execution time (ms) per second",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Exec Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2284,9 +2752,11 @@
     "counter": "Distributed Query",
     "counter_type": "65792",
     "instance": "Execs in progress",
+    "instance_raw": "Execs in progress",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Exec Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2294,9 +2764,11 @@
     "counter": "DTC calls",
     "counter_type": "65792",
     "instance": "Execs in progress",
+    "instance_raw": "Execs in progress",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Exec Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2304,9 +2776,11 @@
     "counter": "DTC calls",
     "counter_type": "65792",
     "instance": "Execs started per second",
+    "instance_raw": "Execs started per second",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Exec Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2314,9 +2788,11 @@
     "counter": "Distributed Query",
     "counter_type": "65792",
     "instance": "Execs started per second",
+    "instance_raw": "Execs started per second",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Exec Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2324,9 +2800,11 @@
     "counter": "Execution Errors",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:External Scripts",
     "sql_instance": "d26d40521426",
+    "raw_value": "1.8256656e+07",
     "value": "1.8256656e+07"
   },
   {
@@ -2334,9 +2812,11 @@
     "counter": "Active Temp Tables",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "1",
     "value": "1"
   },
   {
@@ -2344,9 +2824,11 @@
     "counter": "Logical Connections",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "3",
     "value": "3"
   },
   {
@@ -2354,9 +2836,11 @@
     "counter": "Logins/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "75",
     "value": "75"
   },
   {
@@ -2364,9 +2848,11 @@
     "counter": "Logouts/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "72",
     "value": "72"
   },
   {
@@ -2374,9 +2860,11 @@
     "counter": "Processes blocked",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2384,9 +2872,11 @@
     "counter": "Temp Tables Creation Rate",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "26",
     "value": "26"
   },
   {
@@ -2394,9 +2884,11 @@
     "counter": "Temp Tables For Destruction",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2404,9 +2896,11 @@
     "counter": "User Connections",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "3",
     "value": "3"
   },
   {
@@ -2414,9 +2908,11 @@
     "counter": "Average Latch Wait Time (ms)",
     "counter_type": "1073874176",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Latches",
     "sql_instance": "d26d40521426",
+    "raw_value": "162",
     "value": "162"
   },
   {
@@ -2424,9 +2920,11 @@
     "counter": "Latch Waits/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Latches",
     "sql_instance": "d26d40521426",
+    "raw_value": "935",
     "value": "935"
   },
   {
@@ -2434,9 +2932,11 @@
     "counter": "Total Latch Wait Time (ms)",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Latches",
     "sql_instance": "d26d40521426",
+    "raw_value": "48250",
     "value": "48250"
   },
   {
@@ -2444,9 +2944,11 @@
     "counter": "Number of SuperLatches",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Latches",
     "sql_instance": "d26d40521426",
+    "raw_value": "12",
     "value": "12"
   },
   {
@@ -2454,9 +2956,11 @@
     "counter": "SuperLatch Promotions/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Latches",
     "sql_instance": "d26d40521426",
+    "raw_value": "5",
     "value": "5"
   },
   {
@@ -2464,9 +2968,11 @@
     "counter": "SuperLatch Demotions/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Latches",
     "sql_instance": "d26d40521426",
+    "raw_value": "3",
     "value": "3"
   },
   {
@@ -2474,9 +2980,11 @@
     "counter": "Lock Timeouts (timeout > 0)/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Locks",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2484,9 +2992,11 @@
     "counter": "Lock Timeouts/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Locks",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2494,9 +3004,11 @@
     "counter": "Lock Waits/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Locks",
     "sql_instance": "d26d40521426",
+    "raw_value": "15",
     "value": "15"
   },
   {
@@ -2504,9 +3016,11 @@
     "counter": "Number of Deadlocks/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Locks",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2514,9 +3028,11 @@
     "counter": "Memory broker clerk size",
     "counter_type": "65792",
     "instance": "Buffer Pool",
+    "instance_raw": "Buffer Pool",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Broker Clerks",
     "sql_instance": "d26d40521426",
+    "raw_value": "4626",
     "value": "4626"
   },
   {
@@ -2524,9 +3040,11 @@
     "counter": "Memory broker clerk size",
     "counter_type": "65792",
     "instance": "Column store object pool",
+    "instance_raw": "Column store object pool",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Broker Clerks",
     "sql_instance": "d26d40521426",
+    "raw_value": "14",
     "value": "14"
   },
   {
@@ -2534,9 +3052,11 @@
     "counter": "Memory Grants Outstanding",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2544,9 +3064,11 @@
     "counter": "Memory Grants Pending",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2554,9 +3076,11 @@
     "counter": "Target Server Memory (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "864504",
     "value": "864504"
   },
   {
@@ -2564,9 +3088,11 @@
     "counter": "Total Server Memory (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "307424",
     "value": "307424"
   },
   {
@@ -2574,9 +3100,11 @@
     "counter": "Query Store CPU usage",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Query Store",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2584,9 +3112,11 @@
     "counter": "Query Store logical reads",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Query Store",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2594,9 +3124,11 @@
     "counter": "Query Store logical writes",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Query Store",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2604,9 +3136,11 @@
     "counter": "Query Store physical reads",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Query Store",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2614,9 +3148,11 @@
     "counter": "Active memory grant amount (KB)",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2624,9 +3160,11 @@
     "counter": "CPU usage %",
     "counter_type": "537003264",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0.20693592727184296",
     "value": "0.20693592727184296"
   },
   {
@@ -2634,9 +3172,11 @@
     "counter": "Disk Read Bytes/sec",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2644,9 +3184,11 @@
     "counter": "Used memory (KB)",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "24944",
     "value": "24944"
   },
   {
@@ -2654,9 +3196,11 @@
     "counter": "Disk Read IO Throttled/sec",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2664,9 +3208,11 @@
     "counter": "Disk Read IO/sec",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2674,9 +3220,11 @@
     "counter": "Disk Write Bytes/sec",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2684,9 +3232,11 @@
     "counter": "Disk Write IO Throttled/sec",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2694,9 +3244,11 @@
     "counter": "Disk Write IO/sec",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2704,9 +3256,11 @@
     "counter": "Disk Write IO/sec",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2714,9 +3268,11 @@
     "counter": "Disk Write IO Throttled/sec",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2724,9 +3280,11 @@
     "counter": "Disk Write Bytes/sec",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2734,9 +3292,11 @@
     "counter": "Disk Read IO/sec",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2744,9 +3304,11 @@
     "counter": "Disk Read IO Throttled/sec",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2754,9 +3316,11 @@
     "counter": "Used memory (KB)",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "234720",
     "value": "234720"
   },
   {
@@ -2764,9 +3328,11 @@
     "counter": "Disk Read Bytes/sec",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2774,9 +3340,11 @@
     "counter": "CPU usage %",
     "counter_type": "537003264",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0.07849293202161789",
     "value": "0.07849293202161789"
   },
   {
@@ -2784,9 +3352,11 @@
     "counter": "Active memory grant amount (KB)",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Resource Pool Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2794,9 +3364,11 @@
     "counter": "Errors/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:SQL Errors",
     "sql_instance": "d26d40521426",
+    "raw_value": "369",
     "value": "369"
   },
   {
@@ -2804,9 +3376,11 @@
     "counter": "Errors/sec",
     "counter_type": "272696576",
     "instance": "DB Offline Errors",
+    "instance_raw": "DB Offline Errors",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:SQL Errors",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2814,9 +3388,11 @@
     "counter": "Errors/sec",
     "counter_type": "272696576",
     "instance": "Info Errors",
+    "instance_raw": "Info Errors",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:SQL Errors",
     "sql_instance": "d26d40521426",
+    "raw_value": "313",
     "value": "313"
   },
   {
@@ -2824,9 +3400,11 @@
     "counter": "Errors/sec",
     "counter_type": "272696576",
     "instance": "Kill Connection Errors",
+    "instance_raw": "Kill Connection Errors",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:SQL Errors",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2834,9 +3412,11 @@
     "counter": "Errors/sec",
     "counter_type": "272696576",
     "instance": "User Errors",
+    "instance_raw": "User Errors",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:SQL Errors",
     "sql_instance": "d26d40521426",
+    "raw_value": "56",
     "value": "56"
   },
   {
@@ -2844,9 +3424,11 @@
     "counter": "Batch Requests/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:SQL Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "431",
     "value": "431"
   },
   {
@@ -2854,9 +3436,11 @@
     "counter": "SQL Compilations/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:SQL Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "264",
     "value": "264"
   },
   {
@@ -2864,9 +3448,11 @@
     "counter": "SQL Re-Compilations/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:SQL Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "25",
     "value": "25"
   },
   {
@@ -2874,9 +3460,11 @@
     "counter": "Free Space in tempdb (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Transactions",
     "sql_instance": "d26d40521426",
+    "raw_value": "1.8256656e+07",
     "value": "1.8256656e+07"
   },
   {
@@ -2884,9 +3472,11 @@
     "counter": "Version Store Size (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Transactions",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2894,9 +3484,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 1",
+    "instance_raw": "User counter 1",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2904,9 +3496,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 10",
+    "instance_raw": "User counter 10",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2914,9 +3508,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 2",
+    "instance_raw": "User counter 2",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2924,9 +3520,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 3",
+    "instance_raw": "User counter 3",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2934,9 +3532,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 4",
+    "instance_raw": "User counter 4",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2944,9 +3544,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 5",
+    "instance_raw": "User counter 5",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2954,9 +3556,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 6",
+    "instance_raw": "User counter 6",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2964,9 +3568,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 7",
+    "instance_raw": "User counter 7",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2974,9 +3580,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 8",
+    "instance_raw": "User counter 8",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2984,9 +3592,11 @@
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 9",
+    "instance_raw": "User counter 9",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:User Settable",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -2994,9 +3604,11 @@
     "counter": "Blocked tasks",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3004,9 +3616,11 @@
     "counter": "CPU Limit Violation Count",
     "counter_type": "1",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3014,9 +3628,11 @@
     "counter": "CPU usage %",
     "counter_type": "537003264",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0.20693592727184296",
     "value": "0.20693592727184296"
   },
   {
@@ -3024,9 +3640,11 @@
     "counter": "CPU Usage Time",
     "counter_type": "1",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "11518",
     "value": "11518"
   },
   {
@@ -3034,9 +3652,11 @@
     "counter": "Lock Wait Count",
     "counter_type": "1",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3044,9 +3664,11 @@
     "counter": "Lock Wait Time",
     "counter_type": "1",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3054,9 +3676,11 @@
     "counter": "Queued Request Count",
     "counter_type": "1",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3064,9 +3688,11 @@
     "counter": "Queued requests",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3074,9 +3700,11 @@
     "counter": "Reduced Memory Grant Count",
     "counter_type": "1",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3084,9 +3712,11 @@
     "counter": "Request Count",
     "counter_type": "1",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "430",
     "value": "430"
   },
   {
@@ -3094,9 +3724,11 @@
     "counter": "Requests completed/sec",
     "counter_type": "65792",
     "instance": "default",
+    "instance_raw": "default",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "1",
     "value": "1"
   },
   {
@@ -3104,9 +3736,11 @@
     "counter": "Requests completed/sec",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3114,9 +3748,11 @@
     "counter": "Request Count",
     "counter_type": "1",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3124,9 +3760,11 @@
     "counter": "Reduced Memory Grant Count",
     "counter_type": "1",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3134,9 +3772,11 @@
     "counter": "Queued requests",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3144,9 +3784,11 @@
     "counter": "Queued Request Count",
     "counter_type": "1",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3154,9 +3796,11 @@
     "counter": "Lock Wait Time",
     "counter_type": "1",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "2023",
     "value": "2023"
   },
   {
@@ -3164,9 +3808,11 @@
     "counter": "Lock Wait Count",
     "counter_type": "1",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "20",
     "value": "20"
   },
   {
@@ -3174,9 +3820,11 @@
     "counter": "CPU Usage Time",
     "counter_type": "1",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "153065",
     "value": "153065"
   },
   {
@@ -3184,9 +3832,11 @@
     "counter": "CPU usage %",
     "counter_type": "537003264",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0.07849293202161789",
     "value": "0.07849293202161789"
   },
   {
@@ -3194,9 +3844,11 @@
     "counter": "CPU Limit Violation Count",
     "counter_type": "1",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3204,9 +3856,11 @@
     "counter": "Blocked tasks",
     "counter_type": "65792",
     "instance": "internal",
+    "instance_raw": "internal",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3214,9 +3868,11 @@
     "counter": "SQL Cache Memory (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "8192",
     "value": "8192"
   },
   {
@@ -3224,9 +3880,11 @@
     "counter": "Optimizer Memory (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "4096",
     "value": "4096"
   },
   {
@@ -3234,9 +3892,11 @@
     "counter": "Connection Memory (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "2048",
     "value": "2048"
   },
   {
@@ -3244,9 +3904,11 @@
     "counter": "Granted Workspace Memory (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "16384",
     "value": "16384"
   },
   {
@@ -3254,9 +3916,11 @@
     "counter": "Maximum Workspace Memory (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "32768",
     "value": "32768"
   },
   {
@@ -3264,9 +3928,11 @@
     "counter": "Cache Pages",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "1024",
     "value": "1024"
   },
   {
@@ -3274,9 +3940,11 @@
     "counter": "Total Pages",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "8192",
     "value": "8192"
   },
   {
@@ -3284,9 +3952,11 @@
     "counter": "Target Pages",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "7168",
     "value": "7168"
   },
   {
@@ -3294,9 +3964,11 @@
     "counter": "Stolen Pages",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "512",
     "value": "512"
   },
   {
@@ -3304,9 +3976,11 @@
     "counter": "Reserved Pages",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "256",
     "value": "256"
   },
   {
@@ -3314,9 +3988,11 @@
     "counter": "Free Pages",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Buffer Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "2048",
     "value": "2048"
   },
   {
@@ -3324,9 +4000,11 @@
     "counter": "Cache Object Counts",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Plan Cache",
     "sql_instance": "d26d40521426",
+    "raw_value": "100",
     "value": "100"
   },
   {
@@ -3334,9 +4012,11 @@
     "counter": "Cache Objects in use",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Plan Cache",
     "sql_instance": "d26d40521426",
+    "raw_value": "50",
     "value": "50"
   },
   {
@@ -3344,9 +4024,11 @@
     "counter": "Active cursors",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Cursor Manager by Type",
     "sql_instance": "d26d40521426",
+    "raw_value": "12",
     "value": "12"
   },
   {
@@ -3354,9 +4036,11 @@
     "counter": "Connection Reset/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:General Statistics",
     "sql_instance": "d26d40521426",
+    "raw_value": "12",
     "value": "12"
   },
   {
@@ -3364,9 +4048,11 @@
     "counter": "Cached Cursor Counts",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Cursor Manager by Type",
     "sql_instance": "d26d40521426",
+    "raw_value": "5",
     "value": "5"
   },
   {
@@ -3374,9 +4060,11 @@
     "counter": "Number of active cursor plans",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Cursor Manager by Type",
     "sql_instance": "d26d40521426",
+    "raw_value": "8",
     "value": "8"
   },
   {
@@ -3384,9 +4072,11 @@
     "counter": "Cursor memory usage",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Cursor Manager by Type",
     "sql_instance": "d26d40521426",
+    "raw_value": "256",
     "value": "256"
   },
   {
@@ -3394,9 +4084,11 @@
     "counter": "Cursor Requests/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Cursor Manager by Type",
     "sql_instance": "d26d40521426",
+    "raw_value": "42",
     "value": "42"
   },
   {
@@ -3404,9 +4096,11 @@
     "counter": "CLR Execution",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:CLR",
     "sql_instance": "d26d40521426",
+    "raw_value": "1500",
     "value": "1500"
   },
   {
@@ -3414,9 +4108,11 @@
     "counter": "Tasks Running",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Broker Activation",
     "sql_instance": "d26d40521426",
+    "raw_value": "3",
     "value": "3"
   },
   {
@@ -3424,9 +4120,11 @@
     "counter": "Task Limit Reached",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Broker Activation",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3434,9 +4132,11 @@
     "counter": "Lock Memory (KB)",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "10288",
     "value": "10288"
   },
   {
@@ -3444,9 +4144,11 @@
     "counter": "Lock Blocks",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3454,9 +4156,11 @@
     "counter": "Tasks Started/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Broker Activation",
     "sql_instance": "d26d40521426",
+    "raw_value": "10",
     "value": "10"
   },
   {
@@ -3464,9 +4168,11 @@
     "counter": "Tasks Aborted/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Broker Activation",
     "sql_instance": "d26d40521426",
+    "raw_value": "1",
     "value": "1"
   },
   {
@@ -3474,9 +4180,11 @@
     "counter": "Stored Procedures Invoked/sec",
     "counter_type": "272696576",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Broker Activation",
     "sql_instance": "d26d40521426",
+    "raw_value": "7",
     "value": "7"
   },
   {
@@ -3484,9 +4192,11 @@
     "counter": "Lock Blocks Allocated",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "5000",
     "value": "5000"
   },
   {
@@ -3494,9 +4204,11 @@
     "counter": "Lock Owner Blocks",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "0",
     "value": "0"
   },
   {
@@ -3504,9 +4216,11 @@
     "counter": "Lock Owner Blocks Allocated",
     "counter_type": "65792",
     "instance": "",
+    "instance_raw": "",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Memory Manager",
     "sql_instance": "d26d40521426",
+    "raw_value": "5000",
     "value": "5000"
   },
   {
@@ -3514,9 +4228,11 @@
     "counter": "Lock Requests/sec",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Locks",
     "sql_instance": "d26d40521426",
+    "raw_value": "12345",
     "value": "12345"
   },
   {
@@ -3524,9 +4240,35 @@
     "counter": "Lock Wait Time (ms)",
     "counter_type": "272696576",
     "instance": "Total",
+    "instance_raw": "_Total",
     "measurement": "sqlserver_performance",
     "object": "SQLServer:Locks",
     "sql_instance": "d26d40521426",
+    "raw_value": "271",
     "value": "271"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Average Wait Time (ms)",
+    "counter_type": "1073874176",
+    "instance": "Total",
+    "instance_raw": "_Total",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Locks",
+    "raw_value": "456",
+    "sql_instance": "d26d40521426",
+    "value": "456"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Average Wait Time Base",
+    "counter_type": "1073939712",
+    "instance": "Total",
+    "instance_raw": "_Total",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Locks",
+    "raw_value": "14",
+    "sql_instance": "d26d40521426",
+    "value": "14"
   }
 ]
