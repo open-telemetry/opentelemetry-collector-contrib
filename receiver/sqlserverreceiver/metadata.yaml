@@ -1,8 +1,9 @@
 display_name: Microsoft SQL Server Receiver
-type: sqlserver
+type: sql_server
+deprecated_type: sqlserver
 
 description: |
-  The `sqlserver` receiver grabs metrics/logs about a Microsoft SQL Server instance. The receiver works by either using the
+  The `sql_server` receiver grabs metrics/logs about a Microsoft SQL Server instance. The receiver works by either using the
   Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
   are only available when running on Windows.
 
@@ -1063,7 +1064,7 @@ metrics:
     unit: ms
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait_time.total:
     enabled: false
     description: Total wait time in seconds for locks since the last server restart.
@@ -1197,7 +1198,7 @@ metrics:
     unit: "{writes}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.life_expectancy:
     enabled: true
     description: Time a page will stay in the buffer pool.
@@ -1222,7 +1223,7 @@ metrics:
     gauge:
       value_type: double
     attributes: [page.operations]
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.read_ahead.rate:
     enabled: false
     description: Rate of pages read from disk by the read-ahead manager.
@@ -1382,7 +1383,7 @@ metrics:
     unit: "{transactions}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.write.rate:
     enabled: true
     description: Number of transactions that wrote to the database and committed.
@@ -1424,7 +1425,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction_log.shrink.count:
     enabled: true
     description: Total number of transaction log shrinks for a database.

@@ -21,6 +21,7 @@ func TestDefaultConfig_exporterSettings(t *testing.T) {
 		QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 			queue := exporterhelper.NewDefaultQueueConfig()
 			queue.NumConsumers = 1
+			queue.Batch = configoptional.Some(*queue.Batch.GetOrInsertDefault())
 			return queue
 		}()),
 	}

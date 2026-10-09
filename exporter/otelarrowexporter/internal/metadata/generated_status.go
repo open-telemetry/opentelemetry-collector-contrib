@@ -6,6 +6,8 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var (
@@ -18,3 +20,19 @@ const (
 	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta
 )
+
+// NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.
+func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	cfg := exporterhelper.NewDefaultQueueConfig()
+	cfg.Sizer = exporterhelper.RequestSizerTypeItems
+	cfg.QueueSize = 100000
+	cfg.BlockOnOverflow = true
+	cfg.NumConsumers = 100
+	batchCfg := *cfg.Batch.GetOrInsertDefault()
+	batchCfg.FlushTimeout = 1000000000
+	batchCfg.Sizer = exporterhelper.RequestSizerTypeItems
+	batchCfg.MinSize = 1000
+	batchCfg.MaxSize = 1500
+	cfg.Batch = configoptional.Some(batchCfg)
+	return configoptional.Some(cfg)
+}

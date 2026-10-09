@@ -112,7 +112,7 @@ var _ confmap.Validator = (*Config)(nil)
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		RetrySettings:   configretry.NewDefaultBackOffConfig(),
 		Bucket: bucketConfig{
 			ReuseIfExists: false,
