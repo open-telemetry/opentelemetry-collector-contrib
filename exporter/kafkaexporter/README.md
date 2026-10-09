@@ -75,7 +75,7 @@ The following settings can be optionally configured:
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
-    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
+    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client`, `azure_auth` or `bearertokenauth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
@@ -244,6 +244,10 @@ service:
 The [`azureauth`](../../extension/azureauthextension/README.md) extension can also be used
 as a token source, which supports managed identity, workload identity, and service principal
 for authenticating against Azure Event Hubs.
+
+The [`bearertokenauth`](../../extension/bearertokenauthextension/README.md) extension can be used
+as a token source when the token is obtained out of band and made available to the collector as a
+file, such as a Kubernetes projected service account token.
 
 ## Destination Topic
 
