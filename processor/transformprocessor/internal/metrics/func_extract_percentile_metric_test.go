@@ -724,3 +724,32 @@ func Test_extractPercentileMetric_MalformedData(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkExtractPercentileMetric(b *testing.B) {
+	template := getConfiguredHistogramMetric(histogramConfig{
+		name:           "detailed",
+		count:          1000,
+		bucketCounts:   []uint64{50, 100, 200, 300, 200, 100, 50},
+		explicitBounds: []float64{10, 25, 50, 100, 250, 500},
+	})
+	metric := pmetric.NewMetric()
+	resourceMetrics := pmetric.NewResourceMetrics()
+	scopeMetrics := pmetric.NewScopeMetrics()
+	transformContext := ottlmetric.NewTransformContext(resourceMetrics, scopeMetrics, metric)
+	b.Cleanup(transformContext.Close)
+
+	expr, err := extractPercentileMetric(90.0, ottl.Optional[string]{})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		scopeMetrics.Metrics().RemoveIf(func(pmetric.Metric) bool { return true })
+		_, err = expr(b.Context(), transformContext)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -12,6 +12,9 @@ status:
     active: [hanjm, Frapschen, SpencerTorres]
     emeritus: [dmitryax]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     endpoint: clickhouse://localhost:9000

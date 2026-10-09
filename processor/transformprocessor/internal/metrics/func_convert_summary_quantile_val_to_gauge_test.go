@@ -148,3 +148,26 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkConvertSummaryQuantileValToGauge(b *testing.B) {
+	template := pmetric.NewScopeMetrics()
+	getTestSummaryMetric().CopyTo(template.Metrics().AppendEmpty())
+
+	sMetrics := pmetric.NewScopeMetrics()
+	template.CopyTo(sMetrics)
+
+	exprFunc, err := convertSummaryQuantileValToGauge(ottl.Optional[string]{}, ottl.Optional[string]{})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0))
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(sMetrics)
+		if _, err = exprFunc(b.Context(), transformContext); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

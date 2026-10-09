@@ -87,6 +87,11 @@ The following settings can be optionally configured:
     - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
   - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
+  - `retry`
+    - `backoff` (default = 250ms): The minimum time to wait before retrying a
+      produce request. Each successive retry doubles the wait, with jitter
+      applied, capped at `max(5s, backoff)`. The number of produce retries is
+      governed by `retry_on_failure` and `timeout`, not by `metadata::retry::max`.
 - `timeout` (default = 5s): Time to wait per individual attempt to produce data to Kafka.
 - `retry_on_failure`
   - `enabled` (default = true)
@@ -126,6 +131,19 @@ The following settings can be optionally configured:
   - `flush_max_messages` (default = 10000) The maximum number of messages the producer will send in a single broker request.
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
   - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
+
+### Trace context propagation
+
+The exporter injects trace context from the current export span into Kafka record headers for any signal when `service::telemetry::traces::propagators` is configured, and are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted. For example, to add W3C `traceparent` and, when present, `tracestate` headers:
+
+```yaml
+service:
+  telemetry:
+    traces:
+      propagators: [tracecontext]
+```
+
+Headers are injected only when the export context has a valid span. In that case, existing `record_headers` or `include_metadata_keys` headers for all propagator fields are removed, even if the propagator does not inject a replacement value. Other headers are preserved.
 
 ### Shared signal topic
 
