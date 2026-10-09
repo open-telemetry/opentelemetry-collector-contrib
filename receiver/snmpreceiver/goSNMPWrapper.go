@@ -97,6 +97,12 @@ type goSNMPWrapper interface {
 
 	// SetSecurityParameters sets the SecurityParameters
 	SetSecurityParameters(securityParameters gosnmp.SnmpV3SecurityParameters)
+
+	// GetMaxRepetitions gets the MaxRepetitions
+	GetMaxRepetitions() uint32
+
+	// SetMaxRepetitions sets the MaxRepetitions
+	SetMaxRepetitions(maxRepetitions uint32)
 }
 
 // otelGoSNMPWrapper is a wrapper around gosnmp
@@ -108,7 +114,8 @@ type otelGoSNMPWrapper struct {
 func newGoSNMPWrapper() goSNMPWrapper {
 	return &otelGoSNMPWrapper{
 		gosnmp.GoSNMP{
-			MaxOids: gosnmp.Default.MaxOids,
+			MaxOids:        gosnmp.Default.MaxOids,
+			MaxRepetitions: defaultMaxRepetitions,
 		},
 	}
 }
@@ -219,4 +226,14 @@ func (w *otelGoSNMPWrapper) GetSecurityParameters() gosnmp.SnmpV3SecurityParamet
 // SetSecurityParameters sets the SecurityParameters
 func (w *otelGoSNMPWrapper) SetSecurityParameters(securityParameters gosnmp.SnmpV3SecurityParameters) {
 	w.SecurityParameters = securityParameters
+}
+
+// GetMaxRepetitions gets the MaxRepetitions
+func (w *otelGoSNMPWrapper) GetMaxRepetitions() uint32 {
+	return w.MaxRepetitions
+}
+
+// SetMaxRepetitions sets the MaxRepetitions
+func (w *otelGoSNMPWrapper) SetMaxRepetitions(maxRepetitions uint32) {
+	w.MaxRepetitions = maxRepetitions
 }

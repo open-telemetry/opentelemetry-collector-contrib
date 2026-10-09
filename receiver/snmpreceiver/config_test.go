@@ -46,6 +46,10 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 	expectedConfigSimple := factory.CreateDefaultConfig().(*Config)
 	expectedConfigSimple.Metrics = metrics
 
+	expectedConfigCustomMaxRepetitions := factory.CreateDefaultConfig().(*Config)
+	expectedConfigCustomMaxRepetitions.MaxRepetitions = 10
+	expectedConfigCustomMaxRepetitions.Metrics = metrics
+
 	expectedConfigInvalidEndpoint := factory.CreateDefaultConfig().(*Config)
 	expectedConfigInvalidEndpoint.Endpoint = "udp://a:a:a:a:a:a"
 	expectedConfigInvalidEndpoint.Metrics = metrics
@@ -132,6 +136,12 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 	expectedConfigV3NoPrivacyPassword.Metrics = metrics
 
 	testCases := []testCase{
+		{
+			name:        "CustomMaxRepetitions",
+			nameVal:     "custom_max_repetitions",
+			expectedCfg: expectedConfigCustomMaxRepetitions,
+			expectedErr: "",
+		},
 		{
 			name:        "NoEndpointUsesDefault",
 			nameVal:     "no_endpoint",
