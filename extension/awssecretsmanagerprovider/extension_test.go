@@ -60,11 +60,11 @@ func TestStart_Success(t *testing.T) {
 	}, zaptest.NewLogger(t))
 	p.client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = p.Shutdown(t.Context()) })
 
-	val, err := p.GetSecret(context.Background())
+	val, err := p.GetSecret(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, secret, val)
 }
@@ -80,7 +80,7 @@ func TestStart_Failure(t *testing.T) {
 	}, zaptest.NewLogger(t))
 	p.client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "access denied")
 }
@@ -97,7 +97,7 @@ func TestStart_NilSecretString(t *testing.T) {
 	}, zaptest.NewLogger(t))
 	p.client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no string value")
 }
@@ -118,9 +118,9 @@ func TestOnChange_CalledOnRotation(t *testing.T) {
 		lastValue.Store(newValue)
 	})
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = p.Shutdown(t.Context()) })
 
 	mock.setOutput("value2")
 
@@ -129,7 +129,7 @@ func TestOnChange_CalledOnRotation(t *testing.T) {
 		return v != nil && v.(string) == "value2"
 	}, 5*time.Second, time.Millisecond)
 
-	val, err := p.GetSecret(context.Background())
+	val, err := p.GetSecret(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "value2", val)
 }
@@ -153,9 +153,9 @@ func TestOnChange_AllCallbacksCalledOnRotation(t *testing.T) {
 		second.Store(newValue)
 	})
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = p.Shutdown(t.Context()) })
 
 	mock.setOutput("value2")
 
@@ -181,9 +181,9 @@ func TestOnChange_NotCalledWhenUnchanged(t *testing.T) {
 		callCount.Add(1)
 	})
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = p.Shutdown(t.Context()) })
 
 	time.Sleep(50 * time.Millisecond)
 	assert.Equal(t, int32(0), callCount.Load())
@@ -200,14 +200,14 @@ func TestRefreshError_KeepsStaleValue(t *testing.T) {
 	}, zaptest.NewLogger(t))
 	p.client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = p.Shutdown(t.Context()) })
 
 	mock.setError(errors.New("transient failure"))
 	time.Sleep(50 * time.Millisecond)
 
-	val, err := p.GetSecret(context.Background())
+	val, err := p.GetSecret(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "good-value", val)
 }
@@ -223,10 +223,10 @@ func TestShutdown(t *testing.T) {
 	}, zaptest.NewLogger(t))
 	p.client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
 
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -236,7 +236,7 @@ func TestGetSecret_BeforeStart(t *testing.T) {
 		Region:    "us-east-1",
 	}, zaptest.NewLogger(t))
 
-	_, err := p.GetSecret(context.Background())
+	_, err := p.GetSecret(t.Context())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not yet loaded")
 }

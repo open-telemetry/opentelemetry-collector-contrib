@@ -5,6 +5,7 @@ package awssecretsmanagerprovider // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -87,7 +88,7 @@ func (p *awsSecretProvider) Shutdown(_ context.Context) error {
 func (p *awsSecretProvider) GetSecret(_ context.Context) (string, error) {
 	v := p.secret.Load()
 	if v == nil {
-		return "", fmt.Errorf("secret not yet loaded")
+		return "", errors.New("secret not yet loaded")
 	}
 	return *v, nil
 }
