@@ -537,7 +537,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("spans condition: metric %q: condition has invalid syntax", defaultMetricNameSpans),
+			expect: fmt.Sprintf("spans condition: metric %q: 1:9: condition has invalid syntax", defaultMetricNameSpans),
 		},
 		{
 			name: "invalid_condition_spanevent",
@@ -549,7 +549,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("spanevents condition: metric %q: condition has invalid syntax", defaultMetricNameSpanEvents),
+			expect: fmt.Sprintf("spanevents condition: metric %q: 1:9: condition has invalid syntax", defaultMetricNameSpanEvents),
 		},
 		{
 			name: "invalid_condition_metric",
@@ -561,7 +561,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("metrics condition: metric %q: condition has invalid syntax", defaultMetricNameMetrics),
+			expect: fmt.Sprintf("metrics condition: metric %q: 1:9: condition has invalid syntax", defaultMetricNameMetrics),
 		},
 		{
 			name: "invalid_condition_datapoint",
@@ -573,7 +573,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("datapoints condition: metric %q: condition has invalid syntax", defaultMetricNameDataPoints),
+			expect: fmt.Sprintf("datapoints condition: metric %q: 1:9: condition has invalid syntax", defaultMetricNameDataPoints),
 		},
 		{
 			name: "invalid_condition_log",
@@ -585,7 +585,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("logs condition: metric %q: condition has invalid syntax", defaultMetricNameLogs),
+			expect: fmt.Sprintf("logs condition: metric %q: 1:9: condition has invalid syntax", defaultMetricNameLogs),
 		},
 		{
 			name: "invalid_condition_profile",
@@ -597,7 +597,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("profiles condition: metric %q: condition has invalid syntax", defaultMetricNameProfiles),
+			expect: fmt.Sprintf("profiles condition: metric %q: 1:9: condition has invalid syntax", defaultMetricNameProfiles),
 		},
 	}
 
