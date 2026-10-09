@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -63,6 +64,19 @@ func TestNewUploadManager(t *testing.T) {
 					S3ForcePathStyle:    true,
 					DisableSSL:          true,
 					Compression:         configcompression.TypeGzip,
+				},
+			},
+			errVal: "",
+		},
+		{
+			name: "valid configuration with external id",
+			conf: &Config{
+				S3Uploader: S3UploaderConfig{
+					Region:     "local",
+					S3Bucket:   "my-awesome-bucket",
+					Endpoint:   "localhost",
+					RoleArn:    "arn:aws:iam::123456789012:role/my_role",
+					ExternalID: "my-external-id",
 				},
 			},
 			errVal: "",
@@ -192,4 +206,32 @@ func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 			assert.Equal(t, tt.wantSTSCalls, stsCalls.Load())
 		})
 	}
+}
+
+func TestAssumeRoleOptionsWithExternalID(t *testing.T) {
+	conf := &Config{
+		S3Uploader: S3UploaderConfig{
+			RoleArn:    "arn:aws:iam::123456789012:role/my_role",
+			ExternalID: "my-external-id",
+		},
+	}
+
+	opts := &stscreds.AssumeRoleOptions{}
+	assumeRoleOptions(conf)(opts)
+
+	require.NotNil(t, opts.ExternalID)
+	assert.Equal(t, "my-external-id", *opts.ExternalID)
+}
+
+func TestAssumeRoleOptionsWithoutExternalID(t *testing.T) {
+	conf := &Config{
+		S3Uploader: S3UploaderConfig{
+			RoleArn: "arn:aws:iam::123456789012:role/my_role",
+		},
+	}
+
+	opts := &stscreds.AssumeRoleOptions{}
+	assumeRoleOptions(conf)(opts)
+
+	assert.Nil(t, opts.ExternalID)
 }

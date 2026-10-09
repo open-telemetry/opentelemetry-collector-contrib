@@ -72,7 +72,7 @@ func newUploadManager(
 		})
 	} else if arn := conf.S3Uploader.RoleArn; arn != "" {
 		s3Opts = append(s3Opts, func(o *s3.Options) {
-			o.Credentials = aws.NewCredentialsCache(stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), arn))
+			o.Credentials = aws.NewCredentialsCache(stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), arn, assumeRoleOptions(conf)))
 		})
 	}
 
@@ -125,4 +125,12 @@ func newUploadManager(
 		s3types.StorageClass(conf.S3Uploader.StorageClass),
 		managerOpts...,
 	), nil
+}
+
+func assumeRoleOptions(conf *Config) func(*stscreds.AssumeRoleOptions) {
+	return func(o *stscreds.AssumeRoleOptions) {
+		if conf.S3Uploader.ExternalID != "" {
+			o.ExternalID = &conf.S3Uploader.ExternalID
+		}
+	}
 }
