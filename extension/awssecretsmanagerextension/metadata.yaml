@@ -1,5 +1,5 @@
-display_name: AWS Secrets Manager Provider
-type: awssecretsmanagerprovider
+display_name: AWS Secrets Manager Secret Provider
+type: aws_secrets_manager
 
 status:
   class: extension

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awssecretsmanagerprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerprovider"
+package awssecretsmanagerextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerextension"
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerprovider/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerextension/internal/metadata"
 )
 
 func NewFactory() extension.Factory {

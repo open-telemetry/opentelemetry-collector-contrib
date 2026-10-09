@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awssecretsmanagerprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerprovider"
+package awssecretsmanagerextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerextension"
 
 import (
 	"errors"

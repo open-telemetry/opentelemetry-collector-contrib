@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerprovider
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerextension
 
 go 1.26.0
 

@@ -81,9 +81,9 @@ components:
     - extension/avro_log_encoding
     - extension/aws_iam_db_auth
     - extension/aws_logs_encoding
+    - extension/aws_secrets_manager
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awsproxy
-    - extension/awssecretsmanagerprovider
     - extension/azure_auth
     - extension/azure_encoding
     - extension/basicauth

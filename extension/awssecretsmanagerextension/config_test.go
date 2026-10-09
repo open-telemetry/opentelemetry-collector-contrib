@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awssecretsmanagerprovider
+package awssecretsmanagerextension
 
 import (
 	"path/filepath"
@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerprovider/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerextension/internal/metadata"
 )
 
 func TestConfigValidate(t *testing.T) {
