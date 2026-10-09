@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sqlserver
+
+note: Add `auth` field to reference an `azure_auth` extension for Azure AD / managed-identity authentication, eliminating the need for a custom Collector binary solely for that purpose.
+
+issues: [50294]
+
+subtext:
+
+change_logs: [user]
