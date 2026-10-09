@@ -1,4 +1,4 @@
-display_name: AWS Secrets Manager Secret Provider
+display_name: AWS Secrets Manager Secret Extension
 type: aws_secrets_manager
 
 status:
