@@ -83,6 +83,7 @@ components:
     - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awsproxy
+    - extension/awssecretsmanagerprovider
     - extension/azure_auth
     - extension/azure_encoding
     - extension/basicauth

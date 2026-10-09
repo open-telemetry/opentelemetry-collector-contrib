@@ -150,6 +150,7 @@ exporter/tinybirdexporter
 extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
+extension/awssecretsmanagerprovider
 extension/azureauthextension
 extension/cgroupruntimeextension
 extension/datadogextension

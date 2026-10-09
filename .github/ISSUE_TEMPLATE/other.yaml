@@ -87,6 +87,7 @@ body:
       - extension/ack
       - extension/asapauth
       - extension/awsproxy
+      - extension/awssecretsmanagerprovider
       - extension/azureauth
       - extension/basicauth
       - extension/bearertokenauth

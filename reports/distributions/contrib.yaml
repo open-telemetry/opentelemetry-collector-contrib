@@ -67,6 +67,7 @@ components:
         - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
         - awsproxy
+        - awssecretsmanagerprovider
         - azure_auth
         - azure_encoding
         - basicauth
