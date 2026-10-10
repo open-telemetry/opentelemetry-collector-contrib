@@ -77,20 +77,27 @@ type tailSamplingSpanProcessor struct {
 	logger    *zap.Logger
 	tracer    trace.Tracer
 
-	deleteTraceQueue   *list.List
-	nextConsumer       consumer.Traces
-	policies           []*policy
-	idToTrace          map[pcommon.TraceID]*TraceData
-	tailStorage        tailstorageextension.TailStorage
-	tickerFrequency    time.Duration
-	decisionBatcher    idbatcher.Batcher
-	sampledIDCache     cache.Cache
-	nonSampledIDCache  cache.Cache
-	recordPolicy       bool
-	useTracestate      bool
-	sampleOnFirstMatch bool
-	blockOnOverflow    bool
-	maxTraceSizeBytes  uint64
+	deleteTraceQueue *list.List
+	nextConsumer     consumer.Traces
+	policies         []*policy
+	idToTrace        map[pcommon.TraceID]*TraceData
+	tailStorage      tailstorageextension.TailStorage
+	tickerFrequency  time.Duration
+	// firstTickDelay is how long after the event loop starts before the first
+	// decision tick. Used to stagger shards across one ticker period. Zero
+	// preserves time.NewTicker behavior (first tick after one full period).
+	firstTickDelay time.Duration
+	// fixedFirstTickDelay means firstTickDelay was set by an Option (tests)
+	// and must not be overwritten by sharded stagger assignment.
+	fixedFirstTickDelay bool
+	decisionBatcher     idbatcher.Batcher
+	sampledIDCache      cache.Cache
+	nonSampledIDCache   cache.Cache
+	recordPolicy        bool
+	useTracestate       bool
+	sampleOnFirstMatch  bool
+	blockOnOverflow     bool
+	maxTraceSizeBytes   uint64
 
 	cfg  Config
 	host component.Host
@@ -518,9 +525,12 @@ func (tsp *tailSamplingSpanProcessor) recordImmediateDecisionMetrics(decision sa
 }
 
 func (tsp *tailSamplingSpanProcessor) loop() {
-	ticker := time.NewTicker(tsp.tickerFrequency)
-	defer ticker.Stop()
 	defer close(tsp.doneChan)
+
+	// Start the event loop immediately so span ingestion is not delayed by the
+	// per-shard decision-tick stagger. Only the first decision tick is offset.
+	ticker := newStaggeredDecisionTicker(tsp.firstTickDelay, tsp.tickerFrequency)
+	defer ticker.Stop()
 	for tsp.iter(ticker.C, tsp.workChan) {
 	}
 }

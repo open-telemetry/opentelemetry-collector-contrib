@@ -7,8 +7,10 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"math/rand/v2"
 	"slices"
 	"sync/atomic"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -77,11 +79,24 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 		shards[i] = p
 	}
 
+	// One random base phase per processor instance so separate collectors do
+	// not all fire shard 0 together. Shards then spread evenly across the
+	// ticker period (e.g. 8 shards / 1s → ~125ms apart).
+	assignDecisionTickDelays(shards, randomDecisionTickBase(shards[0].tickerFrequency))
+
 	return &shardedProcessor{
 		tracer:    shared.tracer,
 		shards:    shards,
 		numShards: numShards,
 	}, nil
+}
+
+// randomDecisionTickBase picks a phase in [0, period) for this processor.
+func randomDecisionTickBase(period time.Duration) time.Duration {
+	if period <= 0 {
+		return 0
+	}
+	return time.Duration(rand.Int64N(int64(period)))
 }
 
 // dividePolicyRates returns a copy of cfgs with per-second rate limits

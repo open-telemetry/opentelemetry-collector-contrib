@@ -119,6 +119,11 @@ func withTestController(t *testTSPController) Option {
 		// Use a slow tick frequency to effectively disable automatic ticks.
 		// We'll manually trigger ticks as needed via the tickChan.
 		tsp.tickerFrequency = time.Hour
+
+		// Keep the automatic decision ticker from starting a long first-tick
+		// timer; tests drive decisions only through tickChan.
+		tsp.firstTickDelay = 0
+		tsp.fixedFirstTickDelay = true
 	}
 }
 
@@ -127,6 +132,15 @@ func withTestController(t *testTSPController) Option {
 func withTickerFrequency(frequency time.Duration) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.tickerFrequency = frequency
+	}
+}
+
+// withFirstTickDelay sets a fixed delay before the first automatic decision
+// tick and prevents sharded stagger assignment from overwriting it.
+func withFirstTickDelay(delay time.Duration) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.firstTickDelay = delay
+		tsp.fixedFirstTickDelay = true
 	}
 }
 
