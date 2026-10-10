@@ -15,6 +15,38 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
+{{- if or .TracesTLS .TracesCertificate}}
+                tls:
+                  {{- if .TracesTLSCAFile}}
+                  ca_file: {{.TracesTLSCAFile}}
+                  {{- end}}
+                  {{- if .TracesCertificateCertFile}}
+                  cert_file: {{.TracesCertificateCertFile}}
+                  {{- end}}
+                  {{- if .TracesCertificateKeyFile}}
+                  key_file: {{.TracesCertificateKeyFile}}
+                  {{- end}}
+                  {{- if .TracesTLS}}
+                  {{- if .TracesTLS.InsecureSkipVerify}}
+                  insecure_skip_verify: true
+                  {{- end}}
+                  {{- if .TracesTLS.IncludeSystemCaCertsPool}}
+                  include_system_ca_certs_pool: true
+                  {{- end}}
+                  {{- if .TracesTLS.MinVersion}}
+                  min_version: "{{.TracesTLS.MinVersion}}"
+                  {{- end}}
+                  {{- if .TracesTLS.MaxVersion}}
+                  max_version: "{{.TracesTLS.MaxVersion}}"
+                  {{- end}}
+                  {{- if .TracesTLS.CipherSuites}}
+                  cipher_suites:
+                  {{- range .TracesTLS.CipherSuites}}
+                    - "{{.}}"
+                  {{- end}}
+                  {{- end}}
+                  {{- end}}
+{{- end}}
 {{- end}}
 {{- if .MetricsEndpoint}}
     metrics:
@@ -30,6 +62,38 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
+{{- if or .MetricsTLS .MetricsCertificate}}
+                tls:
+                  {{- if .MetricsTLSCAFile}}
+                  ca_file: {{.MetricsTLSCAFile}}
+                  {{- end}}
+                  {{- if .MetricsCertificateCertFile}}
+                  cert_file: {{.MetricsCertificateCertFile}}
+                  {{- end}}
+                  {{- if .MetricsCertificateKeyFile}}
+                  key_file: {{.MetricsCertificateKeyFile}}
+                  {{- end}}
+                  {{- if .MetricsTLS}}
+                  {{- if .MetricsTLS.InsecureSkipVerify}}
+                  insecure_skip_verify: true
+                  {{- end}}
+                  {{- if .MetricsTLS.IncludeSystemCaCertsPool}}
+                  include_system_ca_certs_pool: true
+                  {{- end}}
+                  {{- if .MetricsTLS.MinVersion}}
+                  min_version: "{{.MetricsTLS.MinVersion}}"
+                  {{- end}}
+                  {{- if .MetricsTLS.MaxVersion}}
+                  max_version: "{{.MetricsTLS.MaxVersion}}"
+                  {{- end}}
+                  {{- if .MetricsTLS.CipherSuites}}
+                  cipher_suites:
+                  {{- range .MetricsTLS.CipherSuites}}
+                    - "{{.}}"
+                  {{- end}}
+                  {{- end}}
+                  {{- end}}
+{{- end}}
 {{- end}}
 {{- if .LogsEndpoint}}
     logs:
@@ -45,4 +109,36 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
+{{- if or .LogsTLS .LogsCertificate}}
+                tls:
+                  {{- if .LogsTLSCAFile}}
+                  ca_file: {{.LogsTLSCAFile}}
+                  {{- end}}
+                  {{- if .LogsCertificateCertFile}}
+                  cert_file: {{.LogsCertificateCertFile}}
+                  {{- end}}
+                  {{- if .LogsCertificateKeyFile}}
+                  key_file: {{.LogsCertificateKeyFile}}
+                  {{- end}}
+                  {{- if .LogsTLS}}
+                  {{- if .LogsTLS.InsecureSkipVerify}}
+                  insecure_skip_verify: true
+                  {{- end}}
+                  {{- if .LogsTLS.IncludeSystemCaCertsPool}}
+                  include_system_ca_certs_pool: true
+                  {{- end}}
+                  {{- if .LogsTLS.MinVersion}}
+                  min_version: "{{.LogsTLS.MinVersion}}"
+                  {{- end}}
+                  {{- if .LogsTLS.MaxVersion}}
+                  max_version: "{{.LogsTLS.MaxVersion}}"
+                  {{- end}}
+                  {{- if .LogsTLS.CipherSuites}}
+                  cipher_suites:
+                  {{- range .LogsTLS.CipherSuites}}
+                    - "{{.}}"
+                  {{- end}}
+                  {{- end}}
+                  {{- end}}
 {{- end}}
+{{end}}
