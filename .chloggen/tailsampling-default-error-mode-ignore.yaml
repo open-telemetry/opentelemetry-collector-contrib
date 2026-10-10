@@ -1,0 +1,6 @@
+change_type: enhancement
+component: processor/tail_sampling
+note: Add an alpha feature gate to default the ottl_condition policy error_mode to ignore.
+issues: [48420]
+subtext: Enable processor.tailsamplingprocessor.defaultErrorModeIgnore to opt in. Explicit error_mode settings take precedence.
+change_logs: [user]
