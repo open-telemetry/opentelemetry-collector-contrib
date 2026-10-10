@@ -9,6 +9,7 @@ SELECT
   temp_blks_written,
   query,
   queryid::TEXT,
+  userid::TEXT,
   COALESCE(rolname, '') AS rolname,
   rows::TEXT,
   total_exec_time,

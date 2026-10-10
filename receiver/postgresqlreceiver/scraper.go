@@ -501,16 +501,21 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		// userid is oid NOT NULL in pg_stat_statements, so this should never be nil;
+		// skip defensively rather than silently fall back to "" and collapse the
+		// cache key, which depends on userid being unique per role.
+		if row[dbAttributePrefix+"userid"] == nil {
+			logger.Debug("skipping top query row with nil userid")
+			continue
+		}
+
 		database, _ := row[string(semconv.DBNamespaceKey)].(string)
-		rolname, _ := row[dbAttributePrefix+"rolname"].(string)
-		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel).
-		// Include database and role to separate their independent counter streams.
-		// NUL cannot occur in PostgreSQL identifiers.
-		//
-		// Note: the SQL template does not select toplevel, so this key does not
-		// distinguish it. With pg_stat_statements.track=all, top-level and nested
-		// statements sharing the same database, role, and queryid can still collide.
-		cacheKeyPrefix := database + "\x00" + rolname + "\x00" + queryID.(string) + "\x00"
+		userid, _ := row[dbAttributePrefix+"userid"].(string)
+		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel). userid is
+		// used here instead of rolname because rolname is empty once the role is
+		// dropped, which would collide two different dropped roles onto one key.
+		// toplevel is not selected, so this key still doesn't distinguish it.
+		cacheKeyPrefix := database + "\x00" + userid + "\x00" + queryID.(string) + "\x00"
 
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
@@ -557,7 +562,10 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
 		rolname := item.Value[dbAttributePrefix+"rolname"].(string)
-		planCacheKey := database + "\x00" + rolname + "\x00" + queryID
+		userid, _ := item.Value[dbAttributePrefix+"userid"].(string)
+		// userid, not rolname: rolname is empty for a dropped role and would
+		// collide two dropped roles onto one cached plan.
+		planCacheKey := database + "\x00" + userid + "\x00" + queryID
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
 		plan, ok := p.queryPlanCache.Get(planCacheKey)
@@ -594,6 +602,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
 			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
+			userid,
 			rolname,
 			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
@@ -609,7 +618,8 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 				metadata.AttributeDbSystemNamePostgresql,
 				queryID,
 				database,
-				item.Value[dbAttributePrefix+"rolname"].(string),
+				userid,
+				rolname,
 				plan,
 			)
 		}
