@@ -63,11 +63,7 @@ func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse)
 // "resourceURI::namespace" (for namespace-filtered calls). When a namespace-filtered
 // call is made and no namespace-specific key exists, an empty response is returned
 // rather than falling back to the plain-URI key, which prevents duplicate definitions.
-func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
-	return newMockMetricsDefinitionListPagerWithTracker(metricDefinitionsPagesByResourceURI, nil)
-}
-
-func newMockMetricsDefinitionListPagerWithTracker(
+func newMockMetricsDefinitionListPager(
 	metricDefinitionsPagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse,
 	tracker func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions),
 ) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
@@ -229,7 +225,7 @@ func newMockClientOptionsResolverWithTracker(
 	// Init arm monitor client options from subscriptions mock data
 	armMonitorServerFactory := armmonitorfake.ServerFactory{
 		MetricDefinitionsServer: armmonitorfake.MetricDefinitionsServer{
-			NewListPager: newMockMetricsDefinitionListPagerWithTracker(metricsDefinitions, definitionsTracker),
+			NewListPager: newMockMetricsDefinitionListPager(metricsDefinitions, definitionsTracker),
 		},
 		MetricsServer: armmonitorfake.MetricsServer{
 			List: newMockMetricList(metrics),
