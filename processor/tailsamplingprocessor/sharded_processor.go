@@ -82,7 +82,9 @@ func newShardedTracesProcessor(ctx context.Context, set processor.Settings, next
 	// One random base phase per processor instance so separate collectors do
 	// not all fire shard 0 together. Shards then spread evenly across the
 	// ticker period (e.g. 8 shards / 1s → ~125ms apart).
-	assignDecisionTickDelays(shards, randomDecisionTickBase(shards[0].tickerFrequency))
+	if cfg.DecisionTickStagger {
+		assignDecisionTickDelays(shards, randomDecisionTickBase(shards[0].tickerFrequency))
+	}
 
 	return &shardedProcessor{
 		tracer:    shared.tracer,

@@ -381,6 +381,12 @@ type Config struct {
 	// and values greater than 1 are not supported with tail_storage.
 	// Defaults to 1 (single event loop, original behavior).
 	NumShards uint32 `mapstructure:"num_shards"`
+	// DecisionTickStagger spreads each shard's decision ticks evenly across
+	// one ticker period, with one random base phase per processor instance.
+	// This smooths sampled-trace release when num_shards is greater than 1.
+	// Span ingestion is not delayed. Defaults to true. Set to false to keep
+	// all shard decision ticks aligned (previous behavior).
+	DecisionTickStagger bool `mapstructure:"decision_tick_stagger"`
 }
 
 // maxNumShards bounds num_shards to catch configuration mistakes: each shard

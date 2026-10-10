@@ -84,9 +84,11 @@ The following configuration options can also be modified:
   `num_shards`. Because each shard enforces its share of a limit independently (with a minimum of 1 per shard),
   enforcement is approximate: limits smaller than `num_shards` can be exceeded in aggregate, and a shard can
   reach its share of `num_traces` before the aggregate does. Values greater than 1 are not supported together
-  with `tail_storage`. Decision ticks are evenly staggered across one ticker period (with a random base phase
-  per processor instance) so shards do not release sampled traces in synchronized bursts; span ingestion still
-  starts immediately on each shard.
+  with `tail_storage`.
+- `decision_tick_stagger` (default = true): When true, decision ticks are evenly staggered across one ticker
+  period (with a random base phase per processor instance) so shards do not release sampled traces in
+  synchronized bursts. Span ingestion still starts immediately on each shard. Set to false to keep all shard
+  decision ticks aligned.
 
 ## Sampling Strategies
 

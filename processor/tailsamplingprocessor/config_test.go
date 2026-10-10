@@ -37,6 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			NumShards:               1,
+			DecisionTickStagger:     true,
 			ExpectedNewTracesPerSec: 10,
 			SamplingStrategy:        samplingStrategyTraceComplete,
 			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1_000, NonSampledCacheSize: 10_000},

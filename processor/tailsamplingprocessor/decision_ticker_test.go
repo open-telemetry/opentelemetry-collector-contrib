@@ -124,11 +124,12 @@ func TestDecisionTickStaggerDoesNotBlockIngest(t *testing.T) {
 
 func TestShardedProcessorDecisionTickStagger(t *testing.T) {
 	cfg := Config{
-		SamplingStrategy: samplingStrategyTraceComplete,
-		DecisionWait:     defaultTestDecisionWait,
-		NumTraces:        400,
-		NumShards:        8,
-		PolicyCfgs:       testPolicy,
+		SamplingStrategy:    samplingStrategyTraceComplete,
+		DecisionWait:        defaultTestDecisionWait,
+		NumTraces:           400,
+		NumShards:           8,
+		DecisionTickStagger: true,
+		PolicyCfgs:          testPolicy,
 		Options: []Option{
 			withTickerFrequency(time.Second),
 		},
@@ -147,4 +148,24 @@ func TestShardedProcessorDecisionTickStagger(t *testing.T) {
 		assert.Equal(t, 125*time.Millisecond, sp.shards[i].firstTickDelay-sp.shards[i-1].firstTickDelay)
 	}
 	assert.Less(t, base, time.Second)
+}
+
+func TestDecisionTickStaggerDisabled(t *testing.T) {
+	cfg := Config{
+		SamplingStrategy:    samplingStrategyTraceComplete,
+		DecisionWait:        defaultTestDecisionWait,
+		NumTraces:           400,
+		NumShards:           8,
+		DecisionTickStagger: false,
+		PolicyCfgs:          testPolicy,
+		Options: []Option{
+			withTickerFrequency(time.Second),
+		},
+	}
+
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	require.NoError(t, err)
+	for i, shard := range p.(*shardedProcessor).shards {
+		assert.Zero(t, shard.firstTickDelay, "shard %d should not be staggered when disabled", i)
+	}
 }

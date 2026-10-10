@@ -28,11 +28,12 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		DecisionWait:       30 * time.Second,
-		NumTraces:          50000,
-		NumShards:          1,
-		SampleOnFirstMatch: false,
-		SamplingStrategy:   samplingStrategyTraceComplete,
+		DecisionWait:        30 * time.Second,
+		NumTraces:           50000,
+		NumShards:           1,
+		DecisionTickStagger: true,
+		SampleOnFirstMatch:  false,
+		SamplingStrategy:    samplingStrategyTraceComplete,
 	}
 }
 
