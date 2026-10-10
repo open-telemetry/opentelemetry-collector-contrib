@@ -604,6 +604,7 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 	receiver, messagingService, unmarshaller, _ := newReceiver(t)
 	// we won't wait 10 seconds since we will interrupt well before
 	receiver.config.Flow.DelayedRetry.Get().Delay = 10 * time.Second
+	firstConsumerCalled := make(chan struct{})
 	var err error
 	// we want to return an error at first, then set the next consumer to a noop consumer
 	receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
@@ -613,6 +614,7 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 			return nil
 		})
 		require.NoError(t, err)
+		close(firstConsumerCalled)
 		return errors.New("Some temporary error")
 	})
 	require.NoError(t, err)
@@ -626,21 +628,28 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
 	receiveMessageComplete := make(chan error, 1)
 	go func() {
 		receiveMessageComplete <- receiver.receiveMessage(ctx, messagingService)
 	}()
 	select {
-	case <-time.After(2 * time.Millisecond):
-		// success
-	case <-receiveMessageComplete:
-		require.Fail(t, "Did not expect receiveMessage to return before delay interval")
+	case <-firstConsumerCalled:
+	case err := <-receiveMessageComplete:
+		require.FailNow(t, "Did not expect receiveMessage to return before cancellation", "received error: %v", err)
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "Timed out waiting for the first consumer to be called")
+	}
+	select {
+	case err := <-receiveMessageComplete:
+		require.FailNow(t, "Did not expect receiveMessage to return before cancellation", "received error: %v", err)
+	default:
 	}
 	cancel()
 	// since we set the next consumer to a noop, this should succeed
 	select {
-	case <-time.After(2 * time.Millisecond):
-		require.Fail(t, "receiveMessage did not return after some time")
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "receiveMessage did not return after cancellation")
 	case err := <-receiveMessageComplete:
 		assert.ErrorContains(t, err, "delayed retry interrupted by shutdown request")
 	}
