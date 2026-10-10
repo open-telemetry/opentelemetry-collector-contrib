@@ -37,6 +37,10 @@ type (
 		// Copy and Move.
 		maxSize int32
 
+		// maxScale is the scale the histogram starts at and
+		// returns to when cleared.  it is set by Init().
+		maxScale int32
+
 		// sum is the sum of all Updates reflected in the
 		// aggregator.  It has the same type number as the
 		// corresponding sdkinstrument.Descriptor.
@@ -160,8 +164,9 @@ func (h *Histogram[N]) Init(cfg Config) {
 	cfg, _ = cfg.Validate()
 
 	h.maxSize = cfg.maxSize
+	h.maxScale = cfg.maxScale
 
-	m, _ := newMapping(logarithm.MaxScale)
+	m, _ := newMapping(cfg.maxScale)
 	h.mapping = m
 }
 
@@ -249,7 +254,7 @@ func (h *Histogram[N]) Clear() {
 	h.zeroCount = 0
 	h.min = 0
 	h.max = 0
-	h.mapping, _ = newMapping(logarithm.MaxScale)
+	h.mapping, _ = newMapping(h.maxScale)
 }
 
 // clear zeros the backing array.
