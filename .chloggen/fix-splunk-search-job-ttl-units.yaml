@@ -1,0 +1,17 @@
+change_type: bug_fix
+
+component: receiver/splunk_enterprise
+
+note: Send the search job TTL to Splunk in seconds instead of nanoseconds
+
+issues: [50940]
+
+subtext: |
+  The receiver sets a TTL on every search job it dispatches, derived from the configured
+  `timeout`. The value was formatted from a Go duration with `%d`, which emits its raw
+  nanosecond count, and Splunk's `setttl` action reads the argument as seconds. A default
+  `timeout: 60s` therefore asked Splunk to retain each dispatched job for roughly 1900 years,
+  so search artifacts accumulated until the search dispatch directory filled and Splunk
+  reported extreme search lag. The duration is now converted to whole seconds.
+
+change_logs: [user]
