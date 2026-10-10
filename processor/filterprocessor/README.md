@@ -26,7 +26,7 @@ The Filter Processor allows dropping spans, span events, metrics, datapoints, an
 
 ## Configuration
 
-The Filter Processor utilizes the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
+The Filter Processor utilizes the [OpenTelemetry Transformation Language](../../pkg/ottl/README.md)
 to create conditions that determine when telemetry should be dropped.
 If **any** condition is met, the telemetry is dropped (each condition is ORed together).
 
@@ -45,7 +45,7 @@ and allows you to configure a list of conditions for the processor to evaluate. 
 - Objects, which allows users to apply configuration options to a specific list of conditions. See [Advanced Config](#advanced-config) for more details.
 
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
-See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for more details.
+See [OTTL Boolean Expressions](../../pkg/ottl/LANGUAGE.md#boolean-expressions) for more details.
 
 ### Context
 
@@ -58,13 +58,13 @@ Within each `<signal>_conditions` list, only certain OTTL Contexts can be used. 
 | log_conditions     | [resource], [scope], and [log]                 |
 | profile_conditions | [resource], [scope], and [profile]             |
 
-[resource]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlresource/README.md
-[scope]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlscope/README.md
-[span]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md
-[spanevent]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspanevent/README.md
-[metric]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md
-[datapoint]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md
-[log]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md
+[resource]: ../../pkg/ottl/contexts/ottlresource/README.md
+[scope]: ../../pkg/ottl/contexts/ottlscope/README.md
+[span]: ../../pkg/ottl/contexts/ottlspan/README.md
+[spanevent]: ../../pkg/ottl/contexts/ottlspanevent/README.md
+[metric]: ../../pkg/ottl/contexts/ottlmetric/README.md
+[datapoint]: ../../pkg/ottl/contexts/ottldatapoint/README.md
+[log]: ../../pkg/ottl/contexts/ottllog/README.md
 [profile]: ../../pkg/ottl/contexts/xprofile/ottlprofile/README.md
 
 Telemetry is evaluated hierarchically, from higher to lower levels. The hierarchy may vary by signal type; examples include:
@@ -325,7 +325,7 @@ processors:
 
 ### OTTL Functions
 
-The filter processor has access to all [OTTL Converter functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters)
+The filter processor has access to all [OTTL Converter functions](../../pkg/ottl/ottlfuncs/README.md#converters)
 
 In addition, the processor defines a few of its own functions:
 
@@ -438,6 +438,19 @@ In general, understand your data before using the filter processor.
 - When using the Filter Processor make sure you understand the look of your incoming data and test the configuration thoroughly. In general, use as specific a configuration as possible to lower the risk of the wrong data being dropped.
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows dropping spans. Dropping a span may lead to orphaned spans if the dropped span is a parent. Dropping a span may lead to orphaned logs if the log references the dropped span.
 
+## Telemetry
+
+The filter processor emits the following internal telemetry metrics to monitor dropped telemetry:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `otelcol_processor_filter_datapoints.filtered` | Counter | Number of metric data points dropped by the filter processor when matching configured metric conditions. |
+| `otelcol_processor_filter_logs.filtered` | Counter | Number of log records dropped by the filter processor when matching configured log conditions. |
+| `otelcol_processor_filter_profiles.filtered` | Counter | Number of profiles dropped by the filter processor when matching configured profile conditions. |
+| `otelcol_processor_filter_spans.filtered` | Counter | Number of spans dropped by the filter processor when matching configured trace conditions. |
+
+For more details on metric stability and configuration, see [documentation.md](./documentation.md#internal-telemetry).
+
 ## Available Benchmarks
 
 The filter processor is tested as part of the project's load tests, with the results being
@@ -450,4 +463,4 @@ conditions against each signal at 10,000 items/second:
 - Metrics: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessormetrics-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessormetrics-ram-mib)
 - Logs: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessorlogs-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessorlogs-ram-mib)
 
-Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/testbed/tests/filter_processor_test.go) for more information about the setup.
+Refer to the [test](../../testbed/tests/filter_processor_test.go) for more information about the setup.
