@@ -1410,13 +1410,17 @@ Examples:
 
 The `IsInCIDR` Converter returns true if the given target IP address falls within any of the specified network ranges.
 
-The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `networks` is a list of CIDR addresses.
+The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `networks` argument accepts an inline list of CIDR strings. The `networks` argument also accepts a path or expression that returns a string slice. Dynamic paths and expressions require the [`pkg.ottl.functions.enableDynamicSliceArguments`](../README.md#pkgottlfunctionsenabledynamicslicearguments) feature gate. The gate allows dynamic slice arguments by default.
 
 Examples:
 
 - `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16"])`
 
 - `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16", "10.0.0.0/8"])`
+
+- `IsInCIDR(resource.attributes["server.ip"], cache["networks"])`
+
+- `IsInCIDR(resource.attributes["server.ip"], Split(resource.attributes["allowed.networks"], ","))`
 
 ### IsInt
 

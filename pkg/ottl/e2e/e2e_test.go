@@ -2167,6 +2167,16 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				attributes.PutStr("flags", "A|B|C")
 			},
 		},
+		{
+			name: "IsInCIDR with networks from cache",
+			statements: []string{
+				`set(cache["networks"], ["198.51.100.0/24", "192.168.0.0/16"])`,
+				`set(attributes["in_cidr"], IsInCIDR(attributes["server.ip"], cache["networks"]))`,
+			},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("in_cidr", true)
+			},
+		},
 	}
 
 	for _, tt := range tests {
