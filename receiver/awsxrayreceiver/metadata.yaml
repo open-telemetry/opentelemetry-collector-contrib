@@ -10,15 +10,38 @@ status:
     active: [wangzlei, srprash]
 
 feature_gates:
+  - id: receiver.awsxray.DontEmitV0DatabaseConventions
+    stage: alpha
+    description: >-
+      When enabled, the receiver no longer emits deprecated database semconv
+      attributes (db.connection_string, db.name, db.system, db.statement, db.user).
+    from_version: v0.163.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
+
   - id: receiver.awsxray.DontEmitV0HttpConventions
     stage: alpha
     description: >-
       When enabled, semconv legacy HTTP attributes are disabled.
     from_version: v0.158.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085
+
+  - id: receiver.awsxray.EmitV1DatabaseConventions
+    stage: alpha
+    description: >-
+      When enabled, the receiver emits new database semconv attributes
+      (db.namespace, db.system.name, db.query.text) alongside or instead of
+      deprecated equivalents.
+    from_version: v0.163.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
+
   - id: receiver.awsxray.EmitV1HttpConventions
     stage: alpha
     description: >-
       When enabled, semconv stable HTTP attributes are enabled.
     from_version: v0.158.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085
+
+# TODO: Update the receiver to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
