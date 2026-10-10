@@ -22,6 +22,8 @@ import (
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
 
+const legacyPollingConfigWarning = "Top-level SNMP polling configuration is deprecated; move polling options under the poll block"
+
 // NewFactory creates a new receiver factory for SNMP
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -54,9 +56,13 @@ func createMetricsReceiver(
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	snmpConfig, ok := config.(*Config)
+	sourceConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errConfigNotSNMP
+	}
+	snmpConfig := sourceConfig.effectivePollConfig()
+	if len(snmpConfig.Metrics) == 0 {
+		return nil, errMetricRequired
 	}
 
 	if err := addMissingConfigDefaults(snmpConfig); err != nil {
@@ -69,7 +75,14 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
+	recv, err := scraperhelper.NewMetricsController(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
+	if err != nil {
+		return nil, err
+	}
+	if sourceConfig.Poll == nil {
+		params.Logger.Warn(legacyPollingConfigWarning)
+	}
+	return recv, nil
 }
 
 // addMissingConfigDefaults adds any missing config parameters that have defaults
