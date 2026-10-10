@@ -120,6 +120,7 @@ var (
 		ContainerImageName:   resourceAttributeEnabled,
 		ContainerName:        resourceAttributeEnabled,
 		ContainerRuntime:     resourceAttributeEnabled,
+		ContainerLabels:      resourceAttributeEnabled,
 	}
 )
 
@@ -248,6 +249,15 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
+					withResourceAttributes(func() metadata.ResourceAttributesConfig {
+						ra := metadata.DefaultResourceAttributesConfig()
+						ra.ContainerLabels.Enabled = true
+						return ra
+					}()).
+					withLabelMatchers(LabelMatcher{
+						MatchType: regexpMatchType,
+						Include:   ".*",
+					}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -267,6 +277,15 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
+					withResourceAttributes(func() metadata.ResourceAttributesConfig {
+						ra := metadata.DefaultResourceAttributesConfig()
+						ra.ContainerLabels.Enabled = true
+						return ra
+					}()).
+					withLabelMatchers(LabelMatcher{
+						MatchType: regexpMatchType,
+						Include:   ".*",
+					}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -285,6 +304,11 @@ func TestScrapeV2(t *testing.T) {
 				},
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
+					withResourceAttributes(func() metadata.ResourceAttributesConfig {
+						ra := metadata.DefaultResourceAttributesConfig()
+						ra.ContainerLabels.Enabled = true
+						return ra
+					}()).
 					withMetrics(allMetricsEnabled).
 					withAPIVersion(dockerAPIVersion),
 			},
@@ -304,6 +328,11 @@ func TestScrapeV2(t *testing.T) {
 				},
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
+					withResourceAttributes(func() metadata.ResourceAttributesConfig {
+						ra := metadata.DefaultResourceAttributesConfig()
+						ra.ContainerLabels.Enabled = true
+						return ra
+					}()).
 					withMetrics(allMetricsEnabled).
 					withAPIVersion(dockerAPIVersion),
 			},
@@ -322,6 +351,11 @@ func TestScrapeV2(t *testing.T) {
 				},
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
+					withResourceAttributes(func() metadata.ResourceAttributesConfig {
+						ra := metadata.DefaultResourceAttributesConfig()
+						ra.ContainerLabels.Enabled = true
+						return ra
+					}()).
 					withMetrics(allMetricsEnabled).
 					withAPIVersion(dockerAPIVersion),
 			},
@@ -342,6 +376,10 @@ func TestScrapeV2(t *testing.T) {
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
 					withResourceAttributes(allResourceAttributesEnabled).
+					withLabelMatchers(LabelMatcher{
+						MatchType: strictMatchType,
+						Include:   "container.label.2",
+					}).
 					withAPIVersion(dockerAPIVersion),
 			},
 		}
@@ -534,6 +572,11 @@ func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
 		"container.label":   "container-metric-label",
 		"container.label.2": "container-metric-label-2",
 	}
+	return cb
+}
+
+func (cb *testConfigBuilder) withLabelMatchers(matchers ...LabelMatcher) *testConfigBuilder {
+	cb.config.ContainerLabelsToResourceAttributes = matchers
 	return cb
 }
 
