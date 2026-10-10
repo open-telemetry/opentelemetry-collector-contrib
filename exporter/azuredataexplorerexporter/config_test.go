@@ -132,6 +132,19 @@ func TestLoadConfig(t *testing.T) {
 				QueueSettings: defaultQueueSettings,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "10"),
+			expected: &Config{
+				ClusterURI:       "https://CLUSTER.kusto.windows.net",
+				Database:         "oteldb",
+				MetricTable:      "OTELMetrics",
+				LogTable:         "OTELLogs",
+				TraceTable:       "OTELTraces",
+				UseAzureAuth:     true,
+				IngestionType:    queuedIngestTest,
+				IncludeExemplars: true,
+			},
+		},
 	}
 
 	for _, tt := range tests {

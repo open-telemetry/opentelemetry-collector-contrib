@@ -47,6 +47,7 @@ The following settings can be optionally configured and have default values:
 - `logs_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`logs_table_name`
 - `traces_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`traces_table_name`
 - `ingestion_type` (possible values=`queued` / `managed`,  default = queued): ADX ingest can happen in managed [streaming](https://docs.microsoft.com/azure/data-explorer/kusto/management/streamingingestionpolicy) or [queued](https://docs.microsoft.com/azure/data-explorer/kusto/management/batchingpolicy) modes.
+- `include_exemplars` (default = false): When true, OTLP metric [exemplars](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exemplars) (which carry `trace_id`/`span_id`) are written to the `Exemplars` dynamic column of the metrics table, enabling joins from aggregate metrics to the exact traces. Requires the `Exemplars` column to exist on the metrics table (see [Database and Table definition scripts](#database-and-table-definition-scripts)). If `metrics_table_json_mapping` is set, that mapping must also be updated to include `Exemplars`, otherwise the column is silently ignored during ingestion. Disabled by default to avoid added ingestion volume.
 
 > Note: [Streaming ingestion](https://docs.microsoft.com/azure/data-explorer/ingest-data-streaming?tabs=azure-portal%2Ccsharp) has to be enabled on ADX [configure the ADX cluster] in case of `streaming` option. Refer the query below to check if streaming is enabled
 
@@ -135,6 +136,16 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 | MetricAttributes              | Custom metric [attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) set from the application. Also contains the [instrumentation scope](https://opentelemetry.io/docs/reference/specification/common/#attribute) name and version                                                                                                         |
 | Host                          | The host.name extracted from [Host resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/). If empty , the hostname of the exporter is used                                  |
 | ResourceAttributes            | The resource attributes JSON map as specified in open telemetry [resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/)                                                        |
+| Exemplars                     | Optional. Only populated when `include_exemplars` is `true`. A JSON array of [exemplars](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exemplars) attached to the datapoint, each `{value, timestamp, trace_id, span_id, attributes}`. The `trace_id`/`span_id` use the same hex format as the traces table, so exemplars can be joined to the traces table to go from an aggregate metric to the exact trace. Integer exemplars are preserved as integers rather than widened to floating point. Non-finite double values are written as the strings `"NaN"`, `"Infinity"` and `"-Infinity"`, since JSON cannot represent them. `value` is omitted for an exemplar that records no value. For histograms, exemplars are attached to the `_count` row. |
+
+#### Histogram metric rows
+
+For histogram metrics, the exporter emits multiple rows per data point:
+- `<name>_sum` — the sum of all observed values
+- `<name>_count` — the number of observations
+- `<name>_min` — the minimum observed value (only emitted when the SDK provides it, e.g., .NET SDK v1.5.0+)
+- `<name>_max` — the maximum observed value (only emitted when the SDK provides it)
+- `<name>_bucket` — one row per explicit bound (cumulative count), plus a `+Inf` bucket
 
 ### Logs
 
@@ -158,6 +169,25 @@ The following tables need to be created in the database specified in the configu
 .create-merge table <Logs-Table-Name> (Timestamp:datetime, ObservedTimestamp:datetime, TraceID:string, SpanID:string, SeverityText:string, SeverityNumber:int, Body:string, ResourceAttributes:dynamic, LogsAttributes:dynamic) 
 
 .create-merge table <Metrics-Table-Name> (Timestamp:datetime, MetricName:string, MetricType:string, MetricUnit:string, MetricDescription:string, MetricValue:real, Host:string, ResourceAttributes:dynamic,MetricAttributes:dynamic) 
+
+// Optional: only required when `include_exemplars` is enabled. Adds the Exemplars column to the metrics table.
+.alter-merge table <Metrics-Table-Name> (Exemplars:dynamic) 
+
+// Also required when `include_exemplars` is enabled AND `metrics_table_json_mapping` is configured.
+// A named mapping only ingests the properties it lists, so Exemplars must be added to it explicitly.
+.create-or-alter table <Metrics-Table-Name> ingestion json mapping "<Metrics-Table-Mapping-Name>" 
+'['
+'  {"column":"Timestamp","path":"$.Timestamp","datatype":"datetime"},'
+'  {"column":"MetricName","path":"$.MetricName","datatype":"string"},'
+'  {"column":"MetricType","path":"$.MetricType","datatype":"string"},'
+'  {"column":"MetricUnit","path":"$.MetricUnit","datatype":"string"},'
+'  {"column":"MetricDescription","path":"$.MetricDescription","datatype":"string"},'
+'  {"column":"MetricValue","path":"$.MetricValue","datatype":"real"},'
+'  {"column":"Host","path":"$.Host","datatype":"string"},'
+'  {"column":"ResourceAttributes","path":"$.ResourceAttributes","datatype":"dynamic"},'
+'  {"column":"MetricAttributes","path":"$.MetricAttributes","datatype":"dynamic"},'
+'  {"column":"Exemplars","path":"$.Exemplars","datatype":"dynamic"}'
+']'
 
 .create-merge table <Traces-Table-Name> (TraceID:string, SpanID:string, ParentID:string, SpanName:string, SpanStatus:string, SpanKind:string, StartTime:datetime, EndTime:datetime, ResourceAttributes:dynamic, TraceAttributes:dynamic, Events:dynamic, Links:dynamic) 
 
