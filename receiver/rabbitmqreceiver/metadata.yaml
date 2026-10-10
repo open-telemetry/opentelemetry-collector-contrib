@@ -186,9 +186,25 @@ resource_attributes:
     description: The name of the RabbitMQ node.
     enabled: true
     type: string
+  rabbitmq.queue.auto_delete:
+    description: Whether the queue will be deleted when its last consumer disconnects.
+    enabled: false
+    type: bool
+  rabbitmq.queue.durable:
+    description: Whether the queue survives a broker restart.
+    enabled: false
+    type: bool
   rabbitmq.queue.name:
     description: The name of the RabbitMQ queue.
     enabled: true
+    type: string
+  rabbitmq.queue.policy.expires:
+    description: The queue expiry in milliseconds set by the queue's effective policy. Absent when the policy doesn't set one.
+    enabled: false
+    type: int
+  rabbitmq.queue.policy.name:
+    description: The name of the user policy applied to the queue. Absent when no policy applies.
+    enabled: false
     type: string
   rabbitmq.vhost.name:
     description: The name of the RabbitMQ vHost.

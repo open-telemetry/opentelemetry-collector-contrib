@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -364,6 +365,125 @@ func TestClusterNameResourceAttributeDisabled(t *testing.T) {
 	require.NoError(t, err)
 	mockClient.AssertNotCalled(t, "GetClusterName", mock.Anything)
 	mockClient.AssertExpectations(t)
+}
+
+func TestQueuePolicyAndArgumentAttributes(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqConsumerCount.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqQueueDurable.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqQueueAutoDelete.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqQueuePolicyName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqQueuePolicyExpires.Enabled = true
+	cfg.Queues.Extract.Arguments = []FieldExtractConfig{
+		{TagName: "owner", Key: "owner"},
+	}
+
+	queue := &models.Queue{
+		Name:                      "webq1",
+		VHost:                     "dev",
+		Durable:                   true,
+		AutoDelete:                false,
+		Policy:                    "ttl-policy",
+		EffectivePolicyDefinition: map[string]any{"expires": float64(1800000)},
+		Arguments:                 map[string]any{"owner": "billing"},
+	}
+
+	mockClient := mocks.MockClient{}
+	mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{queue}, nil).Once()
+	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
+
+	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+	scraper.client = &mockClient
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	attrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
+	assertBoolAttr(t, attrs, "rabbitmq.queue.durable", true)
+	assertBoolAttr(t, attrs, "rabbitmq.queue.auto_delete", false)
+	assertStrAttr(t, attrs, "rabbitmq.queue.policy.name", "ttl-policy")
+	expires, ok := attrs.Get("rabbitmq.queue.policy.expires")
+	require.True(t, ok)
+	require.Equal(t, int64(1800000), expires.Int())
+	assertStrAttr(t, attrs, "owner", "billing")
+	mockClient.AssertExpectations(t)
+}
+
+func TestQueuePolicyWithoutExpires(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqConsumerCount.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqQueuePolicyName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqQueuePolicyExpires.Enabled = true
+
+	queue := &models.Queue{
+		Name:                      "webq1",
+		VHost:                     "dev",
+		Policy:                    "ha-policy",
+		EffectivePolicyDefinition: map[string]any{"ha-mode": "all"},
+	}
+
+	mockClient := mocks.MockClient{}
+	mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{queue}, nil).Once()
+	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
+
+	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+	scraper.client = &mockClient
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	attrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
+	assertStrAttr(t, attrs, "rabbitmq.queue.policy.name", "ha-policy")
+	_, ok := attrs.Get("rabbitmq.queue.policy.expires")
+	require.False(t, ok)
+	mockClient.AssertExpectations(t)
+}
+
+func TestQueueWithoutPolicy(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqConsumerCount.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqQueuePolicyName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqQueuePolicyExpires.Enabled = true
+
+	var queue models.Queue
+	require.NoError(t, json.Unmarshal([]byte(`{"name": "webq1", "vhost": "dev", "effective_policy_definition": {}}`), &queue))
+
+	mockClient := mocks.MockClient{}
+	mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{&queue}, nil).Once()
+	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
+
+	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+	scraper.client = &mockClient
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	attrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
+	_, ok := attrs.Get("rabbitmq.queue.policy.name")
+	require.False(t, ok)
+	_, ok = attrs.Get("rabbitmq.queue.policy.expires")
+	require.False(t, ok)
+	mockClient.AssertExpectations(t)
+}
+
+func assertBoolAttr(t *testing.T, attrs pcommon.Map, key string, expected bool) {
+	t.Helper()
+	v, ok := attrs.Get(key)
+	require.True(t, ok, "expected attribute %q to be set", key)
+	require.Equal(t, expected, v.Bool())
+}
+
+func assertStrAttr(t *testing.T, attrs pcommon.Map, key, expected string) {
+	t.Helper()
+	v, ok := attrs.Get(key)
+	require.True(t, ok, "expected attribute %q to be set", key)
+	require.Equal(t, expected, v.Str())
 }
 
 func TestClusterNameResourceAttributeFailure(t *testing.T) {

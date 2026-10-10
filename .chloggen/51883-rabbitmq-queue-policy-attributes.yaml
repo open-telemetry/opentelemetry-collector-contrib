@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/rabbitmq
+note: Add disabled-by-default `rabbitmq.queue.durable`, `rabbitmq.queue.auto_delete`, `rabbitmq.queue.policy.name`, and `rabbitmq.queue.policy.expires` resource attributes, plus a `queues::extract::arguments` config option to pull arbitrary queue `arguments` into resource attributes.
+issues: [51883]
+change_logs: [user]
