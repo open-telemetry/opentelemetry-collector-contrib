@@ -1,0 +1,8 @@
+1.3.6.1.2.1.1.1.0|4|OpenTelemetry SNMP simulation
+1.3.6.1.2.1.1.3.0|67|123456
+1.3.6.1.2.1.1.5.0|4|sim-device
+1.3.6.1.2.1.2.2.1.10.1|65|1000
+1.3.6.1.2.1.2.2.1.10.2|65|2000
+1.3.6.1.4.1.8072.9999.1.0|2:notification|op=set,version=2c,community=public,host=127.0.0.1,port=1620,ntftype=trap,trapoid=1.3.6.1.6.3.1.1.5.1,uptime=123456,varbinds=1.3.6.1.2.1.1.5.0:s:sim-v2c-trap,value=0
+1.3.6.1.4.1.8072.9999.3.0|2:notification|op=set,version=1,community=public,host=127.0.0.1,port=1620,ntftype=trap,trapoid=1.3.6.1.6.3.1.1.5.1,uptime=123456,varbinds=1.3.6.1.2.1.1.5.0:s:sim-v1-trap,value=0
+1.3.6.1.4.1.8072.9999.4.0|2:notification|op=set,version=3,user=sim-user,authproto=sha,authkey=authpass123,privproto=aes,privkey=privpass123,host=127.0.0.1,port=1620,ntftype=trap,trapoid=1.3.6.1.6.3.1.1.5.1,uptime=123456,varbinds=1.3.6.1.2.1.1.5.0:s:sim-v3-trap,value=0

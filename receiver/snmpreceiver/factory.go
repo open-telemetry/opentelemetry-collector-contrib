@@ -22,12 +22,15 @@ import (
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
 
+const legacyPollingConfigWarning = "Top-level SNMP polling configuration is deprecated; move polling options under the poll block"
+
 // NewFactory creates a new receiver factory for SNMP
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 
@@ -54,9 +57,13 @@ func createMetricsReceiver(
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	snmpConfig, ok := config.(*Config)
+	sourceConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errConfigNotSNMP
+	}
+	snmpConfig := sourceConfig.effectivePollConfig()
+	if len(snmpConfig.Metrics) == 0 {
+		return nil, errMetricRequired
 	}
 
 	if err := addMissingConfigDefaults(snmpConfig); err != nil {
@@ -69,7 +76,33 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
+	recv, err := scraperhelper.NewMetricsController(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
+	if err != nil {
+		return nil, err
+	}
+	if sourceConfig.Poll == nil {
+		params.Logger.Warn(legacyPollingConfigWarning)
+	}
+	return recv, nil
+}
+
+func createLogsReceiver(
+	_ context.Context,
+	settings receiver.Settings,
+	config component.Config,
+	next consumer.Logs,
+) (receiver.Logs, error) {
+	cfg, ok := config.(*Config)
+	if !ok {
+		return nil, errConfigNotSNMP
+	}
+	if cfg.Traps == nil {
+		return nil, errors.New("traps must be configured when using the snmp receiver in a logs pipeline")
+	}
+	if err := cfg.Traps.validate(); err != nil {
+		return nil, fmt.Errorf("invalid traps configuration: %w", err)
+	}
+	return newTrapReceiver(cfg.Traps, settings, next)
 }
 
 // addMissingConfigDefaults adds any missing config parameters that have defaults

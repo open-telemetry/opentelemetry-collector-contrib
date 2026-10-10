@@ -1,0 +1,64 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+receivers:
+  snmp/device:
+    poll:
+      endpoint: udp://127.0.0.1:1161
+      version: v2c
+      community: public
+      collection_interval: 1s
+      timeout: 2s
+      attributes:
+        interface.index:
+          indexed_value_prefix: if
+      metrics:
+        device.uptime:
+          description: Simulated device uptime in hundredths of a second
+          unit: "1"
+          gauge:
+            value_type: int
+          scalar_oids:
+            - oid: "1.3.6.1.2.1.1.3.0"
+        device.interface.in_octets:
+          description: Simulated interface input octets
+          unit: By
+          sum:
+            value_type: int
+            aggregation: cumulative
+            monotonic: true
+          column_oids:
+            - oid: "1.3.6.1.2.1.2.2.1.10"
+              attributes:
+                - name: interface.index
+    traps:
+      listen_address: 127.0.0.1:1620
+      versions: [v1, v2c, v3]
+      communities: [public]
+      v3:
+        user: sim-user
+        security_level: auth_priv
+        auth_type: SHA
+        auth_password: authpass123
+        privacy_type: AES
+        privacy_password: privpass123
+
+exporters:
+  file/metrics:
+    path: .work/metrics.json
+    flush_interval: 100ms
+  file/logs:
+    path: .work/logs.json
+    flush_interval: 100ms
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    metrics:
+      receivers: [snmp/device]
+      exporters: [file/metrics]
+    logs:
+      receivers: [snmp/device]
+      exporters: [file/logs]

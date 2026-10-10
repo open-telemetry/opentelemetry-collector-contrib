@@ -1,0 +1,36 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+receivers:
+  snmp/device:
+    poll:
+      # Replace the polling target with an SNMP agent reachable by the Collector.
+      endpoint: udp://127.0.0.1:1161
+      version: v2c
+      community: ${env:SNMP_COMMUNITY}
+      collection_interval: 30s
+      metrics:
+        device.uptime:
+          description: Device uptime in hundredths of a second
+          unit: "1"
+          gauge:
+            value_type: int
+          scalar_oids:
+            - oid: "1.3.6.1.2.1.1.3.0"
+    traps:
+      listen_address: 127.0.0.1:1620
+      versions: [v1, v2c]
+      communities: [public]
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    metrics:
+      receivers: [snmp/device]
+      exporters: [debug]
+    logs:
+      receivers: [snmp/device]
+      exporters: [debug]

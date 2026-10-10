@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
@@ -132,6 +133,13 @@ type Config struct {
 	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
 	// names along with their metric configurations
 	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
+
+	// Poll optionally groups polling settings. Existing top-level polling fields
+	// remain supported, but cannot be explicitly configured alongside Poll.
+	Poll *PollConfig `mapstructure:"poll"`
+
+	// Traps optionally enables SNMP notifications as logs.
+	Traps *TrapsConfig `mapstructure:"traps,omitempty"`
 }
 
 // ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
@@ -253,16 +261,42 @@ type Attribute struct {
 	Value string `mapstructure:"value"`
 }
 
+// Unmarshal applies defaults to optional blocks when present. Detect mixed
+// polling forms from input keys, before defaults obscure their presence.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := cfg.unmarshalPollConfig(conf); err != nil {
+		return err
+	}
+	if conf.IsSet("traps") {
+		cfg.Traps = defaultTrapsConfig()
+		if conf.IsSet("traps::v3") {
+			cfg.Traps.V3 = &TrapV3Config{
+				SecurityLevel: "auth_priv",
+				AuthType:      "SHA256",
+				PrivacyType:   "AES",
+			}
+		}
+	}
+	return conf.Unmarshal(cfg)
+}
+
 // Validate validates the given config, returning an error specifying any issues with the config.
 func (cfg *Config) Validate() error {
 	var combinedErr error
 
-	combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))
-	combinedErr = errors.Join(combinedErr, validateVersion(cfg))
-	if strings.EqualFold(cfg.Version, "V3") {
-		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
+	if cfg.Poll != nil {
+		combinedErr = errors.Join(combinedErr, cfg.effectivePollConfig().Validate())
+	} else if cfg.Traps == nil || len(cfg.Metrics) > 0 {
+		combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))
+		combinedErr = errors.Join(combinedErr, validateVersion(cfg))
+		if strings.EqualFold(cfg.Version, "V3") {
+			combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
+		}
+		combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
 	}
-	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
+	if cfg.Traps != nil {
+		combinedErr = errors.Join(combinedErr, cfg.Traps.validate())
+	}
 
 	return combinedErr
 }
