@@ -9,6 +9,8 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type inMemoryRecorder struct {
@@ -22,12 +24,12 @@ func (r *inMemoryRecorder) record(_ pcommon.Timestamp, utilization CPUUtilizatio
 func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
-		name                 string
-		now                  pcommon.Timestamp
-		cpuTimes             []cpu.TimesStat
-		previousCPUTimes     []cpu.TimesStat
-		expectedUtilizations []CPUUtilization
-		expectedError        error
+		name                    string
+		now                     pcommon.Timestamp
+		cpuTimes                []cpu.TimesStat
+		previousCPUTimes        []cpu.TimesStat
+		expectedUtilizations    []CPUUtilization
+		expectedWarningContains []string
 	}{
 		{
 			name: "no previous times",
@@ -72,7 +74,9 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 					User: 8260.4,
 				},
 			},
-			expectedError: ErrTimeStatNotFound,
+			expectedWarningContains: []string{
+				"cpu5",
+			},
 		},
 		{
 			name: "one cpu",
@@ -180,16 +184,56 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "cpu core offlined between scrapes",
+			now:  1640097435776827000,
+			previousCPUTimes: []cpu.TimesStat{
+				{
+					CPU:    "cpu0",
+					User:   8258.4,
+					System: 6193.3,
+					Idle:   34284.7,
+				},
+				{
+					CPU:    "cpu1",
+					User:   528.3,
+					System: 549.7,
+					Idle:   47638.2,
+				},
+			},
+			cpuTimes: []cpu.TimesStat{
+				{
+					CPU:    "cpu0",
+					User:   8259.4,
+					System: 6193.9,
+					Idle:   34288.2,
+				},
+			},
+			expectedUtilizations: []CPUUtilization{
+				{
+					CPU:    "cpu0",
+					User:   0.19607,
+					System: 0.11764,
+					Idle:   0.68627,
+				},
+			},
+			expectedWarningContains: []string{
+				"cpu1",
+			},
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			recorder := inMemoryRecorder{}
-			calculator := CPUUtilizationCalculator{
-				previousCPUTimes: test.previousCPUTimes,
+			core, observedLogs := observer.New(zap.WarnLevel)
+			calculator := NewCPUUtilizationCalculator(zap.New(core))
+			calculator.previousCPUTimes = test.previousCPUTimes
+			calculator.CalculateAndRecord(test.now, test.cpuTimes, recorder.record)
+			assert.Len(t, observedLogs.All(), len(test.expectedWarningContains))
+			for idx, expectedWarning := range test.expectedWarningContains {
+				assert.Contains(t, observedLogs.All()[idx].ContextMap()["error"], expectedWarning)
 			}
-			err := calculator.CalculateAndRecord(test.now, test.cpuTimes, recorder.record)
-			assert.ErrorIs(t, err, test.expectedError)
 			assert.Len(t, recorder.cpuUtilizations, len(test.expectedUtilizations))
 			for idx, expectedUtilization := range test.expectedUtilizations {
 				assert.Equal(t, expectedUtilization.CPU, recorder.cpuUtilizations[idx].CPU)
@@ -257,4 +301,10 @@ func Test_cpuTimeByCpu(t *testing.T) {
 			assert.Equal(t, test.expectedTimeStat, actualTimeStat)
 		})
 	}
+}
+
+func Test_NilZapLoggerFallback(t *testing.T) {
+	// We're making codecov happy!
+	u := NewCPUUtilizationCalculator(nil)
+	assert.Equal(t, u.logger, zap.NewNop())
 }
