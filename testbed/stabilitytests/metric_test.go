@@ -6,6 +6,7 @@ package tests
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	scenarios "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
 )
