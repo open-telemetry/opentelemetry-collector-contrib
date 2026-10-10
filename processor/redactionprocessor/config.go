@@ -87,6 +87,11 @@ type Config struct {
 
 	// URLSanitization is a flag to sanitize URLs by removing UUIDs, timestamps, and other non-essential information
 	URLSanitization url.URLSanitizationConfig `mapstructure:"url_sanitizer"`
+
+	// MaskingString is the string that replaces the values being redacted.
+	// If not set, the redacted values will be replaced with "****".
+	// If HashFunction is set, this value must not be set
+	MaskingString string `mapstructure:"masking_string"`
 }
 
 func (u HashFunction) String() string {
@@ -141,6 +146,10 @@ func (cfg *Config) Validate() error {
 		if len(key) < minLength {
 			return fmt.Errorf("hmac_key must be at least %d bytes long for %q, got %d bytes", minLength, cfg.HashFunction, len(key))
 		}
+	}
+
+	if cfg.MaskingString != "" && cfg.HashFunction != None {
+		return errors.New("masking_string must not be set when hash_function is defined")
 	}
 
 	return nil
