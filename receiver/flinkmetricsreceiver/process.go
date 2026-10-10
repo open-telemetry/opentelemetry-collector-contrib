@@ -152,6 +152,7 @@ func (s *flinkmetricsScraper) processJobsMetrics(now pcommon.Timestamp, jobsMetr
 		}
 		rb := s.mb.NewResourceBuilder()
 		rb.SetHostName(jobsMetrics.Host)
+		rb.SetFlinkJobID(jobsMetrics.JobID)
 		rb.SetFlinkJobName(jobsMetrics.JobName)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -186,6 +187,7 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 		rb := s.mb.NewResourceBuilder()
 		rb.SetHostName(subtaskMetrics.Host)
 		rb.SetFlinkTaskmanagerID(subtaskMetrics.TaskmanagerID)
+		rb.SetFlinkJobID(subtaskMetrics.JobID)
 		rb.SetFlinkJobName(subtaskMetrics.JobName)
 		rb.SetFlinkTaskName(subtaskMetrics.TaskName)
 		rb.SetFlinkSubtaskIndex(subtaskMetrics.SubtaskIndex)
