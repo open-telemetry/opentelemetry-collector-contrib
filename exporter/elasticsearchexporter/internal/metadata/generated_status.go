@@ -16,10 +16,10 @@ var (
 )
 
 const (
-	MetricsStability  = component.StabilityLevelDevelopment
 	ProfilesStability = component.StabilityLevelDevelopment
 	TracesStability   = component.StabilityLevelBeta
 	LogsStability     = component.StabilityLevelBeta
+	MetricsStability  = component.StabilityLevelBeta
 )
 
 // NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.

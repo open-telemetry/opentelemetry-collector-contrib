@@ -4,6 +4,7 @@
 | ------------- |-----------|
 | Unsupported Platforms | aix, solaris |
 | Distributions | [contrib] |
+| Warnings      | [Statefulness](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fdatadog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fdatadog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fdatadog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fdatadog) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_datadog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_datadog&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@dineshg13](https://www.github.com/dineshg13), [@jade-guiton-dd](https://www.github.com/jade-guiton-dd), [@IbraheemA](https://www.github.com/IbraheemA) |
@@ -143,3 +144,7 @@ connectors:
         #
         # bucket_interval: 30s
 ```
+
+## Warnings
+
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The `datadog` connector aggregates trace metrics into buckets defined by `bucket_interval` before flushing them, keeping this aggregation state in memory on a single collector instance. All spans that should be aggregated together must be routed to the same collector instance, or the resulting trace metrics will be incomplete or inconsistent.
