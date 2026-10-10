@@ -354,7 +354,6 @@ receiver/redfishreceiver/                                        @open-telemetry
 receiver/redisreceiver/                                          @open-telemetry/collector-contrib-approvers @dmitryax @hughesjj
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers @armstrmi
 receiver/saphanareceiver/                                        @open-telemetry/collector-contrib-approvers @dehaansa
-receiver/signalfxreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/simpleprometheusreceiver/                               @open-telemetry/collector-contrib-approvers @s3onghyun
 receiver/skywalkingreceiver/                                     @open-telemetry/collector-contrib-approvers @JaredTan95
 receiver/snmpreceiver/                                           @open-telemetry/collector-contrib-approvers @ajimenez1503 @svencowart
