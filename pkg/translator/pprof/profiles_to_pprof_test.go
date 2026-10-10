@@ -178,6 +178,78 @@ func TestSampleValueTimestampShapes(t *testing.T) {
 	})
 }
 
+func TestConvertPprofileToPprofRejectsInvalidReferences(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*pprofile.Profiles)
+		field  string
+	}{
+		{"sample type string", func(p *pprofile.Profiles) {
+			profileAt(p).SampleType().SetTypeStrindex(3)
+		}, "sample_type.type_strindex"},
+		{"period type string", func(p *pprofile.Profiles) {
+			profileAt(p).PeriodType().SetUnitStrindex(3)
+		}, "period_type.unit_strindex"},
+		{"mapping filename", func(p *pprofile.Profiles) {
+			p.Dictionary().MappingTable().AppendEmpty().SetFilenameStrindex(3)
+		}, "filename_strindex"},
+		{"function name", func(p *pprofile.Profiles) {
+			p.Dictionary().FunctionTable().At(1).SetNameStrindex(3)
+		}, "name_strindex"},
+		{"sample stack", func(p *pprofile.Profiles) {
+			profileAt(p).Samples().At(0).SetStackIndex(3)
+		}, "stack_index"},
+		{"negative sample stack", func(p *pprofile.Profiles) {
+			profileAt(p).Samples().At(0).SetStackIndex(-1)
+		}, "stack_index"},
+		{"stack location", func(p *pprofile.Profiles) {
+			p.Dictionary().StackTable().At(1).LocationIndices().SetAt(0, 3)
+		}, "location_indices"},
+		{"location mapping", func(p *pprofile.Profiles) {
+			p.Dictionary().LocationTable().At(1).SetMappingIndex(3)
+		}, "mapping_index"},
+		{"line function", func(p *pprofile.Profiles) {
+			p.Dictionary().LocationTable().At(1).Lines().At(0).SetFunctionIndex(3)
+		}, "function_index"},
+		{"attribute key string", func(p *pprofile.Profiles) {
+			p.Dictionary().AttributeTable().AppendEmpty().SetKeyStrindex(3)
+		}, "key_strindex"},
+		{"attribute unit string", func(p *pprofile.Profiles) {
+			p.Dictionary().AttributeTable().AppendEmpty().SetUnitStrindex(3)
+		}, "unit_strindex"},
+		{"mapping attribute", func(p *pprofile.Profiles) {
+			p.Dictionary().MappingTable().At(0).AttributeIndices().Append(1)
+		}, "attribute_indices"},
+		{"location attribute", func(p *pprofile.Profiles) {
+			p.Dictionary().LocationTable().At(1).AttributeIndices().Append(1)
+		}, "attribute_indices"},
+		{"profile attribute", func(p *pprofile.Profiles) {
+			profileAt(p).AttributeIndices().Append(1)
+		}, "attribute_indices"},
+		{"sample attribute", func(p *pprofile.Profiles) {
+			profileAt(p).Samples().At(0).AttributeIndices().Append(3)
+		}, "attribute_indices"},
+		{"link index", func(p *pprofile.Profiles) {
+			profileAt(p).Samples().At(0).SetLinkIndex(1)
+		}, "link_index"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			profiles := buildMinimalProfiles(t, []int64{1}, nil)
+			tt.mutate(profiles)
+
+			_, err := ConvertPprofileToPprof(profiles)
+
+			require.ErrorContains(t, err, tt.field)
+		})
+	}
+}
+
+func profileAt(profiles *pprofile.Profiles) pprofile.Profile {
+	return profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+}
+
 func TestSampleLabelsWithMultipleProfiles(t *testing.T) {
 	t.Run("string labels from multiple profiles merged", func(t *testing.T) {
 		attributes := []*otlpprofiles.KeyValueAndUnit{
