@@ -292,6 +292,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
+      - receiver/gnmi
       - receiver/github
       - receiver/gitlab
       - receiver/googlecloudmonitoring
