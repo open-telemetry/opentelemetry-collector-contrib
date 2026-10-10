@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/opamp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add reports_heartbeat capability to allow the OpAMP server to configure the agent's heartbeat interval
+note: Add `reports_heartbeat` capability, enabled by default, to allow the OpAMP server to configure the agent's heartbeat interval
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51427]
@@ -15,7 +15,7 @@ issues: [51427]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: The `extension.opamp.HeartbeatIntervalNegotiation` feature gate (alpha) changes the default of `reports_heartbeat` to `true`.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

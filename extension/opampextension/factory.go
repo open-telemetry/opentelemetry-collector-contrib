@@ -30,7 +30,7 @@ func createDefaultConfig() component.Config {
 			ReportsHealth:              true,
 			ReportsAvailableComponents: true,
 			AcceptsRestartCommand:      false,
-			ReportsHeartbeat:           metadata.ExtensionOpampHeartbeatIntervalNegotiationFeatureGate.IsEnabled(),
+			ReportsHeartbeat:           true,
 		},
 		PPIDPollInterval: 5 * time.Second,
 	}

@@ -16,9 +16,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/featuregate"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -26,30 +23,6 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, confmap.New().Unmarshal(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
-}
-
-func TestCreateDefaultConfigReportsHeartbeatFeatureGate(t *testing.T) {
-	t.Run("disabled", func(t *testing.T) {
-		previousValue := metadata.ExtensionOpampHeartbeatIntervalNegotiationFeatureGate.IsEnabled()
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampHeartbeatIntervalNegotiationFeatureGate.ID(), false))
-		t.Cleanup(func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampHeartbeatIntervalNegotiationFeatureGate.ID(), previousValue))
-		})
-
-		cfg := NewFactory().CreateDefaultConfig().(*Config)
-		assert.False(t, cfg.Capabilities.ReportsHeartbeat)
-	})
-
-	t.Run("enabled", func(t *testing.T) {
-		previousValue := metadata.ExtensionOpampHeartbeatIntervalNegotiationFeatureGate.IsEnabled()
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampHeartbeatIntervalNegotiationFeatureGate.ID(), true))
-		t.Cleanup(func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampHeartbeatIntervalNegotiationFeatureGate.ID(), previousValue))
-		})
-
-		cfg := NewFactory().CreateDefaultConfig().(*Config)
-		assert.True(t, cfg.Capabilities.ReportsHeartbeat)
-	})
 }
 
 func TestUnmarshalConfig(t *testing.T) {
@@ -70,7 +43,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				ReportsEffectiveConfig:     true,
 				ReportsHealth:              true,
 				ReportsAvailableComponents: true,
-				ReportsHeartbeat:           false,
+				ReportsHeartbeat:           true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -97,7 +70,7 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 				ReportsEffectiveConfig:     true,
 				ReportsHealth:              true,
 				ReportsAvailableComponents: true,
-				ReportsHeartbeat:           false,
+				ReportsHeartbeat:           true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)

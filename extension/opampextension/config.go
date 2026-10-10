@@ -92,9 +92,7 @@ type Capabilities struct {
 	// AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)
 	AcceptsRestartCommand bool `mapstructure:"accepts_restart_command"`
 	// ReportsHeartbeat enables the OpAMP ReportsHeartbeat Capability, allowing the server to
-	// adjust the agent's heartbeat interval via ConnectionSettingsOffers.
-	// Default is false unless the extension.opamp.HeartbeatIntervalNegotiation
-	// feature gate (alpha) is enabled.
+	// adjust the agent's heartbeat interval via ConnectionSettingsOffers. (default: true)
 	ReportsHeartbeat bool `mapstructure:"reports_heartbeat"`
 }
 

@@ -68,8 +68,8 @@ func (h *heartbeatTestServer) stop(t *testing.T) {
 	assert.NoError(t, h.srv.Stop(ctx))
 }
 
-func (h *heartbeatTestServer) endpoint() string {
-	return "ws://" + h.srv.Addr().String() + "/v1/opamp"
+func (h *heartbeatTestServer) endpoint(scheme string) string {
+	return scheme + "://" + h.srv.Addr().String() + "/v1/opamp"
 }
 
 func (h *heartbeatTestServer) onMessage(_ context.Context, _ servertypes.Connection, msg *protobufs.AgentToServer) *protobufs.ServerToAgent {
@@ -99,23 +99,31 @@ func (h *heartbeatTestServer) messagesAfterOffer() int {
 }
 
 // TestReportsHeartbeatNegotiatedInterval checks that the offered heartbeat
-// interval is applied only when reports_heartbeat is enabled.
+// interval is applied only when reports_heartbeat is enabled. The HTTP client
+// uses the heartbeat interval as its polling interval.
 func TestReportsHeartbeatNegotiatedInterval(t *testing.T) {
 	const offeredInterval = 1 // seconds
 
 	for _, tc := range []struct {
 		name             string
+		http             bool
 		reportsHeartbeat bool
 	}{
-		{name: "enabled", reportsHeartbeat: true},
-		{name: "disabled", reportsHeartbeat: false},
+		{name: "ws enabled", reportsHeartbeat: true},
+		{name: "ws disabled", reportsHeartbeat: false},
+		{name: "http enabled", http: true, reportsHeartbeat: true},
+		{name: "http disabled", http: true, reportsHeartbeat: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := startHeartbeatTestServer(t, offeredInterval)
 			defer h.stop(t)
 
 			cfg := createDefaultConfig().(*Config)
-			cfg.Server.WS = &commonFields{Endpoint: h.endpoint()}
+			if tc.http {
+				cfg.Server.HTTP = &httpFields{commonFields: commonFields{Endpoint: h.endpoint("http")}}
+			} else {
+				cfg.Server.WS = &commonFields{Endpoint: h.endpoint("ws")}
+			}
 			cfg.Capabilities.ReportsHeartbeat = tc.reportsHeartbeat
 			cfg.Capabilities.ReportsHealth = false
 			cfg.Capabilities.ReportsAvailableComponents = false
@@ -140,7 +148,8 @@ func TestReportsHeartbeatNegotiatedInterval(t *testing.T) {
 				return
 			}
 
-			// The default interval is 30s, so nothing should arrive in this window.
+			// The default heartbeat and polling intervals are 30s, so nothing
+			// should arrive in this window.
 			require.Never(t, func() bool {
 				return h.messagesAfterOffer() > 0
 			}, 3*time.Second, 100*time.Millisecond,
