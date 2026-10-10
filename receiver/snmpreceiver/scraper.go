@@ -317,19 +317,22 @@ func getIndexedDataPointAttributes(
 		}
 
 		var attributeValue string
+		// answered: the column returned this row, possibly with an empty value
+		// (an empty OCTET STRING such as ifPhysAddress on a loopback)
+		answered := false
 		prefix := configHelper.getAttributeConfigIndexedValuePrefix(attributeName)
 		oid := configHelper.getAttributeConfigOID(attributeName)
 		switch {
 		case prefix != "":
 			attributeValue = prefix + indexString
 		case oid != "":
-			attributeValue = columnOIDIndexedAttributeValues[oid][indexString]
+			attributeValue, answered = columnOIDIndexedAttributeValues[oid][indexString]
 		default:
 			attributeValue = attribute.Value
 		}
 
 		// If no good attribute value could be found
-		if attributeValue == "" {
+		if attributeValue == "" && !answered {
 			return nil, errors.New(errMsgAttributeEmptyValue)
 		}
 		datapointAttributes[attributeKey] = attributeValue
