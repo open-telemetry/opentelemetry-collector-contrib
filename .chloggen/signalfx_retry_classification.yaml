@@ -1,0 +1,34 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: exporter/signalfx
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Treat non-retryable 4xx responses as permanent errors instead of retrying them indefinitely
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [51389]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The SignalFx exporter shares the `HandleHTTPCode` helper with the Splunk HEC
+  exporter. Previously only 400, 401, and 403 were classified as permanent; every
+  other 4xx (404, 405, 410, 413, 414, 415, 422, ...) fell through and was
+  retried forever even though retrying an identical request cannot succeed. Those
+  4xx responses are now permanent, except 408 Request Timeout and 409 Conflict
+  (transient) and 429 Too Many Requests (throttle). 5xx responses remain
+  retryable, and 503 continues to honor Retry-After.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
