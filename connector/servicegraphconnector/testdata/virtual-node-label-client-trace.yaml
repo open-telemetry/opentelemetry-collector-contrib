@@ -16,6 +16,6 @@ resourceSpans:
             endTimeUnixNano:   "1800000000000001000"
             parentSpanId: ""
             attributes:
-              - key: peer.service
+              - key: peer.service.name
                 value:
                   stringValue: external-platform

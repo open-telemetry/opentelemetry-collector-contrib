@@ -20,7 +20,7 @@ resourceMetrics:
                     - key: server
                       value:
                         stringValue: bar-requester
-                    - key: server_peer.service
+                    - key: server_peer.service.name
                       value:
                         stringValue: external-platform
                     - key: virtual_node
@@ -45,7 +45,7 @@ resourceMetrics:
                     - key: server
                       value:
                         stringValue: bar-requester
-                    - key: server_peer.service
+                    - key: server_peer.service.name
                       value:
                         stringValue: external-platform
                     - key: virtual_node
@@ -82,7 +82,7 @@ resourceMetrics:
                     - key: server
                       value:
                         stringValue: bar-requester
-                    - key: server_peer.service
+                    - key: server_peer.service.name
                       value:
                         stringValue: external-platform
                     - key: virtual_node
