@@ -275,6 +275,7 @@ receiver/flinkmetricsreceiver receiver/flinkmetrics
 receiver/fluentforwardreceiver receiver/fluentforward
 receiver/githubreceiver receiver/github
 receiver/gitlabreceiver receiver/gitlab
+receiver/gnmireceiver receiver/gnmi
 receiver/googlecloudmonitoringreceiver receiver/googlecloudmonitoring
 receiver/googlecloudpubsubpushreceiver receiver/googlecloudpubsubpush
 receiver/googlecloudpubsubreceiver receiver/googlecloudpubsub

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -30,7 +31,15 @@ func TestComponentLifecycle(t *testing.T) {
 	tests := []struct {
 		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 		name     string
-	}{}
+	}{
+
+		{
+			name: "metrics",
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
+				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
+	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
 	require.NoError(t, err)
@@ -43,18 +52,36 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			require.NoError(t, c.Shutdown(context.Background()))
+			err = c.Shutdown(context.Background())
+			require.NoError(t, err)
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			firstReceiver, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
-			require.NoError(t, firstReceiver.Start(context.Background(), host))
-			require.NoError(t, firstReceiver.Shutdown(context.Background()))
-			secondReceiver, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			host := newMdatagenNopHost()
 			require.NoError(t, err)
-			require.NoError(t, secondReceiver.Start(context.Background(), host))
-			require.NoError(t, secondReceiver.Shutdown(context.Background()))
+			require.NoError(t, firstRcvr.Start(context.Background(), host))
+			require.NoError(t, firstRcvr.Shutdown(context.Background()))
+			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			require.NoError(t, err)
+			require.NoError(t, secondRcvr.Start(context.Background(), host))
+			require.NoError(t, secondRcvr.Shutdown(context.Background()))
 		})
 	}
+}
+
+var _ component.Host = (*mdatagenNopHost)(nil)
+
+type mdatagenNopHost struct{}
+
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
+}
+
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
 }
