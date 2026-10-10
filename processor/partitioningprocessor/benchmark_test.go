@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -178,6 +179,28 @@ func genBenchMetrics(dpLevel bool, parts int) pmetric.Metrics {
 	return md
 }
 
+const benchProfilesPerScope = 50
+
+func genBenchProfiles(parts int) pprofile.Profiles {
+	pd := newTestProfiles()
+	pi := 0
+	for range benchResources {
+		rp := pd.ResourceProfiles().AppendEmpty()
+		putBenchAttrs(rp.Resource().Attributes())
+		for range benchScopes {
+			sp := rp.ScopeProfiles().AppendEmpty()
+			sp.Scope().SetName("scope")
+			for range benchProfilesPerScope {
+				p := sp.Profiles().AppendEmpty()
+				p.SetOriginalPayloadFormat(partValue(pi, parts))
+				p.Samples().AppendEmpty()
+				pi++
+			}
+		}
+	}
+	return pd
+}
+
 // cloneable is implemented by the top-level pdata containers.
 type cloneable[T any] interface{ CopyTo(T) }
 
@@ -262,5 +285,17 @@ func BenchmarkMetrics(b *testing.B) {
 				runBench(b, md, pmetric.NewMetrics, func(in pmetric.Metrics) error { return p.ConsumeMetrics(b.Context(), in) })
 			})
 		}
+	}
+}
+
+func BenchmarkProfiles(b *testing.B) {
+	for _, parts := range []int{1, 10} {
+		b.Run(fmt.Sprintf("profile/%dpartitions", parts), func(b *testing.B) {
+			p, err := createProfilesProcessor(b.Context(), nopSettings(),
+				newBenchConfig(`profile.original_payload_format`), consumertest.NewNop())
+			require.NoError(b, err)
+			pd := genBenchProfiles(parts)
+			runBench(b, pd, pprofile.NewProfiles, func(in pprofile.Profiles) error { return p.ConsumeProfiles(b.Context(), in) })
+		})
 	}
 }
