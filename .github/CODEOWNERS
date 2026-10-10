@@ -294,6 +294,7 @@ receiver/flinkmetricsreceiver/                                   @open-telemetry
 receiver/fluentforwardreceiver/                                  @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/githubreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @crobert-1
 receiver/gitlabreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @niwoerner
+receiver/gnmireceiver/                                           @open-telemetry/collector-contrib-approvers @atoulme
 receiver/googlecloudmonitoringreceiver/                          @open-telemetry/collector-contrib-approvers @dashpole
 receiver/googlecloudpubsubpushreceiver/                          @open-telemetry/collector-contrib-approvers @constanca-m
 receiver/googlecloudpubsubreceiver/                              @open-telemetry/collector-contrib-approvers @alexvanboxel @braydonk @dpaasman00

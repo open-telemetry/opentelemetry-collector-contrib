@@ -291,6 +291,7 @@ body:
       - receiver/fluentforward
       - receiver/github
       - receiver/gitlab
+      - receiver/gnmi
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudpubsubpush
