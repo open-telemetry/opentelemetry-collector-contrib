@@ -19,7 +19,7 @@ components:
     - connector/datadog
     - connector/exceptions
     - connector/failover
-    - connector/grafanacloud
+    - connector/grafana_cloud
     - connector/metrics_as_logs
     - connector/otlp_json
     - connector/round_robin
@@ -59,7 +59,7 @@ components:
     - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
-    - exporter/mezmo
+    - exporter/nats
     - exporter/opensearch
     - exporter/otelarrow
     - exporter/prometheus
@@ -96,6 +96,7 @@ components:
     - extension/ecs_observer
     - extension/encoding
     - extension/file_storage
+    - extension/file_telemetry_policy
     - extension/google_cloud_logentry_encoding
     - extension/googleclientauth
     - extension/headers_setter
@@ -164,8 +165,9 @@ components:
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
+    - pkg/ottl/contexts/xprofile
+    - pkg/ottl/xottl
     - pkg/pdatatest
-    - pkg/pdatautil
     - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling
@@ -219,6 +221,7 @@ components:
     - processor/metricsgeneration
     - processor/novadetector
     - processor/oracleclouddetector
+    - processor/partitioning
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
@@ -232,6 +235,7 @@ components:
     - processor/span_pruning
     - processor/sumologic
     - processor/tail_sampling
+    - processor/telemetry_policy
     - processor/tencentcvmdetector
     - processor/transform
     - processor/transformprocessor/internal/logparsingfuncs
@@ -249,10 +253,10 @@ components:
     - receiver/apache_spark
     - receiver/aws_cloudwatch
     - receiver/aws_lambda
+    - receiver/aws_s3
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
-    - receiver/awss3
     - receiver/awsxray
     - receiver/azure_blob
     - receiver/azure_event_hub
@@ -336,7 +340,7 @@ components:
     - receiver/splunk_enterprise
     - receiver/splunk_hec
     - receiver/sql_query
-    - receiver/sqlserver
+    - receiver/sql_server
     - receiver/ssh_check
     - receiver/statsd
     - receiver/stef
@@ -348,7 +352,6 @@ components:
     - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
-    - receiver/wavefront
     - receiver/webhook_event
     - receiver/windows_event_log
     - receiver/windows_perf_counters

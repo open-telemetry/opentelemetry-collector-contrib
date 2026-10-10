@@ -19,8 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 type clientRequestArgs struct {
@@ -31,6 +29,8 @@ type clientRequestArgs struct {
 }
 
 func TestExtension(t *testing.T) {
+	const localEndpoint = "127.0.0.1:0"
+
 	tests := []struct {
 		name                        string
 		config                      func(listenAt string) *Config
@@ -47,11 +47,6 @@ func TestExtension(t *testing.T) {
 			name: "No additional headers",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-				ingressConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
@@ -80,20 +75,11 @@ func TestExtension(t *testing.T) {
 			name: "With additional headers",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-				ingressConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
 				}
 				egressConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				egressConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-				egressConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-				egressConfig.ForceAttemptHTTP2 = false
 				egressConfig.Headers = configopaque.MapList{
 					{Name: "key", Value: "value"},
 				}
@@ -118,20 +104,11 @@ func TestExtension(t *testing.T) {
 			name: "Error code from backend",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-				ingressConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
 				}
 				egressConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				egressConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-				egressConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-				egressConfig.ForceAttemptHTTP2 = false
 				egressConfig.Headers = configopaque.MapList{
 					{Name: "key", Value: "value"},
 				}
@@ -154,20 +131,11 @@ func TestExtension(t *testing.T) {
 			name: "Error making request at forwarder",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-				ingressConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
 				}
 				egressConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				egressConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-				egressConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-				egressConfig.ForceAttemptHTTP2 = false
 				egressConfig.Headers = configopaque.MapList{
 					{Name: "key", Value: "value"},
 				}
@@ -190,20 +158,11 @@ func TestExtension(t *testing.T) {
 			name: "Invalid config - HTTP Client creation fails",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-				ingressConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
 				}
 				egressConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				egressConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-				egressConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-				egressConfig.ForceAttemptHTTP2 = false
 				egressConfig.Endpoint = "localhost:9090"
 				egressConfig.TLS = configtls.ClientConfig{
 					Config: configtls.Config{
@@ -222,11 +181,6 @@ func TestExtension(t *testing.T) {
 			name: "Error on Startup",
 			config: func(_ string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-				ingressConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  "invalid", // to mock error setting up listener.
@@ -241,12 +195,9 @@ func TestExtension(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			listenAt := testutil.GetAvailableLocalAddress(t)
+			listenAt := localEndpoint
 			cfg := test.config(listenAt)
 			var cra clientRequestArgs
-			if test.clientRequestArgs != nil {
-				cra = test.clientRequestArgs(listenAt)
-			}
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if test.httpErrorFromBackend {
 					http.Error(w, "", http.StatusInternalServerError)
@@ -279,7 +230,7 @@ func TestExtension(t *testing.T) {
 				_, err := w.Write(test.expectedBackendResponseBody)
 				assert.NoError(t, err)
 			}))
-			defer backend.Close()
+			t.Cleanup(backend.Close)
 
 			// Fill in final destination URL.
 			backendURL, _ := url.Parse(backend.URL)
@@ -287,7 +238,8 @@ func TestExtension(t *testing.T) {
 
 			// Setup forwarder with wrong final address to mock failures.
 			if test.requestErrorAtForwarder {
-				cfg.Egress.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+				// Port 0 is not a listening port when used as a destination.
+				cfg.Egress.Endpoint = "http://" + localEndpoint
 			}
 
 			hf, err := newHTTPForwarder(cfg, componenttest.NewNopTelemetrySettings())
@@ -304,6 +256,13 @@ func TestExtension(t *testing.T) {
 				return
 			}
 			require.NoError(t, hf.Start(ctx, componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, hf.Shutdown(ctx))
+			}()
+			listenAt = hf.(*httpForwarder).server.Addr
+			if test.clientRequestArgs != nil {
+				cra = test.clientRequestArgs(listenAt)
+			}
 
 			// Mock a client trying to talk to backend using the forwarder.
 			httpClient := http.Client{}
@@ -335,8 +294,6 @@ func TestExtension(t *testing.T) {
 				}
 				t.Error("unexpected header found in response: ", k)
 			}
-
-			require.NoError(t, hf.Shutdown(ctx))
 		})
 	}
 }

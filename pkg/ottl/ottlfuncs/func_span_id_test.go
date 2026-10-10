@@ -64,14 +64,14 @@ func Test_SpanIDFactory(t *testing.T) {
 		factory := NewSpanIDFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SpanIDArguments[any]{}, args)
+		assert.IsType(t, &spanIDArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSpanIDFactory[any]()
 		args := factory.CreateDefaultArguments()
-		spanIDArgs, ok := args.(*SpanIDArguments[any])
+		spanIDArgs, ok := args.(*spanIDArguments[any])
 		require.True(t, ok)
 		spanIDArgs.Target = &ottl.StandardByteSliceLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -86,6 +86,22 @@ func Test_SpanIDFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSpanIDFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SpanIDFactory args must be of type *SpanIDArguments[K]")
+		assert.ErrorContains(t, err, "SpanIDFactory args must be of type *spanIDArguments[K]")
 	})
+}
+
+func BenchmarkSpanID(b *testing.B) {
+	exprFunc, err := spanID[any](&ottl.StandardByteSliceLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []byte{1, 2, 3, 4, 5, 6, 7, 8}, nil
+		},
+	})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

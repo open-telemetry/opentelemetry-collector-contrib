@@ -38,10 +38,6 @@ func newMockServer(t *testing.T, responseCode int) *httptest.Server {
 
 func TestScraperStart(t *testing.T) {
 	clientConfigBadConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigBadConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfigBadConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfigBadConfig.ForceAttemptHTTP2 = false
 	clientConfigBadConfig.Endpoint = "http://example.com"
 	clientConfigBadConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
@@ -50,10 +46,6 @@ func TestScraperStart(t *testing.T) {
 	}
 
 	clientConfigValidConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigValidConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfigValidConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfigValidConfig.ForceAttemptHTTP2 = false
 	clientConfigValidConfig.TLS = configtls.ClientConfig{}
 	clientConfigValidConfig.Endpoint = "http://example.com"
 
@@ -174,10 +166,6 @@ func TestScraperScrape(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if tc.endpoint != "" {
 				clientConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-				clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-				clientConfig.ForceAttemptHTTP2 = false
 				clientConfig.Endpoint = tc.endpoint
 				cfg.Targets = []*targetConfig{
 					{
@@ -188,10 +176,6 @@ func TestScraperScrape(t *testing.T) {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
 				clientConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-				clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-				clientConfig.ForceAttemptHTTP2 = false
 				clientConfig.Endpoint = ms.URL
 				cfg.Targets = []*targetConfig{
 					{
@@ -267,10 +251,6 @@ func TestHTTPSWithTLS(t *testing.T) {
 	// Explicitly enable the TLS metric (to test the opt-in behavior)
 	cfg.MetricsBuilderConfig.Metrics.HttpcheckTLSCertRemaining.Enabled = true
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = server.URL
 	clientConfig.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true, // Skip verification for test server
@@ -326,10 +306,6 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 	// Explicitly disable the TLS metric
 	cfg.MetricsBuilderConfig.Metrics.HttpcheckTLSCertRemaining.Enabled = false
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = server.URL
 	clientConfig.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true, // Skip verification for test server
@@ -484,10 +460,6 @@ func TestStatusCodeConditionalInclusion(t *testing.T) {
 
 			cfg := createDefaultConfig().(*Config)
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Endpoint = ms.URL
 			cfg.Targets = []*targetConfig{
 				{
@@ -514,17 +486,9 @@ func TestScraperMultipleTargets(t *testing.T) {
 	defer ms2.Close()
 
 	clientConfig1 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig1.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig1.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig1.ForceAttemptHTTP2 = false
 	clientConfig1.Endpoint = ms1.URL
 
 	clientConfig2 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig2.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig2.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig2.ForceAttemptHTTP2 = false
 	clientConfig2.Endpoint = ms2.URL
 
 	cfg.Targets = append(cfg.Targets,
@@ -567,10 +531,6 @@ func TestTimingMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseDuration.Enabled = true
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = server.URL
 	cfg.Targets = []*targetConfig{
 		{
@@ -649,10 +609,6 @@ func TestTimingMetricsNonZeroValues(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseDuration.Enabled = true
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = server.URL
 	cfg.Targets = []*targetConfig{
 		{
@@ -775,10 +731,6 @@ func TestRequestBodySupport(t *testing.T) {
 
 			cfg := createDefaultConfig().(*Config)
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Endpoint = server.URL
 			cfg.Targets = []*targetConfig{
 				{
@@ -820,10 +772,6 @@ func TestRequestBodyWithCustomHeaders(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = server.URL
 	clientConfig.Headers = configopaque.MapList{
 		{Name: "Content-Type", Value: configopaque.String("application/custom+json")},
@@ -924,10 +872,6 @@ func TestAutoContentTypeConfiguration(t *testing.T) {
 
 			cfg := createDefaultConfig().(*Config)
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Endpoint = server.URL
 			cfg.Targets = []*targetConfig{
 				{
@@ -967,10 +911,6 @@ func TestResponseValidation(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseSize.Enabled = true
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = server.URL
 	cfg.Targets = []*targetConfig{
 		{
@@ -1036,10 +976,6 @@ func TestResponseValidationFailures(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationFailed.Enabled = true
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = server.URL
 	cfg.Targets = []*targetConfig{
 		{

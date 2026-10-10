@@ -50,6 +50,54 @@ func (ms *MongodbActiveWritesMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
+// MongodbAssertCountMetricAttributeKey specifies the key of an attribute for the mongodb.assert.count metric.
+type MongodbAssertCountMetricAttributeKey string
+
+const (
+	MongodbAssertCountMetricAttributeKeyMongodbAssertType MongodbAssertCountMetricAttributeKey = "mongodb.assert.type"
+)
+
+// MongodbAssertCountMetricConfig provides config for the mongodb.assert.count metric.
+type MongodbAssertCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbAssertCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbAssertCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbAssertCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbAssertCountMetricAttributeKeyMongodbAssertType:
+		default:
+			return fmt.Errorf("metric mongodb.assert.count doesn't have an attribute %v, valid attributes: [mongodb.assert.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MongodbCacheOperationsMetricAttributeKey specifies the key of an attribute for the mongodb.cache.operations metric.
 type MongodbCacheOperationsMetricAttributeKey string
 
@@ -477,6 +525,54 @@ func (ms *MongodbGetmoresRateMetricConfig) Unmarshal(parser *confmap.Conf) error
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbGlobalLockQueueCountMetricAttributeKey specifies the key of an attribute for the mongodb.global_lock.queue.count metric.
+type MongodbGlobalLockQueueCountMetricAttributeKey string
+
+const (
+	MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType MongodbGlobalLockQueueCountMetricAttributeKey = "mongodb.global_lock.queue.type"
+)
+
+// MongodbGlobalLockQueueCountMetricConfig provides config for the mongodb.global_lock.queue.count metric.
+type MongodbGlobalLockQueueCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbGlobalLockQueueCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbGlobalLockQueueCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbGlobalLockQueueCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType:
+		default:
+			return fmt.Errorf("metric mongodb.global_lock.queue.count doesn't have an attribute %v, valid attributes: [mongodb.global_lock.queue.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1234,6 +1330,66 @@ func (ms *MongodbOperationTimeMetricConfig) Validate() error {
 	return nil
 }
 
+// MongodbOplogLimitMetricConfig provides config for the mongodb.oplog.limit metric.
+type MongodbOplogLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbOplogLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbOplogUsageMetricConfig provides config for the mongodb.oplog.usage metric.
+type MongodbOplogUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbOplogUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbOplogWindowMetricConfig provides config for the mongodb.oplog.window metric.
+type MongodbOplogWindowMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbOplogWindowMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MongodbPageFaultsMetricConfig provides config for the mongodb.page_faults metric.
 type MongodbPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1261,6 +1417,66 @@ type MongodbQueriesRateMetricConfig struct {
 }
 
 func (ms *MongodbQueriesRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbQueryExecutorCollectionScanCountMetricConfig provides config for the mongodb.query_executor.collection_scan.count metric.
+type MongodbQueryExecutorCollectionScanCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbQueryExecutorCollectionScanCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbQueryExecutorDocumentScannedCountMetricConfig provides config for the mongodb.query_executor.document.scanned.count metric.
+type MongodbQueryExecutorDocumentScannedCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbQueryExecutorDocumentScannedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbQueryExecutorIndexKeyScannedCountMetricConfig provides config for the mongodb.query_executor.index_key.scanned.count metric.
+type MongodbQueryExecutorIndexKeyScannedCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbQueryExecutorIndexKeyScannedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1394,6 +1610,199 @@ func (ms *MongodbReplUpdatesPerSecMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
+// MongodbReplicaStatusMetricAttributeKey specifies the key of an attribute for the mongodb.replica.status metric.
+type MongodbReplicaStatusMetricAttributeKey string
+
+const (
+	MongodbReplicaStatusMetricAttributeKeyMongodbReplicaState MongodbReplicaStatusMetricAttributeKey = "mongodb.replica.state"
+)
+
+// MongodbReplicaStatusMetricConfig provides config for the mongodb.replica.status metric.
+type MongodbReplicaStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbReplicaStatusMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbReplicaStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbReplicaStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbReplicaStatusMetricAttributeKeyMongodbReplicaState:
+		default:
+			return fmt.Errorf("metric mongodb.replica.status doesn't have an attribute %v, valid attributes: [mongodb.replica.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbReplicaSetHeadroomMetricAttributeKey specifies the key of an attribute for the mongodb.replica_set.headroom metric.
+type MongodbReplicaSetHeadroomMetricAttributeKey string
+
+const (
+	MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaName MongodbReplicaSetHeadroomMetricAttributeKey = "mongodb.replica.name"
+)
+
+// MongodbReplicaSetHeadroomMetricConfig provides config for the mongodb.replica_set.headroom metric.
+type MongodbReplicaSetHeadroomMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbReplicaSetHeadroomMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbReplicaSetHeadroomMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbReplicaSetHeadroomMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaName:
+		default:
+			return fmt.Errorf("metric mongodb.replica_set.headroom doesn't have an attribute %v, valid attributes: [mongodb.replica.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbReplicaSetLagMetricAttributeKey specifies the key of an attribute for the mongodb.replica_set.lag metric.
+type MongodbReplicaSetLagMetricAttributeKey string
+
+const (
+	MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaName       MongodbReplicaSetLagMetricAttributeKey = "mongodb.replica.name"
+	MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType MongodbReplicaSetLagMetricAttributeKey = "mongodb.replica_set.lag.type"
+)
+
+// MongodbReplicaSetLagMetricConfig provides config for the mongodb.replica_set.lag metric.
+type MongodbReplicaSetLagMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbReplicaSetLagMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbReplicaSetLagMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbReplicaSetLagMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaName, MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType:
+		default:
+			return fmt.Errorf("metric mongodb.replica_set.lag doesn't have an attribute %v, valid attributes: [mongodb.replica.name, mongodb.replica_set.lag.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MongodbReplicaSetMemberCountMetricAttributeKey specifies the key of an attribute for the mongodb.replica_set.member.count metric.
+type MongodbReplicaSetMemberCountMetricAttributeKey string
+
+const (
+	MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaState MongodbReplicaSetMemberCountMetricAttributeKey = "mongodb.replica.state"
+)
+
+// MongodbReplicaSetMemberCountMetricConfig provides config for the mongodb.replica_set.member.count metric.
+type MongodbReplicaSetMemberCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbReplicaSetMemberCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MongodbReplicaSetMemberCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MongodbReplicaSetMemberCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaState:
+		default:
+			return fmt.Errorf("metric mongodb.replica_set.member.count doesn't have an attribute %v, valid attributes: [mongodb.replica.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MongodbSessionCountMetricConfig provides config for the mongodb.session.count metric.
 type MongodbSessionCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1489,6 +1898,26 @@ type MongodbUptimeMetricConfig struct {
 }
 
 func (ms *MongodbUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MongodbWriteConcernWaitTimeMetricConfig provides config for the mongodb.write_concern.wait.time metric.
+type MongodbWriteConcernWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MongodbWriteConcernWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1682,6 +2111,7 @@ func (ms *MongodbWtcacheBytesReadMetricConfig) Unmarshal(parser *confmap.Conf) e
 type MetricsConfig struct {
 	MongodbActiveReads                        MongodbActiveReadsMetricConfig                        `mapstructure:"mongodb.active.reads"`
 	MongodbActiveWrites                       MongodbActiveWritesMetricConfig                       `mapstructure:"mongodb.active.writes"`
+	MongodbAssertCount                        MongodbAssertCountMetricConfig                        `mapstructure:"mongodb.assert.count"`
 	MongodbCacheOperations                    MongodbCacheOperationsMetricConfig                    `mapstructure:"mongodb.cache.operations"`
 	MongodbCollectionCount                    MongodbCollectionCountMetricConfig                    `mapstructure:"mongodb.collection.count"`
 	MongodbCommandsRate                       MongodbCommandsRateMetricConfig                       `mapstructure:"mongodb.commands.rate"`
@@ -1695,6 +2125,7 @@ type MetricsConfig struct {
 	MongodbExtentCount                        MongodbExtentCountMetricConfig                        `mapstructure:"mongodb.extent.count"`
 	MongodbFlushesRate                        MongodbFlushesRateMetricConfig                        `mapstructure:"mongodb.flushes.rate"`
 	MongodbGetmoresRate                       MongodbGetmoresRateMetricConfig                       `mapstructure:"mongodb.getmores.rate"`
+	MongodbGlobalLockQueueCount               MongodbGlobalLockQueueCountMetricConfig               `mapstructure:"mongodb.global_lock.queue.count"`
 	MongodbGlobalLockTime                     MongodbGlobalLockTimeMetricConfig                     `mapstructure:"mongodb.global_lock.time"`
 	MongodbHealth                             MongodbHealthMetricConfig                             `mapstructure:"mongodb.health"`
 	MongodbIndexAccessCount                   MongodbIndexAccessCountMetricConfig                   `mapstructure:"mongodb.index.access.count"`
@@ -1714,18 +2145,29 @@ type MetricsConfig struct {
 	MongodbOperationLatencyTime               MongodbOperationLatencyTimeMetricConfig               `mapstructure:"mongodb.operation.latency.time"`
 	MongodbOperationReplCount                 MongodbOperationReplCountMetricConfig                 `mapstructure:"mongodb.operation.repl.count"`
 	MongodbOperationTime                      MongodbOperationTimeMetricConfig                      `mapstructure:"mongodb.operation.time"`
+	MongodbOplogLimit                         MongodbOplogLimitMetricConfig                         `mapstructure:"mongodb.oplog.limit"`
+	MongodbOplogUsage                         MongodbOplogUsageMetricConfig                         `mapstructure:"mongodb.oplog.usage"`
+	MongodbOplogWindow                        MongodbOplogWindowMetricConfig                        `mapstructure:"mongodb.oplog.window"`
 	MongodbPageFaults                         MongodbPageFaultsMetricConfig                         `mapstructure:"mongodb.page_faults"`
 	MongodbQueriesRate                        MongodbQueriesRateMetricConfig                        `mapstructure:"mongodb.queries.rate"`
+	MongodbQueryExecutorCollectionScanCount   MongodbQueryExecutorCollectionScanCountMetricConfig   `mapstructure:"mongodb.query_executor.collection_scan.count"`
+	MongodbQueryExecutorDocumentScannedCount  MongodbQueryExecutorDocumentScannedCountMetricConfig  `mapstructure:"mongodb.query_executor.document.scanned.count"`
+	MongodbQueryExecutorIndexKeyScannedCount  MongodbQueryExecutorIndexKeyScannedCountMetricConfig  `mapstructure:"mongodb.query_executor.index_key.scanned.count"`
 	MongodbReplCommandsPerSec                 MongodbReplCommandsPerSecMetricConfig                 `mapstructure:"mongodb.repl_commands_per_sec"`
 	MongodbReplDeletesPerSec                  MongodbReplDeletesPerSecMetricConfig                  `mapstructure:"mongodb.repl_deletes_per_sec"`
 	MongodbReplGetmoresPerSec                 MongodbReplGetmoresPerSecMetricConfig                 `mapstructure:"mongodb.repl_getmores_per_sec"`
 	MongodbReplInsertsPerSec                  MongodbReplInsertsPerSecMetricConfig                  `mapstructure:"mongodb.repl_inserts_per_sec"`
 	MongodbReplQueriesPerSec                  MongodbReplQueriesPerSecMetricConfig                  `mapstructure:"mongodb.repl_queries_per_sec"`
 	MongodbReplUpdatesPerSec                  MongodbReplUpdatesPerSecMetricConfig                  `mapstructure:"mongodb.repl_updates_per_sec"`
+	MongodbReplicaStatus                      MongodbReplicaStatusMetricConfig                      `mapstructure:"mongodb.replica.status"`
+	MongodbReplicaSetHeadroom                 MongodbReplicaSetHeadroomMetricConfig                 `mapstructure:"mongodb.replica_set.headroom"`
+	MongodbReplicaSetLag                      MongodbReplicaSetLagMetricConfig                      `mapstructure:"mongodb.replica_set.lag"`
+	MongodbReplicaSetMemberCount              MongodbReplicaSetMemberCountMetricConfig              `mapstructure:"mongodb.replica_set.member.count"`
 	MongodbSessionCount                       MongodbSessionCountMetricConfig                       `mapstructure:"mongodb.session.count"`
 	MongodbStorageSize                        MongodbStorageSizeMetricConfig                        `mapstructure:"mongodb.storage.size"`
 	MongodbUpdatesRate                        MongodbUpdatesRateMetricConfig                        `mapstructure:"mongodb.updates.rate"`
 	MongodbUptime                             MongodbUptimeMetricConfig                             `mapstructure:"mongodb.uptime"`
+	MongodbWriteConcernWaitTime               MongodbWriteConcernWaitTimeMetricConfig               `mapstructure:"mongodb.write_concern.wait.time"`
 	MongodbWtConcurrentTransactionTicketInUse MongodbWtConcurrentTransactionTicketInUseMetricConfig `mapstructure:"mongodb.wt.concurrent_transaction.ticket.in_use"`
 	MongodbWtFsyncCount                       MongodbWtFsyncCountMetricConfig                       `mapstructure:"mongodb.wt.fsync.count"`
 	MongodbWtLogOperationCount                MongodbWtLogOperationCountMetricConfig                `mapstructure:"mongodb.wt.log.operation.count"`
@@ -1741,6 +2183,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbActiveWrites: MongodbActiveWritesMetricConfig{
 			Enabled: false,
+		},
+		MongodbAssertCount: MongodbAssertCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbAssertCountMetricAttributeKey{MongodbAssertCountMetricAttributeKeyMongodbAssertType},
 		},
 		MongodbCacheOperations: MongodbCacheOperationsMetricConfig{
 			Enabled:             true,
@@ -1792,6 +2239,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbGetmoresRate: MongodbGetmoresRateMetricConfig{
 			Enabled: false,
+		},
+		MongodbGlobalLockQueueCount: MongodbGlobalLockQueueCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbGlobalLockQueueCountMetricAttributeKey{MongodbGlobalLockQueueCountMetricAttributeKeyMongodbGlobalLockQueueType},
 		},
 		MongodbGlobalLockTime: MongodbGlobalLockTimeMetricConfig{
 			Enabled: true,
@@ -1876,10 +2328,28 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MongodbOperationTimeMetricAttributeKey{MongodbOperationTimeMetricAttributeKeyOperation},
 		},
+		MongodbOplogLimit: MongodbOplogLimitMetricConfig{
+			Enabled: false,
+		},
+		MongodbOplogUsage: MongodbOplogUsageMetricConfig{
+			Enabled: false,
+		},
+		MongodbOplogWindow: MongodbOplogWindowMetricConfig{
+			Enabled: false,
+		},
 		MongodbPageFaults: MongodbPageFaultsMetricConfig{
 			Enabled: false,
 		},
 		MongodbQueriesRate: MongodbQueriesRateMetricConfig{
+			Enabled: false,
+		},
+		MongodbQueryExecutorCollectionScanCount: MongodbQueryExecutorCollectionScanCountMetricConfig{
+			Enabled: false,
+		},
+		MongodbQueryExecutorDocumentScannedCount: MongodbQueryExecutorDocumentScannedCountMetricConfig{
+			Enabled: false,
+		},
+		MongodbQueryExecutorIndexKeyScannedCount: MongodbQueryExecutorIndexKeyScannedCountMetricConfig{
 			Enabled: false,
 		},
 		MongodbReplCommandsPerSec: MongodbReplCommandsPerSecMetricConfig{
@@ -1900,6 +2370,26 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbReplUpdatesPerSec: MongodbReplUpdatesPerSecMetricConfig{
 			Enabled: false,
 		},
+		MongodbReplicaStatus: MongodbReplicaStatusMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbReplicaStatusMetricAttributeKey{MongodbReplicaStatusMetricAttributeKeyMongodbReplicaState},
+		},
+		MongodbReplicaSetHeadroom: MongodbReplicaSetHeadroomMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbReplicaSetHeadroomMetricAttributeKey{MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaName},
+		},
+		MongodbReplicaSetLag: MongodbReplicaSetLagMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MongodbReplicaSetLagMetricAttributeKey{MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaName, MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType},
+		},
+		MongodbReplicaSetMemberCount: MongodbReplicaSetMemberCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MongodbReplicaSetMemberCountMetricAttributeKey{MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaState},
+		},
 		MongodbSessionCount: MongodbSessionCountMetricConfig{
 			Enabled: true,
 		},
@@ -1912,6 +2402,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MongodbUptime: MongodbUptimeMetricConfig{
+			Enabled: false,
+		},
+		MongodbWriteConcernWaitTime: MongodbWriteConcernWaitTimeMetricConfig{
 			Enabled: false,
 		},
 		MongodbWtConcurrentTransactionTicketInUse: MongodbWtConcurrentTransactionTicketInUseMetricConfig{
@@ -1973,6 +2466,41 @@ func DefaultEventsConfig() EventsConfig {
 			Enabled: false,
 		},
 	}
+}
+
+// DbSystemVersionResourceAttributeConfig provides config for the db.system.version resource attribute.
+type DbSystemVersionResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *DbSystemVersionResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ServerAddressResourceAttributeConfig provides config for the server.address resource attribute.
@@ -2152,6 +2680,7 @@ func (rac *ServiceNamespaceResourceAttributeConfig) Unmarshal(parser *confmap.Co
 
 // ResourceAttributesConfig provides config for mongodb resource attributes.
 type ResourceAttributesConfig struct {
+	DbSystemVersion   DbSystemVersionResourceAttributeConfig   `mapstructure:"db.system.version"`
 	ServerAddress     ServerAddressResourceAttributeConfig     `mapstructure:"server.address"`
 	ServerPort        ServerPortResourceAttributeConfig        `mapstructure:"server.port"`
 	ServiceInstanceID ServiceInstanceIDResourceAttributeConfig `mapstructure:"service.instance.id"`
@@ -2161,11 +2690,14 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		DbSystemVersion: DbSystemVersionResourceAttributeConfig{
+			Enabled: false,
+		},
 		ServerAddress: ServerAddressResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServerPort: ServerPortResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
 			Enabled: true,
@@ -2183,6 +2715,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // For each enabled resource attribute with a non-nil OverrideValue,
 // the override replaces any existing value in the resource.
 func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.DbSystemVersion.Enabled && rac.DbSystemVersion.OverrideValue != nil {
+		res.Attributes().PutStr("db.system.version", *rac.DbSystemVersion.OverrideValue)
+	}
 	if rac.ServerAddress.Enabled && rac.ServerAddress.OverrideValue != nil {
 		res.Attributes().PutStr("server.address", *rac.ServerAddress.OverrideValue)
 	}
@@ -2211,11 +2746,6 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for mongodb logs builder.

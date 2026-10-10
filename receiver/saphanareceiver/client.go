@@ -102,7 +102,7 @@ func newSapHanaClient(cfg *Config, factory sapHanaConnectionFactory) client {
 }
 
 func (c *sapHanaClient) Connect(ctx context.Context) error {
-	connector, err := sapdriver.NewDSNConnector(fmt.Sprintf("hdb://%s:%s@%s", c.receiverConfig.Username, string(c.receiverConfig.Password), c.receiverConfig.TCPAddrConfig.Endpoint))
+	connectorConfig, err := sapdriver.ParseDSNConfig(fmt.Sprintf("hdb://%s:%s@%s", c.receiverConfig.Username, string(c.receiverConfig.Password), c.receiverConfig.TCPAddrConfig.Endpoint))
 	if err != nil {
 		return fmt.Errorf("error generating DSN for SAP HANA connection: %w", err)
 	}
@@ -111,8 +111,13 @@ func (c *sapHanaClient) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error generating TLS config for SAP HANA connection: %w", err)
 	}
-	connector.SetTLSConfig(tls)
-	connector.SetApplicationName("OpenTelemetry Collector")
+	connectorConfig.TLSConfig = tls
+	connectorConfig.ApplicationName = "OpenTelemetry Collector"
+
+	connector, err := sapdriver.NewConfigConnector(connectorConfig)
+	if err != nil {
+		return fmt.Errorf("error creating SAP HANA connector: %w", err)
+	}
 
 	client := c.connectionFactory.getConnection(connector)
 

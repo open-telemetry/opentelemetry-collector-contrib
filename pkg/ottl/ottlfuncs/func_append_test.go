@@ -707,14 +707,14 @@ func Test_AppendFactory(t *testing.T) {
 		factory := NewAppendFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &AppendArguments[any]{}, args)
+		assert.IsType(t, &appendArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Value", "Values"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewAppendFactory[any]()
 		args := factory.CreateDefaultArguments()
-		appendArgs, ok := args.(*AppendArguments[any])
+		appendArgs, ok := args.(*appendArguments[any])
 		require.True(t, ok)
 		appendArgs.Target = &ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -739,4 +739,34 @@ func Test_AppendFactory(t *testing.T) {
 		_, err := createAppendFunction[any](ottl.FunctionContext{}, "invalid args")
 		assert.ErrorContains(t, err, "AppendFactory args must be of type *Appendrguments[K]")
 	})
+}
+
+func BenchmarkAppendTo(b *testing.B) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{"5", "6"}, nil
+		},
+		Setter: func(_ context.Context, res, val any) error {
+			rSlice := res.(pcommon.Slice)
+			vSlice := val.(pcommon.Slice)
+			return rSlice.FromRaw(vSlice.AsRaw())
+		},
+	}
+	value := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "a", nil
+		},
+	})
+	var nilSliceOptional ottl.Optional[[]ottl.Getter[any]]
+
+	exprFunc, err := appendTo[any](target, value, nilSliceOptional)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		res := pcommon.NewSlice()
+		if _, err := exprFunc(ctx, res); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

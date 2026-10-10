@@ -17,8 +17,24 @@ COVER_DIR_ABS?=$(SRC_ROOT)/$(COVER_DIR)
 GO_BUILD_TAGS=""
 # These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
 GO_BUILD_LDFLAGS="-s -w"
+GO_COMPAT_VERSION=$(shell awk '/^go /{print $$2}' go.mod)
 GOTEST_TIMEOUT?= 900s
 GOCMD?= go
+# `|` between distinct spellings of one proxy makes Go retry any fetch error; keep in sync with setup-go-tools, prepare-release, prometheus-compliance-tests.
+ifeq ($(GITHUB_ACTIONS),true)
+export GOPROXY ?= https://proxy.golang.org|https://proxy.golang.org/|https://proxy.golang.org:443,direct
+endif
+
+# sum.golang.org is read directly (no GOPROXY fallback), so commands that verify new module sums should run via $(call retry,<cmd>).
+define retry
+for i in 1 2 3; do \
+	$(1) && break; \
+	[ $$i -lt 3 ] || { echo "failed after 3 attempts"; exit 1; }; \
+	echo "attempt $$i/3 failed, retrying in $$((i*10))s..."; \
+	sleep $$((i*10)); \
+done
+endef
+
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
@@ -27,7 +43,10 @@ GOTESTARCH?=$(GOARCH)
 # - GO-2026-5662: False positive, we use `github.com/prometheus/prometheus` 
 #   >= 0.312.0, which has the fix for this vulnerability. Besides, this doesn't
 #   affect the Collector in any way, only the Prometheus UI.
-IGNORED_VULNS = GO-2026-5662
+# - GO-2026-6443: False positive, the vulndb entry marks google.golang.org/grpc
+#   v1.84.0 as affected, but v1.84.0 contains the fix.
+#   See https://github.com/golang/vulndb/issues/6659
+IGNORED_VULNS = GO-2026-5662 GO-2026-6443
 
 # Ignore all golang-related vulnerabilities (stdlib, golang.org/x/*, google.golang.org/*, etc.)
 IGNORE_GOLANG_VULNS ?=
@@ -71,7 +90,7 @@ GO_TOOL = GOOS= GOARCH= $(GOCMD) tool -modfile=$(TOOLS_MOD_FILE)
 # which are stripped when passed to the MSYS2/Git Bash shell used by Make.
 # $(subst \,/,...) converts them to forward slashes so the shell can find the binary.
 MDATAGEN            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/mdatagen))
-ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/rhysd/actionlint/cmd/actionlint))
+ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL) -n actionlint.kjanat.dev/cmd/actionlint))
 ADDLICENSE          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/google/addlicense))
 MISSPELL            = $(subst \,/,$(shell $(GO_TOOL) -n github.com/client9/misspell/cmd/misspell -error))
 MISSPELL_CORRECTION = $(subst \,/,$(shell $(GO_TOOL) -n github.com/client9/misspell/cmd/misspell -w))
@@ -92,6 +111,7 @@ GOJQ                = $(subst \,/,$(shell $(GO_TOOL) -n github.com/itchyny/gojq/
 GOTESTSUM           = $(subst \,/,$(shell $(GO_TOOL) -n gotest.tools/gotestsum))
 CHECKAPI            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkapi))
 MODERNIZE           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize))
+SCHEMAGEN           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/schemagen))
 
 GOTESTSUM_OPT?= --rerun-fails=1
 
@@ -274,6 +294,25 @@ MDATAGEN_METADATA_YAML?= metadata.yaml
 mdatagen:
 	@$(MDATAGEN) $(MDATAGEN_METADATA_YAML)
 
+COVERAGE_PROFILE ?= $(SRC_ROOT)/coverage.txt
+
+.PHONY: check-stability
+check-stability:
+ifeq ($(CURDIR),$(SRC_ROOT))
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="check-stability-mod" COVERAGE_PROFILE="$(SRC_ROOT)/$(GROUP)-coverage.txt"
+else
+	@$(MDATAGEN) check-stability --profile=$(COVERAGE_PROFILE) $(MDATAGEN_METADATA_YAML)
+endif
+
+.PHONY: check-stability-mod
+check-stability-mod:
+	@for dir in $$(find . -name '$(MDATAGEN_METADATA_YAML)' -exec dirname {} \; | sort -u); do \
+		if ! grep -qrl 'go:generate make mdatagen' "$$dir"/*.go 2>/dev/null; then \
+			continue; \
+		fi; \
+		$(MAKE) --no-print-directory -C "$$dir" check-stability COVERAGE_PROFILE="$(COVERAGE_PROFILE)" || exit 1; \
+	done
+
 .PHONY: generate
 generate:
 ifeq ($(CURDIR),$(SRC_ROOT))
@@ -356,6 +395,8 @@ gci:
 	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $$($(ALL_SRC_AND_DOC_CMD))
 
 CHANGED_GOLANG_SOURCES?=$(shell git diff main --name-only | grep -E '.*\.go$$' | grep -v -E '.*_test\.go$$')
+# FREE_DISK_THRESHOLD_MIB: if set, runs `$(GOCMD) clean -cache -testcache` when free disk space is less than threshold.
+FREE_DISK_THRESHOLD_MIB?=
 .PHONY: for-affected-components
 for-affected-components:
 	@echo "Checking for affected components..."
@@ -372,6 +413,13 @@ for-affected-components:
 			(cd "$${dir}" && \
 				echo "running $${CMD} in $${dir}" && \
 				$${CMD} ); \
+			if [ -n "$${FREE_DISK_THRESHOLD_MIB}" ]; then \
+				avail=$$(df -BM --output=avail / | sed '1d;s/[^0-9]//g'); \
+				if [ "$${avail}" -lt "$${FREE_DISK_THRESHOLD_MIB}" ]; then \
+					echo "Available disk space $${avail} MiB is below threshold $${FREE_DISK_THRESHOLD_MIB} MiB; running 'go clean -cache -testcache'"; \
+					$(GOCMD) clean -cache -testcache; \
+				fi; \
+			fi; \
 			done \
 		fi \
 	fi
@@ -392,6 +440,10 @@ run-changed-tests:
 			echo "Failed to find the affected test directories."; \
 		else \
 			set -e; for dir in $$(echo $${AFFECTED_TEST_DIRS}); do \
+			if [ ! -d "$${dir}" ]; then \
+				echo "Skipping $${dir}: directory no longer exists."; \
+				continue; \
+			fi; \
 			(cd "$${dir}" && \
 				$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -count=3 ); \
 			done \
@@ -401,13 +453,28 @@ run-changed-tests:
 SRC ?= '$(CURDIR)'
 FLAGS ?= '-o=$(CURDIR)/'
 
-# SCHEMAGEN_PKG controls which build of go.opentelemetry.io/collector/cmd/schemagen
-# is invoked. Pinned to the post-migration commit on collector main; bump to a
-# released `@v0.x.y` once a collector release ships `cmd/schemagen`. Override on
-# the make command line for ad-hoc runs (e.g. `SCHEMAGEN_PKG=...@latest`).
-SCHEMAGEN_PKG ?= go.opentelemetry.io/collector/cmd/schemagen@v0.22.1-0.20260615181954-d04d642d0a3e
-
 .PHONY: schemagen
 schemagen:
 	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
-	go run $(SCHEMAGEN_PKG) $(FLAGS) $(SRC)
+	$(SCHEMAGEN) $(FLAGS) $(SRC)
+
+EXTERNAL_PKGS = $(shell go list ./... | grep -v -E '/internal($$|/)')
+APIDIFF_DATA_DIR ?= internal/data/apidiff
+
+.PHONY: apidiff-build-mod
+apidiff-build-mod:
+	@for pkg in $(EXTERNAL_PKGS); do \
+		$(SRC_ROOT)/internal/buildscripts/gen-apidiff.sh -p $$pkg -o $(SRC_ROOT)/$(APIDIFF_DATA_DIR) || exit 1; \
+	done
+
+.PHONY: apidiff-compare-mod
+apidiff-compare-mod:
+	@for pkg in $(EXTERNAL_PKGS); do \
+		$(SRC_ROOT)/internal/buildscripts/compare-apidiff.sh -p $$pkg -d $(SRC_ROOT)/$(APIDIFF_DATA_DIR) || exit 1; \
+	done
+
+.PHONY: apidiff-check-mod
+apidiff-check-mod:
+	@for pkg in $(EXTERNAL_PKGS); do \
+		$(SRC_ROOT)/internal/buildscripts/compare-apidiff.sh -p $$pkg -d $(SRC_ROOT)/$(APIDIFF_DATA_DIR) -c || exit 1; \
+	done

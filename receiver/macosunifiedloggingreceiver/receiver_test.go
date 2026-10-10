@@ -132,6 +132,26 @@ func TestBuildLogCommandArgs(t *testing.T) {
 		require.Contains(t, args, "--style")
 		require.Contains(t, args, "json")
 	})
+
+	t.Run("live mode resumes from last emitted record", func(t *testing.T) {
+		cursor := time.Date(2024, 1, 1, 12, 0, 3, 250000000, time.Local)
+		receiver := &unifiedLoggingReceiver{
+			config: &Config{
+				StartTime: "2024-01-01 00:00:00",
+				MaxLogAge: 24 * time.Hour,
+				Format:    "ndjson",
+			},
+			lastTimestamp: cursor,
+		}
+
+		args := receiver.buildLogCommandArgs("")
+		require.Equal(t, []string{"show", "--style", "ndjson", "--start", "2024-01-01 12:00:03"}, args)
+
+		// Archive mode does not use the live cursor
+		args = receiver.buildLogCommandArgs("./testdata/system_logs.logarchive")
+		require.Contains(t, args, "2024-01-01 00:00:00")
+		require.NotContains(t, args, "2024-01-01 12:00:03")
+	})
 }
 
 func TestProcessLogLine(t *testing.T) {
@@ -146,7 +166,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		rawLine := []byte("2024-01-01 12:00:00.123456-0700  localhost kernel[0]: (AppleACPIPlatform) AppleACPICPU: ProcessorId=0 LocalApicId=0 Enabled")
-		err := receiver.processLogLine(t.Context(), rawLine)
+		err := receiver.processLogLine(t.Context(), rawLine, receiver.parseLogLine(rawLine))
 		require.NoError(t, err)
 
 		// Verify the log was consumed
@@ -158,9 +178,10 @@ func TestProcessLogLine(t *testing.T) {
 		logRecord := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 		require.Equal(t, string(rawLine), logRecord.Body().Str())
 
-		// In default format, timestamp should only be observed (not parsed)
+		// In default format, timestamp is parsed from the leading timestamp column
 		require.NotZero(t, logRecord.ObservedTimestamp())
-		require.Zero(t, logRecord.Timestamp())
+		expectedTime, _ := time.Parse("2006-01-02 15:04:05.000000-0700", "2024-01-01 12:00:00.123456-0700")
+		require.Equal(t, expectedTime.UnixNano(), logRecord.Timestamp().AsTime().UnixNano())
 
 		// In default format, severity should not be set
 		require.Empty(t, logRecord.SeverityText())
@@ -178,7 +199,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		jsonLine := []byte(`{"timestamp":"2024-01-01 12:00:00.123456-0700","eventMessage":"Test message","messageType":"Error","subsystem":"com.test"}`)
-		err := receiver.processLogLine(t.Context(), jsonLine)
+		err := receiver.processLogLine(t.Context(), jsonLine, receiver.parseLogLine(jsonLine))
 		require.NoError(t, err)
 
 		// Verify the log was consumed
@@ -211,7 +232,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		invalidJSON := []byte(`{invalid json}`)
-		err := receiver.processLogLine(t.Context(), invalidJSON)
+		err := receiver.processLogLine(t.Context(), invalidJSON, receiver.parseLogLine(invalidJSON))
 		require.NoError(t, err)
 
 		// Verify the log was still consumed (with just the body)
@@ -239,7 +260,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		jsonLine := []byte(`{"timestamp":"2024-01-01 12:00:00.123456-0700","eventMessage":"Test message","messageType":"Debug","subsystem":"com.test"}`)
-		err := receiver.processLogLine(t.Context(), jsonLine)
+		err := receiver.processLogLine(t.Context(), jsonLine, receiver.parseLogLine(jsonLine))
 		require.NoError(t, err)
 
 		// Verify the log was consumed
@@ -270,7 +291,7 @@ func TestProcessLogLine(t *testing.T) {
 		}
 
 		jsonLine := []byte(`{"eventMessage":"Test message","subsystem":"com.test"}`)
-		err := receiver.processLogLine(t.Context(), jsonLine)
+		err := receiver.processLogLine(t.Context(), jsonLine, receiver.parseLogLine(jsonLine))
 		require.NoError(t, err)
 
 		// Verify the log was consumed
@@ -623,5 +644,114 @@ func TestReadFromLiveUsesBackoffLoop(t *testing.T) {
 	require.GreaterOrEqual(t, len(calls), 2, "expected initial run plus at least one ticker iteration")
 
 	allLogs := sink.AllLogs()
-	require.GreaterOrEqual(t, len(allLogs), 2)
+	require.Len(t, allLogs, 1, "the same record must not be emitted again by later polls")
+}
+
+func TestRunLogCommandLiveModeDoesNotReemitRecords(t *testing.T) {
+	setupFakeLogBinary(t)
+	// The fake binary returns the same window on every poll, like `log show --start` does
+	// when the window has not moved past these records yet
+	outputPath := writeFakeLogOutput(t,
+		`{"timestamp":"2024-01-01 12:00:00.000000-0700","eventMessage":"first","messageType":"Info"}`,
+		`{"timestamp":"2024-01-01 12:00:00.500000-0700","eventMessage":"second","messageType":"Info"}`,
+	)
+	t.Setenv("FAKE_LOG_OUTPUT_PATH", outputPath)
+
+	sink := &consumertest.LogsSink{}
+	receiver := newUnifiedLoggingReceiver(&Config{Format: "ndjson", MaxLogAge: 24 * time.Hour}, zap.NewNop(), sink)
+
+	count, err := receiver.runLogCommand(t.Context(), "")
+	require.NoError(t, err)
+	require.Equal(t, 2, count)
+
+	count, err = receiver.runLogCommand(t.Context(), "")
+	require.NoError(t, err)
+	require.Equal(t, 0, count, "second poll must not count records that were already emitted")
+	require.Equal(t, 2, sink.LogRecordCount(), "records must be emitted exactly once across polls")
+}
+
+func TestRunLogCommandLiveModeStartsFromLastEmittedRecord(t *testing.T) {
+	setupFakeLogBinary(t)
+	outputPath := writeFakeLogOutput(t,
+		`{"timestamp":"2024-01-01 12:00:00.000000-0700","eventMessage":"first","messageType":"Info"}`,
+		`{"timestamp":"2024-01-01 12:00:03.250000-0700","eventMessage":"second","messageType":"Info"}`,
+	)
+	t.Setenv("FAKE_LOG_OUTPUT_PATH", outputPath)
+	callsFile := filepath.Join(t.TempDir(), "calls.txt")
+	t.Setenv("FAKE_LOG_CALLS_FILE", callsFile)
+
+	receiver := newUnifiedLoggingReceiver(&Config{Format: "ndjson", MaxLogAge: 24 * time.Hour}, zap.NewNop(), &consumertest.LogsSink{})
+
+	_, err := receiver.runLogCommand(t.Context(), "")
+	require.NoError(t, err)
+	_, err = receiver.runLogCommand(t.Context(), "")
+	require.NoError(t, err)
+
+	calls := readRecordedCalls(t, callsFile)
+	require.Len(t, calls, 2)
+	last, err := time.Parse("2006-01-02 15:04:05.000000-0700", "2024-01-01 12:00:03.250000-0700")
+	require.NoError(t, err)
+	require.Contains(t, calls[1], "--start "+last.Local().Format("2006-01-02 15:04:05"),
+		"second poll must start from the last emitted record, not from now-max_log_age")
+}
+
+func TestParseLogLineTimestamp(t *testing.T) {
+	local := func(year int, month time.Month, day, hour, minute, sec, nsec int) time.Time {
+		return time.Date(year, month, day, hour, minute, sec, nsec, time.Local)
+	}
+	fixed := func(value string) time.Time {
+		ts, err := time.Parse("2006-01-02 15:04:05.000000-0700", value)
+		require.NoError(t, err)
+		return ts
+	}
+	tests := []struct {
+		name     string
+		format   string
+		line     string
+		expected time.Time
+	}{
+		{
+			name:     "ndjson",
+			format:   "ndjson",
+			line:     `{"timestamp":"2024-01-01 12:00:00.123456-0700","eventMessage":"m","messageType":"Info"}`,
+			expected: fixed("2024-01-01 12:00:00.123456-0700"),
+		},
+		{
+			name:     "ndjson without timestamp",
+			format:   "ndjson",
+			line:     `{"eventMessage":"m"}`,
+			expected: time.Time{},
+		},
+		{
+			name:     "default",
+			format:   "default",
+			line:     "2024-01-01 12:00:00.123456-0700 0xc31f3    Activity    0x1f96ea             421    0    runningboardd: message",
+			expected: fixed("2024-01-01 12:00:00.123456-0700"),
+		},
+		{
+			name:     "syslog",
+			format:   "syslog",
+			line:     "2024-01-01 12:00:00.123456-0700  localhost app[123]: message",
+			expected: fixed("2024-01-01 12:00:00.123456-0700"),
+		},
+		{
+			name:     "compact",
+			format:   "compact",
+			line:     "2024-01-01 12:00:00.123 Df app[123:1a2b] [subsystem:category] message",
+			expected: local(2024, time.January, 1, 12, 0, 0, 123000000),
+		},
+		{
+			name:     "text without timestamp",
+			format:   "default",
+			line:     "Timestamp               Thread     Type        Activity             PID",
+			expected: time.Time{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			receiver := &unifiedLoggingReceiver{config: &Config{Format: tt.format}}
+			require.WithinDuration(t, tt.expected, receiver.parseLogLine([]byte(tt.line)).timestamp, 0)
+		})
+	}
 }

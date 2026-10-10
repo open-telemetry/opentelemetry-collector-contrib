@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/prometheus_simple
+
+note: Restore the stability of the receiver from `unmaintained` to `beta`
+
+issues: [11504]
+
+subtext: ""
+
+change_logs: []

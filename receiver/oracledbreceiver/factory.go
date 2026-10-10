@@ -52,6 +52,11 @@ func createDefaultConfig() component.Config {
 			TopQueryCount:       200,
 			CollectionInterval:  time.Minute,
 		},
+		ProcedureMetrics: ProcedureMetrics{
+			MaxProcedureSampleCount: 1000,
+			TopProcedureCount:       250,
+			CollectionInterval:      time.Minute,
+		},
 	}
 }
 
@@ -174,11 +179,19 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 			return db, openErr
 		}
 
+		// 2 times the fetch limit, to keep procedures of adjacent collections available for delta calculation.
+		procedureCacheSize := sqlCfg.ProcedureMetrics.MaxProcedureSampleCount * 2
+		procedureMetricCache, err := lru.New[string, map[string]int64](int(procedureCacheSize))
+		if err != nil {
+			settings.Logger.Error("Failed to create procedure metrics LRU cache, skipping the current scraper", zap.Error(err))
+			return nil, err
+		}
+
 		mp, err := newLogsScraper(logsBuilder, sqlCfg.LogsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, providerFunc, clientProviderFunc, instanceName, metricCache, sqlCfg.TopQueryCollection, sqlCfg.QuerySample, sqlCfg.SessionWaitEvent, hostName, func() {
 			if dbCleanup != nil {
 				dbCleanup()
 			}
-		})
+		}, procedureMetricCache, sqlCfg.ProcedureMetrics)
 		if err != nil {
 			return nil, err
 		}
