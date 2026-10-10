@@ -336,6 +336,7 @@ receiver/redisreceiver receiver/redis
 receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
 receiver/signalfxreceiver receiver/signalfx
+receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
 receiver/snmpreceiver receiver/snmp
 receiver/snowflakereceiver receiver/snowflake
@@ -369,4 +370,3 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-receiver/simpleprometheusreceiver receiver/simpleprometheus

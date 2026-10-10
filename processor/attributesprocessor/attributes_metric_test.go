@@ -50,6 +50,12 @@ func generateMetricData(resourceName string, attrs map[string]any) pmetric.Metri
 	return md
 }
 
+func generateMetricsOneEmptyMetric() pmetric.Metrics {
+	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+	return md
+}
+
 // TestMetricProcessor_Values tests all possible value types.
 func TestMetricProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyMetricTestCase struct {
@@ -57,7 +63,6 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		input  pmetric.Metrics
 		output pmetric.Metrics
 	}
-	// TODO: Add test for "nil" Metric/Attributes. This needs support from data slices to allow to construct that.
 	metricTestCases := []nilEmptyMetricTestCase{
 		{
 			name:   "empty",
@@ -79,6 +84,26 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 			input:  testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
 			output: testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
 		},
+		{
+			name:   "one-empty-metric",
+			input:  generateMetricsOneEmptyMetric(),
+			output: generateMetricsOneEmptyMetric(),
+		},
+		{
+			name:   "one-metric-no-attributes",
+			input:  testdata.GenerateMetricsOneMetricNoAttributes(),
+			output: testdata.GenerateMetricsOneMetricNoAttributes(),
+		},
+		{
+			name:   "all-types-no-data-points",
+			input:  testdata.GenerateMetricsAllTypesNoDataPoints(),
+			output: testdata.GenerateMetricsAllTypesNoDataPoints(),
+		},
+		{
+			name:   "all-types-empty-data-point",
+			input:  testdata.GenerateMetricsAllTypesEmptyDataPoint(),
+			output: testdata.GenerateMetricsAllTypesEmptyDataPoint(),
+		},
 	}
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -95,7 +120,7 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		tc := metricTestCases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			assert.NoError(t, mp.ConsumeMetrics(t.Context(), tc.input))
-			assert.Equal(t, tc.output, tc.input)
+			assert.NoError(t, pmetrictest.CompareMetrics(tc.output, tc.input))
 		})
 	}
 }

@@ -64,7 +64,7 @@ exporter/elasticsearchexporter/                                  @open-telemetry
 exporter/faroexporter/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
 exporter/fileexporter/                                           @open-telemetry/collector-contrib-approvers @paulojmdias
 exporter/googlecloudexporter/                                    @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
-exporter/googlecloudpubsubexporter/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
+exporter/googlecloudpubsubexporter/                              @open-telemetry/collector-contrib-approvers @alexvanboxel @braydonk @dpaasman00
 exporter/googlecloudstorageexporter/                             @open-telemetry/collector-contrib-approvers @constanca-m @braydonk
 exporter/googlemanagedprometheusexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
 exporter/honeycombmarkerexporter/                                @open-telemetry/collector-contrib-approvers @robbkidd
@@ -178,7 +178,7 @@ pkg/kafka/topic/                                                 @open-telemetry
 pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 pkg/ottl/contexts/xprofile/                                      @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 pkg/ottl/xottl/                                                  @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
-pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers
+pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers @dmitryax @singhvibhanshu
 pkg/resourcetotelemetry/                                         @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/sampling/                                                    @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
 pkg/semconvtest/                                                 @open-telemetry/collector-contrib-approvers @braydonk
@@ -268,7 +268,7 @@ receiver/awsfirehosereceiver/                                    @open-telemetry
 receiver/awslambdareceiver/                                      @open-telemetry/collector-contrib-approvers @MichaelKatsoulis @Kavindu-Dodan @pjanotti
 receiver/awss3receiver/                                          @open-telemetry/collector-contrib-approvers @atoulme @adcharre
 receiver/awsxrayreceiver/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
-receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi @dyl10s
+receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dyl10s
 receiver/azureeventhubreceiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @cparkins @dyl10s
 receiver/azurefunctionsreceiver/                                 @open-telemetry/collector-contrib-approvers @jmacd @MichaelKatsoulis @constanca-m
 receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @celian-garcia @ishleenk17
@@ -296,7 +296,7 @@ receiver/githubreceiver/                                         @open-telemetry
 receiver/gitlabreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @niwoerner
 receiver/googlecloudmonitoringreceiver/                          @open-telemetry/collector-contrib-approvers @dashpole
 receiver/googlecloudpubsubpushreceiver/                          @open-telemetry/collector-contrib-approvers @constanca-m
-receiver/googlecloudpubsubreceiver/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
+receiver/googlecloudpubsubreceiver/                              @open-telemetry/collector-contrib-approvers @alexvanboxel @braydonk @dpaasman00
 receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @nsj07
 receiver/haproxyreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                                    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
@@ -355,8 +355,9 @@ receiver/redisreceiver/                                          @open-telemetry
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers @armstrmi
 receiver/saphanareceiver/                                        @open-telemetry/collector-contrib-approvers @dehaansa
 receiver/signalfxreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/simpleprometheusreceiver/                               @open-telemetry/collector-contrib-approvers @s3onghyun
 receiver/skywalkingreceiver/                                     @open-telemetry/collector-contrib-approvers @JaredTan95
-receiver/snmpreceiver/                                           @open-telemetry/collector-contrib-approvers @ajimenez1503
+receiver/snmpreceiver/                                           @open-telemetry/collector-contrib-approvers @ajimenez1503 @svencowart
 receiver/snowflakereceiver/                                      @open-telemetry/collector-contrib-approvers @dmitryax @shalper2
 receiver/solacereceiver/                                         @open-telemetry/collector-contrib-approvers @mcardy
 receiver/splunkenterprisereceiver/                               @open-telemetry/collector-contrib-approvers @shalper2 @MovieStoreGuy @greatestusername
@@ -410,6 +411,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 
 # Start unmaintained components list
 
-receiver/simpleprometheusreceiver/                               @open-telemetry/collector-contrib-approvers
+
 
 # End unmaintained components list

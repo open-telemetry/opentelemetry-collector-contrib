@@ -49,7 +49,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
@@ -90,6 +89,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth

@@ -6,7 +6,7 @@ status:
   stability:
     beta: [traces, metrics, logs]
   distributions: [contrib]
-  unsupported_platforms: [aix, solaris]
+  unsupported_platforms: [aix, freebsd, solaris]
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, jade-guiton-dd, IbraheemA]
     emeritus: [gbbr, jackgopack4, ankitpatel96]
@@ -32,6 +32,9 @@ feature_gates:
       When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent.
     from_version: v0.122.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/37930
+
+sending_queue:
+  support: default
 
 tests:
   config:
