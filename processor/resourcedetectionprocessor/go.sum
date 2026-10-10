@@ -462,6 +462,8 @@ go.opentelemetry.io/contrib/detectors/hetzner v0.19.0 h1:bt2D4vPOIxDjgvZiBQ69UhM
 go.opentelemetry.io/contrib/detectors/hetzner v0.19.0/go.mod h1:FOnmN7SZe1oDvotWLiZSmUdHG9hFE4KQvJeI3A+whfI=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0 h1:jxs+/EjbVFUyPmqWWF/4FZ8mzdKrjcjTE9FLAuK8g/c=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0/go.mod h1:6ZgR/POYxoG0KRkequLUifFH4SIKPmwyEeOCty2qsZU=
+go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0 h1:rDvASawsxGFjokcb1ztkpMGq/A3+Hk60hOhemPLeWT4=
+go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0/go.mod h1:Z6X+V9BjLNC5vNwOjE7c03lkQfvOhj5QsLP06/jJW/o=
 go.opentelemetry.io/contrib/detectors/vultr v0.19.0 h1:xFmRazM+v0Kbk7YbkgeX5JajCL5HC+U6cGN3gbpow6k=
 go.opentelemetry.io/contrib/detectors/vultr v0.19.0/go.mod h1:Jmz+cuPSup8pd8LOSRPd7ioFoy+n9Z8ScYmCXbgpQVo=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 h1:oECp5f+hN7nkwjU/8BxQ/q23bGPb8FIrD839owX222E=
