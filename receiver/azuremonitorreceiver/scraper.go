@@ -103,6 +103,17 @@ func (*timeWrapper) Now() time.Time {
 	return time.Now()
 }
 
+func logDataPointDelay(logger *zap.Logger, resourceID, metricName string, collectionTime, dataPointTimestamp time.Time) {
+	logger.Debug(
+		"Emitting Azure Metric data point",
+		zap.String("resource_id", resourceID),
+		zap.String("metric_name", metricName),
+		zap.Time("collection_time", collectionTime),
+		zap.Time("data_point_timestamp", dataPointTimestamp),
+		zap.Duration("data_point_delay", collectionTime.Sub(dataPointTimestamp)),
+	)
+}
+
 type storageAccountSpecificConfig struct {
 	askedBlobServices  bool
 	askedFileServices  bool
@@ -597,7 +608,8 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 		zap.String("resource_id", resourceID),
 		zap.String("subscription_id", subscriptionID))
 	res := *s.resources[subscriptionID][resourceID]
-	updatedAt := s.time.Now().Truncate(truncateTimeGrain)
+	collectionTime := s.time.Now().UTC()
+	updatedAt := collectionTime.Truncate(truncateTimeGrain)
 
 	clientMetricsValues, clientErr := armmonitor.NewMetricsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
 	if clientErr != nil {
@@ -690,8 +702,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 
 						lastTime, exists := metricsByGrain.lastEmittedTimestamps[tsKeyPrefix]
 						if !exists || t.After(lastTime) {
-							pts := pcommon.NewTimestampFromTime(t)
-							s.processTimeseriesData(resourceID, metric, metricValue, attributes, pts)
+							s.processTimeseriesData(resourceID, metric, metricValue, attributes, collectionTime)
 							metricsByGrain.lastEmittedTimestamps[tsKeyPrefix] = t
 						}
 					}
@@ -733,10 +744,15 @@ func (s *azureScraper) processTimeseriesData(
 	metric *armmonitor.Metric,
 	metricValue *armmonitor.MetricValue,
 	attributes map[string]*string,
-	ts pcommon.Timestamp,
+	collectionTime time.Time,
 ) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+
+	dataPointTimestamp := *metricValue.TimeStamp
+	ts := pcommon.NewTimestampFromTime(dataPointTimestamp)
+	metricName := *metric.Name.Value
+	loggedDelay := false
 
 	aggregationsData := []struct {
 		name  string
@@ -750,9 +766,13 @@ func (s *azureScraper) processTimeseriesData(
 	}
 	for _, aggregation := range aggregationsData {
 		if aggregation.value != nil {
+			if !loggedDelay {
+				logDataPointDelay(s.settings.Logger, resourceID, metricName, collectionTime, dataPointTimestamp)
+				loggedDelay = true
+			}
 			s.mb.AddDataPoint(
 				resourceID,
-				*metric.Name.Value,
+				metricName,
 				aggregation.name,
 				string(*metric.Unit),
 				attributes,
