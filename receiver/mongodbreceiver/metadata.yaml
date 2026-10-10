@@ -681,6 +681,16 @@ metrics:
       value_type: int
       monotonic: true
     attributes: [operation]
+  mongodb.operation.latency.count:
+    description: The number of operations included in the operation latency statistics.
+    stability: development
+    unit: "{operation}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [operation_latency]
   mongodb.operation.latency.time:
     description: The latency of operations.
     stability: development
@@ -758,6 +768,15 @@ metrics:
       monotonic: false
   mongodb.query_executor.collection_scan.count:
     description: The number of queries that performed a collection scan.
+    stability: development
+    unit: "{query}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+  mongodb.query_executor.collection_scan.non_tailable.count:
+    description: The number of queries that performed a collection scan without a tailable cursor.
     stability: development
     unit: "{query}"
     enabled: false

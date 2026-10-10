@@ -900,6 +900,10 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordLatencyTime(now, document, errs)
 	}
 
+	if s.config.MetricsBuilderConfig.Metrics.MongodbOperationLatencyCount.Enabled {
+		s.recordLatencyCount(now, document, errs)
+	}
+
 	if s.config.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled {
 		s.recordUptime(now, document, errs)
 	}
@@ -954,6 +958,10 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled {
 		s.recordQueryExecutorCollectionScans(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanNonTailableCount.Enabled {
+		s.recordQueryExecutorNonTailableCollectionScans(now, document, errs)
 	}
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbPageFaults.Enabled {
