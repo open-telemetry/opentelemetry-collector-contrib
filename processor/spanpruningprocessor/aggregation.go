@@ -4,10 +4,11 @@
 package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
+	"bytes"
 	"encoding/binary"
-	"math/rand/v2"
+	"hash/fnv"
+	"slices"
 	"sort"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -53,12 +54,42 @@ func findLongestDurationNode(nodes []*spanNode) *spanNode {
 	return longest
 }
 
-// generateSpanID produces a non-cryptographic span ID suitable for summary
-// spans; uniqueness is sufficient, not randomness strength.
-func generateSpanID() pcommon.SpanID {
-	var id [8]byte
-	binary.BigEndian.PutUint64(id[:], rand.Uint64())
-	return pcommon.SpanID(id)
+// summarySpanIDFor returns a summary SpanID that is stable across runs. A group
+// holding summaries from an earlier run keeps the earliest one's ID, so the
+// summary stays addressable as late spans fold into it. Otherwise the ID hashes
+// the trace ID and the sorted member SpanIDs, so repeating a run over the same
+// spans repeats the ID while disjoint batches of one trace get distinct ones.
+func summarySpanIDFor(nodes []*spanNode) pcommon.SpanID {
+	var reuse *spanNode
+	for _, n := range nodes {
+		if n.existingSummary != nil && (reuse == nil || nodeOrderLess(n, reuse)) {
+			reuse = n
+		}
+	}
+	if reuse != nil {
+		return reuse.span.SpanID()
+	}
+
+	ids := make([]pcommon.SpanID, len(nodes))
+	for i, n := range nodes {
+		ids[i] = n.span.SpanID()
+	}
+	slices.SortFunc(ids, func(a, b pcommon.SpanID) int {
+		return bytes.Compare(a[:], b[:])
+	})
+	h := fnv.New64a()
+	traceID := nodes[0].span.TraceID()
+	h.Write(traceID[:])
+	for _, id := range ids {
+		h.Write(id[:])
+	}
+	sum := h.Sum64()
+	if sum == 0 {
+		sum = 1 // an all-zero SpanID is invalid
+	}
+	var id pcommon.SpanID
+	binary.BigEndian.PutUint64(id[:], sum)
+	return id
 }
 
 // buildAggregationPlan sorts aggregation groups by depth (parents before
@@ -77,7 +108,7 @@ func (*spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationG
 
 	// Pre-assign SpanIDs for all summary spans
 	for i := range groupSlice {
-		groupSlice[i].summarySpanID = generateSpanID()
+		groupSlice[i].summarySpanID = summarySpanIDFor(groupSlice[i].nodes)
 	}
 
 	return aggregationPlan{groups: groupSlice}
@@ -89,6 +120,11 @@ func (*spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationG
 func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *traceTree) int {
 	prunedCount := 0
 	prefix := p.config.AggregationAttributePrefix
+	// mergedInto maps a prior run's summary SpanID to the summary it merged into.
+	var mergedInto map[string]ptrace.Span
+	// created holds this run's summaries, one of which may reuse the SpanID of
+	// a prior summary that the removal pass below looks up by ID.
+	created := make(map[ptrace.Span]struct{}, len(plan.groups))
 
 	for i := range plan.groups {
 		group := &plan.groups[i]
@@ -104,7 +140,16 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 		}
 
 		// Create summary span with correct parent
-		p.createSummarySpanWithParent(*group, data, summaryParentID)
+		summary := p.createSummarySpanWithParent(*group, data, summaryParentID)
+		created[summary] = struct{}{}
+		for _, node := range group.nodes {
+			if node.existingSummary != nil {
+				if mergedInto == nil {
+					mergedInto = make(map[string]ptrace.Span)
+				}
+				mergedInto[node.span.SpanID().String()] = summary
+			}
+		}
 
 		// Mark preserved outliers with reference to summary span.
 		for _, outlier := range group.preservedOutliers {
@@ -132,6 +177,9 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 		prunedCount += len(group.nodes)
 	}
 
+	// Must run before removal below, which invalidates the removed spans.
+	relinkPriorKept(tree.priorKept, mergedInto, prefix)
+
 	// Collect unique ScopeSpans that contain marked nodes, then remove in a
 	// single pass per ScopeSpans using the tree's flags set during analysis.
 	seen := make(map[ptrace.ScopeSpans]struct{})
@@ -142,6 +190,9 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan, tree *t
 	}
 	for scopeSpans := range seen {
 		scopeSpans.Spans().RemoveIf(func(span ptrace.Span) bool {
+			if _, ok := created[span]; ok {
+				return false
+			}
 			n, ok := tree.nodeByID[span.SpanID()]
 			return ok && n.markedForRemoval
 		})
@@ -159,6 +210,8 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 	templateSpan := templateNode.span
 	scopeSpans := templateNode.scopeSpans
 
+	prefix := p.config.AggregationAttributePrefix
+
 	// Create new span in the same ScopeSpans as the first span
 	newSpan := scopeSpans.Spans().AppendEmpty()
 
@@ -173,8 +226,13 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 	newSpan.SetStartTimestamp(data.earliestStart)
 	newSpan.SetEndTimestamp(data.latestEnd)
 
-	// Copy attributes from template
+	// Drop the aggregation attributes the template carried: only the subset this
+	// run recomputes is rewritten below, so the rest would leak through stale
+	// when the template is itself a summary from an earlier run.
 	templateSpan.Attributes().CopyTo(newSpan.Attributes())
+	newSpan.Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+		return isAggregationAttr(k, prefix)
+	})
 
 	// Copy status from template
 	templateSpan.Status().CopyTo(newSpan.Status())
@@ -187,15 +245,21 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 	templateSpan.Links().CopyTo(newSpan.Links())
 
 	// Add aggregation statistics as attributes
-	prefix := p.config.AggregationAttributePrefix
-	newSpan.Attributes().PutBool(prefix+"is_summary", true)
-	newSpan.Attributes().PutInt(prefix+"span_count", data.count)
-	newSpan.Attributes().PutInt(prefix+"duration_min_ns", int64(data.minDuration))
-	newSpan.Attributes().PutInt(prefix+"duration_max_ns", int64(data.maxDuration))
-	newSpan.Attributes().PutInt(prefix+"duration_total_ns", int64(data.sumDuration))
+	newSpan.Attributes().PutBool(prefix+attrIsSummary, true)
+	newSpan.Attributes().PutInt(prefix+attrSpanCount, data.count)
+	newSpan.Attributes().PutInt(prefix+attrDurationMin, int64(data.minDuration))
+	newSpan.Attributes().PutInt(prefix+attrDurationMax, int64(data.maxDuration))
+	newSpan.Attributes().PutInt(prefix+attrDurationTotal, int64(data.sumDuration))
 	if data.count > 0 {
 		newSpan.Attributes().PutInt(prefix+"duration_avg_ns", int64(data.sumDuration)/data.count)
 	}
+	// Record the aggregation level this group sat at (0 = leaf-level, >=1 = that
+	// many levels above the leaves). Once the group's children are deleted a
+	// parent-level summary is structurally a leaf, so this attribute is the only
+	// way a later run can tell how much subtree it stands for. Always written,
+	// even when merge_existing_summaries is off, because the run that reads it
+	// is not the run that wrote it.
+	newSpan.Attributes().PutInt(prefix+attrAggregationLvl, int64(group.depth))
 
 	// Add outlier analysis attributes when enabled.
 	if group.outlierAnalysis != nil {
@@ -227,16 +291,19 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 		}
 	}
 
-	// Add histogram attributes if enabled.
-	if len(p.config.AggregationHistogramBuckets) > 0 {
+	// Add histogram attributes if enabled. The bounds come from the aggregation
+	// data rather than the configuration: a merged summary keeps the bounds its
+	// historical counts were bucketed against, and the data carries no bounds at
+	// all when the histogram had to be dropped.
+	if len(data.bucketBoundsS) > 0 {
 		// Add bucket bounds in seconds.
-		bucketBoundsSlice := newSpan.Attributes().PutEmptySlice(prefix + "histogram_bucket_bounds_s")
-		for _, bucket := range p.config.AggregationHistogramBuckets {
-			bucketBoundsSlice.AppendEmpty().SetDouble(float64(bucket) / float64(time.Second))
+		bucketBoundsSlice := newSpan.Attributes().PutEmptySlice(prefix + attrHistogramBounds)
+		for _, bound := range data.bucketBoundsS {
+			bucketBoundsSlice.AppendEmpty().SetDouble(bound)
 		}
 
 		// Add cumulative bucket counts.
-		bucketCountsSlice := newSpan.Attributes().PutEmptySlice(prefix + "histogram_bucket_counts")
+		bucketCountsSlice := newSpan.Attributes().PutEmptySlice(prefix + attrHistogramCounts)
 		for _, count := range data.bucketCounts {
 			bucketCountsSlice.AppendEmpty().SetInt(count)
 		}
