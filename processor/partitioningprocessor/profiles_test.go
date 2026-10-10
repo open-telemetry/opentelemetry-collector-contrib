@@ -6,10 +6,14 @@ package partitioningprocessor
 import (
 	"testing"
 
+	"github.com/open-telemetry/sig-profiling/profcheck"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/testdata"
+	otlpprofiles "go.opentelemetry.io/proto/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 )
 
 // --- parser tests ---
@@ -61,7 +65,7 @@ func TestNewProfilesPartitioner_InvalidExpression(t *testing.T) {
 // --- partitioner tests ---
 
 func TestPartitionProfiles_ResourcePartitioning(t *testing.T) {
-	pd := pprofile.NewProfiles()
+	pd := newTestProfiles()
 	for _, tenant := range []string{"t1", "t2", "t1"} {
 		rp := pd.ResourceProfiles().AppendEmpty()
 		rp.Resource().Attributes().PutStr("tenant.id", tenant)
@@ -76,6 +80,7 @@ func TestPartitionProfiles_ResourcePartitioning(t *testing.T) {
 	counts := make(map[string]int)
 	for _, pp := range result {
 		require.Len(t, pp.values, 1)
+		requireConformant(t, pp.data)
 		counts[pp.values[0].value] = pp.data.ResourceProfiles().Len()
 	}
 	assert.Equal(t, 2, counts["t1"])
@@ -83,7 +88,7 @@ func TestPartitionProfiles_ResourcePartitioning(t *testing.T) {
 }
 
 func TestPartitionProfiles_ScopePartitioning(t *testing.T) {
-	pd := pprofile.NewProfiles()
+	pd := newTestProfiles()
 	rp := pd.ResourceProfiles().AppendEmpty()
 
 	sp1 := rp.ScopeProfiles().AppendEmpty()
@@ -102,6 +107,7 @@ func TestPartitionProfiles_ScopePartitioning(t *testing.T) {
 	scopes := make(map[string]bool)
 	for _, pp := range result {
 		require.Len(t, pp.values, 1)
+		requireConformant(t, pp.data)
 		scopes[pp.values[0].value] = true
 	}
 	assert.True(t, scopes["scope-a"])
@@ -109,7 +115,7 @@ func TestPartitionProfiles_ScopePartitioning(t *testing.T) {
 }
 
 func TestPartitionProfiles_ProfilePartitioning(t *testing.T) {
-	pd := pprofile.NewProfiles()
+	pd := newTestProfiles()
 	rp := pd.ResourceProfiles().AppendEmpty()
 	sp := rp.ScopeProfiles().AppendEmpty()
 
@@ -125,6 +131,7 @@ func TestPartitionProfiles_ProfilePartitioning(t *testing.T) {
 	counts := make(map[string]int)
 	for _, pp := range result {
 		require.Len(t, pp.values, 1)
+		requireConformant(t, pp.data)
 		require.Equal(t, 1, pp.data.ResourceProfiles().Len())
 		require.Equal(t, 1, pp.data.ResourceProfiles().At(0).ScopeProfiles().Len())
 		counts[pp.values[0].value] = pp.data.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().Len()
@@ -134,14 +141,14 @@ func TestPartitionProfiles_ProfilePartitioning(t *testing.T) {
 }
 
 func TestPartitionProfiles_EmptyInput(t *testing.T) {
-	result := partitionProfiles(t, pprofile.NewProfiles(),
+	result := partitionProfiles(t, newTestProfiles(),
 		`resource.attributes["tenant.id"]`,
 	)
 	assert.Empty(t, result)
 }
 
 func TestPartitionProfiles_NilAttributeValue(t *testing.T) {
-	pd := pprofile.NewProfiles()
+	pd := newTestProfiles()
 	rp := pd.ResourceProfiles().AppendEmpty()
 	rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 
@@ -154,7 +161,7 @@ func TestPartitionProfiles_NilAttributeValue(t *testing.T) {
 }
 
 func TestPartitionProfiles_PreservesSchemaURL(t *testing.T) {
-	pd := pprofile.NewProfiles()
+	pd := newTestProfiles()
 	rp := pd.ResourceProfiles().AppendEmpty()
 	rp.SetSchemaUrl("https://example.com/resource-schema")
 	sp := rp.ScopeProfiles().AppendEmpty()
@@ -172,19 +179,21 @@ func TestPartitionProfiles_PreservesSchemaURL(t *testing.T) {
 }
 
 func TestPartitionProfiles_PreservesDictionary(t *testing.T) {
-	pd := pprofile.NewProfiles()
+	pd := newTestProfiles()
 	dict := pd.Dictionary()
-	dict.StringTable().Append("attr.key")
-	dict.StringTable().Append("unit")
+	keyIdx := int32(dict.StringTable().Len())
+	dict.StringTable().Append("attr.key", "unit")
+	attrIdx := int32(dict.AttributeTable().Len())
 	attr := dict.AttributeTable().AppendEmpty()
-	attr.SetKeyStrindex(0)
-	attr.SetUnitStrindex(1)
+	attr.SetKeyStrindex(keyIdx)
+	attr.SetUnitStrindex(keyIdx + 1)
+	attr.Value().SetStr("v")
 
 	rp := pd.ResourceProfiles().AppendEmpty()
 	rp.Resource().Attributes().PutStr("tenant.id", "t1")
 	sp := rp.ScopeProfiles().AppendEmpty()
 	profile := sp.Profiles().AppendEmpty()
-	profile.AttributeIndices().Append(0)
+	profile.AttributeIndices().Append(attrIdx)
 
 	result := partitionProfiles(t, pd,
 		`resource.attributes["tenant.id"]`,
@@ -192,9 +201,10 @@ func TestPartitionProfiles_PreservesDictionary(t *testing.T) {
 	require.Len(t, result, 1)
 
 	got := result[0].data
-	assert.Equal(t, 2, got.Dictionary().StringTable().Len(), "partitioned profiles should retain referenced dictionary strings")
-	assert.Equal(t, 1, got.Dictionary().AttributeTable().Len(), "partitioned profiles should retain referenced dictionary attributes")
-	assert.Equal(t, int32(0), got.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).AttributeIndices().At(0))
+	assert.Equal(t, dict.StringTable().Len(), got.Dictionary().StringTable().Len(), "partitioned profiles should retain referenced dictionary strings")
+	assert.Equal(t, dict.AttributeTable().Len(), got.Dictionary().AttributeTable().Len(), "partitioned profiles should retain referenced dictionary attributes")
+	assert.Equal(t, attrIdx, got.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).AttributeIndices().At(0))
+	requireConformant(t, got)
 }
 
 func partitionProfiles(t *testing.T, pd pprofile.Profiles, expressions ...string) []partitionedProfiles {
@@ -204,4 +214,25 @@ func partitionProfiles(t *testing.T, pd pprofile.Profiles, expressions ...string
 	result, err := p.partitionProfiles(t.Context(), pd)
 	require.NoError(t, err)
 	return result
+}
+
+// newTestProfiles returns Profiles with a conventional dictionary (an empty
+// entry at index 0 of every table) and no resource profiles.
+func newTestProfiles() pprofile.Profiles {
+	pd := testdata.GenerateProfiles(0)
+	pd.ResourceProfiles().RemoveIf(func(pprofile.ResourceProfiles) bool { return true })
+	return pd
+}
+
+// requireConformant checks pd against the profiling SIG conformance checker.
+// The pinned profcheck does not yet check for unreferenced dictionary entries,
+// so it cannot detect the entries each partition inherits from the full input
+// dictionary (see the README's known limitations).
+func requireConformant(t *testing.T, pd pprofile.Profiles) {
+	t.Helper()
+	b, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(pd)
+	require.NoError(t, err)
+	var data otlpprofiles.ProfilesData
+	require.NoError(t, proto.Unmarshal(b, &data))
+	require.NoError(t, profcheck.ConformanceChecker{CheckDictionaryDuplicates: true}.Check(&data))
 }

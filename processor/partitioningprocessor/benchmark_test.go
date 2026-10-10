@@ -182,7 +182,7 @@ func genBenchMetrics(dpLevel bool, parts int) pmetric.Metrics {
 const benchProfilesPerScope = 50
 
 func genBenchProfiles(parts int) pprofile.Profiles {
-	pd := pprofile.NewProfiles()
+	pd := newTestProfiles()
 	pi := 0
 	for range benchResources {
 		rp := pd.ResourceProfiles().AppendEmpty()

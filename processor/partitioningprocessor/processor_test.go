@@ -648,7 +648,7 @@ func TestConsumeProfiles_Basic(t *testing.T) {
 		"tenant_id": `resource.attributes["tenant.id"]`,
 	}}, next)
 
-	profiles := pprofile.NewProfiles()
+	profiles := newTestProfiles()
 	rp := profiles.ResourceProfiles().AppendEmpty()
 	rp.Resource().Attributes().PutStr("tenant.id", "acme")
 	rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
@@ -679,7 +679,7 @@ func TestConsumeProfiles_OTelColContext_ClientMetadata(t *testing.T) {
 		}),
 	})
 
-	profiles := pprofile.NewProfiles()
+	profiles := newTestProfiles()
 	profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 
 	require.NoError(t, proc.ConsumeProfiles(ctx, profiles))
@@ -693,7 +693,7 @@ func TestConsumeProfiles_NonStringKeyIsPermanentError(t *testing.T) {
 		"count": `resource.attributes["count"]`,
 	}}, consumertest.NewNop())
 
-	profiles := pprofile.NewProfiles()
+	profiles := newTestProfiles()
 	rp := profiles.ResourceProfiles().AppendEmpty()
 	rp.Resource().Attributes().PutInt("count", 1)
 	rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
