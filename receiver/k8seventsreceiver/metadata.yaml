@@ -20,6 +20,11 @@ tests:
         # The e2e tests use a real k8s client whose HTTP/2 connection to the API
         # server keeps a readLoop goroutine alive past the test.
         - "golang.org/x/net/http2.(*ClientConn).readLoop"
+        # HTTP/1.1 keep-alive connections from the k8s client (e.g. discovery or
+        # watch fallback) are not always returned to the idle pool before goleak
+        # checks; these are test-infrastructure goroutines, not production leaks.
+        - "net/http.(*persistConn).readLoop"
+        - "net/http.(*persistConn).writeLoop"
 
 telemetry:
   metrics:
