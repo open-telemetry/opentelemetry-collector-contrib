@@ -379,7 +379,7 @@ func (p *connectorImp) resetState() {
 
 		// If none of these features are enabled then we can skip the remaining operations.
 		// Enabling either of these features requires to go over resource metrics and do operation on each.
-		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 && p.config.SeriesExpiration == 0 && !p.config.Exemplars.Enabled {
+		if p.config.MetricsExpiration == 0 && p.config.SeriesExpiration == 0 && !p.config.Exemplars.Enabled {
 			return
 		}
 
