@@ -22,11 +22,22 @@ import (
 type MockKinesisAPI struct {
 	producer.Kinesis
 
-	op func(*kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error)
+	op     func(*kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error)
+	descOp func(*kinesis.DescribeStreamInput) (*kinesis.DescribeStreamOutput, error)
 }
 
 func (mka *MockKinesisAPI) PutRecords(_ context.Context, r *kinesis.PutRecordsInput, _ ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error) {
-	return mka.op(r)
+	if mka.op != nil {
+		return mka.op(r)
+	}
+	return nil, nil
+}
+
+func (mka *MockKinesisAPI) DescribeStream(_ context.Context, r *kinesis.DescribeStreamInput, _ ...func(*kinesis.Options)) (*kinesis.DescribeStreamOutput, error) {
+	if mka.descOp != nil {
+		return mka.descOp(r)
+	}
+	return nil, nil
 }
 
 func SetPutRecordsOperation(op func(r *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error)) producer.Kinesis {
@@ -101,6 +112,55 @@ func TestBatchedExporter(t *testing.T) {
 			assert.Error(t, err, "Must have returned an error for this test case")
 			if tc.isPermanent {
 				assert.True(t, consumererror.IsPermanent(err), "Must have returned a permanent error")
+			}
+		})
+	}
+}
+
+func TestBatcherReady(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		descOp    func(*kinesis.DescribeStreamInput) (*kinesis.DescribeStreamOutput, error)
+		shouldErr bool
+	}{
+		{
+			name: "Successful DescribeStream",
+			descOp: func(_ *kinesis.DescribeStreamInput) (*kinesis.DescribeStreamOutput, error) {
+				return &kinesis.DescribeStreamOutput{}, nil
+			},
+			shouldErr: false,
+		},
+		{
+			name: "LimitExceededException rate limit should log warning and not error",
+			descOp: func(_ *kinesis.DescribeStreamInput) (*kinesis.DescribeStreamOutput, error) {
+				return nil, &types.LimitExceededException{Message: aws.String("Rate exceeded for stream")}
+			},
+			shouldErr: false,
+		},
+		{
+			name: "ResourceNotFoundException should return error",
+			descOp: func(_ *kinesis.DescribeStreamInput) (*kinesis.DescribeStreamOutput, error) {
+				return nil, &types.ResourceNotFoundException{Message: aws.String("Stream not found")}
+			},
+			shouldErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			be, err := producer.NewBatcher(
+				&MockKinesisAPI{descOp: tc.descOp},
+				"test-stream",
+				producer.WithLogger(zaptest.NewLogger(t)),
+			)
+			require.NoError(t, err)
+			err = be.Ready(t.Context())
+			if tc.shouldErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
