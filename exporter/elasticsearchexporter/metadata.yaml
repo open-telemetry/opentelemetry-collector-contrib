@@ -4,8 +4,8 @@ display_name: Elasticsearch Exporter
 status:
   class: exporter
   stability:
-    beta: [traces, logs]
-    development: [metrics, profiles]
+    beta: [traces, logs, metrics]
+    development: [profiles]
   distributions: [contrib]
   codeowners:
     active: [JaredTan95, blakerouse, carsonip, lahsivjar]
@@ -114,6 +114,19 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+sending_queue:
+  support: has_overrides
+  overrides:
+    enabled: true
+    queue_size: 10
+    block_on_overflow: true
+    batch:
+      enabled: true
+      flush_timeout: 10s
+      sizer: bytes
+      min_size: 1000000
+      max_size: 5000000
 
 tests:
   config:

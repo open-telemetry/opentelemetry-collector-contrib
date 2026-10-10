@@ -122,7 +122,7 @@ func TestFactory(t *testing.T) {
 
 				databaseIOScraperFound := false
 				for _, scraper := range sqlScrapers {
-					if scraper.sqlQuery == getSQLServerDatabaseIOQuery(cfg.InstanceName) {
+					if scraper.sqlQuery == getSQLServerDatabaseIOQuery() {
 						databaseIOScraperFound = true
 						break
 					}
@@ -135,7 +135,7 @@ func TestFactory(t *testing.T) {
 
 				databaseIOScraperFound = false
 				for _, scraper := range sqlScrapers {
-					if scraper.sqlQuery == getSQLServerDatabaseIOQuery(cfg.InstanceName) {
+					if scraper.sqlQuery == getSQLServerDatabaseIOQuery() {
 						databaseIOScraperFound = true
 						break
 					}
