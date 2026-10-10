@@ -170,7 +170,11 @@ func (r *bulkRecorder) countItems() (count int) {
 }
 
 func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
-	return newESTestServerBulkHandlerFunc(t, handleErr(func(w http.ResponseWriter, req *http.Request) error {
+	return newESTestServerWithVersion(t, currentESVersion, bulkHandler)
+}
+
+func newESTestServerWithVersion(t *testing.T, version string, bulkHandler bulkHandler) *httptest.Server {
+	return newESTestServerBulkHandlerFunc(t, version, handleErr(func(w http.ResponseWriter, req *http.Request) error {
 		tsStart := time.Now()
 		var items []itemRequest
 
@@ -208,7 +212,7 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 	}))
 }
 
-func newESTestServerBulkHandlerFunc(t *testing.T, handler http.HandlerFunc) *httptest.Server {
+func newESTestServerBulkHandlerFunc(t *testing.T, version string, handler http.HandlerFunc) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleErr(func(w http.ResponseWriter, _ *http.Request) error {
 		w.Header().Add("X-Elastic-Product", "Elasticsearch")
@@ -216,7 +220,7 @@ func newESTestServerBulkHandlerFunc(t *testing.T, handler http.HandlerFunc) *htt
 		enc := json.NewEncoder(w)
 		return enc.Encode(map[string]any{
 			"version": map[string]any{
-				"number": currentESVersion,
+				"number": version,
 			},
 		})
 	}))

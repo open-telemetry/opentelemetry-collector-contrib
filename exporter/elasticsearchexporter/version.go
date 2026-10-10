@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -48,19 +49,20 @@ func (es *esInfo) fetchESInfo(ctx context.Context, tp elastictransport.Interface
 	return nil
 }
 
-func logElasticsearchVersions(ctx context.Context, cfg *Config, set exporter.Settings, host component.Host) {
+func getElasticsearchVersions(ctx context.Context, cfg *Config, set exporter.Settings, host component.Host) *semver.Version {
 	infoCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	httpClient, err := cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), set.TelemetrySettings)
 	if err != nil {
 		set.Logger.Warn("version detection: couldn't create Elasticsearch client", zap.Error(err))
-		return
+		return nil
 	}
 	defer httpClient.CloseIdleConnections()
 
 	endpoints, _ := cfg.endpoints()
 
+	var lowest *semver.Version
 	for _, endpoint := range endpoints {
 		u, err := url.Parse(strings.TrimRight(endpoint, "/"))
 		if err != nil {
@@ -84,14 +86,35 @@ func logElasticsearchVersions(ctx context.Context, cfg *Config, set exporter.Set
 			continue
 		}
 		var info esInfo
-		if err := info.fetchESInfo(infoCtx, tp); err != nil {
+		if err = info.fetchESInfo(infoCtx, tp); err != nil {
 			set.Logger.Warn("failed to fetch Elasticsearch info", zap.String("endpoint", endpoint), zap.Error(err))
 			continue
 		}
-		set.Logger.Info("Connected to Elasticsearch",
-			zap.String("endpoint", endpoint),
-			zap.String("version", info.Version.Number),
-			zap.String("build_flavor", info.Version.BuildFlavor),
-		)
+
+		v, err := semver.NewVersion(info.Version.Number)
+		if err != nil {
+			set.Logger.Warn("could not parse Elasticsearch version", zap.String("version", info.Version.Number), zap.Error(err))
+		} else {
+			if lowest == nil || v.LessThan(lowest) {
+				lowest = v
+			}
+			set.Logger.Info("Connected to Elasticsearch",
+				zap.String("endpoint", endpoint),
+				zap.String("version", info.Version.Number),
+				zap.String("build_flavor", info.Version.BuildFlavor),
+			)
+		}
 	}
+	return lowest
+}
+
+var minExponentialHistogramVersion = semver.MustParse("9.3.0")
+
+func supportsExponentialHistograms(v *semver.Version) bool {
+	if v == nil {
+		return false
+	}
+
+	core := semver.New(v.Major(), v.Minor(), v.Patch(), "", "")
+	return !core.LessThan(minExponentialHistogramVersion)
 }
