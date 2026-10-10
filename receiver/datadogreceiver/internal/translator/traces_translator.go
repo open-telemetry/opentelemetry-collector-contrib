@@ -333,14 +333,16 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
-			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
 			if hasSamplingPriority {
 				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
 			}
+
 			if span.Error > 0 {
 				newSpan.Status().SetCode(ptrace.StatusCodeError)
 			}
+			addExceptionSpanEvent(span, &newSpan)
+
 			newSpan.Attributes().PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID, 10))
 			newSpan.Attributes().PutStr(attributeDatadogTraceID, strconv.FormatUint(span.TraceID, 10))
 			for k, v := range span.GetMeta() {
@@ -629,6 +631,53 @@ func putAttributeAnyValue(attrs pcommon.Map, key string, v *pb.AttributeAnyValue
 			}
 		}
 	}
+}
+
+// addExceptionSpanEvent converts Datadog error tags into an OpenTelemetry `exception` span event.
+// Datadog tracers report an error either as an exception span event or
+// as error.* tags; when only the tags are present this reconstructs the event so downstream consumers
+// see OTel-native exception semantics. The consumed tags are removed so they do not also surface as
+// raw span attributes. dd-trace tracers use error.message/error.type; some use error.msg/error.kind/error.stacktrace.
+func addExceptionSpanEvent(span *pb.Span, newSpan *ptrace.Span) {
+	msg := firstMeta(span, "error.msg", "error.message")
+	typ := firstMeta(span, "error.type", "error.kind")
+	stack := firstMeta(span, "error.stack", "error.stacktrace")
+
+	for _, k := range []string{"error.msg", "error.message", "error.type", "error.kind", "error.stack", "error.stacktrace"} {
+		delete(span.Meta, k)
+	}
+
+	if msg == "" && typ == "" && stack == "" {
+		return
+	}
+
+	for _, event := range newSpan.Events().All() {
+		if event.Name() == "exception" {
+			return
+		}
+	}
+
+	event := newSpan.Events().AppendEmpty()
+	event.SetName("exception")
+	event.SetTimestamp(pcommon.Timestamp(span.Start + span.Duration))
+	if msg != "" {
+		event.Attributes().PutStr(string(conventions.ExceptionMessageKey), msg)
+	}
+	if typ != "" {
+		event.Attributes().PutStr(string(conventions.ExceptionTypeKey), typ)
+	}
+	if stack != "" {
+		event.Attributes().PutStr(string(conventions.ExceptionStacktraceKey), stack)
+	}
+}
+
+func firstMeta(span *pb.Span, keys ...string) string {
+	for _, k := range keys {
+		if v, ok := span.Meta[k]; ok && v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 var bufferPool = sync.Pool{
