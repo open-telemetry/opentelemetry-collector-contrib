@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
@@ -23,6 +24,28 @@ func isLiteralSliceElementType(t reflect.Type) bool {
 	default:
 		return false
 	}
+}
+
+func (p *parseContext[K]) buildSliceGetterArg(fieldAddr any, arg argument, allowDynamic bool) (any, error) {
+	sliceItemType, ok := slicegetter.ReflectTypeParam(fieldAddr)
+	if !ok {
+		return nil, ottlerror.New(arg.Pos, "slice getter type is not manageable by the OTTL parser. This is a bug in OTTL")
+	}
+	gv, err := buildSliceGetterValue[K](
+		arg.Value,
+		sliceItemType,
+		allowDynamic,
+		p.buildSliceArg,
+		p.buildStandardGetSetter,
+		p.newGetter,
+	)
+	if err != nil {
+		return nil, ottlerror.FromError(arg.Pos, err)
+	}
+	if err := slicegetter.SetReflectValue(fieldAddr, reflect.ValueOf(gv)); err != nil {
+		return nil, ottlerror.FromError(arg.Pos, err)
+	}
+	return reflect.ValueOf(fieldAddr).Elem().Interface(), nil
 }
 
 func buildSliceGetterValue[K any](
