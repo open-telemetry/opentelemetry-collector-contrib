@@ -48,6 +48,7 @@ The following settings are optional for both transports:
   - `reports_health`: Whether to enable the OpAMP ReportsHealth capability. Default is `true`.
   - `reports_available_components`: Whether to enable the OpAMP ReportsAvailableComponents capability. Default is `true`.
   - `accepts_restart_command`: Whether to enable the OpAMP AcceptsRestartCommand capability. Default is `false`. The extension sends a `SIGHUP` signal to the collector to initiate a restart (however, SIGHUP isn't supported on windows systems, so it will be ignored). This functionality is also behind a feature gate (alpha) called `extension.opampextension.RemoteRestarts`
+  - `reports_heartbeat`: Whether to allow the OpAMP server to configure the agent's heartbeat interval via `ConnectionSettingsOffers`. The default is `false`, unless the `extension.opamp.HeartbeatIntervalNegotiation` feature gate (alpha) is enabled, in which case the default is `true`.
 - `reports_raw_config`: Whether to additionally report the raw, unexpanded configuration alongside the effective configuration. Default is `false`. Requires the `reports_effective_config` capability to be enabled. When enabled, the raw configuration (as authored, before environment variable and other provider references are expanded) is reported under the `raw` key of the effective config map, while the fully expanded effective configuration remains under the `""` (empty) key. This lets a server distinguish values that were explicitly authored from component defaults populated during expansion.
 
   > [!WARNING]
