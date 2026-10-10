@@ -273,6 +273,127 @@ Attribute `elasticsearch.index` will be removed from the final document if exist
 | Metrics   | :white_check_mark: |
 | Profiles  | :white_check_mark: |
 
+##### Example indexed documents
+
+The examples below use the same log record and default dynamic data-stream routing.
+In `otel` mode, timestamps are serialized as Unix milliseconds.
+
+Log document:
+
+```json
+{
+  "@timestamp": 1705312800000.0,
+  "observed_timestamp": 1705312800001.0,
+  "data_stream": {
+    "type": "logs",
+    "dataset": "generic.otel",
+    "namespace": "default"
+  },
+  "severity_text": "ERROR",
+  "severity_number": 17,
+  "attributes": {
+    "exception.type": "NullPointerException",
+    "exception.message": "index out of range",
+    "user.id": "u42"
+  },
+  "resource": {
+    "attributes": {
+      "service.name": "myservice",
+      "deployment.environment.name": "production"
+    }
+  },
+  "scope": {
+    "name": "mylib",
+    "version": "1.2.3",
+    "attributes": {
+      "library.setting": "enabled"
+    }
+  },
+  "body": {
+    "text": "Uncaught exception"
+  }
+}
+```
+
+Span document:
+
+```json
+{
+  "@timestamp": 1705312800000.0,
+  "data_stream": {
+    "type": "traces",
+    "dataset": "generic.otel",
+    "namespace": "default"
+  },
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "name": "GET /users/{id}",
+  "kind": "Server",
+  "duration": 5000000,
+  "attributes": {
+    "http.response.status_code": 500
+  },
+  "links": [],
+  "status": {
+    "message": "server error",
+    "code": "Error"
+  },
+  "resource": {
+    "attributes": {
+      "service.name": "myservice",
+      "deployment.environment.name": "production"
+    }
+  },
+  "scope": {
+    "name": "mylib",
+    "version": "1.2.3",
+    "attributes": {
+      "library.setting": "enabled"
+    }
+  }
+}
+```
+
+The span's `exception` event is indexed as a separate log document:
+
+```json
+{
+  "@timestamp": 1705312800003.0,
+  "data_stream": {
+    "type": "logs",
+    "dataset": "generic.otel",
+    "namespace": "default"
+  },
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "event_name": "exception",
+  "attributes": {
+    "exception.type": "NullPointerException",
+    "exception.message": "index out of range",
+    "exception.stacktrace": "at example.Handler(Handler.go:42)",
+    "event.name": "exception"
+  },
+  "resource": {
+    "attributes": {
+      "service.name": "myservice",
+      "deployment.environment.name": "production"
+    }
+  },
+  "scope": {
+    "name": "mylib",
+    "version": "1.2.3",
+    "attributes": {
+      "library.setting": "enabled"
+    }
+  }
+}
+```
+
+Attribute names are preserved under `attributes`, `resource.attributes`, and
+`scope.attributes`. String log bodies are written as `body.text`; map bodies are
+written as `body.structured`. Span events are separate log documents, not fields
+embedded in the span document.
+
 #### ECS mapping mode
 
 > [!WARNING]
@@ -296,6 +417,82 @@ the APM data stream convention:
   to `logs-apm.error-<namespace>`.
 - All other span events are routed to `logs-apm.app.<service_name>-<namespace>`.
 
+##### Example indexed documents
+
+With the same log record and default dynamic data-stream routing, the ECS log document is:
+
+```json
+{
+  "@timestamp": "2024-01-15T10:00:00.000000000Z",
+  "data_stream": {
+    "dataset": "generic",
+    "namespace": "default",
+    "type": "logs"
+  },
+  "error": {
+    "message": "index out of range",
+    "type": "NullPointerException"
+  },
+  "event": {
+    "severity": 17
+  },
+  "library": {
+    "setting": "enabled"
+  },
+  "log": {
+    "level": "ERROR"
+  },
+  "message": "Uncaught exception",
+  "service": {
+    "environment": "production",
+    "name": "myservice"
+  },
+  "user": {
+    "id": "u42"
+  }
+}
+```
+
+An `exception` span event with exception attributes is a separate ECS log document:
+
+```json
+{
+  "@timestamp": "2024-01-15T10:00:00.003000000Z",
+  "data_stream": {
+    "dataset": "apm.error",
+    "namespace": "default",
+    "type": "logs"
+  },
+  "error": {
+    "exception": {
+      "message": "index out of range",
+      "type": "NullPointerException"
+    },
+    "stack_trace": "at example.Handler(Handler.go:42)"
+  },
+  "library": {
+    "setting": "enabled"
+  },
+  "parent": {
+    "id": "00f067aa0ba902b7"
+  },
+  "service": {
+    "environment": "production",
+    "name": "myservice"
+  },
+  "trace": {
+    "id": "4bf92f3577b34da6a3ce929d0e0e4736"
+  }
+}
+```
+
+For log records, severity text is written to `log.level` and a specified severity
+number to `event.severity`. Resource `deployment.environment.name` is mapped to
+`service.environment`; `service.name` remains `service.name`. Log-record exception
+attributes map to `error.type`, `error.message`, and `error.stacktrace`. Exception
+span events instead use `error.exception.type`, `error.exception.message`, and
+`error.stack_trace`, and are routed to the `logs-apm.error-*` data stream.
+
 #### Bodymap mapping mode
 
 > [!WARNING]
@@ -313,6 +510,27 @@ the Elasticsearch document structure.
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
 
+##### Example indexed document
+
+For a body map containing the fields shown below, the indexed source document is:
+
+```json
+{
+  "@timestamp": "2024-01-15T10:00:00.000000000Z",
+  "level": "ERROR",
+  "message": "Uncaught exception",
+  "host": "host01"
+}
+```
+
+Only the log record body is serialized. The body must be a key-value map; string,
+slice, and other body types return `ErrInvalidTypeForBodyMapMode`. Resource, scope,
+severity, and log-record attributes are not copied into the source document. They
+may still affect routing: for example, `data_stream.dataset: custom` selects the
+`logs-custom-default` data stream, but is not added to the source unless it is also
+present in the body map. Keys and nested values in the body are serialized without
+the attribute flattening used by the other modes.
+
 #### Default (none) mapping mode
 
 In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
@@ -324,6 +542,68 @@ field names of from the OTLP data structures.
 | Traces    | :white_check_mark: |
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
+
+##### Example indexed documents
+
+Log document:
+
+```json
+{
+  "@timestamp": "2024-01-15T10:00:00.000000000Z",
+  "Attributes.data_stream.dataset": "generic",
+  "Attributes.data_stream.namespace": "default",
+  "Attributes.data_stream.type": "logs",
+  "Attributes.exception.message": "index out of range",
+  "Attributes.exception.type": "NullPointerException",
+  "Attributes.user.id": "u42",
+  "Body": "Uncaught exception",
+  "Resource.deployment.environment.name": "production",
+  "Resource.service.name": "myservice",
+  "Scope.library.setting": "enabled",
+  "Scope.name": "mylib",
+  "Scope.version": "1.2.3",
+  "SeverityNumber": 17,
+  "SeverityText": "ERROR",
+  "TraceFlags": 0
+}
+```
+
+Span events remain in the parent span document. The event fields are flattened
+under `Events.<event name>`:
+
+```json
+{
+  "@timestamp": "2024-01-15T10:00:00.000000000Z",
+  "Attributes.data_stream.dataset": "generic",
+  "Attributes.data_stream.namespace": "default",
+  "Attributes.data_stream.type": "traces",
+  "Attributes.http.response.status_code": 500,
+  "Duration": 5000,
+  "EndTimestamp": "2024-01-15T10:00:00.005000000Z",
+  "Events.exception.exception.message": "index out of range",
+  "Events.exception.exception.stacktrace": "at example.Handler(Handler.go:42)",
+  "Events.exception.exception.type": "NullPointerException",
+  "Events.exception.time": "2024-01-15T10:00:00.003000000Z",
+  "Kind": "SPAN_KIND_SERVER",
+  "Link": "[]",
+  "Name": "GET /users/{id}",
+  "Resource.deployment.environment.name": "production",
+  "Resource.service.name": "myservice",
+  "Scope.library.setting": "enabled",
+  "Scope.name": "mylib",
+  "Scope.version": "1.2.3",
+  "SpanId": "00f067aa0ba902b7",
+  "TraceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "TraceStatus": 2,
+  "TraceStatusDescription": "server error"
+}
+```
+
+Record attributes are flattened with an `Attributes.` prefix; resource and scope
+fields use `Resource.` and `Scope.` prefixes. Span event fields use
+`Events.<event name>.<field>`, with the event timestamp at
+`Events.<event name>.time`. With default dynamic routing, data-stream fields are
+also flattened under `Attributes.data_stream.*`.
 
 #### Raw mapping mode
 
@@ -340,6 +620,68 @@ The `raw` mapping mode is identical to `none`, except for two differences:
 | Traces    | :white_check_mark: |
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
+
+##### Example indexed documents
+
+Log document:
+
+```json
+{
+  "@timestamp": "2024-01-15T10:00:00.000000000Z",
+  "Body": "Uncaught exception",
+  "Resource.deployment.environment.name": "production",
+  "Resource.service.name": "myservice",
+  "Scope.library.setting": "enabled",
+  "Scope.name": "mylib",
+  "Scope.version": "1.2.3",
+  "SeverityNumber": 17,
+  "SeverityText": "ERROR",
+  "TraceFlags": 0,
+  "data_stream.dataset": "generic",
+  "data_stream.namespace": "default",
+  "data_stream.type": "logs",
+  "exception.message": "index out of range",
+  "exception.type": "NullPointerException",
+  "user.id": "u42"
+}
+```
+
+Span events remain in the parent span document. The same span event as in the
+`none` example is flattened at the document root, without an `Events.` prefix:
+
+```json
+{
+  "@timestamp": "2024-01-15T10:00:00.000000000Z",
+  "Duration": 5000,
+  "EndTimestamp": "2024-01-15T10:00:00.005000000Z",
+  "Kind": "SPAN_KIND_SERVER",
+  "Link": "[]",
+  "Name": "GET /users/{id}",
+  "Resource.deployment.environment.name": "production",
+  "Resource.service.name": "myservice",
+  "Scope.library.setting": "enabled",
+  "Scope.name": "mylib",
+  "Scope.version": "1.2.3",
+  "SpanId": "00f067aa0ba902b7",
+  "TraceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "TraceStatus": 2,
+  "TraceStatusDescription": "server error",
+  "data_stream.dataset": "generic",
+  "data_stream.namespace": "default",
+  "data_stream.type": "traces",
+  "exception.exception.message": "index out of range",
+  "exception.exception.stacktrace": "at example.Handler(Handler.go:42)",
+  "exception.exception.type": "NullPointerException",
+  "exception.time": "2024-01-15T10:00:00.003000000Z",
+  "http.response.status_code": 500
+}
+```
+
+As in `none` mode, resource and scope fields retain their prefixes and nested
+attribute maps are flattened using dots. Log/span record attributes are written
+at the document root, and span events use `<event name>.<field>` keys without an
+`Events.` wrapper. With default dynamic routing, `data_stream.*` fields are also
+written at the root.
 
 ### Elasticsearch ingest pipeline
 
