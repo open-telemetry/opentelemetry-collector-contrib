@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -42,6 +43,12 @@ type dockerObserver struct {
 	cancel  context.CancelFunc
 	wg      errgroup.Group
 	dClient *docker.Client
+}
+
+// netEntry holds network name and its endpoint settings for sorting
+type netEntry struct {
+	name     string
+	settings *network.EndpointSettings
 }
 
 // newObserver creates a new docker observer extension.
@@ -232,7 +239,6 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 		// Use the IP Address of the first network we iterate over.
 		// This can be made configurable if so desired.
 		details.Host = containerNetworkAddress(c.NetworkSettings.Networks)
-
 		// If we still haven't gotten a host at this point and we are using
 		// host bindings, just make it localhost.
 		if details.Host == "" && d.config.UseHostBindings {
@@ -266,22 +272,6 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 	return &endpoint
 }
 
-func containerNetworkAddress(networks map[string]*network.EndpointSettings) string {
-	for _, networkSettings := range networks {
-		if networkSettings == nil {
-			return ""
-		}
-		if address := networkSettings.IPAddress; address.IsValid() {
-			return address.String()
-		}
-		if address := networkSettings.GlobalIPv6Address; address.IsValid() {
-			return address.String()
-		}
-		return ""
-	}
-	return ""
-}
-
 // FindHostMappedPort returns the port number of the docker port binding to the
 // underlying host, or 0 if none exists.  It also returns the mapped ip that the
 // port is bound to on the underlying host, or "" if none exists.
@@ -310,4 +300,43 @@ func portProtoToTransport(proto string) observer.Transport {
 		return observer.ProtocolUDP
 	}
 	return observer.ProtocolUnknown
+}
+
+// containerNetworkAddress returns the most appropriate IP address from a container's networks.
+// It deterministically sorts networks by GwPriority and alphabetically to prevent IP flapping.
+func containerNetworkAddress(networks map[string]*network.EndpointSettings) string {
+	var validNetworks []netEntry
+	for name, settings := range networks {
+		if settings == nil {
+			continue
+		}
+		if settings.IPAddress.IsValid() || settings.GlobalIPv6Address.IsValid() {
+			validNetworks = append(validNetworks, netEntry{
+				name:     name,
+				settings: settings,
+			})
+		}
+	}
+
+	if len(validNetworks) == 0 {
+		return ""
+	}
+
+	slices.SortFunc(validNetworks, func(a, b netEntry) int {
+		// Highest GwPriority wins
+		if a.settings.GwPriority != b.settings.GwPriority {
+			if a.settings.GwPriority > b.settings.GwPriority {
+				return -1
+			}
+			return 1
+		}
+		// Tie-breaker: alphabetical by network name
+		return strings.Compare(a.name, b.name)
+	})
+
+	best := validNetworks[0].settings
+	if best.IPAddress.IsValid() {
+		return best.IPAddress.String()
+	}
+	return best.GlobalIPv6Address.String()
 }
