@@ -38,9 +38,9 @@ const numShards = 256
 // "the whole datapoint was marked overflow".
 const overflowSentinel = "otel.cardinality_overflow"
 
-// mustGetSketch returns a fresh HLL++ sketch (p=14 → ~0.81% standard error,
-// ~12 KB in dense mode). Allocated directly because hyperloglog.Sketch lacks
-// a safe Reset(), so pooling dirty sketches would corrupt estimates.
+// mustGetSketch returns a new sparse HLL++ sketch for tracker initialization
+// and for replacing dense sketches during epoch rotation (p=14 → ~0.81%
+// standard error).
 func mustGetSketch() *hyperloglog.Sketch {
 	return hyperloglog.New14()
 }
@@ -61,6 +61,13 @@ type trackerKey struct {
 // accurate while the sketch grows through the configured limit.
 const estimateInterval = 64
 
+// maxSparseSketchInsertCount is the largest number of insert calls guaranteed
+// to leave a precision-14 HLL++ sketch sparse. hyperloglog v0.3.0 switches to
+// dense after more than 1<<14 distinct sparse codes; insert calls can only
+// produce that many or fewer distinct codes. Above this conservative bound,
+// rotation replaces the sketch instead of clearing a potentially dense one.
+const maxSparseSketchInsertCount = 1 << 14
+
 // tracker holds two HLL++ sketches for a (metric_name, label_key) pair plus
 // a fine-grained mutex so the shard-level lock can be released before HLL
 // work begins. Hot fields are at the front for cache-line locality.
@@ -73,6 +80,9 @@ type tracker struct {
 	cachedCurr  uint64
 	cachedPrev  uint64
 	insertCount uint64
+	// previousInsertCount tracks insert calls into previous, so rotation can
+	// avoid clearing the dense register array when reusing a sketch.
+	previousInsertCount uint64
 	// idleEpochs counts consecutive zero-insert rotations; eviction at staleSweepEpochs.
 	idleEpochs int
 }
@@ -96,24 +106,38 @@ func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
 	return t.cachedCurr, t.cachedPrev
 }
 
-// rotate promotes current → previous, installs fresh as the new current, and
-// carries cachedCurr forward as cachedPrev so the new epoch has its baseline
-// without another Estimate() call. Returns true when this tracker received
-// zero inserts during the epoch that just ended.
-func (t *tracker) rotate(fresh *hyperloglog.Sketch) (idle bool) {
+// rotate promotes current → previous, reuses the old previous sketch when it
+// is guaranteed sparse, and replaces it otherwise. It carries cachedCurr
+// forward as cachedPrev so the new epoch has its baseline without another
+// Estimate() call. Returns true when this tracker received zero inserts during
+// the epoch that just ended.
+func (t *tracker) rotate() (idle bool) {
 	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	idle = t.insertCount == 0
 	if idle {
 		t.idleEpochs++
 	} else {
 		t.idleEpochs = 0
 	}
+	currentInsertCount := t.insertCount
 	t.cachedPrev = t.cachedCurr
 	t.cachedCurr = 0
+
+	oldCurrent := t.current
+	oldPrevious := t.previous
+	if t.previousInsertCount <= maxSparseSketchInsertCount {
+		oldPrevious.Reset()
+	} else {
+		// Reset clears all 1<<14 dense registers; replace dense sketches to
+		// avoid making that work part of every epoch rotation.
+		oldPrevious = mustGetSketch()
+	}
+	t.current = oldPrevious
+	t.previous = oldCurrent
+	t.previousInsertCount = currentInsertCount
 	t.insertCount = 0
-	t.previous = t.current
-	t.current = fresh
-	t.mu.Unlock()
 	return idle
 }
 
@@ -519,10 +543,10 @@ func (p *cardinalityProcessor) isProtected(key string) bool {
 // rotate advances the sliding cardinality window by one epoch across all
 // shards. It runs on the background ticker goroutine, never on the hot path.
 //
-// Per shard: snapshot tracker pointers under a brief RLock, release, allocate
-// fresh sketches outside any lock, then call tracker.rotate on each — which
-// takes only the fine-grained per-tracker mutex. The shard-level write lock
-// is never held during sketch allocation.
+// Per shard: snapshot tracker pointers under a brief RLock, release, then call
+// tracker.rotate on each — which resets and reuses the old previous sketch under
+// the fine-grained per-tracker mutex. The shard-level write lock is never held
+// during sketch reset.
 func (p *cardinalityProcessor) rotate() {
 	p.logger.Debug("Rotating cardinality sketches")
 
@@ -551,19 +575,13 @@ func (p *cardinalityProcessor) rotate() {
 		// Snapshot deltas before rotation resets the cached estimates.
 		topBuf = collectShardDeltas(entries, topBuf, topN)
 
-		// Pull fresh sketches from the pool entirely outside any lock.
-		fresh := make([]*hyperloglog.Sketch, len(entries))
-		for i := range entries {
-			fresh[i] = mustGetSketch()
-		}
-
 		// Rotate each tracker under its own fine-grained per-tracker lock,
 		// not the shard lock, so ConsumeMetrics is never blocked here.
 		// Collect keys of trackers that have been idle for staleSweepEpochs
 		// consecutive rotations.
 		staleKeys := make([]trackerKey, 0, len(entries))
-		for i, e := range entries {
-			idle := e.t.rotate(fresh[i])
+		for _, e := range entries {
+			idle := e.t.rotate()
 			if idle && e.t.idleEpochs >= staleSweepEpochs {
 				staleKeys = append(staleKeys, e.key)
 			}
