@@ -59,6 +59,19 @@ func TestNewClient(t *testing.T) {
 			logger:      zap.NewNop(),
 			expectError: nil,
 		},
+		{
+			desc: "Valid v2c configuration with custom max_repetitions",
+			cfg: &Config{
+				Version:        "v2c",
+				Endpoint:       "udp://localhost:161",
+				Community:      "public",
+				MaxRepetitions: 10,
+			},
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: nil,
+		},
 	}
 
 	for _, tc := range testCase {
@@ -85,6 +98,11 @@ func compareConfigToClient(t *testing.T, client *snmpClient, cfg *Config) {
 	require.Contains(t, cfg.Endpoint, client.client.GetTarget())
 	require.Contains(t, cfg.Endpoint, strconv.FormatInt(int64(client.client.GetPort()), 10))
 	require.Contains(t, cfg.Endpoint, client.client.GetTransport())
+	if cfg.MaxRepetitions > 0 {
+		require.Equal(t, cfg.MaxRepetitions, client.client.GetMaxRepetitions())
+	} else {
+		require.Equal(t, uint32(defaultMaxRepetitions), client.client.GetMaxRepetitions())
+	}
 	switch cfg.Version {
 	case "v1":
 		require.Equal(t, gosnmp.Version1, client.client.GetVersion())

@@ -147,6 +147,10 @@ properties:
   endpoint:
     description: 'Endpoint is the SNMP target to request data from. Must be formatted as [udp|tcp|][4|6|]://{host}:{port}. Default: udp://localhost:161 If no scheme is given, udp4 is assumed. If no port is given, 161 is assumed.'
     type: string
+  max_repetitions:
+    description: 'MaxRepetitions is the maximum number of iterations over the repeating variable list for GETBULK requests. Only valid for versions "v2c" and "v3". Default: 25'
+    type: integer
+    x-customType: uint32
   metrics:
     description: Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric names along with their metric configurations
     type: object

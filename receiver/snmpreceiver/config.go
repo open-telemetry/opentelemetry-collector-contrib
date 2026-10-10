@@ -24,6 +24,7 @@ const (
 	defaultSecurityLevel      = "no_auth_no_priv"
 	defaultAuthType           = "MD5"
 	defaultPrivacyType        = "DES"
+	defaultMaxRepetitions     = 25
 )
 
 var (
@@ -120,6 +121,11 @@ type Config struct {
 	// PrivacyPassword is the authentication password used for this SNMP connection.
 	// Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
 	PrivacyPassword configopaque.String `mapstructure:"privacy_password"`
+
+	// MaxRepetitions is the maximum number of iterations over the repeating variable list for GETBULK requests.
+	// Only valid for versions "v2c" and "v3".
+	// Default: 25
+	MaxRepetitions uint32 `mapstructure:"max_repetitions"`
 
 	// ResourceAttributes defines what resource attributes will be used for this receiver and is composed
 	// of resource attribute names along with their resource attribute configurations
