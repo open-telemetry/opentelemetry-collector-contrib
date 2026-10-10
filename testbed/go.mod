@@ -88,23 +88,23 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.211 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260930220258-a8c2777f7050 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.84.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.84.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.83.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.83.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/template v0.83.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.84.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.84.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.84.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.84.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.83.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.83.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.84.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.84.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.84.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.84.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.83.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.83.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.84.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.84.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.66.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.9.1 // indirect
 	github.com/DataDog/go-sqllexer v0.2.4 // indirect
@@ -210,7 +210,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
-	github.com/gofrs/flock v0.13.0 // indirect
+	github.com/gofrs/flock v0.13.1 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
@@ -268,11 +268,11 @@ require (
 	github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b // indirect
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
 	github.com/linode/linodego v1.69.1 // indirect
-	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
+	github.com/lufia/plan9stats v0.0.0-20260802145828-341c2f0c90b5 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.23 // indirect
-	github.com/mdlayher/socket v0.6.0 // indirect
+	github.com/mdlayher/socket v0.6.1 // indirect
 	github.com/mdlayher/vsock v1.3.0 // indirect
 	github.com/miekg/dns v1.1.73 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -338,7 +338,7 @@ require (
 	github.com/puzpuzpuz/xsync/v4 v4.5.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.37 // indirect
-	github.com/secure-systems-lab/go-securesystemslib v0.11.0 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.11.1 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/sony/gobreaker/v2 v2.4.0 // indirect
