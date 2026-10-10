@@ -72,6 +72,7 @@ type multiShardAggregator struct {
 	timezone          *time.Location
 	telemetryBuilder  *metadata.TelemetryBuilder
 	includeFields     []string
+	timestampMode     TimestampMode
 
 	shards map[attribute.Set]*aggregatorShard
 	// lock protects the shards map during concurrent lookups and creation.
@@ -118,7 +119,7 @@ func (m *multiShardAggregator) getOrCreateShard(info client.Info, aset attribute
 		md[k] = info.Metadata.Get(k)
 	}
 	shard = &aggregatorShard{
-		aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields),
+		aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields, m.timestampMode),
 		clientInfo: client.Info{
 			Metadata: client.NewMetadata(md),
 		},
@@ -184,7 +185,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 	var agg shardedAggregator
 	if len(metadataKeys) == 0 {
 		agg = &singleShardAggregator{
-			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
+			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields, cfg.TimestampMode),
 		}
 	} else {
 		if cfg.MetadataCardinalityLimit == 0 {
@@ -199,6 +200,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 			timezone:                 timezone,
 			telemetryBuilder:         telemetryBuilder,
 			includeFields:            cfg.IncludeFields,
+			timestampMode:            cfg.TimestampMode,
 			shards:                   make(map[attribute.Set]*aggregatorShard),
 		}
 	}
