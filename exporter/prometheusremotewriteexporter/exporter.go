@@ -432,6 +432,22 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 	}
 }
 
+// nonRetryableStatusError reports that the remote endpoint rejected the write
+// with an HTTP status that will reject the identical payload again, so no
+// amount of retrying can make the batch succeed. It is distinct from a
+// permanent error, which also covers a retryable failure that merely ran out
+// of retry budget.
+type nonRetryableStatusError struct {
+	StatusCode int
+	err        error
+}
+
+func (e *nonRetryableStatusError) Error() string {
+	return fmt.Sprintf("%s (http status %d)", e.err.Error(), e.StatusCode)
+}
+
+func (e *nonRetryableStatusError) Unwrap() error { return e.err }
+
 func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 	retryCount := 0
 	// executeFunc can be used for backoff and non backoff scenarios.
@@ -530,7 +546,8 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			return resp.StatusCode, rerr
 		}
 
-		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		rejected := &nonRetryableStatusError{StatusCode: resp.StatusCode, err: rerr}
+		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rejected))
 	}
 
 	var err error

@@ -1,0 +1,35 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: exporter/prometheus_remote_write
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Unblock the write-ahead log when the remote endpoint rejects the record at the head of the queue
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [51710]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  A record the endpoint rejected with a non-retryable HTTP status was never truncated,
+  so the read loop rewound to it on every pass and no record queued behind it was ever
+  delivered. Such a record is now dropped, with a warning naming the status and the
+  number of requests discarded, and the log moves on.
+
+  Only a rejection by the endpoint is dropped. A cancelled export, a retryable failure,
+  and a batch that mixes a rejection with a retryable failure are all still retained and
+  retried, so an outage or a shutdown does not lose data.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
