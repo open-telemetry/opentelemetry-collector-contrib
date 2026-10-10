@@ -10,7 +10,7 @@ component: processor/tail_sampling
 note: Add `decision_tick_stagger` (default 1s) to spread per-shard decision ticks across a configurable window and smooth sampled-trace release under `num_shards` > 1.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [0]
+issues: [51950]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
