@@ -1,0 +1,21 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Drop float flavored native histograms and rebuild the data point count from the translated buckets.
+
+issues: [50337]
+
+subtext: |
+  Float and gauge flavored native histograms are now dropped, which the
+  Prometheus compatibility specification requires; float ones were being
+  converted, forcing fractional and non-finite bucket populations through an
+  unsigned integer conversion. The data point count is rebuilt from the zero
+  count and the buckets that were translated rather than copied from the
+  sender, so it agrees with what the data point holds, and the sum is left
+  unset when that count is zero. Histograms whose spans, deltas and custom
+  bounds describe different shapes are refused rather than read as far as the
+  shorter of them, and a stale marker keeps its flag without carrying buckets
+  it cannot record. Such a drop is logged at error level rather than info.
+
+change_logs: [user]
