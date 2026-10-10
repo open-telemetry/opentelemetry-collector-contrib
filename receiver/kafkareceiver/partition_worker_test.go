@@ -398,6 +398,61 @@ func TestProcessPartitionBatchMaxInFlight(t *testing.T) {
 	}
 }
 
+func TestProcessPartitionBatchMaxInFlightBytes(t *testing.T) {
+	const recordSize = 10
+	const records = 4
+	cases := []struct {
+		name string
+		// bytes is the max_in_flight.bytes cap.
+		bytes int
+		// wantConcurrent is how many calls may be in Consume at once.
+		wantConcurrent int
+	}{
+		{name: "byte cap limits calls below the record cap", bytes: 2 * recordSize, wantConcurrent: 2},
+		{name: "record above the byte cap runs alone", bytes: recordSize - 1, wantConcurrent: 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// The record cap is above the batch size, so only bytes can limit.
+			consumer, _, partitionConsumer := newMaxInFlightConsumer(t, 2*records)
+			consumer.config.PartitionProcessing.MaxInFlight.Bytes = tc.bytes
+			entered := make(chan struct{}, records)
+			release := make(chan struct{}, records)
+			consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set) error {
+				entered <- struct{}{}
+				<-release
+				return nil
+			}
+			batch := offsetBatch(records)
+			for _, r := range batch.Records {
+				// Key and value both count towards the size.
+				r.Key = make([]byte, recordSize/2)
+				r.Value = make([]byte, recordSize/2)
+			}
+
+			done := make(chan partitionBatchResult, 1)
+			go func() { done <- consumer.processPartitionBatch(partitionConsumer, batch) }()
+
+			// Each wave must fill the cap again once the previous one releases. A
+			// leaked byte count would shrink the later waves.
+			for range records / tc.wantConcurrent {
+				for range tc.wantConcurrent {
+					select {
+					case <-entered:
+					case <-time.After(10 * time.Second):
+						t.Fatalf("fewer than %d Consume calls overlapped", tc.wantConcurrent)
+					}
+				}
+				requireNoEntry(t, entered, "started more calls than the byte cap allows")
+				for range tc.wantConcurrent {
+					release <- struct{}{}
+				}
+			}
+			require.Nil(t, (<-done).rewindRecord)
+		})
+	}
+}
+
 func TestProcessPartitionBatchPrefixMark(t *testing.T) {
 	const topic = "test"
 	const inFlight = 4
@@ -646,7 +701,7 @@ func TestProcessPartitionBatchCancelledSkipsExtraConsume(t *testing.T) {
 			t.Fatal("in-flight Consume calls did not start")
 		}
 	}
-	// The next acquire must already be waiting on the semaphore. A cancel
+	// The next acquire must already be waiting for room. A cancel
 	// before that wait ends at the loop's context check and never enters acquire.
 	waitAcquireBlocked(t)
 	partitionConsumer.cancel(context.Canceled)

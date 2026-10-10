@@ -128,6 +128,7 @@ The following settings can be optionally configured:
   - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
   - `max_in_flight`:
     - `records` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Applies only when `independent` is true. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
+    - `bytes` (default = 0, no cap): Maximum key and value bytes, after decompression and without headers, held by the in-flight calls of each partition worker. Must not be negative. Applies only when `independent` is true and `records` is above 1. A record above the cap still runs, alone.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -320,6 +321,8 @@ Each partition has one worker and one mailbox. `max_buffered_batches` is how man
 
 `max_in_flight.records` (default 1) is how many unmarshal-plus-Consume calls one partition worker may run at once. The worker starts those calls only for records already in a fetched batch. An idle partition still has one worker. At 1, records stay in offset order inside the partition. Above 1, later records in the same fetch can reach Consume before earlier ones finish.
 
+`max_in_flight.bytes` (default 0, no cap) also limits the key and value bytes of the records in those calls. The worker starts a record only when both limits have room. A record larger than `bytes` runs alone, so it never blocks the partition. Use it to size memory when record sizes vary. The fetched batch and the mailbox stay in memory outside this cap. It has no effect when `max_in_flight.records` is 1.
+
 Unmarshal must be safe for concurrent calls. The receiver uses one unmarshaler for all workers. It cannot clone encoding extensions. Independent workers call Unmarshal at the same time across partitions. `max_in_flight.records` above 1 does the same inside a partition. 
 
 > **WARNING**: Built-in `text` and `text_*` encodings keep one decoder and are not concurrent-safe. Encoding extensions must be concurrent-safe as well.
@@ -340,4 +343,5 @@ receivers:
       max_buffered_batches: 1
       max_in_flight:
         records: 4
+        bytes: 33554432
 ```
