@@ -15,7 +15,7 @@ import (
 )
 
 func LogFunctions() map[string]ottl.Factory[*ottllog.TransformContext] {
-	functions := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]()))
+	functions := xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]())))
 
 	logFunctions := ottl.CreateFactoryMap(
 		logparsingfuncs.NewParseCEFFactory(),

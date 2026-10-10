@@ -220,6 +220,90 @@ func Test_e2e_converters(t *testing.T) {
 	}
 }
 
+func Test_e2e_editors(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(tCtx *ottllog.TransformContext)
+	}{
+		{
+			statement: `sanitize_utf8(body)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
+			},
+		},
+		{
+			statement: `sanitize_utf8(body, "?")`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("operation?A")
+			},
+		},
+		{
+			statement: `sanitize_utf8(attributes["invalid"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("invalid", "bad\uFFFDvalue")
+			},
+		},
+		{
+			statement: `sanitize_utf8(attributes)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				attrs := tCtx.GetLogRecord().Attributes()
+				attrs.PutStr("invalid", "bad\uFFFDvalue")
+				attrs.Remove("bad\xffkey")
+				attrs.PutStr("bad\uFFFDkey", "value")
+				nested, _ := attrs.Get("nested")
+				nested.Map().PutStr("inner", "nested\uFFFD")
+			},
+		},
+		{
+			statement: `sanitize_utf8(resource.attributes)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetResource().Attributes().PutStr("resource.invalid", "res\uFFFD")
+			},
+		},
+		{
+			statement: `sanitize_utf8(instrumentation_scope.name)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetInstrumentationScope().SetName("scope\uFFFD")
+			},
+		},
+		{
+			statement: `sanitize_utf8(attributes["http.method"])`,
+			want:      func(*ottllog.TransformContext) {},
+		},
+	}
+
+	construct := func() *ottllog.TransformContext {
+		tCtx := constructLogTransformContext()
+		tCtx.GetLogRecord().Body().SetStr("operation\xffA")
+		tCtx.GetLogRecord().Attributes().PutStr("invalid", "bad\xffvalue")
+		tCtx.GetLogRecord().Attributes().PutStr("bad\xffkey", "value")
+		tCtx.GetLogRecord().Attributes().PutEmptyMap("nested").PutStr("inner", "nested\xff")
+		tCtx.GetResource().Attributes().PutStr("resource.invalid", "res\xff")
+		tCtx.GetInstrumentationScope().SetName("scope\xff")
+		return tCtx
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
+			require.NoError(t, err)
+
+			for _, statement := range logStatements {
+				tCtx := construct()
+				_, _, err = statement.Execute(t.Context(), tCtx)
+				require.NoError(t, err)
+
+				exTCtx := construct()
+				tt.want(exTCtx)
+
+				require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				tCtx.Close()
+				exTCtx.Close()
+			}
+		})
+	}
+}
+
 func Test_e2e_lambda_gate_disabled(t *testing.T) {
 	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false))
 
@@ -229,7 +313,7 @@ func Test_e2e_lambda_gate_disabled(t *testing.T) {
 
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[*ottllog.TransformContext], error) {
 	settings := componenttest.NewNopTelemetrySettings()
-	functions := xottlfuncs.WithExperimentalConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]())
+	functions := xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]()))
 	parserWithoutPathCtx, err := ottllog.NewParser(functions, settings)
 	if err != nil {
 		return nil, err

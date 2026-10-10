@@ -13,9 +13,9 @@ import (
 )
 
 func ResourceFunctions() map[string]ottl.Factory[*ottlresource.TransformContext] {
-	return xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlresource.TransformContext]()))
+	return xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlresource.TransformContext]())))
 }
 
 func ScopeFunctions() map[string]ottl.Factory[*ottlscope.TransformContext] {
-	return xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlscope.TransformContext]()))
+	return xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlscope.TransformContext]())))
 }
