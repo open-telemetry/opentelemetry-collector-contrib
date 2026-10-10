@@ -47,7 +47,19 @@ type Metadata struct {
 	// (the option-off code path does not read them).
 	LastObservedPath  string
 	LastObservedMtime time.Time
+
+	// incompleteGzipSize is the size of a gzip compressed file when its gzip stream was last found to be
+	// incomplete, and incompleteGzipSince is when that was first found for this size. They are used to avoid
+	// decompressing the file again while it has not grown, and to warn about a stream that stays incomplete.
+	// They are not persisted.
+	incompleteGzipSize   int64
+	incompleteGzipSince  time.Time
+	incompleteGzipWarned bool
 }
+
+// incompleteGzipWarnAfter is how long a gzip stream can stay incomplete, without its file growing,
+// before a warning is logged.
+const incompleteGzipWarnAfter = time.Minute
 
 // Reader manages a single file
 type Reader struct {
@@ -160,13 +172,47 @@ func (r *Reader) createGzipReader() (int64, error) {
 		compressedStart = 0
 	}
 
+	// A gzip stream can only be decompressed from the start of a gzip member. If the stream is still
+	// being written, reading it now would move the offset into the middle of the compressed data and
+	// every following poll would fail with "gzip: invalid header". Wait until the stream is complete.
+	if r.incompleteGzipSize > 0 && r.incompleteGzipSize == currentEOF {
+		// The file has not grown since its gzip stream was found to be incomplete, so it is still incomplete.
+		err = errGzipStreamIncomplete
+	} else {
+		err = checkGzipStreamComplete(io.NewSectionReader(r.file, compressedStart, currentEOF-compressedStart))
+		r.incompleteGzipSize, r.incompleteGzipSince, r.incompleteGzipWarned = 0, time.Time{}, false
+		if errors.Is(err, errGzipStreamIncomplete) {
+			r.incompleteGzipSize, r.incompleteGzipSince = currentEOF, time.Now()
+		}
+	}
+	if err != nil {
+		switch {
+		case errors.Is(err, errGzipStreamIncomplete):
+			if unchangedFor := time.Since(r.incompleteGzipSince); !r.incompleteGzipWarned && unchangedFor >= incompleteGzipWarnAfter {
+				r.set.Logger.Warn("gzip stream is incomplete and the file has not grown, it will be read once the stream is complete",
+					zap.Duration("unchanged_for", unchangedFor))
+				r.incompleteGzipWarned = true
+			} else {
+				r.set.Logger.Debug("gzip stream is not complete yet, waiting for it to be fully written")
+			}
+			if r.decompressedBytesToSkip > 0 {
+				// Keep the plaintext offset of a file that was rotated into this gzip file, so that the
+				// already consumed bytes are skipped once the gzip stream is complete.
+				r.Offset = r.decompressedBytesToSkip
+				r.FileType = ""
+				r.decompressedBytesToSkip = 0
+			}
+		case !errors.Is(err, io.EOF):
+			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
+		}
+		return 0, err
+	}
+
 	// use a gzip Reader with an underlying SectionReader to pick up at the last
 	// offset of a gzip compressed file
 	gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, compressedStart, currentEOF-compressedStart))
 	if err != nil {
-		if !errors.Is(err, io.EOF) {
-			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
-		}
+		r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
 		return 0, err
 	}
 
@@ -180,6 +226,29 @@ func (r *Reader) createGzipReader() (int64, error) {
 	}
 	r.reader = gzipReader
 	return currentEOF, nil
+}
+
+var errGzipStreamIncomplete = errors.New("gzip stream is incomplete")
+
+// checkGzipStreamComplete decompresses the gzip stream read from rd and returns errGzipStreamIncomplete
+// if it ends before the trailer of its last gzip member, which happens while the stream is still being written.
+// It returns io.EOF if rd is empty.
+func checkGzipStreamComplete(rd io.Reader) error {
+	gzipReader, err := gzip.NewReader(rd)
+	if err == nil {
+		// Decompress into a fixed size buffer that is discarded, so the decompressed data is never kept in memory.
+		buf := make([]byte, 32*1024)
+		for err == nil {
+			_, err = gzipReader.Read(buf)
+		}
+		if errors.Is(err, io.EOF) {
+			err = nil
+		}
+	}
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		return errGzipStreamIncomplete
+	}
+	return err
 }
 
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
