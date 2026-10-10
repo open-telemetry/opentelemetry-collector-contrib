@@ -49,7 +49,7 @@ func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric
 		metricsBuffer[idx] = adxMetricJSONString
 	}
 	if len(metricsBuffer) != 0 {
-		if err := e.ingestData(metricsBuffer); err != nil {
+		if err := e.ingestData(ctx, metricsBuffer); err != nil {
 			return err
 		}
 	}
@@ -58,17 +58,17 @@ func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric
 	return nil
 }
 
-func (e *adxDataProducer) ingestData(b []string) error {
+func (e *adxDataProducer) ingestData(ctx context.Context, b []string) error {
 	ingestReader := strings.NewReader(strings.Join(b, nextline))
 
-	if _, err := e.ingestor.FromReader(context.Background(), ingestReader, e.ingestOptions...); err != nil {
+	if _, err := e.ingestor.FromReader(ctx, ingestReader, e.ingestOptions...); err != nil {
 		e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
 		return err
 	}
 	return nil
 }
 
-func (e *adxDataProducer) logsDataPusher(_ context.Context, logData plog.Logs) error {
+func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
 	var logsBuffer []string
 	for i := 0; i < resourceLogs.Len(); i++ {
@@ -89,14 +89,14 @@ func (e *adxDataProducer) logsDataPusher(_ context.Context, logData plog.Logs) e
 		}
 	}
 	if len(logsBuffer) != 0 {
-		if err := e.ingestData(logsBuffer); err != nil {
+		if err := e.ingestData(ctx, logsBuffer); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.Traces) error {
+func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace.Traces) error {
 	resourceSpans := traceData.ResourceSpans()
 	var spanBuffer []string
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -117,7 +117,7 @@ func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.T
 		}
 	}
 	if len(spanBuffer) != 0 {
-		if err := e.ingestData(spanBuffer); err != nil {
+		if err := e.ingestData(ctx, spanBuffer); err != nil {
 			return err
 		}
 	}
