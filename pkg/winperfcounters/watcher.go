@@ -127,6 +127,7 @@ func initQuery(counterPath string, collectOnStartup bool) (*win_perf_counters.Pe
 	var handle win_perf_counters.PDH_HCOUNTER
 	handle, err = query.AddEnglishCounterToQuery(counterPath)
 	if err != nil {
+		_ = query.Close()
 		return nil, nil, err
 	}
 
@@ -139,6 +140,7 @@ func initQuery(counterPath string, collectOnStartup bool) (*win_perf_counters.Pe
 			// matching instances.
 			var pdhErr *win_perf_counters.PdhError
 			if !errors.As(err, &pdhErr) || pdhErr.ErrorCode != win_perf_counters.PDH_NO_DATA {
+				_ = query.Close()
 				return nil, nil, err
 			}
 		}
