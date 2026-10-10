@@ -31,6 +31,23 @@ var testPod = &corev1.Pod{
 	},
 	Spec: corev1.PodSpec{
 		NodeName: "test-node",
+		InitContainers: []corev1.Container{
+			{
+				Name:  "sidecar-container",
+				Image: "docker/test-image:v1.0",
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("2"),
+						corev1.ResourceMemory: resource.MustParse("512Mi"),
+					},
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("500m"),
+						corev1.ResourceMemory: resource.MustParse("256Mi"),
+					},
+				},
+				RestartPolicy: new(corev1.ContainerRestartPolicyAlways),
+			},
+		},
 		Containers: []corev1.Container{
 			{
 				Name:  "test-container",
@@ -145,6 +162,62 @@ func TestRecordSpecMetrics(t *testing.T) {
 
 			expectedFile := filepath.Join("testdata", tt.expectedFile)
 			// golden.WriteMetrics(t, expectedFile, m)
+			expected, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+			))
+		})
+	}
+}
+
+func TestRecordSpecMetricsForSidecarContainer(t *testing.T) {
+	tests := []struct {
+		name            string
+		containerStatus *corev1.ContainerStatus
+		metricsConfig   func(metadata.MetricsBuilderConfig) metadata.MetricsBuilderConfig
+		expectedFile    string
+	}{
+		{
+			name: "running sidecar container",
+			containerStatus: &corev1.ContainerStatus{
+				Name:         "sidecar-container",
+				Image:        "docker/test-image:v1.0",
+				ContainerID:  "docker://abc123",
+				Ready:        true,
+				RestartCount: 2,
+				State: corev1.ContainerState{
+					Running: &corev1.ContainerStateRunning{},
+				},
+			},
+			expectedFile: "expected_sidecar_running.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pod := testPod.DeepCopy()
+			if tt.containerStatus != nil {
+				pod.Status.InitContainerStatuses = []corev1.ContainerStatus{*tt.containerStatus}
+			}
+
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
+			if tt.metricsConfig != nil {
+				mbc = tt.metricsConfig(mbc)
+			}
+			mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
+			ts := pcommon.Timestamp(time.Now().UnixNano())
+			assert.NotPanics(t, func() {
+				RecordSpecMetrics(zap.NewNop(), mb, pod.Spec.InitContainers[0], pod, ts)
+			})
+			m := mb.Emit()
+
+			expectedFile := filepath.Join("testdata", tt.expectedFile)
 			expected, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 			require.NoError(t, pmetrictest.CompareMetrics(expected, m,

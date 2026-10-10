@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -58,6 +59,62 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		pmetrictest.IgnoreScopeMetricsOrder(),
 	),
 	)
+}
+
+func setSidecarContainerMetricsFeatureGate(t *testing.T, enabled bool) {
+	t.Helper()
+	gate := metadata.ReceiverK8sclusterSidecarContainerMetricsFeatureGate
+	previous := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous))
+	})
+}
+
+func TestPodAndContainerMetricsSidecarFeatureGateDisabled(t *testing.T) {
+	setSidecarContainerMetricsFeatureGate(t, false)
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainerAndSidecarContainer("container-name", "sidecar-name"),
+		testutils.NewPodStatusWithContainerAndSidecarContainer("container-name", containerIDWithPrefix("container-id"), "sidecar-name", containerIDWithPrefix("sidecar-id")),
+	)
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	m := mb.Emit()
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	))
+}
+
+func TestPodAndContainerMetricsSidecarFeatureGateEnabled(t *testing.T) {
+	setSidecarContainerMetricsFeatureGate(t, true)
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainerAndSidecarContainer("container-name", "sidecar-name"),
+		testutils.NewPodStatusWithContainerAndSidecarContainer("container-name", containerIDWithPrefix("container-id"), "sidecar-name", containerIDWithPrefix("sidecar-id")),
+	)
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	m := mb.Emit()
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_sidecar.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	))
 }
 
 func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
@@ -536,6 +593,155 @@ func TestTransform(t *testing.T) {
 		},
 	}
 	assert.Equal(t, wantPod, Transform(originalPod))
+}
+
+func TestTransformSidecarContainers(t *testing.T) {
+	sidecarRestartPolicy := corev1.ContainerRestartPolicyAlways
+	sidecarState := corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}}
+	initState := corev1.ContainerState{Terminated: &corev1.ContainerStateTerminated{Reason: "Completed"}}
+	originalPod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "my-pod",
+			Namespace: "default",
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "node-1",
+			Containers: []corev1.Container{
+				{
+					Name: "app",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")},
+					},
+				},
+			},
+			InitContainers: []corev1.Container{
+				{
+					Name:          "sidecar",
+					RestartPolicy: &sidecarRestartPolicy,
+					Image:         "sidecar:latest",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m")},
+						Limits:   corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("200m")},
+					},
+				},
+				{
+					Name:  "init",
+					Image: "init:latest",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("50m")},
+					},
+				},
+			},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name:        "app",
+					Image:       "app:latest",
+					ContainerID: "app-id",
+					Ready:       true,
+				},
+			},
+			InitContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name:         "sidecar",
+					Image:        "sidecar:latest",
+					ContainerID:  "sidecar-id",
+					RestartCount: 1,
+					Ready:        true,
+					State:        sidecarState,
+				},
+				{Name: "init", Image: "init:latest", ContainerID: "init-id", Ready: false, State: initState},
+			},
+		},
+	}
+
+	t.Run("gate off drops all init containers", func(t *testing.T) {
+		setSidecarContainerMetricsFeatureGate(t, false)
+		wantPod := &corev1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "my-pod",
+				Namespace: "default",
+			},
+			Spec: corev1.PodSpec{
+				NodeName: "node-1",
+				Containers: []corev1.Container{
+					{
+						Name: "app",
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")},
+						},
+					},
+				},
+			},
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				ContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name:        "app",
+						Image:       "app:latest",
+						ContainerID: "app-id",
+						Ready:       true,
+					},
+				},
+			},
+		}
+		assert.Equal(t, wantPod, Transform(originalPod))
+	})
+
+	t.Run("gate on keeps sidecar spec and status", func(t *testing.T) {
+		setSidecarContainerMetricsFeatureGate(t, true)
+		wantPod := &corev1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "my-pod",
+				Namespace: "default",
+			},
+			Spec: corev1.PodSpec{
+				NodeName: "node-1",
+				Containers: []corev1.Container{
+					{
+						Name: "app",
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("500m")},
+						},
+					},
+				},
+				InitContainers: []corev1.Container{
+					{
+						Name:          "sidecar",
+						RestartPolicy: &sidecarRestartPolicy,
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m")},
+							Limits:   corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("200m")},
+						},
+					},
+				},
+			},
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				ContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name:        "app",
+						Image:       "app:latest",
+						ContainerID: "app-id",
+						Ready:       true,
+					},
+				},
+				InitContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name:         "sidecar",
+						Image:        "sidecar:latest",
+						ContainerID:  "sidecar-id",
+						RestartCount: 1,
+						Ready:        true,
+						State:        sidecarState,
+					},
+				},
+			},
+		}
+		assert.Equal(t, wantPod, Transform(originalPod))
+	})
 }
 
 func TestPodMetadata(t *testing.T) {
