@@ -54,7 +54,7 @@ func TestFetchParsesPodsOnly(t *testing.T) {
 
 	pods, unresolved, err := newPodClient(srv.URL, time.Second).fetch(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, map[string]string{"uid-1": "uuid-1"}, pods)
+	require.Equal(t, map[string]resourceMetadata{"uid-1": {uuid: "uuid-1"}}, pods)
 	require.Equal(t, 1, unresolved)
 }
 
@@ -193,4 +193,37 @@ func TestRepeatedFailuresEscalateToErrorAndRecoveryIsLogged(t *testing.T) {
 	p.refresh(context.Background())
 	require.Equal(t, 1, logs.FilterMessage("pod uuid endpoint recovered").Len())
 	require.Equal(t, 1, logs.FilterMessage("refreshed pod uuids").Len())
+}
+
+func TestUsedEntrySurvivesAndAbsentPodIsKept(t *testing.T) {
+	var gone atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if gone.Load() {
+			_, _ = w.Write([]byte(`{"nodes":[]}`))
+			return
+		}
+		_, _ = w.Write([]byte(graphJSON))
+	}))
+	defer srv.Close()
+
+	p := newTestProcessor(t, srv.URL, func(c *Config) {
+		c.CacheTTL = 200 * time.Millisecond
+		c.RetryInterval = 10 * time.Millisecond
+		c.RefreshInterval = 10 * time.Millisecond
+	})
+	p.refresh(context.Background())
+	gone.Store(true)
+
+	for i := 0; i < 4; i++ {
+		time.Sleep(100 * time.Millisecond)
+		p.refresh(context.Background())
+		out, _ := p.processLogs(context.Background(), logsFor("uid-1"))
+		_, ok := uuidOf(out)
+		require.True(t, ok, "entry in use must stay cached after %d refreshes", i+1)
+	}
+
+	time.Sleep(300 * time.Millisecond)
+	out, _ := p.processLogs(context.Background(), logsFor("uid-1"))
+	_, ok := uuidOf(out)
+	require.False(t, ok, "entry unused for longer than cache_ttl must be dropped")
 }

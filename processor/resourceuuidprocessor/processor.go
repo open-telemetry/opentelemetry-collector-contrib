@@ -2,6 +2,7 @@ package resourceuuidprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,17 +13,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// cacheEntry carries its own expiry: the expirable LRU of golang-lru starts a goroutine that cannot be stopped.
+// cacheEntry tracks when it was last used so that idle entries expire; the expirable LRU of golang-lru
+// starts a goroutine that cannot be stopped.
 type cacheEntry struct {
-	uuid    string
-	expires time.Time
+	resourceMetadata
+	lastUsed atomic.Int64 // unix nanoseconds
 }
 
 type resourceUUIDProcessor struct {
 	logger *zap.Logger
 	cfg    *Config
 	client *podClient
-	cache  *lru.Cache[string, cacheEntry]
+	cache  *lru.Cache[string, *cacheEntry]
 
 	// missed is set when a record referred to a pod that is not cached, so the retry tick knows a poll is worth it.
 	missed atomic.Bool
@@ -36,7 +38,7 @@ type resourceUUIDProcessor struct {
 
 func newResourceUUIDProcessor(logger *zap.Logger, cfg *Config) *resourceUUIDProcessor {
 	// New only fails for a non-positive size, which Validate rejects.
-	cache, _ := lru.New[string, cacheEntry](cfg.CacheSize)
+	cache, _ := lru.New[string, *cacheEntry](cfg.CacheSize)
 	return &resourceUUIDProcessor{
 		logger: logger,
 		cfg:    cfg,
@@ -45,16 +47,18 @@ func newResourceUUIDProcessor(logger *zap.Logger, cfg *Config) *resourceUUIDProc
 	}
 }
 
-func (p *resourceUUIDProcessor) lookup(uid string) (string, bool) {
+func (p *resourceUUIDProcessor) lookup(uid string) (resourceMetadata, bool) {
 	e, ok := p.cache.Get(uid)
 	if !ok {
-		return "", false
+		return resourceMetadata{}, false
 	}
-	if time.Now().After(e.expires) {
+	now := time.Now()
+	if now.Sub(time.Unix(0, e.lastUsed.Load())) > p.cfg.CacheTTL {
 		p.cache.Remove(uid)
-		return "", false
+		return resourceMetadata{}, false
 	}
-	return e.uuid, true
+	e.lastUsed.Store(now.UnixNano())
+	return e.resourceMetadata, true
 }
 
 func (p *resourceUUIDProcessor) start(_ context.Context, _ component.Host) error {
@@ -110,7 +114,7 @@ func (p *resourceUUIDProcessor) loop(ctx context.Context) {
 // failuresBeforeError is how many consecutive failed polls are logged as warnings before they become errors.
 const failuresBeforeError = 3
 
-// refresh pulls the pod list and caches every pod that has a uuid. On failure the cache is left as it is.
+// refresh replaces known metadata from a successful snapshot, retaining the cache on failure.
 func (p *resourceUUIDProcessor) refresh(ctx context.Context) {
 	pods, unresolved, err := p.client.fetch(ctx)
 	if err != nil {
@@ -125,7 +129,7 @@ func (p *resourceUUIDProcessor) refresh(ctx context.Context) {
 			zap.Error(err),
 		}
 		if p.failures >= failuresBeforeError {
-			p.logger.Error("pod uuid endpoint keeps failing; new pods will not get k8s.pod.uuid and cached ones expire after cache_ttl", fields...)
+			p.logger.Error("pod uuid endpoint keeps failing; new pods will not get k8s.pod.uuid and cached ones expire after sitting unused for cache_ttl", fields...)
 		} else {
 			p.logger.Warn("failed to fetch pod uuids, keeping the cached ones", fields...)
 		}
@@ -138,15 +142,32 @@ func (p *resourceUUIDProcessor) refresh(ctx context.Context) {
 	}
 
 	added := 0
-	expires := time.Now().Add(p.cfg.CacheTTL)
-	for uid, uuid := range pods {
-		if _, ok := p.lookup(uid); !ok {
+	now := time.Now()
+	// Entries leave the cache only after sitting unused for cache_ttl, not because a snapshot omits them.
+	for _, uid := range p.cache.Keys() {
+		if e, ok := p.cache.Peek(uid); ok && now.Sub(time.Unix(0, e.lastUsed.Load())) > p.cfg.CacheTTL {
+			p.cache.Remove(uid)
+		}
+	}
+	resolved := 0
+	for uid, metadata := range pods {
+		if strings.HasPrefix(uid, nodeKeyPrefix) != p.cfg.NodeLogs {
+			continue
+		}
+		entry := &cacheEntry{resourceMetadata: metadata}
+		if existing, ok := p.cache.Peek(uid); ok {
+			entry.lastUsed.Store(existing.lastUsed.Load())
+		} else {
+			entry.lastUsed.Store(now.UnixNano())
 			added++
 		}
-		p.cache.Add(uid, cacheEntry{uuid: uuid, expires: expires})
+		p.cache.Add(uid, entry)
+		if metadata.uuid != "" {
+			resolved++
+		}
 	}
 	p.logger.Info("refreshed pod uuids",
-		zap.Int("pods_with_uuid", len(pods)),
+		zap.Int("resources_with_uuid", resolved),
 		zap.Int("pods_without_uuid", unresolved),
 		zap.Int("newly_cached", added),
 		zap.Int("cached_pods", p.cache.Len()))
@@ -157,11 +178,37 @@ func (p *resourceUUIDProcessor) processLogs(_ context.Context, ld plog.Logs) (pl
 	for i := 0; i < rls.Len(); i++ {
 		attrs := rls.At(i).Resource().Attributes()
 		uidVal, ok := attrs.Get(p.cfg.PodUIDAttribute)
+		key := uidVal.Str()
+		if p.cfg.NodeLogs {
+			// Never fall back to node identity for a pod whose UUID has not resolved.
+			if ok && key != "" {
+				continue
+			}
+			uidVal, ok = attrs.Get("k8s.node.name")
+			key = nodeKeyPrefix + uidVal.Str()
+		}
 		if !ok || uidVal.Str() == "" {
 			continue
 		}
-		if uuid, found := p.lookup(uidVal.Str()); found {
-			attrs.PutStr(p.cfg.TargetAttribute, uuid)
+		if metadata, found := p.lookup(key); found {
+			if cluster, exists := attrs.Get("k8s.cluster.name"); exists && metadata.attributes["k8s.cluster.name"] != "" && cluster.Str() != metadata.attributes["k8s.cluster.name"] {
+				p.logger.Warn("skipping metadata from a different cluster", zap.String("resource_key", key))
+				continue
+			}
+			for name, value := range metadata.attributes {
+				if value != "" {
+					attrs.PutStr(name, value)
+				}
+			}
+			if metadata.uuid != "" {
+				attrs.PutStr("resourceUUID", metadata.uuid)
+				if !p.cfg.NodeLogs {
+					attrs.PutStr("k8s.pod.resourceUUID", metadata.uuid)
+					attrs.PutStr(p.cfg.TargetAttribute, metadata.uuid)
+				}
+			} else {
+				p.missed.Store(true)
+			}
 		} else {
 			p.logger.Debug("no uuid cached for pod yet", zap.String("pod_uid", uidVal.Str()))
 			p.missed.Store(true)

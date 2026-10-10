@@ -21,13 +21,13 @@ const (
 
 // Config defines the configuration of the resource uuid processor.
 type Config struct {
-	// Endpoint is the eworker provider graph endpoint, ideally with kind=Pod&edges=false.
+	// Endpoint is the eworker graph endpoint, optionally with workloadDetails=true.
 	Endpoint string `mapstructure:"endpoint"`
 	// RefreshInterval is how often the whole pod list is pulled.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 	// RetryInterval is how often the list is pulled again when a record referred to a pod that has no uuid yet.
 	RetryInterval time.Duration `mapstructure:"retry_interval"`
-	// CacheTTL is how long a pod uuid stays cached after it was last seen in the endpoint response.
+	// CacheTTL is how long a pod entry may sit unused (no log record looked it up) before it is dropped.
 	CacheTTL time.Duration `mapstructure:"cache_ttl"`
 	// CacheSize is the maximum number of pods kept in the cache.
 	CacheSize int `mapstructure:"cache_size"`
@@ -37,6 +37,8 @@ type Config struct {
 	PodUIDAttribute string `mapstructure:"pod_uid_attribute"`
 	// TargetAttribute is the resource attribute the uuid is written to.
 	TargetAttribute string `mapstructure:"target_attribute"`
+	// NodeLogs enriches explicitly node-scoped pipelines by k8s.node.name instead of pod UID.
+	NodeLogs bool `mapstructure:"node_logs"`
 }
 
 var _ component.Config = (*Config)(nil)
