@@ -170,6 +170,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches, err = builder.meter.Int64Histogram(
+		"otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches",
+		metric.WithDescription("Distribution of root span condition matches for traces where the condition matched at least once. [Development]"),
+		metric.WithUnit("{spans}"),
+		metric.WithExplicitBucketBoundaries([]float64{2, 3, 5, 10, 25, 100}...),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerBurstCount, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_adaptive_tail_sampling_sampler_burst_count",
 		metric.WithDescription("Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]"),

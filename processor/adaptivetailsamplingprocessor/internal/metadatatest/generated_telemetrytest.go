@@ -129,6 +129,21 @@ func AssertEqualProcessorAdaptiveTailSamplingOttlEvalErrors(t *testing.T, tt *co
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches",
+		Description: "Distribution of root span condition matches for traces where the condition matched at least once. [Development]",
+		Unit:        "{spans}",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_burst_count",

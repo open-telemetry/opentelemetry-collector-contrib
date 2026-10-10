@@ -72,6 +72,14 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+    processor_adaptive_tail_sampling_root_span_condition_multiple_matches:
+      enabled: true
+      description: Distribution of root span condition matches for traces where the condition matched at least once.
+      unit: "{spans}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [2, 3, 5, 10, 25, 100]
+      stability: development
     processor_adaptive_tail_sampling_sampler_burst_count:
       enabled: true
       description: Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter.
