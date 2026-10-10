@@ -90,8 +90,8 @@ func TestConvertGCPTimeSeriesToMetrics_DeltaPointsOrdering(t *testing.T) {
 	assert.Equal(t, int64(4), dps.At(1).IntValue())
 
 	// Strict downstream invariant: Timestamp must be strictly increasing
-	assert.True(t, dps.At(1).Timestamp() > dps.At(0).Timestamp(), "Timestamp must be strictly increasing")
-	assert.True(t, dps.At(1).StartTimestamp() >= dps.At(0).StartTimestamp(), "StartTimestamp must be non-decreasing")
+	assert.Greater(t, dps.At(1).Timestamp(), dps.At(0).Timestamp(), "Timestamp must be strictly increasing")
+	assert.GreaterOrEqual(t, dps.At(1).StartTimestamp(), dps.At(0).StartTimestamp(), "StartTimestamp must be non-decreasing")
 }
 
 func TestConvertGCPTimeSeriesToMetrics_DistributionPointsOrdering(t *testing.T) {
@@ -164,8 +164,8 @@ func TestConvertGCPTimeSeriesToMetrics_DistributionPointsOrdering(t *testing.T) 
 	assert.Equal(t, pcommon.NewTimestampFromTime(timestamppb.New(timeFromSec(100)).AsTime()), dps.At(1).StartTimestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(timestamppb.New(timeFromSec(160)).AsTime()), dps.At(1).Timestamp())
 
-	assert.True(t, dps.At(1).Timestamp() > dps.At(0).Timestamp(), "Timestamp must be strictly increasing")
-	assert.True(t, dps.At(1).StartTimestamp() >= dps.At(0).StartTimestamp(), "StartTimestamp must be non-decreasing")
+	assert.Greater(t, dps.At(1).Timestamp(), dps.At(0).Timestamp(), "Timestamp must be strictly increasing")
+	assert.GreaterOrEqual(t, dps.At(1).StartTimestamp(), dps.At(0).StartTimestamp(), "StartTimestamp must be non-decreasing")
 }
 
 func TestConvertGCPTimeSeriesToMetrics_GaugePointsOrdering(t *testing.T) {
@@ -219,7 +219,7 @@ func TestConvertGCPTimeSeriesToMetrics_GaugePointsOrdering(t *testing.T) {
 
 	assert.Equal(t, 0.5, dps.At(0).DoubleValue())
 	assert.Equal(t, 0.8, dps.At(1).DoubleValue())
-	assert.True(t, dps.At(1).Timestamp() > dps.At(0).Timestamp(), "Timestamp must be strictly increasing")
+	assert.Greater(t, dps.At(1).Timestamp(), dps.At(0).Timestamp(), "Timestamp must be strictly increasing")
 }
 
 func TestConvertGCPTimeSeriesToMetrics_CumulativePointsOrdering(t *testing.T) {
@@ -274,7 +274,7 @@ func TestConvertGCPTimeSeriesToMetrics_CumulativePointsOrdering(t *testing.T) {
 
 	assert.Equal(t, int64(1000), dps.At(0).IntValue())
 	assert.Equal(t, int64(2000), dps.At(1).IntValue())
-	assert.True(t, dps.At(1).Timestamp() > dps.At(0).Timestamp(), "Timestamp must be strictly increasing")
+	assert.Greater(t, dps.At(1).Timestamp(), dps.At(0).Timestamp(), "Timestamp must be strictly increasing")
 }
 
 func timeFromSec(sec int64) time.Time {
