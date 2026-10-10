@@ -65,9 +65,9 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 		if cs.LastTerminationState.Terminated != nil {
 			e.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
 		}
-		image, err := docker.ParseImageName(cs.Image)
+		image, err := docker.ParseImageName(c.Image)
 		if err != nil {
-			docker.LogParseError(err, cs.Image, logger)
+			docker.LogParseError(err, c.Image, logger)
 		} else {
 			e.SetContainerImageName(image.Repository)
 			e.SetContainerImageTag(image.Tag)
@@ -156,8 +156,11 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger) *metadata.KubernetesMetadata {
 	mdata := map[string]string{}
 
-	imageStr := cs.Image
-	image, err := docker.ParseImageName(cs.Image)
+	imageStr := specImageForContainer(pod, cs.Name)
+	if imageStr == "" {
+		imageStr = cs.Image
+	}
+	image, err := docker.ParseImageName(imageStr)
 	if err != nil {
 		docker.LogParseError(err, imageStr, logger)
 	} else {
@@ -196,6 +199,22 @@ func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger)
 		ResourceID:    metadataPkg.ResourceID(stripContainerID(cs.ContainerID)),
 		Metadata:      mdata,
 	}
+}
+
+// specImageForContainer returns the image string from the pod spec for
+// the container with the given name.
+func specImageForContainer(pod *corev1.Pod, containerName string) string {
+	for i := range pod.Spec.Containers {
+		if pod.Spec.Containers[i].Name == containerName {
+			return pod.Spec.Containers[i].Image
+		}
+	}
+	for i := range pod.Spec.InitContainers {
+		if pod.Spec.InitContainers[i].Name == containerName {
+			return pod.Spec.InitContainers[i].Image
+		}
+	}
+	return ""
 }
 
 func boolToInt64(b bool) int64 {

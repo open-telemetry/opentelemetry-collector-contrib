@@ -169,6 +169,11 @@ func TestGetMetadata(t *testing.T) {
 		},
 		Spec: corev1.PodSpec{
 			NodeName: "test-node",
+			Containers: []corev1.Container{
+				{Name: "my-test-container1", Image: "docker/someimage1:v1.0"},
+				{Name: "my-test-container2", Image: "docker/someimage2:v1.1"},
+				{Name: "my-test-container3", Image: "docker/someimage3:latest"},
+			},
 		},
 	}
 
@@ -280,4 +285,59 @@ func TestGetMetadata(t *testing.T) {
 			assert.Equal(t, tt.nodeName, md.Metadata["k8s.node.name"])
 		})
 	}
+}
+
+func TestGetMetadataUsesSpecImage(t *testing.T) {
+	refTime := v1.Now()
+	pod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+			UID:       types.UID("test-pod-uid"),
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
+			Containers: []corev1.Container{
+				{Name: "http", Image: "registry.example.com/myapp:v1.2.3@sha256:dbc66f8c46d4cf4793527ca0737d73527a2bb830019953c2371b5f45f515f1a8"},
+			},
+		},
+	}
+	logger := zap.NewNop()
+
+	cs := corev1.ContainerStatus{
+		State: corev1.ContainerState{
+			Running: &corev1.ContainerStateRunning{
+				StartedAt: refTime,
+			},
+		},
+		Name:        "http",
+		ContainerID: "containerd://abc123",
+		// Some container runtimes (e.g. containerd on EKS) set Image
+		// to the digest rather than the full image reference.
+		Image: "sha256:dbc66f8c46d4cf4793527ca0737d73527a2bb830019953c2371b5f45f515f1a8",
+	}
+	md := GetMetadata(pod, cs, logger)
+
+	require.NotNil(t, md)
+	assert.Equal(t, "registry.example.com/myapp", md.Metadata[containerImageName])
+	assert.Equal(t, "v1.2.3", md.Metadata[containerImageTag])
+}
+
+func TestSpecImageForContainer(t *testing.T) {
+	pod := &corev1.Pod{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "app", Image: "myregistry.com/app:v1"},
+				{Name: "sidecar", Image: "myregistry.com/sidecar:v2"},
+			},
+			InitContainers: []corev1.Container{
+				{Name: "init", Image: "myregistry.com/init:latest"},
+			},
+		},
+	}
+
+	assert.Equal(t, "myregistry.com/app:v1", specImageForContainer(pod, "app"))
+	assert.Equal(t, "myregistry.com/sidecar:v2", specImageForContainer(pod, "sidecar"))
+	assert.Equal(t, "myregistry.com/init:latest", specImageForContainer(pod, "init"))
+	assert.Empty(t, specImageForContainer(pod, "nonexistent"))
 }
