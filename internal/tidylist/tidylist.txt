@@ -34,12 +34,6 @@ internal/exp/metrics
 processor/deltatocumulativeprocessor
 receiver/prometheusreceiver
 exporter/prometheusexporter
-internal/gopsutilenv
-internal/splunk
-pkg/batchperresourceattr
-pkg/experimentalmetricmetadata
-pkg/translator/signalfx
-exporter/signalfxexporter
 exporter/stefexporter
 exporter/syslogexporter
 pkg/core/xidutils
@@ -58,6 +52,8 @@ internal/datadog
 pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
+internal/splunk
+pkg/batchperresourceattr
 pkg/translator/pprof
 pkg/translator/splunk
 exporter/splunkhecexporter
@@ -80,6 +76,8 @@ internal/filter
 connector/countconnector
 exporter/datadogexporter
 processor/tailsamplingprocessor
+internal/gopsutilenv
+pkg/experimentalmetricmetadata
 pkg/winperfcounters
 receiver/hostmetricsreceiver
 connector/datadogconnector
@@ -142,6 +140,8 @@ internal/rabbitmq
 exporter/rabbitmqexporter
 exporter/sematextexporter
 exporter/sentryexporter
+pkg/translator/signalfx
+exporter/signalfxexporter
 extension/sumologicextension
 exporter/sumologicexporter
 exporter/tencentcloudlogserviceexporter
