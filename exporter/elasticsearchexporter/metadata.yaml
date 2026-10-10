@@ -4,8 +4,8 @@ display_name: Elasticsearch Exporter
 status:
   class: exporter
   stability:
-    beta: [traces, logs]
-    development: [metrics, profiles]
+    beta: [traces, logs, metrics]
+    development: [profiles]
   distributions: [contrib]
   codeowners:
     active: [JaredTan95, blakerouse, carsonip, lahsivjar]
