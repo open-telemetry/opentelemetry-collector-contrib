@@ -135,6 +135,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(ctx context.Context, md p
 					baseIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
 						InstrumentationLibrary: ilm.Scope(),
+						ScopeSchemaURL:         ilm.SchemaUrl(),
 						MetricType:             m.Type(),
 						MetricName:             m.Name(),
 						MetricUnit:             m.Unit(),
@@ -156,6 +157,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(ctx context.Context, md p
 					baseIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
 						InstrumentationLibrary: ilm.Scope(),
+						ScopeSchemaURL:         ilm.SchemaUrl(),
 						MetricType:             m.Type(),
 						MetricName:             m.Name(),
 						MetricUnit:             m.Unit(),
@@ -180,6 +182,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(ctx context.Context, md p
 					baseIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
 						InstrumentationLibrary: ilm.Scope(),
+						ScopeSchemaURL:         ilm.SchemaUrl(),
 						MetricType:             m.Type(),
 						MetricName:             m.Name(),
 						MetricUnit:             m.Unit(),
