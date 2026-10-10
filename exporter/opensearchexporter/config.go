@@ -29,11 +29,12 @@ const (
 
 // Config defines configuration for OpenSearch exporter.
 type Config struct {
-	ClientConfig     confighttp.ClientConfig                                  `mapstructure:"http"`
-	BackOffConfig    configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
-	TimeoutSettings  exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
-	MappingsSettings MappingsSettings                                         `mapstructure:"mapping"`
-	QueueConfig      configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	ClientConfig      confighttp.ClientConfig                                  `mapstructure:"http"`
+	BackOffConfig     configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	TimeoutSettings   exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	MappingsSettings  MappingsSettings                                         `mapstructure:"mapping"`
+	QueueConfig       configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TelemetrySettings TelemetrySettings                                        `mapstructure:"telemetry"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
@@ -69,6 +70,15 @@ type Config struct {
 	// Pipeline is the optional ID of an ingest pipeline to apply when indexing documents.
 	// https://opensearch.org/docs/latest/ingest-pipelines/
 	Pipeline string `mapstructure:"pipeline"`
+}
+
+// TelemetrySettings configures request and response body logging for the OpenSearch client.
+type TelemetrySettings struct {
+	// LogRequestBody enables logging of OpenSearch request bodies at debug level.
+	LogRequestBody bool `mapstructure:"log_request_body"`
+
+	// LogResponseBody enables logging of OpenSearch response bodies at debug level.
+	LogResponseBody bool `mapstructure:"log_response_body"`
 }
 
 var (

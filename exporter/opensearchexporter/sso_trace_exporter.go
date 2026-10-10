@@ -63,7 +63,12 @@ func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) erro
 		return err
 	}
 
-	client, err := newOpenSearchClient(s.httpSettings.Endpoint, httpClient, s.telemetry.Logger)
+	client, err := newOpenSearchClient(
+		s.httpSettings.Endpoint,
+		httpClient,
+		s.telemetry.Logger,
+		s.config,
+	)
 	if err != nil {
 		return err
 	}
@@ -91,7 +96,14 @@ func (s *ssoTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces)
 	return indexer.joinedError()
 }
 
-func newOpenSearchClient(endpoint string, httpClient *http.Client, logger *zap.Logger) (*opensearchapi.Client, error) {
+func newOpenSearchClient(
+	endpoint string,
+	httpClient *http.Client,
+	logger *zap.Logger,
+	cfg *Config,
+) (*opensearchapi.Client, error) {
+	warnAboutBodyLogging(logger, cfg.TelemetrySettings)
+
 	return opensearchapi.NewClient(opensearchapi.Config{
 		Client: opensearch.Config{
 			Transport: httpClient.Transport,
@@ -103,7 +115,11 @@ func newOpenSearchClient(endpoint string, httpClient *http.Client, logger *zap.L
 			// configure internal metrics reporting and logging
 			EnableMetrics:     false, // TODO
 			EnableDebugLogger: false, // TODO
-			Logger:            newClientLogger(logger),
+			Logger: newClientLogger(
+				logger,
+				cfg.TelemetrySettings.LogRequestBody,
+				cfg.TelemetrySettings.LogResponseBody,
+			),
 		},
 	})
 }
