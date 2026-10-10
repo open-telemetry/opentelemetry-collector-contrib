@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add top minute split stats metrics and `hide_split_stats_keys` logic in `googlecloudspannerreceiver`. All `split_stats/top/*` metrics gain the `split_start` and `split_limit` attributes with PII hiding support.
+issues: [51026]
+subtext: ""
+change_logs: []

@@ -294,3 +294,131 @@ func metricsDataPointForTests() *MetricsDataPoint {
 		metricValue: allPossibleMetricValues(metricDataType)[0],
 	}
 }
+
+func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
+	testCases := []struct {
+		name          string
+		originalValue string
+		expectedValue string
+	}{
+		{
+			name:          "flat string",
+			originalValue: "test_db_user_123",
+			expectedValue: "test_db_user_123",
+		},
+		{
+			name:          "boundary begin",
+			originalValue: "<begin>",
+			expectedValue: "<begin>",
+		},
+		{
+			name:          "boundary end",
+			originalValue: "<end>",
+			expectedValue: "<end>",
+		},
+		{
+			name:          "boundary infinity",
+			originalValue: "<infinity>",
+			expectedValue: "<infinity>",
+		},
+		{
+			name:          "simple table key",
+			originalValue: "Users(3)",
+			expectedValue: "Users(1309098117)",
+		},
+		{
+			name:          "composite table key",
+			originalValue: "Messages(3,\"a\",1)",
+			expectedValue: "Messages(1309098117,2894955330,1803989619)",
+		},
+		{
+			name:          "nested brackets key",
+			originalValue: "UsersTable(Accounts(12345, \"bob\"), Settings(true, \"US\"))",
+			expectedValue: "UsersTable(Accounts(1502889754,2388175350), Settings(3049169947,3244586957))",
+		},
+		{
+			name:          "quoted comma key",
+			originalValue: "Table(3,\"John, Doe\")",
+			expectedValue: "Table(1309098117,145129574)",
+		},
+		{
+			name:          "escaped quotes",
+			originalValue: "Table(\"O\\\"Connor\")",
+			expectedValue: "Table(1624458470)",
+		},
+		{
+			name:          "complex index",
+			originalValue: "UserEmailIndex(\"alice@gmail.com\", 987654)",
+			expectedValue: "UserEmailIndex(2147054059,1145901250)",
+		},
+		{
+			name:          "empty brackets",
+			originalValue: "Table()",
+			expectedValue: "Table()",
+		},
+		{
+			name:          "single quoted uuid",
+			originalValue: "INDEX Order ('5b8bac71-0cb2-95e9-e1b0-89a027525460')",
+			expectedValue: "INDEX Order (1576611093)",
+		},
+		{
+			name:          "multi index with single quotes and escaped comma",
+			originalValue: "INDEX IndexABC (0, '2020-06-18T17:24:53Z', '2020-06-18T17:24:53Z') TableKey (123,'ab\\,c')",
+			expectedValue: "INDEX IndexABC (1609362278,1478541813,1478541813) TableKey (2791679065,4005005524)",
+		},
+		{
+			name:          "verbose index key with begin",
+			originalValue: "Index: T_IDX on T, Index Key: (10), Primary Table Key: (<begin>,<begin>)",
+			expectedValue: "Index: T_IDX on T, Index Key: (1246026773), Primary Table Key: (<begin>,<begin>)",
+		},
+		{
+			name:          "index with NULL values",
+			originalValue: "INDEX IndexXYZ ('8762203435012030000',NULL,NULL)",
+			expectedValue: "INDEX IndexXYZ (3755976169,NULL,NULL)",
+		},
+		{
+			name:          "emoji unicode",
+			originalValue: "UsersTable('bob😊')",
+			expectedValue: "UsersTable(1331076972)",
+		},
+		{
+			name:          "date of birth with hyphens",
+			originalValue: "UsersTable(\"1990-01-01\")",
+			expectedValue: "UsersTable(25106544)",
+		},
+		{
+			name:          "date of birth with slashes",
+			originalValue: "UsersTable(\"05/12/1985\")",
+			expectedValue: "UsersTable(1994209726)",
+		},
+		{
+			name:          "split stats empty brackets",
+			originalValue: "TableA()",
+			expectedValue: "TableA()",
+		},
+		{
+			name:          "split stats interleaved",
+			originalValue: "TableA().TableB",
+			expectedValue: "TableA().TableB",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			splitStartMetadata, _ := NewLabelValueMetadata("split_start", "splitStartColumnName", StringValueType)
+			labelValue1 := stringLabelValue{metadata: splitStartMetadata, value: tc.originalValue}
+
+			labelValues := []LabelValue{labelValue1}
+			metricsDataPoint := &MetricsDataPoint{
+				metricName:  "test_metric",
+				timestamp:   time.Now().UTC(),
+				databaseID:  databaseID(),
+				labelValues: labelValues,
+			}
+
+			metricsDataPoint.HideSplitStatsKeysPII()
+
+			assert.Equal(t, tc.expectedValue, metricsDataPoint.labelValues[0].Value(), "Hashing failed for case %s", tc.name)
+		})
+	}
+}
