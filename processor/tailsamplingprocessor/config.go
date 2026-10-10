@@ -384,9 +384,9 @@ type Config struct {
 	// DecisionTickStagger is the time window used to spread shard decision
 	// ticks. Shards are placed evenly across this window, with one random
 	// base phase per processor instance, so sampled traces are not released
-	// in synchronized bursts. Span ingestion is not delayed. Defaults to 1s
-	// (the decision ticker period). Set to 0 to keep all shard decision ticks
-	// aligned (previous behavior). Negative values are invalid.
+	// in synchronized bursts. Span ingestion is not delayed. Defaults to 0
+	// (disabled; all shard decision ticks stay aligned). Set to a positive
+	// duration (e.g. 1s) to enable stagger. Negative values are invalid.
 	DecisionTickStagger time.Duration `mapstructure:"decision_tick_stagger"`
 }
 

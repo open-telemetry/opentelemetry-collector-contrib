@@ -85,10 +85,10 @@ The following configuration options can also be modified:
   enforcement is approximate: limits smaller than `num_shards` can be exceeded in aggregate, and a shard can
   reach its share of `num_traces` before the aggregate does. Values greater than 1 are not supported together
   with `tail_storage`.
-- `decision_tick_stagger` (default = 1s): Time window used to spread shard decision ticks. Shards are placed
-  evenly across this window (with a random base phase per processor instance) so sampled traces are not
-  released in synchronized bursts. Span ingestion still starts immediately. Set to `0` to keep all shard
-  decision ticks aligned.
+- `decision_tick_stagger` (default = 0): Time window used to spread shard decision ticks. Defaults to `0`
+  (disabled; all shard decision ticks stay aligned). Set to a positive duration (e.g. `1s`) to place shards
+  evenly across that window (with a random base phase per processor instance) so sampled traces are not
+  released in synchronized bursts. Span ingestion still starts immediately.
 
 ## Sampling Strategies
 
