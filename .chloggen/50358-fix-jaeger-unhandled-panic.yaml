@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: receiver/jaeger
+note: Fixes a potential Denial of Service vulnerability caused by an unhandled panic in EmitZipkinBatch Thrift payload processing.
+issues: [50358]
