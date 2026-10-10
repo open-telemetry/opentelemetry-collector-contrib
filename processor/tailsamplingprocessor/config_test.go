@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			NumShards:               1,
-			DecisionTickStagger:     true,
+			DecisionTickStagger:     time.Second,
 			ExpectedNewTracesPerSec: 10,
 			SamplingStrategy:        samplingStrategyTraceComplete,
 			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1_000, NonSampledCacheSize: 10_000},
@@ -227,6 +227,19 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		}, cfg)
+}
+
+func TestConfigValidateDecisionTickStagger(t *testing.T) {
+	cfg := &Config{
+		SamplingStrategy:    samplingStrategyTraceComplete,
+		DecisionTickStagger: -time.Second,
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "decision_tick_stagger")
+
+	cfg.DecisionTickStagger = 0
+	require.NoError(t, cfg.Validate())
 }
 
 func TestConfigValidateNumShards(t *testing.T) {

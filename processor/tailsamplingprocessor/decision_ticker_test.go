@@ -45,7 +45,7 @@ func TestAssignDecisionTickDelays(t *testing.T) {
 	shards[2].fixedFirstTickDelay = true
 	shards[2].firstTickDelay = 5 * time.Millisecond
 
-	assignDecisionTickDelays(shards, base)
+	assignDecisionTickDelays(shards, base, period)
 
 	assert.Equal(t, base, shards[0].firstTickDelay)
 	assert.Equal(t, base+period/4, shards[1].firstTickDelay)
@@ -128,7 +128,7 @@ func TestShardedProcessorDecisionTickStagger(t *testing.T) {
 		DecisionWait:        defaultTestDecisionWait,
 		NumTraces:           400,
 		NumShards:           8,
-		DecisionTickStagger: true,
+		DecisionTickStagger: time.Second,
 		PolicyCfgs:          testPolicy,
 		Options: []Option{
 			withTickerFrequency(time.Second),
@@ -156,7 +156,7 @@ func TestDecisionTickStaggerDisabled(t *testing.T) {
 		DecisionWait:        defaultTestDecisionWait,
 		NumTraces:           400,
 		NumShards:           8,
-		DecisionTickStagger: false,
+		DecisionTickStagger: 0,
 		PolicyCfgs:          testPolicy,
 		Options: []Option{
 			withTickerFrequency(time.Second),
@@ -166,6 +166,30 @@ func TestDecisionTickStaggerDisabled(t *testing.T) {
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 	for i, shard := range p.(*shardedProcessor).shards {
-		assert.Zero(t, shard.firstTickDelay, "shard %d should not be staggered when disabled", i)
+		assert.Zero(t, shard.firstTickDelay, "shard %d should not be staggered when set to 0", i)
 	}
+}
+
+func TestDecisionTickStaggerCustomWindow(t *testing.T) {
+	window := 400 * time.Millisecond
+	cfg := Config{
+		SamplingStrategy:    samplingStrategyTraceComplete,
+		DecisionWait:        defaultTestDecisionWait,
+		NumTraces:           400,
+		NumShards:           4,
+		DecisionTickStagger: window,
+		PolicyCfgs:          testPolicy,
+		Options: []Option{
+			withTickerFrequency(time.Second),
+		},
+	}
+
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	require.NoError(t, err)
+	sp := p.(*shardedProcessor)
+	base := sp.shards[0].firstTickDelay
+	for i := 1; i < len(sp.shards); i++ {
+		assert.Equal(t, window/4, sp.shards[i].firstTickDelay-sp.shards[i-1].firstTickDelay)
+	}
+	assert.Less(t, base, window)
 }

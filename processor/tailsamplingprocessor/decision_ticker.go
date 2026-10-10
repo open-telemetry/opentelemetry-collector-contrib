@@ -98,18 +98,17 @@ func decisionTickDelay(shardIndex, numShards int, period, base time.Duration) ti
 }
 
 // assignDecisionTickDelays sets each shard's firstTickDelay so ticks are evenly
-// staggered across one ticker period, starting from base. Shards that already
-// have a fixed delay (tests) are left unchanged.
-func assignDecisionTickDelays(shards []*tailSamplingSpanProcessor, base time.Duration) {
+// staggered across window, starting from base. Shards that already have a fixed
+// delay (tests) are left unchanged.
+func assignDecisionTickDelays(shards []*tailSamplingSpanProcessor, base, window time.Duration) {
 	n := len(shards)
-	if n == 0 {
+	if n == 0 || window <= 0 {
 		return
 	}
-	period := shards[0].tickerFrequency
 	for i, s := range shards {
 		if s.fixedFirstTickDelay {
 			continue
 		}
-		s.firstTickDelay = decisionTickDelay(i, n, period, base)
+		s.firstTickDelay = decisionTickDelay(i, n, window, base)
 	}
 }

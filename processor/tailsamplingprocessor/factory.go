@@ -31,7 +31,7 @@ func createDefaultConfig() component.Config {
 		DecisionWait:        30 * time.Second,
 		NumTraces:           50000,
 		NumShards:           1,
-		DecisionTickStagger: true,
+		DecisionTickStagger: time.Second,
 		SampleOnFirstMatch:  false,
 		SamplingStrategy:    samplingStrategyTraceComplete,
 	}
