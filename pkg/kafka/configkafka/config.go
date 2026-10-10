@@ -144,6 +144,14 @@ type ConsumerConfig struct {
 	// per partition (default "1048576")
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
+	// MaxDecompressBatchBytes defines the maximum number of bytes to allow
+	// for decompressing a single Kafka record batch. This limit is applied
+	// after compression, so it bounds the memory required to decompress highly
+	// compressible batches. The default is 1 GiB (1073741824 bytes).
+	// This setting is independent of MaxFetchSize and MaxPartitionFetchSize,
+	// which limit compressed bytes on the wire.
+	MaxDecompressBatchBytes int `mapstructure:"max_decompress_batch_bytes"`
+
 	// GroupRebalanceStrategies specifies the ordered strategies to advertise
 	// for partition assignment. Kafka selects the first strategy supported by
 	// every member of the consumer group. Built-in values are "range",
@@ -168,10 +176,11 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Enable:   true,
 			Interval: time.Second,
 		},
-		MinFetchSize:          1,
-		MaxFetchSize:          1048576,
-		MaxFetchWait:          250 * time.Millisecond,
-		MaxPartitionFetchSize: 1048576,
+		MinFetchSize:            1,
+		MaxFetchSize:            1048576,
+		MaxFetchWait:            250 * time.Millisecond,
+		MaxPartitionFetchSize:   1048576,
+		MaxDecompressBatchBytes: 1073741824, // 1 GiB
 	}
 }
 
@@ -204,6 +213,9 @@ func (c ConsumerConfig) Validate() error {
 	}
 	if c.MaxPartitionFetchSize < 0 {
 		return fmt.Errorf("max_partition_fetch_size (%d) must be non-negative", c.MaxPartitionFetchSize)
+	}
+	if c.MaxDecompressBatchBytes < 0 {
+		return fmt.Errorf("max_decompress_batch_bytes (%d) must be non-negative", c.MaxDecompressBatchBytes)
 	}
 	if c.MaxFetchSize < c.MinFetchSize {
 		return fmt.Errorf(

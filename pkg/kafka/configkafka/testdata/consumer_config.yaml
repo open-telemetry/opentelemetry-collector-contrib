@@ -11,6 +11,7 @@ kafka/full:
   max_fetch_size: 4096
   max_fetch_wait: 1s
   max_partition_fetch_size: 4096
+  max_decompress_batch_bytes: 536870912
 
 kafka/group_rebalance_strategies:
   group_rebalance_strategies:
@@ -29,6 +30,8 @@ kafka/invalid_fetch_size:
 kafka/negative_min_fetch_size:
   min_fetch_size: -100
   max_fetch_size: 1048576
+kafka/negative_max_decompress_batch_bytes:
+  max_decompress_batch_bytes: -100
 kafka/conflicting_group_rebalance_strategies:
   group_rebalance_strategies:
     - my_balancer
