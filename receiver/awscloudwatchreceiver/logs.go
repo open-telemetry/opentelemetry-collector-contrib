@@ -266,10 +266,10 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 			errs = errors.Join(errs, err)
 		}
 
-		// Persist the new end time as the checkpoint for this log group
+		// Persist nextStartTime so a restart resumes from the last consumed position.
 		if l.cloudwatchCheckpointPersister != nil {
 			logGroup := r.groupName()
-			newCheckpoint := endTime.Format(time.RFC3339)
+			newCheckpoint := nextStartTime.UTC().Format(time.RFC3339Nano)
 			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
 			if err != nil {
 				l.settings.Logger.Error("failed to persist timestamp checkpoint",
@@ -294,7 +294,7 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 }
 
 func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTime, endTime time.Time) (time.Time, error) {
-	// In case of failure, the startTime of the request will be used as the checkpoint for the next poll
+	// nextStartTime advances past each consumed page. On failure it is the position the next poll retries from.
 	nextStartTime := startTime
 
 	err := l.ensureSession()
