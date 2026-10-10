@@ -109,6 +109,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	for endpointType := range cfg.ResourceAttributes {
 		switch endpointType {
+		// As it is this prevents downstream versions of adding their own custom resource attributes via configuration
 		case observer.ContainerType, observer.K8sServiceType, observer.K8sIngressType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType, observer.PodContainerType:
 		default:
 			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
