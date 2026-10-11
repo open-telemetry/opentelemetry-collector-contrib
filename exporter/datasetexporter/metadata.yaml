@@ -11,6 +11,9 @@ status:
     emeritus: [zdaratom-s1]
 
 # TODO: Update the exporter to pass the tests
+sending_queue:
+  support: default
+
 tests:
   config:
     dataset_url: https://app.scalyr.com

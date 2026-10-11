@@ -387,7 +387,7 @@ ClickHouse tables:
 
 Cluster definition:
 
-- `cluster_name` (default = ): Optional. If present, will include `ON CLUSTER cluster_name` when creating tables.
+- `cluster_name` (default = ): Optional. If present, will include `ON CLUSTER cluster_name` when creating the database and tables.
 
 Table engine:
 
@@ -397,6 +397,15 @@ Table engine:
 
 Modifies `ENGINE` definition when table is created. If not set then `ENGINE` defaults to `MergeTree()`.
 Can be combined with `cluster_name` to enable [replication for fault tolerance](https://clickhouse.com/docs/en/architecture/replication).
+
+Database engine:
+
+- `database_engine`
+    - `name` (default = )
+    - `params` (default = )
+
+Modifies `ENGINE` definition when the database is created. If not set then the server default is used. Not used for the `default` database.
+With `Replicated`, `ON CLUSTER` is only used for the database since a [Replicated database](https://clickhouse.com/docs/engines/database-engines/replicated) replicates table DDL itself.
 
 Processing:
 
@@ -538,6 +547,9 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
     # cluster_name: my_cluster
+    # database_engine:
+    #   name: Replicated
+    #   params: "'/clickhouse/databases/otel'"
     # table_engine:
     #   name: ReplicatedMergeTree
     #   params:

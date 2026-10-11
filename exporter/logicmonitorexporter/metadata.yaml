@@ -10,6 +10,9 @@ status:
     active: [bogdandrutu, avadhut123pisal]
     emeritus: [khyatigandhi6]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     endpoint: https://company.logicmonitor.com/rest
