@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/partitioningprocessor/internal/metadata"
 )
 
 // partitioningProcessor is the consumer wrapped by processorhelper; it
@@ -30,6 +32,8 @@ type partitioningProcessor struct {
 	// keyNames holds the lower-cased partition key names in sorted order,
 	// matching the order of values produced by each partitioner.
 	keyNames []string
+
+	telemetry *metadata.TelemetryBuilder
 }
 
 // Capabilities reports MutatesData: true because, when a batch is split,
@@ -41,28 +45,43 @@ func (*partitioningProcessor) Capabilities() consumer.Capabilities {
 func (p *partitioningProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	parts, err := p.logsPartitioner.partitionLogs(ctx, ld)
 	if err != nil {
-		// Key evaluation depends only on the data, so a retry would fail the same way.
-		return consumererror.NewPermanent(err)
+		return p.keyEvaluationError(ctx, err)
 	}
+	p.recordPartitions(ctx, len(parts))
 	return consumePartitions(ctx, p.keyNames, parts, p.nextLogs.ConsumeLogs)
 }
 
 func (p *partitioningProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	parts, err := p.tracesPartitioner.partitionTraces(ctx, td)
 	if err != nil {
-		// Key evaluation depends only on the data, so a retry would fail the same way.
-		return consumererror.NewPermanent(err)
+		return p.keyEvaluationError(ctx, err)
 	}
+	p.recordPartitions(ctx, len(parts))
 	return consumePartitions(ctx, p.keyNames, parts, p.nextTraces.ConsumeTraces)
 }
 
 func (p *partitioningProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	parts, err := p.metricsPartitioner.partitionMetrics(ctx, md)
 	if err != nil {
-		// Key evaluation depends only on the data, so a retry would fail the same way.
-		return consumererror.NewPermanent(err)
+		return p.keyEvaluationError(ctx, err)
 	}
+	p.recordPartitions(ctx, len(parts))
 	return consumePartitions(ctx, p.keyNames, parts, p.nextMetrics.ConsumeMetrics)
+}
+
+// keyEvaluationError counts a batch rejected by key evaluation and returns
+// the error as permanent.
+func (p *partitioningProcessor) keyEvaluationError(ctx context.Context, err error) error {
+	p.telemetry.ProcessorPartitioningKeyEvaluationErrors.Add(ctx, 1)
+	// Key evaluation depends only on the data, so a retry would fail the same way.
+	return consumererror.NewPermanent(err)
+}
+
+// recordPartitions records how many partitions an incoming batch was split into.
+func (p *partitioningProcessor) recordPartitions(ctx context.Context, partitions int) {
+	if partitions > 0 {
+		p.telemetry.ProcessorPartitioningPartitions.Record(ctx, int64(partitions))
+	}
 }
 
 // consumePartitions forwards all partitions concurrently.

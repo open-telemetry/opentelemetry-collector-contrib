@@ -22,3 +22,21 @@ tests:
   config:
     keys:
       service: 'resource.attributes["service.name"]'
+
+telemetry:
+  metrics:
+    processor_partitioning_key_evaluation_errors:
+      enabled: true
+      description: Number of batches rejected because a key expression failed to evaluate or returned a non-string value.
+      unit: "{batches}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_partitioning_partitions:
+      enabled: true
+      description: Number of partitions each incoming batch was split into.
+      unit: "{partitions}"
+      histogram:
+        value_type: int
+      stability: development
