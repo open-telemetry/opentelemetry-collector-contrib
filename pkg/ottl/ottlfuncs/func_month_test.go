@@ -32,8 +32,7 @@ func Test_Month(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Month(tt.time)
-			require.NoError(t, err)
+			exprFunc := month(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -47,8 +46,7 @@ func Test_Month_Error(t *testing.T) {
 			return "not a time", nil
 		},
 	}
-	exprFunc, err := Month(getter)
-	require.NoError(t, err)
+	exprFunc := month(getter)
 	result, err := exprFunc(t.Context(), nil)
 	assert.Nil(t, result)
 	assert.Error(t, err)
@@ -91,12 +89,11 @@ func Test_MonthFactory(t *testing.T) {
 }
 
 func BenchmarkMonth(b *testing.B) {
-	exprFunc, err := Month[any](&ottl.StandardTimeGetter[any]{
+	exprFunc := month[any](&ottl.StandardTimeGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC), nil
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

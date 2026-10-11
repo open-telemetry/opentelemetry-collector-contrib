@@ -37,28 +37,57 @@ const (
 	databaseNameKey = "database_name"
 	instanceNameKey = "sql_instance"
 
-	defaultServiceName = "unknown_service:microsoft.sql_server"
+	// Windows performance counter types that contain cumulative values and
+	// require two samples to calculate a per-second rate.
+	perfCounterCounterType   = "272696320"
+	perfCounterBulkCountType = "272696576"
+
+	// Windows performance counter type whose value accumulates a total that only
+	// becomes an average once divided by a companion base counter.
+	perfCounterAverageBulkType = "1073874176"
+
+	// instanceRawKey holds the instance name as SQL Server reports it, before
+	// [instance] renames the _Total aggregate.
+	instanceRawKey    = "instance_raw"
+	totalInstanceName = "_Total"
+
+	defaultServiceName  = "unknown_service:microsoft.sql_server"
+	versionQueryTimeout = 5 * time.Second
 )
 
+type performanceCounterKey struct {
+	object   string
+	counter  string
+	instance string
+}
+
+type performanceCounterSample struct {
+	value     int64
+	timestamp time.Time
+}
+
 type sqlServerScraperHelper struct {
-	id                     component.ID
-	config                 *Config
-	sqlQuery               string
-	instanceName           string
-	clientProviderFunc     sqlquery.ClientProviderFunc
-	dbProviderFunc         sqlquery.DbProviderFunc
-	logger                 *zap.Logger
-	telemetry              sqlquery.TelemetryConfig
-	client                 sqlquery.DbClient
-	db                     *sql.DB
-	mb                     *metadata.MetricsBuilder
-	lb                     *metadata.LogsBuilder
-	cache                  *lru.Cache[string, int64]
-	lastExecutionTimestamp time.Time
-	obfuscator             *obfuscator
-	serviceInstanceID      string
-	serverAddress          string
-	serverPort             int64
+	id                        component.ID
+	config                    *Config
+	sqlQuery                  string
+	clientProviderFunc        sqlquery.ClientProviderFunc
+	dbProviderFunc            sqlquery.DbProviderFunc
+	logger                    *zap.Logger
+	telemetry                 sqlquery.TelemetryConfig
+	client                    sqlquery.DbClient
+	db                        *sql.DB
+	mb                        *metadata.MetricsBuilder
+	lb                        *metadata.LogsBuilder
+	cache                     *lru.Cache[string, int64]
+	performanceCounterSamples map[performanceCounterKey]performanceCounterSample
+	lastExecutionTimestamp    time.Time
+	now                       func() time.Time
+	obfuscator                *obfuscator
+	serviceInstanceID         string
+	serverAddress             string
+	serverPort                int64
+	dbVersion                 string
+	versionFunc               func(context.Context, *zap.Logger) (string, bool)
 }
 
 var (
@@ -68,7 +97,7 @@ var (
 
 func newSQLServerScraper(id component.ID,
 	query string,
-	telemetry sqlquery.TelemetryConfig,
+	telemetry sqlquery.TelemetryConfig, //nolint:unparam // Parameter is currently unused as callers always pass sqlquery.TelemetryConfig{}. cleanup in a follow-up PR.
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
 	params receiver.Settings,
@@ -93,21 +122,23 @@ func newSQLServerScraper(id component.ID,
 	}
 
 	return &sqlServerScraperHelper{
-		id:                     id,
-		config:                 cfg,
-		sqlQuery:               query,
-		logger:                 params.Logger,
-		telemetry:              telemetry,
-		dbProviderFunc:         dbProviderFunc,
-		clientProviderFunc:     clientProviderFunc,
-		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
-		cache:                  cache,
-		lastExecutionTimestamp: time.Unix(0, 0),
-		obfuscator:             newObfuscator(params.Logger),
-		serviceInstanceID:      serviceInstanceID,
-		serverAddress:          serverAddress,
-		serverPort:             int64(serverPort),
+		id:                        id,
+		config:                    cfg,
+		sqlQuery:                  query,
+		logger:                    params.Logger,
+		telemetry:                 telemetry,
+		dbProviderFunc:            dbProviderFunc,
+		clientProviderFunc:        clientProviderFunc,
+		mb:                        metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                        metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
+		cache:                     cache,
+		performanceCounterSamples: make(map[performanceCounterKey]performanceCounterSample),
+		lastExecutionTimestamp:    time.Unix(0, 0),
+		now:                       time.Now,
+		obfuscator:                newObfuscator(params.Logger),
+		serviceInstanceID:         serviceInstanceID,
+		serverAddress:             serverAddress,
+		serverPort:                int64(serverPort),
 	}
 }
 
@@ -115,7 +146,7 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 	return s.id
 }
 
-func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
+func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) error {
 	// The connection pool is owned by the receiver and shared across all
 	// scrapers. Fetch the shared pool (opened once by the provider) rather than
 	// opening a new one here.
@@ -129,27 +160,67 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 	return nil
 }
 
+// detectSQLServerVersion queries SERVERPROPERTY('ProductVersion').
+// Returns (*string, error):
+//   - (&"15.0", nil): success — non-nil pointer means resolved, latch it.
+//   - (&"", nil):     SERVERPROPERTY returned NULL — permanent empty, latch it.
+//   - (nil, err):     transient scan error — caller may retry.
+//   - (nil, nil):     db is nil, not yet connected — silently skip.
+//
+// Declared as a var so tests can stub it.
+var detectSQLServerVersion = func(ctx context.Context, db *sql.DB) (*string, error) {
+	if db == nil {
+		return nil, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, versionQueryTimeout)
+	defer cancel()
+
+	var version sql.NullString
+	row := db.QueryRowContext(ctx, "SELECT CAST(SERVERPROPERTY('ProductVersion') AS NVARCHAR(128))")
+	if err := row.Scan(&version); err != nil {
+		return nil, err
+	}
+	if !version.Valid {
+		v := ""
+		return &v, nil
+	}
+	return &version.String, nil
+}
+
+func (s *sqlServerScraperHelper) ensureDBVersion(ctx context.Context) {
+	if s.versionFunc != nil {
+		v, resolved := s.versionFunc(ctx, s.logger)
+		s.dbVersion = v
+		if resolved {
+			s.versionFunc = nil
+		}
+	}
+}
+
 func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	s.ensureDBVersion(ctx)
+
 	var err error
 
 	switch s.sqlQuery {
-	case getSQLServerAvailabilityGroupQuery(s.config.InstanceName):
+	case getSQLServerAvailabilityGroupQuery():
 		err = s.recordAvailabilityGroupMetrics(ctx)
-	case getSQLServerDatabaseIOQuery(s.config.InstanceName):
+	case getSQLServerDatabaseIOQuery():
 		err = s.recordDatabaseIOMetrics(ctx)
-	case getSQLServerPerformanceCounterQuery(s.config.InstanceName):
+	case getSQLServerPerformanceCounterQuery():
 		err = s.recordDatabasePerfCounterMetrics(ctx)
-	case getSQLServerPropertiesQuery(s.config.InstanceName):
+	case getSQLServerPropertiesQuery():
 		err = s.recordDatabaseStatusMetrics(ctx)
-	case getSQLServerWaitStatsQuery(s.config.InstanceName):
+	case getSQLServerWaitStatsQuery():
 		err = s.recordDatabaseWaitMetrics(ctx)
-	case getSQLServerWorkerThreadsQuery(s.config.InstanceName):
+	case getSQLServerWorkerThreadsQuery():
 		err = s.recordWorkerThreadMetrics(ctx)
-	case getSQLServerIndexPhysicalStatsQuery(s.config.InstanceName):
+	case getSQLServerIndexPhysicalStatsQuery():
 		err = s.recordIndexPhysicalMetrics(ctx)
-	case getSQLServerCPUMemoryQuery(s.config.InstanceName):
+	case getSQLServerCPUMemoryQuery():
 		err = s.recordCPUMemoryMetrics(ctx)
-	case getSQLServerDiskIOQuery(s.config.InstanceName):
+	case getSQLServerDiskIOQuery():
 		err = s.recordDiskIOMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
@@ -163,6 +234,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
+	s.ensureDBVersion(ctx)
+
 	var err error
 	var resources pcommon.Resource
 	var isQuerySample bool
@@ -176,7 +249,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	case getSQLServerQuerySamplesQuery():
 		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
-	case getSQLServerTopProcedureQuery(s.config.InstanceName):
+	case getSQLServerTopProcedureQuery():
 		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopProcedureCollection.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top procedures because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
@@ -396,6 +469,9 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceNamespace("")
 	rb.SetServerAddress(s.serverAddress)
 	rb.SetServerPort(s.serverPort)
+	if s.dbVersion != "" {
+		rb.SetDbSystemVersion(s.dbVersion)
+	}
 
 	return rb
 }
@@ -543,9 +619,230 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 	return errors.Join(errs...)
 }
 
+// Some SQL Server rate counter types are also used by counters that this receiver
+// exports as cumulative sums, so counter type alone cannot determine whether to calculate a rate.
+// averageBulkBaseCounters pairs each PERF_AVERAGE_BULK counter with the base counter
+// holding the denominator of its average.
+var averageBulkBaseCounters = map[string]string{
+	"Average Wait Time (ms)": "Average Wait Time Base",
+}
+
+func isPerformanceCounterAverageBulk(counterType, counterName string) bool {
+	if counterType != perfCounterAverageBulkType {
+		return false
+	}
+	_, ok := averageBulkBaseCounters[counterName]
+	return ok
+}
+
+// isPerformanceCounterAverageBulkBase reports whether a counter is the base of a
+// PERF_AVERAGE_BULK counter. Those rows carry a denominator rather than a value worth
+// reporting, so they are read for the average and otherwise ignored.
+func isPerformanceCounterAverageBulkBase(counterName string) bool {
+	for _, base := range averageBulkBaseCounters {
+		if counterName == base {
+			return true
+		}
+	}
+	return false
+}
+
+// averageBulkBaseValues indexes the base counters in a result set so each
+// PERF_AVERAGE_BULK row can find its denominator, which arrives as a separate row.
+func averageBulkBaseValues(rows []sqlquery.StringMap) map[performanceCounterKey]int64 {
+	bases := make(map[performanceCounterKey]int64)
+	for _, row := range rows {
+		if !isPerformanceCounterAverageBulkBase(row["counter"]) {
+			continue
+		}
+		val, err := retrieveInt(row, "raw_value")
+		if err != nil {
+			continue
+		}
+		bases[performanceCounterKeyFromRow(row)] = val.(int64)
+	}
+	return bases
+}
+
+func isPerformanceCounterRate(counterType, counterName string) bool {
+	switch counterType {
+	case perfCounterCounterType, perfCounterBulkCountType:
+	default:
+		return false
+	}
+
+	switch counterName {
+	case "Auto-Param Attempts/sec",
+		"Backup/Restore Throughput/sec",
+		"Batch Requests/sec",
+		"Bytes Received from Replica/sec",
+		"Bytes Sent to Replica/sec",
+		"Connection Reset/sec",
+		"Cursor Requests/sec",
+		"Disk Read IO Throttled/sec",
+		"Disk Read IO/sec",
+		"Disk Write IO Throttled/sec",
+		"Disk Write IO/sec",
+		"Errors/sec",
+		"Extent Deallocations/sec",
+		"Extents Allocated/sec",
+		"Failed Auto-Params/sec",
+		"Forced Parameterizations/sec",
+		"Free list stalls/sec",
+		"FreeSpace Scans/sec",
+		"Full Scans/sec",
+		"Guided plan executions/sec",
+		"Index Searches/sec",
+		"Latch Waits/sec",
+		"Lazy writes/sec",
+		"Lock Requests/sec",
+		"Lock Timeouts (timeout > 0)/sec",
+		"Lock Timeouts/sec",
+		"Lock Waits/sec",
+		"Logins/sec",
+		"Logouts/sec",
+		"Mirrored Write Transactions/sec",
+		"Misguided plan executions/sec",
+		"Mixed page allocations/sec",
+		"Number of Deadlocks/sec",
+		"Page Compression Attempts/sec",
+		"Page Deallocations/sec",
+		"Page lookups/sec",
+		"Page reads/sec",
+		"Page writes/sec",
+		"Pages Allocated/sec",
+		"Pages Compressed/sec",
+		"Probe Scans/sec",
+		"Range Scans/sec",
+		"Readahead pages/sec",
+		"SQL Attention rate",
+		"SQL Compilations/sec",
+		"SQL Re-Compilations/sec",
+		"Safe Auto-Params/sec",
+		"Scan Point Revalidations/sec",
+		"Skipped Ghosted Records/sec",
+		"Stored Procedures Invoked/sec",
+		"SuperLatch Demotions/sec",
+		"SuperLatch Promotions/sec",
+		"Table Lock Escalations/sec",
+		"Tasks Aborted/sec",
+		"Tasks Started/sec",
+		"Transactions/sec",
+		"Unsafe Auto-Params/sec":
+		return true
+	default:
+		return false
+	}
+}
+
+func performanceCounterKeyFromRow(row sqlquery.StringMap) performanceCounterKey {
+	// Key on the unmodified instance name so the _Total aggregate and a database that
+	// happens to be called Total keep separate samples. [instance] renames the former
+	// to the latter, which would make the two share a key and corrupt both deltas.
+	instance := row[instanceRawKey]
+	if instance == "" {
+		instance = row["instance"]
+	}
+	return performanceCounterKey{
+		object:   row["object"],
+		counter:  row["counter"],
+		instance: instance,
+	}
+}
+
+// calculatePerformanceCounterAverage converts a PERF_AVERAGE_BULK counter into the
+// average over the interval since the previous scrape. The raw value accumulates a
+// total rather than holding an average, so the average is the change in that total
+// divided by the change in its base counter, which counts what went into it. Dividing
+// by elapsed time instead, as the rate counters do, would not give an average.
+func (s *sqlServerScraperHelper) calculatePerformanceCounterAverage(
+	row sqlquery.StringMap,
+	bases map[performanceCounterKey]int64,
+	now time.Time,
+) (float64, bool, error) {
+	val, err := retrieveInt(row, "raw_value")
+	if err != nil {
+		return 0, false, err
+	}
+	current := val.(int64)
+
+	numeratorKey := performanceCounterKeyFromRow(row)
+	baseKey := numeratorKey
+	baseKey.counter = averageBulkBaseCounters[numeratorKey.counter]
+
+	currentBase, found := bases[baseKey]
+	if !found {
+		return 0, false, nil
+	}
+
+	previous, haveNumerator := s.performanceCounterSamples[numeratorKey]
+	previousBase, haveBase := s.performanceCounterSamples[baseKey]
+
+	s.performanceCounterSamples[numeratorKey] = performanceCounterSample{value: current, timestamp: now}
+	s.performanceCounterSamples[baseKey] = performanceCounterSample{value: currentBase, timestamp: now}
+
+	// The first sample establishes a baseline, and a counter reset re-seeds instead of
+	// reporting a value derived from a drop.
+	if !haveNumerator || !haveBase || current < previous.value || currentBase < previousBase.value {
+		return 0, false, nil
+	}
+
+	// No base movement means nothing was measured in this interval.
+	baseDelta := currentBase - previousBase.value
+	if baseDelta <= 0 {
+		return 0, false, nil
+	}
+
+	return float64(current-previous.value) / float64(baseDelta), true, nil
+}
+
+func (s *sqlServerScraperHelper) calculatePerformanceCounterRate(
+	row sqlquery.StringMap,
+	now time.Time,
+) (float64, bool, error) {
+	val, err := retrieveInt(row, "raw_value")
+	if err != nil {
+		return 0, false, err
+	}
+	current := val.(int64)
+
+	key := performanceCounterKeyFromRow(row)
+
+	previous, found := s.performanceCounterSamples[key]
+	if !found {
+		s.performanceCounterSamples[key] = performanceCounterSample{
+			value:     current,
+			timestamp: now,
+		}
+		return 0, false, nil
+	}
+
+	if current < previous.value {
+		s.performanceCounterSamples[key] = performanceCounterSample{
+			value:     current,
+			timestamp: now,
+		}
+		return 0, false, nil
+	}
+
+	elapsed := now.Sub(previous.timestamp).Seconds()
+	if elapsed <= 0 {
+		return 0, false, nil
+	}
+
+	s.performanceCounterSamples[key] = performanceCounterSample{
+		value:     current,
+		timestamp: now,
+	}
+
+	return float64(current-previous.value) / elapsed, true, nil
+}
+
 func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Context) error {
 	const counterKey = "counter"
 	const valueKey = "value"
+	const objectKey = "object"
+	const instanceKey = "instance"
 	// Constants are the columns for metrics from query
 	const activeTempTables = "Active Temp Tables"
 	const autoParamAttemptsPerSec = "Auto-Param Attempts/sec"
@@ -571,6 +868,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const fullScansPerSec = "Full Scans/sec"
 	const guidedPlanExecutionsPerSec = "Guided plan executions/sec"
 	const indexSearchesPerSec = "Index Searches/sec"
+	const lazyWritesPerSec = "Lazy writes/sec"
 	const lockBlocks = "Lock Blocks"
 	const lockBlocksAllocated = "Lock Blocks Allocated"
 	const lockMemoryKB = "Lock Memory (KB)"
@@ -580,8 +878,10 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const lockTimeoutsNonzeroPerSec = "Lock Timeouts (timeout > 0)/sec"
 	const lockTimeoutsPerSec = "Lock Timeouts/sec"
 	const lockWaitCount = "Lock Wait Count"
+	const lockWaitTimeAvgMS = "Average Wait Time (ms)"
 	const lockWaitTimeMS = "Lock Wait Time (ms)"
 	const lockWaits = "Lock Waits/sec"
+	const logGrowths = "Log Growths"
 	const loginsPerSec = "Logins/sec"
 	const logoutPerSec = "Logouts/sec"
 	const misguidedPlanExecutionsPerSec = "Misguided plan executions/sec"
@@ -593,6 +893,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const pageDeallocationsPerSec = "Page Deallocations/sec"
 	const pageLifeExpectancy = "Page life expectancy"
 	const pageLookupsPerSec = "Page lookups/sec"
+	const pageReadsPerSec = "Page reads/sec"
+	const pageWritesPerSec = "Page writes/sec"
 	const pagesAllocatedPerSec = "Pages Allocated/sec"
 	const pagesCompressedPerSec = "Pages Compressed/sec"
 	const probeScansPerSec = "Probe Scans/sec"
@@ -607,6 +909,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const sqlReCompilationsRate = "SQL Re-Compilations/sec"
 	const tableLockEscalationsPerSec = "Table Lock Escalations/sec"
 	const transactionDelay = "Transaction Delay"
+	const transactionsPerSec = "Transactions/sec"
 	const unsafeAutoParamsPerSec = "Unsafe Auto-Params/sec"
 	const userConnCount = "User Connections"
 	const usedMemory = "Used memory (KB)"
@@ -655,7 +958,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	}
 
 	var errs []error
-	now := pcommon.NewTimestampFromTime(time.Now())
+	scrapeTime := s.now()
+	now := pcommon.NewTimestampFromTime(scrapeTime)
 
 	// Track SQL compilation and recompilation rates so the derived
 	// sqlserver.recompilation.ratio metric can be emitted after the row loop.
@@ -665,8 +969,62 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		recompRatioRow       sqlquery.StringMap
 	)
 
+	seenPerformanceCounterKeys := make(map[performanceCounterKey]struct{})
+	averageBases := averageBulkBaseValues(rows)
+
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		if isPerformanceCounterAverageBulk(row["counter_type"], row[counterKey]) {
+			average, emit, err := s.calculatePerformanceCounterAverage(row, averageBases, scrapeTime)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to calculate performance counter average for row %d: %w", i, err))
+				continue
+			}
+
+			numeratorKey := performanceCounterKeyFromRow(row)
+			baseKey := numeratorKey
+			baseKey.counter = averageBulkBaseCounters[numeratorKey.counter]
+			seenPerformanceCounterKeys[numeratorKey] = struct{}{}
+			seenPerformanceCounterKeys[baseKey] = struct{}{}
+
+			if !emit {
+				continue
+			}
+			row[valueKey] = strconv.FormatFloat(average, 'f', -1, 64)
+		}
+
+		if isPerformanceCounterRate(row["counter_type"], row[counterKey]) {
+			rate, emit, err := s.calculatePerformanceCounterRate(row, scrapeTime)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to calculate performance counter rate for row %d: %w", i, err))
+				continue
+			}
+
+			key := performanceCounterKeyFromRow(row)
+			seenPerformanceCounterKeys[key] = struct{}{}
+
+			if !emit {
+				continue
+			}
+			row[valueKey] = strconv.FormatFloat(rate, 'f', -1, 64)
+		}
+
+		// Counters on the Databases object are reported once per database plus a
+		// _Total aggregate. Keep only the per-database rows, attributed with the
+		// database name as the Windows PDH path does: the aggregate is exactly the
+		// sum of the others, so emitting both would double-count any aggregation,
+		// and without the name every database would collapse into one series.
+		if strings.HasSuffix(row[objectKey], ":Databases") {
+			// Match on the unmodified instance name: the query renames the aggregate
+			// from _Total to Total, which is also a legal database name.
+			if row[instanceRawKey] == totalInstanceName {
+				continue
+			}
+			if instance := row[instanceKey]; instance != "" {
+				rb.SetSqlserverDatabaseName(instance)
+			}
+		}
 
 		switch row[counterKey] {
 		case activeCursors:
@@ -894,12 +1252,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				s.mb.RecordSqlserverParameterizationRateDataPoint(now, val.(float64), metadata.AttributeSqlserverParameterizationResultForced)
 			}
 		case freeListStalls:
-			val, err := retrieveInt(row, valueKey)
+			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, freeListStalls)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint(now, val.(float64))
 			}
 		case freePages:
 			val, err := retrieveInt(row, valueKey)
@@ -964,6 +1322,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverLatchWaitRateDataPoint(now, val.(float64))
+			}
+		case lazyWritesPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lazyWritesPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageLazyWriteRateDataPoint(now, val.(float64))
 			}
 		case lockBlocks:
 			val, err := retrieveInt(row, valueKey)
@@ -1037,6 +1403,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverLockWaitCountDataPoint(now, val.(int64))
 			}
+		case lockWaitTimeAvgMS:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitTimeAvgMS)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLockWaitTimeAvgDataPoint(now, val.(float64))
+			}
 		case lockWaitTimeMS:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
@@ -1052,6 +1426,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverLockWaitRateDataPoint(now, val.(float64))
+			}
+		case logGrowths:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, logGrowths)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverTransactionLogGrowthCountDataPoint(now, int64(val.(float64)))
 			}
 		case loginsPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1172,6 +1554,22 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverPageLookupRateDataPoint(now, val.(float64))
+			}
+		case pageReadsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageReadsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsRead)
+			}
+		case pageWritesPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageWritesPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsWrite)
 			}
 		case pagesAllocatedPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -1407,6 +1805,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverTransactionDelayDataPoint(now, val.(float64))
 			}
+		case transactionsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, transactionsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverTransactionRateDataPoint(now, val.(float64))
+			}
 		case unsafeAutoParamsPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
@@ -1451,6 +1857,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	for key := range s.performanceCounterSamples {
+		if _, seen := seenPerformanceCounterKeys[key]; !seen {
+			delete(s.performanceCounterSamples, key)
+		}
 	}
 
 	// Emit derived sqlserver.recompilation.ratio metric (recomp / comp * 100)
@@ -1810,6 +2222,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		s.lb.RecordDbServerQueryPlanEvent(
 			context.Background(),
 			timestamp,
+			databaseNameVal,
+			dbSystemNameVal,
 			queryHashVal,
 			queryPlanVal.(string),
 			queryPlanHashVal,
@@ -2040,7 +2454,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const reads = "reads"
 	const requestStatus = "request_status"
 	const rowCount = "row_count"
-	const sessionDurationMillisecond = "session_duration"
+	const sessionDurationSecond = "session_duration"
 	const sessionID = "session_id"
 	const sessionStartTime = "session_start_time"
 	const sessionStatus = "session_status"
@@ -2180,8 +2594,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
 		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
 		sessionStatusVal := row[sessionStatus]
-		sessionDurationSecondVal := s.retrieveValue(row, sessionDurationMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
-			return float64(i) / 1000.0
+		sessionDurationSecondVal := s.retrieveValue(row, sessionDurationSecond, &errs, retrieveIntAndConvert(func(i int64) any {
+			return float64(i)
 		})).(float64)
 		totalElapsedTimeSecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0

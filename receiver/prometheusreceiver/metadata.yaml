@@ -33,8 +33,9 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40355
 
   - id: receiver.prometheusreceiver.IgnoreScopeInfoMetric
-    stage: beta
+    stage: stable
     description: >-
       When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction.
     from_version: v0.148.0
+    to_version: v0.164.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502

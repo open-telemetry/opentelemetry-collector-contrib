@@ -798,9 +798,6 @@ func TestPrometheusExporterResourceConstantLabels(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr.Endpoint = addr
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 
 	cfg := &Config{
 		ServerConfig:           serverConfig,
@@ -848,9 +845,6 @@ func TestPrometheusExporterDisableResourceToTelemetryConversion(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr.Endpoint = addr
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 
 	cfg := &Config{
 		ServerConfig:     serverConfig,

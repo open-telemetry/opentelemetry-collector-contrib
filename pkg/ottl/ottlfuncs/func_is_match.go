@@ -15,6 +15,8 @@ type isMatchArguments[K any] struct {
 	Pattern ottl.StringGetter[K]
 }
 
+// NewIsMatchFactory returns a factory for the IsMatch OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#ismatch
 func NewIsMatchFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("IsMatch", &isMatchArguments[K]{}, createIsMatchFunction[K])
 }

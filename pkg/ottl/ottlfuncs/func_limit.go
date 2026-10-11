@@ -20,6 +20,8 @@ type limitArguments[K any] struct {
 	PriorityKeys []string
 }
 
+// NewLimitFactory returns a factory for the limit OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#limit
 func NewLimitFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("limit", &limitArguments[K]{}, createLimitFunction[K])
 }

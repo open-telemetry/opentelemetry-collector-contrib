@@ -313,6 +313,29 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 			},
 		},
 		{
+			statements: []string{`extract_avg_metric() where name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				avgMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				avgMetric.SetEmptyGauge()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
+
+				avgMetric.SetDescription(histogramMetric.Description())
+				avgMetric.SetName(histogramMetric.Name() + "_avg")
+				avgMetric.SetUnit(histogramMetric.Unit())
+
+				avgDp := avgMetric.Gauge().DataPoints().AppendEmpty()
+				histogramDp.Attributes().CopyTo(avgDp.Attributes())
+				avgDp.SetDoubleValue(histogramDp.Sum() / float64(histogramDp.Count()))
+				avgDp.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Gauge datapoint
+			},
+		},
+		{
 			statements: []string{`copy_metric(name="http.request.status_code", unit="s") where name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				newMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
@@ -485,6 +508,29 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 				histogramDp1.Attributes().CopyTo(countDp1.Attributes())
 				countDp1.SetIntValue(int64(histogramDp1.Count()))
 				countDp1.SetStartTimestamp(StartTimestamp)
+			},
+		},
+		{
+			statements: []string{`extract_avg_metric() where metric.name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				avgMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				avgMetric.SetEmptyGauge()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
+
+				avgMetric.SetDescription(histogramMetric.Description())
+				avgMetric.SetName(histogramMetric.Name() + "_avg")
+				avgMetric.SetUnit(histogramMetric.Unit())
+
+				avgDp := avgMetric.Gauge().DataPoints().AppendEmpty()
+				histogramDp.Attributes().CopyTo(avgDp.Attributes())
+				avgDp.SetDoubleValue(histogramDp.Sum() / float64(histogramDp.Count()))
+				avgDp.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Gauge datapoint
 			},
 		},
 		{

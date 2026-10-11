@@ -14,6 +14,8 @@ type unixNanoArguments[K any] struct {
 	Time ottl.TimeGetter[K]
 }
 
+// NewUnixNanoFactory returns a factory for the UnixNano OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#unixnano
 func NewUnixNanoFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("UnixNano", &unixNanoArguments[K]{}, createUnixNanoFunction[K])
 }
@@ -25,15 +27,15 @@ func createUnixNanoFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, errors.New("UnixNanoFactory args must be of type *unixNanoArguments[K]")
 	}
 
-	return UnixNano(args.Time)
+	return unixNano(args.Time), nil
 }
 
-func UnixNano[K any](inputTime ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
+func unixNano[K any](inputTime ottl.TimeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		return t.UnixNano(), nil
-	}, nil
+	}
 }

@@ -34,7 +34,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: UPSERT,
+			strategy: upsert,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 				expectedValue.PutStr("attr2", "value2")
@@ -50,7 +50,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: UPSERT,
+			strategy: upsert,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value3")
 				expectedValue.PutStr("attr2", "value2")
@@ -65,7 +65,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: INSERT,
+			strategy: insert,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 				expectedValue.PutStr("attr2", "value2")
@@ -81,7 +81,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: INSERT,
+			strategy: insert,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 				expectedValue.PutStr("attr2", "value2")
@@ -96,7 +96,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: UPDATE,
+			strategy: update,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 			},
@@ -110,7 +110,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: UPDATE,
+			strategy: update,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value3")
 			},
@@ -223,7 +223,7 @@ func Test_MergeMapsFactory(t *testing.T) {
 				return pcommon.NewMap(), nil
 			},
 		}
-		mergeMapsArgs.Strategy = INSERT
+		mergeMapsArgs.Strategy = insert
 
 		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
@@ -254,7 +254,7 @@ func BenchmarkMergeMaps(b *testing.B) {
 			return nil
 		},
 	}
-	exprFunc, err := mergeMaps[any](target, source, UPSERT)
+	exprFunc, err := mergeMaps[any](target, source, upsert)
 	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()

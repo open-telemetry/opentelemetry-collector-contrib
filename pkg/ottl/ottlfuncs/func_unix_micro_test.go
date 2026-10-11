@@ -59,8 +59,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := UnixMicro(tt.time)
-			require.NoError(t, err)
+			exprFunc := unixMicro(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := tt.expected.UnixMicro()
@@ -106,10 +105,9 @@ func Test_UnixMicroFactory(t *testing.T) {
 }
 
 func BenchmarkUnixMicro(b *testing.B) {
-	exprFunc, err := UnixMicro[any](&ottl.StandardTimeGetter[any]{
+	exprFunc := unixMicro[any](&ottl.StandardTimeGetter[any]{
 		Getter: func(context.Context, any) (any, error) { return time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), nil },
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

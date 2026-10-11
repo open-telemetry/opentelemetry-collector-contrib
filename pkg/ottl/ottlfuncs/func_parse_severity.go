@@ -37,6 +37,8 @@ type parseSeverityArguments[K any] struct {
 	Mapping ottl.PMapGetter[K]
 }
 
+// NewParseSeverityFactory returns a factory for the ParseSeverity OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#parseseverity
 func NewParseSeverityFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ParseSeverity", &parseSeverityArguments[K]{}, createParseSeverityFunction[K])
 }

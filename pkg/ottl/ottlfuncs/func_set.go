@@ -15,6 +15,8 @@ type setArguments[K any] struct {
 	Value  ottl.Getter[K]
 }
 
+// NewSetFactory returns a factory for the set OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#set
 func NewSetFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("set", &setArguments[K]{}, createSetFunction[K])
 }

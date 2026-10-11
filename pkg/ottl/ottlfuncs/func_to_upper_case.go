@@ -15,6 +15,8 @@ type toUpperCaseArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewToUpperCaseFactory returns a factory for the ToUpperCase OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#touppercase
 func NewToUpperCaseFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ToUpperCase", &toUpperCaseArguments[K]{}, createToUpperCaseFunction[K])
 }

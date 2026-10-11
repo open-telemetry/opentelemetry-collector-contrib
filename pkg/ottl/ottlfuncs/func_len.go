@@ -25,6 +25,8 @@ type lenArguments[K any] struct {
 	Target ottl.Getter[K]
 }
 
+// NewLenFactory returns a factory for the Len OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#len
 func NewLenFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Len", &lenArguments[K]{}, createLenFunction[K])
 }

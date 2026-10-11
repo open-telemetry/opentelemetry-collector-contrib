@@ -18,6 +18,8 @@ type spanIDArguments[K any] struct {
 	Target ottl.ByteSliceLikeGetter[K]
 }
 
+// NewSpanIDFactory returns a factory for the SpanID OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#spanid
 func NewSpanIDFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory(spanIDFuncName, &spanIDArguments[K]{}, createSpanIDFunction[K])
 }

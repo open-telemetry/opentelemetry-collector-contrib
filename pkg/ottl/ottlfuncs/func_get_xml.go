@@ -17,6 +17,8 @@ type getXMLArguments[K any] struct {
 	XPath  string
 }
 
+// NewGetXMLFactory returns a factory for the GetXML OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#getxml
 func NewGetXMLFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("GetXML", &getXMLArguments[K]{}, createGetXMLFunction[K])
 }

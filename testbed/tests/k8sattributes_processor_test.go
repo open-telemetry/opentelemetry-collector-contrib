@@ -326,7 +326,7 @@ func getK8sAttributesProcessorExtendedTestCases() []k8sAttributesProcessorTestCa
         - k8s.node.name
         - k8s.cluster.uid
         - container.image.name
-        - container.image.tag
+        - container.image.tags
     pod_association:
       - sources:
           - from: resource_attribute
@@ -345,7 +345,7 @@ func getK8sAttributesProcessorExtendedTestCases() []k8sAttributesProcessorTestCa
 		"k8s.node.name":        nil,
 		"k8s.cluster.uid":      nil,
 		"container.image.name": nil,
-		"container.image.tag":  nil,
+		"container.image.tags": nil,
 	}
 	return []k8sAttributesProcessorTestCase{
 		{

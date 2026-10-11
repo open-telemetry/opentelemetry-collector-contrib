@@ -15,6 +15,8 @@ type uRLArguments[K any] struct {
 	URI ottl.StringGetter[K]
 }
 
+// NewURLFactory returns a factory for the URL OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#url
 func NewURLFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("URL", &uRLArguments[K]{}, createURIFunction[K])
 }

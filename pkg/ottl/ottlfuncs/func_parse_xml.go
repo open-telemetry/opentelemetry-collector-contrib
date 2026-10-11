@@ -20,6 +20,8 @@ type parseXMLArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewParseXMLFactory returns a factory for the ParseXML OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#parsexml
 func NewParseXMLFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ParseXML", &parseXMLArguments[K]{}, createParseXMLFunction[K])
 }

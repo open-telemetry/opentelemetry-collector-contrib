@@ -16,6 +16,8 @@ type stringifyAllArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
 }
 
+// NewStringifyAllFactory returns a factory for the stringify_all OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#stringify_all
 func NewStringifyAllFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("stringify_all", &stringifyAllArguments[K]{}, createStringifyAllFunction[K])
 }

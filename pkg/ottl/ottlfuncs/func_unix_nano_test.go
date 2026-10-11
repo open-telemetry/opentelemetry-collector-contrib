@@ -59,8 +59,7 @@ func Test_TimeUnixNano(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := UnixNano(tt.time)
-			require.NoError(t, err)
+			exprFunc := unixNano(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := tt.expected.UnixNano()
@@ -107,12 +106,11 @@ func Test_UnixNanoFactory(t *testing.T) {
 
 func BenchmarkUnixNano(b *testing.B) {
 	inputTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
-	exprFunc, err := UnixNano(&ottl.StandardTimeGetter[any]{
+	exprFunc := unixNano(&ottl.StandardTimeGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return inputTime, nil
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

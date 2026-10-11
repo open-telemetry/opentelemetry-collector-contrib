@@ -565,9 +565,14 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}
 	if s.db != nil {
+		versionSQL := instanceVersionSQL
+		if s.metricsBuilderConfig.ResourceAttributes.OracleDbEdition.Enabled ||
+			s.logsBuilderConfig.ResourceAttributes.OracleDbEdition.Enabled {
+			versionSQL = instanceVersionEditionSQL
+		}
 		s.instanceInfo = detectInstanceInfo(
 			ctx,
-			s.clientProviderFunc(s.db, instanceVersionSQL, s.logger),
+			s.clientProviderFunc(s.db, versionSQL, s.logger),
 			s.clientProviderFunc(s.db, instanceCDBSQL, s.logger),
 			s.clientProviderFunc(s.db, instanceConTypeSQL, s.logger),
 			s.clientProviderFunc(s.db, instanceConNameSQL, s.logger),
@@ -1958,10 +1963,10 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
-		lookbackTimeCounter := calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
-		if lookbackTimeCounter < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
+		if !collectionIntervalElapsed(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval) {
 			s.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
 		} else {
+			lookbackTimeCounter := calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
 			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
@@ -1986,10 +1991,10 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
 		currentCollectionTime := time.Now()
-		lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
-		if lookbackTimeCounter < int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
+		if !collectionIntervalElapsed(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval) {
 			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
 		} else {
+			lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
 			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if procedureCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, procedureCollectionErrors)
@@ -1998,7 +2003,33 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		}
 	}
 
+	if s.logsBuilderConfig.Events.DbServerQueryPlan.Enabled {
+		removeQueryPlanFromTopQuery(logs)
+	}
+
 	return logs, errors.Join(scrapeErrors...)
+}
+
+// removeQueryPlanFromTopQuery drops oracledb.query_plan from db.server.top_query records, so the
+// plan is carried only by db.server.query_plan. mdatagen sets every attribute declared for an event,
+// so the attribute has to be removed after the fact rather than skipped while recording. This
+// mirrors removeQueryPlanFromTopQuery in the sqlserver receiver.
+//
+// The event name must be checked: db.server.query_plan records sit in the same scope and have to
+// keep their oracledb.query_plan.
+func removeQueryPlanFromTopQuery(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				if logRecord := logRecords.At(k); logRecord.EventName() == "db.server.top_query" {
+					logRecord.Attributes().Remove("oracledb.query_plan")
+				}
+			}
+		}
+	}
 }
 
 func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs, collectionTime time.Time, lookbackTimeSeconds int) error {
@@ -2118,7 +2149,8 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 
 	for i := range hits {
 		hit := &hits[i]
-		planBytes, err := json.Marshal(childAddressToPlanMap[hit.childAddress])
+		planRows, hasPlan := childAddressToPlanMap[hit.childAddress]
+		planBytes, err := json.Marshal(planRows)
 		if err != nil {
 			s.logger.Error("Error marshaling plan data to JSON", zap.Error(err))
 		}
@@ -2158,6 +2190,20 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.planHashValue,
 			hit.firstLoadTime,
 			hit.lastLoadTime)
+
+		// A cursor with no rows in V$SQL_PLAN_STATISTICS_ALL has no plan to report, so it gets no
+		// record rather than one carrying the JSON encoding of an absent plan.
+		if hasPlan {
+			s.lb.RecordDbServerQueryPlanEvent(ctx,
+				pcommon.NewTimestampFromTime(collectionTime),
+				dbSystemNameVal,
+				hit.sqlID,
+				hit.childNumber,
+				hit.childAddress,
+				hit.planHashValue,
+				hit.dbNamespace,
+				planString)
+		}
 	}
 
 	hitCount := len(hits)
@@ -2550,7 +2596,7 @@ func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.
 			continue
 		}
 
-		s.lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, row[sid], row[serial], row[event], row[waitClass], totalWaitsVal, totalTimeoutsVal, totalTimeWaitedSecsVal, row[dbNamespaceAttr])
+		s.lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, dbSystemNameVal, row[sid], row[serial], row[event], row[waitClass], totalWaitsVal, totalTimeoutsVal, totalTimeWaitedSecsVal, row[dbNamespaceAttr])
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
@@ -2651,6 +2697,9 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	if s.instanceInfo.dbVersion != "" {
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
 	}
+	if s.instanceInfo.dbEdition != "" {
+		rb.SetOracleDbEdition(s.instanceInfo.dbEdition)
+	}
 	if s.instanceInfo.databaseRole != "" {
 		rb.SetOracleDbRole(s.instanceInfo.databaseRole)
 	}
@@ -2726,6 +2775,15 @@ func constructInstanceID(host, port, service string) string {
 // vsqlRefreshLag is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
 // PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
 const vsqlRefreshLag = 10 * time.Second
+
+// collectionIntervalElapsed reports whether the configured collection
+// interval has elapsed since lastTimestamp.
+func collectionIntervalElapsed(lastTimestamp time.Time, collectionInterval time.Duration) bool {
+	if lastTimestamp.IsZero() {
+		return true
+	}
+	return time.Since(lastTimestamp) >= collectionInterval
+}
 
 // calculateLookbackSeconds reports how far back the query window should reach. The vsqlRefreshLag
 // buffer is included so rows whose V$SQL entry lagged the previous scrape are still picked up.

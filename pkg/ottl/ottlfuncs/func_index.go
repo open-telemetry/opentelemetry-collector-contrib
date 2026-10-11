@@ -18,6 +18,8 @@ type indexArguments[K any] struct {
 	Value  ottl.Getter[K]
 }
 
+// NewIndexFactory returns a factory for the Index OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#index
 func NewIndexFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Index", &indexArguments[K]{}, createIndexFunction[K])
 }

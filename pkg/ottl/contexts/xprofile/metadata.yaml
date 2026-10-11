@@ -4,6 +4,6 @@ status:
   stability:
     development: [ profiles ]
   codeowners:
-    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
-    emeritus: [anuraaga, kentquirk]
+    active: [TylerHelmuth, evan-bradley, edmocosta]
+    emeritus: [anuraaga, kentquirk, bogdandrutu]
     seeking_new: true

@@ -15,6 +15,8 @@ type toLowerCaseArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewToLowerCaseFactory returns a factory for the ToLowerCase OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#tolowercase
 func NewToLowerCaseFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("ToLowerCase", &toLowerCaseArguments[K]{}, createToLowerCaseFunction[K])
 }

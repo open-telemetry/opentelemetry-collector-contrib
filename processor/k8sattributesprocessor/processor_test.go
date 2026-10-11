@@ -31,6 +31,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -2630,4 +2633,124 @@ func TestPodAssociationMetricSignalAttribute(t *testing.T) {
 			Attributes: attribute.NewSet(attribute.String("status", "success"), attribute.String("pod_identifier", "resource_attribute/k8s.pod.uid"), attribute.String("otelcol.signal", "traces")),
 		},
 	}, metricdatatest.IgnoreTimestamp())
+}
+
+// setSemconvGates flips both semantic convention feature gates together and
+// restores their previous values when the test finishes. The two gates must be
+// set as a pair: enabling DontEmitV0K8sConventions without
+// EmitV1K8sConventions makes Start fail.
+func setSemconvGates(t *testing.T, enabled bool) {
+	t.Helper()
+	reg := featuregate.GlobalRegistry()
+	emitV1 := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate
+	dontEmitV0 := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate
+
+	prevEmitV1, prevDontEmitV0 := emitV1.IsEnabled(), dontEmitV0.IsEnabled()
+	require.NoError(t, reg.Set(emitV1.ID(), enabled))
+	require.NoError(t, reg.Set(dontEmitV0.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, reg.Set(emitV1.ID(), prevEmitV1))
+		require.NoError(t, reg.Set(dontEmitV0.ID(), prevDontEmitV0))
+	})
+}
+
+func TestStartLogsSemconvDeprecationWarnings(t *testing.T) {
+	const (
+		legacyTagBlocked      = "container.image.tag is configured but will NOT be emitted"
+		legacyTagRenamed      = "container.image.tag is being renamed to container.image.tags"
+		podLabelsRenamed      = "Pod label extraction attributes are being renamed"
+		podAnnotationsRenamed = "Pod annotation extraction attributes are being renamed"
+	)
+
+	tests := []struct {
+		name string
+		// gatesEnabled reflects the state of both semconv gates. They default to
+		// enabled, which is what a user of a recent release gets.
+		gatesEnabled bool
+		extract      ExtractConfig
+		wantWarnings []string
+	}{
+		{
+			name:         "legacy image tag is silently dropped when gates are enabled",
+			gatesEnabled: true,
+			extract:      ExtractConfig{Metadata: []string{"container.image.tag"}},
+			wantWarnings: []string{legacyTagBlocked},
+		},
+		{
+			name:         "legacy image tag still emitted when gates are disabled",
+			gatesEnabled: false,
+			extract:      ExtractConfig{Metadata: []string{"container.image.tag"}},
+			wantWarnings: []string{legacyTagRenamed},
+		},
+		{
+			name:         "pod labels when gates are disabled",
+			gatesEnabled: false,
+			extract: ExtractConfig{
+				Metadata: []string{"k8s.pod.name"},
+				Labels:   []FieldExtractConfig{{TagName: "l", Key: "app"}},
+			},
+			wantWarnings: []string{podLabelsRenamed},
+		},
+		{
+			name:         "pod annotations when gates are disabled",
+			gatesEnabled: false,
+			extract: ExtractConfig{
+				Metadata:    []string{"k8s.pod.name"},
+				Annotations: []FieldExtractConfig{{TagName: "a", Key: "note"}},
+			},
+			wantWarnings: []string{podAnnotationsRenamed},
+		},
+		{
+			name:         "legacy image tag and pod labels when gates are disabled",
+			gatesEnabled: false,
+			extract: ExtractConfig{
+				Metadata: []string{"container.image.tag"},
+				Labels:   []FieldExtractConfig{{TagName: "l", Key: "app"}},
+			},
+			wantWarnings: []string{legacyTagRenamed, podLabelsRenamed},
+		},
+		{
+			name:         "pod labels and annotations are not reported when gates are enabled",
+			gatesEnabled: true,
+			extract: ExtractConfig{
+				Metadata:    []string{"k8s.pod.name"},
+				Labels:      []FieldExtractConfig{{TagName: "l", Key: "app"}},
+				Annotations: []FieldExtractConfig{{TagName: "a", Key: "note"}},
+			},
+		},
+		{
+			name:         "stable image tags are not reported",
+			gatesEnabled: true,
+			extract:      ExtractConfig{Metadata: []string{"container.image.tags"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSemconvGates(t, tt.gatesEnabled)
+
+			core, observed := observer.New(zapcore.WarnLevel)
+			set := processortest.NewNopSettings(metadata.Type)
+			set.Logger = zap.New(core)
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract = tt.extract
+
+			p, err := createLogsProcessorWithOptions(
+				t.Context(), set, cfg, consumertest.NewNop(),
+				withKubeClientProvider(newFakeClient),
+			)
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+
+			assert.Equal(t, len(tt.wantWarnings), observed.Len(),
+				"unexpected warnings: %v", observed.All())
+			for _, want := range tt.wantWarnings {
+				assert.Equal(t, 1, observed.FilterMessageSnippet(want).Len(),
+					"expected a warning containing %q", want)
+			}
+
+			assert.NoError(t, p.Shutdown(t.Context()))
+		})
+	}
 }

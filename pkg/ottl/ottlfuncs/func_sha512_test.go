@@ -33,12 +33,11 @@ func Test_SHA512(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := SHA512HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := sha512HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
@@ -70,13 +69,12 @@ func Test_SHA512Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := SHA512HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := sha512HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
-			_, err = exprFunc(nil, nil)
+			_, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -119,12 +117,11 @@ func Test_SHA512Factory(t *testing.T) {
 }
 
 func BenchmarkSHA512(b *testing.B) {
-	exprFunc, err := SHA512HashString[any](&ottl.StandardStringGetter[any]{
+	exprFunc := sha512HashString[any](&ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return "hello world", nil
 		},
 	})
-	require.NoError(b, err)
 	ctx := b.Context()
 	b.ReportAllocs()
 	for b.Loop() {

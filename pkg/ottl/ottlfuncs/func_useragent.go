@@ -16,6 +16,8 @@ type userAgentArguments[K any] struct {
 	UserAgent ottl.StringGetter[K]
 }
 
+// NewUserAgentFactory returns a factory for the UserAgent OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#useragent
 func NewUserAgentFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("UserAgent", &userAgentArguments[K]{}, createUserAgentFunction[K])
 }

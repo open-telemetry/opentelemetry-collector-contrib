@@ -16,6 +16,8 @@ type splitArguments[K any] struct {
 	Delimiter ottl.StringGetter[K]
 }
 
+// NewSplitFactory returns a factory for the Split OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#split
 func NewSplitFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Split", &splitArguments[K]{}, createSplitFunction[K])
 }

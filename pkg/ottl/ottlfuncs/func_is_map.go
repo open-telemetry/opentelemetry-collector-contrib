@@ -14,6 +14,8 @@ type isMapArguments[K any] struct {
 	Target ottl.PMapGetter[K]
 }
 
+// NewIsMapFactory returns a factory for the IsMap OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#ismap
 func NewIsMapFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("IsMap", &isMapArguments[K]{}, createIsMapFunction[K])
 }

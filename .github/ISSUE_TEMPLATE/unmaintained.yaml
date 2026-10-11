@@ -72,6 +72,7 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
+      - exporter/nats
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -175,8 +176,8 @@ body:
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
+      - pkg/ottl/xottl
       - pkg/pdatatest
-      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
       - pkg/semconvtest
@@ -223,6 +224,7 @@ body:
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
+      - processor/partitioning
       - processor/probabilisticsampler
       - processor/redaction
       - processor/remotetap
@@ -372,7 +374,6 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/vcr
-      - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters

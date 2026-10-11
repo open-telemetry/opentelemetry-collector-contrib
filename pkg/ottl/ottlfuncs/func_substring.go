@@ -19,6 +19,8 @@ type substringArguments[K any] struct {
 	Utf8Safe ottl.Optional[bool]
 }
 
+// NewSubstringFactory returns a factory for the Substring OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#substring
 func NewSubstringFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Substring", &substringArguments[K]{}, createSubstringFunction[K])
 }

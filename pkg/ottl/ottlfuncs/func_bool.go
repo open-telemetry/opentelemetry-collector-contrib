@@ -14,6 +14,8 @@ type boolArguments[K any] struct {
 	Target ottl.BoolLikeGetter[K]
 }
 
+// NewBoolFactory returns a factory for the Bool OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#bool
 func NewBoolFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Bool", &boolArguments[K]{}, createBoolFunction[K])
 }

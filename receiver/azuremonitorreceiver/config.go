@@ -237,6 +237,12 @@ type DimensionsConfig struct {
 	Overrides NestedListAlias `mapstructure:"overrides"`
 }
 
+// ResourceTagFilter defines a tag-based filter for Azure resources.
+type ResourceTagFilter struct {
+	Name  string  `mapstructure:"name"`
+	Value *string `mapstructure:"value"`
+}
+
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	ControllerConfig                  scraperhelper.ControllerConfig `mapstructure:",squash"`
@@ -246,6 +252,7 @@ type Config struct {
 	DiscoverSubscriptions             bool                           `mapstructure:"discover_subscriptions"`
 	TenantID                          string                         `mapstructure:"tenant_id"`
 	ResourceGroups                    []string                       `mapstructure:"resource_groups"`
+	ResourceTags                      []ResourceTagFilter            `mapstructure:"resource_tags"`
 	Services                          []string                       `mapstructure:"services"`
 	Metrics                           NestedListAlias                `mapstructure:"metrics"`
 	CacheResources                    float64                        `mapstructure:"cache_resources"`

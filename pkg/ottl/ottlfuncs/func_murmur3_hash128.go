@@ -18,6 +18,8 @@ type murmur3Hash128Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewMurmur3Hash128Factory returns a factory for the Murmur3Hash128 OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#murmur3hash128
 func NewMurmur3Hash128Factory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("Murmur3Hash128", &murmur3Hash128Arguments[K]{}, createMurmur3Hash128Function[K])
 }

@@ -15,6 +15,8 @@ type deleteKeyArguments[K any] struct {
 	Key    ottl.StringGetter[K]
 }
 
+// NewDeleteKeyFactory returns a factory for the delete_key OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#delete_key
 func NewDeleteKeyFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("delete_key", &deleteKeyArguments[K]{}, createDeleteKeyFunction[K])
 }
