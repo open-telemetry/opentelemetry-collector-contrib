@@ -939,7 +939,19 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		assert.ErrorContains(t, err, "is not configured")
 	})
 
-	t.Run("present_extension", func(t *testing.T) {
+	t.Run("incompatible_extension", func(t *testing.T) {
+		host := &mockHost{extensions: map[component.ID]component.Component{
+			extID: &mockGroupBalancer{},
+		}}
+		_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+			Mechanism:              OAUTHBEARER,
+			OAuthBearerTokenSource: extID,
+		}, host)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "does not implement Token(context.Context)")
+	})
+
+	t.Run("present_extension_success", func(t *testing.T) {
 		host := &mockHost{extensions: map[component.ID]component.Component{
 			extID: &mockTokenSource{token: "tok"},
 		}}
@@ -949,6 +961,35 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		}, host)
 		require.NoError(t, err)
 		require.NotNil(t, opt)
+
+		cl, err := kgo.NewClient(opt)
+		require.NoError(t, err)
+		defer cl.Close()
+		mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
+		require.Len(t, mechanisms, 1)
+		_, msg, err := mechanisms[0].Authenticate(t.Context(), "broker:9092")
+		require.NoError(t, err)
+		assert.Contains(t, string(msg), "auth=Bearer tok")
+	})
+
+	t.Run("token_retrieval_error", func(t *testing.T) {
+		host := &mockHost{extensions: map[component.ID]component.Component{
+			extID: &mockTokenSource{err: errors.New("token fetch failed")},
+		}}
+		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+			Mechanism:              OAUTHBEARER,
+			OAuthBearerTokenSource: extID,
+		}, host)
+		require.NoError(t, err)
+		require.NotNil(t, opt)
+
+		cl, err := kgo.NewClient(opt)
+		require.NoError(t, err)
+		defer cl.Close()
+		mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
+		require.Len(t, mechanisms, 1)
+		_, _, err = mechanisms[0].Authenticate(t.Context(), "broker:9092")
+		require.ErrorContains(t, err, "token fetch failed")
 	})
 }
 
@@ -993,9 +1034,13 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 type mockTokenSource struct {
 	extension.Extension
 	token string
+	err   error
 }
 
 func (m *mockTokenSource) Token(context.Context) (*oauth2.Token, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
 	return &oauth2.Token{AccessToken: m.token}, nil
 }
 

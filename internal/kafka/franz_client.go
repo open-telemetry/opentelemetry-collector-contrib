@@ -428,10 +428,12 @@ func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host com
 		if !exists {
 			return nil, fmt.Errorf("extension %s is not configured", cfg.OAuthBearerTokenSource)
 		}
+		ts, ok := oauthExt.(contextTokenSource)
+		if !ok {
+			return nil, fmt.Errorf("extension %s does not implement Token(context.Context)", cfg.OAuthBearerTokenSource)
+		}
 
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			ts := oauthExt.(contextTokenSource)
-
 			token, err := ts.Token(ctx)
 			if err != nil {
 				return oauth.Auth{}, err
