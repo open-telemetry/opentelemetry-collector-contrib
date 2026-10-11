@@ -284,7 +284,7 @@ func TestAzureAppServiceRunningMetrics(t *testing.T) {
 		instanceIDs []string
 	}{
 		{name: "complete identity", instanceIDs: []string{"instance-1"}},
-		{name: "distinct resources", instanceIDs: []string{"instance-1", "instance-2"}},
+		{name: "two instances of one app", instanceIDs: []string{"instance-1", "instance-2"}},
 	}
 
 	for _, tt := range tests {
@@ -309,23 +309,14 @@ func TestAzureAppServiceRunningMetrics(t *testing.T) {
 			}
 
 			got := runningMetricTags(t, body, "otel.datadog_exporter.metrics.running.azureappservices")
-			require.Len(t, got, len(tt.instanceIDs))
-
-			for _, instanceID := range tt.instanceIDs {
-				var matchingTags []string
-				for _, tags := range got {
-					if slices.Contains(tags, "instance:"+instanceID) {
-						matchingTags = tags
-						break
-					}
-				}
-				require.NotNil(t, matchingTags, "missing running metric for %s", instanceID)
-				assert.Subset(t, matchingTags, []string{
-					"instance:" + instanceID,
-					"name:my-app",
-					"resource_group:my-rg",
-					"subscription_id:sub-123",
-				})
+			require.Len(t, got, 1)
+			assert.Subset(t, got[0], []string{
+				"name:my-app",
+				"resource_group:my-rg",
+				"subscription_id:sub-123",
+			})
+			for _, tag := range got[0] {
+				assert.NotContains(t, tag, "instance:")
 			}
 		})
 	}
@@ -343,7 +334,6 @@ func TestAzureFunctionsRunningMetrics(t *testing.T) {
 				{appName: "my-app", instanceID: "instance-1", functionName: "function-a", resourceGroup: "my-rg"},
 			},
 			wantTags: [][]string{{
-				"instance:instance-1",
 				"name:my-app",
 				"resource_group:my-rg",
 				"subscription_id:sub-123",
@@ -356,7 +346,6 @@ func TestAzureFunctionsRunningMetrics(t *testing.T) {
 				{appName: "my-app", instanceID: "instance-1", functionName: "function-b", resourceGroup: "my-rg"},
 			},
 			wantTags: [][]string{{
-				"instance:instance-1",
 				"name:my-app",
 				"resource_group:my-rg",
 				"subscription_id:sub-123",
@@ -369,8 +358,7 @@ func TestAzureFunctionsRunningMetrics(t *testing.T) {
 				{appName: "my-app", instanceID: "instance-2", functionName: "function-a", resourceGroup: "my-rg"},
 			},
 			wantTags: [][]string{
-				{"instance:instance-1", "name:my-app", "resource_group:my-rg", "subscription_id:sub-123"},
-				{"instance:instance-2", "name:my-app", "resource_group:my-rg", "subscription_id:sub-123"},
+				{"name:my-app", "resource_group:my-rg", "subscription_id:sub-123"},
 			},
 		},
 		{
@@ -380,8 +368,8 @@ func TestAzureFunctionsRunningMetrics(t *testing.T) {
 				{appName: "second-app", instanceID: "shared-instance", functionName: "function-a", resourceGroup: "my-rg"},
 			},
 			wantTags: [][]string{
-				{"instance:shared-instance", "name:first-app", "resource_group:my-rg", "subscription_id:sub-123"},
-				{"instance:shared-instance", "name:second-app", "resource_group:my-rg", "subscription_id:sub-123"},
+				{"name:first-app", "resource_group:my-rg", "subscription_id:sub-123"},
+				{"name:second-app", "resource_group:my-rg", "subscription_id:sub-123"},
 			},
 		},
 		{
