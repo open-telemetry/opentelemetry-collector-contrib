@@ -147,6 +147,10 @@ type adaptiveTailSamplingProcessor struct {
 	// default IsRootSpan(), letting the per-span check skip OTTL entirely.
 	rootSpanFastPath bool
 
+	// fleet groups all fleet_tracker runtime state and the member count
+	// callback; see fleetState in fleettracker.go.
+	fleet fleetState
+
 	wg sync.WaitGroup
 }
 
@@ -177,7 +181,21 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		return nil, err
 	}
 
-	return &adaptiveTailSamplingProcessor{
+	hasThroughputRules := false
+	for _, r := range rules {
+		if r.goalThroughput > 0 {
+			hasThroughputRules = true
+			break
+		}
+	}
+	if cfg.FleetTrackerID != nil && !hasThroughputRules {
+		set.Logger.Warn(
+			"fleet_tracker is set but no rule uses adaptive_throughput; it has no effect",
+			zap.String("fleet_tracker", cfg.FleetTrackerID.String()),
+		)
+	}
+
+	p := &adaptiveTailSamplingProcessor{
 		logger:               set.Logger,
 		telemetry:            tb,
 		cfg:                  cfg,
@@ -190,7 +208,73 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		rootSpanCondEvalErrs: tb.ProcessorAdaptiveTailSamplingOttlEvalErrors,
 		rootSpanCondAttrSet:  metric.WithAttributes(attribute.String("rule", rootSpanConditionRuleLabel)),
 		rootSpanFastPath:     cfg.effectiveRootSpanCondition() == defaultRootSpanCondition,
-	}, nil
+		fleet: fleetState{
+			logger:             set.Logger,
+			telemetry:          tb,
+			rules:              rules,
+			size:               1,
+			hasThroughputRules: hasThroughputRules,
+		},
+	}
+
+	if err := registerSamplerMetricsCallbacks(tb, p.rules); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+// dynsampler-go GetMetrics suffixes. See dynsampler-go's dynsampler.go.
+const (
+	dynsamplerRequestCountSuffix = "request_count"
+	dynsamplerKeyspaceSizeSuffix = "keyspace_size"
+	dynsamplerBurstCountSuffix   = "burst_count"
+)
+
+// registerSamplerMetricsCallbacks wires each adaptive-sampler rule's
+// dynsampler-go internal metrics into the processor's async OTel metrics.
+// Rules whose sampler does not implement sampler.MetricsProvider (e.g.
+// always_sample, probabilistic) are skipped, as are metrics a
+// given dynsampler-go implementation does not produce (e.g.
+// adaptive_throughput_windowed has no burst count).
+func registerSamplerMetricsCallbacks(tb *metadata.TelemetryBuilder, rules []*rule) error {
+	observe := func(o metric.Int64Observer, suffix string) {
+		for _, r := range rules {
+			mp, ok := r.sampler.(sampler.MetricsProvider)
+			if !ok {
+				continue
+			}
+			// GetMetrics prefixes its map keys with whatever string is
+			// passed in; since the rule/sampler_type attribution comes from
+			// r.dynsamplerAttrSet instead, an empty prefix keeps the keys
+			// (and this lookup) as plain suffixes.
+			if v, ok := mp.GetMetrics("")[suffix]; ok {
+				o.Observe(v, r.dynsamplerAttrSet)
+			}
+		}
+	}
+
+	callback := func(suffix string) metric.Int64Callback {
+		return func(_ context.Context, o metric.Int64Observer) error {
+			observe(o, suffix)
+			return nil
+		}
+	}
+
+	registrations := []struct {
+		register func(metric.Int64Callback) error
+		suffix   string
+	}{
+		{tb.RegisterProcessorAdaptiveTailSamplingSamplerRequestCountCallback, dynsamplerRequestCountSuffix},
+		{tb.RegisterProcessorAdaptiveTailSamplingSamplerKeyspaceSizeCallback, dynsamplerKeyspaceSizeSuffix},
+		{tb.RegisterProcessorAdaptiveTailSamplingSamplerBurstCountCallback, dynsamplerBurstCountSuffix},
+	}
+	for _, reg := range registrations {
+		if err := reg.register(callback(reg.suffix)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // compileRootSpanCondition parses the operator-supplied (or defaulted) OTTL
@@ -255,7 +339,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 			GoalSamplingPercentage: sc.GoalPercentage,
 			AdjustmentInterval:     sc.AdjustmentInterval,
 			Weight:                 sc.Weight,
-			MaxKeys:                sc.MaxKeys,
+			MaxKeys:                sc.effectiveMaxKeys(),
 		})
 		if err != nil {
 			return nil, nil, err
@@ -279,7 +363,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 				InitialSamplingRate:  initialRate,
 				UpdateFrequency:      sc.UpdateFrequency,
 				LookbackFrequency:    sc.LookbackFrequency,
-				MaxKeys:              sc.MaxKeys,
+				MaxKeys:              sc.effectiveMaxKeys(),
 			})
 		} else {
 			s, err = sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
@@ -287,7 +371,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 				InitialSamplingRate:  initialRate,
 				AdjustmentInterval:   sc.AdjustmentInterval,
 				Weight:               sc.Weight,
-				MaxKeys:              sc.MaxKeys,
+				MaxKeys:              sc.effectiveMaxKeys(),
 			})
 		}
 		if err != nil {
@@ -306,13 +390,51 @@ func (*adaptiveTailSamplingProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-// Start initializes the embedded samplers.
-func (p *adaptiveTailSamplingProcessor) Start(context.Context, component.Host) error {
+// Start initializes the embedded samplers and, when fleet_tracker is
+// configured, subscribes to the fleet's live member count.
+func (p *adaptiveTailSamplingProcessor) Start(_ context.Context, host component.Host) error {
 	for _, r := range p.rules {
 		if err := r.sampler.Start(); err != nil {
 			return fmt.Errorf("rule %q sampler start: %w", r.name, err)
 		}
 	}
+
+	if p.cfg.FleetTrackerID == nil {
+		return nil
+	}
+	if !p.fleet.hasThroughputRules {
+		// Already warned in newProcessor; nothing to subscribe to.
+		return nil
+	}
+
+	ft, err := resolveFleetTracker(host, *p.cfg.FleetTrackerID)
+	if err != nil {
+		return err
+	}
+	// Warn once at startup for any throughput rule whose sampler cannot
+	// receive fleet-divided goals, so the per-callback loop's !ok continue
+	// can stay silent (an expected, already-warned condition) instead of
+	// spamming a warning on every callback.
+	for _, r := range p.rules {
+		if r.goalThroughput <= 0 {
+			continue
+		}
+		if _, ok := r.sampler.(sampler.ThroughputGoalSetter); !ok {
+			p.logger.Warn(
+				"adaptive_throughput rule's sampler does not implement ThroughputGoalSetter; fleet_tracker will not adjust its goal",
+				zap.String("rule", r.name),
+			)
+		}
+	}
+	// Subscribing after samplers start is required, since the callback calls
+	// setters on live samplers. The contract's immediate first delivery may
+	// fire synchronously before fleet.cancel is assigned below, which is safe
+	// because the callback never reads fleet.cancel.
+	cancel, err := ft.SubscribeMemberCount(p.fleet.onMemberCount)
+	if err != nil {
+		return fmt.Errorf("fleet_tracker %q: subscribe: %w", *p.cfg.FleetTrackerID, err)
+	}
+	p.fleet.cancel = cancel
 	return nil
 }
 
@@ -347,6 +469,11 @@ func (p *adaptiveTailSamplingProcessor) Shutdown(ctx context.Context) error {
 	}
 	p.arrival = nil
 	p.mu.Unlock()
+
+	if p.fleet.cancel != nil {
+		p.fleet.cancel()
+		p.fleet.cancel = nil
+	}
 
 	p.wg.Wait()
 
@@ -406,12 +533,12 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 		// Split the batch by traceID and by decision-cache status so we can
 		// stamp sampled-cache hits with the original rule annotations once per
 		// batch.
-		pendingBuckets := make(map[pcommon.TraceID]ptrace.ResourceSpans)
+		pendingBuckets := make(map[pcommon.TraceID]*scopeSpansBuilder)
 		lateBuckets := make(map[pcommon.TraceID]struct {
-			rs ptrace.ResourceSpans
-			md cachedDecision
+			builder *scopeSpansBuilder
+			md      cachedDecision
 		})
-		for _, ss := range rs.ScopeSpans().All() {
+		for scopeIndex, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				id := span.TraceID()
 				// The pending map is checked before the decision cache: spans
@@ -421,8 +548,7 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 				pt, exists := p.traces[id]
 				if !exists {
 					if b, ok := lateBuckets[id]; ok {
-						dstSS := findOrAppendScopeSpans(b.rs, ss)
-						span.MoveTo(dstSS.Spans().AppendEmpty())
+						b.builder.appendSpan(scopeIndex, ss, span)
 						continue
 					}
 					if _, ok := dropped[id]; ok {
@@ -434,16 +560,12 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 							dropped[id] = struct{}{}
 							continue
 						}
-						rsCopy := ptrace.NewResourceSpans()
-						rs.Resource().CopyTo(rsCopy.Resource())
-						rsCopy.SetSchemaUrl(rs.SchemaUrl())
 						b := struct {
-							rs ptrace.ResourceSpans
-							md cachedDecision
-						}{rs: rsCopy, md: md}
+							builder *scopeSpansBuilder
+							md      cachedDecision
+						}{builder: newScopeSpansBuilder(rs), md: md}
 						lateBuckets[id] = b
-						dstSS := findOrAppendScopeSpans(b.rs, ss)
-						span.MoveTo(dstSS.Spans().AppendEmpty())
+						b.builder.appendSpan(scopeIndex, ss, span)
 						continue
 					}
 					pt = &pendingTrace{
@@ -460,19 +582,17 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 				if !pt.hasRootSpan && !pt.triggered && p.evalRootSpanCondition(ctx, rs, ss, span) {
 					pt.hasRootSpan = true
 				}
-				if _, ok := pendingBuckets[id]; !ok {
-					rsCopy := ptrace.NewResourceSpans()
-					rs.Resource().CopyTo(rsCopy.Resource())
-					rsCopy.SetSchemaUrl(rs.SchemaUrl())
-					pendingBuckets[id] = rsCopy
+				b, ok := pendingBuckets[id]
+				if !ok {
+					b = newScopeSpansBuilder(rs)
+					pendingBuckets[id] = b
 				}
-				dstSS := findOrAppendScopeSpans(pendingBuckets[id], ss)
-				span.MoveTo(dstSS.Spans().AppendEmpty())
+				b.appendSpan(scopeIndex, ss, span)
 			}
 		}
-		for id, copied := range pendingBuckets {
+		for id, b := range pendingBuckets {
 			if pt, ok := p.traces[id]; ok {
-				pt.spans = append(pt.spans, copied)
+				pt.spans = append(pt.spans, b.rs)
 				// The span-limit check runs before the root-span check so a
 				// trace that crosses the limit decides immediately rather
 				// than waiting decision_delay; the check sits after the
@@ -492,7 +612,7 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 		}
 		for id, b := range lateBuckets {
 			out := ptrace.NewTraces()
-			b.rs.MoveTo(out.ResourceSpans().AppendEmpty())
+			b.builder.rs.MoveTo(out.ResourceSpans().AppendEmpty())
 			lateForwards = append(lateForwards, lateSampled{traceID: id, md: b.md, td: out})
 		}
 	}
@@ -731,19 +851,30 @@ func (p *adaptiveTailSamplingProcessor) stampLateBatch(ctx context.Context, td p
 	}
 }
 
-// findOrAppendScopeSpans returns the ScopeSpans slot in dst that matches src,
-// appending an empty entry if needed. This preserves resource attributes when
-// copying spans across batches.
-func findOrAppendScopeSpans(dst ptrace.ResourceSpans, src ptrace.ScopeSpans) ptrace.ScopeSpans {
-	for _, ss := range dst.ScopeSpans().All() {
-		if ss.Scope().Name() == src.Scope().Name() && ss.Scope().Version() == src.Scope().Version() {
-			return ss
-		}
+// scopeSpansBuilder collects one trace's spans from one source ResourceSpans.
+// Source scopes are visited in order and never revisited, so remembering the
+// last source index preserves their grouping without comparing scope contents.
+type scopeSpansBuilder struct {
+	rs        ptrace.ResourceSpans
+	destScope ptrace.ScopeSpans
+	lastScope int
+}
+
+func newScopeSpansBuilder(src ptrace.ResourceSpans) *scopeSpansBuilder {
+	rs := ptrace.NewResourceSpans()
+	src.Resource().CopyTo(rs.Resource())
+	rs.SetSchemaUrl(src.SchemaUrl())
+	return &scopeSpansBuilder{rs: rs, lastScope: -1}
+}
+
+func (b *scopeSpansBuilder) appendSpan(scopeIndex int, src ptrace.ScopeSpans, span ptrace.Span) {
+	if b.lastScope != scopeIndex {
+		b.destScope = b.rs.ScopeSpans().AppendEmpty()
+		src.Scope().CopyTo(b.destScope.Scope())
+		b.destScope.SetSchemaUrl(src.SchemaUrl())
+		b.lastScope = scopeIndex
 	}
-	out := dst.ScopeSpans().AppendEmpty()
-	src.Scope().CopyTo(out.Scope())
-	out.SetSchemaUrl(src.SchemaUrl())
-	return out
+	span.MoveTo(b.destScope.Spans().AppendEmpty())
 }
 
 // decide pops a trace from the buffer, evaluates rules, and either forwards or

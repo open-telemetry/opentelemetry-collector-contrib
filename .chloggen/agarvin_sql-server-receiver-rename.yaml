@@ -1,0 +1,6 @@
+change_type: deprecation
+component: receiver/sql_server
+note: Rename the `sqlserver` receiver to `sql_server`. The old `sqlserver` type remains available as a deprecated alias.
+issues: [45339]
+subtext:
+change_logs: [user]
