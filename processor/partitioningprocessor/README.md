@@ -204,7 +204,3 @@ processors:
     keys:
       tenant_id: 'otelcol.client.metadata["x-tenant-id"][0]'
 ```
-
-## Known limitations
-
-- **Profiles dictionary:** when a profiles batch is split, every partition receives a full copy of the input's `ProfilesDictionary`, so a partition can contain dictionary entries that none of its profiles reference. Compacting the dictionary per partition needs a splitting API in pdata, which does not exist yet; see [#51894](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/51894).
