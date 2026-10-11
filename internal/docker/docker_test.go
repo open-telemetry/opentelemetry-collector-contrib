@@ -546,3 +546,51 @@ func TestTLSClientConfigInvalidCert(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "could not load docker client TLS config")
 }
+
+// TestContainerEnvToMap verifies that ContainerEnvToMap correctly parses
+// environment variable strings, including those whose values contain "=".
+func TestContainerEnvToMap(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected map[string]string
+	}{
+		{
+			name:     "simple key=value",
+			input:    []string{"KEY=value"},
+			expected: map[string]string{"KEY": "value"},
+		},
+		{
+			name:     "value with embedded equals sign (issue #51948)",
+			input:    []string{"JAVA_OPTS=-Xmx=512m"},
+			expected: map[string]string{"JAVA_OPTS": "-Xmx=512m"},
+		},
+		{
+			name:     "value with multiple equals signs",
+			input:    []string{"CONN=host=db;pass=secret"},
+			expected: map[string]string{"CONN": "host=db;pass=secret"},
+		},
+		{
+			name:     "entry without equals sign is skipped",
+			input:    []string{"NOEQUALS"},
+			expected: map[string]string{},
+		},
+		{
+			name:     "entry with empty value is skipped",
+			input:    []string{"EMPTY="},
+			expected: map[string]string{},
+		},
+		{
+			name:     "mixed entries",
+			input:    []string{"SIMPLE=val", "JAVA_OPTS=-Xmx=512m", "NOEQUALS", "EMPTY="},
+			expected: map[string]string{"SIMPLE": "val", "JAVA_OPTS": "-Xmx=512m"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ContainerEnvToMap(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
