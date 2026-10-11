@@ -1,0 +1,24 @@
+display_name: Partitioning Processor
+type: partitioning
+
+description: |
+  The `partitioning` processor splits incoming batches into sub-batches using
+  OTTL value expressions, and forwards each sub-batch with the evaluated
+  partition keys added to the outgoing request metadata.
+
+status:
+  class: processor
+  stability:
+    development: [logs, metrics, traces, profiles]
+  distributions: []
+  codeowners:
+    active: [paulojmdias, dmitryax]
+    emeritus: [axw]
+
+tests:
+  # Each partition is forwarded with a derived context carrying its partition
+  # keys in client.Metadata, so the downstream context is not the inbound one.
+  skip_context_propagation: true
+  config:
+    keys:
+      service: 'resource.attributes["service.name"]'

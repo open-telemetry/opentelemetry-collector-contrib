@@ -42,7 +42,18 @@ Each of `logs`, `metrics`, and `traces` accepts:
 | `marshaler`          | `otlp_proto`                                   | Built-in payload marshaler: `otlp_proto` or `otlp_json`. Mutually exclusive with `encoding_extension`. |
 | `encoding_extension` | (unset)                                        | Component ID of an [encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding) to marshal payloads. Mutually exclusive with `marshaler`. |
 
+> [!NOTE]
+> The `subject` and marshaler for all three signals are prepared at startup,
+> regardless of which pipelines reference the exporter. A malformed `subject`
+> expression or an `encoding_extension` that is not registered will fail startup
+> even for a signal that is not part of any pipeline.
+
 ### JetStream
+
+> [!NOTE]
+> JetStream publishing is not yet implemented; a configured `jetstream` block is
+> rejected at startup. The behavior described in this section is the planned
+> design and is contributed in a follow-up.
 
 When the `jetstream` block is present, every payload is published with JetStream
 and the publish blocks until the server acknowledges persistence.
