@@ -13,6 +13,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestGetBackendsRowError(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+	rows := sqlmock.NewRows([]string{"datname", "count"}).
+		AddRow("db1", int64(3)).
+		AddRow("db2", int64(1)).
+		AddRow("db3", int64(4)).
+		RowError(1, errors.New("connection reset by peer"))
+	mock.ExpectQuery("SELECT datname, count(*) as count from pg_stat_activity GROUP BY datname;").
+		WillReturnRows(rows)
+
+	got, err := client.getBackends(t.Context(), nil)
+	require.ErrorContains(t, err, "connection reset by peer")
+	assert.Equal(t, map[databaseName]int64{databaseName("db1"): 3}, got)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListDatabasesRowError(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+	rows := sqlmock.NewRows([]string{"datname"}).
+		AddRow("db1").
+		AddRow("db2").
+		RowError(1, errors.New("connection reset by peer"))
+	mock.ExpectQuery("SELECT datname FROM pg_database\n\tWHERE datistemplate = false;").
+		WillReturnRows(rows)
+
+	got, err := client.listDatabases(t.Context())
+	require.ErrorContains(t, err, "connection reset by peer")
+	assert.Equal(t, []string{"db1"}, got)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestQuoteDatabaseList(t *testing.T) {
 	tests := []struct {
 		name      string

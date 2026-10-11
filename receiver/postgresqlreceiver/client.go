@@ -591,6 +591,7 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var errs error
 	dbStats := map[databaseName]databaseStats{}
@@ -620,7 +621,7 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 			}
 		}
 	}
-	return dbStats, errs
+	return dbStats, multierr.Append(errs, rows.Err())
 }
 
 // getExecutionTimeStats returns, per database, the cumulative time (in seconds) spent executing
@@ -761,7 +762,7 @@ func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string)
 			locks:    locks,
 		})
 	}
-	return dl, multierr.Combine(errs...)
+	return dl, multierr.Combine(append(errs, rows.Err())...)
 }
 
 // getBackends returns the number of backend processes for each database, counted from pg_stat_activity
@@ -789,7 +790,7 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) 
 			ars[databaseName(datname)] = count
 		}
 	}
-	return ars, errors
+	return ars, multierr.Append(errors, rows.Err())
 }
 
 func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error) {
@@ -813,7 +814,7 @@ func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []stri
 			sizes[databaseName(datname)] = size
 		}
 	}
-	return sizes, errors
+	return sizes, multierr.Append(errors, rows.Err())
 }
 
 // tableStats contains a result for a row of the getDatabaseTableMetrics result
@@ -863,6 +864,7 @@ WHERE l.relation IS NULL;`
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var schema, table string
 		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
@@ -886,7 +888,7 @@ WHERE l.relation IS NULL;`
 			vacuumCount: vacuumCount,
 		}
 	}
-	return ts, errors
+	return ts, multierr.Append(errors, rows.Err())
 }
 
 type tableIOStats struct {
@@ -921,6 +923,7 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var schema, table string
 		var heapRead, heapHit, idxRead, idxHit, toastRead, toastHit, tidxRead, tidxHit int64
@@ -943,7 +946,7 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 			tidxHit:   tidxHit,
 		}
 	}
-	return tios, errors
+	return tios, multierr.Append(errors, rows.Err())
 }
 
 // getTableCount is a cheap COUNT(*) alternative to getDatabaseTableMetrics;
@@ -1035,7 +1038,7 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 			scans:    indexScans,
 		}
 	}
-	return stats, multierr.Combine(errs...)
+	return stats, multierr.Combine(append(errs, rows.Err())...)
 }
 
 type functionStat struct {
@@ -1089,7 +1092,7 @@ SELECT s.schemaname,
 			calls:    calls,
 		}
 	}
-	return stats, multierr.Combine(errs...)
+	return stats, multierr.Combine(append(errs, rows.Err())...)
 }
 
 // vectorSearchStat holds the aggregated pgvector search statistics for a single distance function.
@@ -1346,7 +1349,7 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 		})
 	}
 
-	return rs, errors
+	return rs, multierr.Append(errors, rows.Err())
 }
 
 func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
@@ -1387,7 +1390,7 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 		})
 	}
 
-	return rs, errors
+	return rs, multierr.Append(errors, rows.Err())
 }
 
 func (c *postgreSQLClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {
@@ -1429,7 +1432,7 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 
 		databases = append(databases, database)
 	}
-	return databases, nil
+	return databases, rows.Err()
 }
 
 func (c *postgreSQLClient) getVersion(ctx context.Context) (string, error) {
