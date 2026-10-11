@@ -39,7 +39,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotEqual(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
 
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutConfig())
-	assert.Equal(t, configcompression.TypeZstd, ocfg.Compression)
+	assert.Equal(t, configcompression.TypeZstd, ocfg.ClientConfig.Compression)
 	assert.Equal(t, ArrowConfig{
 		Disabled:           false,
 		NumStreams:         max(1, runtime.NumCPU()/2),
@@ -53,7 +53,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	oexp, err := factory.CreateMetrics(t.Context(), set, cfg)
@@ -219,7 +219,7 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	oexp, err := factory.CreateLogs(t.Context(), set, cfg)
@@ -230,7 +230,7 @@ func TestCreateLogs(t *testing.T) {
 func TestCreateArrowTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Arrow = ArrowConfig{
 		NumStreams: 1,
 	}

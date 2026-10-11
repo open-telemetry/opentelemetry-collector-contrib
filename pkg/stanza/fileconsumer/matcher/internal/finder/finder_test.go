@@ -175,21 +175,21 @@ func TestFindFiles(t *testing.T) {
 			files:                      []string{"a.log", "B.LOG", "c.Log", "my_file.txt", "CaSe_FIle.TXT"},
 			include:                    []string{"*.log", "*.txt"},
 			caseInsensitiveFeaturegate: true,
-			expected: (func() []string {
+			expected: func() []string {
 				if runtime.GOOS == "windows" {
 					return []string{"a.log", "B.LOG", "c.Log", "my_file.txt", "CaSe_FIle.TXT"}
 				}
 				return []string{"a.log", "my_file.txt"}
-			})(),
+			}(),
 		},
 		{
 			name:                       "CaseSensitivity_WithoutFeaturegate",
 			files:                      []string{"a.log", "B.LOG", "c.Log", "my_file.txt", "CaSe_FIle.TXT"},
 			include:                    []string{"*.log", "*.txt"},
 			caseInsensitiveFeaturegate: false,
-			expected: (func() []string {
+			expected: func() []string {
 				return []string{"a.log", "my_file.txt"}
-			})(),
+			}(),
 		},
 	}
 

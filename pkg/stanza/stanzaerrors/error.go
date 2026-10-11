@@ -49,8 +49,7 @@ func (e AgentError) WithDetails(keyValues ...string) AgentError {
 
 // WithDetails will add details to an agent error
 func WithDetails(err error, keyValues ...string) AgentError {
-	var agentErr AgentError
-	if errors.As(err, &agentErr) {
+	if agentErr, ok := errors.AsType[AgentError](err); ok {
 		if len(keyValues) > 0 {
 			for i := 0; i+1 < len(keyValues); i += 2 {
 				agentErr.Details[keyValues[i]] = keyValues[i+1]
@@ -63,8 +62,7 @@ func WithDetails(err error, keyValues ...string) AgentError {
 
 // Deprecated: [v0.143.0] use fmt.Errorf with %w.
 func Wrap(err error, context string) AgentError {
-	var agentErr AgentError
-	if errors.As(err, &agentErr) {
+	if agentErr, ok := errors.AsType[AgentError](err); ok {
 		agentErr.Description = fmt.Sprintf("%s: %s", context, agentErr.Description)
 		return agentErr
 	}

@@ -47,6 +47,7 @@ type kubeletScraper struct {
 	nodeInformer          cache.SharedInformer
 	stopCh                chan struct{}
 	m                     sync.RWMutex
+	cpuUsageCalculator    *kubelet.CPUUsageCalculator
 
 	// A struct that keeps Node's information
 	nodeInfo *kubelet.NodeInfo
@@ -82,8 +83,9 @@ func newKubeletScraper(
 			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
-		stopCh:   make(chan struct{}),
-		nodeInfo: &kubelet.NodeInfo{},
+		stopCh:             make(chan struct{}),
+		nodeInfo:           &kubelet.NodeInfo{},
+		cpuUsageCalculator: kubelet.NewCPUUsageCalculator(),
 	}
 
 	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
@@ -124,7 +126,7 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
 
-	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs)
+	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs, r.cpuUsageCalculator)
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())

@@ -35,7 +35,7 @@ all_set:
       enabled: true
     postgresql.database.locks:
       enabled: true
-      attributes: ["relation","mode","lock_type"]
+      attributes: ["relation","mode","lock_type","db.namespace"]
     postgresql.db_size:
       enabled: true
       attributes: ["db.namespace"]
@@ -57,6 +57,9 @@ all_set:
     postgresql.query.conflicts:
       enabled: true
       attributes: ["postgresql.conflict.type","db.namespace"]
+    postgresql.query.execution.time:
+      enabled: true
+      attributes: ["db.namespace"]
     postgresql.replication.data_delay:
       enabled: true
       attributes: ["replication_client"]
@@ -99,6 +102,21 @@ all_set:
     postgresql.tup_updated:
       enabled: true
       attributes: ["db.namespace"]
+    postgresql.vector.insert.duration:
+      enabled: true
+      attributes: ["db.namespace"]
+    postgresql.vector.insert.rows:
+      enabled: true
+      attributes: ["db.namespace"]
+    postgresql.vector.search.calls:
+      enabled: true
+      attributes: ["postgresql.distance.function.name","db.namespace"]
+    postgresql.vector.search.duration:
+      enabled: true
+      attributes: ["postgresql.distance.function.name","db.namespace"]
+    postgresql.vector.search.rows_returned:
+      enabled: true
+      attributes: ["postgresql.distance.function.name","db.namespace"]
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
@@ -108,11 +126,15 @@ all_set:
       enabled: true
       attributes: ["operation","replication_client"]
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     postgresql.database.name:
       enabled: true
     postgresql.index.name:
@@ -189,6 +211,9 @@ reaggregate_set:
     postgresql.query.conflicts:
       enabled: true
       attributes: []
+    postgresql.query.execution.time:
+      enabled: true
+      attributes: []
     postgresql.replication.data_delay:
       enabled: true
       attributes: []
@@ -231,6 +256,21 @@ reaggregate_set:
     postgresql.tup_updated:
       enabled: true
       attributes: []
+    postgresql.vector.insert.duration:
+      enabled: true
+      attributes: []
+    postgresql.vector.insert.rows:
+      enabled: true
+      attributes: []
+    postgresql.vector.search.calls:
+      enabled: true
+      attributes: []
+    postgresql.vector.search.duration:
+      enabled: true
+      attributes: []
+    postgresql.vector.search.rows_returned:
+      enabled: true
+      attributes: []
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
@@ -240,11 +280,15 @@ reaggregate_set:
       enabled: true
       attributes: []
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     postgresql.database.name:
       enabled: true
     postgresql.index.name:
@@ -299,7 +343,7 @@ none_set:
       enabled: false
     postgresql.database.locks:
       enabled: false
-      attributes: ["relation","mode","lock_type"]
+      attributes: ["relation","mode","lock_type","db.namespace"]
     postgresql.db_size:
       enabled: false
       attributes: ["db.namespace"]
@@ -321,6 +365,9 @@ none_set:
     postgresql.query.conflicts:
       enabled: false
       attributes: ["postgresql.conflict.type","db.namespace"]
+    postgresql.query.execution.time:
+      enabled: false
+      attributes: ["db.namespace"]
     postgresql.replication.data_delay:
       enabled: false
       attributes: ["replication_client"]
@@ -363,6 +410,21 @@ none_set:
     postgresql.tup_updated:
       enabled: false
       attributes: ["db.namespace"]
+    postgresql.vector.insert.duration:
+      enabled: false
+      attributes: ["db.namespace"]
+    postgresql.vector.insert.rows:
+      enabled: false
+      attributes: ["db.namespace"]
+    postgresql.vector.search.calls:
+      enabled: false
+      attributes: ["postgresql.distance.function.name","db.namespace"]
+    postgresql.vector.search.duration:
+      enabled: false
+      attributes: ["postgresql.distance.function.name","db.namespace"]
+    postgresql.vector.search.rows_returned:
+      enabled: false
+      attributes: ["postgresql.distance.function.name","db.namespace"]
     postgresql.wal.age:
       enabled: false
     postgresql.wal.delay:
@@ -372,11 +434,15 @@ none_set:
       enabled: false
       attributes: ["operation","replication_client"]
   events:
+    db.server.query_plan:
+      enabled: false
     db.server.query_sample:
       enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.version:
+      enabled: false
     postgresql.database.name:
       enabled: false
     postgresql.index.name:
@@ -397,6 +463,9 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      override_value: "override-db.system.version"
     postgresql.database.name:
       enabled: true
       override_value: "override-postgresql.database.name"
@@ -426,6 +495,12 @@ override_set:
       override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     postgresql.database.name:
       enabled: true
       metrics_include:
@@ -482,6 +557,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     postgresql.database.name:
       enabled: true
       metrics_exclude:

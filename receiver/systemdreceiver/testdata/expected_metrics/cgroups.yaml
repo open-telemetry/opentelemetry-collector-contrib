@@ -27,6 +27,24 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: us
+          - description: Bytes of memory in use by this service.
+            name: systemd.service.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "158478336"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Maximum memory used by this service, in bytes.
+            name: systemd.service.memory.usage.max
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "669528064"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
           version: latest

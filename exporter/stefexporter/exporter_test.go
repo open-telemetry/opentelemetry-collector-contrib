@@ -143,9 +143,9 @@ func runTest(
 	if cfg == nil {
 		cfg = factory.CreateDefaultConfig().(*Config)
 	}
-	cfg.Endpoint = mockSrv.endpoint
+	cfg.ClientConfig.Endpoint = mockSrv.endpoint
 	// Use insecure mode for tests so that we don't bother with certificates.
-	cfg.TLS.Insecure = true
+	cfg.ClientConfig.TLS.Insecure = true
 
 	// Make retries quick. We will be testing failure modes and don't want test to take too long.
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
@@ -174,7 +174,7 @@ func TestExport(t *testing.T) {
 			compression, func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig().(*Config)
-				cfg.Compression = configcompression.Type(compression)
+				cfg.ClientConfig.Compression = configcompression.Type(compression)
 
 				runTest(
 					t,
@@ -214,7 +214,7 @@ func TestReconnect(t *testing.T) {
 	// Shorten max ack waiting time so that the attempt to send on a failed
 	// connection times out quickly and attempt to send again is tried
 	// until the broken connection is detected and reconnection happens.
-	cfg.Timeout = 300 * time.Millisecond
+	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -263,7 +263,7 @@ func TestAckTimeout(t *testing.T) {
 
 	// Shorten max ack waiting time so that tests run fast.
 	// Increase this if the second eventually() below fails sporadically.
-	cfg.Timeout = 300 * time.Millisecond
+	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,

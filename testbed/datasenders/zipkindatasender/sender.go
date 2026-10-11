@@ -38,9 +38,9 @@ func NewZipkinDataSender(host string, port int) testbed.TraceDataSender {
 func (zs *zipkinDataSender) Start() error {
 	factory := zipkinexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinexporter.Config)
-	cfg.Endpoint = fmt.Sprintf("http://%s/api/v2/spans", zs.GetEndpoint())
+	cfg.ClientConfig.Endpoint = fmt.Sprintf("http://%s/api/v2/spans", zs.GetEndpoint())
 	// Disable retries, we should push data and if error just log it.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	params := exportertest.NewNopSettings(factory.Type())

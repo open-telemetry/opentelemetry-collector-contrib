@@ -20,7 +20,7 @@ func newMetricsExporter(cfg component.Config, set exporter.Settings) (*metricsEx
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
 	}
 
-	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Metrics.Endpoint, oCfg.Metrics.Headers)
+	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Metrics.ClientConfig.Endpoint, oCfg.Metrics.ClientConfig.Headers)
 	if err != nil {
 		return nil, err
 	}

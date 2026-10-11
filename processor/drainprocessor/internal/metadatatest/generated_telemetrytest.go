@@ -25,7 +25,7 @@ func AssertEqualProcessorDrainClustersActive(t *testing.T, tt *componenttest.Tel
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_drain_clusters_active",
 		Description: "Current number of active clusters in the Drain parse tree. [Development]",
-		Unit:        "{clusters}",
+		Unit:        "{cluster}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -39,7 +39,7 @@ func AssertEqualProcessorDrainLogRecordsAnnotated(t *testing.T, tt *componenttes
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_drain_log_records_annotated",
 		Description: "Number of log records successfully annotated with a template. [Development]",
-		Unit:        "{records}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -47,6 +47,22 @@ func AssertEqualProcessorDrainLogRecordsAnnotated(t *testing.T, tt *componenttes
 		},
 	}
 	got, err := tt.GetMetric("otelcol_processor_drain_log_records_annotated")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorDrainMasksDuplicates(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_drain_masks_duplicates",
+		Description: "Number of records where a mask name matched more than one position in the matched template. Incremented once per record per duplicated mask name; the losing values are discarded and first-match wins. [Development]",
+		Unit:        "{record}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_drain_masks_duplicates")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

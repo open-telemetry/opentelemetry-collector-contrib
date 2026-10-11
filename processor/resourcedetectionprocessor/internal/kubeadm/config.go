@@ -9,8 +9,8 @@ import (
 )
 
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
-	ResourceAttributes  metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	APIConfig          k8sconfig.APIConfig               `mapstructure:",squash"`
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 func CreateDefaultConfig() Config {

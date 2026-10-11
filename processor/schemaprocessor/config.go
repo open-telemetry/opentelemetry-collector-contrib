@@ -25,7 +25,7 @@ var (
 
 // Config defines the user provided values for the Schema Processor
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 
 	// CacheCooldown is the duration to wait before retrying schema fetches
 	// after the retry limit has been reached. Defaults to 5 minutes.

@@ -39,6 +39,14 @@ func TestScrape(t *testing.T) {
 		config       *Config
 	}
 
+	mockLoadFunc := func(_ context.Context) (*load.AvgStat, error) {
+		return &load.AvgStat{
+			Load1:  1.0,
+			Load5:  5.0,
+			Load15: 15.0,
+		}, nil
+	}
+
 	testCases := []testCase{
 		{
 			name:        testStandard,
@@ -46,6 +54,7 @@ func TestScrape(t *testing.T) {
 			config: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
+			loadFunc: mockLoadFunc,
 		},
 		{
 			name:        testAverage,
@@ -55,6 +64,7 @@ func TestScrape(t *testing.T) {
 				CPUAverage:           true,
 			},
 			bootTimeFunc: func(context.Context) (uint64, error) { return bootTime, nil },
+			loadFunc:     mockLoadFunc,
 		},
 		{
 			name:     "Load Error",

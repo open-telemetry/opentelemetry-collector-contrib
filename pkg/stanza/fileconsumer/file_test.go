@@ -597,8 +597,10 @@ func TestMultiFileSort(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
+	topN := 1
 	cfg.OrderingCriteria = matcher.OrderingCriteria{
 		Regex: `.*(?P<value>\d)`,
+		TopN:  &topN,
 		SortBy: []matcher.Sort{
 			{
 				SortType: "numeric",
@@ -630,8 +632,10 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
+	topN := 1
 	cfg.OrderingCriteria = matcher.OrderingCriteria{
 		Regex: `.(?P<value>\d{10})\.log`,
+		TopN:  &topN,
 		SortBy: []matcher.Sort{
 			{
 				SortType: "timestamp",
@@ -1220,9 +1224,6 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
-	sink := emittest.NewSink(emittest.WithCallBuffer(longFileLines + 1))
-	operator := testManagerWithSink(t, cfg, sink)
-	operator.persister = testutil.NewUnscopedMockPersister()
 
 	shortFile := filetest.OpenTemp(t, tempDir)
 	_, err := shortFile.WriteString(shortFileLine + "\n")
@@ -1236,39 +1237,62 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	}
 	require.NoError(t, longFile.Close())
 
+	// Route emits per file so the assertions do not depend on Go's scheduling.
+	// The short file emits its single line and its reader reaches EOF, which
+	// deletes the file. The long file's reader signals once and then blocks on
+	// ctx.Done(), so it can never reach EOF and its file is never deleted, no
+	// matter how the reader goroutines are scheduled (e.g. on a single CPU).
+	shortEmitted := make(chan struct{})
+	longEmitted := make(chan struct{})
+	ctx, cancel := context.WithCancel(t.Context())
+	callback := func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
+		switch attributes[attrs.LogFileName] {
+		case filepath.Base(shortFile.Name()):
+			assert.Len(t, tokens, 1)
+			assert.Equal(t, shortFileLine, string(tokens[0]))
+			close(shortEmitted)
+		case filepath.Base(longFile.Name()):
+			// Signal once, then block until the test cancels so the long file's
+			// reader never reaches EOF and the file is never deleted.
+			select {
+			case longEmitted <- struct{}{}:
+			case <-ctx.Done():
+			}
+			<-ctx.Done()
+		}
+		return ctx.Err()
+	}
+
+	operator := testManagerWithEmit(t, cfg, callback)
+	operator.persister = testutil.NewUnscopedMockPersister()
+
 	// Verify we have no checkpointed files
 	require.Equal(t, 0, operator.tracker.TotalReaders())
-
-	// Wait until the only line in the short file and
-	// at least one line from the long file have been consumed
-	var shortOne, longOne bool
-	ctx, cancel := context.WithCancel(t.Context())
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		operator.poll(ctx)
 	})
 
-	for !shortOne || !longOne {
-		if token := sink.NextToken(t); string(token) == shortFileLine {
-			shortOne = true
-		} else {
-			longOne = true
+	// Wait until both files have been read. A file is deleted synchronously
+	// before its tokens are emitted (see Reader.readContents), so once the short
+	// file's line is emitted the short file has already been deleted.
+	for _, ch := range []chan struct{}{shortEmitted, longEmitted} {
+		select {
+		case <-ch:
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for emit")
 		}
 	}
 
-	// Short file was fully consumed and should eventually be deleted.
-	// Enforce assertion before canceling because EOF is not necessarily detected
-	// immediately when the token is emitted. An additional scan may be necessary.
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.NoFileExists(c, shortFile.Name())
-	}, 100*time.Millisecond, time.Millisecond)
+	// Short file was fully consumed and should already be deleted.
+	require.NoFileExists(t, shortFile.Name())
 
 	// Stop consuming before long file has been fully consumed
 	cancel()
 	wg.Wait()
 
-	// Long file was partially consumed and should NOT have been deleted.
+	// Long file was only partially consumed and should NOT have been deleted.
 	require.FileExists(t, longFile.Name())
 }
 
@@ -1729,4 +1753,178 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 		sink2.ExpectToken(t, []byte(line))
 	}
 	sink2.ExpectNoCalls(t)
+}
+
+// TestTopNZeroNoDuplication verifies end-to-end that when top_n is explicitly
+// set to 0, ordering_criteria.sort_by=mtime tracks all matching files without
+// duplication. Before this fix, the zero value silently meant "default to 1",
+// which caused massive duplication with multiple actively-written files (the
+// 3-generation knownFiles window could not sustain all files, readers were
+// discarded, and files were re-read from offset 0 when rediscovered).
+// Regression test for #47444.
+func TestTopNZeroNoDuplication(t *testing.T) {
+	// NOT parallel — modifies the global mtime sort feature gate
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogMtimeSortTypeFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogMtimeSortTypeFeatureGate.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg := NewConfig()
+	cfg.Include = []string{filepath.Join(tempDir, "*.log")}
+	cfg.PollInterval = 50 * time.Millisecond
+	cfg.StartAt = "beginning"
+	topN := 0
+	cfg.OrderingCriteria = matcher.OrderingCriteria{
+		SortBy: []matcher.Sort{
+			{SortType: "mtime"},
+		},
+		TopN: &topN, // Explicit 0 means "match all files"
+	}
+
+	sink := emittest.NewSink(emittest.WithCallBuffer(100000), emittest.WithTimeout(500*time.Millisecond))
+	operator := testManagerWithSink(t, cfg, sink)
+
+	// Create 10 files — more than the 3-generation knownFiles window can sustain
+	// with top_n=1. Each file gets a unique initial line, and we use os.Chtimes
+	// to set deterministically-staggered mtimes instead of relying on filesystem
+	// time resolution and time.Sleep between operations.
+	const numFiles = 10
+	const rounds = 20
+	baseTime := time.Now()
+	files := make([]*os.File, numFiles)
+	for i := range files {
+		name := filepath.Join(tempDir, fmt.Sprintf("host%02d.log", i))
+		f, err := os.Create(name)
+		require.NoError(t, err)
+		_, err = fmt.Fprintf(f, "init-host%02d\n", i)
+		require.NoError(t, err)
+		require.NoError(t, f.Close())
+		mtime := baseTime.Add(time.Duration(i) * time.Second)
+		require.NoError(t, os.Chtimes(name, mtime, mtime))
+		files[i], err = os.OpenFile(name, os.O_APPEND|os.O_WRONLY, 0o600)
+		require.NoError(t, err)
+	}
+	t.Cleanup(func() {
+		for _, f := range files {
+			f.Close()
+		}
+	})
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	t.Cleanup(func() { require.NoError(t, operator.Stop()) })
+
+	// Write unique lines to each file in round-robin. After each write we chtimes
+	// to a strictly-later mtime than any previous file's mtime, so different
+	// files "win" the mtime competition on different polls without relying on
+	// time.Sleep between writes.
+	for round := 1; round <= rounds; round++ {
+		for i, f := range files {
+			msg := fmt.Sprintf("host%02d-round%02d", i, round)
+			_, err := fmt.Fprintf(f, "%s\n", msg)
+			require.NoError(t, err)
+			require.NoError(t, f.Sync())
+			mtime := baseTime.Add(time.Duration(numFiles+(round-1)*numFiles+i) * time.Second)
+			require.NoError(t, os.Chtimes(f.Name(), mtime, mtime))
+		}
+	}
+
+	// Wait until all unique tokens (init + each round per file) have been
+	// emitted. EventuallyWithT replaces a fixed sleep so the test adapts to
+	// the host's processing speed instead of relying on a brittle wall-clock
+	// guess.
+	const expectedUniqueTokens = numFiles * (1 + rounds)
+	tokenCounts := make(map[string]int)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		for {
+			token := sink.NextTokenWithin(0)
+			if token == nil {
+				break
+			}
+			tokenCounts[string(token)]++
+		}
+		assert.GreaterOrEqualf(c, len(tokenCounts), expectedUniqueTokens,
+			"expected %d unique tokens, have %d", expectedUniqueTokens, len(tokenCounts))
+	}, 30*time.Second, 100*time.Millisecond)
+
+	// Drain a tail window so any duplicate emissions arriving after the last
+	// unique token still get counted.
+	for {
+		token := sink.NextTokenWithin(500 * time.Millisecond)
+		if token == nil {
+			break
+		}
+		tokenCounts[string(token)]++
+	}
+
+	var duplicates []string
+	for token, count := range tokenCounts {
+		if count > 1 {
+			duplicates = append(duplicates, fmt.Sprintf("%s (x%d)", token, count))
+		}
+	}
+
+	assert.Empty(t, duplicates, "Expected no duplicates with top_n=0 (unlimited)")
+}
+
+// TestSkipUnmodifiedFiles verifies that with skip_unmodified_files enabled, a
+// file whose path+mtime is unchanged between polls skips the
+// open/fingerprint/read cycle on the second poll. Exercised by: first poll
+// consumes the file and stamps LastObservedPath/LastObservedMtime; second poll
+// sees the same path+mtime and the tracker's TryReuseByPathMtime handles reuse.
+func TestSkipUnmodifiedFiles(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig()
+	cfg.Include = []string{filepath.Join(tempDir, "*.log")}
+	cfg.StartAt = "beginning"
+	cfg.SkipUnmodifiedFiles = true
+
+	op, sink := testManager(t, cfg)
+	op.persister = testutil.NewUnscopedMockPersister()
+
+	path := filepath.Join(tempDir, "a.log")
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+	require.NoError(t, err)
+	filetest.WriteString(t, f, "line1\n")
+	require.NoError(t, f.Close())
+
+	// First poll: file is new, opens and reads. Metadata should be stamped.
+	op.poll(t.Context())
+	sink.ExpectToken(t, []byte("line1"))
+
+	// Inspect tracked metadata — one of the entries (the reader in
+	// previousPollFiles or its closed metadata) should have LastObservedPath
+	// set to our file and a non-zero LastObservedMtime.
+	var stampedMd *reader.Metadata
+	for _, md := range op.tracker.GetMetadata() {
+		if md.LastObservedPath == path {
+			stampedMd = md
+			break
+		}
+	}
+	require.NotNil(t, stampedMd, "expected at least one tracked metadata to carry LastObservedPath for the file")
+	require.False(t, stampedMd.LastObservedMtime.IsZero(), "expected LastObservedMtime to be stamped")
+	firstMtime := stampedMd.LastObservedMtime
+	firstOffset := stampedMd.Offset
+
+	// Second poll: file is unchanged. Because skip_unmodified_files is on and
+	// mtime matches, the tracker should reuse the metadata without opening the
+	// file again. No new tokens should appear.
+	op.poll(t.Context())
+	sink.ExpectNoCalls(t)
+
+	// The metadata should still be tracked (reuse path promotes it into the
+	// fresh generation). Offset and mtime should be unchanged.
+	var postReuseMd *reader.Metadata
+	for _, md := range op.tracker.GetMetadata() {
+		if md.LastObservedPath == path {
+			postReuseMd = md
+			break
+		}
+	}
+	require.NotNil(t, postReuseMd, "metadata should still be tracked after the skip poll")
+	assert.Equal(t, firstMtime, postReuseMd.LastObservedMtime, "mtime should be unchanged since the file was not modified")
+	assert.Equal(t, firstOffset, postReuseMd.Offset, "offset should be unchanged since no read happened")
 }

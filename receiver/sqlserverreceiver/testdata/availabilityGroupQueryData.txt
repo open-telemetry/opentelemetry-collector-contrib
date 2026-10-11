@@ -1,0 +1,38 @@
+[
+  {
+    "availability_group_name": "AG1",
+    "database_name": "UserDB",
+    "replica_name": "node2",
+    "log_send_queue_size": "512",
+    "log_send_rate": "256",
+    "redo_queue_size": "128",
+    "redo_rate": "64",
+    "secondary_lag":"0.5",
+    "computer_name": "testhost",
+    "sql_instance": "MSSQLSERVER"
+  },
+  {
+    "availability_group_name": "AG1",
+    "database_name": "UserDB2",
+    "replica_name": "node3",
+    "log_send_queue_size": "1024",
+    "log_send_rate": "512",
+    "redo_queue_size": "256",
+    "redo_rate": "128",
+    "secondary_lag":"",
+    "computer_name": "testhost",
+    "sql_instance": "MSSQLSERVER"
+  },
+  {
+    "availability_group_name": "AG1",
+    "database_name": "UserDB3",
+    "replica_name": "node4",
+    "log_send_queue_size": "",
+    "log_send_rate": "",
+    "redo_queue_size": "64",
+    "redo_rate": "32",
+    "secondary_lag":"1.2",
+    "computer_name": "testhost",
+    "sql_instance": "MSSQLSERVER"
+  }
+]

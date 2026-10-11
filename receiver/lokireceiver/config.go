@@ -30,8 +30,8 @@ type Protocols struct {
 // Config defines configuration for the lokireceiver receiver.
 type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
-	Protocols     `mapstructure:"protocols"`
-	KeepTimestamp bool `mapstructure:"use_incoming_timestamp"`
+	Protocols     Protocols `mapstructure:"protocols"`
+	KeepTimestamp bool      `mapstructure:"use_incoming_timestamp"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -44,7 +44,7 @@ var (
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.GRPC == nil && cfg.HTTP == nil {
+	if cfg.Protocols.GRPC == nil && cfg.Protocols.HTTP == nil {
 		return errors.New("must specify at least one protocol when using the Loki receiver")
 	}
 	return nil
@@ -58,11 +58,11 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if !conf.IsSet(protoGRPC) {
-		cfg.GRPC = nil
+		cfg.Protocols.GRPC = nil
 	}
 
 	if !conf.IsSet(protoHTTP) {
-		cfg.HTTP = nil
+		cfg.Protocols.HTTP = nil
 	}
 
 	return nil

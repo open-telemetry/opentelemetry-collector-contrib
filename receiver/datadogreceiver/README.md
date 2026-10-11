@@ -137,6 +137,9 @@ If the `receiver.datadogreceiver.EnableMultiTagParsing` feature gate is enabled,
 ### Default Attributes
 
 - `dd.span.Resource`: The datadog resource name (as distinct from the span name)
+- `datadog.metric.as_type`: Set to `rate` on data points from a Datadog `rate` series, which is otherwise
+indistinguishable from a `count` series once translated to a delta Sum. The Datadog exporter reads it to map such a
+Sum back to a Datadog rate.
 
 ### Optional Attributes
 
@@ -161,6 +164,7 @@ Format example can be found [here](./internal/translator/traces_translator_test.
 |-----------------------------|-------------|----------------------------|
 | /api/v1/series              | Development |                            |
 | /api/v2/series              | Development |                            |
+| /api/intake/metrics/v3/series | Development | Default series endpoint for Datadog Agent 7.81.0+; also served at /api/intake/metrics/v3beta/series |
 | /api/v1/check_run           | Development |                            |
 | /api/v1/sketches            | Development |                            |
 | /api/beta/sketches          | Development |                            |

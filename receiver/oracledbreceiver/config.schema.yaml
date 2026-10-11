@@ -1,4 +1,17 @@
 $defs:
+  procedure_metrics:
+    type: object
+    properties:
+      collection_interval:
+        type: string
+        format: duration
+      max_procedure_sample_count:
+        description: MaxProcedureSampleCount is the fetch limit; ranking happens over deltas, so it must exceed TopProcedureCount.
+        type: integer
+        x-customType: uint
+      top_procedure_count:
+        type: integer
+        x-customType: uint
   query_sample:
     type: object
     properties:
@@ -39,14 +52,19 @@ properties:
     type: string
   password:
     type: string
+  query_sample_collection:
+    $ref: query_sample
   service:
     type: string
+  session_wait_event_collection:
+    $ref: session_wait_event
+  top_procedure_collection:
+    $ref: procedure_metrics
+  top_query_collection:
+    $ref: top_query_collection
   username:
     type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   - $ref: ./internal/metadata.metrics_builder_config
   - $ref: ./internal/metadata.logs_builder_config
-  - $ref: top_query_collection
-  - $ref: query_sample
-  - $ref: session_wait_event

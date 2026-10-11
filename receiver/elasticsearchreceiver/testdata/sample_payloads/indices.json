@@ -8,14 +8,14 @@
     "primaries" : {
         "docs" : {
           "count" : 40,
-          "deleted" : 0
+          "deleted" : 7
         },
         "shard_stats" : {
           "total_count" : 1
         },
         "store" : {
-          "size_in_bytes" : 40230884,
-          "total_data_set_size_in_bytes" : 40230884,
+          "size_in_bytes" : 20115442,
+          "total_data_set_size_in_bytes" : 20115442,
           "reserved_in_bytes" : 0
         },
         "indexing" : {
@@ -136,7 +136,7 @@
     "total" : {
         "docs" : {
           "count" : 40,
-          "deleted" : 0
+          "deleted" : 11
         },
         "shard_stats" : {
           "total_count" : 1
@@ -268,14 +268,14 @@
       "primaries" : {
           "docs" : {
             "count" : 40,
-            "deleted" : 0
+            "deleted" : 13
           },
           "shard_stats" : {
             "total_count" : 1
           },
           "store" : {
-            "size_in_bytes" : 40230884,
-            "total_data_set_size_in_bytes" : 40230884,
+            "size_in_bytes" : 20115442,
+            "total_data_set_size_in_bytes" : 20115442,
             "reserved_in_bytes" : 0
           },
           "indexing" : {
@@ -396,7 +396,7 @@
       "total" : {
           "docs" : {
             "count" : 40,
-            "deleted" : 0
+            "deleted" : 17
           },
           "shard_stats" : {
             "total_count" : 1

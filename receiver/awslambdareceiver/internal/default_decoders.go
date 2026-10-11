@@ -62,6 +62,14 @@ func (*defaultCWLogsDecoder) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
 	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
 	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
+	// Expose the CloudWatch subscription filter names as a resource attribute. No-op when absent.
+	if len(cwLog.SubscriptionFilters) > 0 {
+		filters := resourceAttrs.PutEmptySlice("aws.log.subscription_filter.names")
+		filters.EnsureCapacity(len(cwLog.SubscriptionFilters))
+		for _, name := range cwLog.SubscriptionFilters {
+			filters.AppendEmpty().SetStr(name)
+		}
+	}
 
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName(metadata.ScopeName)

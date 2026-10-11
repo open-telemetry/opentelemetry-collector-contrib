@@ -10,6 +10,6 @@ import (
 
 // Config holds configuration for the interfaces scraper
 type Config struct {
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Device                        connection.DeviceConfig `mapstructure:"-"` // Passed from receiver config
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Device               connection.DeviceConfig       `mapstructure:"-"` // Passed from receiver config
 }

@@ -92,6 +92,14 @@ func (lp *bestOfNPrioritizer) sendOne(item writeItem, rnd *rand.Rand, tmp []stre
 	case writeCh <- item:
 		return
 
+	case <-item.producerCtx.Done():
+		// The caller has given up waiting, so this goroutine must
+		// stop waiting too. Otherwise, a stream whose work state
+		// has no reader (e.g., while the stream is reconnecting)
+		// would permanently consume one of the fixed number of
+		// prioritizer goroutines, and once they are all consumed
+		// no work is dispatched to any stream.
+
 	case <-lp.done:
 		// All other cases: signal restart.
 	}

@@ -7,7 +7,7 @@ import "go.opentelemetry.io/collector/config/confighttp"
 
 // Config contains the v2 config for the http healthcheck service
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	Config PathConfig `mapstructure:"config"`
 	Status PathConfig `mapstructure:"status"`
@@ -23,7 +23,7 @@ type PathConfig struct {
 // incrementally towards the v2 config and behavior. LegacyConfig is intentionally handled
 // separately here and elsewhere to facilitate its eventual removal.
 type LegacyConfig struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// Path represents the path the health check service will serve.
 	// The default path is "/".

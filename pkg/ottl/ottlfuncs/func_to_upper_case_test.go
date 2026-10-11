@@ -99,3 +99,52 @@ func Test_toUpperCaseRuntimeError(t *testing.T) {
 		})
 	}
 }
+
+func Test_ToUpperCaseFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewToUpperCaseFactory[any]()
+		assert.Equal(t, "ToUpperCase", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewToUpperCaseFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &toUpperCaseArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewToUpperCaseFactory[any]()
+		args := factory.CreateDefaultArguments()
+		createToUpperCaseArgs, ok := args.(*toUpperCaseArguments[any])
+		require.True(t, ok)
+		createToUpperCaseArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello world", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createToUpperCaseFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ToUpperCaseFactory args must be of type *toUpperCaseArguments[K]")
+	})
+}
+
+func BenchmarkToUpperCase(b *testing.B) {
+	exprFunc := toUpperCase[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "complex_SET-of.WORDS1234", nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

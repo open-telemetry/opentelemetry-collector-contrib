@@ -34,7 +34,7 @@ func NewJaegerDataReceiver(port int) testbed.DataReceiver {
 func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := jaegerreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*jaegerreceiver.Config)
-	cfg.GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", jr.Port), Transport: confignet.TransportTypeTCP},
 	})
 	var err error

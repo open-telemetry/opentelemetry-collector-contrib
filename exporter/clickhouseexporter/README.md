@@ -322,6 +322,22 @@ add more clickhouse node to cluster can increase linearly.
 The otel-collector with `otlp receiver/clickhouse tcp exporter` (with `sending_queue` batching enabled) can process
 around 40k/s logs entry per CPU cores, add more collector node can increase linearly.
 
+### Reading a shared table by a resource attribute
+
+The default schemas order primarily by time and `ServiceName`, and store resource-level
+labels (for example a `tenant` or `namespace` attribute) in the `ResourceAttributes` map
+rather than in the sort key. A skip index on the map values lets a query that filters on a
+single attribute value prune granules, but because every value shares the same
+time-partitioned parts, a wide time-range read filtered to one value still scans granules
+that also contain other values' rows — the filter is applied after the granule is read.
+
+For a low-cardinality attribute this is negligible. If you query a shared table by a
+*high-cardinality* attribute (for example one tenant out of hundreds or thousands, each
+reading concurrently), that shared-parts scan can become the read bottleneck. In that case,
+set [`create_schema: false`](#schema-management) and manage the DDL yourself so the
+attribute participates in the primary key — for example by adding it early in `ORDER BY` or
+via a projection — accepting that this diverges from the default schema.
+
 ## Configuration options
 
 The following settings are required:
@@ -371,7 +387,7 @@ ClickHouse tables:
 
 Cluster definition:
 
-- `cluster_name` (default = ): Optional. If present, will include `ON CLUSTER cluster_name` when creating tables.
+- `cluster_name` (default = ): Optional. If present, will include `ON CLUSTER cluster_name` when creating the database and tables.
 
 Table engine:
 
@@ -381,6 +397,15 @@ Table engine:
 
 Modifies `ENGINE` definition when table is created. If not set then `ENGINE` defaults to `MergeTree()`.
 Can be combined with `cluster_name` to enable [replication for fault tolerance](https://clickhouse.com/docs/en/architecture/replication).
+
+Database engine:
+
+- `database_engine`
+    - `name` (default = )
+    - `params` (default = )
+
+Modifies `ENGINE` definition when the database is created. If not set then the server default is used. Not used for the `default` database.
+With `Replicated`, `ON CLUSTER` is only used for the database since a [Replicated database](https://clickhouse.com/docs/engines/database-engines/replicated) replicates table DDL itself.
 
 Processing:
 
@@ -522,6 +547,9 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
     # cluster_name: my_cluster
+    # database_engine:
+    #   name: Replicated
+    #   params: "'/clickhouse/databases/otel'"
     # table_engine:
     #   name: ReplicatedMergeTree
     #   params:

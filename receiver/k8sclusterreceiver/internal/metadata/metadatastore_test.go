@@ -91,3 +91,9 @@ func (mockStore) Replace(_ []any, _ string) error {
 func (mockStore) Resync() error {
 	return nil
 }
+
+func (mockStore) LastStoreSyncResourceVersion() string {
+	return ""
+}
+
+func (mockStore) Bookmark(_ string) {}

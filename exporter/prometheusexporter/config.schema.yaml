@@ -17,8 +17,11 @@ properties:
   namespace:
     description: Namespace if set, exports metrics under the provided value.
     type: string
+  resource_constant_labels:
+    description: ResourceConstantLabels controls which resource attributes are added as constant labels on Prometheus metrics.
+    $ref: /pkg/resourcetotelemetry.settings
   resource_to_telemetry_conversion:
-    description: ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
+    description: 'ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels. Deprecated: Use ResourceConstantLabels instead.'
     $ref: /pkg/resourcetotelemetry.settings
   send_timestamps:
     description: SendTimestamps will send the underlying scrape timestamp with the export

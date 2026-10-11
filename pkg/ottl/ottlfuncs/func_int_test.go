@@ -29,11 +29,13 @@ func Test_Int(t *testing.T) {
 			name:     "empty string",
 			value:    "",
 			expected: nil,
+			err:      true,
 		},
 		{
 			name:     "not a number string",
 			value:    "test",
 			expected: nil,
+			err:      true,
 		},
 		{
 			name:     "int64",
@@ -87,5 +89,54 @@ func Test_Int(t *testing.T) {
 			}
 			assert.Equal(t, tt.expected, result)
 		})
+	}
+}
+
+func Test_IntFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIntFactory[any]()
+		assert.Equal(t, "Int", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIntFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &intArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIntFactory[any]()
+		args := factory.CreateDefaultArguments()
+		intArgs, ok := args.(*intArguments[any])
+		require.True(t, ok)
+		intArgs.Target = &ottl.StandardIntLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "42", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIntFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IntFactory args must be of type *intArguments[K]")
+	})
+}
+
+func BenchmarkInt(b *testing.B) {
+	exprFunc := intFunc[any](&ottl.StandardIntLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return "50", nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

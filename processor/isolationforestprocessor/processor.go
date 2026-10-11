@@ -71,6 +71,9 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 	if config.IsMultiModelMode() {
 		// Create named models for multi-model configuration
 		for _, modelConfig := range config.Models {
+			// contamination_rate is resolved per-model (outlier fraction varies by service);
+			// min_node_samples is a low-level tree-growth knob kept global on purpose —
+			// ModelConfig intentionally has no per-model override for it.
 			// Use adaptive forest creation if adaptive window is enabled
 			var forest *onlineIsolationForest
 			if config.IsAdaptiveWindowEnabled() {
@@ -79,12 +82,16 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 					config.Performance.BatchSize, // Use global batch size as initial window size
 					0,                            // Let forest determine max depth automatically
 					config.AdaptiveWindow,        // Pass adaptive configuration
+					modelConfig.ContaminationRate,
+					config.MinNodeSamples,
 				)
 			} else {
 				forest = newOnlineIsolationForest(
 					modelConfig.ForestSize,
 					config.Performance.BatchSize,
 					0,
+					modelConfig.ContaminationRate,
+					config.MinNodeSamples,
 				)
 			}
 			processor.modelForests[modelConfig.Name] = forest
@@ -105,12 +112,16 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 				config.Performance.BatchSize,
 				0, // Auto-determine max depth
 				config.AdaptiveWindow,
+				config.ContaminationRate,
+				config.MinNodeSamples,
 			)
 		} else {
 			processor.defaultForest = newOnlineIsolationForest(
 				config.ForestSize,
 				config.Performance.BatchSize,
 				0,
+				config.ContaminationRate,
+				config.MinNodeSamples,
 			)
 		}
 

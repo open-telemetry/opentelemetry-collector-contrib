@@ -1,0 +1,28 @@
+type: resourcedetectionprocessor/azurecontainerapps
+sem_conv_version: 1.43.0
+
+parent: resourcedetection
+
+resource_attributes:
+  azure.container_app.instance.id:
+    description: The name of the Azure Container App replica
+    type: string
+    enabled: true
+  cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
+    description: The cloud.provider
+    type: string
+    enabled: true
+  service.name:
+    semantic_convention:
+      ref: service.md#service-name
+    description: The name of the Azure Container App
+    type: string
+    enabled: true

@@ -55,18 +55,18 @@ func newStefExporter(set component.TelemetrySettings, cfg *Config) *stefExporter
 	}
 
 	exp.compression = stefpkg.CompressionNone
-	if exp.cfg.Compression == "zstd" {
+	if exp.cfg.ClientConfig.Compression == "zstd" {
 		exp.compression = stefpkg.CompressionZstd
 	}
 	// Disable built-in grpc compression. STEF has its own zstd compression support.
-	exp.cfg.Compression = ""
+	exp.cfg.ClientConfig.Compression = ""
 	return exp
 }
 
 func (s *stefExporter) Start(ctx context.Context, host component.Host) error {
 	// Prepare gRPC connection.
 	var err error
-	s.grpcConn, err = s.cfg.ToClientConn(ctx, host.GetExtensions(), s.set)
+	s.grpcConn, err = s.cfg.ClientConfig.ToClientConn(ctx, host.GetExtensions(), s.set)
 	if err != nil {
 		return err
 	}

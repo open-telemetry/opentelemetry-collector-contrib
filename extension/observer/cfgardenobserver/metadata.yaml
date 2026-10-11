@@ -9,8 +9,3 @@ status:
   codeowners:
     active: [crobert-1, jriguera]
     emeritus: [m1rp, cemdk]
-
-# We don't want to make actual connections to CloudFoundry api in our tests
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

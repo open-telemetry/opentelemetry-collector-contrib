@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -247,4 +248,60 @@ func Test_toKeyValueString_empty_delimiters(t *testing.T) {
 
 	_, err = toKeyValueString[any](target, ottl.Optional[string]{}, delimiter, ottl.NewTestingOptional[bool](false))
 	assert.ErrorContains(t, err, "pair delimiter cannot be set to an empty string")
+}
+
+func Test_ToKeyValueStringFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewToKeyValueStringFactory[any]()
+		assert.Equal(t, "ToKeyValueString", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewToKeyValueStringFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &toKeyValueStringArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter", "PairDelimiter", "SortOutput"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewToKeyValueStringFactory[any]()
+		args := factory.CreateDefaultArguments()
+		toKeyValueStringArgs, ok := args.(*toKeyValueStringArguments[any])
+		require.True(t, ok)
+		toKeyValueStringArgs.Target = &ottl.StandardPMapGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createToKeyValueStringFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ToKeyValueStringFactory args must be of type *toKeyValueStringArguments[K]")
+	})
+}
+
+func BenchmarkToKeyValueString(b *testing.B) {
+	target := ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return map[string]any{
+				"key1": "value1",
+				"key2": "value2",
+			}, nil
+		},
+	}
+	exprFunc, err := toKeyValueString[any](target, ottl.Optional[string]{}, ottl.Optional[string]{}, ottl.Optional[bool]{})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

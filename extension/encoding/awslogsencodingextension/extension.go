@@ -100,7 +100,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(
 				settings.BuildInfo,
-				metadata.ExtensionAwslogsencodingCloudtrailEnableUserIdentityPrefixFeatureGate.IsEnabled()),
+				metadata.ExtensionAwslogsencodingCloudtrailEnableUserIdentityPrefixFeatureGate.IsEnabled(),
+			),
 			format: constants.FormatCloudTrailLog,
 			logger: settings.Logger,
 		}, nil

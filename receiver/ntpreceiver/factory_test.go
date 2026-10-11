@@ -14,5 +14,5 @@ func TestCreateDefaultConfig(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	require.Equal(t, 4, c.Version)
 	require.Equal(t, "pool.ntp.org:123", c.Endpoint)
-	require.Equal(t, 30*time.Minute, c.CollectionInterval)
+	require.Equal(t, 30*time.Minute, c.ControllerConfig.CollectionInterval)
 }

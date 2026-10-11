@@ -1,0 +1,40 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: dns.domain
+          value:
+            stringValue: example.com
+        - key: dns.record.type
+          value:
+            stringValue: A
+        - key: dns.server
+          value:
+            stringValue: ""
+    scopeMetrics:
+      - metrics:
+          - description: Round-trip duration of the DNS query.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: dnscheck.duration
+            unit: ms
+          - description: 1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1 and the record type is A or AAAA.  The dns.rcode attribute is present whenever a response was received  from the server, including non-success responses such as NXDOMAIN,  SERVFAIL, or REFUSED; it is absent only when no response was received  at all (e.g. timeout or network unreachable).
+            name: dnscheck.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: dns.rcode
+                      value:
+                        intValue: "0"
+                    - key: dns.resolved.all.ips
+                      value:
+                        stringValue: 93.184.216.34
+                    - key: dns.resolved.ip
+                      value:
+                        stringValue: 93.184.216.34
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dnscheckreceiver
+          version: latest

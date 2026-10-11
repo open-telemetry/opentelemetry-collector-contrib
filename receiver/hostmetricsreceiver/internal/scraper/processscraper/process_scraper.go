@@ -264,7 +264,7 @@ func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMeta
 		}
 
 		parentProcessID := int32(0)
-		if s.config.ResourceAttributes.ProcessParentPid.Enabled {
+		if s.config.MetricsBuilderConfig.ResourceAttributes.ProcessParentPid.Enabled {
 			parentProcessID, err = parentPid(ctx, handle, pid)
 			if err != nil {
 				errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
@@ -288,7 +288,7 @@ func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMeta
 }
 
 func (s *processScraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle, pid int32) error {
-	if !s.config.Metrics.ProcessCPUTime.Enabled && !s.config.Metrics.ProcessCPUUtilization.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled && !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 		return nil
 	}
 
@@ -297,11 +297,11 @@ func (s *processScraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now p
 		return err
 	}
 
-	if s.config.Metrics.ProcessCPUTime.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled {
 		s.recordCPUTimeMetric(now, times)
 	}
 
-	if !s.config.Metrics.ProcessCPUUtilization.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 		return nil
 	}
 
@@ -314,7 +314,7 @@ func (s *processScraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now p
 }
 
 func (s *processScraper) scrapeAndAppendMemoryUsageMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessMemoryUsage.Enabled && !s.config.Metrics.ProcessMemoryVirtual.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled && !s.config.MetricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled {
 		return nil
 	}
 
@@ -329,7 +329,7 @@ func (s *processScraper) scrapeAndAppendMemoryUsageMetrics(ctx context.Context, 
 }
 
 func (s *processScraper) scrapeAndAppendMemoryUtilizationMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessMemoryUtilization.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUtilization.Enabled {
 		return nil
 	}
 
@@ -344,7 +344,7 @@ func (s *processScraper) scrapeAndAppendMemoryUtilizationMetric(ctx context.Cont
 }
 
 func (s *processScraper) scrapeAndAppendDiskMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if (!s.config.Metrics.ProcessDiskIo.Enabled && !s.config.Metrics.ProcessDiskOperations.Enabled) || runtime.GOOS == "darwin" {
+	if (!s.config.MetricsBuilderConfig.Metrics.ProcessDiskIo.Enabled && !s.config.MetricsBuilderConfig.Metrics.ProcessDiskOperations.Enabled) || runtime.GOOS == "darwin" {
 		return nil
 	}
 
@@ -356,8 +356,8 @@ func (s *processScraper) scrapeAndAppendDiskMetrics(ctx context.Context, now pco
 		return err
 	}
 
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead, metadata.AttributeDiskIoDirectionRead)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite, metadata.AttributeDiskIoDirectionWrite)
 	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.ReadCount), metadata.AttributeDirectionRead)
 	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.WriteCount), metadata.AttributeDirectionWrite)
 
@@ -365,7 +365,7 @@ func (s *processScraper) scrapeAndAppendDiskMetrics(ctx context.Context, now pco
 }
 
 func (s *processScraper) scrapeAndAppendPagingMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessPagingFaults.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessPagingFaults.Enabled {
 		return nil
 	}
 
@@ -377,14 +377,14 @@ func (s *processScraper) scrapeAndAppendPagingMetric(ctx context.Context, now pc
 		return nil
 	}
 
-	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributePagingFaultTypeMajor)
-	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MinorFaults), metadata.AttributePagingFaultTypeMinor)
+	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributePagingFaultTypeMajor, metadata.AttributeSystemPagingFaultTypeMajor)
+	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MinorFaults), metadata.AttributePagingFaultTypeMinor, metadata.AttributeSystemPagingFaultTypeMinor)
 
 	return nil
 }
 
 func (s *processScraper) scrapeAndAppendThreadsMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessThreads.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessThreads.Enabled {
 		return nil
 	}
 	threads, err := handle.NumThreadsWithContext(ctx)
@@ -403,7 +403,7 @@ func (s *processScraper) scrapeAndAppendThreadsMetrics(ctx context.Context, now 
 // the implementation may end up needing to change or be separated
 // into individual platform implementations.
 func (s *processScraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessContextSwitches.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled {
 		return nil
 	}
 
@@ -450,14 +450,14 @@ func (s *processScraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context
 		}
 	}
 
-	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Involuntary, metadata.AttributeContextSwitchTypeInvoluntary)
-	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Voluntary, metadata.AttributeContextSwitchTypeVoluntary)
+	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Involuntary, metadata.AttributeContextSwitchTypeInvoluntary, metadata.AttributeProcessContextSwitchTypeInvoluntary)
+	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Voluntary, metadata.AttributeContextSwitchTypeVoluntary, metadata.AttributeProcessContextSwitchTypeVoluntary)
 
 	return nil
 }
 
 func (s *processScraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessOpenFileDescriptors.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessOpenFileDescriptors.Enabled {
 		return nil
 	}
 
@@ -472,7 +472,7 @@ func (s *processScraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Co
 }
 
 func (s *processScraper) scrapeAndAppendHandlesMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessHandles.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
 		return nil
 	}
 
@@ -487,7 +487,7 @@ func (s *processScraper) scrapeAndAppendHandlesMetric(ctx context.Context, now p
 }
 
 func (s *processScraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessSignalsPending.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessSignalsPending.Enabled {
 		return nil
 	}
 
@@ -507,7 +507,7 @@ func (s *processScraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context
 }
 
 func (s *processScraper) scrapeAndAppendUptimeMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessUptime.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessUptime.Enabled {
 		return nil
 	}
 

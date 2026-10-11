@@ -9,7 +9,3 @@ status:
   codeowners:
     active: [akats7]
     emeritus: [fatsheep9146]
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

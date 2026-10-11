@@ -12,17 +12,19 @@ import (
 	"go.uber.org/zap"
 )
 
-var patternKeyToAttributeMap = map[string]string{
-	"ClusterName":          "aws.ecs.cluster.name",
-	"TaskId":               "aws.ecs.task.id",
-	"NodeName":             "k8s.node.name",
-	"PodName":              "pod",
-	"ServiceName":          "service.name",
-	"ContainerInstanceId":  "aws.ecs.container.instance.id",
-	"TaskDefinitionFamily": "aws.ecs.task.family",
-	"InstanceId":           "service.instance.id",
-	"FaasName":             "faas.name",
-	"FaasVersion":          "faas.version",
+// patternKeyToAttributeMap maps each placeholder key to the resource attribute names
+// that are searched, in order, to resolve its value.
+var patternKeyToAttributeMap = map[string][]string{
+	"ClusterName":          {"aws.ecs.cluster.name"},
+	"TaskId":               {"aws.ecs.task.id"},
+	"NodeName":             {"k8s.node.name"},
+	"PodName":              {"pod", "k8s.pod.name"},
+	"ServiceName":          {"service.name"},
+	"ContainerInstanceId":  {"aws.ecs.container.instance.id"},
+	"TaskDefinitionFamily": {"aws.ecs.task.family"},
+	"InstanceId":           {"service.instance.id"},
+	"FaasName":             {"faas.name"},
+	"FaasVersion":          {"faas.version"},
 }
 
 func isPatternValid(s string) (bool, string) {
@@ -59,8 +61,11 @@ func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string
 	if strings.Contains(s, pattern) {
 		if value, ok := attrMap[patternKey]; ok {
 			return replace(s, pattern, value, logger)
-		} else if value, ok := attrMap[patternKeyToAttributeMap[patternKey]]; ok {
-			return replace(s, pattern, value, logger)
+		}
+		for _, attrName := range patternKeyToAttributeMap[patternKey] {
+			if value, ok := attrMap[attrName]; ok {
+				return replace(s, pattern, value, logger)
+			}
 		}
 		logger.Debug("No resource attribute found for pattern " + pattern)
 		return strings.ReplaceAll(s, pattern, "undefined"), false

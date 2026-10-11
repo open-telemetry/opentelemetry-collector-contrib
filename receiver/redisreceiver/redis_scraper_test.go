@@ -24,15 +24,19 @@ func TestRedisRunnable(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:6379"
+	cfg.AddrConfig.Endpoint = "localhost:6379"
 	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)}
 	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
 	require.NoError(t, err)
 	md, err := runner.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	// + 9 because there are three keyspace entries each of which has three metrics
-	// -2 because maxmemory and slave_repl_offset is by default disabled, so recorder is there, but there won't be data point
-	assert.Equal(t, len(rs.dataPointRecorders())+9-18, md.DataPointCount())
+	// -22 because that many recorders either have disabled metrics or keys absent from the test info fixture
+	// (includes cluster_enabled, maxmemory, tracking_total_keys, used_memory_overhead, used_memory_startup,
+	//  slave_repl_offset, all other cluster_*/links_buffer_limit_exceeded.count fields not in info.txt,
+	//  and pubsub_channels, pubsub_shardchannels, pubsub_clients, pubsub_patterns, which are all disabled
+	//  by default)
+	assert.Equal(t, len(rs.dataPointRecorders())+9-22, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 	il := ilm.Scope()

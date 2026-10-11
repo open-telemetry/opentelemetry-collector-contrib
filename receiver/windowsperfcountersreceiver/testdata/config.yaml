@@ -1,4 +1,4 @@
-windowsperfcounters:
+windows_perf_counters:
   metrics:
     metric:
       description: desc
@@ -10,7 +10,7 @@ windowsperfcounters:
         - name: counter1
           metric: metric
 
-windowsperfcounters/customname:
+windows_perf_counters/customname:
   metrics:
     metric:
       description: desc
@@ -23,6 +23,8 @@ windowsperfcounters/customname:
   collection_interval: 30s
   perfcounters:
     - object: object1
+      instances: ["*", "_Global_"]
+      aggregation_name: "_Global_"
       counters:
         - name: counter1
           metric: metric
@@ -33,7 +35,7 @@ windowsperfcounters/customname:
         - name: counter2
           metric: metric2
 
-windowsperfcounters/nometricspecified:
+windows_perf_counters/nometricspecified:
   metrics:
     metric:
       description: desc
@@ -44,7 +46,7 @@ windowsperfcounters/nometricspecified:
       counters:
         - name: counter1
 
-windowsperfcounters/unspecifiedmetrictype:
+windows_perf_counters/unspecifiedmetrictype:
   metrics:
     metric:
       description: desc
@@ -55,7 +57,7 @@ windowsperfcounters/unspecifiedmetrictype:
         - name: counter1
           metric: metric
 
-windowsperfcounters/summetric:
+windows_perf_counters/summetric:
   metrics:
     metric:
       description: desc
@@ -68,20 +70,20 @@ windowsperfcounters/summetric:
         - name: counter1
           metric: metric
 
-windowsperfcounters/nometrics:
+windows_perf_counters/nometrics:
   perfcounters:
     - object: "object"
       counters:
         - name: counter1
 
-windowsperfcounters/allerrors:
+windows_perf_counters/allerrors:
   collection_interval: -1m
   perfcounters:
     -
     - object: "object"
       instances: [ "instance", "", "*" ]
 
-windowsperfcounters/emptyinstance:
+windows_perf_counters/emptyinstance:
   metrics:
     metric:
       description: desc
@@ -94,7 +96,7 @@ windowsperfcounters/emptyinstance:
         - name: counter
           metric: metric
 
-windowsperfcounters/negative-collection-interval:
+windows_perf_counters/negative-collection-interval:
   metrics:
     metric:
       description: desc
@@ -107,7 +109,7 @@ windowsperfcounters/negative-collection-interval:
         - name: counter1
           metric: metric
 
-windowsperfcounters/nocounters:
+windows_perf_counters/nocounters:
   metrics:
     metric:
       description: desc
@@ -116,7 +118,7 @@ windowsperfcounters/nocounters:
   perfcounters:
     - object: "object"
 
-windowsperfcounters/noobjectname:
+windows_perf_counters/noobjectname:
   metrics:
     metric:
       description: desc
@@ -125,7 +127,7 @@ windowsperfcounters/noobjectname:
   perfcounters:
     - counters:
 
-windowsperfcounters/noperfcounters:
+windows_perf_counters/noperfcounters:
   metrics:
     metric:
       description: desc

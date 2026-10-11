@@ -58,7 +58,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", "tcp")),
+							attribute.String("transport", "tcp"),
+						),
 						Value: accepted,
 					},
 				},
@@ -79,7 +80,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", "tcp")),
+							attribute.String("transport", "tcp"),
+						),
 						Value: refused,
 					},
 				},

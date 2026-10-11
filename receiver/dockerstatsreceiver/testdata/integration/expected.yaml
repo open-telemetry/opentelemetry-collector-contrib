@@ -3,10 +3,10 @@ resourceMetrics:
       attributes:
         - key: container.hostname
           value:
-            stringValue: 7bb21392e3eb
+            stringValue: 4e20200aaff3
         - key: container.id
           value:
-            stringValue: 7bb21392e3eb4357edf26fbf6e3388c7bcd6c3c87b53bc82aa0e89b07c575837
+            stringValue: 4e20200aaff3cd3e28b280c26b614878088009c09c8cf4263c24d4deaf0c2128
         - key: container.image.name
           value:
             stringValue: docker.io/library/nginx:1.17
@@ -28,26 +28,13 @@ resourceMetrics:
                   attributes:
                     - key: device_major
                       value:
-                        stringValue: "254"
+                        stringValue: "8"
                     - key: device_minor
                       value:
                         stringValue: "0"
                     - key: operation
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "98304"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: write
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -57,7 +44,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "28095000"
+                - asInt: "6277000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -67,7 +54,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "51869000"
+                - asInt: "26154000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -77,7 +64,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "23773000"
+                - asInt: "19877000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -85,7 +72,7 @@ resourceMetrics:
           - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 1.5378994960422893e-05
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.utilization
@@ -95,14 +82,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "24576"
+                - asInt: "8192"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
           - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:
-                - asDouble: 0.009669439735715272
+                - asDouble: 0.004020398834981384
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.memory.percent
@@ -112,7 +99,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "8217890816"
+                - asInt: "50227056640"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -121,7 +108,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "794624"
+                - asInt: "2019328"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -130,7 +117,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1106"
+                - asInt: "624"
                   attributes:
                     - key: interface
                       value:
@@ -158,7 +145,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "126"
+                - asInt: "84"
                   attributes:
                     - key: interface
                       value:
@@ -181,6 +168,33 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{packets}'
+          - description: The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero.
+            name: container.state.health.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.health.state
+                      value:
+                        stringValue: healthy
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: container.state.health.state
+                      value:
+                        stringValue: starting
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.health.state
+                      value:
+                        stringValue: unhealthy
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{container}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
           version: latest

@@ -5,10 +5,10 @@ package otlpencodingextension // import "github.com/open-telemetry/opentelemetry
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
-var _ xconfmap.Validator = (*Config)(nil)
+var _ confmap.Validator = (*Config)(nil)
 
 type Config struct {
 	Protocol string `mapstructure:"protocol"`

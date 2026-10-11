@@ -28,7 +28,8 @@ func newLogsExporter(set exporter.Settings, cfg component.Config) (exporter.Logs
 		context.TODO(),
 		set,
 		cfg,
-		l.pushLogsData)
+		l.pushLogsData,
+	)
 }
 
 type logServiceLogsSender struct {

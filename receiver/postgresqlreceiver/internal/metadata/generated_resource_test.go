@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -15,6 +15,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
@@ -32,12 +33,17 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
 			}
 			postgresqlDatabaseNameAttrVal, ok := res.Attributes().Get("postgresql.database.name")
 			assert.True(t, ok)
@@ -90,8 +96,9 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
 	rb.SetPostgresqlIndexName("postgresql.index.name-val")
 	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
@@ -103,6 +110,13 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("db.system.version")
+		assert.True(t, ok, "db.system.version should be present")
+		if ok {
+			assert.Equal(t, "override-db.system.version", val.Str())
+		}
+	}
 	{
 		val, ok := res.Attributes().Get("postgresql.database.name")
 		assert.True(t, ok, "postgresql.database.name should be present")
@@ -171,10 +185,17 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 // TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("db.system.version")
+		assert.True(t, ok, "db.system.version should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-db.system.version", val.Str())
+		}
+	}
 	{
 		val, ok := res.Attributes().Get("postgresql.database.name")
 		assert.True(t, ok, "postgresql.database.name should be present even without calling Set")
@@ -243,6 +264,7 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 // TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
 func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.DbSystemVersion.Enabled = false
 	cfg.PostgresqlDatabaseName.Enabled = false
 	cfg.PostgresqlIndexName.Enabled = false
 	cfg.PostgresqlSchemaName.Enabled = false
@@ -252,7 +274,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.ServiceInstanceID.Enabled = false
 	cfg.ServiceName.Enabled = false
 	cfg.ServiceNamespace.Enabled = false
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -262,7 +284,8 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 // TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+	assert.Nil(t, cfg.DbSystemVersion.OverrideValue, "OverrideValue should be nil for db.system.version")
 	assert.Nil(t, cfg.PostgresqlDatabaseName.OverrideValue, "OverrideValue should be nil for postgresql.database.name")
 	assert.Nil(t, cfg.PostgresqlIndexName.OverrideValue, "OverrideValue should be nil for postgresql.index.name")
 	assert.Nil(t, cfg.PostgresqlSchemaName.OverrideValue, "OverrideValue should be nil for postgresql.schema.name")
@@ -273,6 +296,7 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.Nil(t, cfg.ServiceName.OverrideValue, "OverrideValue should be nil for service.name")
 	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
 	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
 	rb.SetPostgresqlIndexName("postgresql.index.name-val")
 	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
@@ -284,7 +308,12 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 9, res.Attributes().Len())
+	assert.Equal(t, 10, res.Attributes().Len())
+	dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
+	}
 	postgresqlDatabaseNameAttrVal, ok := res.Attributes().Get("postgresql.database.name")
 	assert.True(t, ok)
 	if ok {

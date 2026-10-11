@@ -67,6 +67,10 @@ func createDefaultConfig() component.Config {
 			OnError:          false,
 			OnPermanentError: false,
 		},
+		PartitionProcessing: PartitionProcessing{
+			MaxBufferedBatches: 1,
+			MaxInFlight:        MaxInFlightConfig{Records: 1},
+		},
 		HeaderExtraction: HeaderExtraction{
 			ExtractHeaders: false,
 		},

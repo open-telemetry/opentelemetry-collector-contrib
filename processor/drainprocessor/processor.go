@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -16,11 +17,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	internaldrain "github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor/internal/drain"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor/internal/metadata"
 )
+
+// compiledMaskRule is a MaskingRule with its pattern pre-compiled and its
+// replacement token materialized.
+type compiledMaskRule struct {
+	name    string
+	token   string // "<name>"
+	pattern *regexp.Regexp
+}
 
 type drainProcessor struct {
 	config      *Config
@@ -31,6 +42,13 @@ type drainProcessor struct {
 	mu       sync.Mutex
 	drain    *internaldrain.Drain
 	warmedUp bool // true when WarmupMinClusters == 0 or cluster count has reached the threshold
+
+	// masks holds compiled masking rules in declaration order.
+	masks []compiledMaskRule
+	// maskTokenNames maps a mask token (e.g. "<ip>") back to its bare name
+	// (e.g. "ip"). Used during parameter extraction to name variable positions
+	// in the template. nil when no rules are configured.
+	maskTokenNames map[string]string
 
 	storageClient    storage.Client
 	stopSave         context.CancelFunc // cancels periodic save goroutine
@@ -49,25 +67,69 @@ func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, er
 		return nil, err
 	}
 
+	masks, tokenNames, err := compileMaskingRules(cfg.MaskingRules)
+	if err != nil {
+		return nil, err
+	}
+
 	tel, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 
 	p := &drainProcessor{
-		config:      cfg,
-		componentID: set.ID,
-		logger:      set.Logger,
-		telemetry:   tel,
-		drain:       d,
-		warmedUp:    cfg.WarmupMinClusters == 0,
+		config:         cfg,
+		componentID:    set.ID,
+		logger:         set.Logger,
+		telemetry:      tel,
+		drain:          d,
+		warmedUp:       cfg.WarmupMinClusters == 0,
+		masks:          masks,
+		maskTokenNames: tokenNames,
 	}
 	return p, nil
+}
+
+// compileMaskingRules pre-compiles the configured rules. Validate is expected
+// to have already caught invalid regex; we recompile here so the processor
+// holds compiled forms without leaning on Validate side-effects.
+func compileMaskingRules(rules []MaskingRule) ([]compiledMaskRule, map[string]string, error) {
+	if len(rules) == 0 {
+		return nil, nil, nil
+	}
+	compiled := make([]compiledMaskRule, 0, len(rules))
+	tokenNames := make(map[string]string, len(rules))
+	for i, r := range rules {
+		re, err := regexp.Compile(r.Pattern)
+		if err != nil {
+			return nil, nil, fmt.Errorf("masking_rules[%d]: compile %q: %w", i, r.Pattern, err)
+		}
+		token := "<" + r.Name + ">"
+		compiled = append(compiled, compiledMaskRule{name: r.Name, token: token, pattern: re})
+		tokenNames[token] = r.Name
+	}
+	return compiled, tokenNames, nil
+}
+
+// applyMasks returns text with each configured masking rule applied in order.
+// Empty input and no-rule configurations short-circuit.
+func (p *drainProcessor) applyMasks(text string) string {
+	if len(p.masks) == 0 || text == "" {
+		return text
+	}
+	for _, r := range p.masks {
+		text = r.pattern.ReplaceAllLiteralString(text, r.token)
+	}
+	return text
 }
 
 // seed pre-populates the Drain tree from SeedTemplates and SeedLogs before any
 // live log records arrive. Empty entries are skipped. Train failures are logged
 // as warnings and skipped rather than aborting startup.
+//
+// SeedTemplates are trained verbatim — the user is declaring template shape,
+// so mask tokens they include appear as-is. SeedLogs go through the same
+// masking pass as live records so the tree learns the same shape.
 func (p *drainProcessor) seed() {
 	for _, tmpl := range p.config.SeedTemplates {
 		if strings.TrimSpace(tmpl) == "" {
@@ -81,7 +143,8 @@ func (p *drainProcessor) seed() {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		if _, _, err := p.drain.Train(line); err != nil {
+		masked := p.applyMasks(line)
+		if _, _, err := p.drain.Train(masked); err != nil {
 			p.logger.Warn("failed to seed log line, skipping", zap.String("line", line), zap.Error(err))
 		}
 	}
@@ -153,13 +216,14 @@ func (p *drainProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 }
 
 func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
-	text := extractBody(lr, p.config.BodyField)
-	if text == "" {
+	raw := extractBody(lr, p.config.BodyField)
+	if raw == "" {
 		return
 	}
+	masked := p.applyMasks(raw)
 
 	p.mu.Lock()
-	tmpl, tmplTokens, err := p.drain.Train(text)
+	tmpl, tmplTokens, err := p.drain.Train(masked)
 	if !p.warmedUp && p.drain.ClusterCount() >= p.config.WarmupMinClusters {
 		p.warmedUp = true
 	}
@@ -175,32 +239,70 @@ func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 	}
 
 	lr.Attributes().PutStr(p.config.TemplateAttribute, tmpl)
-	if p.config.ExtractParameters {
-		p.extractParams(lr, text, tmplTokens)
+	if len(p.masks) > 0 || p.config.EmitWildcards {
+		p.extractParams(ctx, lr, raw, tmplTokens)
 	}
 	p.telemetry.ProcessorDrainLogRecordsAnnotated.Add(ctx, 1)
 }
 
-// extractParams writes body tokens at <*> positions of the template as a slice
-// attribute. The slice is only created when at least one parameter is present.
-func (p *drainProcessor) extractParams(lr plog.LogRecord, body string, tmplTokens []string) {
-	bodyTokens := p.drain.Tokenise(body)
+// extractParams writes extracted parameters to attributes on lr:
+//
+//   - Each mask-matched position writes a dynamic attribute keyed as
+//     "<ParameterKeyPrefix>.<mask name>" with the raw body value. First-match
+//     wins on duplicate mask names; losing values are dropped and each
+//     duplicated name increments the masks-duplicates metric once per record.
+//   - When EmitWildcards is true, Drain's own "<*>" positions are written as
+//     a positional string slice attribute at WildcardsAttribute in template
+//     order.
+//
+// Extraction relies on positional alignment between raw body tokens and
+// template tokens. When a mask pattern spans whitespace, the masked line has
+// fewer tokens than the raw line, alignment breaks, and this function skips
+// extraction rather than emit misaligned values. The template attribute is
+// still written by the caller.
+func (p *drainProcessor) extractParams(ctx context.Context, lr plog.LogRecord, rawBody string, tmplTokens []string) {
+	bodyTokens := p.drain.Tokenise(rawBody)
 	if len(bodyTokens) == 0 || len(bodyTokens) != len(tmplTokens) {
 		return
 	}
-	var params []string
+
+	attrs := lr.Attributes()
+	var wildcards []string       // deferred allocation; only touched when EmitWildcards
+	var seenMasks map[string]int // occurrences per mask name this record; nil until needed
+
 	for i, t := range tmplTokens {
 		if t == "<*>" {
-			params = append(params, bodyTokens[i])
+			if p.config.EmitWildcards {
+				wildcards = append(wildcards, bodyTokens[i])
+			}
+			continue
+		}
+		name, ok := p.maskTokenNames[t]
+		if !ok {
+			continue
+		}
+		if seenMasks == nil {
+			seenMasks = make(map[string]int, len(p.masks))
+		}
+		seenMasks[name]++
+		switch seenMasks[name] {
+		case 1:
+			attrs.PutStr(p.config.ParameterKeyPrefix+"."+name, bodyTokens[i])
+		case 2:
+			// First-match wins: an earlier position already claimed this
+			// attribute key. Record the collision once per record per mask
+			// name, regardless of how many further positions collide.
+			p.telemetry.ProcessorDrainMasksDuplicates.Add(ctx, 1,
+				metric.WithAttributes(attribute.String("mask", name)))
 		}
 	}
-	if len(params) == 0 {
-		return
-	}
-	slice := lr.Attributes().PutEmptySlice(p.config.ParamsAttribute)
-	slice.EnsureCapacity(len(params))
-	for _, v := range params {
-		slice.AppendEmpty().SetStr(v)
+
+	if p.config.EmitWildcards && len(wildcards) > 0 {
+		slice := attrs.PutEmptySlice(p.config.WildcardsAttribute)
+		slice.EnsureCapacity(len(wildcards))
+		for _, v := range wildcards {
+			slice.AppendEmpty().SetStr(v)
+		}
 	}
 }
 

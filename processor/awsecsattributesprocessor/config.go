@@ -23,7 +23,7 @@ type Config struct {
 	//     sources:
 	//       - "log.file.name"
 	//       - "container.id"
-	ContainerID `mapstructure:"container_id"`
+	ContainerID ContainerID `mapstructure:"container_id"`
 
 	// CacheTTL is the time to live, in seconds, for the metadata cache.
 	CacheTTL int64 `mapstructure:"cache_ttl"`
@@ -45,7 +45,7 @@ var _ component.Config = (*Config)(nil)
 // Validate validates the configuration.
 func (c *Config) Validate() error {
 	// at least one container ID source must be specified
-	if len(c.Sources) == 0 {
+	if len(c.ContainerID.Sources) == 0 {
 		return errors.New("at least one container ID source must be specified [container_id.sources]")
 	}
 

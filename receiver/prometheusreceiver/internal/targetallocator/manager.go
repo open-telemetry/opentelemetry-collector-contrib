@@ -76,7 +76,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		// the target allocator is disabled
 		return nil
 	}
-	httpClient, err := m.cfg.ToClient(ctx, host.GetExtensions(), m.settings.TelemetrySettings)
+	httpClient, err := m.cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), m.settings.TelemetrySettings)
 	if err != nil {
 		m.settings.Logger.Error("Failed to create http client", zap.Error(err))
 		return err
@@ -128,7 +128,7 @@ func (m *Manager) Shutdown() {
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
 func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, error) {
 	m.settings.Logger.Debug("Syncing target allocator jobs")
-	scrapeConfigsResponse, err := getScrapeConfigsResponse(httpClient, m.cfg.Endpoint)
+	scrapeConfigsResponse, err := getScrapeConfigsResponse(httpClient, m.cfg.ClientConfig.Endpoint)
 	if err != nil {
 		m.settings.Logger.Error("Failed to retrieve job list", zap.Error(err))
 		return 0, err
@@ -161,7 +161,7 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 			httpSD = promHTTP.SDConfig(*m.cfg.HTTPSDConfig)
 		}
 		escapedJob := url.QueryEscape(jobName)
-		httpSD.URL = fmt.Sprintf("%s/jobs/%s/targets?collector_id=%s", m.cfg.Endpoint, escapedJob, m.cfg.CollectorID)
+		httpSD.URL = fmt.Sprintf("%s/jobs/%s/targets?collector_id=%s", m.cfg.ClientConfig.Endpoint, escapedJob, m.cfg.CollectorID)
 
 		err = configureSDHTTPClientConfigFromTA(&httpSD, m.cfg)
 		if err != nil {

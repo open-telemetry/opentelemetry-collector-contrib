@@ -27,7 +27,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -37,7 +37,7 @@ func TestCreateMetrics(t *testing.T) {
 
 func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -47,7 +47,7 @@ func TestCreateTraces(t *testing.T) {
 
 func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -59,21 +59,23 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(
 		t.Context(), params,
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
 	// Set values that don't have a valid default.
 	cfg.Token = "testToken"
-	cfg.Endpoint = "https://example.com"
+	cfg.ClientConfig.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetrics(
 		t.Context(), params,
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -115,10 +117,9 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 
 	config.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	config.QueueSettings.Get().Sizer = exporterhelper.RequestSizerTypeItems
-	config.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
-		FlushTimeout: 200 * time.Millisecond,
-		MinSize:      8192,
-	})
+	batch := config.QueueSettings.Get().Batch.GetOrInsertDefault()
+	batch.FlushTimeout = 200 * time.Millisecond
+	batch.MinSize = 8192
 
 	me, err = createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
@@ -146,13 +147,11 @@ func TestHecQueueSettings(t *testing.T) {
 
 	someBatch := func(keys []string) exporterhelper.QueueBatchConfig {
 		cfg := exporterhelper.NewDefaultQueueConfig()
-		batch := exporterhelper.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      8192,
-		}
+		batch := cfg.Batch.GetOrInsertDefault()
+		batch.FlushTimeout = 200 * time.Millisecond
+		batch.Sizer = exporterhelper.RequestSizerTypeItems
+		batch.MinSize = 8192
 		batch.Partition.MetadataKeys = keys
-		cfg.Batch = configoptional.Some(batch)
 		return cfg
 	}
 

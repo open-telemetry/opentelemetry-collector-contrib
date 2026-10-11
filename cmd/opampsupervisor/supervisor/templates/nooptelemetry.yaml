@@ -1,0 +1,15 @@
+# Internal telemetry for the bootstrap Collector.
+#
+# The bootstrap Collector is started only so that it reports its AgentDescription
+# and is stopped immediately afterwards, so its internal metrics are never
+# collected. Without this the Collector falls back to its default internal
+# telemetry configuration, a Prometheus reader on localhost:8888, and fails to
+# create its meter provider when that port is already in use.
+#
+# Metrics are disabled with `level: none` rather than an empty readers list
+# because configuration validation rejects an empty list while the level is not
+# none.
+service:
+  telemetry:
+    metrics:
+      level: none

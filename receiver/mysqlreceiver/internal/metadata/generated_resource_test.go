@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -18,6 +18,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetDbSystemName("db.system.name-val")
 			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetServiceName("service.name-val")
 			rb.SetServiceNamespace("service.namespace-val")
@@ -27,9 +29,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 6, res.Attributes().Len())
+				assert.Equal(t, 8, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -50,6 +52,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "mysql.instance.endpoint-val", mysqlInstanceEndpointAttrVal.Str())
+			}
+			serverAddressAttrVal, ok := res.Attributes().Get("server.address")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
+			}
+			serverPortAttrVal, ok := res.Attributes().Get("server.port")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, 11, serverPortAttrVal.Int())
 			}
 			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)
@@ -72,11 +84,13 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	rb.SetDbSystemName("db.system.name-val")
 	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+	rb.SetServerAddress("server.address-val")
+	rb.SetServerPort(11)
 	rb.SetServiceInstanceID("service.instance.id-val")
 	rb.SetServiceName("service.name-val")
 	rb.SetServiceNamespace("service.namespace-val")
@@ -101,6 +115,20 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 		assert.True(t, ok, "mysql.instance.endpoint should be present")
 		if ok {
 			assert.Equal(t, "override-mysql.instance.endpoint", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.address")
+		assert.True(t, ok, "server.address should be present")
+		if ok {
+			assert.Equal(t, "override-server.address", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.port")
+		assert.True(t, ok, "server.port should be present")
+		if ok {
+			assert.EqualValues(t, 123, val.Int())
 		}
 	}
 	{
@@ -129,7 +157,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 // TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -152,6 +180,20 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 		assert.True(t, ok, "mysql.instance.endpoint should be present even without calling Set")
 		if ok {
 			assert.Equal(t, "override-mysql.instance.endpoint", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.address")
+		assert.True(t, ok, "server.address should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-server.address", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.port")
+		assert.True(t, ok, "server.port should be present even without calling Set")
+		if ok {
+			assert.EqualValues(t, 123, val.Int())
 		}
 	}
 	{
@@ -183,10 +225,12 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.DbSystemName.Enabled = false
 	cfg.DbSystemVersion.Enabled = false
 	cfg.MysqlInstanceEndpoint.Enabled = false
+	cfg.ServerAddress.Enabled = false
+	cfg.ServerPort.Enabled = false
 	cfg.ServiceInstanceID.Enabled = false
 	cfg.ServiceName.Enabled = false
 	cfg.ServiceNamespace.Enabled = false
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -196,10 +240,12 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 // TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	assert.Nil(t, cfg.DbSystemName.OverrideValue, "OverrideValue should be nil for db.system.name")
 	assert.Nil(t, cfg.DbSystemVersion.OverrideValue, "OverrideValue should be nil for db.system.version")
 	assert.Nil(t, cfg.MysqlInstanceEndpoint.OverrideValue, "OverrideValue should be nil for mysql.instance.endpoint")
+	assert.Nil(t, cfg.ServerAddress.OverrideValue, "OverrideValue should be nil for server.address")
+	assert.Nil(t, cfg.ServerPort.OverrideValue, "OverrideValue should be nil for server.port")
 	assert.Nil(t, cfg.ServiceInstanceID.OverrideValue, "OverrideValue should be nil for service.instance.id")
 	assert.Nil(t, cfg.ServiceName.OverrideValue, "OverrideValue should be nil for service.name")
 	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
@@ -207,12 +253,14 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetDbSystemName("db.system.name-val")
 	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+	rb.SetServerAddress("server.address-val")
+	rb.SetServerPort(11)
 	rb.SetServiceInstanceID("service.instance.id-val")
 	rb.SetServiceName("service.name-val")
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 6, res.Attributes().Len())
+	assert.Equal(t, 8, res.Attributes().Len())
 	dbSystemNameAttrVal, ok := res.Attributes().Get("db.system.name")
 	assert.True(t, ok)
 	if ok {
@@ -227,6 +275,16 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.True(t, ok)
 	if ok {
 		assert.Equal(t, "mysql.instance.endpoint-val", mysqlInstanceEndpointAttrVal.Str())
+	}
+	serverAddressAttrVal, ok := res.Attributes().Get("server.address")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
+	}
+	serverPortAttrVal, ok := res.Attributes().Get("server.port")
+	assert.True(t, ok)
+	if ok {
+		assert.EqualValues(t, 11, serverPortAttrVal.Int())
 	}
 	serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
 	assert.True(t, ok)

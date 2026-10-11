@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // SourceName identifies a source instrumentation convention. Built-in
@@ -73,7 +73,7 @@ type Config struct {
 	Sources []Source `mapstructure:"sources"`
 }
 
-var _ xconfmap.Validator = (*Config)(nil)
+var _ confmap.Validator = (*Config)(nil)
 
 // builtInSourceNames returns a sorted comma-separated list of built-in
 // source names for use in error messages.

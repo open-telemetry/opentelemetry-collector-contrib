@@ -6,6 +6,8 @@ all:
   max_log_size: 1MB
   add_attributes: true
   encoding: utf-8
+  max_connections: 5
+  connection_idle_timeout: 30s
   multiline:
     line_start_pattern: ABC
   tls:

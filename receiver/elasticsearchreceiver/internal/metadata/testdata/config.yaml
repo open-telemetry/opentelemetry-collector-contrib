@@ -236,6 +236,8 @@ all_set:
   resource_attributes:
     elasticsearch.cluster.name:
       enabled: true
+    elasticsearch.cluster.uuid:
+      enabled: true
     elasticsearch.index.name:
       enabled: true
     elasticsearch.node.name:
@@ -478,6 +480,8 @@ reaggregate_set:
       enabled: true
   resource_attributes:
     elasticsearch.cluster.name:
+      enabled: true
+    elasticsearch.cluster.uuid:
       enabled: true
     elasticsearch.index.name:
       enabled: true
@@ -722,6 +726,8 @@ none_set:
   resource_attributes:
     elasticsearch.cluster.name:
       enabled: false
+    elasticsearch.cluster.uuid:
+      enabled: false
     elasticsearch.index.name:
       enabled: false
     elasticsearch.node.name:
@@ -731,6 +737,10 @@ none_set:
 filter_set_include:
   resource_attributes:
     elasticsearch.cluster.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    elasticsearch.cluster.uuid:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -752,6 +762,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "elasticsearch.cluster.name-val"
+    elasticsearch.cluster.uuid:
+      enabled: true
+      metrics_exclude:
+        - strict: "elasticsearch.cluster.uuid-val"
     elasticsearch.index.name:
       enabled: true
       metrics_exclude:

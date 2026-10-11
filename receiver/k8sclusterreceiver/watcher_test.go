@@ -260,7 +260,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 			name: "pv_phase_metric_enabled",
 			config: func() *Config {
 				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
-				cfg.Metrics.K8sPersistentvolumeStatusPhase.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.K8sPersistentvolumeStatusPhase.Enabled = true
 				return cfg
 			}(),
 			wantPV: true, wantPVC: false,
@@ -269,7 +269,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 			name: "pv_capacity_metric_enabled",
 			config: func() *Config {
 				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
-				cfg.Metrics.K8sPersistentvolumeStorageCapacity.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.K8sPersistentvolumeStorageCapacity.Enabled = true
 				return cfg
 			}(),
 			wantPV: true, wantPVC: false,
@@ -278,7 +278,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 			name: "pvc_phase_metric_enabled",
 			config: func() *Config {
 				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
-				cfg.Metrics.K8sPersistentvolumeclaimStatusPhase.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.K8sPersistentvolumeclaimStatusPhase.Enabled = true
 				return cfg
 			}(),
 			wantPV: false, wantPVC: true,
@@ -287,7 +287,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 			name: "pvc_capacity_metric_enabled",
 			config: func() *Config {
 				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
-				cfg.Metrics.K8sPersistentvolumeclaimStorageCapacity.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.K8sPersistentvolumeclaimStorageCapacity.Enabled = true
 				return cfg
 			}(),
 			wantPV: false, wantPVC: true,
@@ -296,7 +296,7 @@ func TestConditionalInformerSetup(t *testing.T) {
 			name: "pvc_request_metric_enabled",
 			config: func() *Config {
 				cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
-				cfg.Metrics.K8sPersistentvolumeclaimStorageRequest.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.K8sPersistentvolumeclaimStorageRequest.Enabled = true
 				return cfg
 			}(),
 			wantPV: false, wantPVC: true,

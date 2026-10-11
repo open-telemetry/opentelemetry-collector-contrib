@@ -4,6 +4,7 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"time"
@@ -230,16 +231,6 @@ func withOtelAnnotations(enabled bool) option {
 	}
 }
 
-func withDeploymentNameFromReplicaSet(enabled bool) option {
-	return func(p *kubernetesprocessor) error {
-		if !enabled && p.logger != nil {
-			p.logger.Warn("`deployment_name_from_replicaset: false` is deprecated and will be removed in future releases")
-		}
-		p.rules.DeploymentNameFromReplicaSet = enabled
-		return nil
-	}
-}
-
 // withExtractLabels allows specifying options to control extraction of pod labels.
 func withExtractLabels(labels ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {
@@ -404,7 +395,11 @@ func withExcludes(podExclude ExcludeConfig) option {
 			names = []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}
 		}
 		for _, name := range names {
-			ignoredNames.Pods = append(ignoredNames.Pods, kube.ExcludePods{Name: regexp.MustCompile(name.Name)})
+			re, err := regexp.Compile(name.Name)
+			if err != nil {
+				return fmt.Errorf("invalid pod exclude name %q: %w", name.Name, err)
+			}
+			ignoredNames.Pods = append(ignoredNames.Pods, kube.ExcludePods{Name: re})
 		}
 		p.podIgnore = ignoredNames
 		return nil

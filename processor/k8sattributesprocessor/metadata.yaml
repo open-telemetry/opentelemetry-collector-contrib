@@ -10,7 +10,7 @@ sem_conv_version: 1.42.0
 status:
   class: processor
   stability:
-    beta: [logs, metrics, traces]
+    stable: [logs, metrics, traces]
     development: [profiles]
   distributions: [contrib, k8s]
   warnings: [Memory consumption, Other]
@@ -236,19 +236,17 @@ resource_attributes:
 
 feature_gates:
   - id: processor.k8sattributes.DontEmitV0K8sConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, semconv legacy attributes are disabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
-    skip_strict_validation: true
   - id: processor.k8sattributes.EmitV1K8sConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, semconv stable attributes are enabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
-    skip_strict_validation: true
   - id: processor.k8sattributes.ShareProcessorBetweenPipelines
     stage: alpha
     description: >-
@@ -256,27 +254,21 @@ feature_gates:
       across different signal type pipelines, reducing duplicate Kubernetes API watchers.
     from_version: v0.150.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/2450
-    skip_strict_validation: true
   - id: processor.k8sattributes.telemetry.disableOldFormatMetrics
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, old formatted internal telemetry metrics are disabled.
     from_version: v0.146.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871
-    skip_strict_validation: true
   - id: processor.k8sattributes.telemetry.enableNewFormatMetrics
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, new formatted internal telemetry metrics are enabled.
     from_version: v0.146.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871
-    skip_strict_validation: true
 
 tests:
   config:
-  skip_lifecycle: true
-  goleak:
-    skip: true
 
 attributes:
   otelcol.signal:
@@ -306,6 +298,33 @@ telemetry:
       stability: development
       unit: "{resources}"
       attributes: [status, pod_identifier, otelcol.signal]
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.cronjob.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of cronjob add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.cronjob.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of cronjob delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.cronjob.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of cronjob update events received
+      stability: development
+      unit: "1"
       sum:
         value_type: int
         monotonic: true

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -67,10 +68,61 @@ func TestHex(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expressionFunc, _ := Hex(tt.args.target)
+			expressionFunc := hexString(tt.args.target)
 			got, err := expressionFunc(t.Context(), tt.args)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantFunc(), got)
 		})
+	}
+}
+
+func Test_HexFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewHexFactory[any]()
+		assert.Equal(t, "Hex", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewHexFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &hexArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewHexFactory[any]()
+		args := factory.CreateDefaultArguments()
+		hexArgs, ok := args.(*hexArguments[any])
+		require.True(t, ok)
+		hexArgs.Target = &ottl.StandardByteSliceLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return []byte("hello"), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createHexFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "HexFactory args must be of type *hexArguments[K]")
+	})
+}
+
+func BenchmarkHex(b *testing.B) {
+	exprFunc := hexString[any](&ottl.StandardByteSliceLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []byte("hello world"), nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

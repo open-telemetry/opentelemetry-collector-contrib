@@ -25,7 +25,7 @@ func newBuf(b *testing.B, nRecords int) []byte {
 	data, err := gojson.Marshal(rec)
 	require.NoError(b, err)
 
-	buf := bytes.NewBuffer(make([]byte, 0, nRecords*(len(data))))
+	buf := bytes.NewBuffer(make([]byte, 0, nRecords*len(data)))
 	buf.WriteString(`{"records": [`)
 	for i := range nRecords {
 		if i > 0 {

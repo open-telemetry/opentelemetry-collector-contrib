@@ -65,7 +65,11 @@ func newCwLogsPusher(ctx context.Context, expConfig *Config, params exp.Settings
 	}
 
 	logStreamManager := cwlogs.NewLogStreamManager(*svcStructuredLog)
-	multiStreamPusherFactory := cwlogs.NewMultiStreamPusherFactory(logStreamManager, *svcStructuredLog, params.Logger)
+	var pusherOpts []cwlogs.PusherOption
+	if expConfig.MaxEventPayloadBytes > 0 {
+		pusherOpts = append(pusherOpts, cwlogs.WithMaxEventPayloadBytes(expConfig.MaxEventPayloadBytes))
+	}
+	multiStreamPusherFactory := cwlogs.NewMultiStreamPusherFactory(logStreamManager, *svcStructuredLog, params.Logger, pusherOpts...)
 
 	logsExporter := &cwlExporter{
 		svcStructuredLog: svcStructuredLog,

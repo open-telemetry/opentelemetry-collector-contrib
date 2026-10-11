@@ -9,11 +9,12 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/protocol"
 )
 
 var errNilListenAndServeParameters = errors.New(
-	"no parameter of ListenAndServe can be nil")
+	"no parameter of ListenAndServe can be nil",
+)
 
 // Server abstracts the type of transport being used and offer an
 // interface to handle serving clients over that transport.

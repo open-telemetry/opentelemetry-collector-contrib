@@ -8,5 +8,5 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| k8s.cluster.name | The Kubernetes cluster name | Any Str | true | - | - |
-| k8s.cluster.uid | The Kubernetes cluster UID | Any Str | true | - | - |
+| k8s.cluster.name | The Kubernetes cluster name | Any Str | true | [k8s.cluster.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-cluster-name) | - |
+| k8s.cluster.uid | The Kubernetes cluster UID | Any Str | true | [k8s.cluster.uid](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-cluster-uid) | - |

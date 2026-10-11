@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter/internal/metadata"
@@ -25,6 +25,8 @@ func TestLoadConfig(t *testing.T) {
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
+
+	defaultQueueSettings := createDefaultConfig().(*Config).QueueSettings
 
 	tests := []struct {
 		id           component.ID
@@ -43,6 +45,7 @@ func TestLoadConfig(t *testing.T) {
 				LogTable:       "OTELLogs",
 				TraceTable:     "OTELTraces",
 				IngestionType:  managedIngestType,
+				QueueSettings:  defaultQueueSettings,
 			},
 		},
 		{
@@ -63,6 +66,7 @@ func TestLoadConfig(t *testing.T) {
 				LogTable:          "OTELLogs",
 				TraceTable:        "OTELTraces",
 				IngestionType:     managedIngestType,
+				QueueSettings:     defaultQueueSettings,
 			},
 		},
 		{
@@ -79,6 +83,7 @@ func TestLoadConfig(t *testing.T) {
 				LogTable:          "OTELLogs",
 				TraceTable:        "OTELTraces",
 				IngestionType:     managedIngestType,
+				QueueSettings:     defaultQueueSettings,
 			},
 		},
 		{
@@ -106,10 +111,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     60 * time.Second,
 					MaxElapsedTime:  10 * time.Minute,
 				},
-				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers: 2,
-					QueueSize:    10,
-				}),
+				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+					queue := *createDefaultConfig().(*Config).QueueSettings.GetOrInsertDefault()
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return configoptional.Some(queue)
+				}(),
 			},
 		},
 		{
@@ -122,6 +129,7 @@ func TestLoadConfig(t *testing.T) {
 				TraceTable:    "OTELTraces",
 				UseAzureAuth:  true,
 				IngestionType: queuedIngestTest,
+				QueueSettings: defaultQueueSettings,
 			},
 		},
 	}
@@ -136,10 +144,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.EqualError(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

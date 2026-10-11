@@ -27,7 +27,7 @@ func TestBookmarkOpenInvalidUTF8(t *testing.T) {
 func TestBookmarkOpenSyscallFailure(t *testing.T) {
 	bookmark := NewBookmark()
 	xml := "<bookmark><\\bookmark>"
-	createBookmarkProc = SimpleMockProc(0, 0, ErrorNotSupported)
+	t.Cleanup(mockWithDeferredRestore(&evtCreateBookmark, func(*uint16) (uintptr, error) { return 0, ErrorNotSupported }))
 	err := bookmark.Open(xml)
 	require.ErrorContains(t, err, "failed to create bookmark handle from xml")
 }
@@ -35,7 +35,7 @@ func TestBookmarkOpenSyscallFailure(t *testing.T) {
 func TestBookmarkOpenSuccess(t *testing.T) {
 	bookmark := NewBookmark()
 	xml := "<bookmark><\\bookmark>"
-	createBookmarkProc = SimpleMockProc(5, 0, ErrorSuccess)
+	t.Cleanup(mockWithDeferredRestore(&evtCreateBookmark, func(*uint16) (uintptr, error) { return 5, nil }))
 	err := bookmark.Open(xml)
 	require.NoError(t, err)
 	require.Equal(t, uintptr(5), bookmark.handle)
@@ -44,7 +44,7 @@ func TestBookmarkOpenSuccess(t *testing.T) {
 func TestBookmarkUpdateFailureOnCreateSyscall(t *testing.T) {
 	event := NewEvent(1)
 	bookmark := NewBookmark()
-	createBookmarkProc = SimpleMockProc(0, 0, ErrorNotSupported)
+	t.Cleanup(mockWithDeferredRestore(&evtCreateBookmark, func(*uint16) (uintptr, error) { return 0, ErrorNotSupported }))
 	err := bookmark.Update(event)
 	require.ErrorContains(t, err, "syscall to `EvtCreateBookmark` failed")
 }
@@ -52,8 +52,8 @@ func TestBookmarkUpdateFailureOnCreateSyscall(t *testing.T) {
 func TestBookmarkUpdateFailureOnUpdateSyscall(t *testing.T) {
 	event := NewEvent(1)
 	bookmark := NewBookmark()
-	createBookmarkProc = SimpleMockProc(1, 0, ErrorSuccess)
-	updateBookmarkProc = SimpleMockProc(0, 0, ErrorNotSupported)
+	t.Cleanup(mockWithDeferredRestore(&evtCreateBookmark, func(*uint16) (uintptr, error) { return 1, nil }))
+	t.Cleanup(mockWithDeferredRestore(&evtUpdateBookmark, func(_, _ uintptr) error { return ErrorNotSupported }))
 	err := bookmark.Update(event)
 	require.ErrorContains(t, err, "syscall to `EvtUpdateBookmark` failed")
 }
@@ -61,8 +61,8 @@ func TestBookmarkUpdateFailureOnUpdateSyscall(t *testing.T) {
 func TestBookmarkUpdateSuccess(t *testing.T) {
 	event := NewEvent(1)
 	bookmark := NewBookmark()
-	createBookmarkProc = SimpleMockProc(5, 0, ErrorSuccess)
-	updateBookmarkProc = SimpleMockProc(1, 0, ErrorSuccess)
+	t.Cleanup(mockWithDeferredRestore(&evtCreateBookmark, func(*uint16) (uintptr, error) { return 5, nil }))
+	t.Cleanup(mockWithDeferredRestore(&evtUpdateBookmark, func(_, _ uintptr) error { return nil }))
 	err := bookmark.Update(event)
 	require.NoError(t, err)
 	require.Equal(t, uintptr(5), bookmark.handle)
@@ -76,14 +76,14 @@ func TestBookmarkCloseWhenAlreadyClosed(t *testing.T) {
 
 func TestBookmarkCloseSyscallFailure(t *testing.T) {
 	bookmark := Bookmark{handle: 5}
-	closeProc = SimpleMockProc(0, 0, ErrorNotSupported)
+	t.Cleanup(mockWithDeferredRestore(&evtClose, func(uintptr) error { return ErrorNotSupported }))
 	err := bookmark.Close()
 	require.ErrorContains(t, err, "failed to close bookmark handle")
 }
 
 func TestBookmarkCloseSuccess(t *testing.T) {
 	bookmark := Bookmark{handle: 5}
-	closeProc = SimpleMockProc(1, 0, ErrorSuccess)
+	t.Cleanup(mockWithDeferredRestore(&evtClose, func(uintptr) error { return nil }))
 	err := bookmark.Close()
 	require.NoError(t, err)
 	require.Equal(t, uintptr(0), bookmark.handle)
@@ -99,7 +99,7 @@ func TestBookmarkRenderWhenClosed(t *testing.T) {
 func TestBookmarkRenderInvalidSyscall(t *testing.T) {
 	bookmark := Bookmark{handle: 5}
 	buffer := NewBuffer()
-	renderProc = SimpleMockProc(0, 0, ErrorNotSupported)
+	t.Cleanup(mockWithDeferredRestore(&evtRender, func(_, _ uintptr, _, _ uint32, _ *byte) (*uint32, error) { return new(uint32), ErrorNotSupported }))
 	_, err := bookmark.Render(buffer)
 	require.ErrorContains(t, err, "syscall to 'EvtRender' failed")
 }

@@ -37,7 +37,8 @@ func NewFactory() confmap.ProviderFactory {
 			return &provider{
 				logger: settings.Logger,
 			}
-		})
+		},
+	)
 }
 
 func (*provider) Scheme() string {

@@ -82,7 +82,16 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemdServiceCPUTimeDataPoint(ts, 1, AttributeCPUModeSystem)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemdServiceCPUTimeDataPoint(ts, 3, AttributeCPUModeUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemdServiceCPUTimeDataPoint(ts+1, 3, AttributeCPUModeUser)
+				assert.Equal(t, 2, mb.metricSystemdServiceCPUTime.data.Sum().DataPoints().Len())
 			}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdServiceMemoryUsageDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdServiceMemoryUsageMaxDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSystemdServiceRestartsDataPoint(ts, 1)
@@ -91,6 +100,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemdUnitStateDataPoint(ts, 1, AttributeSystemdUnitActiveStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemdUnitStateDataPoint(ts, 3, AttributeSystemdUnitActiveStateReloading)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemdUnitStateDataPoint(ts+1, 3, AttributeSystemdUnitActiveStateReloading)
+				assert.Equal(t, 2, mb.metricSystemdUnitState.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -149,7 +161,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["systemd.service.cpu.time"], "Found a duplicate in the metrics slice: systemd.service.cpu.time")
 						validatedMetrics["systemd.service.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total CPU time spent by this service.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -171,13 +185,41 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("cpu.mode")
 						assert.False(t, ok)
 					}
+				case "systemd.service.memory.usage":
+					assert.False(t, validatedMetrics["systemd.service.memory.usage"], "Found a duplicate in the metrics slice: systemd.service.memory.usage")
+					validatedMetrics["systemd.service.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of memory in use by this service.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "systemd.service.memory.usage.max":
+					assert.False(t, validatedMetrics["systemd.service.memory.usage.max"], "Found a duplicate in the metrics slice: systemd.service.memory.usage.max")
+					validatedMetrics["systemd.service.memory.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Maximum memory used by this service, in bytes.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "systemd.service.restarts":
 					assert.False(t, validatedMetrics["systemd.service.restarts"], "Found a duplicate in the metrics slice: systemd.service.restarts")
 					validatedMetrics["systemd.service.restarts"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of automatic restarts for the service.", mi.Description())
-					assert.Equal(t, "{restarts}", mi.Unit())
+					assert.Equal(t, "{restart}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -207,7 +249,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["systemd.unit.state"], "Found a duplicate in the metrics slice: systemd.unit.state")
 						validatedMetrics["systemd.unit.state"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "1 if the check resulted in active_state matching the current state, otherwise 0.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

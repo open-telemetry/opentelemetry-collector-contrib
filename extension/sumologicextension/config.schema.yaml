@@ -45,6 +45,9 @@ properties:
   ephemeral:
     description: Ephemeral defines whether the collector will be deleted after 12 hours of inactivity. By default this is false.
     type: boolean
+  fleet_id:
+    description: FleetID is the ID of the fleet to assign this collector to during registration.
+    type: string
   force_registration:
     description: 'ForceRegistration defines whether to force registration every time the collector starts. This will cause the collector to not look at the locally stored credentials and to always reach out to API to register itself. NOTE: if clobber is unset (default) then setting this to true will create a new collector on Sumo UI on every collector start. By default this is false.'
     type: boolean

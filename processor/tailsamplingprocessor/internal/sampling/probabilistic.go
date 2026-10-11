@@ -126,6 +126,32 @@ type tracestateScan struct {
 	hasSamplingInfo bool
 }
 
+// resolveRandomness returns the sampling randomness for a trace: the
+// explicit `rv` from its W3C tracestate if present, otherwise the value
+// derived from the trace ID per the W3C Trace Context spec. This is the
+// same resolution the probabilistic policy uses, so policies that sort
+// or threshold on randomness stay consistent with one another.
+func resolveRandomness(id pcommon.TraceID, td ptrace.Traces) sampling.Randomness {
+	if scan := scanOTelTracestate(td); scan.hasRandomness {
+		return scan.randomness
+	}
+	return sampling.TraceIDToRandomness(id)
+}
+
+// traceIDOf returns the trace ID carried by td's spans, or the zero ID if
+// it has none. All spans in a trace share the same trace ID, so the first
+// span found is authoritative.
+func traceIDOf(td *samplingpolicy.TraceData) pcommon.TraceID {
+	for _, rs := range td.ReceivedBatches.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			if spans := ss.Spans(); spans.Len() > 0 {
+				return spans.At(0).TraceID()
+			}
+		}
+	}
+	return pcommon.TraceID{}
+}
+
 // scanOTelTracestate finds the first OTel `rv` across the trace and
 // notes whether any span carries OTel sampling info at all (rv or
 // th). It short-circuits as soon as both are known.

@@ -72,6 +72,8 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 | `preserve_leading_whitespaces`  | false    | Whether to preserve leading whitespaces.                                                                                          |
 | `preserve_trailing_whitespaces` | false    | Whether to preserve trailing whitespaces.                                                                                         |
 | `encoding`                      | `utf-8`  | The encoding of the file being read. See the list of supported encodings below for available options.                             |
+| `max_connections`               | 0        | The maximum number of open TCP connections allowed. 0 means unlimited.                                                            |
+| `connection_idle_timeout`       | 0        | The maximum duration a TCP connection can be idle before being closed. 0 means no idle timeout.                                    |
 
 #### TLS Configuration
 

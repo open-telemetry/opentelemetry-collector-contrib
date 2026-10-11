@@ -15,9 +15,9 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	docker.Config `mapstructure:",squash"`
+	Config docker.Config `mapstructure:",squash"`
 
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// A mapping of container label names to MetricDescriptor label keys.
 	// The corresponding container label value will become the DataPoint label value
@@ -35,12 +35,12 @@ type Config struct {
 	EnvVarsToMetricLabels map[string]string `mapstructure:"env_vars_to_metric_labels"`
 
 	// MetricsBuilderConfig config. Enable or disable stats by name.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {
-	if config.DockerAPIVersion != "" {
-		if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+	if config.Config.DockerAPIVersion != "" {
+		if err := docker.VersionIsValidAndGTE(config.Config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
 			return err
 		}
 	}
@@ -53,8 +53,8 @@ func (config *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if len(config.ExcludedImages) == 0 {
-		config.ExcludedImages = nil
+	if len(config.Config.ExcludedImages) == 0 {
+		config.Config.ExcludedImages = nil
 	}
 
 	return err

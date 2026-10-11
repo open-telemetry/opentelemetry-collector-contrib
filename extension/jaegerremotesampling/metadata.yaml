@@ -9,7 +9,3 @@ status:
   - contrib
   codeowners:
     active: [yurishkuro, frzifus]
-
-# TODO: Update the extension to make the tests pass
-tests:
-  skip_lifecycle: true

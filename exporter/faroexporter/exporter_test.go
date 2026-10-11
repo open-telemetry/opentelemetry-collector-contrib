@@ -43,7 +43,7 @@ func TestExporter_BaseTest(t *testing.T) {
 			name: "deflate",
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Compression = configcompression.TypeDeflate
+				cfg.ClientConfig.Compression = configcompression.TypeDeflate
 				return cfg
 			}(),
 		},
@@ -51,7 +51,7 @@ func TestExporter_BaseTest(t *testing.T) {
 			name: "no compression",
 			config: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.CompressionParams = configcompression.CompressionParams{
+				cfg.ClientConfig.CompressionParams = configcompression.CompressionParams{
 					Level: configcompression.Level(0),
 				}
 				return cfg
@@ -65,7 +65,7 @@ func TestExporter_BaseTest(t *testing.T) {
 	for _, c := range tc {
 		t.Run(c.name, func(t *testing.T) {
 			cfg := c.config
-			cfg.Endpoint = server.URL
+			cfg.ClientConfig.Endpoint = server.URL
 
 			set := exportertest.NewNopSettings(metadata.Type)
 			exp, err := newExporter(cfg, set)
@@ -184,7 +184,7 @@ func TestExporter_ResponseHandling(t *testing.T) {
 			defer server.Close()
 
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = server.URL
+			cfg.ClientConfig.Endpoint = server.URL
 
 			set := exportertest.NewNopSettings(metadata.Type)
 			exp, err := newExporter(cfg, set)
@@ -229,7 +229,7 @@ func TestExportContextCanceled(t *testing.T) {
 	defer server.Close()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = server.URL
+	cfg.ClientConfig.Endpoint = server.URL
 	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)

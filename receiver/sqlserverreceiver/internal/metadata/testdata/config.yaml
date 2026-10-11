@@ -5,6 +5,15 @@ all_set:
       enabled: true
     sqlserver.attention.rate:
       enabled: true
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: true
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name"]
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -18,6 +27,8 @@ all_set:
     sqlserver.connection.reset.rate:
       enabled: true
     sqlserver.cpu.count:
+      enabled: true
+    sqlserver.cpu.utilization:
       enabled: true
     sqlserver.cursor.count:
       enabled: true
@@ -53,12 +64,23 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.disk.io:
+      enabled: true
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
+    sqlserver.disk.operations:
+      enabled: true
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.host.memory.limit:
+      enabled: true
+    sqlserver.host.memory.usage:
+      enabled: true
+      attributes: ["system.memory.state"]
     sqlserver.index.fragmentation:
       enabled: true
       attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
@@ -213,11 +235,17 @@ all_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     host.name:
       enabled: true
     server.address:
@@ -242,6 +270,15 @@ reaggregate_set:
       enabled: true
     sqlserver.attention.rate:
       enabled: true
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: true
+      attributes: []
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -255,6 +292,8 @@ reaggregate_set:
     sqlserver.connection.reset.rate:
       enabled: true
     sqlserver.cpu.count:
+      enabled: true
+    sqlserver.cpu.utilization:
       enabled: true
     sqlserver.cursor.count:
       enabled: true
@@ -290,12 +329,23 @@ reaggregate_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.disk.io:
+      enabled: true
+      attributes: []
+    sqlserver.disk.operations:
+      enabled: true
+      attributes: []
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.host.memory.limit:
+      enabled: true
+    sqlserver.host.memory.usage:
+      enabled: true
+      attributes: []
     sqlserver.index.fragmentation:
       enabled: true
       attributes: []
@@ -450,11 +500,17 @@ reaggregate_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     host.name:
       enabled: true
     server.address:
@@ -479,6 +535,15 @@ none_set:
       enabled: false
     sqlserver.attention.rate:
       enabled: false
+    sqlserver.availability_group.database_replica.queue.rate:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.queue.size:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name","sqlserver.availability_group.queue.type"]
+    sqlserver.availability_group.database_replica.secondary_lag:
+      enabled: false
+      attributes: ["sqlserver.availability_group.name","sqlserver.replica.name"]
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:
@@ -492,6 +557,8 @@ none_set:
     sqlserver.connection.reset.rate:
       enabled: false
     sqlserver.cpu.count:
+      enabled: false
+    sqlserver.cpu.utilization:
       enabled: false
     sqlserver.cursor.count:
       enabled: false
@@ -527,12 +594,23 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
+    sqlserver.disk.io:
+      enabled: false
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
+    sqlserver.disk.operations:
+      enabled: false
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.error.rate:
       enabled: false
     sqlserver.extent.operation.rate:
       enabled: false
     sqlserver.ghost_record.skipped.rate:
       enabled: false
+    sqlserver.host.memory.limit:
+      enabled: false
+    sqlserver.host.memory.usage:
+      enabled: false
+      attributes: ["system.memory.state"]
     sqlserver.index.fragmentation:
       enabled: false
       attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
@@ -687,11 +765,17 @@ none_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: false
   events:
+    db.server.query_plan:
+      enabled: false
     db.server.query_sample:
+      enabled: false
+    db.server.top_procedure:
       enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.version:
+      enabled: false
     host.name:
       enabled: false
     server.address:
@@ -712,6 +796,9 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      override_value: "override-db.system.version"
     host.name:
       enabled: true
       override_value: "override-host.name"
@@ -741,6 +828,12 @@ override_set:
       override_value: "override-sqlserver.instance.name"
 filter_set_include:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     host.name:
       enabled: true
       metrics_include:
@@ -797,6 +890,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     host.name:
       enabled: true
       metrics_exclude:

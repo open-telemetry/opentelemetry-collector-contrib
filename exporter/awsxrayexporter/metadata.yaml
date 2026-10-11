@@ -9,13 +9,6 @@ status:
   codeowners:
     active: [wangzlei, srprash]
 
-tests:
-  config:
-    region: 'us-west-2'
-  expect_consumer_error: true
-  goleak:
-    skip: true
-
 feature_gates:
   - id: exporter.awsxray.DontEmitV0DBConventions
     stage: alpha
@@ -52,3 +45,13 @@ feature_gates:
       of the deprecated v1.12.0 keys.
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533
+  - id: exporter.awsxray.skiptimestampvalidation
+    description: "Remove XRay's timestamp validation on first 32 bits of trace ID"
+    stage: beta
+    from_version: v0.84.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737
+
+tests:
+  config:
+    region: 'us-west-2'
+  expect_consumer_error: true

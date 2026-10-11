@@ -12,7 +12,7 @@ import (
 )
 
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 	// NodeFromEnv can be used to extract the node name from an environment
 	// variable. The value must be the name of the environment variable.
 	// This is useful when the node a Otel agent will run on cannot be

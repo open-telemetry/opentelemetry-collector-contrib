@@ -79,7 +79,6 @@ func createDefaultConfig() component.Config {
 				string(conventions.K8SNodeNameKey): "`name`",
 				string(conventions.K8SNodeUIDKey):  "`uid`",
 			},
-			observer.KafkaTopicType: map[string]string{},
 		},
 		receiverTemplates: map[string]receiverTemplate{},
 	}

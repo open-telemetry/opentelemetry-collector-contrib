@@ -45,7 +45,7 @@ const (
 // Helper function to create a gitlabTracesReceiver
 func setupGitlabTracesReceiver(t *testing.T) *gitlabTracesReceiver {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
@@ -59,7 +59,7 @@ func setupGitlabTracesReceiver(t *testing.T) *gitlabTracesReceiver {
 
 func TestHandleWebhook(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 
 	tests := []struct {
 		name         string

@@ -50,6 +50,12 @@ func generateMetricData(resourceName string, attrs map[string]any) pmetric.Metri
 	return md
 }
 
+func generateMetricsOneEmptyMetric() pmetric.Metrics {
+	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+	return md
+}
+
 // TestMetricProcessor_Values tests all possible value types.
 func TestMetricProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyMetricTestCase struct {
@@ -57,7 +63,6 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		input  pmetric.Metrics
 		output pmetric.Metrics
 	}
-	// TODO: Add test for "nil" Metric/Attributes. This needs support from data slices to allow to construct that.
 	metricTestCases := []nilEmptyMetricTestCase{
 		{
 			name:   "empty",
@@ -79,11 +84,31 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 			input:  testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
 			output: testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
 		},
+		{
+			name:   "one-empty-metric",
+			input:  generateMetricsOneEmptyMetric(),
+			output: generateMetricsOneEmptyMetric(),
+		},
+		{
+			name:   "one-metric-no-attributes",
+			input:  testdata.GenerateMetricsOneMetricNoAttributes(),
+			output: testdata.GenerateMetricsOneMetricNoAttributes(),
+		},
+		{
+			name:   "all-types-no-data-points",
+			input:  testdata.GenerateMetricsAllTypesNoDataPoints(),
+			output: testdata.GenerateMetricsAllTypesNoDataPoints(),
+		},
+		{
+			name:   "all-types-empty-data-point",
+			input:  testdata.GenerateMetricsAllTypesEmptyDataPoint(),
+			output: testdata.GenerateMetricsAllTypesEmptyDataPoint(),
+		},
 	}
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 		{Key: "attribute1", Action: attraction.DELETE},
 	}
@@ -95,7 +120,7 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		tc := metricTestCases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			assert.NoError(t, mp.ConsumeMetrics(t.Context(), tc.input))
-			assert.Equal(t, tc.output, tc.input)
+			assert.NoError(t, pmetrictest.CompareMetrics(tc.output, tc.input))
 		})
 	}
 }
@@ -139,14 +164,14 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Attributes: []filterconfig.Attribute{
 			{Key: "NoModification", Value: true},
 		},
@@ -205,14 +230,14 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
@@ -269,14 +294,14 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
@@ -332,7 +357,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "user.email", Action: attraction.HASH},
 		{Key: "user.id", Action: attraction.HASH},
 		{Key: "user.balance", Action: attraction.HASH},
@@ -391,7 +416,7 @@ func TestMetricAttributes_Convert(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "to.int", Action: attraction.CONVERT, ConvertedType: "int"},
 		{Key: "to.double", Action: attraction.CONVERT, ConvertedType: "double"},
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
@@ -547,10 +572,10 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config:    *createConfig(filterset.Regexp),
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 	}

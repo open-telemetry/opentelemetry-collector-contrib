@@ -64,6 +64,21 @@ func TestValidate(t *testing.T) {
 			expectedErr: fmt.Errorf("%w: %s", errInvalidEndpoint, `provided port is not a number:   12efg; endpoint contains a scheme, which is not allowed: https://example.com:80`),
 		},
 		{
+			desc: "duplicate targets",
+			cfg: &Config{
+				Targets: []*confignet.TCPAddrConfig{
+					{
+						Endpoint: "opentelemetry.io:443",
+					},
+					{
+						Endpoint: "opentelemetry.io:443",
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: fmt.Errorf("%w: %s", errDuplicateTarget, "opentelemetry.io:443"),
+		},
+		{
 			desc: "port out of range",
 			cfg: &Config{
 				Targets: []*confignet.TCPAddrConfig{

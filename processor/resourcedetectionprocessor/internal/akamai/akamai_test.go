@@ -51,7 +51,7 @@ func TestNewDetector(t *testing.T) {
 		},
 	})
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	require.NotNil(t, det)
 }
@@ -80,7 +80,7 @@ func TestAkamaiDetector_Detect_OK(t *testing.T) {
 		},
 	})
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := det.Detect(t.Context())
@@ -108,7 +108,7 @@ func TestAkamaiDetector_NotOnAkamai(t *testing.T) {
 		err: errors.New("no metadata here"),
 	})
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := det.Detect(t.Context())

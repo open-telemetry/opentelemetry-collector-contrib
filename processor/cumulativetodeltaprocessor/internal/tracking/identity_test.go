@@ -11,14 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 func TestMetricIdentity_Write(t *testing.T) {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutBool("resource", true)
-	resHash := pdatautil.MapHash(resource.Attributes())
+	resHash := xhash.MapHash(resource.Attributes())
 	resHashStr := string(resHash[:])
 
 	il := pcommon.NewInstrumentationScope()
@@ -27,7 +26,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 
 	attributes := pcommon.NewMap()
 	attributes.PutStr("label", "value")
-	attrsHash := pdatautil.MapHash(attributes)
+	attrsHash := xhash.MapHash(attributes)
 	attrsHashStr := string(attrsHash[:])
 	type fields struct {
 		Resource               pcommon.Resource

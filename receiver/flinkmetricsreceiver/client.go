@@ -56,7 +56,7 @@ type flinkClient struct {
 }
 
 func newClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
-	httpClient, err := cfg.ToClient(ctx, host.GetExtensions(), settings)
+	httpClient, err := cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -69,7 +69,7 @@ func newClient(ctx context.Context, cfg *Config, host component.Host, settings c
 	return &flinkClient{
 		client:       httpClient,
 		hostName:     hostName,
-		hostEndpoint: cfg.Endpoint,
+		hostEndpoint: cfg.ClientConfig.Endpoint,
 		logger:       logger,
 	}, nil
 }

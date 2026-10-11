@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewrite.DisableResourceToTelemetryConversion",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the deprecated resource_to_telemetry_conversion section and legacy conversion fields are disabled, and resource_constant_labels must be used instead"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48862"),
+	featuregate.WithRegisterFromVersion("v0.160.0"),
+)
+
 var ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewritexporter.EnableMultipleWorkers",
 	featuregate.StageAlpha,
@@ -28,4 +36,12 @@ var ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate = featuregat
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888"),
 	featuregate.WithRegisterFromVersion("v0.125.0"),
+)
+
+var ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.removeTopLevelHTTPSettings",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, it rejects top-level HTTP client settings (e.g. endpoint, tls, proxy_url); configure them under the http block instead."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )

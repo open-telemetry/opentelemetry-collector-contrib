@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -22,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
 
 const (
@@ -46,6 +48,7 @@ type logsReceiver struct {
 	doneChan                      chan bool
 	storageID                     *component.ID
 	cloudwatchCheckpointPersister *cloudwatchCheckpointPersister
+	accountID                     string
 }
 
 type client interface {
@@ -311,8 +314,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEvents(ctx, input)
 			if err != nil {
-				var resourceNotFoundException *types.ResourceNotFoundException
-				if errors.As(err, &resourceNotFoundException) {
+				if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 					l.settings.Logger.Warn("log group no longer exists, skipping",
 						zap.String("logGroup", logGroup),
 						zap.Error(err))
@@ -385,12 +387,17 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			resourceAttributes := resourceLogs.Resource().Attributes()
 			resourceAttributes.PutStr("aws.region", l.region)
 			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
+			if l.accountID != "" {
+				resourceAttributes.PutStr("cloud.account.id", l.accountID)
+			}
 			if logStreamName != "" {
 				resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
 			}
 			group[logStreamName] = resourceLogs
 
-			_ = resourceLogs.ScopeLogs().AppendEmpty()
+			scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+			scopeLogs.Scope().SetName(metadata.ScopeName)
+			scopeLogs.Scope().SetVersion(l.settings.BuildInfo.Version)
 		}
 
 		// Now we know resourceLogs is initialized and has one scopeLogs so we don't have to handle any special cases.
@@ -499,5 +506,12 @@ func (l *logsReceiver) ensureSession() error {
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), cfgOptions...)
 	l.client = cloudwatchlogs.NewFromConfig(cfg)
+
+	stsClient := sts.NewFromConfig(cfg)
+	stsResult, _ := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
+	if stsClient != nil && *stsResult.Account != "" {
+		l.accountID = *stsResult.Account
+	}
+
 	return err
 }

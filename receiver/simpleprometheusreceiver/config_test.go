@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
@@ -92,8 +92,48 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr string
+	}{
+		{
+			name:   "default config is valid",
+			mutate: func(*Config) {},
+		},
+		{
+			name:    "missing endpoint",
+			mutate:  func(cfg *Config) { cfg.ClientConfig.Endpoint = "" },
+			wantErr: "endpoint must be specified",
+		},
+		{
+			name:    "zero collection_interval",
+			mutate:  func(cfg *Config) { cfg.CollectionInterval = 0 },
+			wantErr: "collection_interval must be positive",
+		},
+		{
+			name:    "negative collection_interval",
+			mutate:  func(cfg *Config) { cfg.CollectionInterval = -5 * time.Second },
+			wantErr: "collection_interval must be positive",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			tt.mutate(cfg)
+			err := cfg.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }

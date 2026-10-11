@@ -20,7 +20,6 @@ var podArray = []any{
 			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 			Name:      "kube-proxy-csm88",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -31,7 +30,6 @@ var podArray = []any{
 			UID:       "75ab40d2-552a-4c05-82c9-0ddcb3008657",
 			Name:      "coredns-7554568866-26jdf",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/coredns-7554568866-26jdf",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -42,7 +40,6 @@ var podArray = []any{
 			UID:       "b0280963-d68a-4096-ac56-4ecfbaee37f6",
 			Name:      "aws-node-wf7jj",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/aws-node-wf7jj",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -53,7 +50,6 @@ var podArray = []any{
 			UID:       "eb09849f-b3f6-4c2c-ba4a-3e2c6eaf24f4",
 			Name:      "cloudwatch-agent-rnjfp",
 			Namespace: "default",
-			SelfLink:  "/api/v1/namespaces/default/pods/cloudwatch-agent-rnjfp",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -64,7 +60,6 @@ var podArray = []any{
 			UID:       "11d078c2-6fed-49c3-83a8-b94915a6451f",
 			Name:      "guestbook-qbdv8",
 			Namespace: "default",
-			SelfLink:  "/api/v1/namespaces/default/pods/guestbook-qbdv8",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -75,7 +70,6 @@ var podArray = []any{
 			UID:       "52a76177-8431-400c-95b2-109f9b28b3b1",
 			Name:      "kube-proxy-v5l9h",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-v5l9h",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -86,7 +80,6 @@ var podArray = []any{
 			UID:       "bb003966-4134-4ebf-9be3-dfb1741a1499",
 			Name:      "redis-slave-mdjsj",
 			Namespace: "default",
-			SelfLink:  "/api/v1/namespaces/default/pods/redis-slave-mdjsj",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -97,7 +90,6 @@ var podArray = []any{
 			UID:       "440854dd-73e8-4616-b21a-3a63831d27e3",
 			Name:      "guestbook-qjqnz",
 			Namespace: "default",
-			SelfLink:  "/api/v1/namespaces/default/pods/guestbook-qjqnz",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -108,7 +100,6 @@ var podArray = []any{
 			UID:       "b79e85a1-1fc8-439c-b3a5-bd854ed29e10",
 			Name:      "kube-proxy-h5tsv",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-h5tsv",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -119,7 +110,6 @@ var podArray = []any{
 			UID:       "f9ecca30-f5de-4809-9b63-79dc8369a0a6",
 			Name:      "cloudwatch-agent-ksd26",
 			Namespace: "default",
-			SelfLink:  "/api/v1/namespaces/default/pods/cloudwatch-agent-ksd26",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -130,7 +120,6 @@ var podArray = []any{
 			UID:       "cfc496eb-2e5e-490e-9547-f0fe5399c219",
 			Name:      "aws-node-pqxp2",
 			Namespace: "kube-system",
-			SelfLink:  "/api/v1/namespaces/kube-system/pods/aws-node-pqxp2",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -141,7 +130,6 @@ var podArray = []any{
 			UID:       "20d46c94-5341-429d-af0c-55d97314db7b",
 			Name:      "cloudwatch-agent-2x7p4",
 			Namespace: "default",
-			SelfLink:  "/api/v1/namespaces/default/pods/cloudwatch-agent-2x7p4",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",
@@ -152,7 +140,6 @@ var podArray = []any{
 			UID:       "885c6c56-da31-4a63-b823-eed50172193d",
 			Name:      "guestbook-92wmq",
 			Namespace: "default",
-			SelfLink:  "/api/v1/namespaces/default/pods/guestbook-92wmq",
 		},
 		Status: v1.PodStatus{
 			Phase: "Running",

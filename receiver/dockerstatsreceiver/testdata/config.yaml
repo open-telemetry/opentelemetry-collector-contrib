@@ -22,3 +22,5 @@ docker_stats/allsettings:
       enabled: false
     container.memory.total_rss:
       enabled: true
+    container.state.health.status:
+      enabled: true

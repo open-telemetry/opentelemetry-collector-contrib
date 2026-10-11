@@ -1,0 +1,90 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: test-service
+        - key: host.name
+          value:
+            stringValue: test-host
+    scopeMetrics:
+      - scope:
+          name: test-scope
+          version: 1.0.0
+        metrics:
+          - name: system.cpu.usage
+            description: CPU usage
+            unit: "1"
+            gauge:
+              dataPoints:
+                - asDouble: 0.42
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                - asDouble: 0.13
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu1
+          - name: http.server.requests
+            description: Number of HTTP requests
+            unit: "{requests}"
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - asInt: "1234"
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+          - name: http.server.duration
+            description: HTTP request duration
+            unit: ms
+            histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - count: "10"
+                  sum: 55.5
+                  min: 1
+                  max: 20
+                  bucketCounts: ["2", "5", "3"]
+                  explicitBounds: [5, 10]
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+          - name: rpc.client.duration
+            description: RPC duration
+            unit: ms
+            exponentialHistogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - count: "6"
+                  sum: 30
+                  zeroCount: "1"
+                  scale: 0
+                  positive:
+                    offset: 0
+                    bucketCounts: ["1", "2", "3"]
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"
+          - name: jvm.gc.duration
+            description: GC duration summary
+            unit: ms
+            summary:
+              dataPoints:
+                - count: "100"
+                  sum: 123.4
+                  quantileValues:
+                    - quantile: 0.5
+                      value: 1.2
+                    - quantile: 0.99
+                      value: 9.9
+                  startTimeUnixNano: "1581452772000000321"
+                  timeUnixNano: "1581452773000000789"

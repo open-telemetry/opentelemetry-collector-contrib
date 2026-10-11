@@ -18,25 +18,25 @@ resourceMetrics:
           - description: Average round-trip time in milliseconds.
             gauge:
               dataPoints:
-                - asInt: "44"
+                - asDouble: 44
             name: ping.rtt.avg
             unit: ms
           - description: Maximum round-trip time in milliseconds.
             gauge:
               dataPoints:
-                - asInt: "47"
+                - asDouble: 47
             name: ping.rtt.max
             unit: ms
           - description: Minimum round-trip time in milliseconds.
             gauge:
               dataPoints:
-                - asInt: "42"
+                - asDouble: 42
             name: ping.rtt.min
             unit: ms
           - description: Standard deviation of round-trip time in milliseconds.
             gauge:
               dataPoints:
-                - asInt: "5"
+                - asDouble: 5
             name: ping.rtt.stddev
             unit: ms
         scope:

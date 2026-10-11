@@ -4,6 +4,6 @@ type: azure_functions
 status:
   class: receiver
   stability:
-    development: [logs]
+    development: [logs, metrics]
   codeowners:
     active: [jmacd, MichaelKatsoulis, constanca-m]

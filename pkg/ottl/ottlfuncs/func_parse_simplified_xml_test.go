@@ -270,9 +270,10 @@ func TestCreateParseSimplifiedXMLFunc(t *testing.T) {
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ParseSimplifiedXMLArguments[any]{
+		fCtx, &parseSimplifiedXMLArguments[any]{
 			Target: invalidXMLGetter(),
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
@@ -291,4 +292,56 @@ func TestParseSimplifiedXMLMaxDepth(t *testing.T) {
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "exceeded maximum XML nesting depth")
+}
+
+func Test_ParseSimplifiedXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewParseSimplifiedXMLFactory[any]()
+		assert.Equal(t, "ParseSimplifiedXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewParseSimplifiedXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &parseSimplifiedXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewParseSimplifiedXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		xmlArgs, ok := args.(*parseSimplifiedXMLArguments[any])
+		require.True(t, ok)
+		xmlArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "<a>b</a>", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createParseSimplifiedXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ParseSimplifiedXML args must be of type *ParseSimplifiedXMLAguments[K]")
+	})
+}
+
+func BenchmarkParseSimplifiedXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a><b>1</b><c>2</c><c>3</c></a>`, nil
+		},
+	}
+	exprFunc := parseSimplifiedXML(target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

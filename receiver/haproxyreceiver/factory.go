@@ -21,15 +21,12 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		newDefaultConfig,
-		receiver.WithMetrics(newReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(newReceiver, metadata.MetricsStability),
+	)
 }
 
 func newDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
-	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
 		ClientConfig:         clientConfig,
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),

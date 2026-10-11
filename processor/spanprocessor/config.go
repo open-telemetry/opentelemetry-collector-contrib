@@ -14,7 +14,7 @@ import (
 // the include properties and then the exclude properties if they are specified.
 // This determines if a span is to be processed or not.
 type Config struct {
-	filterconfig.MatchConfig `mapstructure:",squash"`
+	MatchConfig filterconfig.MatchConfig `mapstructure:",squash"`
 
 	// Rename specifies the components required to re-name a span.
 	// The `from_attributes` field needs to be set for this processor to be properly

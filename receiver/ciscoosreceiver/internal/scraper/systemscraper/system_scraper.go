@@ -31,7 +31,7 @@ type systemScraper struct {
 
 func (s *systemScraper) Start(_ context.Context, _ component.Host) error {
 	s.logger.Info("Starting system scraper with metric configuration",
-		zap.Bool("device_up_enabled", s.config.Metrics.CiscoDeviceUp.Enabled))
+		zap.Bool("device_up_enabled", s.config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled))
 
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, scraper.Settings{
 		ID:                component.MustNewIDWithName(metadata.Type.String(), "system"),

@@ -3,7 +3,7 @@ all_set:
   metrics:
     tlscheck.time_left:
       enabled: true
-      attributes: ["tlscheck.x509.issuer","tlscheck.x509.cn","tlscheck.x509.san"]
+      attributes: ["tlscheck.x509.issuer","tlscheck.x509.cn","tlscheck.x509.san","tlscheck.x509.fingerprint"]
   resource_attributes:
     tlscheck.target:
       enabled: true
@@ -19,7 +19,7 @@ none_set:
   metrics:
     tlscheck.time_left:
       enabled: false
-      attributes: ["tlscheck.x509.issuer","tlscheck.x509.cn","tlscheck.x509.san"]
+      attributes: ["tlscheck.x509.issuer","tlscheck.x509.cn","tlscheck.x509.san","tlscheck.x509.fingerprint"]
   resource_attributes:
     tlscheck.target:
       enabled: false

@@ -16,10 +16,10 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// TODO: Use one of the configs from core.
 	// The target endpoint.
-	confignet.AddrConfig `mapstructure:",squash"`
+	AddrConfig confignet.AddrConfig `mapstructure:",squash"`
 
 	// TODO allow users to add additional resource key value pairs?
 
@@ -45,9 +45,9 @@ type configInfo struct {
 }
 
 func newConfigInfo(cfg *Config) (configInfo, error) {
-	address, port, err := net.SplitHostPort(cfg.Endpoint)
+	address, port, err := net.SplitHostPort(cfg.AddrConfig.Endpoint)
 	if err != nil {
-		return configInfo{}, fmt.Errorf("invalid endpoint %q: %w", cfg.Endpoint, err)
+		return configInfo{}, fmt.Errorf("invalid endpoint %q: %w", cfg.AddrConfig.Endpoint, err)
 	}
 	return configInfo{Address: address, Port: port}, nil
 }

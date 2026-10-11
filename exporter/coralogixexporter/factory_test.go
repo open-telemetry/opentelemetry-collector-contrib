@@ -38,7 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Metrics.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Metrics.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	oexp, err := factory.CreateMetrics(t.Context(), set, cfg)
@@ -61,7 +61,7 @@ func TestCreateMetricsWithDomain(t *testing.T) {
 func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Logs.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	oexp, err := factory.CreateLogs(t.Context(), set, cfg)
@@ -247,7 +247,7 @@ func TestCreateLogsWithDomainAndEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Domain = "	bad domain"
 
-	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Logs.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	consumer, err := factory.CreateLogs(t.Context(), set, cfg)

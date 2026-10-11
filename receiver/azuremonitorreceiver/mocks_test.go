@@ -15,7 +15,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	azmetricsfake "github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
@@ -386,14 +385,14 @@ func newQueryResourcesResponseMockData(inputSlice []queryResourceMockInput) azme
 		for j, inputMetric := range input.Metrics {
 			values[j] = azmetrics.Metric{
 				Name: &azmetrics.LocalizableString{
-					Value: to.Ptr(inputMetric.Name),
+					Value: new(inputMetric.Name),
 				},
-				Unit:       to.Ptr(inputMetric.Unit),
+				Unit:       new(inputMetric.Unit),
 				TimeSeries: inputMetric.TimeSeries,
 			}
 		}
 		result.Values[i] = azmetrics.MetricData{
-			ResourceID: to.Ptr(input.ResourceID),
+			ResourceID: new(input.ResourceID),
 			Values:     values,
 		}
 	}
@@ -429,6 +428,14 @@ func newMetricsClientListResponseMockData(inputMap map[string]map[string][]metri
 					},
 					Unit:       &input.Unit,
 					Timeseries: input.TimeSeries,
+				}
+				for _, ts := range result3.Value[i].Timeseries {
+					for _, d := range ts.Data {
+						if d.TimeStamp == nil {
+							t := time.Unix(1, 0).UTC()
+							d.TimeStamp = &t
+						}
+					}
 				}
 			}
 			result2[metricNames] = result3

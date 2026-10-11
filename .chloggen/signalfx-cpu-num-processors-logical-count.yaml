@@ -1,7 +1,0 @@
-change_type: enhancement
-component: exporter/signalfx
-note: "Translate `cpu.num_processors` from `system.cpu.logical.count`."
-issues: [49296]
-subtext: |
-  The exporter no longer derives `cpu.num_processors` by counting per-core `system.cpu.time` series.
-change_logs: [user]

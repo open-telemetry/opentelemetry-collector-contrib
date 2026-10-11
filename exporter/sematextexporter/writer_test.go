@@ -211,7 +211,8 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 			},
 			Region: "US",
 		},
-		componenttest.NewNopTelemetrySettings())
+		componenttest.NewNopTelemetrySettings(),
+	)
 	require.NoError(t, err)
 	sematextWriter.httpClient = noopHTTPServer.Client()
 	sematextWriterBatch := sematextWriter.NewBatch()
@@ -223,7 +224,8 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 		map[string]string{"k": "v", "empty": ""},
 		map[string]any{"f": int64(1)},
 		nowTime,
-		common.InfluxMetricValueTypeUntyped)
+		common.InfluxMetricValueTypeUntyped,
+	)
 	require.NoError(t, err)
 
 	err = sematextWriterBatch.WriteBatch(t.Context())

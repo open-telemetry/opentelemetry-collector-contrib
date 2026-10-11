@@ -50,5 +50,6 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment))
+		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
+	)
 }

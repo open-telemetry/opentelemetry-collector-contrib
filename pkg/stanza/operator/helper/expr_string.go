@@ -131,7 +131,7 @@ func (*patcher) Visit(node *ast.Node) {
 	if !ok {
 		return
 	}
-	c, ok := (n.Callee).(*ast.IdentifierNode)
+	c, ok := n.Callee.(*ast.IdentifierNode)
 	if !ok {
 		return
 	}

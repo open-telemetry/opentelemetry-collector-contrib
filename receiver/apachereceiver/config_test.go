@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
@@ -71,8 +71,8 @@ func TestValidate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
-			cfg.Endpoint = tc.endpoint
-			err := xconfmap.Validate(cfg)
+			cfg.ClientConfig.Endpoint = tc.endpoint
+			err := confmap.Validate(cfg)
 			if tc.errExpected {
 				require.EqualError(t, err, tc.errText)
 				return
@@ -94,8 +94,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "http://localhost:8080/server-status?auto"
-	expected.CollectionInterval = 10 * time.Second
+	expected.ClientConfig.Endpoint = "http://localhost:8080/server-status?auto"
+	expected.ControllerConfig.CollectionInterval = 10 * time.Second
 
 	require.Equal(t, expected, cfg)
 }

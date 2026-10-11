@@ -43,51 +43,26 @@ type teststep struct {
 
 func TestHealthCheckExtensionUsage(t *testing.T) {
 	serverConfigWithoutCheckCollectorPipeline := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfigWithoutCheckCollectorPipeline.WriteTimeout = 0
-	serverConfigWithoutCheckCollectorPipeline.ReadHeaderTimeout = 0
-	serverConfigWithoutCheckCollectorPipeline.IdleTimeout = 0
-	serverConfigWithoutCheckCollectorPipeline.KeepAlivesEnabled = false
 	serverConfigWithoutCheckCollectorPipeline.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 	}
 	serverConfigWithCustomizedPath := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfigWithCustomizedPath.WriteTimeout = 0
-	serverConfigWithCustomizedPath.ReadHeaderTimeout = 0
-	serverConfigWithCustomizedPath.IdleTimeout = 0
-	serverConfigWithCustomizedPath.KeepAlivesEnabled = false
 	serverConfigWithCustomizedPath.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 	}
 	serverConfigWithBothCustomResponseBody := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfigWithBothCustomResponseBody.WriteTimeout = 0
-	serverConfigWithBothCustomResponseBody.ReadHeaderTimeout = 0
-	serverConfigWithBothCustomResponseBody.IdleTimeout = 0
-	serverConfigWithBothCustomResponseBody.KeepAlivesEnabled = false
 	serverConfigWithBothCustomResponseBody.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 	}
 	serverConfigWithHealthyCustomResponseBody := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfigWithHealthyCustomResponseBody.WriteTimeout = 0
-	serverConfigWithHealthyCustomResponseBody.ReadHeaderTimeout = 0
-	serverConfigWithHealthyCustomResponseBody.IdleTimeout = 0
-	serverConfigWithHealthyCustomResponseBody.KeepAlivesEnabled = false
 	serverConfigWithHealthyCustomResponseBody.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 	}
 	serverConfigWithUnhealthyCustomResponseBody := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfigWithUnhealthyCustomResponseBody.WriteTimeout = 0
-	serverConfigWithUnhealthyCustomResponseBody.ReadHeaderTimeout = 0
-	serverConfigWithUnhealthyCustomResponseBody.IdleTimeout = 0
-	serverConfigWithUnhealthyCustomResponseBody.KeepAlivesEnabled = false
 	serverConfigWithUnhealthyCustomResponseBody.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -280,10 +255,10 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 
 			// Give a chance for the server goroutine to run.
 			runtime.Gosched()
-			require.Eventuallyf(t, ensureServerRunning(tt.config.NetAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+			require.Eventuallyf(t, ensureServerRunning(tt.config.Config.ServerConfig.NetAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
 
 			client := &http.Client{}
-			url := "http://" + tt.config.NetAddr.Endpoint + tt.config.Path
+			url := "http://" + tt.config.Config.ServerConfig.NetAddr.Endpoint + tt.config.Config.Path
 
 			// Cast to PipelineWatcher for step functions
 			pw, ok := hcExt.(extensioncapabilities.PipelineWatcher)
@@ -313,11 +288,6 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  testutil.GetAvailableLocalAddress(t),

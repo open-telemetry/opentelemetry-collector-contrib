@@ -15,6 +15,15 @@ $defs:
         type: boolean
       overrides:
         $ref: nested_list_alias
+  resource_tag_filter:
+    description: ResourceTagFilter defines a tag-based filter for Azure resources.
+    type: object
+    properties:
+      name:
+        type: string
+      value:
+        x-pointer: true
+        type: string
 description: Config defines the configuration for the various elements of the receiver agent.
 type: object
 properties:
@@ -60,6 +69,10 @@ properties:
     type: array
     items:
       type: string
+  resource_tags:
+    type: array
+    items:
+      $ref: resource_tag_filter
   services:
     type: array
     items:

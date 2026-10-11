@@ -45,8 +45,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	config, ok := cfg.(*Config)
 	require.True(t, ok)
-	assert.Equal(t, 1*time.Minute, config.CollectionInterval)
-	assert.Equal(t, 10*time.Second, config.Timeout)
+	assert.Equal(t, 1*time.Minute, config.ControllerConfig.CollectionInterval)
+	assert.Equal(t, 10*time.Second, config.ControllerConfig.Timeout)
 	assert.Empty(t, config.Devices)
 	assert.Empty(t, config.Scrapers)
 }

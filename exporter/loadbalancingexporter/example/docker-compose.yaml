@@ -62,7 +62,7 @@ services:
 
   # Log generator
   flog:
-    image: mingrammer/flog:0.4.3
+    image: mingrammer/flog:0.4.3@sha256:44180f8610fab7d4c29ff233a79e19cf28bd425c1737aa59c72c1f66613fdf41
     # Output 1 log per second in JSON format
     command: ["--format=json", "--loop", "--delay=1s", "--number=1"]
     depends_on:

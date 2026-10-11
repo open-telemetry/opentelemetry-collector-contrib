@@ -90,7 +90,7 @@ func (r ResourceTracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, e
 	case unmarshaler.FormatUnknown:
 		return ptrace.NewTraces(), nil
 	default:
-		return ptrace.NewTraces(), fmt.Errorf("unrecognized batch format: %q", batchFormat)
+		return ptrace.NewTraces(), fmt.Errorf("unrecognized batch format: %d", batchFormat)
 	}
 
 	t := ptrace.NewTraces()

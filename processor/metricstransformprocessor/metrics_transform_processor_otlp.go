@@ -322,18 +322,20 @@ func initResourceMetrics(dest pmetric.ResourceMetrics, resource pcommon.Resource
 	scope.CopyTo(sm.Scope())
 }
 
-// canBeCombined returns true if all the provided metrics share the same type, unit, and labels
+// canBeCombined returns an error if the provided metrics cannot be combined (e.g. type/unit/labels mismatch).
 func canBeCombined(metrics []pmetric.Metric) error {
+	for _, metric := range metrics {
+		if metric.Type() == pmetric.MetricTypeSummary {
+			return fmt.Errorf("summary metrics cannot be combined: %v", metric.Name())
+		}
+	}
+
 	if len(metrics) <= 1 {
 		return nil
 	}
 
 	var firstMetric pmetric.Metric
 	for _, metric := range metrics {
-		if metric.Type() == pmetric.MetricTypeSummary {
-			return fmt.Errorf("Summary metrics cannot be combined: %v ", metric.Name())
-		}
-
 		if firstMetric == (pmetric.Metric{}) {
 			firstMetric = metric
 			continue
@@ -367,26 +369,30 @@ func canBeCombined(metrics []pmetric.Metric) error {
 			if firstMetric.Sum().AggregationTemporality() != metric.Sum().AggregationTemporality() {
 				return fmt.Errorf(
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
-					firstMetric.Name(), firstMetric.Sum().AggregationTemporality(), metric.Name(), metric.Sum().AggregationTemporality())
+					firstMetric.Name(), firstMetric.Sum().AggregationTemporality(), metric.Name(), metric.Sum().AggregationTemporality(),
+				)
 			}
 			if firstMetric.Sum().IsMonotonic() != metric.Sum().IsMonotonic() {
 				return fmt.Errorf(
 					"metrics cannot be combined as they have different monotonicity: %v (%v) and %v (%v)",
-					firstMetric.Name(), firstMetric.Sum().IsMonotonic(), metric.Name(), metric.Sum().IsMonotonic())
+					firstMetric.Name(), firstMetric.Sum().IsMonotonic(), metric.Name(), metric.Sum().IsMonotonic(),
+				)
 			}
 		case pmetric.MetricTypeHistogram:
 			if firstMetric.Histogram().AggregationTemporality() != metric.Histogram().AggregationTemporality() {
 				return fmt.Errorf(
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
 					firstMetric.Name(), firstMetric.Histogram().AggregationTemporality(), metric.Name(),
-					metric.Histogram().AggregationTemporality())
+					metric.Histogram().AggregationTemporality(),
+				)
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			if firstMetric.ExponentialHistogram().AggregationTemporality() != metric.ExponentialHistogram().AggregationTemporality() {
 				return fmt.Errorf(
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
 					firstMetric.Name(), firstMetric.ExponentialHistogram().AggregationTemporality(), metric.Name(),
-					metric.ExponentialHistogram().AggregationTemporality())
+					metric.ExponentialHistogram().AggregationTemporality(),
+				)
 			}
 		}
 	}

@@ -43,7 +43,7 @@ func buildHistogramDP(dp pmetric.HistogramDataPoint, timestamp pcommon.Timestamp
 	dp.SetMax(2)
 	dp.SetCount(5)
 	dp.SetSum(7.0)
-	dp.BucketCounts().FromRaw([]uint64{3, 2})
+	dp.BucketCounts().FromRaw([]uint64{3, 2, 0})
 	dp.ExplicitBounds().FromRaw([]float64{1, 2})
 	dp.Attributes().PutStr("k1", "v1")
 }

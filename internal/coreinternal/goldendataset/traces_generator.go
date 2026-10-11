@@ -4,7 +4,6 @@
 package goldendataset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -36,7 +35,8 @@ func GenerateTraces(tracePairsFile, spanPairsFile string) ([]ptrace.Traces, erro
 	if metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.IsEnabled() {
 		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0MessagingConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1MessagingConventions")
 	}
-	random := (*randReader)(rand.New(rand.NewPCG(42, 0)))
+	// Use a fixed seed so that the generated IDs are reproducible across runs.
+	random := rand.NewChaCha8([32]byte{42})
 	pairsData, err := loadPictOutputFile(tracePairsFile)
 	if err != nil {
 		return nil, err
@@ -59,23 +59,6 @@ func GenerateTraces(tracePairsFile, spanPairsFile string) ([]ptrace.Traces, erro
 		}
 	}
 	return traces, err
-}
-
-// TODO: use math/rand/v2.ChaCha8.Read when we upgrade to go1.23.
-type randReader rand.Rand
-
-func (r *randReader) Read(p []byte) (n int, err error) {
-	for len(p) >= 8 {
-		binary.BigEndian.PutUint64(p[:8], (*rand.Rand)(r).Uint64())
-		p = p[8:]
-		n += 8
-	}
-	if len(p) > 0 {
-		var buf [8]byte
-		binary.BigEndian.PutUint64(buf[:], (*rand.Rand)(r).Uint64())
-		n += copy(p, buf[:])
-	}
-	return n, err
 }
 
 // generateResourceSpan generates a single PData ResourceSpans populated based on the provided inputs. They are:

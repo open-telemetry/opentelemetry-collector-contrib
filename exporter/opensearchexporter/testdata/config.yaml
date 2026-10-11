@@ -139,3 +139,17 @@ opensearch/otel_v1_with_dataset:
     endpoint: https://opensearch.example.com:9200
   mapping:
     mode: "otel-v1"
+
+opensearch/metrics_index_valid:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  metrics_index: "otel-metrics-%{service.name}"
+  metrics_index_fallback: "default-service"
+  metrics_index_time_format: "yyyy.MM.dd"
+
+opensearch/metrics_index_time_format_invalid:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  metrics_index: "otel-metrics-%{service.name}"
+  metrics_index_fallback: "default-service"
+  metrics_index_time_format: "invalid_format!"

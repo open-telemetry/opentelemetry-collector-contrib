@@ -30,7 +30,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config)
 
 	// Verify default metrics are enabled
-	assert.True(t, config.Metrics.CiscoDeviceUp.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled)
 }
 
 func TestFactory_CreateScraperMethod(t *testing.T) {
@@ -102,11 +102,11 @@ func TestConfig_MetricsConfiguration(t *testing.T) {
 	}
 
 	// Verify metrics are configurable
-	assert.True(t, config.Metrics.CiscoDeviceUp.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled)
 
 	// Test disabling metrics
-	config.Metrics.CiscoDeviceUp.Enabled = false
-	assert.False(t, config.Metrics.CiscoDeviceUp.Enabled)
+	config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled = false
+	assert.False(t, config.MetricsBuilderConfig.Metrics.CiscoDeviceUp.Enabled)
 }
 
 func TestDeviceConfig_Structure(t *testing.T) {
@@ -179,6 +179,6 @@ func TestCreateDefaultConfig_MetricsEnabled(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Verify all default metrics are enabled
-	metrics := cfg.Metrics
+	metrics := cfg.MetricsBuilderConfig.Metrics
 	assert.True(t, metrics.CiscoDeviceUp.Enabled)
 }

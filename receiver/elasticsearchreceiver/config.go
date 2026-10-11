@@ -26,21 +26,29 @@ var (
 
 // Config is the configuration for the elasticsearch receiver
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig     confighttp.ClientConfig        `mapstructure:",squash"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Nodes defines the nodes to scrape.
 	// See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here.
 	// If Nodes is empty, no nodes will be scraped.
 	Nodes []string `mapstructure:"nodes"`
 	// SkipClusterMetrics indicates whether cluster level metrics from /_cluster/* endpoints should be scraped or not.
 	SkipClusterMetrics bool `mapstructure:"skip_cluster_metrics"`
+	// ClusterStatsMasterOnly indicates whether cluster stats (from /_cluster/stats) should only be scraped when
+	// this receiver's endpoint is the cluster's current elected master node. This is useful when running one
+	// receiver instance per node and targeting the same cluster, to avoid every instance issuing the same
+	// master-coordinated, cluster-wide call every collection interval. Has no effect if SkipClusterMetrics is true.
+	ClusterStatsMasterOnly bool `mapstructure:"cluster_stats_master_only"`
 	// Indices defines the indices to scrape.
 	// See https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html#index-stats-api-path-params
 	// for which names are viable.
 	// If Indices is empty, no indices will be scraped.
 	Indices []string `mapstructure:"indices"`
+	// IndexStatsMasterOnly indicates whether index stats (from /_stats) should only be scraped when this
+	// receiver's endpoint is the cluster's current elected master node. Same rationale as ClusterStatsMasterOnly.
+	IndexStatsMasterOnly bool `mapstructure:"index_stats_master_only"`
 	// Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
 	Username string `mapstructure:"username"`
 	// Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.
@@ -54,15 +62,15 @@ func (cfg *Config) Validate() error {
 		combinedErr = err
 	}
 
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return errors.Join(combinedErr, errEmptyEndpoint)
 	}
 
-	u, err := url.Parse(cfg.Endpoint)
+	u, err := url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return errors.Join(
 			combinedErr,
-			fmt.Errorf("invalid endpoint '%s': %w", cfg.Endpoint, err),
+			fmt.Errorf("invalid endpoint '%s': %w", cfg.ClientConfig.Endpoint, err),
 		)
 	}
 
