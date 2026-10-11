@@ -72,6 +72,50 @@ func TestNewClient(t *testing.T) {
 			logger:      zap.NewNop(),
 			expectError: nil,
 		},
+		{
+			desc: "Valid v2c configuration with max_repetitions at maxInt32",
+			cfg: &Config{
+				Version:        "v2c",
+				Endpoint:       "udp://localhost:161",
+				Community:      "public",
+				MaxRepetitions: math.MaxInt32,
+			},
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: nil,
+		},
+		{
+			desc: "Valid v3 configuration with max_repetitions at maxInt32",
+			cfg: &Config{
+				Version:         "v3",
+				Endpoint:        "tcp://localhost:161",
+				User:            "user",
+				SecurityLevel:   "auth_priv",
+				AuthType:        "MD5",
+				AuthPassword:    "authpass",
+				PrivacyType:     "DES",
+				PrivacyPassword: "privacypass",
+				MaxRepetitions:  math.MaxInt32,
+			},
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: nil,
+		},
+		{
+			desc: "Valid v2c configuration with zero max_repetitions falling back to default",
+			cfg: &Config{
+				Version:        "v2c",
+				Endpoint:       "udp://localhost:161",
+				Community:      "public",
+				MaxRepetitions: 0,
+			},
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: nil,
+		},
 	}
 
 	for _, tc := range testCase {

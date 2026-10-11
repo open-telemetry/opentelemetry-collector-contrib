@@ -5,6 +5,7 @@ package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"slices"
 	"strings"
@@ -54,6 +55,7 @@ var (
 	errMsgMultipleKeysSetOnResourceAttribute        = `resource attribute '%s' must have only one of oid, scalar_oid, or indexed_value_prefix`
 	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute '%s' has scalar_oid '%s' that ends in a nonzero digit (scalar oids should not be indexed)`
 	errColumnOIDResourceAttributeEndsInZero         = `resource attribute '%s' has oid '%s' that ends in a zero (column oids should be indexed)`
+	errMsgMaxRepetitionsTooLarge                    = `max_repetitions (%d) must not exceed %d`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -268,6 +270,7 @@ func (cfg *Config) Validate() error {
 	if strings.EqualFold(cfg.Version, "V3") {
 		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
 	}
+	combinedErr = errors.Join(combinedErr, validateMaxRepetitions(cfg))
 	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
 
 	return combinedErr
@@ -309,6 +312,15 @@ func validateVersion(cfg *Config) error {
 	case "V1", "V2C", "V3": // ok
 	default:
 		return errBadVersion
+	}
+
+	return nil
+}
+
+// validateMaxRepetitions validates the MaxRepetitions
+func validateMaxRepetitions(cfg *Config) error {
+	if cfg.MaxRepetitions > math.MaxInt32 {
+		return fmt.Errorf(errMsgMaxRepetitionsTooLarge, cfg.MaxRepetitions, math.MaxInt32)
 	}
 
 	return nil
