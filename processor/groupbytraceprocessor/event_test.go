@@ -669,3 +669,145 @@ func (*testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) met
 func (tt *testTelemetry) Shutdown(ctx context.Context) error {
 	return tt.meterProvider.Shutdown(ctx)
 }
+
+// The event name is used as an attribute value on the event latency metric, so
+// every event type needs a distinct name and none may fall through to "unknown".
+func TestEventTypeString(t *testing.T) {
+	all := []eventType{
+		traceReceived, traceExpired, traceReleased, traceRemoved,
+		subtraceTick,
+	}
+	seen := make(map[string]bool, len(all))
+	for _, typ := range all {
+		name := typ.String()
+		assert.NotEqual(t, "unknown", name, "event type %d has no name", int(typ))
+		assert.False(t, seen[name], "duplicate event name %q", name)
+		seen[name] = true
+	}
+	assert.Equal(t, "unknown", eventType(-1).String())
+}
+
+func TestEventTimeoutDoesNotApplyToSubtraceTick(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
+	require.NoError(t, err)
+
+	em := newEventMachine(zap.NewNop(), 50, 1, 50, tb)
+	em.eventTimeout = 20 * time.Millisecond
+	const tickDuration = 200 * time.Millisecond // comfortably past the timeout
+
+	var tickReturned atomic.Bool
+	tickDone := make(chan struct{})
+	receivedWhileTicking := make(chan bool, 1)
+
+	em.onSubtraceTick = func(*eventMachineWorker) error {
+		time.Sleep(tickDuration)
+		tickReturned.Store(true)
+		close(tickDone)
+		return nil
+	}
+	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
+		receivedWhileTicking <- !tickReturned.Load()
+		return nil
+	}
+	em.startInBackground()
+	defer em.shutdown()
+
+	w := em.workers[0]
+	w.fire(event{typ: subtraceTick})
+	w.fire(event{typ: traceReceived, payload: tracesWithID{id: pcommon.TraceID([16]byte{1})}})
+
+	select {
+	case <-tickDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("subtraceTick never finished")
+	}
+
+	select {
+	case overlapped := <-receivedWhileTicking:
+		assert.False(t, overlapped,
+			"onTraceReceived ran while onSubtraceTick was still going: the tick was abandoned and the two now share the worker's deadlines and ring buffer")
+	case <-time.After(5 * time.Second):
+		t.Fatal("the event queued behind the tick was never handled")
+	}
+}
+
+func TestEventTimeoutAppliesToOtherHandlers(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
+	require.NoError(t, err)
+
+	em := newEventMachine(zap.NewNop(), 50, 1, 50, tb)
+	em.eventTimeout = 20 * time.Millisecond
+
+	release := make(chan struct{})
+	removedWhileReceiving := make(chan struct{}, 1)
+
+	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
+		<-release // outlasts the timeout
+		return nil
+	}
+	em.onTraceRemoved = func(pcommon.TraceID) error {
+		removedWhileReceiving <- struct{}{}
+		return nil
+	}
+	em.startInBackground()
+	defer func() {
+		close(release)
+		em.shutdown()
+	}()
+
+	w := em.workers[0]
+	w.fire(event{typ: traceReceived, payload: tracesWithID{id: pcommon.TraceID([16]byte{1})}})
+	w.fire(event{typ: traceRemoved, payload: pcommon.TraceID([16]byte{1})})
+
+	select {
+	case <-removedWhileReceiving:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the worker never moved past the blocked onTraceReceived: the timeout no longer applies to it, which leaves the eviction path in onTraceReceived able to deadlock its own worker")
+	}
+}
+
+func TestEventTimeoutBreaksFireDeadlock(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
+	require.NoError(t, err)
+
+	// bufferSize 2 with one worker gives an event channel of capacity 2.
+	em := newEventMachine(zap.NewNop(), 2, 1, 2, tb)
+	em.eventTimeout = 50 * time.Millisecond
+
+	entered := make(chan struct{})
+	queueFull := make(chan struct{})
+	fireReturned := make(chan time.Duration, 1)
+
+	em.onTraceReceived = func(_ tracesWithID, w *eventMachineWorker) error {
+		close(entered)
+		<-queueFull
+		start := time.Now()
+		w.fire(event{typ: traceRemoved, payload: pcommon.TraceID([16]byte{1})})
+		fireReturned <- time.Since(start)
+		return nil
+	}
+	em.onTraceRemoved = func(pcommon.TraceID) error { return nil }
+	em.startInBackground()
+	defer em.shutdown()
+
+	w := em.workers[0]
+	w.fire(event{typ: traceReceived, payload: tracesWithID{id: pcommon.TraceID([16]byte{1})}})
+	<-entered // the worker is inside the handler and no longer draining
+
+	w.fire(event{typ: traceRemoved, payload: pcommon.TraceID([16]byte{2})})
+	w.fire(event{typ: traceRemoved, payload: pcommon.TraceID([16]byte{3})})
+	require.Len(t, w.events, cap(w.events), "the queue must be full for the handler's send to have nowhere to go")
+	close(queueFull)
+
+	select {
+	case blocked := <-fireReturned:
+		// Give the expected time a slight buffer to prevent flakiness due to timing issues.
+		assert.GreaterOrEqual(t, blocked+5*time.Millisecond, em.eventTimeout,
+			"the send should have been stuck until the timeout gave up on the handler")
+	case <-time.After(5 * time.Second):
+		t.Fatal("the handler's fire never completed: the worker is deadlocked against itself")
+	}
+}

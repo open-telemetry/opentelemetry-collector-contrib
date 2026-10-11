@@ -575,6 +575,7 @@ func TestReceiverLogs(t *testing.T) {
 }
 
 func TestReceiverMetrics(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48669")
 	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 	stdTesting := otelAssert.NewStdUnitTest(t)
@@ -585,7 +586,7 @@ func TestReceiverMetrics(t *testing.T) {
 
 	sendDone := make(chan struct{})
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
-		func(_ *arrowpb.BatchStatus) error {
+		func(_ *arrowpb.BatchStatus) error { //nolint:unparam // flagged only because t.Skip makes this unreachable
 			close(sendDone)
 			return nil
 		},

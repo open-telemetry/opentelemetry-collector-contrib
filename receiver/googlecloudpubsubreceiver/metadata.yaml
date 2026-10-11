@@ -10,7 +10,7 @@ status:
     beta: [traces, logs, metrics]
   distributions: [contrib]
   codeowners:
-    active: [alexvanboxel]
+    active: [alexvanboxel, braydonk, dpaasman00]
 
 telemetry:
   metrics:

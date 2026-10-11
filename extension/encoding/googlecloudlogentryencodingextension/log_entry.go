@@ -54,6 +54,9 @@ const (
 
 	gcpErrorGroupField = "gcp.error_group"
 
+	gcpTraceField  = "gcp.trace"
+	gcpSpanIDField = "gcp.span_id"
+
 	gcpAppHubPrefix                       = "gcp.apphub"
 	gcpAppHubDestinationPrefix            = "gcp.apphub_destination"
 	gcpAppHubApplicationContainerField    = "application.container"
@@ -352,15 +355,19 @@ func handleAppHubField(attributes pcommon.Map, appHub *appHub, prefix string) {
 	}
 }
 
-// getTraceID will parse the given trace and return the decoding id
+// getTraceID will parse the given trace and return the decoded id
 func getTraceID(trace string) ([16]byte, error) {
-	// Format: projects/my-gcp-project/traces/4ebc71f1def9274798cac4e8960d0095
-	_, trace, found := strings.Cut(trace, "/traces/")
-	if !found || trace == "" {
-		return [16]byte{}, fmt.Errorf(`expected trace format to be "projects/<id>/traces/<id>" but got %q`, trace)
+	// Format: projects/my-gcp-project/traces/4ebc71f1def9274798cac4e8960d0095,
+	// or a bare 4ebc71f1def9274798cac4e8960d0095 as sent by some Google services.
+	id := trace
+	if _, after, found := strings.Cut(trace, "/traces/"); found {
+		id = after
+	}
+	if id == "" {
+		return [16]byte{}, fmt.Errorf(`expected trace format to be "projects/<id>/traces/<id>" or "<id>" but got %q`, trace)
 	}
 
-	decoded, err := hex.DecodeString(trace)
+	decoded, err := hex.DecodeString(id)
 	if err != nil {
 		return [16]byte{}, fmt.Errorf("failed to decode trace id to hexadecimal string: %w", err)
 	}
@@ -370,10 +377,8 @@ func getTraceID(trace string) ([16]byte, error) {
 	return [16]byte(decoded), nil
 }
 
-// getTraceID will return the decoded span id
+// getSpanID will return the decoded span id
 func getSpanID(spanIDStr string) ([8]byte, error) {
-	// TODO cloud Run sends invalid span id's, make sure we're not crashing,
-	// see https://issuetracker.google.com/issues/338634230?pli=1
 	decoded, err := hex.DecodeString(spanIDStr)
 	if err != nil {
 		return [8]byte{}, fmt.Errorf("failed to decode span id to hexadecimal string: %w", err)
@@ -612,20 +617,22 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 		logRecord.SetSeverityNumber(getSeverityNumber(log.Severity))
 	}
 
+	// Unparseable IDs (e.g. Cloud Run, see https://issuetracker.google.com/issues/338634230)
+	// must not drop the entry, so keep the raw value as an attribute instead.
 	if log.Trace != "" {
-		traceIDBytes, err := getTraceID(log.Trace)
-		if err != nil {
-			return err
+		if traceID, err := getTraceID(log.Trace); err != nil {
+			logRecord.Attributes().PutStr(gcpTraceField, log.Trace)
+		} else {
+			logRecord.SetTraceID(traceID)
 		}
-		logRecord.SetTraceID(traceIDBytes)
 	}
 
 	if log.SpanID != "" {
-		spanIDBytes, err := getSpanID(log.SpanID)
-		if err != nil {
-			return err
+		if spanID, err := getSpanID(log.SpanID); err != nil {
+			logRecord.Attributes().PutStr(gcpSpanIDField, log.SpanID)
+		} else {
+			logRecord.SetSpanID(spanID)
 		}
-		logRecord.SetSpanID(spanIDBytes)
 	}
 
 	if log.TraceSampled != nil {

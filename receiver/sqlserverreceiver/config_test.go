@@ -239,7 +239,7 @@ func TestLoadConfig(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig()
 
-		sub, err := cm.Sub("sqlserver")
+		sub, err := cm.Sub("sql_server")
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
@@ -325,7 +325,7 @@ func TestLoadConfig(t *testing.T) {
 			MaxRowsPerQuery: 1450,
 		}
 
-		sub, err := cm.Sub("sqlserver/named")
+		sub, err := cm.Sub("sql_server/named")
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 

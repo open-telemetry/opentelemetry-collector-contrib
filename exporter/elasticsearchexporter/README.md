@@ -2,8 +2,8 @@
 # Elasticsearch Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: metrics, profiles   |
-|               | [beta]: traces, logs   |
+| Stability     | [development]: profiles   |
+|               | [beta]: traces, logs, metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Felasticsearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Felasticsearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Felasticsearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Felasticsearch) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_elasticsearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_elasticsearch&displayType=list) |
@@ -355,10 +355,14 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (DEPRECATED, use `sending_queue::num_consumers` instead): This config is deprecated and will be used to configure `sending_queue::num_consumers` if `sending_queue::num_consumers` is not explicitly defined. Number of workers publishing bulk requests concurrently.
-- `flush` (DEPRECATED, use `sending_queue` instead): This config is deprecated and will be used to configure different options for `sending_queue` if `sending_queue` options are not explicitly defined. Event bulk indexer buffer flush settings
-  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if `sending_queue::batch::max_size` is not explicitly defined. See the `sending_queue::batch::max_size` for more details.
-  - `interval` (DEPRECATED, use `sending_queue::batch::flush_timeout` instead): This config is deprecated and will be used to configure `sending_queue::batch::flush_timeout` if `sending_queue::batch::flush_timeout` is not explicitly defined. See the `sending_queue::batch::flush_timeout` for more details.
+The deprecated `num_workers` and `flush` settings have been removed. Existing configurations should use these replacements:
+
+| Removed setting | Replacement |
+| --- | --- |
+| `num_workers` | `sending_queue::num_consumers` |
+| `flush::interval` | `sending_queue::batch::flush_timeout` |
+| `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
+
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
@@ -403,6 +407,24 @@ Settings related to node discovery are:
   - `interval` (optional): Interval to update the list of Elasticsearch nodes.
 
 Node discovery can be disabled by setting `discover.interval` to 0.
+
+### Elasticsearch version detection
+
+On startup, the Elasticsearch Exporter queries each configured endpoint for its
+version and build flavor and logs the result. This information is used to
+automatically enable features supported by the connected Elasticsearch version,
+so no per-feature configuration is required.
+
+- `version_detection`:
+  - `enabled` (default `true`): If enabled, the exporter queries Elasticsearch
+    at startup to detect its version and build flavor. When disabled, the
+    exporter does not query Elasticsearch and assumes only the baseline
+    capability set is available.
+
+The query is best-effort: if it fails (for example, when Elasticsearch is
+temporarily unreachable), startup is not blocked. Version detection cannot be
+performed when the endpoint is resolved at request time (for example, when a
+routing middleware rewrites the destination per request).
 
 ### Telemetry settings
 
@@ -490,6 +512,40 @@ exporters:
 > For the Elasticsearch Exporter to be able to export Profiles data, Universal Profiling needs to be installed in the database.
 > See [the Universal Profiling getting started documentation](https://www.elastic.co/guide/en/observability/current/profiling-get-started.html)
 > You will need to use the Elasticsearch endpoint, with an [Elasticsearch API key](https://www.elastic.co/guide/en/kibana/current/api-keys.html).
+
+### OTel profiling datastreams
+
+In `otel` mapping mode, profiling signals are ingested into OTel-native Elasticsearch datastreams.
+Each profiling signal type is written to a dedicated backing index:
+
+| Signal type    | Index pattern                                 |
+| -------------- | --------------------------------------------- |
+| Stack traces   | `profiling-stacktraces.otel-default`          |
+| Stack frames   | `profiling-stackframes.otel-default`          |
+| Executables    | `profiling-executables.otel-default`          |
+| Trace events   | `profiling-events-all.otel-default`           |
+| Downsampled trace events | `profiling-events-5powNN.otel-default` (`NN` from `01` to `11`) |
+| Host metadata  | `profiling-hosts.otel-default`                |
+
+> [!NOTE]
+> Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations)
+> is not yet supported in OTel profiling datastream mode.
+
+> [!WARNING]
+> The `.otel-default` profiling datastream index templates are only available in **Elasticsearch 9.6.0 and later**.
+> If you send profiles with the default OTel mapping mode to an older cluster, documents will be rejected
+> with `index_not_found_exception` (HTTP 404) and profiling data will be lost.
+>
+> To continue sending profiles to Elasticsearch < 9.6.0, restrict the exporter to ECS mode:
+>
+> ```yaml
+> mapping:
+>   allowed_modes: [ecs]
+> ```
+>
+> This is a **breaking change** for existing OTel-mode profiling users (profiles are still in tech preview):
+> the backing indices are different from the ECS-schema indices used by prior versions,
+> and existing profiling data in the old indices is not migrated automatically.
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings

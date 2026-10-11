@@ -225,6 +225,10 @@ component_management:
     name: exporter_logzio
     paths:
     - exporter/logzioexporter/**
+  - component_id: exporter_nats
+    name: exporter_nats
+    paths:
+    - exporter/natsexporter/**
   - component_id: exporter_opensearch
     name: exporter_opensearch
     paths:
@@ -361,6 +365,10 @@ component_management:
     name: extension_internal_credentialsfile
     paths:
     - extension/internal/credentialsfile/**
+  - component_id: extension_internal_secretprovider
+    name: extension_internal_secretprovider
+    paths:
+    - extension/internal/secretprovider/**
   - component_id: extension_jaegerremotesampling
     name: extension_jaegerremotesampling
     paths:
@@ -501,6 +509,10 @@ component_management:
     name: pkg_ottl_contexts_xprofile
     paths:
     - pkg/ottl/contexts/xprofile/**
+  - component_id: pkg_ottl_xottl
+    name: pkg_ottl_xottl
+    paths:
+    - pkg/ottl/xottl/**
   - component_id: pkg_resourcetotelemetry
     name: pkg_resourcetotelemetry
     paths:
@@ -665,6 +677,10 @@ component_management:
     name: processor_metricstransform
     paths:
     - processor/metricstransformprocessor/**
+  - component_id: processor_partitioning
+    name: processor_partitioning
+    paths:
+    - processor/partitioningprocessor/**
   - component_id: processor_probabilisticsampler
     name: processor_probabilisticsampler
     paths:
@@ -1149,10 +1165,6 @@ component_management:
     name: receiver_vcr
     paths:
     - receiver/vcrreceiver/**
-  - component_id: receiver_wavefront
-    name: receiver_wavefront
-    paths:
-    - receiver/wavefrontreceiver/**
   - component_id: receiver_webhookevent
     name: receiver_webhookevent
     paths:

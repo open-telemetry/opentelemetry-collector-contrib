@@ -67,11 +67,20 @@ func (*Deterministic) Stop() error { return nil }
 
 // dynsamplerImpl is the subset of dynsampler-go's Sampler interface used by
 // this package. Declared locally so test doubles do not need to satisfy the
-// full upstream interface (SaveState, LoadState, GetMetrics).
+// full upstream interface (SaveState, LoadState).
 type dynsamplerImpl interface {
 	Start() error
 	Stop() error
 	GetSampleRateMulti(key string, count int) int
+	GetMetrics(prefix string) map[string]int64
+}
+
+// MetricsProvider returns a set of metric values that expose sampler's internal performance
+// counters (request/event counts, keyspace size, burst/interval counts) via GetMetrics.
+type MetricsProvider interface {
+	// GetMetrics returns metric values with keys prefixed by the passed-in prefix.
+	// Must use the same prefix value for every call for a given sampler instance.
+	GetMetrics(prefix string) map[string]int64
 }
 
 // dynsamplerWrapper adapts any dynsampler-go sampler into our Sampler
@@ -114,6 +123,26 @@ func (w *dynsamplerWrapper) Start() error {
 func (w *dynsamplerWrapper) Stop() error {
 	w.stopOnce.Do(func() { w.stopErr = w.inner.Stop() })
 	return w.stopErr
+}
+
+// GetMetrics implements MetricsProvider.
+func (w *dynsamplerWrapper) GetMetrics(prefix string) map[string]int64 {
+	return w.inner.GetMetrics(prefix)
+}
+
+// ThroughputGoalSetter is implemented by samplers whose throughput goal can
+// be adjusted at runtime. Updating the goal never resets learned per-key
+// state. No-op for samplers without a throughput goal.
+type ThroughputGoalSetter interface {
+	SetGoalThroughputPerSec(goalPerSec int)
+}
+
+// SetGoalThroughputPerSec implements ThroughputGoalSetter. A no-op for
+// samplers without a throughput goal (e.g. adaptive_percentage).
+func (w *dynsamplerWrapper) SetGoalThroughputPerSec(goalPerSec int) {
+	if s, ok := w.inner.(interface{ SetGoalThroughputPerSec(int) }); ok {
+		s.SetGoalThroughputPerSec(goalPerSec)
+	}
 }
 
 // EMAPercentageConfig configures the EMA percentage (per-key) sampler.
