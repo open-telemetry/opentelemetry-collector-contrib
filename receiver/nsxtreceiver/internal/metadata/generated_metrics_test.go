@@ -84,12 +84,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 1, AttributeClassDatapath)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 3, AttributeClassServices)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNsxtNodeCPUUtilizationDataPoint(ts+1, 3, AttributeClassServices)
+				assert.Equal(t, 2, mb.metricNsxtNodeCPUUtilization.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 1, AttributeDiskStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 3, AttributeDiskStateAvailable)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNsxtNodeFilesystemUsageDataPoint(ts+1, 3, AttributeDiskStateAvailable)
+				assert.Equal(t, 2, mb.metricNsxtNodeFilesystemUsage.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -105,12 +111,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNsxtNodeNetworkIoDataPoint(ts, 1, AttributeDirectionReceived)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeNetworkIoDataPoint(ts, 3, AttributeDirectionTransmitted)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNsxtNodeNetworkIoDataPoint(ts+1, 3, AttributeDirectionTransmitted)
+				assert.Equal(t, 2, mb.metricNsxtNodeNetworkIo.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirectionReceived, AttributePacketTypeDropped)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 3, AttributeDirectionTransmitted, AttributePacketTypeErrored)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts+1, 3, AttributeDirectionTransmitted, AttributePacketTypeErrored)
+				assert.Equal(t, 2, mb.metricNsxtNodeNetworkPacketCount.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -172,7 +184,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nsxt.node.cpu.utilization"], "Found a duplicate in the metrics slice: nsxt.node.cpu.utilization")
 						validatedMetrics["nsxt.node.cpu.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The average amount of CPU being used by the node.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -214,7 +228,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nsxt.node.filesystem.usage"], "Found a duplicate in the metrics slice: nsxt.node.filesystem.usage")
 						validatedMetrics["nsxt.node.filesystem.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of storage space used by the node.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -298,7 +314,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nsxt.node.network.io"], "Found a duplicate in the metrics slice: nsxt.node.network.io")
 						validatedMetrics["nsxt.node.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of bytes which have flowed through the network interface.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -345,7 +363,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nsxt.node.network.packet.count"], "Found a duplicate in the metrics slice: nsxt.node.network.packet.count")
 						validatedMetrics["nsxt.node.network.packet.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of packets which have flowed through the network interface on the node.", mi.Description())
 						assert.Equal(t, "{packets}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
