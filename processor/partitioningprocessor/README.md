@@ -44,8 +44,11 @@ processors:
 
 Required. A map from **partition key name** to an [OTTL value expression](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) that evaluates to a `string`. Each expression is evaluated against every item in the incoming batch; items that produce the same tuple of values are collected into the same partition.
 
-Expressions must evaluate to `string`, or `nil`. In case of a `nil` result (e.g. a missing attribute), the item is partitioned with other items that also produce `nil` for that key, and the key will be omitted from the metadata.
-This allows you to partition by optional attributes without losing those items entirely.
+Key names are used as `client.Metadata` keys, which are case-insensitive and stored lower-cased; names that differ only in case are rejected.
+
+Expressions must evaluate to `string`, or `nil`. In case of a `nil` result (e.g. a missing attribute), the item is partitioned with other items that also produce `nil` for that key, the key is omitted from the outgoing metadata, and any inbound metadata value for that key is removed (see below). This allows you to partition by optional attributes without losing those items entirely.
+
+If an expression fails to evaluate or returns any other type, the whole batch is rejected with a permanent error, so that receivers do not retry it.
 
 ### Supported OTTL contexts per signal
 
@@ -70,9 +73,11 @@ For each partition, the processor calls the next consumer with a new context car
 client.Metadata["<key-name>"] = ["<evaluated-value>"]
 ```
 
-Any metadata already present on the inbound context is preserved. If a partition key name collides with an existing metadata key, the partition value takes precedence (the downstream consumer needs a deterministic value for the key).
+Any metadata already present on the inbound context is preserved, except for keys that share a name with a partition key: those are always removed from the inbound metadata, even when the expression produces no value for an item. The outgoing value for such a key is therefore always the partition value, or absent when the expression returns `nil`; inbound values never leak through.
 
-Partition deliveries run concurrently, one per partition. If any downstream `Consume*` call returns an error, the processor cancels the remaining in-flight partition deliveries and returns that error.
+Partition deliveries are started concurrently, one goroutine per partition, in the order in which each partition was first seen in the batch. Every partition is delivered even if another one fails; the errors of all failed deliveries are joined and returned. The inbound context is passed through without a derived cancellation, so downstream consumers that keep the context after returning are not affected.
+
+When every item in a batch maps to the same partition, the batch is forwarded as-is without copying. When a batch is split, items are moved (not copied) into the partitions, so the processor declares that it mutates data; if the pipeline fans out to several consumers, the collector clones the batch before it reaches this processor.
 
 ## Examples
 
@@ -100,8 +105,6 @@ processors:
 Records with the same `(tenant.id, severity_text)` tuple are grouped together. The outgoing context carries both keys.
 
 ### Partition by inbound request metadata (e.g. gRPC header)
-
-Requires the `ottl.contexts.enableOTelColContext` feature gate to be enabled on the collector (e.g. `--feature-gates=ottl.contexts.enableOTelColContext`).
 
 `otelcol.client.metadata["<header>"]` returns a `[]string`; select a single element with `[0]` to satisfy the string constraint.
 

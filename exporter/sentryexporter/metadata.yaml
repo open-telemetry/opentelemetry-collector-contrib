@@ -9,6 +9,9 @@ status:
   codeowners:
     active: [AbhiPrasad, giortzisg]
 
+sending_queue:
+  support: default
+
 tests:
   expect_consumer_error: true
   config:
