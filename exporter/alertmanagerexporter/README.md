@@ -19,7 +19,7 @@ Supported pipeline types: traces, logs
 
 The following settings are required:
 
-- `endpoint`: Alertmanager endpoint to send events
+- `endpoint`: Alertmanager base URL to send events. The exporter appends `/api/<api_version>/alerts` to its path, preserving any path prefix and query parameters.
 - `severity`: Default severity for Alerts
 
 

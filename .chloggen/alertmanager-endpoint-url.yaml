@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/alertmanager
+note: Append the alerts API path correctly when the endpoint URL includes query parameters or a fragment.
+issues: [51953]
+subtext:
+change_logs: [user]

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -365,21 +366,28 @@ func (s *alertmanagerExporter) shutdown(context.Context) error {
 	return nil
 }
 
-func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *alertmanagerExporter {
+func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) (*alertmanagerExporter, error) {
+	endpoint, err := url.JoinPath(cfg.ClientConfig.Endpoint, "api", cfg.APIVersion, "alerts")
+	if err != nil {
+		return nil, fmt.Errorf("failed to build Alertmanager endpoint: %w", err)
+	}
 	return &alertmanagerExporter{
 		config:            cfg,
 		settings:          set,
-		endpoint:          fmt.Sprintf("%s/api/%s/alerts", cfg.ClientConfig.Endpoint, cfg.APIVersion),
+		endpoint:          endpoint,
 		generatorURL:      cfg.GeneratorURL,
 		defaultSeverity:   cfg.DefaultSeverity,
 		severityAttribute: cfg.SeverityAttribute,
-	}
+	}, nil
 }
 
 func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.Settings) (exporter.Traces, error) {
 	config := cfg.(*Config)
 
-	s := newAlertManagerExporter(config, set.TelemetrySettings)
+	s, err := newAlertManagerExporter(config, set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewTraces(
 		ctx,
@@ -398,7 +406,10 @@ func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.S
 func newLogsExporter(ctx context.Context, cfg component.Config, set exporter.Settings) (exporter.Logs, error) {
 	config := cfg.(*Config)
 
-	s := newAlertManagerExporter(config, set.TelemetrySettings)
+	s, err := newAlertManagerExporter(config, set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewLogs(
 		ctx,
