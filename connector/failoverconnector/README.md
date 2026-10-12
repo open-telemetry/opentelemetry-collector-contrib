@@ -35,14 +35,16 @@ The following settings are available:
 
 - `priority_levels (required)`: list of pipeline level priorities in a 1 - n configuration, multiple pipelines can sit at a single priority level.
 - `retry_interval (optional)`: the frequency at which the pipeline levels will attempt to reestablish connection with all higher priority levels. Default value is 10 minutes. (See Example below for further explanation)
-- `condition`: Conditional statements that decide when the connector should failover. Currently supports below types
-    - `error`: 
-       - `contains`: "network failure" 
-
-  TBD: `contains` is not honored yet and all errors trigger failover. 
 - `sending_queue (optional)`: queues and batches data in the connector before it is routed to a priority level. Supports the common [`sending_queue` settings][exporterhelper] and is enabled by default.
   We recommend configuring the queue here instead of on the exporters in the priority pipelines, and disabling `sending_queue` on those exporters.
   Moving the queue to the connector avoids data being stuck in the queue of an unhealthy exporter, where it cannot be failed over to another priority level.
+- `condition`: Conditional statements that decide when the connector should failover. Currently supports below types
+    - `error`: 
+       - `contains`: ["network failure", "connection refused"] (required list of non-empty, case-insensitive substrings)
+
+  Only errors whose message contains any configured string trigger failover. Non-matching errors are returned
+  to the upstream caller without failing over, and they do not mark the pipeline level unhealthy during
+  retry sampling either. When `condition` is omitted, all errors trigger failover.
 
 The connector intakes a list of `priority_levels` each of which can contain multiple pipelines.
 If any pipeline at a stable level fails, the level is considered unhealthy and the connector will move down one priority level and route all data to the new level (assuming it is stable).
