@@ -79,9 +79,17 @@ Partition deliveries are started concurrently, one goroutine per partition, in t
 
 When every item in a batch maps to the same partition, the batch is forwarded as-is without copying. When a batch is split, items are moved (not copied) into the partitions, so the processor declares that it mutates data; if the pipeline fans out to several consumers, the collector clones the batch before it reaches this processor.
 
+## Using the metadata downstream
+
+The processor only adds the partition keys to the request metadata; another component has to read them. A few things to keep in mind when wiring that up:
+
+- **Exporter batching:** when an exporter batches with `sending_queue::batch`, requests from different partitions are merged, and only the metadata keys listed in `sending_queue::batch::partition::metadata_keys` are kept. List every partition key that a downstream component reads there, which also makes the exporter batch each partition separately. Without batching, the exporter's in-memory queue keeps the request metadata.
+- **Inbound metadata:** receivers only need `include_metadata: true` when a key expression reads inbound request metadata through `otelcol.client.metadata`. The keys this processor adds do not need it.
+- **High-cardinality keys:** every partition is delivered concurrently, so a key with many distinct values in one batch results in as many concurrent downstream calls. Put an exporter `sending_queue` between this processor and slow or synchronous backends.
+
 ## Examples
 
-### Partition logs by tenant resource attribute
+### Partition by a resource attribute
 
 ```yaml
 processors:
@@ -90,9 +98,9 @@ processors:
       tenant_id: 'resource.attributes["tenant.id"]'
 ```
 
-Each outgoing `ConsumeLogs` call will carry `client.Metadata["tenant_id"] = ["<tenant value>"]`.
+Each outgoing call carries `client.Metadata["tenant_id"] = ["<tenant value>"]`.
 
-### Partition logs by both tenant and severity
+### Partition by several keys
 
 ```yaml
 processors:
@@ -102,26 +110,97 @@ processors:
       severity:  'log.severity_text'
 ```
 
-Records with the same `(tenant.id, severity_text)` tuple are grouped together. The outgoing context carries both keys.
+Log records with the same `(tenant.id, severity_text)` tuple are grouped together, and the outgoing metadata carries both keys.
 
-### Partition by inbound request metadata (e.g. gRPC header)
+### Set a per-tenant HTTP header
 
-`otelcol.client.metadata["<header>"]` returns a `[]string`; select a single element with `[0]` to satisfy the string constraint.
+Split mixed-tenant batches and send each tenant's data with its own `X-Scope-OrgID` header, for example to a multi-tenant backend. The exporter batches per tenant, and the [`headers_setter`](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/headerssetterextension/README.md) extension reads the tenant from the request metadata.
 
 ```yaml
+extensions:
+  headers_setter:
+    headers:
+      - action: upsert
+        key: X-Scope-OrgID
+        from_context: tenant_id
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
 processors:
   partitioning:
     keys:
-      logs_topic: 'otelcol.client.metadata["x-tenant-id"][0]'
+      tenant_id: 'resource.attributes["tenant.id"]'
+
+exporters:
+  otlp_grpc:
+    endpoint: backend:4317
+    auth:
+      authenticator: headers_setter
+    sending_queue:
+      batch:
+        flush_timeout: 1s
+        partition:
+          metadata_keys: [tenant_id]
+
+service:
+  extensions: [headers_setter]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [partitioning]
+      exporters: [otlp_grpc]
 ```
 
-### Route traces to Kafka topics by service name
+### Route to Kafka topics and set the record key
+
+Write each service's spans to its own Kafka topic, keyed by trace ID, with the [Kafka exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/kafkaexporter/README.md) reading the topic and key from the request metadata. When batching is enabled, the Kafka exporter requires both keys in `sending_queue::batch::partition::metadata_keys`.
 
 ```yaml
 processors:
   partitioning:
     keys:
       kafka_topic: 'resource.attributes["service.name"]'
+      kafka_key: 'span.trace_id.string'
+
+exporters:
+  kafka:
+    brokers: [kafka:9092]
+    traces:
+      topic_from_metadata_key: kafka_topic
+      message_key_from_metadata_key: kafka_key
+    sending_queue:
+      batch:
+        partition:
+          metadata_keys: [kafka_topic, kafka_key]
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [partitioning]
+      exporters: [kafka]
 ```
 
-Combine with a metadata-aware Kafka exporter so that each service's spans are written to a dedicated topic.
+Partitioning by trace ID creates one partition per trace in each batch, which is why the exporter batches them again per key.
+
+### Partition by inbound request metadata
+
+Use a header sent by the client, such as a gRPC or HTTP header, as a partition key. `otelcol.client.metadata["<header>"]` returns a `[]string`; select a single element with `[0]` to satisfy the string constraint. The receiver must set `include_metadata: true` for inbound headers to be available.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        include_metadata: true
+
+processors:
+  partitioning:
+    keys:
+      tenant_id: 'otelcol.client.metadata["x-tenant-id"][0]'
+```
