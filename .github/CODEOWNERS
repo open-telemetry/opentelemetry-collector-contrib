@@ -32,7 +32,7 @@ confmap/provider/secretsmanagerprovider/                         @open-telemetry
 connector/countconnector/                                        @open-telemetry/collector-contrib-approvers @akats7
 connector/datadogconnector/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @jade-guiton-dd @IbraheemA
 connector/exceptionsconnector/                                   @open-telemetry/collector-contrib-approvers @marctc
-connector/failoverconnector/                                     @open-telemetry/collector-contrib-approvers @akats7
+connector/failoverconnector/                                     @open-telemetry/collector-contrib-approvers @akats7 @khushijain21
 connector/grafanacloudconnector/                                 @open-telemetry/collector-contrib-approvers @rlankfo @jcreixell
 connector/metricsaslogsconnector/                                @open-telemetry/collector-contrib-approvers @atoulme
 connector/otlpjsonconnector/                                     @open-telemetry/collector-contrib-approvers @ChrsMark
