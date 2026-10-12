@@ -55,3 +55,17 @@ func TestLoadConfigMaxConnections(t *testing.T) {
 	assert.NoError(t, confmap.Validate(cfg))
 	assert.Equal(t, 5, cfg.(*Config).MaxConnections)
 }
+
+func TestLoadConfigRefuseOverLimit(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_refuse_over_limit.yaml"))
+	require.NoError(t, err)
+
+	cfg := createDefaultConfig()
+	sub, err := cm.Sub(metadata.Type.String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	assert.NoError(t, confmap.Validate(cfg))
+	assert.Equal(t, 5, cfg.(*Config).MaxConnections)
+	assert.True(t, cfg.(*Config).RefuseOverLimit)
+}
