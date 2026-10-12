@@ -20,7 +20,7 @@ attributes:
     description: Error code recorded during check
     requirement_level: recommended
     type: string
-    enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, unknown_error]
+    enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, query_response_failed, unknown_error]
   tcpcheck.endpoint:
     description: TCP endpoint
     requirement_level: required

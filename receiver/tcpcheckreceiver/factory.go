@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
@@ -33,7 +32,7 @@ func newDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-		Targets:              []*confignet.TCPAddrConfig{},
+		Targets:              []*TargetConfig{},
 	}
 }
 
@@ -48,7 +47,10 @@ func newReceiver(
 		return nil, errConfigTCPCheck
 	}
 
-	mp := newScraper(tcpCheckConfig, settings)
+	mp, err := newScraper(tcpCheckConfig, settings)
+	if err != nil {
+		return nil, err
+	}
 	s, err := collectorscraper.NewMetrics(mp.scrape)
 	if err != nil {
 		return nil, err

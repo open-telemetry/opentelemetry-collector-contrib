@@ -27,6 +27,14 @@ The following settings are required:
 The following settings are optional:
 
 - `collection_interval` (default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `timeout` (default = no timeout): Bounds every scrape, including all targets' dials and query/response exchanges.
+
+Each target supports the following settings:
+
+- `endpoint` (required): The `host:port` to connect to.
+- `dialer.timeout` (default = no timeout): Bounds the whole check of this target: the dial plus the `query_response` exchange, if any.
+- `query_response` (default = none): An ordered list of steps run on the connection once it is established. See [Query/response checks](#queryresponse-checks).
+- `max_response_bytes` (default = `65536`): Maximum amount of unmatched response data buffered while waiting for an `expect` or `expect_bytes` step to match. The check fails if the limit is reached without a match.
 
 ## Example Configuration
 
@@ -45,6 +53,97 @@ receivers:
       - endpoint: localhost:10901
 ```
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
+
+## Query/response checks
+
+By default a target is healthy as soon as a TCP connection can be established. `query_response` lets you
+additionally verify that the service behind the connection answers as expected, similar to the
+`query_response` option of the Blackbox Exporter's TCP probe. Targets without `query_response` keep the
+dial-only behavior.
+
+Each step may contain:
+
+- `send`: A string written to the connection.
+- `send_bytes`: Base64-encoded bytes written to the connection, for binary protocols. Mutually exclusive with `send`.
+- `expect`: A [RE2](https://github.com/google/re2/wiki/Syntax) regular expression. Data is read from the connection until it matches.
+- `expect_bytes`: A base64-encoded byte sequence. Data is read from the connection until it contains the sequence. Mutually exclusive with `expect`.
+
+Every step must contain at least one of these. Steps run in order on the same connection, and within a
+step the `expect`/`expect_bytes` operation runs before the `send`/`send_bytes` operation. When a step
+has both `expect` and `send`, capture groups of the match can be referenced in `send` as `${1}`, `${2}`,
+and so on; a literal `$` must then be written as `$$`.
+
+Data is matched against everything received so far that has not been consumed by a previous step, and a
+match consumes the data up to its end. `^` therefore anchors to the start of the unconsumed data; use
+`(?m)^` to anchor to the start of any line.
+
+Any step that fails (no match before the connection is closed, the deadline is reached, or
+`max_response_bytes` is exceeded, or a write fails) marks the check as failed: `tcpcheck.status` is `0`
+and `tcpcheck.error` is recorded with `error.code` set to `query_response_failed`. The index of the
+failing step is included in the scrape error that is logged; response data and patterns are never
+emitted as metric attributes.
+
+Set `dialer.timeout` (or the receiver-level `timeout`) on targets that use `query_response`, otherwise
+a server that accepts the connection but never responds can block the check indefinitely.
+
+SMTP banner check:
+
+```yaml
+receivers:
+  tcp_check:
+    targets:
+      - endpoint: mail.example.com:25
+        dialer:
+          timeout: 10s
+        query_response:
+          - expect: "^220"
+```
+
+Redis `PING`:
+
+```yaml
+receivers:
+  tcp_check:
+    targets:
+      - endpoint: localhost:6379
+        dialer:
+          timeout: 5s
+        query_response:
+          - send: "PING\r\n"
+          - expect: "^\\+PONG"
+```
+
+Multi-step IRC exchange reusing a capture group:
+
+```yaml
+receivers:
+  tcp_check:
+    targets:
+      - endpoint: irc.example.com:6667
+        dialer:
+          timeout: 15s
+        query_response:
+          - send: "NICK prober\r\n"
+          - send: "USER prober prober prober :prober\r\n"
+          - expect: "PING :([^ ]+)"
+            send: "PONG ${1}\r\n"
+          - expect: "(?m)^:[^ ]+ 001"
+```
+
+Binary protocol using base64-encoded payloads:
+
+```yaml
+receivers:
+  tcp_check:
+    targets:
+      - endpoint: localhost:9000
+        dialer:
+          timeout: 5s
+        max_response_bytes: 1024
+        query_response:
+          - send_bytes: "AQID"   # 0x01 0x02 0x03
+          - expect_bytes: "BAUG" # 0x04 0x05 0x06
+```
 
 ## Metrics
 

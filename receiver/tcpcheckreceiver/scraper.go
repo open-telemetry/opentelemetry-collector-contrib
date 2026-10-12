@@ -4,12 +4,13 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -22,8 +23,36 @@ type scraper struct {
 	cfg                *Config
 	settings           component.TelemetrySettings
 	mb                 *metadata.MetricsBuilder
-	getConnectionState func(tcpConfig *confignet.TCPAddrConfig) (tcpConnectionState, error)
+	getConnectionState func(ctx context.Context, target *compiledTarget) (tcpConnectionState, error)
 	errorCounts        map[string]int64
+	targets            []*compiledTarget
+}
+
+// compiledTarget is a TargetConfig whose query_response steps have been
+// compiled once, so that no regex compilation or base64 decoding happens on
+// every check.
+type compiledTarget struct {
+	*TargetConfig
+	steps []compiledStep
+}
+
+func compileTargets(cfg *Config) ([]*compiledTarget, error) {
+	targets := make([]*compiledTarget, 0, len(cfg.Targets))
+	for _, target := range cfg.Targets {
+		ct := &compiledTarget{
+			TargetConfig: target,
+			steps:        make([]compiledStep, 0, len(target.QueryResponse)),
+		}
+		for i := range target.QueryResponse {
+			step, err := target.QueryResponse[i].compile()
+			if err != nil {
+				return nil, fmt.Errorf("target %s: query_response step %d: %w", target.Endpoint, i, err)
+			}
+			ct.steps = append(ct.steps, step)
+		}
+		targets = append(targets, ct)
+	}
+	return targets, nil
 }
 
 type tcpConnectionState struct {
@@ -32,8 +61,9 @@ type tcpConnectionState struct {
 	Network    string // Network type (e.g., "tcp")
 }
 
-func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (tcpConnectionState, error) {
-	conn, err := tcpConfig.Dial(context.Background())
+func getConnectionState(ctx context.Context, target *compiledTarget) (tcpConnectionState, error) {
+	start := time.Now()
+	conn, err := target.Dial(ctx)
 	if err != nil {
 		return tcpConnectionState{}, err
 	}
@@ -43,7 +73,57 @@ func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (tcpConnectionState,
 		RemoteAddr: conn.RemoteAddr().String(),
 		Network:    conn.LocalAddr().Network(),
 	}
+	if len(target.steps) == 0 {
+		return state, nil
+	}
+	// The dialer timeout bounds the whole check, including the exchange.
+	deadline := exchangeDeadline(ctx, start, target.DialerConfig.Timeout)
+	if err := runQueryResponse(ctx, conn, target.steps, target.MaxResponseBytes, deadline); err != nil {
+		return state, err
+	}
 	return state, nil
+}
+
+// errorCodeFor maps a check failure to the error.code attribute value.
+func errorCodeFor(err error) metadata.AttributeErrorCode {
+	if _, ok := errors.AsType[*queryResponseError](err); ok {
+		return metadata.AttributeErrorCodeQueryResponseFailed
+	}
+
+	errMsg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(errMsg, "connection refused") ||
+		strings.Contains(errMsg, "connection reset by peer") ||
+		strings.Contains(errMsg, "no route to host") ||
+		strings.Contains(errMsg, "host is down") ||
+		strings.Contains(errMsg, "no connection could be made because the target machine actively refused it"):
+		return metadata.AttributeErrorCodeConnectionRefused
+	case strings.Contains(errMsg, "timeout") ||
+		strings.Contains(errMsg, "i/o timeout") ||
+		strings.Contains(errMsg, "operation timed out"):
+		return metadata.AttributeErrorCodeConnectionTimeout
+	case strings.Contains(errMsg, "invalid endpoint") ||
+		strings.Contains(errMsg, "missing port in address") ||
+		strings.Contains(errMsg, "invalid port") ||
+		strings.Contains(errMsg, "invalid host") ||
+		strings.Contains(errMsg, "invalid address") ||
+		strings.Contains(errMsg, "invalid hostname") ||
+		strings.Contains(errMsg, "invalid ip") ||
+		strings.Contains(errMsg, "invalid tcp address") ||
+		strings.Contains(errMsg, "invalid:host") ||
+		strings.Contains(errMsg, "missing port") ||
+		strings.Contains(errMsg, "address invalid") ||
+		strings.Contains(errMsg, "unknown port") ||
+		strings.Contains(errMsg, "unknown host"):
+		return metadata.AttributeErrorCodeInvalidEndpoint
+	case strings.Contains(errMsg, "network is unreachable") ||
+		strings.Contains(errMsg, "network unreachable") ||
+		strings.Contains(errMsg, "no such network interface") ||
+		strings.Contains(errMsg, "network down"):
+		return metadata.AttributeErrorCodeNetworkUnreachable
+	default:
+		return metadata.AttributeErrorCodeUnknownError
+	}
 }
 
 func (*scraper) errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
@@ -64,13 +144,13 @@ func (*scraper) errorListener(ctx context.Context, eQueue <-chan error, eOut cha
 	}
 }
 
-func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAddrConfig, wg *sync.WaitGroup, mux *sync.Mutex, errChan chan<- error) {
+func (s *scraper) scrapeEndpoint(ctx context.Context, target *compiledTarget, wg *sync.WaitGroup, mux *sync.Mutex, errChan chan<- error) {
 	defer wg.Done()
 	const pointValue int64 = 1
 	const failPointValue int64 = 0
 
 	start := time.Now()
-	_, err := s.getConnectionState(tcpConfig)
+	_, err := s.getConnectionState(ctx, target)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	duration := time.Since(start).Milliseconds()
@@ -79,51 +159,15 @@ func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAd
 	defer mux.Unlock()
 
 	if err != nil {
-		// Convert error to appropriate error code
-		var errorCode metadata.AttributeErrorCode
-		errMsg := strings.ToLower(err.Error())
-
-		switch {
-		case strings.Contains(errMsg, "connection refused") ||
-			strings.Contains(errMsg, "connection reset by peer") ||
-			strings.Contains(errMsg, "no route to host") ||
-			strings.Contains(errMsg, "host is down") ||
-			strings.Contains(errMsg, "no connection could be made because the target machine actively refused it"):
-			errorCode = metadata.AttributeErrorCodeConnectionRefused
-		case strings.Contains(errMsg, "timeout") ||
-			strings.Contains(errMsg, "i/o timeout") ||
-			strings.Contains(errMsg, "operation timed out"):
-			errorCode = metadata.AttributeErrorCodeConnectionTimeout
-		case strings.Contains(errMsg, "invalid endpoint") ||
-			strings.Contains(errMsg, "missing port in address") ||
-			strings.Contains(errMsg, "invalid port") ||
-			strings.Contains(errMsg, "invalid host") ||
-			strings.Contains(errMsg, "invalid address") ||
-			strings.Contains(errMsg, "invalid hostname") ||
-			strings.Contains(errMsg, "invalid ip") ||
-			strings.Contains(errMsg, "invalid tcp address") ||
-			strings.Contains(errMsg, "invalid:host") ||
-			strings.Contains(errMsg, "missing port") ||
-			strings.Contains(errMsg, "address invalid") ||
-			strings.Contains(errMsg, "unknown port") ||
-			strings.Contains(errMsg, "unknown host"):
-			errorCode = metadata.AttributeErrorCodeInvalidEndpoint
-		case strings.Contains(errMsg, "network is unreachable") ||
-			strings.Contains(errMsg, "network unreachable") ||
-			strings.Contains(errMsg, "no such network interface") ||
-			strings.Contains(errMsg, "network down"):
-			errorCode = metadata.AttributeErrorCodeNetworkUnreachable
-		default:
-			errorCode = metadata.AttributeErrorCodeUnknownError
-		}
+		errorCode := errorCodeFor(err)
 
 		// Increment error count for this endpoint
-		s.errorCounts[tcpConfig.Endpoint]++
+		s.errorCounts[target.Endpoint]++
 
 		// Record error metrics with the current error count
-		s.mb.RecordTcpcheckErrorDataPoint(now, s.errorCounts[tcpConfig.Endpoint], tcpConfig.Endpoint, errorCode)
+		s.mb.RecordTcpcheckErrorDataPoint(now, s.errorCounts[target.Endpoint], target.Endpoint, errorCode)
 
-		s.mb.RecordTcpcheckStatusDataPoint(now, failPointValue, tcpConfig.Endpoint)
+		s.mb.RecordTcpcheckStatusDataPoint(now, failPointValue, target.Endpoint)
 		// Send error to channel
 		select {
 		case <-ctx.Done():
@@ -134,8 +178,8 @@ func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAd
 	}
 
 	// Record success metrics
-	s.mb.RecordTcpcheckDurationDataPoint(now, duration, tcpConfig.Endpoint)
-	s.mb.RecordTcpcheckStatusDataPoint(now, pointValue, tcpConfig.Endpoint)
+	s.mb.RecordTcpcheckDurationDataPoint(now, duration, target.Endpoint)
+	s.mb.RecordTcpcheckStatusDataPoint(now, pointValue, target.Endpoint)
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -159,9 +203,9 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.errorListener(ctx, errChan, errOut)
 	}()
 
-	wg.Add(len(s.cfg.Targets))
-	for _, tcpConfig := range s.cfg.Targets {
-		go s.scrapeEndpoint(ctx, tcpConfig, &wg, &mux, errChan)
+	wg.Add(len(s.targets))
+	for _, target := range s.targets {
+		go s.scrapeEndpoint(ctx, target, &wg, &mux, errChan)
 	}
 
 	wg.Wait()
@@ -171,11 +215,16 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), errs.Combine()
 }
 
-func newScraper(cfg *Config, settings receiver.Settings) *scraper {
+func newScraper(cfg *Config, settings receiver.Settings) (*scraper, error) {
+	targets, err := compileTargets(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &scraper{
 		cfg:                cfg,
 		settings:           settings.TelemetrySettings,
 		mb:                 metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings),
 		getConnectionState: getConnectionState,
-	}
+		targets:            targets,
+	}, nil
 }

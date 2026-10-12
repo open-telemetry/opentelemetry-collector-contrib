@@ -40,10 +40,33 @@ func TestNewFactory(t *testing.T) {
 						InitialDelay:       time.Second,
 					},
 					MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-					Targets:              []*confignet.TCPAddrConfig{},
+					Targets:              []*TargetConfig{},
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
+			},
+		},
+		{
+			desc: "creates a new factory and CreateMetricsReceiver returns error with invalid query_response step",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := &Config{
+					ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+					MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+					Targets: []*TargetConfig{
+						{
+							TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "localhost:25"},
+							QueryResponse: []QueryResponseStep{{Expect: "^(220"}},
+						},
+					},
+				}
+				_, err := factory.CreateMetrics(
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.ErrorContains(t, err, "query_response step 0")
 			},
 		},
 		{

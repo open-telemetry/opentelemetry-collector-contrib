@@ -38,6 +38,7 @@ const (
 	AttributeErrorCodeConnectionTimeout
 	AttributeErrorCodeInvalidEndpoint
 	AttributeErrorCodeNetworkUnreachable
+	AttributeErrorCodeQueryResponseFailed
 	AttributeErrorCodeUnknownError
 )
 
@@ -52,6 +53,8 @@ func (av AttributeErrorCode) String() string {
 		return "invalid_endpoint"
 	case AttributeErrorCodeNetworkUnreachable:
 		return "network_unreachable"
+	case AttributeErrorCodeQueryResponseFailed:
+		return "query_response_failed"
 	case AttributeErrorCodeUnknownError:
 		return "unknown_error"
 	}
@@ -60,11 +63,12 @@ func (av AttributeErrorCode) String() string {
 
 // MapAttributeErrorCode is a helper map of string to AttributeErrorCode attribute value.
 var MapAttributeErrorCode = map[string]AttributeErrorCode{
-	"connection_refused":  AttributeErrorCodeConnectionRefused,
-	"connection_timeout":  AttributeErrorCodeConnectionTimeout,
-	"invalid_endpoint":    AttributeErrorCodeInvalidEndpoint,
-	"network_unreachable": AttributeErrorCodeNetworkUnreachable,
-	"unknown_error":       AttributeErrorCodeUnknownError,
+	"connection_refused":    AttributeErrorCodeConnectionRefused,
+	"connection_timeout":    AttributeErrorCodeConnectionTimeout,
+	"invalid_endpoint":      AttributeErrorCodeInvalidEndpoint,
+	"network_unreachable":   AttributeErrorCodeNetworkUnreachable,
+	"query_response_failed": AttributeErrorCodeQueryResponseFailed,
+	"unknown_error":         AttributeErrorCodeUnknownError,
 }
 
 var MetricsInfo = metricsInfo{

@@ -1,3 +1,34 @@
+$defs:
+  query_response_step:
+    description: QueryResponseStep is a single step of a query/response exchange. When a step specifies both an expect and a send operation, the expect operation runs first.
+    type: object
+    properties:
+      expect:
+        description: Expect is a regular expression. Data is read from the connection until it matches.
+        type: string
+      expect_bytes:
+        description: ExpectBytes is a base64-encoded byte sequence. Data is read from the connection until it contains the sequence. Mutually exclusive with Expect.
+        type: string
+      send:
+        description: Send is a string written to the connection. When the same step also specifies Expect, capture groups of the match can be referenced as ${1}, ${2}, ... and a literal $ must be written as $$.
+        type: string
+      send_bytes:
+        description: SendBytes is base64-encoded data written to the connection as-is. Mutually exclusive with Send.
+        type: string
+  target_config:
+    description: TargetConfig defines a single TCP endpoint to check.
+    type: object
+    properties:
+      max_response_bytes:
+        description: MaxResponseBytes bounds the amount of unmatched response data buffered while waiting for an expect step to match. Defaults to 64 KiB.
+        type: integer
+      query_response:
+        description: QueryResponse is an optional ordered list of send/expect steps that are executed on the connection after it is established. When empty, the check only verifies that a TCP connection can be established.
+        type: array
+        items:
+          $ref: query_response_step
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
 description: Config defines the configuration for the various elements of the receiver agent.
 type: object
 properties:
@@ -5,7 +36,7 @@ properties:
     type: array
     items:
       x-pointer: true
-      $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
+      $ref: target_config
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   - $ref: ./internal/metadata.metrics_builder_config

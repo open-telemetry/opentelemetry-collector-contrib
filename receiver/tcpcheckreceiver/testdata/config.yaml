@@ -9,3 +9,12 @@ receivers:
       - endpoint: "localhost:8080"
         dialer:
           timeout: 5s
+      - endpoint: "localhost:6379"
+        dialer:
+          timeout: 5s
+        max_response_bytes: 1024
+        query_response:
+          - send: "PING\r\n"
+          - expect: "^\\+PONG"
+          - send_bytes: "AQID"
+            expect_bytes: "BAUG"

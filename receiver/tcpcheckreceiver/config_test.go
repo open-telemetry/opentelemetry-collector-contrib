@@ -4,6 +4,7 @@
 package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -28,7 +29,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing targets",
 			cfg: &Config{
-				Targets:          []*confignet.TCPAddrConfig{},
+				Targets:          []*TargetConfig{},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errMissingTargets,
@@ -36,11 +37,13 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "endpoint:  12efg",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 12 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "endpoint:  12efg",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 12 * time.Second,
+							},
 						},
 					},
 				},
@@ -51,12 +54,12 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid config with multiple targets",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "endpoint:  12efg",
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "endpoint:  12efg"},
 					},
 					{
-						Endpoint: "https://example.com:80",
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "https://example.com:80"},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -66,12 +69,12 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "duplicate targets",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "opentelemetry.io:443",
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
 					},
 					{
-						Endpoint: "opentelemetry.io:443",
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -81,9 +84,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "port out of range",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "www.opentelemetry.io:67000",
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "www.opentelemetry.io:67000"},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -93,9 +96,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing port",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "www.opentelemetry.io/docs",
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "www.opentelemetry.io/docs"},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -103,26 +106,136 @@ func TestValidate(t *testing.T) {
 			expectedErr: fmt.Errorf("%w: %s", errInvalidEndpoint, `address www.opentelemetry.io/docs: missing port in address`),
 		},
 		{
+			desc: "query_response step without operation",
+			cfg: &Config{
+				Targets: []*TargetConfig{
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
+						QueryResponse: []QueryResponseStep{{}},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: fmt.Errorf("query_response step 0: %w", errEmptyQueryResponseStep),
+		},
+		{
+			desc: "query_response step with conflicting send fields",
+			cfg: &Config{
+				Targets: []*TargetConfig{
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
+						QueryResponse: []QueryResponseStep{
+							{Expect: "^220"},
+							{Send: "PING\r\n", SendBytes: "UElORw=="},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: fmt.Errorf("query_response step 1: %w", errConflictingSend),
+		},
+		{
+			desc: "query_response step with conflicting expect fields",
+			cfg: &Config{
+				Targets: []*TargetConfig{
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
+						QueryResponse: []QueryResponseStep{
+							{Expect: "^220", ExpectBytes: "MjIw"},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: fmt.Errorf("query_response step 0: %w", errConflictingExpect),
+		},
+		{
+			desc: "query_response step with invalid regular expression",
+			cfg: &Config{
+				Targets: []*TargetConfig{
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
+						QueryResponse: []QueryResponseStep{
+							{Expect: "^(220"},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: fmt.Errorf("query_response step 0: invalid expect regular expression: error parsing regexp: missing closing ): %s", "`^(220`"),
+		},
+		{
+			desc: "query_response step with invalid base64",
+			cfg: &Config{
+				Targets: []*TargetConfig{
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
+						QueryResponse: []QueryResponseStep{
+							{SendBytes: "not base64!"},
+							{ExpectBytes: "not base64!"},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New("query_response step 0: invalid send_bytes: illegal base64 data at input byte 3; query_response step 1: invalid expect_bytes: illegal base64 data at input byte 3"),
+		},
+		{
+			desc: "negative max_response_bytes",
+			cfg: &Config{
+				Targets: []*TargetConfig{
+					{
+						TCPAddrConfig:    confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
+						QueryResponse:    []QueryResponseStep{{Expect: "^220"}},
+						MaxResponseBytes: -1,
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errNegativeMaxResponseBytes,
+		},
+		{
 			desc: "valid config",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "opentelemetry.io:443",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 3 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "opentelemetry.io:443",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 3 * time.Second,
+							},
 						},
 					},
 					{
-						Endpoint: "opentelemetry.io:8080",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 1 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "opentelemetry.io:8080",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 1 * time.Second,
+							},
 						},
 					},
 					{
-						Endpoint: "111.222.33.44:10000",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 5 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "111.222.33.44:10000",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 5 * time.Second,
+							},
 						},
+					},
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "mail.example.com:25",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 10 * time.Second,
+							},
+						},
+						QueryResponse: []QueryResponseStep{
+							{Expect: "^220"},
+							{Send: "EHLO prober\r\n"},
+							{Expect: "PING :([^ ]+)", Send: "PONG ${1}\r\n"},
+							{SendBytes: "AQID", ExpectBytes: "BAUG"},
+						},
+						MaxResponseBytes: 4096,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -164,17 +277,35 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 1 * time.Minute,
 					InitialDelay:       1 * time.Second,
 				},
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "google.com:443",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 3 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "google.com:443",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 3 * time.Second,
+							},
 						},
 					},
 					{
-						Endpoint: "localhost:8080",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 5 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "localhost:8080",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 5 * time.Second,
+							},
+						},
+					},
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "localhost:6379",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 5 * time.Second,
+							},
+						},
+						MaxResponseBytes: 1024,
+						QueryResponse: []QueryResponseStep{
+							{Send: "PING\r\n"},
+							{Expect: `^\+PONG`},
+							{SendBytes: "AQID", ExpectBytes: "BAUG"},
 						},
 					},
 				},
@@ -191,6 +322,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, receiver.Unmarshal(tempCfg))
 			compareConfigs(t, tt.expected.(*Config), tempCfg)
+			require.NoError(t, tempCfg.Validate())
 		})
 	}
 }
