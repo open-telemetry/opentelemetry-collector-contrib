@@ -280,7 +280,7 @@ attributes:
     enum: [guided, misguided]
   # Stored Procedures
   sqlserver.procedure.definition:
-    description: The SQL source text of the stored procedure as returned by OBJECT_DEFINITION(). Empty string when the caller lacks VIEW DEFINITION permission or the definition is not available.
+    description: The SQL source text of the stored procedure as returned by sys.dm_exec_sql_text. Empty string when the procedure is encrypted (WITH ENCRYPTION) or its plan has been evicted from cache.
     type: string
     requirement_level: recommended
   sqlserver.procedure.last_execution_time:
