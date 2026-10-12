@@ -37,11 +37,11 @@ type obfuscator struct {
 	*obfuscate.Obfuscator
 	logger *zap.Logger
 
-	xmlPlanCache    *lru.Cache[[sha256.Size]byte, string]
-	cacheHits       metric.Int64Counter
-	cacheMisses     metric.Int64Counter
-	cacheBypasses   metric.Int64Counter
-	cacheMetricAttr metric.AddOption
+	xmlPlanCache  *lru.Cache[[sha256.Size]byte, string]
+	cacheRequests metric.Int64Counter
+	cacheHit      metric.AddOption
+	cacheMiss     metric.AddOption
+	cacheBypass   metric.AddOption
 }
 
 func newObfuscator(logger *zap.Logger, cacheEnabled bool) *obfuscator {
@@ -79,15 +79,15 @@ func (o *obfuscator) initCacheMetrics(settings component.TelemetrySettings, id c
 		o.logger.Warn("Unable to create XML plan cache metrics", zap.Error(err))
 		return
 	}
-	o.cacheHits = telemetry.SqlserverXMLPlanCacheHits
-	o.cacheMisses = telemetry.SqlserverXMLPlanCacheMisses
-	o.cacheBypasses = telemetry.SqlserverXMLPlanCacheBypasses
-	o.cacheMetricAttr = metric.WithAttributes(attribute.String("receiver", id.String()))
+	o.cacheRequests = telemetry.SqlserverXMLPlanCacheRequests
+	o.cacheHit = metric.WithAttributes(attribute.String("receiver", id.String()), attribute.String("outcome", "hit"))
+	o.cacheMiss = metric.WithAttributes(attribute.String("receiver", id.String()), attribute.String("outcome", "miss"))
+	o.cacheBypass = metric.WithAttributes(attribute.String("receiver", id.String()), attribute.String("outcome", "bypass"))
 }
 
-func (o *obfuscator) recordCacheEvent(counter metric.Int64Counter) {
-	if counter != nil {
-		counter.Add(context.Background(), 1, o.cacheMetricAttr)
+func (o *obfuscator) recordCacheEvent(outcome metric.AddOption) {
+	if o.cacheRequests != nil {
+		o.cacheRequests.Add(context.Background(), 1, outcome)
 	}
 }
 
@@ -123,12 +123,12 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 		digest = sha256.Sum256([]byte(rawPlan))
 		cached, ok := o.xmlPlanCache.Get(digest)
 		if ok {
-			o.recordCacheEvent(o.cacheHits)
+			o.recordCacheEvent(o.cacheHit)
 			return cached, nil
 		}
-		o.recordCacheEvent(o.cacheMisses)
+		o.recordCacheEvent(o.cacheMiss)
 	} else if o.xmlPlanCache != nil {
-		o.recordCacheEvent(o.cacheBypasses)
+		o.recordCacheEvent(o.cacheBypass)
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(rawPlan))

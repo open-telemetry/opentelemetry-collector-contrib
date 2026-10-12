@@ -21,33 +21,15 @@ status:
 
 telemetry:
   metrics:
-    sqlserver_xml_plan_cache_bypasses:
+    sqlserver_xml_plan_cache_requests:
       enabled: true
-      description: Number of SQL Server XML query plans too large for a cache lookup.
+      description: Number of XML query plans presented to the receiver-side cache decision.
       stability: development
-      unit: "{plan}"
+      unit: "{request}"
       sum:
         value_type: int
         monotonic: true
-      attributes: [receiver]
-    sqlserver_xml_plan_cache_hits:
-      enabled: true
-      description: Number of SQL Server XML query-plan cache lookups that hit.
-      stability: development
-      unit: "{lookup}"
-      sum:
-        value_type: int
-        monotonic: true
-      attributes: [receiver]
-    sqlserver_xml_plan_cache_misses:
-      enabled: true
-      description: Number of SQL Server XML query-plan cache lookups that missed.
-      stability: development
-      unit: "{lookup}"
-      sum:
-        value_type: int
-        monotonic: true
-      attributes: [receiver]
+      attributes: [outcome, receiver]
 
 resource_attributes:
   host.name:
@@ -156,6 +138,10 @@ attributes:
     description: TCP port used by the peer client.
     type: int
     requirement_level: recommended
+  outcome:
+    description: The result of a receiver-side XML-plan cache request.
+    type: string
+    enum: [hit, miss, bypass]
   page.operations:
     name_override: type
     description: The page operation types.

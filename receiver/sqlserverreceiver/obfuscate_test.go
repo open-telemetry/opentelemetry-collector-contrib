@@ -161,7 +161,7 @@ func TestObfuscateQueryPlanCacheRefreshesRecentlyUsedPlan(t *testing.T) {
 	assert.False(t, obf.xmlPlanCache.Contains(second))
 }
 
-func TestObfuscateQueryPlanCacheReportsCounters(t *testing.T) {
+func TestObfuscateQueryPlanCacheReportsOutcomes(t *testing.T) {
 	telemetry := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.WithoutCancel(t.Context()))) })
 	obf := newObfuscator(zap.NewNop(), true)
@@ -174,20 +174,20 @@ func TestObfuscateQueryPlanCacheReportsCounters(t *testing.T) {
 	_, err := obf.obfuscateXMLPlan(`<ShowPlanXML Data="` + strings.Repeat("x", maxCachedXMLPlanBytes) + `"/>`)
 	require.NoError(t, err)
 
-	for name, want := range map[string]int64{
-		"otelcol_sqlserver_xml_plan_cache_hits":     1,
-		"otelcol_sqlserver_xml_plan_cache_misses":   1,
-		"otelcol_sqlserver_xml_plan_cache_bypasses": 1,
-	} {
-		got, err := telemetry.GetMetric(name)
-		require.NoError(t, err)
-		points := got.Data.(metricdata.Sum[int64]).DataPoints
-		require.Len(t, points, 1)
-		assert.Equal(t, want, points[0].Value)
-		receiver, ok := points[0].Attributes.Value(attribute.Key("receiver"))
+	got, err := telemetry.GetMetric("otelcol_sqlserver_xml_plan_cache_requests")
+	require.NoError(t, err)
+	points := got.Data.(metricdata.Sum[int64]).DataPoints
+	require.Len(t, points, 3)
+	counts := make(map[string]int64, len(points))
+	for _, point := range points {
+		outcome, ok := point.Attributes.Value(attribute.Key("outcome"))
+		require.True(t, ok)
+		receiver, ok := point.Attributes.Value(attribute.Key("receiver"))
 		require.True(t, ok)
 		assert.Equal(t, "sqlserver/cache-test", receiver.AsString())
+		counts[outcome.AsString()] = point.Value
 	}
+	assert.Equal(t, map[string]int64{"hit": 1, "miss": 1, "bypass": 1}, counts)
 }
 
 func TestObfuscateQueryPlanCacheWithoutTelemetry(t *testing.T) {

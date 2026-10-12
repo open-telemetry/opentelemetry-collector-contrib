@@ -19,16 +19,8 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.SqlserverXMLPlanCacheBypasses.Add(context.Background(), 1)
-	tb.SqlserverXMLPlanCacheHits.Add(context.Background(), 1)
-	tb.SqlserverXMLPlanCacheMisses.Add(context.Background(), 1)
-	AssertEqualSqlserverXMLPlanCacheBypasses(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualSqlserverXMLPlanCacheHits(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualSqlserverXMLPlanCacheMisses(t, testTel,
+	tb.SqlserverXMLPlanCacheRequests.Add(context.Background(), 1)
+	AssertEqualSqlserverXMLPlanCacheRequests(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
