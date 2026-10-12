@@ -40,6 +40,9 @@ The following settings are available:
        - `contains`: "network failure" 
 
   TBD: `contains` is not honored yet and all errors trigger failover. 
+- `sending_queue (optional)`: queues and batches data in the connector before it is routed to a priority level. Supports the common [`sending_queue` settings][exporterhelper] and is enabled by default.
+  We recommend configuring the queue here instead of on the exporters in the priority pipelines, and disabling `sending_queue` on those exporters.
+  Moving the queue to the connector avoids data being stuck in the queue of an unhealthy exporter, where it cannot be failed over to another priority level.
 
 The connector intakes a list of `priority_levels` each of which can contain multiple pipelines.
 If any pipeline at a stable level fails, the level is considered unhealthy and the connector will move down one priority level and route all data to the new level (assuming it is stable).
@@ -80,3 +83,4 @@ service:
 [Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[exporterhelper]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md
