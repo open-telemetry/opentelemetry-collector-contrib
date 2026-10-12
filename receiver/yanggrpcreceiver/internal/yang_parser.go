@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 // YANGDataType represents the YANG data type information
@@ -42,14 +44,36 @@ type YANGModule struct {
 
 // YANGParser handles parsing of YANG modules to identify keyed elements
 type YANGParser struct {
-	modules map[string]*YANGModule
+	modules       map[string]*YANGModule
+	moduleSources map[string]string
+	logger        *zap.Logger
 }
 
 // NewYANGParser creates a new YANG parser instance
-func NewYANGParser() *YANGParser {
-	return &YANGParser{
-		modules: make(map[string]*YANGModule),
+func NewYANGParser(logger ...*zap.Logger) *YANGParser {
+	l := zap.NewNop()
+	if len(logger) > 0 && logger[0] != nil {
+		l = logger[0]
 	}
+	return &YANGParser{
+		modules:       make(map[string]*YANGModule),
+		moduleSources: make(map[string]string),
+		logger:        l,
+	}
+}
+
+// SetLogger sets the logger for the parser
+func (p *YANGParser) SetLogger(logger *zap.Logger) {
+	if logger == nil {
+		p.logger = zap.NewNop()
+	} else {
+		p.logger = logger
+	}
+}
+
+// GetModuleSource returns the source path of a loaded module, or empty string if not found
+func (p *YANGParser) GetModuleSource(moduleName string) string {
+	return p.moduleSources[moduleName]
 }
 
 // LoadBuiltinModules loads pre-analyzed YANG modules for Cisco IOS XE 17.18.1
@@ -168,10 +192,25 @@ func (p *YANGParser) LoadBuiltinModules() {
 		Description: "OSPF operational data for Cisco IOS XE devices",
 	}
 
+	if p.modules == nil {
+		p.modules = make(map[string]*YANGModule)
+	}
+	if p.moduleSources == nil {
+		p.moduleSources = make(map[string]string)
+	}
+	if p.logger == nil {
+		p.logger = zap.NewNop()
+	}
+
 	p.modules[interfacesModule.Name] = interfacesModule
 	p.modules[bgpModule.Name] = bgpModule
 	p.modules[processCPUModule.Name] = processCPUModule
 	p.modules[ospfModule.Name] = ospfModule
+
+	p.moduleSources[interfacesModule.Name] = "<builtin>"
+	p.moduleSources[bgpModule.Name] = "<builtin>"
+	p.moduleSources[processCPUModule.Name] = "<builtin>"
+	p.moduleSources[ospfModule.Name] = "<builtin>"
 
 	log.Printf("Loaded %d builtin YANG modules", len(p.modules))
 }
@@ -438,7 +477,17 @@ func (p *YANGParser) LoadModulesFromFile(filename string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	return json.Unmarshal(data, &p.modules)
+	if err := json.Unmarshal(data, &p.modules); err != nil {
+		return fmt.Errorf("failed to unmarshal modules: %w", err)
+	}
+
+	if p.moduleSources == nil {
+		p.moduleSources = make(map[string]string)
+	}
+	for name := range p.modules {
+		p.moduleSources[name] = filename
+	}
+	return nil
 }
 
 // GetAvailableModules returns a list of loaded module names
@@ -452,6 +501,16 @@ func (p *YANGParser) GetAvailableModules() []string {
 
 // ExtractYANGFromFiles attempts to extract YANG module information from .yang files
 func (p *YANGParser) ExtractYANGFromFiles(yangDir string) error {
+	if p.modules == nil {
+		p.modules = make(map[string]*YANGModule)
+	}
+	if p.moduleSources == nil {
+		p.moduleSources = make(map[string]string)
+	}
+	if p.logger == nil {
+		p.logger = zap.NewNop()
+	}
+
 	return filepath.Walk(yangDir, func(path string, _ os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -469,7 +528,16 @@ func (p *YANGParser) ExtractYANGFromFiles(yangDir string) error {
 
 		module := p.parseYANGContent(string(content), filepath.Base(path))
 		if module != nil {
+			if prevPath, exists := p.moduleSources[module.Name]; exists {
+				p.logger.Warn("Duplicate YANG module detected; overwriting existing module",
+					zap.String("module", module.Name),
+					zap.String("previous_path", prevPath),
+					zap.String("new_path", path),
+					zap.String("winner", path),
+				)
+			}
 			p.modules[module.Name] = module
+			p.moduleSources[module.Name] = path
 		}
 
 		return nil
