@@ -4,6 +4,7 @@ pkg/pdatatest
 cmd/golden
 extension/internal/basicauth
 extension/internal/credentialsfile
+extension/internal/secretprovider
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/oauth2clientauthextension
@@ -80,6 +81,8 @@ internal/filter
 connector/countconnector
 exporter/datadogexporter
 processor/tailsamplingprocessor
+pkg/winperfcounters
+receiver/hostmetricsreceiver
 connector/datadogconnector
 connector/exceptionsconnector
 connector/failoverconnector
@@ -109,9 +112,6 @@ exporter/bmchelixexporter
 exporter/cassandraexporter
 exporter/clickhouseexporter
 exporter/coralogixexporter
-pkg/winperfcounters
-receiver/hostmetricsreceiver
-exporter/datadogexporter/integrationtest
 exporter/datasetexporter
 exporter/dorisexporter
 exporter/elasticsearchexporter
@@ -240,6 +240,7 @@ processor/lookupprocessor
 processor/metricsgenerationprocessor
 processor/metricstarttimeprocessor
 processor/metricstransformprocessor
+processor/partitioningprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
