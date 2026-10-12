@@ -336,7 +336,9 @@ func TestSuccessfulScrape(t *testing.T) {
 
 							if queryCall == 0 {
 								for _, row := range rows {
-									if isPerformanceCounterRate(row["counter_type"], row["counter"]) {
+									if isPerformanceCounterRate(row["counter_type"], row["counter"]) ||
+										isPerformanceCounterAverageBulk(row["counter_type"], row["counter"]) ||
+										isPerformanceCounterAverageBulkBase(row["counter"]) {
 										row["value"] = "0"
 										row["raw_value"] = "0"
 									}
@@ -390,6 +392,130 @@ func TestSuccessfulScrape(t *testing.T) {
 	}
 }
 
+// The Databases object reports a counter once per database plus a _Total aggregate
+// that is their sum. Assert the emitted series directly rather than relying on the
+// golden file: each database is named, the aggregate is dropped so that aggregating
+// across sqlserver.database.name cannot double-count, and a database that happens to
+// be called Total is kept.
+func TestDatabasesObjectSeriesIdentity(t *testing.T) {
+	row := func(instance, raw, value string) sqlquery.StringMap {
+		return sqlquery.StringMap{
+			"measurement": "sqlserver_performance", "sql_instance": "instance",
+			"computer_name": "computer", "object": "SQLServer:Databases",
+			"counter": "Transactions/sec", "instance": instance, instanceRawKey: raw,
+			"value": value, "raw_value": value, "counter_type": perfCounterBulkCountType,
+		}
+	}
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionRate.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	t.Cleanup(func() { assert.NoError(t, provider.close()) })
+	var perf *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerPerformanceCounterQuery() {
+			perf = s
+			break
+		}
+	}
+	require.NotNil(t, perf)
+	require.NoError(t, perf.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, perf.Shutdown(t.Context())) }()
+
+	// Drive the clock so the two samples are a fixed interval apart. Relying on
+	// wall-clock time makes this flaky where the timer granularity is coarse enough
+	// for both scrapes to land in the same tick, leaving no elapsed time to divide by.
+	scrapeTimes := []time.Time{time.Unix(100, 0), time.Unix(101, 0)}
+	timeCall := 0
+	perf.now = func() time.Time {
+		now := scrapeTimes[timeCall]
+		timeCall++
+		return now
+	}
+
+	// Two samples: the rate is derived from the change between them.
+	call := 0
+	perf.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		call++
+		v := map[bool]string{true: "0", false: "1000"}[call == 1]
+		return []sqlquery.StringMap{
+			row("Total", "_Total", v), // the aggregate
+			row("master", "master", v),
+			row("Total", "Total", v), // a database actually named Total
+		}, nil
+	}}
+	_, err := perf.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	md, err := perf.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	var named []string
+	unlabeled := 0
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		has := false
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ms := rm.ScopeMetrics().At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				if ms.At(k).Name() == "sqlserver.transaction.rate" {
+					has = true
+				}
+			}
+		}
+		if !has {
+			continue
+		}
+		if db, ok := rm.Resource().Attributes().Get("sqlserver.database.name"); ok {
+			named = append(named, db.AsString())
+		} else {
+			unlabeled++
+		}
+	}
+	sort.Strings(named)
+
+	assert.Equal(t, []string{"Total", "master"}, named,
+		"every per-database row is named, including a database called Total")
+	assert.Zero(t, unlabeled,
+		"the _Total aggregate must not be emitted, or aggregating by database would double-count")
+}
+
+func TestIsPerformanceCounterAverageBulk(t *testing.T) {
+	assert.True(t, isPerformanceCounterAverageBulk(perfCounterAverageBulkType, "Average Wait Time (ms)"))
+	assert.False(t, isPerformanceCounterAverageBulk(perfCounterBulkCountType, "Average Wait Time (ms)"),
+		"the counter type has to match too")
+	assert.False(t, isPerformanceCounterAverageBulk(perfCounterAverageBulkType, "Average Latch Wait Time (ms)"),
+		"only counters paired with a known base are handled")
+	assert.True(t, isPerformanceCounterAverageBulkBase("Average Wait Time Base"))
+	assert.False(t, isPerformanceCounterAverageBulkBase("Average Wait Time (ms)"))
+}
+
+// A database may legitimately be called Total, which the query's [instance] column
+// renames the _Total aggregate to. The two must not share a sample key.
+func TestPerformanceCounterKeyDistinguishesTotalDatabase(t *testing.T) {
+	aggregate := sqlquery.StringMap{
+		"object": "SQLServer:Databases", "counter": "Transactions/sec",
+		"instance": "Total", instanceRawKey: "_Total",
+	}
+	database := sqlquery.StringMap{
+		"object": "SQLServer:Databases", "counter": "Transactions/sec",
+		"instance": "Total", instanceRawKey: "Total",
+	}
+	assert.NotEqual(t, performanceCounterKeyFromRow(aggregate), performanceCounterKeyFromRow(database),
+		"the aggregate and a database named Total must keep separate samples")
+
+	// Rows without the column fall back to [instance] rather than collapsing to "".
+	legacy := sqlquery.StringMap{
+		"object": "SQLServer:Databases", "counter": "Transactions/sec", "instance": "master",
+	}
+	assert.Equal(t, "master", performanceCounterKeyFromRow(legacy).instance)
+}
+
 func TestIsPerformanceCounterRate(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -408,6 +534,36 @@ func TestIsPerformanceCounterRate(t *testing.T) {
 			counterType: perfCounterCounterType,
 			counterName: "Batch Requests/sec",
 			expected:    true,
+		},
+		{
+			name:        "transactions rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Transactions/sec",
+			expected:    true,
+		},
+		{
+			name:        "page read rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Page reads/sec",
+			expected:    true,
+		},
+		{
+			name:        "page write rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Page writes/sec",
+			expected:    true,
+		},
+		{
+			name:        "lazy write rate counter",
+			counterType: perfCounterBulkCountType,
+			counterName: "Lazy writes/sec",
+			expected:    true,
+		},
+		{
+			name:        "average bulk counter is not a rate",
+			counterType: perfCounterAverageBulkType,
+			counterName: "Average Wait Time (ms)",
+			expected:    false,
 		},
 		{
 			name:        "bulk cumulative counter",
