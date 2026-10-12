@@ -6,6 +6,8 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var (
@@ -16,3 +18,12 @@ var (
 const (
 	LogsStability = component.StabilityLevelAlpha
 )
+
+// NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.
+func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	cfg := exporterhelper.NewDefaultQueueConfig()
+	cfg.NumConsumers = 1
+	batchCfg := *cfg.Batch.GetOrInsertDefault()
+	cfg.Batch = configoptional.Some(batchCfg)
+	return configoptional.Some(cfg)
+}

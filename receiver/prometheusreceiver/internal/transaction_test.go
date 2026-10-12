@@ -2013,7 +2013,7 @@ func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *test
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
 	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
 		string(model.MetricNameLabel): "foo",
-	}))
+	}), false)
 	require.False(t, ok, "expected false when metadata type != histogram")
 }
 
@@ -2062,7 +2062,7 @@ func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
 }
 
 func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
-	scope, attrs := getScopeID(labels.FromStrings(
+	scope, attrs, _ := getScopeID(labels.FromStrings(
 		string(model.MetricNameLabel), "metric_x",
 		prometheus.ScopeNameLabelKey, "scope.with.info",
 		prometheus.ScopeVersionLabelKey, "v1.0.0",
@@ -2071,7 +2071,9 @@ func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
 	require.Equal(t, "scope.with.info", scope.name)
 	require.Equal(t, "v1.0.0", scope.version)
 	require.Zero(t, scope.attrsHash)
-	require.Zero(t, attrs.Len())
+	if attrs != (pcommon.Map{}) {
+		require.Zero(t, attrs.Len())
+	}
 }
 
 func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {

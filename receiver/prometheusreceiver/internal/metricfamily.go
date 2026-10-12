@@ -56,6 +56,7 @@ type metricGroup struct {
 	fhValue        *histogram.FloatHistogram
 	complexValue   []dataPoint
 	exemplars      pmetric.ExemplarSlice
+	hasExemplars   bool
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
@@ -213,7 +214,9 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
-	mg.setExemplars(point.Exemplars())
+	if mg.hasExemplars {
+		mg.setExemplars(point.Exemplars())
+	}
 }
 
 // toExponentialHistogramDataPoints is based on
@@ -288,7 +291,9 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
-	mg.setExemplars(point.Exemplars())
+	if mg.hasExemplars {
+		mg.setExemplars(point.Exemplars())
+	}
 }
 
 func convertDeltaBuckets(spans []histogram.Span, deltas []int64, buckets pcommon.UInt64Slice) {
@@ -385,7 +390,7 @@ func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) ([]uint64, 
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
-	if mg == nil {
+	if mg == nil || !mg.hasExemplars {
 		return
 	}
 	if mg.exemplars.Len() > 0 {
@@ -459,7 +464,9 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 		point.SetDoubleValue(mg.value)
 	}
 	populateAttributes(pmetric.MetricTypeGauge, mg.ls, point.Attributes())
-	mg.setExemplars(point.Exemplars())
+	if mg.hasExemplars {
+		mg.setExemplars(point.Exemplars())
+	}
 }
 
 func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
@@ -488,10 +495,9 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			mtype:     mf.mtype,
-			ts:        ts,
-			ls:        ls,
-			exemplars: pmetric.NewExemplarSlice(),
+			mtype: mf.mtype,
+			ts:    ts,
+			ls:    ls,
 		}
 		switch mf.mtype {
 		case pmetric.MetricTypeHistogram:
@@ -700,12 +706,18 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 }
 
 func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
+	if mf.mtype == pmetric.MetricTypeSummary {
+		return
+	}
 	mg := mf.groups[seriesRef]
 	if mg == nil {
 		return
 	}
-	es := mg.exemplars
-	convertExemplar(e, es.AppendEmpty())
+	if !mg.hasExemplars {
+		mg.exemplars = pmetric.NewExemplarSlice()
+		mg.hasExemplars = true
+	}
+	convertExemplar(e, mg.exemplars.AppendEmpty())
 }
 
 // convertExemplar converts a Prometheus exemplar's labels to an OTel exemplar.
@@ -715,7 +727,8 @@ func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
 func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.SetTimestamp(timestampFromMs(pe.Ts))
 	e.SetDoubleValue(pe.Value)
-	e.FilteredAttributes().EnsureCapacity(pe.Labels.Len())
+	filteredAttrs := e.FilteredAttributes()
+	filteredAttrs.EnsureCapacity(pe.Labels.Len())
 	pe.Labels.Range(func(lb labels.Label) {
 		switch strings.ToLower(lb.Name) {
 		case prometheus.ExemplarTraceIDKey:
@@ -733,7 +746,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 					}
 				}
 			}
-			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			filteredAttrs.PutStr(lb.Name, lb.Value)
 		case prometheus.ExemplarSpanIDKey:
 			if lb.Value == "" {
 				return
@@ -749,9 +762,9 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 					}
 				}
 			}
-			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			filteredAttrs.PutStr(lb.Name, lb.Value)
 		default:
-			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			filteredAttrs.PutStr(lb.Name, lb.Value)
 		}
 	})
 }
