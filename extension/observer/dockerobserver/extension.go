@@ -104,7 +104,14 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.StopListAndWatch()
 	d.cancel()
-	return d.wg.Wait()
+	err := d.wg.Wait()
+	// Close the docker client to clean up underlying connections.
+	if d.dClient != nil {
+		if closeErr := d.dClient.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}
+	return err
 }
 
 func (d *dockerObserver) ListEndpoints() []observer.Endpoint {

@@ -472,7 +472,14 @@ func (dc *Client) RemoveContainer(cid string) {
 // Close shuts down the client and waits for all background streams to finish.
 func (dc *Client) Close() error {
 	dc.streamClientCancel()
-	return dc.streamErrorGroup.Wait()
+	err := dc.streamErrorGroup.Wait()
+	// Close the underlying Docker SDK client to release idle transport connections.
+	if dc.client != nil {
+		if closeErr := dc.client.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}
+	return err
 }
 
 func (dc *Client) shouldBeExcluded(image string) bool {
