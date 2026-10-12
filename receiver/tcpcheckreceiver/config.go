@@ -119,9 +119,18 @@ func validateTarget(cfg *TargetConfig) error {
 		err = multierr.Append(err, errNegativeMaxResponseBytes)
 	}
 
+	maxResponseBytes := cfg.MaxResponseBytes
+	if maxResponseBytes <= 0 {
+		maxResponseBytes = defaultMaxResponseBytes
+	}
 	for i := range cfg.QueryResponse {
-		if _, stepErr := cfg.QueryResponse[i].compile(); stepErr != nil {
+		step, stepErr := cfg.QueryResponse[i].compile()
+		if stepErr != nil {
 			err = multierr.Append(err, fmt.Errorf("query_response step %d: %w", i, stepErr))
+			continue
+		}
+		if len(step.expectBytes) > maxResponseBytes {
+			err = multierr.Append(err, fmt.Errorf("query_response step %d: expect_bytes is longer than max_response_bytes (%d) and can never match", i, maxResponseBytes))
 		}
 	}
 
@@ -180,8 +189,11 @@ func (s *QueryResponseStep) compile() (compiledStep, error) {
 	}
 	if s.ExpectBytes != "" {
 		b, decErr := base64.StdEncoding.DecodeString(s.ExpectBytes)
-		if decErr != nil {
+		switch {
+		case decErr != nil:
 			err = multierr.Append(err, fmt.Errorf("invalid expect_bytes: %w", decErr))
+		case len(b) == 0:
+			err = multierr.Append(err, errEmptyBytes("expect_bytes"))
 		}
 		cs.expectBytes = b
 	}
@@ -193,11 +205,20 @@ func (s *QueryResponseStep) compile() (compiledStep, error) {
 	}
 	if s.SendBytes != "" {
 		b, decErr := base64.StdEncoding.DecodeString(s.SendBytes)
-		if decErr != nil {
+		switch {
+		case decErr != nil:
 			err = multierr.Append(err, fmt.Errorf("invalid send_bytes: %w", decErr))
+		case len(b) == 0:
+			err = multierr.Append(err, errEmptyBytes("send_bytes"))
 		}
 		cs.send = b
 	}
 
 	return cs, err
+}
+
+// errEmptyBytes reports a base64 field that decodes to nothing, which the
+// decoder otherwise accepts silently (e.g. a value of only whitespace).
+func errEmptyBytes(field string) error {
+	return fmt.Errorf("%s decodes to zero bytes", field)
 }

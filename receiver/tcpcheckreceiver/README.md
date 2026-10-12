@@ -74,8 +74,11 @@ has both `expect` and `send`, capture groups of the match can be referenced in `
 and so on; a literal `$` must then be written as `$$`.
 
 Data is matched against everything received so far that has not been consumed by a previous step, and a
-match consumes the data up to its end. `^` therefore anchors to the start of the unconsumed data; use
-`(?m)^` to anchor to the start of any line.
+match consumes the data up to its end. `^` and `$` therefore anchor to the start and end of the unconsumed
+data; use `(?m)` to anchor to line boundaries instead. Because the pattern is evaluated as data arrives, a
+pattern whose tail is optional (for example `OK\r?\n?`) can match before the line is complete and leave
+the rest buffered for the next step. Prefer patterns that end at a fixed delimiter, such as `OK\r\n`, or
+anchor the next step with `(?m)^`.
 
 Any step that fails (no match before the connection is closed, the deadline is reached, or
 `max_response_bytes` is exceeded, or a write fails) marks the check as failed: `tcpcheck.status` is `0`

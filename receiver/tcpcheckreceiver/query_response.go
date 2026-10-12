@@ -57,7 +57,9 @@ func runQueryResponse(ctx context.Context, conn net.Conn, steps []compiledStep, 
 	}
 	if !deadline.IsZero() {
 		if err := conn.SetDeadline(deadline); err != nil {
-			return err
+			// The connection is unusable; report it against the step that
+			// was about to run so it is classified as a query_response failure.
+			return &queryResponseError{step: 0, err: fmt.Errorf("set deadline failed: %w", err)}
 		}
 	}
 	// Unblock any pending read or write if the scrape context is cancelled.

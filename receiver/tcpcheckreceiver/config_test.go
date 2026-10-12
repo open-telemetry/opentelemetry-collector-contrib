@@ -181,6 +181,36 @@ func TestValidate(t *testing.T) {
 			expectedErr: errors.New("query_response step 0: invalid send_bytes: illegal base64 data at input byte 3; query_response step 1: invalid expect_bytes: illegal base64 data at input byte 3"),
 		},
 		{
+			desc: "query_response step with base64 decoding to nothing",
+			cfg: &Config{
+				Targets: []*TargetConfig{
+					{
+						TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
+						QueryResponse: []QueryResponseStep{
+							{SendBytes: "\n"},
+							{ExpectBytes: "\n"},
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New("query_response step 0: send_bytes decodes to zero bytes; query_response step 1: expect_bytes decodes to zero bytes"),
+		},
+		{
+			desc: "expect_bytes longer than max_response_bytes",
+			cfg: &Config{
+				Targets: []*TargetConfig{
+					{
+						TCPAddrConfig:    confignet.TCPAddrConfig{Endpoint: "opentelemetry.io:443"},
+						QueryResponse:    []QueryResponseStep{{ExpectBytes: "BAUG"}},
+						MaxResponseBytes: 2,
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New("query_response step 0: expect_bytes is longer than max_response_bytes (2) and can never match"),
+		},
+		{
 			desc: "negative max_response_bytes",
 			cfg: &Config{
 				Targets: []*TargetConfig{

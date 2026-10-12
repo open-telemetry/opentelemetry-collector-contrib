@@ -183,7 +183,7 @@ func (s *scraper) scrapeEndpoint(ctx context.Context, target *compiledTarget, wg
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	if s.cfg == nil || len(s.cfg.Targets) == 0 {
+	if len(s.targets) == 0 {
 		return pmetric.NewMetrics(), errMissingTargets
 	}
 	// Initialize error counts if not already done
@@ -196,7 +196,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var mux sync.Mutex
 
 	errOut := make(chan *scrapererror.ScrapeErrors)
-	errChan := make(chan error, len(s.cfg.Targets))
+	errChan := make(chan error, len(s.targets))
 
 	// Start error listener
 	go func() {

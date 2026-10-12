@@ -16,9 +16,7 @@ issues: [51971]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Each step supports `send`, `send_bytes`, `expect` and `expect_bytes`. A failing step records `tcpcheck.error` with
-  `error.code` set to the new value `query_response_failed`. The new `max_response_bytes` target setting bounds buffered
-  response data.
+  Adds the `error.code` value `query_response_failed`. `Config.Targets` changes from `[]*confignet.TCPAddrConfig` to `[]*TargetConfig`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
@@ -27,4 +25,4 @@ subtext: |
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user]
+change_logs: [user, api]
