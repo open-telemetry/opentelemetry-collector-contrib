@@ -62,11 +62,7 @@ func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 	// Create goSNMP client
 	goSNMP := newGoSNMPWrapper()
 	goSNMP.SetTimeout(cfg.ControllerConfig.Timeout)
-	if cfg.MaxRepetitions > 0 {
-		goSNMP.SetMaxRepetitions(cfg.MaxRepetitions)
-	} else {
-		goSNMP.SetMaxRepetitions(defaultMaxRepetitions)
-	}
+	goSNMP.SetMaxRepetitions(cfg.MaxRepetitions)
 
 	// Set goSNMP version based on config
 	switch cfg.Version {

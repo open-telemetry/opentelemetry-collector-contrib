@@ -286,6 +286,32 @@ func TestNewFactory(t *testing.T) {
 				require.Equal(t, uint32(25), snmpCfg.MaxRepetitions)
 			},
 		},
+		{
+			desc: "CreateMetrics preserves custom max_repetitions",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.MaxRepetitions = 10
+				snmpCfg.Metrics = map[string]*MetricConfig{
+					"m1": {
+						Unit:  "1",
+						Gauge: &GaugeMetric{ValueType: "int"},
+						ScalarOIDs: []ScalarOID{{
+							OID: ".1",
+						}},
+					},
+				}
+				_, err := factory.CreateMetrics(
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, uint32(10), snmpCfg.MaxRepetitions)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
