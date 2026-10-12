@@ -692,12 +692,14 @@ metrics:
       monotonic: true
     attributes: [operation_latency]
   mongodb.operation.latency.time:
-    description: The latency of operations.
+    description: Cumulative latency of operations.
     stability: development
     unit: us
     enabled: false
-    gauge:
+    sum:
       value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
     attributes: [operation_latency]
   mongodb.operation.repl.count:
     description: The number of replicated operations executed.

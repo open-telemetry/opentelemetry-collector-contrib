@@ -2390,7 +2390,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbOperationLatencyTime: MongodbOperationLatencyTimeMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
+			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MongodbOperationLatencyTimeMetricAttributeKey{MongodbOperationLatencyTimeMetricAttributeKeyOperationLatency},
 		},
 		MongodbOperationReplCount: MongodbOperationReplCountMetricConfig{

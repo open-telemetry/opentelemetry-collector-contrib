@@ -356,8 +356,10 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
-          - description: The latency of operations.
-            gauge:
+          - description: Cumulative latency of operations.
+            name: mongodb.operation.latency.time
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "8631"
                   attributes:
@@ -380,7 +382,7 @@ resourceMetrics:
                         stringValue: write
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: mongodb.operation.latency.time
+              isMonotonic: true
             unit: us
           - description: The number of replicated operations executed.
             name: mongodb.operation.repl.count

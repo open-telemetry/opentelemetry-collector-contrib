@@ -3410,10 +3410,12 @@ type metricMongodbOperationLatencyTime struct {
 // init fills mongodb.operation.latency.time metric with initial data.
 func (m *metricMongodbOperationLatencyTime) init() {
 	m.data.SetName("mongodb.operation.latency.time")
-	m.data.SetDescription("The latency of operations.")
+	m.data.SetDescription("Cumulative latency of operations.")
 	m.data.SetUnit("us")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
@@ -3432,7 +3434,7 @@ func (m *metricMongodbOperationLatencyTime) recordDataPoint(start pcommon.Timest
 
 	var s string
 	key := dataPointKey(dp)
-	dps := m.data.Gauge().DataPoints()
+	dps := m.data.Sum().DataPoints()
 	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
 		switch s = m.config.AggregationStrategy; s {
@@ -3461,17 +3463,17 @@ func (m *metricMongodbOperationLatencyTime) recordDataPoint(start pcommon.Timest
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricMongodbOperationLatencyTime) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMongodbOperationLatencyTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
 		}
 		m.updateCapacity()

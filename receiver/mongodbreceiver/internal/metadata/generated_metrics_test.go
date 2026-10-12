@@ -327,7 +327,7 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 3, AttributeOperationLatencyWrite)
 				// a different timestamp is a different key: must not merge with the above.
 				mb.RecordMongodbOperationLatencyTimeDataPoint(ts+1, 3, AttributeOperationLatencyWrite)
-				assert.Equal(t, 2, mb.metricMongodbOperationLatencyTime.data.Gauge().DataPoints().Len())
+				assert.Equal(t, 2, mb.metricMongodbOperationLatencyTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -1682,11 +1682,13 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mongodb.operation.latency.time"], "Found a duplicate in the metrics slice: mongodb.operation.latency.time")
 						validatedMetrics["mongodb.operation.latency.time"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The latency of operations.", mi.Description())
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative latency of operations.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1697,13 +1699,15 @@ func TestMetricsBuilder(t *testing.T) {
 					} else {
 						assert.False(t, validatedMetrics["mongodb.operation.latency.time"], "Found a duplicate in the metrics slice: mongodb.operation.latency.time")
 						validatedMetrics["mongodb.operation.latency.time"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
-						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
-						assert.Equal(t, "The latency of operations.", mi.Description())
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Cumulative latency of operations.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

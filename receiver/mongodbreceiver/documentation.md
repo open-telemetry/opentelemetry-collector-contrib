@@ -462,11 +462,11 @@ The number of operations included in the operation latency statistics.
 
 ### mongodb.operation.latency.time
 
-The latency of operations.
+Cumulative latency of operations.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| us | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| us | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 

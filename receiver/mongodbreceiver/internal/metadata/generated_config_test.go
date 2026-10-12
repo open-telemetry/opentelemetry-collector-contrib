@@ -169,7 +169,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					MongodbOperationLatencyTime: MongodbOperationLatencyTimeMetricConfig{
 						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MongodbOperationLatencyTimeMetricAttributeKey{MongodbOperationLatencyTimeMetricAttributeKeyOperationLatency},
 					},
 					MongodbOperationReplCount: MongodbOperationReplCountMetricConfig{
@@ -443,7 +443,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					MongodbOperationLatencyTime: MongodbOperationLatencyTimeMetricConfig{
 						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MongodbOperationLatencyTimeMetricAttributeKey{MongodbOperationLatencyTimeMetricAttributeKeyOperationLatency},
 					},
 					MongodbOperationReplCount: MongodbOperationReplCountMetricConfig{
