@@ -16,7 +16,7 @@ issues: [51519]
 # These lines will be padded with 2 spaces and then inline with the main note.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Over-limit connections are closed on accept with RST, so long-lived clients reconnect, possibly to another instance. It defaults to `false`, so over-limit connections still queue by default.
+  `refuse_over_limit` defaults to `false`, so over-limit connections still queue by default.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
