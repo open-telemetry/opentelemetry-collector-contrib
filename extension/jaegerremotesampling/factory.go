@@ -37,8 +37,13 @@ func createDefaultConfig() component.Config {
 				Transport: confignet.TransportTypeTCP,
 			},
 		}),
-		GRPCServerConfig: configoptional.None[configgrpc.ServerConfig](),
-		Source:           Source{},
+		GRPCServerConfig: configoptional.Default(configgrpc.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  testutil.EndpointForPort(14250),
+				Transport: confignet.TransportTypeTCP,
+			},
+		}),
+		Source: Source{},
 	}
 }
 

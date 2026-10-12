@@ -61,6 +61,46 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_grpc_default"),
+			expected: &Config{
+				HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:5778",
+						Transport: confignet.TransportTypeTCP,
+					},
+				}),
+				GRPCServerConfig: configoptional.Some(configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:14250",
+						Transport: confignet.TransportTypeTCP,
+					},
+				}),
+				Source: Source{
+					File: "/etc/otelcol/sampling_strategies.json",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_grpc_custom"),
+			expected: &Config{
+				HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:5778",
+						Transport: confignet.TransportTypeTCP,
+					},
+				}),
+				GRPCServerConfig: configoptional.Some(configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "0.0.0.0:14260",
+						Transport: confignet.TransportTypeTCP,
+					},
+				}),
+				Source: Source{
+					File: "/etc/otelcol/sampling_strategies.json",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -80,7 +120,11 @@ func TestLoadConfig(t *testing.T) {
 			require.True(t, actualCfg.HTTPServerConfig.HasValue())
 			assert.Equal(t, expectedCfg.HTTPServerConfig.Get().NetAddr, actualCfg.HTTPServerConfig.Get().NetAddr)
 
-			assert.False(t, actualCfg.GRPCServerConfig.HasValue())
+			assert.Equal(t, expectedCfg.GRPCServerConfig.HasValue(), actualCfg.GRPCServerConfig.HasValue())
+			if expectedCfg.GRPCServerConfig.HasValue() {
+				require.True(t, actualCfg.GRPCServerConfig.HasValue())
+				assert.Equal(t, expectedCfg.GRPCServerConfig.Get().NetAddr, actualCfg.GRPCServerConfig.Get().NetAddr)
+			}
 			assert.Equal(t, expectedCfg.Source, actualCfg.Source)
 		})
 	}
@@ -115,24 +159,9 @@ func TestValidate(t *testing.T) {
 			},
 			expected: errTooManySources,
 		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			res := tC.cfg.Validate()
-			assert.Equal(t, tC.expected, res)
-		})
-	}
-}
-
-func TestConfigValidate(t *testing.T) {
-	tests := []struct {
-		name        string
-		config      Config
-		expectedErr error
-	}{
 		{
-			name: "valid config with both protocols",
-			config: Config{
+			desc: "valid config with both protocols",
+			cfg: Config{
 				HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint: "0.0.0.0:5778",
@@ -147,11 +176,11 @@ func TestConfigValidate(t *testing.T) {
 					File: "/etc/strategies.json",
 				},
 			},
-			expectedErr: nil,
+			expected: nil,
 		},
 		{
-			name: "valid config with only gRPC",
-			config: Config{
+			desc: "valid config with only gRPC",
+			cfg: Config{
 				GRPCServerConfig: configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint: "0.0.0.0:14250",
@@ -161,11 +190,11 @@ func TestConfigValidate(t *testing.T) {
 					Remote: &configgrpc.ClientConfig{},
 				},
 			},
-			expectedErr: nil,
+			expected: nil,
 		},
 		{
-			name: "valid config with only HTTP",
-			config: Config{
+			desc: "valid config with only HTTP",
+			cfg: Config{
 				HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint: "0.0.0.0:5778",
@@ -175,28 +204,13 @@ func TestConfigValidate(t *testing.T) {
 					File: "/etc/strategies.json",
 				},
 			},
-			expectedErr: nil,
-		},
-		{
-			name: "invalid: no protocols configured",
-			config: Config{
-				Source: Source{
-					File: "/etc/strategies.json",
-				},
-			},
-			expectedErr: errAtLeastOneProtocol,
+			expected: nil,
 		},
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if tt.expectedErr != nil {
-				require.Error(t, err)
-				assert.ErrorIs(t, err, tt.expectedErr)
-			} else {
-				require.NoError(t, err)
-			}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res := tC.cfg.Validate()
+			assert.ErrorIs(t, res, tC.expected)
 		})
 	}
 }

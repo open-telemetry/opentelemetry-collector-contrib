@@ -2,13 +2,10 @@ change_type: breaking
 
 component: jaegerremotesampling
 
-note: Require explicit `grpc:` configuration to keep the default gRPC sampling endpoint and add HTTP/gRPC port conflict validation
+note: Disable gRPC server by default, requiring explicit `grpc:` configuration to enable it
 issues: [45944]
 subtext: |
-  The jaegerremotesampling extension now validates that HTTP and gRPC servers
-  are configured on different ports during configuration loading, preventing
-  runtime port binding failures and providing clear, actionable error messages
-  for misconfigurations.
+  The jaegerremotesampling extension no longer starts a gRPC server by default; it is only started when `grpc:` is explicitly configured.
 
   This change is breaking: the extension no longer starts a gRPC server on
   port 14250 by default when `grpc:` is omitted from the YAML configuration.
