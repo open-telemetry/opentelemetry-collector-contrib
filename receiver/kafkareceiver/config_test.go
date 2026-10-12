@@ -166,6 +166,18 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
+			name: "kafka/partition_processing",
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing = PartitionProcessing{
+					Independent:        true,
+					MaxBufferedBatches: 2,
+					MaxInFlight:        MaxInFlightConfig{Records: 1},
+				}
+				return cfg
+			}(),
+		},
+		{
 			name:        "kafka/invalid_exclude_topics_logs_non_regex",
 			expectedErr: "logs.exclude_topics is configured but none of the configured logs.topics use regex pattern (must start with '^')",
 		},
@@ -200,6 +212,27 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name:        "kafka/invalid_exclude_topics_profiles_empty",
 			expectedErr: "profiles.exclude_topics contains empty string",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_zero_buffered_batches",
+			expectedErr: "partition_processing.max_buffered_batches must be greater than zero",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_manual_commit",
+			expectedErr: "partition_processing.independent requires autocommit.enable",
+		},
+		{
+			name: "kafka/partition_processing_max_in_flight",
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing.Independent = true
+				cfg.PartitionProcessing.MaxInFlight.Records = 4
+				return cfg
+			}(),
+		},
+		{
+			name:        "kafka/invalid_partition_processing_zero_max_in_flight",
+			expectedErr: "partition_processing.max_in_flight.records must be greater than zero",
 		},
 	}
 

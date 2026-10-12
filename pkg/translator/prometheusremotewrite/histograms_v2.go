@@ -41,13 +41,12 @@ func explicitToNHCBHistogramV2(pt pmetric.HistogramDataPoint) (writev2.Histogram
 	var out writev2.Histogram
 	switch {
 	case h != nil:
-		out = writev2.FromIntHistogram(timestamp, h)
+		out = writev2.FromIntHistogram(startTimestamp, timestamp, h)
 	case fh != nil:
-		out = writev2.FromFloatHistogram(timestamp, fh)
+		out = writev2.FromFloatHistogram(startTimestamp, timestamp, fh)
 	default:
 		return writev2.Histogram{}, errors.New("convertnhcb produced neither an integer nor a float histogram")
 	}
-	out.StartTimestamp = startTimestamp
 	return out, nil
 }
 

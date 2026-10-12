@@ -72,6 +72,7 @@ type BaseConfig struct {
 	Encoding              string                  `mapstructure:"encoding,omitempty"`
 	SplitConfig           split.Config            `mapstructure:"multiline,omitempty"`
 	TrimConfig            trim.Config             `mapstructure:",squash"`
+	Auth                  *helper.AuthConfig      `mapstructure:"auth,omitempty"`
 	SplitFuncBuilder      SplitFuncBuilder        `mapstructure:"-"`
 	MaxConnections        int                     `mapstructure:"max_connections,omitempty"`
 	ConnectionIdleTimeout time.Duration           `mapstructure:"connection_idle_timeout,omitempty"`
@@ -150,6 +151,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 			Max: 3 * time.Second,
 		},
 		resolver:              resolver,
+		auth:                  c.Auth,
 		maxConnections:        c.MaxConnections,
 		connectionIdleTimeout: c.ConnectionIdleTimeout,
 		tb:                    tb,

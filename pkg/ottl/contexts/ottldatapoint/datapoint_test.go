@@ -15,13 +15,14 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
 
 func Test_MarshalLogObject_IncludesDataPoint(t *testing.T) {
 	numberDataPoint := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeDouble)
-	ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
+	ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
 	defer ctx.Close()
 
 	encoder := zapcore.NewMapObjectEncoder()
@@ -97,7 +98,7 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -529,7 +530,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), numberDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -977,7 +978,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), histogramDataPoint)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), histogramDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -1509,7 +1510,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), expoHistogramDataPoint)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), expoHistogramDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -1942,7 +1943,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), summaryDataPoint)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), summaryDataPoint)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -2124,7 +2125,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 			metric := createMetricTelemetry()
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, pmetric.NewNumberDataPoint())
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, pmetric.NewNumberDataPoint())
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -2253,7 +2254,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	metric := sm.Metrics().AppendEmpty()
 	metric.SetName("metric")
 
-	ctx := NewTransformContextPtr(rm, sm, metric, pmetric.NewNumberDataPoint())
+	ctx := NewTransformContext(rm, sm, metric, pmetric.NewNumberDataPoint())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -2324,4 +2325,21 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext: func(options ...TransformContextOption) *TransformContext {
+			return NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), pmetric.NewNumberDataPoint(), options...)
+		},
+		WithCache: WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }

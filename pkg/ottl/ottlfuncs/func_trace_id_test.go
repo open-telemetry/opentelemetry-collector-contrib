@@ -93,7 +93,7 @@ func BenchmarkTraceID(b *testing.B) {
 			var err error
 
 			if tc.isLiteral {
-				getter, err = ottl.NewTestingLiteralGetter(true, makeIDGetter(tc.data))
+				getter, err = ottl.NewTestingOptionalLiteralGetter(true, makeIDGetter(tc.data))
 				require.NoError(b, err)
 			} else {
 				getter = makeIDGetter(tc.data)
@@ -126,14 +126,14 @@ func Test_TraceIDFactory(t *testing.T) {
 		factory := NewTraceIDFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &TraceIDArguments[any]{}, args)
+		assert.IsType(t, &traceIDArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewTraceIDFactory[any]()
 		args := factory.CreateDefaultArguments()
-		traceIDArgs, ok := args.(*TraceIDArguments[any])
+		traceIDArgs, ok := args.(*traceIDArguments[any])
 		require.True(t, ok)
 		traceIDArgs.Target = &ottl.StandardByteSliceLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -148,6 +148,6 @@ func Test_TraceIDFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createTraceIDFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "TraceIDFactory args must be of type *TraceIDArguments[K]")
+		assert.ErrorContains(t, err, "TraceIDFactory args must be of type *traceIDArguments[K]")
 	})
 }

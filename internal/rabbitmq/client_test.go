@@ -91,7 +91,7 @@ func TestDialConfig(t *testing.T) {
 	config := DialConfig{
 		URL:               "amqp://guest:guest@localhost:5672/",
 		Vhost:             "/",
-		Auth:              &amqp.PlainAuth{Username: "guest", Password: "guest"},
+		Auth:              func() amqp.Authentication { return &amqp.PlainAuth{Username: "guest", Password: "guest"} },
 		ConnectionTimeout: 10 * time.Second,
 		Heartbeat:         10 * time.Second,
 		TLS:               &tls.Config{},
@@ -116,6 +116,7 @@ func TestReconnectIfUnhealthy(t *testing.T) {
 		config: amqp.Config{
 			Vhost: "/",
 		},
+		authFactory: func() amqp.Authentication { return &amqp.PlainAuth{Username: "guest", Password: "guest"} },
 	}
 
 	connection.connectionErrors <- &amqp.Error{

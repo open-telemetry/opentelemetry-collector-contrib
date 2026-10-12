@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add missing execution metrics to total query stats in `googlecloudspannerreceiver`.
+issues: [51228]
+change_logs: []

@@ -8,10 +8,10 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // ValidateMetrics reports semantic errors in md (Metrics Data).
@@ -145,7 +145,7 @@ func checkDuplicateDatapointAttrs(attrs []pcommon.Map) error {
 	var errs error
 
 	for i, a := range attrs {
-		h := pdatautil.MapHash(a)
+		h := xhash.MapHash(a)
 		if firstIdx, exists := seen[h]; exists {
 			errs = multierr.Append(errs, fmt.Errorf(
 				"datapoint at index %d has duplicate attributes with datapoint at index %d, attributes: %v",
@@ -187,7 +187,7 @@ func validateDuplicateResources(rms pmetric.ResourceMetricsSlice) error {
 	var errs error
 
 	for i := 0; i < rms.Len(); i++ {
-		h := pdatautil.MapHash(rms.At(i).Resource().Attributes())
+		h := xhash.MapHash(rms.At(i).Resource().Attributes())
 		if firstIdx, exists := seen[h]; exists {
 			errs = multierr.Append(errs, fmt.Errorf(
 				"resource %v at index %d is a duplicate of resource at index %d",

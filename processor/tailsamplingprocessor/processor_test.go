@@ -33,6 +33,7 @@ import (
 	pkgsampling "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
@@ -224,8 +225,11 @@ func TestTraceIntegrity(t *testing.T) {
 
 	mpe1.SetDecision(samplingpolicy.Sampled)
 
-	// Generate and deliver first span
-	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
+	// Generate and deliver first span. The processor moves spans out of its
+	// input, so hand it a copy and keep spans for comparison.
+	input := ptrace.NewTraces()
+	traces.CopyTo(input)
+	require.NoError(t, p.ConsumeTraces(t.Context(), input))
 
 	// The first tick won't do anything
 	controller.waitForTick()
@@ -254,6 +258,83 @@ func TestTraceIntegrity(t *testing.T) {
 			require.Fail(t, "Span not found")
 		}
 	}
+}
+
+func TestSplitResourceSpansByTrace(t *testing.T) {
+	rss := ptrace.NewResourceSpans()
+	rss.SetSchemaUrl("https://example.com/resource")
+	rss.Resource().Attributes().PutStr("service.name", "frontend")
+
+	scopeA := rss.ScopeSpans().AppendEmpty()
+	scopeA.SetSchemaUrl("https://example.com/scope-a")
+	scopeA.Scope().SetName("lib-a")
+	scopeB := rss.ScopeSpans().AppendEmpty()
+	scopeB.Scope().SetName("lib-b")
+
+	traceA := uInt64ToTraceID(1)
+	traceB := uInt64ToTraceID(2)
+
+	span := scopeA.Spans().AppendEmpty()
+	span.SetTraceID(traceA)
+	span.SetSpanID(uInt64ToSpanID(1))
+	// Empty parent: this is the root for trace A.
+
+	// Same scope as the root, so lastScope gets reused.
+	span = scopeA.Spans().AppendEmpty()
+	span.SetTraceID(traceA)
+	span.SetSpanID(uInt64ToSpanID(4))
+	span.SetParentSpanID(uInt64ToSpanID(1))
+
+	span = scopeA.Spans().AppendEmpty()
+	span.SetTraceID(traceB)
+	span.SetSpanID(uInt64ToSpanID(2))
+	span.SetParentSpanID(uInt64ToSpanID(99))
+
+	span = scopeB.Spans().AppendEmpty()
+	span.SetTraceID(traceA)
+	span.SetSpanID(uInt64ToSpanID(3))
+	span.SetParentSpanID(uInt64ToSpanID(1))
+
+	batches := splitResourceSpansByTrace(rss)
+	require.Len(t, batches, 2)
+	byID := make(map[pcommon.TraceID]traceBatch, len(batches))
+	for _, batch := range batches {
+		byID[batch.id] = batch
+	}
+	a, b := byID[traceA], byID[traceB]
+	require.EqualValues(t, 3, a.spanCount)
+	require.EqualValues(t, 1, b.spanCount)
+	require.True(t, a.hasRoot)
+	require.False(t, b.hasRoot)
+
+	// We copy the resource, but not SchemaUrl (the old rebuild path didn't either).
+	require.Equal(t, "frontend", a.rss.Resource().Attributes().AsRaw()["service.name"])
+	require.Empty(t, a.rss.SchemaUrl())
+	require.Empty(t, b.rss.SchemaUrl())
+
+	// Trace A keeps both scopes in first-seen order, no empty scopes.
+	require.Equal(t, 2, a.rss.ScopeSpans().Len())
+	require.Equal(t, "lib-a", a.rss.ScopeSpans().At(0).Scope().Name())
+	require.Equal(t, "lib-b", a.rss.ScopeSpans().At(1).Scope().Name())
+	require.Equal(t, 2, a.rss.ScopeSpans().At(0).Spans().Len())
+	require.Equal(t, uInt64ToSpanID(1), a.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
+	require.Equal(t, uInt64ToSpanID(4), a.rss.ScopeSpans().At(0).Spans().At(1).SpanID())
+	require.Equal(t, uInt64ToSpanID(3), a.rss.ScopeSpans().At(1).Spans().At(0).SpanID())
+	require.Empty(t, a.rss.ScopeSpans().At(0).SchemaUrl())
+
+	// Trace B only appeared in scope A.
+	require.Equal(t, 1, b.rss.ScopeSpans().Len())
+	require.Equal(t, "lib-a", b.rss.ScopeSpans().At(0).Scope().Name())
+	require.Equal(t, uInt64ToSpanID(2), b.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
+
+	// Spans are moved out of the source; the resource and scopes are copied.
+	for _, ss := range rss.ScopeSpans().All() {
+		for _, span := range ss.Spans().All() {
+			require.True(t, span.SpanID().IsEmpty())
+		}
+	}
+	require.Equal(t, "frontend", rss.Resource().Attributes().AsRaw()["service.name"])
+	require.Equal(t, "lib-a", rss.ScopeSpans().At(0).Scope().Name())
 }
 
 func TestSequentialTraceArrival(t *testing.T) {
@@ -339,6 +420,9 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		// Add the same traceId twice.
 		wg.Add(2)
 		concurrencyLimiter <- struct{}{}
+		// The processor moves spans out of its input, so each call needs its own copy.
+		dup := ptrace.NewTraces()
+		batch.CopyTo(dup)
 		go func(td ptrace.Traces) {
 			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			wg.Done()
@@ -349,7 +433,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			wg.Done()
 			<-concurrencyLimiter
-		}(batch)
+		}(dup)
 	}
 
 	wg.Wait()
@@ -401,12 +485,18 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
+			// The processor moves spans out of its input, so each call needs its own copy.
+			consume := func() {
+				input := ptrace.NewTraces()
+				td.CopyTo(input)
+				assert.NoError(t, sp.ConsumeTraces(t.Context(), input))
+			}
 			for range 10 {
-				assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+				consume()
 			}
 			controller.concurrentWithTick(func() {
 				for range 10 {
-					assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+					consume()
 				}
 			})
 			wg.Done()
@@ -518,9 +608,6 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, tsp.Shutdown(t.Context()))
-	}()
 
 	var expectedSpans atomic.Int64
 	wg := sync.WaitGroup{}
@@ -545,7 +632,10 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			// until the time must have passed.
 			for time.Since(start) < 2*cfg.DecisionWait {
 				expectedSpans.Add(int64(batch.SpanCount()))
-				err := tsp.ConsumeTraces(t.Context(), batch)
+				// The processor moves spans out of its input, so each call needs its own copy.
+				input := ptrace.NewTraces()
+				batch.CopyTo(input)
+				err := tsp.ConsumeTraces(t.Context(), input)
 				if err != nil {
 					errCh <- err
 				}
@@ -557,14 +647,9 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	<-errDone
 	require.NoError(t, combinedErr)
 
-	// verify
-	// despite all the concurrency above, we should eventually sample all the spans.
-	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		received := int64(msp.SpanCount())
-		expected := expectedSpans.Load()
-		missing := expected - received
-		require.Equal(collect, expected, received, "expected %d spans, received %d, missing %d", expected, received, missing)
-	}, 1*time.Second, 100*time.Millisecond)
+	// Shutting down drains all pending traces, so every span must be forwarded.
+	require.NoError(t, tsp.Shutdown(t.Context()))
+	require.Equal(t, expectedSpans.Load(), int64(msp.SpanCount()))
 }
 
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
@@ -1112,6 +1197,7 @@ type mockPolicyEvaluator struct {
 	mu sync.Mutex
 
 	nextDecision    samplingpolicy.Decision
+	nextThreshold   pkgsampling.Threshold
 	nextError       error
 	evaluationCount int
 }
@@ -1131,7 +1217,10 @@ func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *sampli
 
 func (m *mockPolicyEvaluator) EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, pkgsampling.Threshold, error) {
 	d, err := m.Evaluate(ctx, traceID, trace)
-	return d, pkgsampling.AlwaysSampleThreshold, err
+	m.mu.Lock()
+	th := m.nextThreshold
+	m.mu.Unlock()
+	return d, th, err
 }
 
 func (*mockPolicyEvaluator) IsStateful() bool {
@@ -1142,6 +1231,12 @@ func (m *mockPolicyEvaluator) SetDecision(decision samplingpolicy.Decision) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.nextDecision = decision
+}
+
+func (m *mockPolicyEvaluator) SetThreshold(threshold pkgsampling.Threshold) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.nextThreshold = threshold
 }
 
 func (m *mockPolicyEvaluator) SetError(nextError error) {
@@ -1224,6 +1319,192 @@ func (s *syncIDBatcher) Stop() {
 	defer s.Unlock()
 	s.stopped = true
 	close(s.batchPipe)
+}
+
+func TestRateLimitingBatchThresholdOnTick(t *testing.T) {
+	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+
+	// Randomness derives from trace-ID bytes 9-15 (byte 8 is masked out),
+	// so byte 9 controls the ordering. Budget of 2 single-span traces
+	// keeps the two highest and drops the lowest.
+	traceIDWithRandomness := func(tag, msb byte) pcommon.TraceID {
+		var id [16]byte
+		id[0] = tag
+		id[9] = msb
+		return pcommon.TraceID(id)
+	}
+	high := traceIDWithRandomness(1, 0xf0)
+	mid := traceIDWithRandomness(2, 0x80)
+	low := traceIDWithRandomness(3, 0x10)
+
+	// Gate must be on before constructing the policy: the rate limiter
+	// reads the feature gate at construction time.
+	rl := sampling.NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 2, 2)
+	policies := []*policy{
+		{
+			name:      "rate-limiting",
+			evaluator: samplingpolicy.AsThresholdEvaluator(rl),
+			attribute: metric.WithAttributes(attribute.String("policy", "rate-limiting")),
+		},
+	}
+
+	controller := newTestTSPController()
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               defaultNumTraces,
+		ExpectedNewTracesPerSec: 64,
+		Options: []Option{
+			withPolicies(policies),
+			withUseTracestate(),
+			withTestController(controller),
+		},
+	}
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+	require.NoError(t, sp.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, sp.Shutdown(t.Context()))
+	}()
+
+	for _, id := range []pcommon.TraceID{high, mid, low} {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), simpleTracesWithID(id)))
+	}
+
+	// The first tick rotates the batch; the second evaluates it.
+	controller.waitForTick()
+	controller.waitForTick()
+
+	sampled := make(map[pcommon.TraceID]ptrace.Traces)
+	for _, trace := range nextConsumer.AllTraces() {
+		span := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		sampled[span.TraceID()] = trace
+	}
+
+	require.Len(t, sampled, 2, "budget of 2 spans should keep 2 of 3 single-span traces")
+	require.Contains(t, sampled, high)
+	require.Contains(t, sampled, mid)
+	require.NotContains(t, sampled, low, "lowest-randomness trace should be dropped")
+
+	// Kept traces must carry the effective threshold so downstream
+	// consumers can compute adjusted counts.
+	for id, trace := range sampled {
+		ts := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceState().AsRaw()
+		assert.Contains(t, ts, "th:", "kept trace %x should carry a threshold, got %q", id, ts)
+	}
+}
+
+func TestRateLimitingBatchExcludesDroppedTraces(t *testing.T) {
+	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+
+	settings := componenttest.NewNopTelemetrySettings()
+	dropSub, err := sampling.NewStringAttributeFilter(settings, "drop", []string{"yes"}, false, 0, false)
+	require.NoError(t, err)
+	dropPolicy := sampling.NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{dropSub})
+	rl := sampling.NewRateLimitingWithBurstCapacity(settings, 2, 2)
+
+	// Drop policies come first, matching loadSamplingPolicies' ordering.
+	policies := []*policy{
+		{name: "drop", evaluator: samplingpolicy.AsThresholdEvaluator(dropPolicy), isDrop: true, attribute: metric.WithAttributes(attribute.String("policy", "drop"))},
+		{name: "rate-limiting", evaluator: samplingpolicy.AsThresholdEvaluator(rl), attribute: metric.WithAttributes(attribute.String("policy", "rate-limiting"))},
+	}
+
+	// The dropped trace has the highest randomness (byte 9), so if it were
+	// not excluded from the batch it would take a budget slot and push out a
+	// keeper. Budget is 2 spans; the two keepers should both survive.
+	dropID := pcommon.TraceID([16]byte{1, 0, 0, 0, 0, 0, 0, 0, 0, 0xff})
+	keepAID := pcommon.TraceID([16]byte{2, 0, 0, 0, 0, 0, 0, 0, 0, 0x80})
+	keepBID := pcommon.TraceID([16]byte{3, 0, 0, 0, 0, 0, 0, 0, 0, 0x40})
+
+	mkTrace := func(id pcommon.TraceID, drop bool) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(id)
+		if drop {
+			span.Attributes().PutStr("drop", "yes")
+		}
+		return traces
+	}
+
+	controller := newTestTSPController()
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               defaultNumTraces,
+		ExpectedNewTracesPerSec: 64,
+		Options: []Option{
+			withPolicies(policies),
+			withUseTracestate(),
+			withTestController(controller),
+		},
+	}
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+	require.NoError(t, sp.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, sp.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, sp.ConsumeTraces(t.Context(), mkTrace(dropID, true)))
+	require.NoError(t, sp.ConsumeTraces(t.Context(), mkTrace(keepAID, false)))
+	require.NoError(t, sp.ConsumeTraces(t.Context(), mkTrace(keepBID, false)))
+
+	controller.waitForTick()
+	controller.waitForTick()
+
+	sampled := make(map[pcommon.TraceID]struct{})
+	for _, trace := range nextConsumer.AllTraces() {
+		sampled[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
+	}
+
+	assert.NotContains(t, sampled, dropID, "trace matching a drop policy must be dropped")
+	assert.Contains(t, sampled, keepAID, "keeper should be sampled")
+	assert.Contains(t, sampled, keepBID, "both keepers should fit the budget; the dropped trace must not consume it")
+}
+
+func TestStartWarnsOnSampleOnFirstMatchWithTracestate(t *testing.T) {
+	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+
+	zc, logs := observer.New(zap.WarnLevel)
+	settings := processortest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(zc)
+
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               defaultNumTraces,
+		ExpectedNewTracesPerSec: 64,
+		SampleOnFirstMatch:      true,
+		Options: []Option{
+			withUseTracestate(),
+		},
+	}
+	sp, err := newTracesProcessor(t.Context(), settings, new(consumertest.TracesSink), cfg)
+	require.NoError(t, err)
+	require.NoError(t, sp.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, sp.Shutdown(t.Context()))
+	}()
+
+	require.Equal(t, 1, logs.Len(), "expected exactly one warning")
+	assert.Contains(t, logs.All()[0].Message, "sample_on_first_match")
 }
 
 func simpleTraces() ptrace.Traces {

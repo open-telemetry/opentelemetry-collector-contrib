@@ -78,9 +78,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"})
+			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"}, "tlscheck.x509.fingerprint-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordTlscheckTimeLeftDataPoint(ts, 3, "tlscheck.x509.issuer-val-2", "tlscheck.x509.cn-val-2", []any{"tlscheck.x509.san-item3", "tlscheck.x509.san-item4"})
+				mb.RecordTlscheckTimeLeftDataPoint(ts, 3, "tlscheck.x509.issuer-val-2", "tlscheck.x509.cn-val-2", []any{"tlscheck.x509.san-item3", "tlscheck.x509.san-item4"}, "tlscheck.x509.fingerprint-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordTlscheckTimeLeftDataPoint(ts+1, 3, "tlscheck.x509.issuer-val-2", "tlscheck.x509.cn-val-2", []any{"tlscheck.x509.san-item3", "tlscheck.x509.san-item4"}, "tlscheck.x509.fingerprint-val-2")
+				assert.Equal(t, 2, mb.metricTlscheckTimeLeft.data.Gauge().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -139,7 +142,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["tlscheck.time_left"], "Found a duplicate in the metrics slice: tlscheck.time_left")
 						validatedMetrics["tlscheck.time_left"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -161,6 +166,8 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("tlscheck.x509.cn")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("tlscheck.x509.san")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("tlscheck.x509.fingerprint")
 						assert.False(t, ok)
 					}
 				}

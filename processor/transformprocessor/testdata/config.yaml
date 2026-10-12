@@ -244,3 +244,20 @@ transform/context_statements_error_mode:
         - set(resource.attributes["name"], "propagate")
     - statements:
         - set(resource.attributes["name"], "ignore")
+
+transform/shared_cache:
+  trace_statements:
+    - shared_cache: true
+      statements:
+        - set(resource.attributes["name"], "bear")
+    - shared_cache: true
+      statements:
+        - set(resource.attributes["copy"], resource.attributes["name"])
+  metric_statements:
+    - shared_cache: true
+      statements:
+        - set(resource.attributes["name"], "bear")
+  log_statements:
+    - shared_cache: true
+      statements:
+        - set(resource.attributes["name"], "bear")

@@ -50,3 +50,4 @@ The following optional config fields are available:
   - `access_token`: [OAuth 2.0 access token](https://cloud.google.com/docs/authentication/token-types#access) will be generated.
   - `id_token`: Google-signed [ID token](https://cloud.google.com/docs/authentication/token-types#id) will be generated.
 - `audience` - The audience claim used for generating ID token
+- `token_header` - Controls which HTTP header carries the token. Options: `authorization` (default) or `proxy-authorization` (for IAP-protected endpoints).

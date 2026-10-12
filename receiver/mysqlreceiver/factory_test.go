@@ -8,12 +8,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
@@ -30,6 +33,53 @@ func TestValidConfig(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig.Endpoint = "localhost:3306"
 	require.NoError(t, confmap.Validate(cfg))
+}
+
+func TestCreateMetricsResolvesDBAuthAtStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_db_auth"))
+	cfg.AddrConfig.Endpoint = "localhost:3306"
+	cfg.TLS.Insecure = false
+
+	metricsReceiver, err := factory.CreateMetrics(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	err = metricsReceiver.Start(t.Context(), componenttest.NewNopHost())
+	require.ErrorContains(t, err, "requested credential provider is not present")
+}
+
+type extensionsHost map[component.ID]component.Component
+
+func (h extensionsHost) GetExtensions() map[component.ID]component.Component {
+	return h
+}
+
+func TestCreateMetricsStartsWithDBAuthProvider(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_db_auth"))
+	cfg.AddrConfig.Endpoint = "localhost:3306"
+	cfg.TLS.Insecure = false
+	cfg.ControllerConfig.InitialDelay = time.Hour
+
+	metricsReceiver, err := factory.CreateMetrics(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, metricsReceiver.Start(t.Context(), extensionsHost(credExtMap())))
+	require.NoError(t, metricsReceiver.Shutdown(t.Context()))
 }
 
 func TestCreateMetrics(t *testing.T) {

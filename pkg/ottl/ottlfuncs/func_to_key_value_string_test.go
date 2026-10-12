@@ -260,14 +260,14 @@ func Test_ToKeyValueStringFactory(t *testing.T) {
 		factory := NewToKeyValueStringFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ToKeyValueStringArguments[any]{}, args)
+		assert.IsType(t, &toKeyValueStringArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter", "PairDelimiter", "SortOutput"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewToKeyValueStringFactory[any]()
 		args := factory.CreateDefaultArguments()
-		toKeyValueStringArgs, ok := args.(*ToKeyValueStringArguments[any])
+		toKeyValueStringArgs, ok := args.(*toKeyValueStringArguments[any])
 		require.True(t, ok)
 		toKeyValueStringArgs.Target = &ottl.StandardPMapGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -282,6 +282,26 @@ func Test_ToKeyValueStringFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createToKeyValueStringFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ToKeyValueStringFactory args must be of type *ToKeyValueStringArguments[K]")
+		assert.ErrorContains(t, err, "ToKeyValueStringFactory args must be of type *toKeyValueStringArguments[K]")
 	})
+}
+
+func BenchmarkToKeyValueString(b *testing.B) {
+	target := ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return map[string]any{
+				"key1": "value1",
+				"key2": "value2",
+			}, nil
+		},
+	}
+	exprFunc, err := toKeyValueString[any](target, ottl.Optional[string]{}, ottl.Optional[string]{}, ottl.Optional[bool]{})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

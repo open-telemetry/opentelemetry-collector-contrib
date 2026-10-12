@@ -6,7 +6,8 @@
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fprometheusremotewrite%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fprometheusremotewrite) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fprometheusremotewrite%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fprometheusremotewrite) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_prometheusremotewrite)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_prometheusremotewrite&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@rapphil](https://www.github.com/rapphil), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@ywwg](https://www.github.com/ywwg) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@ywwg](https://www.github.com/ywwg) |
+| Emeritus      | [@rapphil](https://www.github.com/rapphil) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
@@ -61,9 +62,12 @@ The following settings can be optionally configured:
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5` or default: `1` if `EnableMultipleWorkersFeatureGate` is enabled).
-- `resource_to_telemetry_conversion`
-  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
-  - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace`  resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
+- `resource_constant_labels`: Controls which resource attributes are added as constant labels on exported metrics. Takes precedence over `resource_to_telemetry_conversion`.
+  - `included`: List of wildcard patterns (e.g., `service*`, `k8s.pod.*`) matching resource attribute keys to include. Note: if `included` is empty and `excluded` is non-empty, all resource attributes except those matched by `excluded` will be included.
+  - `excluded`: List of wildcard patterns matching resource attribute keys to exclude, overriding any matches in `included`. If `included` is empty, setting `excluded` implies including all non-excluded attributes.
+- `resource_to_telemetry_conversion` **[Deprecated: use `resource_constant_labels` instead]**: Can be disabled entirely via the `exporter.prometheusremotewrite.DisableResourceToTelemetryConversion` feature gate.
+  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is setting `included: ["*"]`.
+  - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is adding `service.name`, `service.instance.id`, and `service.namespace` to `excluded`.
 - `wal`: Write-Ahead-Log settings for the exporter.
   - `directory` (default = ``): The directory to store the WAL in.
   - `buffer_size` (default = `300`): Count of elements to be read from the WAL before truncating.
@@ -113,7 +117,7 @@ exporters:
 ```
 
 > [!NOTE]
-> The deprecated coponent type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
+> The deprecated component type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
 
 ## Advanced Configuration
 

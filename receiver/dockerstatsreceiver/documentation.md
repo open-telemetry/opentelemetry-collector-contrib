@@ -754,6 +754,20 @@ The number of containers that are currently in a given health state. All possibl
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | container.state.health.state | The health state of the container. | Str: ``starting``, ``healthy``, ``unhealthy`` | Recommended | - |
 
+### container.state.status
+
+Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {status} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| container.state.status | Container State | Str: ``created``, ``running``, ``paused``, ``restarting``, ``removing``, ``exited``, ``dead`` | Recommended | - |
+
 ### container.uptime
 
 Time elapsed since container start time.

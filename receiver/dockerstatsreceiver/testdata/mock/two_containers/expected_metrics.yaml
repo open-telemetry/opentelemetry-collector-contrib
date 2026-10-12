@@ -1,4 +1,24 @@
 resourceMetrics:
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.40.0
+    scopeMetrics:
+      - metrics:
+          - description: Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead
+            name: container.state.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: container.state.status
+                      value:
+                        stringValue: running
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{status}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
+          version: latest
   - resource:
       attributes:
         - key: container-metric-label

@@ -90,12 +90,65 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			desc: "exclude_databases covering every listed database is not a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Databases = []string{"otel", "rdsadmin"}
+				cfg.ExcludeDatabases = []string{"rdsadmin", "otel", "template0"}
+			},
+			expected: nil,
+		},
+		{
+			desc: "connect_database outside databases is not a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = "monitoring"
+				cfg.Databases = []string{"mydb"}
+			},
+			expected: nil,
+		},
+		{
+			desc: "empty connect_database is a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = ""
+			},
+			expected: []error{
+				errors.New(ErrEmptyConnectDatabase),
+			},
+		},
+		{
+			desc: "whitespace-only connect_database is a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = "   "
+			},
+			expected: []error{
+				errors.New(ErrEmptyConnectDatabase),
+			},
+		},
+		{
 			desc: "no error",
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
 			},
 			expected: nil,
+		},
+		{
+			desc: "query plan event without top query event",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+			},
+			expected: []error{
+				errQueryPlanWithoutTopQuery,
+			},
 		},
 	}
 	for _, tC := range testCases {
@@ -108,6 +161,8 @@ func TestValidate(t *testing.T) {
 				for _, err := range tC.expected {
 					require.ErrorContains(t, actual, err.Error())
 				}
+			} else {
+				require.NoError(t, actual)
 			}
 		})
 	}
@@ -168,6 +223,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
 		expected.ExcludeDatabases = []string{"template0"}
+		expected.ConnectDatabase = "monitoring"
 		expected.ControllerConfig.CollectionInterval = 10 * time.Second
 		expected.ClientConfig = configtls.ClientConfig{
 			Insecure:           false,

@@ -1,4 +1,4 @@
-CREATE JOB `%s:%s_graph_job`
+CREATE JOB `%s.%s_graph_job`
 ON SCHEDULE EVERY 10 MINUTE
 DO
 INSERT INTO %s_graph
