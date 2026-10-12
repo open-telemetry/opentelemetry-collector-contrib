@@ -3261,6 +3261,9 @@ func TestExporterBatcher(t *testing.T) {
 	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
 			testauthID: newMockAuthClient(func(req *http.Request) (*http.Response, error) {
+				if req.URL.Path == "/" {
+					return nil, errors.New("nope")
+				}
 				requests = append(requests, req)
 				return nil, errors.New("nope")
 			}),
@@ -3321,9 +3324,11 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		return &mockHost{
 			extensions: map[component.ID]component.Component{
 				testCtxKey: newMockAuthClient(func(req *http.Request) (*http.Response, error) {
-					info := client.FromContext(req.Context())
-					for k := range metadata.Keys() {
-						assert.Equal(t, metadata.Get(k), info.Metadata.Get(k))
+					if req.URL.Path != "/" {
+						info := client.FromContext(req.Context())
+						for k := range metadata.Keys() {
+							assert.Equal(t, metadata.Get(k), info.Metadata.Get(k))
+						}
 					}
 					req.Clone(req.Context())
 					req.URL.Host = esURL.Host

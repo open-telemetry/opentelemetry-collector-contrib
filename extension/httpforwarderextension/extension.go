@@ -48,6 +48,7 @@ func (h *httpForwarder) Start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
+	h.server.Addr = listener.Addr().String()
 
 	h.shutdownWG.Go(func() {
 		if errHTTP := h.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
