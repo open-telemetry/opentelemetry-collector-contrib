@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -679,9 +680,41 @@ func TestConsumeLogs_RecordsKeyEvaluationErrors(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err))
 
 	metadatatest.AssertEqualPartitioningKeyEvaluationErrors(t, tel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
+		[]metricdata.DataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("error.type", "invalid_value_type")),
+			Value:      1,
+		}},
 		metricdatatest.IgnoreTimestamp())
 
 	_, err = tel.GetMetric("otelcol.partitioning.partitions")
 	assert.Error(t, err, "no partitions should be recorded for a rejected batch")
+}
+
+func TestConsumeLogs_RecordsKeyEvaluationErrors_EvaluationFailed(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+	set := nopSettings()
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	// Parses fine, but Substring fails at runtime because the range exceeds the value.
+	proc, err := createLogsProcessor(t.Context(), set, &Config{Keys: map[string]string{
+		"tenant": `Substring(resource.attributes["tenant.id"], 0, 100)`,
+	}}, consumertest.NewNop())
+	require.NoError(t, err)
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("tenant.id", "t1")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	err = proc.ConsumeLogs(t.Context(), logs)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+
+	metadatatest.AssertEqualPartitioningKeyEvaluationErrors(t, tel,
+		[]metricdata.DataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("error.type", "evaluation_failed")),
+			Value:      1,
+		}},
+		metricdatatest.IgnoreTimestamp())
 }

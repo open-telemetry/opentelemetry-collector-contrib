@@ -68,6 +68,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol.partitioning.partitions",
 		metric.WithDescription("Number of partitions each incoming batch was split into. [Development]"),
 		metric.WithUnit("{partition}"),
+		metric.WithExplicitBucketBoundaries([]float64{1, 2, 3, 5, 10, 20, 50, 100, 250, 1000}...),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

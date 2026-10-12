@@ -14,6 +14,12 @@ Number of batches rejected because a key expression failed to evaluate or return
 | ---- | ----------- | ---------- | --------- | --------- |
 | {batch} | Sum | Int | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| error.type | Why key evaluation failed. | Str: ``evaluation_failed``, ``invalid_value_type`` | - |
+
 ### otelcol.partitioning.partitions
 
 Number of partitions each incoming batch was split into.

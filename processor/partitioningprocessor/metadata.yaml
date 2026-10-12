@@ -23,6 +23,14 @@ tests:
     keys:
       service: 'resource.attributes["service.name"]'
 
+attributes:
+  error.type:
+    description: Why key evaluation failed.
+    type: string
+    enum:
+      - evaluation_failed
+      - invalid_value_type
+
 telemetry:
   metrics:
     partitioning.key_evaluation.errors:
@@ -31,6 +39,7 @@ telemetry:
       description: Number of batches rejected because a key expression failed to evaluate or returned a non-string value.
       stability: development
       unit: "{batch}"
+      attributes: [error.type]
       sum:
         value_type: int
         monotonic: true
@@ -42,3 +51,4 @@ telemetry:
       unit: "{partition}"
       histogram:
         value_type: int
+        bucket_boundaries: [1, 2, 3, 5, 10, 20, 50, 100, 250, 1000]

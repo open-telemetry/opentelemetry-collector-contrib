@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/partitioningprocessor/internal/metadata"
 )
@@ -69,10 +71,21 @@ func (p *partitioningProcessor) ConsumeMetrics(ctx context.Context, md pmetric.M
 	return consumePartitions(ctx, p.keyNames, parts, p.nextMetrics.ConsumeMetrics)
 }
 
+// error.type values for otelcol.partitioning.key_evaluation.errors, built once
+// so that recording an error does not allocate.
+var (
+	evaluationFailedAttrs = metric.WithAttributeSet(attribute.NewSet(attribute.String("error.type", "evaluation_failed")))
+	invalidValueTypeAttrs = metric.WithAttributeSet(attribute.NewSet(attribute.String("error.type", "invalid_value_type")))
+)
+
 // keyEvaluationError counts a batch rejected by key evaluation and returns
 // the error as permanent.
 func (p *partitioningProcessor) keyEvaluationError(ctx context.Context, err error) error {
-	p.telemetry.PartitioningKeyEvaluationErrors.Add(ctx, 1)
+	attrs := evaluationFailedAttrs
+	if errors.Is(err, errInvalidValueType) {
+		attrs = invalidValueTypeAttrs
+	}
+	p.telemetry.PartitioningKeyEvaluationErrors.Add(ctx, 1, attrs)
 	// Key evaluation depends only on the data, so a retry would fail the same way.
 	return consumererror.NewPermanent(err)
 }
