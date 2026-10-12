@@ -52,6 +52,10 @@ $defs:
     description: RemoteConfig is the configuration for a remote server or group of servers.
     type: object
     properties:
+      domain:
+        type: string
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       server:
         type: string
       servers:
@@ -59,8 +63,4 @@ $defs:
         items:
           type: string
       username:
-        type: string
-      password:
-        $ref: go.opentelemetry.io/collector/config/configopaque.string
-      domain:
         type: string
