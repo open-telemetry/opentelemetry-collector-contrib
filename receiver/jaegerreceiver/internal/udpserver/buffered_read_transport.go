@@ -44,12 +44,18 @@ func (*TBufferedReadTransport) Close() error {
 
 // Read reads bytes from the local buffer and puts them in the specified buf
 func (p *TBufferedReadTransport) Read(buf []byte) (int, error) {
+	if p.readBuf == nil {
+		p.readBuf = bytes.NewBuffer(nil)
+	}
 	in, err := p.readBuf.Read(buf)
 	return in, thrift.NewTTransportExceptionFromError(err)
 }
 
 // RemainingBytes returns the number of bytes left to be read from the readBuf
 func (p *TBufferedReadTransport) RemainingBytes() uint64 {
+	if p.readBuf == nil {
+		return 0
+	}
 	return uint64(p.readBuf.Len())
 }
 
