@@ -29,7 +29,7 @@ feature_gates:
       start collecting logs from specified channel.
     from_version: v0.150.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44156
-  - id: receiver.windowseventlog.multipleRemoteHosts
+  - id: receiver.windows_event_log.multipleRemoteHosts
     stage: alpha
     description: >-
       When enabled, allows configuring multiple remote hosts in a single receiver instance

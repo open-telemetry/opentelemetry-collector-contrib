@@ -14,8 +14,8 @@ var DomainControllersAutodiscoveryFeatureGate = featuregate.GlobalRegistry().Mus
 	featuregate.WithRegisterFromVersion("v0.150.0"),
 )
 
-var ReceiverWindowseventlogMultipleRemoteHostsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.windowseventlog.multipleRemoteHosts",
+var ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.windows_event_log.multipleRemoteHosts",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, allows configuring multiple remote hosts in a single receiver instance via the remote.servers configuration field."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47933"),
