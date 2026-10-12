@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"sync"
 	"testing"
 	"time"
@@ -94,6 +95,30 @@ func TestProcessor_HandlerError(t *testing.T) {
 		Spans:   []*jaeger.Span{{OperationName: testSpanName}},
 	})
 	require.NoError(t, err)
+}
+
+func TestProcessor_EmptyDatagram(t *testing.T) {
+	h := &fakeAgentHandler{}
+	hostPort, processor := createProcessor(t, compactFactory, agent.NewAgentProcessor(h))
+
+	conn, err := net.Dial("udp", hostPort)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	_, err = conn.Write([]byte{})
+	require.NoError(t, err)
+
+	client, clientCloser, err := newJaegerThriftUDPClient(hostPort, compactFactory)
+	require.NoError(t, err)
+	defer clientCloser.Close()
+
+	require.NoError(t, client.EmitBatch(t.Context(), batch))
+	require.Eventually(t,
+		func() bool { return len(h.GetJaegerBatches()) == 1 },
+		5*time.Second,
+		time.Millisecond,
+		"server should still be serving after the empty datagram")
+	require.True(t, processor.IsServing(), "processor must still be serving after empty datagram")
 }
 
 // NewJaegerThriftUDPClient creates a new jaeger agent client that works like Jaeger client
