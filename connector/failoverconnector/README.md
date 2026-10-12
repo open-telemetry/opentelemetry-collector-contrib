@@ -35,6 +35,9 @@ The following settings are available:
 
 - `priority_levels (required)`: list of pipeline level priorities in a 1 - n configuration, multiple pipelines can sit at a single priority level.
 - `retry_interval (optional)`: the frequency at which the pipeline levels will attempt to reestablish connection with all higher priority levels. Default value is 10 minutes. (See Example below for further explanation)
+- `sending_queue (optional)`: queues and batches data in the connector before it is routed to a priority level. Supports the common [`sending_queue` settings][exporterhelper] and is enabled by default.
+  We recommend configuring the queue here instead of on the exporters in the priority pipelines, and disabling `sending_queue` on those exporters.
+  Moving the queue to the connector avoids data being stuck in the queue of an unhealthy exporter, where it cannot be failed over to another priority level.
 - `condition`: Conditional statements that decide when the connector should failover. Currently supports below types
     - `error`: 
        - `contains`: ["network failure", "connection refused"] (required list of non-empty, case-insensitive substrings)
@@ -82,3 +85,4 @@ service:
 [Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[exporterhelper]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md
