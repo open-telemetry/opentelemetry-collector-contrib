@@ -79,7 +79,7 @@ func createLogsReceiver(
 		return &multiLogsReceiver{receivers: receivers}, nil
 	}
 
-	if metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() && len(receiverCfg.InputConfig.Remote.Servers) > 0 {
+	if metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.IsEnabled() && len(receiverCfg.InputConfig.Remote.Servers) > 0 {
 		remoteConfigs := expandMultipleHosts(receiverCfg.InputConfig.Remote)
 		receivers := make([]receiver.Logs, 0, len(remoteConfigs))
 		for _, rc := range remoteConfigs {

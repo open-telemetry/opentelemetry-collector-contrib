@@ -75,7 +75,7 @@ func (c *WindowsLogConfig) Validate() error {
 		return nil
 	}
 
-	if !metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() {
+	if !metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.IsEnabled() {
 		return errors.New("remote.servers requires the receiver.windowseventlog.multipleRemoteHosts feature gate to be enabled")
 	}
 

@@ -67,9 +67,9 @@ func TestExpandMultipleHosts(t *testing.T) {
 }
 
 func TestValidate_MutualExclusion(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), false))
 	}()
 
 	cfg := createTestConfig()
@@ -86,7 +86,7 @@ func TestValidate_MutualExclusion(t *testing.T) {
 }
 
 func TestValidate_FeatureGateRequired(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), false))
 
 	cfg := createTestConfig()
 	cfg.InputConfig.Remote = stanzawindows.RemoteConfig{
@@ -101,9 +101,9 @@ func TestValidate_FeatureGateRequired(t *testing.T) {
 }
 
 func TestValidate_MissingCredentials(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), false))
 	}()
 
 	cfg := createTestConfig()
@@ -117,9 +117,9 @@ func TestValidate_MissingCredentials(t *testing.T) {
 }
 
 func TestValidate_ValidMultiHostConfig(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), false))
 	}()
 
 	cfg := createTestConfig()
@@ -135,9 +135,9 @@ func TestValidate_ValidMultiHostConfig(t *testing.T) {
 }
 
 func TestCreateLogsReceiver_MultipleHosts(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), false))
 	}()
 
 	cfg := createTestConfig()
@@ -162,9 +162,9 @@ func TestCreateLogsReceiver_MultipleHosts(t *testing.T) {
 }
 
 func TestLoadConfigMultiHost(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowsEventLogMultipleRemoteHostsFeatureGate.ID(), false))
 	}()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_multi_host.yaml"))
