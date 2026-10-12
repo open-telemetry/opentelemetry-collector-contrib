@@ -16,7 +16,7 @@ issues: [51518]
 # These lines will be padded with 2 spaces and then inline with the main note.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `max_connections` defaults to 100, the previous hardcoded limit. Connections over the limit queue in the accept backlog. `0` means no limit.
+  `max_connections` defaults to 100, the previous hardcoded limit.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -25,9 +25,11 @@ const eventChannelLength = 100
 
 const (
 	defaultACKWaitTimeout = 30 * time.Second
-	// defaultMaxConnections is the default for Config.MaxConnections. Each
-	// connection acknowledges its chunks serially, so the cap also bounds
-	// in-flight chunk acknowledgments and the memory they hold.
+	// defaultMaxConnections bounds the number of simultaneously accepted
+	// connections. Each connection acknowledges its chunks serially (it blocks
+	// until the pipeline responds before reading the next event), so limiting
+	// connections also bounds the number of in-flight chunk acknowledgments and
+	// keeps memory use bounded when clients delay behind pipeline backpressure.
 	defaultMaxConnections = 100
 )
 
@@ -98,8 +100,10 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	// Queue connections over the limit in the accept backlog until a slot
-	// frees, which bounds in-flight chunk acknowledgments under load.
+	// Bound the number of simultaneously accepted connections. Excess
+	// connections wait in the accept backlog until a slot frees, which keeps
+	// the number of in-flight chunk acknowledgments bounded under load. With
+	// refuse_over_limit, the server refuses them instead (see addConn).
 	if r.conf.MaxConnections > 0 && !r.conf.RefuseOverLimit {
 		listener = netutil.LimitListener(listener, r.conf.MaxConnections)
 	}

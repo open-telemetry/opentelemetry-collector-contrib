@@ -26,6 +26,7 @@ type Config struct {
 	_ struct{}
 }
 
+// Validate checks that the connection limit settings are valid.
 func (c *Config) Validate() error {
 	if c.MaxConnections < 0 {
 		return errors.New("max_connections must be greater than or equal to 0")
