@@ -669,13 +669,14 @@ func TestTrackerRotateReusesPreviousSketch(t *testing.T) {
 
 func TestTrackerRotateReplacesDenseSketch(t *testing.T) {
 	tracker := newTracker()
-	for value := range 20000 {
+	const valuesPerSketch = 10000
+	for value := range valuesPerSketch {
 		hashValue := rotationBenchmarkHash(0, value)
 		tracker.current.InsertHash(hashValue)
 		tracker.previous.InsertHash(hashValue)
 	}
-	tracker.insertCount = 20000
-	tracker.previousInsertCount = 20000
+	tracker.insertCount = valuesPerSketch
+	tracker.previousInsertCount = valuesPerSketch
 	verifyRotationBenchmarkSketch(t, tracker.current, true)
 	verifyRotationBenchmarkSketch(t, tracker.previous, true)
 

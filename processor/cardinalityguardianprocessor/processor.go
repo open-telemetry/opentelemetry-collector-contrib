@@ -62,11 +62,11 @@ type trackerKey struct {
 const estimateInterval = 64
 
 // maxSparseSketchInsertCount is the largest number of insert calls guaranteed
-// to leave a precision-14 HLL++ sketch sparse. hyperloglog v0.3.0 switches to
-// dense after more than 1<<14 distinct sparse codes; insert calls can only
-// produce that many or fewer distinct codes. Above this conservative bound,
-// rotation replaces the sketch instead of clearing a potentially dense one.
-const maxSparseSketchInsertCount = 1 << 14
+// to leave a precision-14 HLL++ sketch sparse. The sparse buffer converts to
+// dense after it exceeds 1<<14 bytes, and each value can take up to five bytes.
+// Above this conservative bound, rotation replaces the sketch instead of
+// clearing a potentially dense one.
+const maxSparseSketchInsertCount = (1 << 14) / 5
 
 // tracker holds two HLL++ sketches for a (metric_name, label_key) pair plus
 // a fine-grained mutex so the shard-level lock can be released before HLL
