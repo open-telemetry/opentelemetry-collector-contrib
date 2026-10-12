@@ -643,7 +643,7 @@ func TestConsumeLogs_RecordsPartitionsHistogram(t *testing.T) {
 	}
 	require.NoError(t, proc.ConsumeLogs(t.Context(), logs))
 
-	m, err := tel.GetMetric("otelcol_processor_partitioning_partitions")
+	m, err := tel.GetMetric("otelcol.partitioning.partitions")
 	require.NoError(t, err)
 	hist, ok := m.Data.(metricdata.Histogram[int64])
 	require.True(t, ok)
@@ -654,7 +654,7 @@ func TestConsumeLogs_RecordsPartitionsHistogram(t *testing.T) {
 	assert.Equal(t, metricdata.NewExtrema[int64](2), dp.Min)
 	assert.Equal(t, metricdata.NewExtrema[int64](2), dp.Max)
 
-	_, err = tel.GetMetric("otelcol_processor_partitioning_key_evaluation_errors")
+	_, err = tel.GetMetric("otelcol.partitioning.key_evaluation.errors")
 	assert.Error(t, err, "no key evaluation error should be recorded")
 }
 
@@ -678,10 +678,10 @@ func TestConsumeLogs_RecordsKeyEvaluationErrors(t *testing.T) {
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
 
-	metadatatest.AssertEqualProcessorPartitioningKeyEvaluationErrors(t, tel,
+	metadatatest.AssertEqualPartitioningKeyEvaluationErrors(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
-	_, err = tel.GetMetric("otelcol_processor_partitioning_partitions")
+	_, err = tel.GetMetric("otelcol.partitioning.partitions")
 	assert.Error(t, err, "no partitions should be recorded for a rejected batch")
 }

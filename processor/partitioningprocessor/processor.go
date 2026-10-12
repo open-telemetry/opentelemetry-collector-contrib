@@ -72,7 +72,7 @@ func (p *partitioningProcessor) ConsumeMetrics(ctx context.Context, md pmetric.M
 // keyEvaluationError counts a batch rejected by key evaluation and returns
 // the error as permanent.
 func (p *partitioningProcessor) keyEvaluationError(ctx context.Context, err error) error {
-	p.telemetry.ProcessorPartitioningKeyEvaluationErrors.Add(ctx, 1)
+	p.telemetry.PartitioningKeyEvaluationErrors.Add(ctx, 1)
 	// Key evaluation depends only on the data, so a retry would fail the same way.
 	return consumererror.NewPermanent(err)
 }
@@ -80,7 +80,7 @@ func (p *partitioningProcessor) keyEvaluationError(ctx context.Context, err erro
 // recordPartitions records how many partitions an incoming batch was split into.
 func (p *partitioningProcessor) recordPartitions(ctx context.Context, partitions int) {
 	if partitions > 0 {
-		p.telemetry.ProcessorPartitioningPartitions.Record(ctx, int64(partitions))
+		p.telemetry.PartitioningPartitions.Record(ctx, int64(partitions))
 	}
 }
 

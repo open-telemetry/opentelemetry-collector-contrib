@@ -22,11 +22,11 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                    metric.Meter
-	mu                                       sync.Mutex
-	registrations                            []metric.Registration
-	ProcessorPartitioningKeyEvaluationErrors metric.Int64Counter
-	ProcessorPartitioningPartitions          metric.Int64Histogram
+	meter                           metric.Meter
+	mu                              sync.Mutex
+	registrations                   []metric.Registration
+	PartitioningKeyEvaluationErrors metric.Int64Counter
+	PartitioningPartitions          metric.Int64Histogram
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -58,16 +58,16 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorPartitioningKeyEvaluationErrors, err = builder.meter.Int64Counter(
-		"otelcol_processor_partitioning_key_evaluation_errors",
+	builder.PartitioningKeyEvaluationErrors, err = builder.meter.Int64Counter(
+		"otelcol.partitioning.key_evaluation.errors",
 		metric.WithDescription("Number of batches rejected because a key expression failed to evaluate or returned a non-string value. [Development]"),
-		metric.WithUnit("{batches}"),
+		metric.WithUnit("{batch}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorPartitioningPartitions, err = builder.meter.Int64Histogram(
-		"otelcol_processor_partitioning_partitions",
+	builder.PartitioningPartitions, err = builder.meter.Int64Histogram(
+		"otelcol.partitioning.partitions",
 		metric.WithDescription("Number of partitions each incoming batch was split into. [Development]"),
-		metric.WithUnit("{partitions}"),
+		metric.WithUnit("{partition}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

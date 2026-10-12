@@ -6,18 +6,18 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_processor_partitioning_key_evaluation_errors
+### otelcol.partitioning.key_evaluation.errors
 
 Number of batches rejected because a key expression failed to evaluate or returned a non-string value.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {batches} | Sum | Int | true | Development |
+| {batch} | Sum | Int | true | Development |
 
-### otelcol_processor_partitioning_partitions
+### otelcol.partitioning.partitions
 
 Number of partitions each incoming batch was split into.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {partitions} | Histogram | Int | Development |
+| {partition} | Histogram | Int | Development |

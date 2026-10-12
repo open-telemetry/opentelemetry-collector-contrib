@@ -25,18 +25,20 @@ tests:
 
 telemetry:
   metrics:
-    processor_partitioning_key_evaluation_errors:
+    partitioning.key_evaluation.errors:
+      prefix: otelcol.
       enabled: true
       description: Number of batches rejected because a key expression failed to evaluate or returned a non-string value.
-      unit: "{batches}"
+      stability: development
+      unit: "{batch}"
       sum:
         value_type: int
         monotonic: true
-      stability: development
-    processor_partitioning_partitions:
+    partitioning.partitions:
+      prefix: otelcol.
       enabled: true
       description: Number of partitions each incoming batch was split into.
-      unit: "{partitions}"
+      stability: development
+      unit: "{partition}"
       histogram:
         value_type: int
-      stability: development
