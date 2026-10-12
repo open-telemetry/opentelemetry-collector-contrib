@@ -85,12 +85,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordFileCountDataPoint(ts, 1, "file.include-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFileCountDataPoint(ts, 3, "file.include-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordFileCountDataPoint(ts+1, 3, "file.include-val-2")
+				assert.Equal(t, 2, mb.metricFileCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordFileCtimeDataPoint(ts, 1, "file.permissions-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFileCtimeDataPoint(ts, 3, "file.permissions-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordFileCtimeDataPoint(ts+1, 3, "file.permissions-val-2")
+				assert.Equal(t, 2, mb.metricFileCtime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -165,7 +171,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["file.count"], "Found a duplicate in the metrics slice: file.count")
 						validatedMetrics["file.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of files matched", mi.Description())
 						assert.Equal(t, "{file}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -207,7 +215,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["file.ctime"], "Found a duplicate in the metrics slice: file.ctime")
 						validatedMetrics["file.ctime"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
