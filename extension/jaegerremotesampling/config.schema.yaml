@@ -17,10 +17,10 @@ description: Config has the configuration for the extension enabling the health 
 type: object
 properties:
   grpc:
-    x-pointer: true
+    x-optional: true
     $ref: go.opentelemetry.io/collector/config/configgrpc.server_config
   http:
-    x-pointer: true
+    x-optional: true
     $ref: go.opentelemetry.io/collector/config/confighttp.server_config
   source:
     description: Source configures the source for the strategies file. One of `remote` or `file` has to be specified.

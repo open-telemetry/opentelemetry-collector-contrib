@@ -7,33 +7,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	// prepare and test
-	serverConfig := confighttp.NewDefaultServerConfig()
-	serverConfig.NetAddr = confignet.AddrConfig{
+	cfg := createDefaultConfig().(*Config)
+
+	require.True(t, cfg.HTTPServerConfig.HasValue())
+	assert.Equal(t, confignet.AddrConfig{
 		Endpoint:  "localhost:5778",
 		Transport: confignet.TransportTypeTCP,
-	}
-	expected := &Config{
-		HTTPServerConfig: &serverConfig,
-		GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
-			Endpoint:  "localhost:14250",
-			Transport: confignet.TransportTypeTCP,
-		}},
-	}
+	}, cfg.HTTPServerConfig.Get().NetAddr)
 
-	// test
-	cfg := createDefaultConfig()
-
-	// verify
-	assert.Equal(t, expected, cfg)
+	assert.False(t, cfg.GRPCServerConfig.HasValue())
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 

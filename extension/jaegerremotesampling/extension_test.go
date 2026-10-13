@@ -17,7 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -98,7 +100,12 @@ func TestRemote(t *testing.T) {
 
 			// create the config, pointing to the mock server
 			cfg := testConfig()
-			cfg.GRPCServerConfig.NetAddr.Endpoint = "127.0.0.1:0"
+			cfg.GRPCServerConfig = configoptional.Some(configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "127.0.0.1:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+			})
 			cfg.Source.ReloadInterval = tc.reloadInterval
 			cfg.Source.Remote = &configgrpc.ClientConfig{
 				Endpoint: fmt.Sprintf("127.0.0.1:%d", lis.Addr().(*net.TCPAddr).Port),
@@ -162,10 +169,19 @@ func (s *samplingServer) GetSamplingStrategy(ctx context.Context, params *api_v2
 		StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC,
 	}, nil
 }
-
 func testConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPServerConfig.NetAddr.Endpoint = "127.0.0.1:5778"
-	cfg.GRPCServerConfig.NetAddr.Endpoint = "127.0.0.1:14250"
+
+	httpCfg := *cfg.HTTPServerConfig.Get()
+	httpCfg.NetAddr.Endpoint = "127.0.0.1:5778"
+	cfg.HTTPServerConfig = configoptional.Some(httpCfg)
+
+	cfg.GRPCServerConfig = configoptional.Some(configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "127.0.0.1:14250",
+			Transport: confignet.TransportTypeTCP,
+		},
+	})
+
 	return cfg
 }

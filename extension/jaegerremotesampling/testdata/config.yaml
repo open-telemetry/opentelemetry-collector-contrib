@@ -6,3 +6,12 @@ jaegerremotesampling/1:
   source:
     reload_interval: 1s
     file: /etc/otelcol/sampling_strategies.json
+jaegerremotesampling/with_grpc_default:
+  grpc:
+  source:
+    file: /etc/otelcol/sampling_strategies.json
+jaegerremotesampling/with_grpc_custom:
+  grpc:
+    endpoint: 0.0.0.0:14260
+  source:
+    file: /etc/otelcol/sampling_strategies.json
