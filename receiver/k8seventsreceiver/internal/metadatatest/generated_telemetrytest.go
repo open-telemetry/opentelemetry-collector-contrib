@@ -25,7 +25,7 @@ func AssertEqualK8sEventsModifiedFiltered(t *testing.T, tt *componenttest.Teleme
 	want := metricdata.Metrics{
 		Name:        "otelcol.k8s.events.modified.filtered",
 		Description: "Number of MODIFIED watch events filtered out by dedup_interval. Always 0 when dedup_interval is not set. [Development]",
-		Unit:        "{events}",
+		Unit:        "{event}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

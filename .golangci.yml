@@ -108,6 +108,22 @@ linters:
         path: receiver/macosunifiedloggingreceiver/config_common.go
         text: resolvedArchivePaths
 
+      # github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp is deprecated
+      # in favor of go.opentelemetry.io/contrib/detectors/gcp, but the replacement only exposes
+      # an otel SDK resource.Detector and does not expose the underlying platform-detection API
+      # (ProjectID, CloudPlatform, GCEHostName, GKEClusterName) this package relies on.
+      - linters:
+          - staticcheck
+        path: internal/datadog/hostmetadata/internal/gcp/
+        text: SA1019
+
+      # Same deprecated github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
+      # package used here. Suppressed for now; revisit with a proper migration.
+      - linters:
+          - staticcheck
+        path: processor/resourcedetectionprocessor/internal/gcp/
+        text: SA1019
+
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45002
       - linters:
           - revive

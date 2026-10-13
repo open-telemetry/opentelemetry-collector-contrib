@@ -57,7 +57,7 @@ func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 	return nil, fmt.Errorf("FileContentHash: %w", errors.ErrUnsupported)
 }
 
-func (p *packageManager) UpdateContent(_ context.Context, packageName string, _ io.Reader, _, _ []byte) error {
+func (p *packageManager) UpdateContent(_ context.Context, packageName, _ string, _ io.Reader, _, _ []byte) error {
 	p.logger.Debug("UpdateContent not yet implemented", zap.String("package", packageName))
 	return fmt.Errorf("UpdateContent: %w", errors.ErrUnsupported)
 }

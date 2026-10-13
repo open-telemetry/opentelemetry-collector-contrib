@@ -72,6 +72,16 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		return err
 	}
 
+	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+
+	for _, opt := range allOptions {
+		if err := opt(kp); err != nil {
+			kp.logger.Error("Could not apply option", zap.Error(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			return err
+		}
+	}
+
 	if kp.rules.ContainerImageTag {
 		if metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() {
 			kp.logger.Warn(
@@ -106,16 +116,6 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 					"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
 					"See processor README section 'Semantic Conventions Compatibility' for details.",
 			)
-		}
-	}
-
-	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
-
-	for _, opt := range allOptions {
-		if err := opt(kp); err != nil {
-			kp.logger.Error("Could not apply option", zap.Error(err))
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			return err
 		}
 	}
 

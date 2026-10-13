@@ -10,11 +10,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
 
 func DataPointFunctions() map[string]ottl.Factory[*ottldatapoint.TransformContext] {
-	functions := ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()
+	functions := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()))
 
 	datapointFunctions := ottl.CreateFactoryMap(
 		newConvertSummarySumValToSumFactory(),
@@ -28,15 +30,16 @@ func DataPointFunctions() map[string]ottl.Factory[*ottldatapoint.TransformContex
 }
 
 func ExemplarFunctions() map[string]ottl.Factory[*ottlexemplar.TransformContext] {
-	return ottlfuncs.StandardFuncs[*ottlexemplar.TransformContext]()
+	return xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlexemplar.TransformContext]()))
 }
 
 func MetricFunctions() map[string]ottl.Factory[*ottlmetric.TransformContext] {
-	functions := ottlfuncs.StandardFuncs[*ottlmetric.TransformContext]()
+	functions := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext]()))
 
 	metricFunctions := ottl.CreateFactoryMap(
 		newExtractSumMetricFactory(),
 		newExtractCountMetricFactory(),
+		newExtractAvgMetricFactory(),
 		newExtractPercentileMetricFactory(),
 		newConvertGaugeToSumFactory(),
 		newConvertSumToGaugeFactory(),

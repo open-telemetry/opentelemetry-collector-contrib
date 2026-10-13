@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
@@ -415,7 +416,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			is, res := createTelemetry()
 
-			tCtx := NewTransformContextPtr(is, res, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			tCtx := NewTransformContext(is, res, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 			defer tCtx.Close()
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -448,7 +449,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl("resource_schema")
 
-	ctx := NewTransformContextPtr(scope, resource, sm, rm)
+	ctx := NewTransformContext(scope, resource, sm, rm)
 	defer ctx.Close()
 
 	tests := []struct {
@@ -555,4 +556,21 @@ func createTelemetry() (pcommon.InstrumentationScope, pcommon.Resource) {
 	is.Attributes().CopyTo(resource.Attributes())
 
 	return is, resource
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext: func(options ...TransformContextOption) *TransformContext {
+			return NewTransformContext(pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics(), options...)
+		},
+		WithCache: WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }

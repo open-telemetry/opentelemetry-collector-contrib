@@ -803,6 +803,17 @@ func TestWithExcludes(t *testing.T) {
 	}
 }
 
+func TestWithExcludesInvalidRegex(t *testing.T) {
+	p := &kubernetesprocessor{}
+	opt := withExcludes(ExcludeConfig{
+		Pods: []ExcludePodConfig{{Name: "[unclosed"}},
+	})
+	err := opt(p)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid pod exclude name")
+	assert.Nil(t, p.podIgnore.Pods)
+}
+
 func TestOtelAnnotations(t *testing.T) {
 	tests := []struct {
 		name            string

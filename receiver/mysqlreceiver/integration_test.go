@@ -126,6 +126,8 @@ func TestIntegration(t *testing.T) {
 				),
 				scraperinttest.WithCompareOptions(
 					pmetrictest.IgnoreResourceAttributeValue("mysql.instance.endpoint"),
+					pmetrictest.IgnoreResourceAttributeValue("server.address"),
+					pmetrictest.IgnoreResourceAttributeValue("server.port"),
 					pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
 					pmetrictest.IgnoreMetricValues(),
 					pmetrictest.IgnoreMetricDataPointsOrder(),
@@ -234,8 +236,8 @@ func runPerfSchemaSetup(t *testing.T, cfg *Config) {
 // end-to-end against real database containers:
 //
 //   - getDBVersion() correctly identifies MySQL vs MariaDB
-//   - scrapeTopQueryFunc uses the 6-column template on MySQL 8+ (query_sample_text present)
-//     and the 5-column fallback on MariaDB (no query_sample_text column)
+//   - scrapeTopQueryFunc uses the primary template on MySQL 8+ (query_sample_text
+//     present) and the fallback template on MariaDB (no query_sample_text column)
 //   - The shared plan cache is populated by scrapeTopQueryFunc so that
 //     scrapeQuerySampleFunc reuses cached plans without a second EXPLAIN call
 //
@@ -502,7 +504,7 @@ func TestIntegrationLogScraper(t *testing.T) {
 // TestVersionCompatibility verifies that getDBVersion() correctly identifies
 // MySQL and MariaDB flavors, and that getTopQueries() and getQuerySamples() select
 // the right query templates:
-//   - getTopQueries: 6-column (query_sample_text) for MySQL 8+, 5-column fallback otherwise
+//   - getTopQueries: primary template (with query_sample_text) for MySQL 8+, fallback otherwise
 //
 // This test manages containers directly with testcontainers.GenericContainer rather
 // than using scraperinttest.NewIntegrationTest. scraperinttest validates metrics
@@ -515,8 +517,10 @@ func TestVersionCompatibility(t *testing.T) {
 		name              string
 		image             string
 		wantProduct       dbProduct
-		wantSampleTextCol bool // true ↔ 6-column top-query template used
+		wantSampleTextCol bool // true ↔ primary top-query template (with query_sample_text) used
 		wantReplicaStatus bool // true ↔ SHOW REPLICA STATUS used instead of SHOW SLAVE STATUS
+		wantRedoLogStats  bool // true ↔ InnoDB redo-log LSN metrics are supported
+		wantBackupAdmin   bool // true ↔ redo-log metrics require BACKUP_ADMIN
 	}{
 		{
 			name:              "MySQL 8.0.33",
@@ -524,6 +528,8 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMySQL,
 			wantSampleTextCol: true,
 			wantReplicaStatus: true,
+			wantRedoLogStats:  true,
+			wantBackupAdmin:   false,
 		},
 		{
 			// mysql:5.7 has no official ARM64 image; this case is skipped on
@@ -533,6 +539,8 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMySQL,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
+			wantRedoLogStats:  false,
+			wantBackupAdmin:   false,
 		},
 		{
 			name:              "MariaDB 10.11",
@@ -540,6 +548,8 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMariaDB,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
+			wantRedoLogStats:  false,
+			wantBackupAdmin:   false,
 		},
 		{
 			name:              "MariaDB 11.4",
@@ -547,6 +557,8 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMariaDB,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
+			wantRedoLogStats:  false,
+			wantBackupAdmin:   false,
 		},
 	}
 
@@ -608,16 +620,18 @@ func TestVersionCompatibility(t *testing.T) {
 			assert.Equal(t, tc.wantProduct, dv.product, "product mismatch")
 			assert.Equal(t, tc.wantSampleTextCol, dv.supportsQuerySampleText(), "supportsQuerySampleText mismatch")
 			assert.Equal(t, tc.wantReplicaStatus, dv.supportsReplicaStatus(), "supportsReplicaStatus mismatch")
+			assert.Equal(t, tc.wantRedoLogStats, dv.supportsInnodbRedoLogStats(), "supportsInnodbRedoLogStats mismatch")
+			assert.Equal(t, tc.wantBackupAdmin, dv.requiresBackupAdminForInnodbRedoLogStats(), "requiresBackupAdminForInnodbRedoLogStats mismatch")
 
 			// --- getTopQueries: must succeed without error ---
 			// No workload is running, so the result may be empty, but the query
 			// itself must execute without error — which proves the correct template
-			// (5-column vs 6-column) was chosen for this server version.
+			// (primary vs fallback) was chosen for this server version.
 			queries, err := c.getTopQueries(10, 60, dv.supportsQuerySampleText())
 			require.NoError(t, err, "getTopQueries should not fail (wrong template would cause 'unknown column' error)")
 
 			// For MySQL 8+, any top queries returned must have querySampleText
-			// populated (non-empty string is only possible with the 6-column query).
+			// populated (non-empty string is only possible with the primary query).
 			// For MySQL <8 / MariaDB, querySampleText must always be empty string
 			// because the fallback template omits the column.
 			for _, q := range queries {
@@ -642,6 +656,22 @@ func TestVersionCompatibility(t *testing.T) {
 			// empty, but the query itself must execute without error.
 			_, err = c.getReplicaStatusStats(dv.supportsReplicaStatus())
 			require.NoError(t, err, "getReplicaStatusStats should not fail (wrong command would cause syntax error)")
+
+			switch dv.innodbRedoLogStatsSource() {
+			case innodbRedoLogStatsSourceGlobalStatus:
+				globalStats, err := c.getGlobalStats()
+				require.NoError(t, err, "getGlobalStats should not fail on supported MySQL versions")
+
+				stats, err := innodbRedoLogStatsFromGlobalStatus(globalStats)
+				require.NoError(t, err, "InnoDB redo-log global status variables should be available on supported MySQL versions")
+				assert.GreaterOrEqual(t, stats.currentLSN, stats.checkpointLSN)
+				assert.Equal(t, stats.currentLSN-stats.checkpointLSN, stats.checkpointAge)
+			case innodbRedoLogStatsSourceLogStatus:
+				stats, err := c.getInnodbRedoLogStatsFromLogStatus()
+				require.NoError(t, err, "getInnodbRedoLogStatsFromLogStatus should not fail on supported MySQL versions")
+				assert.GreaterOrEqual(t, stats.currentLSN, stats.checkpointLSN)
+				assert.Equal(t, stats.currentLSN-stats.checkpointLSN, stats.checkpointAge)
+			}
 		})
 	}
 }
