@@ -369,7 +369,7 @@ func TestBuildReq(t *testing.T) {
 	}
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
-	req, err := cl.(*clientImpl).buildReq(context.Background(), "/foo")
+	req, err := cl.(*clientImpl).buildReq(t.Context(), "/foo")
 	require.NoError(t, err)
 	require.NotNil(t, req)
 }
@@ -385,7 +385,7 @@ func TestBuildBadReq(t *testing.T) {
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
 	require.NoError(t, err)
-	_, err = cl.(*clientImpl).buildReq(context.Background(), "")
+	_, err = cl.(*clientImpl).buildReq(t.Context(), "")
 	require.Error(t, err)
 }
 
@@ -520,7 +520,7 @@ func TestGetWithContextCanceled(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	client := &clientImpl{
 		baseURL:    server.URL,
@@ -533,7 +533,7 @@ func TestGetWithContextCanceled(t *testing.T) {
 
 func TestGetWithContextDeadlineInterruptsStalledRequest(t *testing.T) {
 	released := make(chan struct{})
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		// Simulate a kubelet that accepts the connection and never answers until the client goes away.
 		<-r.Context().Done()
 		close(released)
@@ -545,7 +545,7 @@ func TestGetWithContextDeadlineInterruptsStalledRequest(t *testing.T) {
 		httpClient: http.Client{},
 		logger:     zap.NewNop(),
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	defer cancel()
 	start := time.Now()
 	_, err := client.GetWithContext(ctx, "/pods")

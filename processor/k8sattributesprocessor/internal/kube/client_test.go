@@ -3463,13 +3463,13 @@ func TestHandleKubeletPodUpdateConcurrentWithDeleteLoop(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			c.handleKubeletPodUpdate(&pod)
 		}
 	}()
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			c.forgetPod(&pod)
 			c.deleteLoopProcessing(0)
 			c.handlePodAdd(&pod)
