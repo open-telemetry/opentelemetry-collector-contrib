@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/cumulative_to_delta
+
+note: Fix ExponentialBuckets.Diff missing reset when old buckets precede current histogram offset
+
+issues: [51303]
+
+subtext:
+
+change_logs: [user]
