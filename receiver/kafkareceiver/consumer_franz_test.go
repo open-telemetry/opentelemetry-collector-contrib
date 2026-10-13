@@ -237,6 +237,99 @@ func TestPartitionProcessing(t *testing.T) {
 		waitAtomic(t, &processed, 4)
 	})
 
+	t.Run("resume cancels cold fetch", func(t *testing.T) {
+		// An idle sibling partition keeps the fetch that omitted the paused partition
+		// in flight until MaxFetchWait. Resuming must cancel that poll so the
+		// next hot record does not wait it out.
+		const fetchWait = time.Second
+		h := newPartitionProcessingHarness(t, 2, func(cfg *Config) {
+			cfg.ConsumerConfig.MaxFetchSize = 1
+			cfg.ConsumerConfig.MaxFetchWait = fetchWait
+		})
+		started := make(chan struct{}, 1)
+		release := make(chan struct{})
+		third := make(chan struct{}, 1)
+		h.start(func(ctx context.Context, record *kgo.Record, _ attribute.Set) error {
+			switch string(record.Value) {
+			case "first":
+				notify(started)
+				select {
+				case <-release:
+				case <-ctx.Done():
+				}
+			case "third":
+				notify(third)
+			}
+			return nil
+		})
+		h.produce(0, "first")
+		waitSignal(t, started, "first record did not start")
+		// The first record occupies the worker. The next record fills the
+		// one-slot mailbox and pauses partition 0. Partition 1 stays idle.
+		h.produce(0, "second")
+		h.waitPaused(1)
+		h.produce(0, "third")
+		startedAt := time.Now()
+		close(release)
+		waitSignal(t, third, "third record waited on the cold fetch")
+		require.Less(t, time.Since(startedAt), fetchWait/2) // The record produced with less than half of fetchWait.
+	})
+
+	t.Run("resume reconnect keeps records", func(t *testing.T) {
+		// abortInFlightFetches fails the broker read and reconnects. Records
+		// already queued, and records still only on the broker, must all be
+		// consumed in offset order after that reconnect.
+		const fetchWait = time.Second
+		h := newPartitionProcessingHarness(t, 2, func(cfg *Config) {
+			cfg.ConsumerConfig.MaxFetchSize = 1
+			cfg.ConsumerConfig.MaxFetchWait = fetchWait
+		})
+		started := make(chan struct{}, 1)
+		release := make(chan struct{})
+		var mu sync.Mutex
+		got := map[int32][]string{}
+		h.start(func(ctx context.Context, record *kgo.Record, _ attribute.Set) error {
+			if string(record.Value) == "p0-0" {
+				notify(started)
+				select {
+				case <-release:
+				case <-ctx.Done():
+				}
+			}
+			mu.Lock()
+			got[record.Partition] = append(got[record.Partition], string(record.Value))
+			mu.Unlock()
+			return nil
+		})
+		want := map[int32][]string{
+			0: {"p0-0", "p0-1", "p0-2", "p0-3"},
+			1: {"p1-0", "p1-1"},
+		}
+		h.produce(0, "p0-0")
+		waitSignal(t, started, "first record did not start")
+		// p0-0 occupies the worker. p0-1 fills the mailbox and pauses partition 0.
+		h.produce(0, "p0-1")
+		h.waitPaused(1)
+		// Let the poll block in the fetch that excludes partition 0. Records
+		// produced on partition 1 would satisfy that fetch and it would return
+		// before resume, so they are produced after the read is aborted.
+		time.Sleep(50 * time.Millisecond)
+		h.produce(0, "p0-2")
+		h.produce(0, "p0-3")
+		closedBefore := int64Sum(t, h.telemetry, "otelcol_kafka_broker_closed")
+		close(release)
+		h.produce(1, "p1-0")
+		h.produce(1, "p1-1")
+		require.Eventually(t, func() bool {
+			return int64Sum(t, h.telemetry, "otelcol_kafka_broker_closed") > closedBefore
+		}, 5*time.Second, 10*time.Millisecond, "resume did not close a broker connection")
+		require.EventuallyWithT(t, func(ct *assert.CollectT) {
+			mu.Lock()
+			defer mu.Unlock()
+			assert.Equal(ct, want, got)
+		}, 5*time.Second, 10*time.Millisecond)
+	})
+
 	t.Run("transient retry", func(t *testing.T) {
 		// A transient error rewinds the partition until processing succeeds.
 		h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
@@ -472,6 +565,21 @@ func TestObserveGaugeNilSnapshot(t *testing.T) {
 	require.NoError(t, consumer.observeOffsetLag(t.Context(), observer))
 	require.NoError(t, consumer.observeCurrentOffset(t.Context(), observer))
 	require.Equal(t, 0, observer.count)
+}
+
+func int64Sum(t *testing.T, telemetry *componenttest.Telemetry, metricName string) int64 {
+	t.Helper()
+	metric, err := telemetry.GetMetric(metricName)
+	if err != nil {
+		return 0
+	}
+	sum, ok := metric.Data.(metricdata.Sum[int64])
+	require.True(t, ok, "%s metric must be an int64 sum", metricName)
+	var total int64
+	for _, dp := range sum.DataPoints {
+		total += dp.Value
+	}
+	return total
 }
 
 func readGaugeSamples(t *testing.T, telemetry *componenttest.Telemetry, metricName string) []gaugeSample {
