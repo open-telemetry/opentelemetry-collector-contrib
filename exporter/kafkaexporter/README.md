@@ -132,6 +132,19 @@ The following settings can be optionally configured:
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
   - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
 
+### Trace context propagation
+
+The exporter injects trace context from the current export span into Kafka record headers for any signal when `service::telemetry::traces::propagators` is configured, and are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted. For example, to add W3C `traceparent` and, when present, `tracestate` headers:
+
+```yaml
+service:
+  telemetry:
+    traces:
+      propagators: [tracecontext]
+```
+
+Headers are injected only when the export context has a valid span. In that case, existing `record_headers` or `include_metadata_keys` headers for all propagator fields are removed, even if the propagator does not inject a replacement value. Other headers are preserved.
+
 ### Shared signal topic
 
 To send more than one signal to the same topic, set each signal's `topic` to that topic and enable

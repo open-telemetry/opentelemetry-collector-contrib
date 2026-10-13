@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestConfig_Validate(t *testing.T) {
@@ -563,4 +566,22 @@ func TestSamplerConfig_effectiveMaxKeys(t *testing.T) {
 			assert.Equal(t, tt.want, s.effectiveMaxKeys())
 		})
 	}
+}
+
+func TestConfig_FleetTrackerID_Unmarshal(t *testing.T) {
+	cfg := &Config{
+		TraceTimeout:  time.Second,
+		DecisionDelay: time.Second,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	cm := confmap.NewFromStringMap(map[string]any{
+		"fleet_tracker": "my_tracker/prod",
+	})
+	require.NoError(t, cm.Unmarshal(cfg))
+	require.NotNil(t, cfg.FleetTrackerID)
+	assert.Equal(t, component.MustNewIDWithName("my_tracker", "prod"), *cfg.FleetTrackerID)
+	assert.NoError(t, cfg.Validate())
 }
