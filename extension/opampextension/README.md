@@ -28,14 +28,17 @@ The following settings are optional for the websocket client:
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
     - `auth`: The ID of an auth extension to use for authentication.
-    - `socket`: A local IPC socket to dial instead of a TCP connection. When
-      set, `endpoint` only supplies the URL scheme, request path, and `Host`
-      header (its host and port are ignored). This is typically set by the
-      Supervisor for the local supervisor-to-collector link and not configured
-      manually.
+    - `socket`: A local IPC socket to dial instead of a TCP connection. This is
+      typically set by the Supervisor for the local supervisor-to-collector
+      link and not configured manually. `endpoint` above is still required and
+      the two settings work together: `socket` determines where the connection
+      is dialed, while `endpoint` supplies the URL scheme, request path, and
+      `Host` header (its host and port are ignored). Setting `socket` without
+      `endpoint` is a configuration error.
       - `transport`: `unix` (Unix domain socket) or `npipe` (Windows named pipe).
+        Required.
       - `endpoint`: The socket path (e.g. `/var/run/otelcol/opamp.sock`) or
-        named pipe path (e.g. `\\.\pipe\opamp`).
+        named pipe path (e.g. `\\.\pipe\opamp`). Required.
 
 The following settings are optional for the HTTP client:
 
