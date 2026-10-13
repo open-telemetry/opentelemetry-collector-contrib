@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: extension/docker_observer
+note: Discover IPv6-only Docker endpoints and format their port targets correctly.
+issues: [50972]
+subtext:
+change_logs: [user]

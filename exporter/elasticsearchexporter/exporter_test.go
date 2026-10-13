@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -3260,6 +3261,9 @@ func TestExporterBatcher(t *testing.T) {
 	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
 			testauthID: newMockAuthClient(func(req *http.Request) (*http.Response, error) {
+				if req.URL.Path == "/" {
+					return nil, errors.New("nope")
+				}
 				requests = append(requests, req)
 				return nil, errors.New("nope")
 			}),
@@ -3320,9 +3324,11 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		return &mockHost{
 			extensions: map[component.ID]component.Component{
 				testCtxKey: newMockAuthClient(func(req *http.Request) (*http.Response, error) {
-					info := client.FromContext(req.Context())
-					for k := range metadata.Keys() {
-						assert.Equal(t, metadata.Get(k), info.Metadata.Get(k))
+					if req.URL.Path != "/" {
+						info := client.FromContext(req.Context())
+						for k := range metadata.Keys() {
+							assert.Equal(t, metadata.Get(k), info.Metadata.Get(k))
+						}
 					}
 					req.Clone(req.Context())
 					req.URL.Host = esURL.Host
@@ -3802,4 +3808,53 @@ func TestExporterTimeout_Independent(t *testing.T) {
 	assert.ErrorContains(t, err, "418")
 	assert.Equal(t, int32(successfulOnAttempt), count.Load())
 	assert.GreaterOrEqual(t, time.Since(start), timeout)
+}
+
+func TestExporterProfiles(t *testing.T) {
+	t.Run("downsampled events", func(t *testing.T) {
+		const numEvents = 1000
+
+		for _, tc := range []struct {
+			mode   string
+			suffix string
+		}{
+			{mode: "ecs", suffix: ""},
+			{mode: "otel", suffix: ".otel-default"},
+		} {
+			t.Run(tc.mode, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				profiles := basicProfiles()
+				profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Samples().At(0).Values().Append(numEvents)
+
+				exporter := newTestProfilesExporter(t, server.URL, func(cfg *Config) {
+					// Set wait_for_result to be true so that all documents are flushed when Consume* returns
+					cfg.QueueBatchConfig.Get().WaitForResult = true
+				})
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {tc.mode}})})
+				mustSendProfilesWithCtx(ctx, t, exporter, profiles)
+
+				docsPerIndex := make(map[string]int)
+				for _, item := range rec.Items() {
+					docsPerIndex[gjson.GetBytes(item.Action, "create._index").Str]++
+				}
+
+				assert.Equal(t, numEvents, docsPerIndex["profiling-events-all"+tc.suffix])
+				// Each event has p=0.2 to be copied into the first downsampled index, so with 1000 events
+				// the index is populated with overwhelming probability but never holds every event.
+				firstDownsampled := docsPerIndex["profiling-events-5pow01"+tc.suffix]
+				assert.Positive(t, firstDownsampled)
+				assert.Less(t, firstDownsampled, numEvents)
+				for index := range docsPerIndex {
+					if strings.HasPrefix(index, "profiling-events-5pow") {
+						assert.True(t, strings.HasSuffix(index, tc.suffix), "unexpected downsampled index %q", index)
+					}
+				}
+			})
+		}
+	})
 }

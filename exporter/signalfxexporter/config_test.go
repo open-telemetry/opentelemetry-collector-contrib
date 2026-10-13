@@ -38,17 +38,17 @@ func TestLoadConfig(t *testing.T) {
 	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
+	defaultClientConfig.Keepalive = configoptional.Some(confighttp.NewDefaultKeepaliveClientConfig())
+	defaultClientConfig.Keepalive.Get().IdleConnTimeout = 30 * time.Second
+	defaultClientConfig.Keepalive.Get().MaxIdleConnsPerHost = 100
 	defaultClientConfig.Timeout = 10 * time.Second
 	defaultClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
 	defaultClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	defaultClientConfig.HTTP2PingTimeout = 10 * time.Second
-	// The factory sets these through Keepalive, which Unmarshal folds into the
-	// deprecated fields (Keepalive is left as None). Drop these once the
-	// deprecated fields are removed from confighttp.
-	defaultClientConfig.MaxIdleConnsPerHost = 100          //nolint:staticcheck // SA1019: deprecated field still carries the effective value
-	defaultClientConfig.IdleConnTimeout = 30 * time.Second //nolint:staticcheck // SA1019: deprecated field still carries the effective value
 
 	allSettingsClientConfig := confighttp.NewDefaultClientConfig()
+	allSettingsClientConfig.Keepalive.Get().IdleConnTimeout = 30 * time.Second
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConnsPerHost = 100
 	allSettingsClientConfig.Timeout = 2 * time.Second
 	allSettingsClientConfig.Headers = configopaque.MapList{
 		{Name: "added-entry", Value: "added value"},
@@ -57,7 +57,6 @@ func TestLoadConfig(t *testing.T) {
 	allSettingsClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
 	allSettingsClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	allSettingsClientConfig.HTTP2PingTimeout = 10 * time.Second
-	allSettingsClientConfig.IdleConnTimeout = 30 * time.Second //nolint:staticcheck // SA1019: default folded from Keepalive; testdata does not override idle_conn_timeout
 	// max_idle_conns and max_idle_conns_per_host are deprecated keys and set
 	// as such in testdata/config.yaml; unmarshal them through confmap
 	// (rather than setting the fields directly) so that allSettingsClientConfig

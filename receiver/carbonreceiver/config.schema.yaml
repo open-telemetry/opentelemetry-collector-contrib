@@ -4,7 +4,7 @@ properties:
   parser:
     description: Parser specifies a parser and the respective configuration to be used by the receiver.
     x-pointer: true
-    $ref: ./protocol.config
+    $ref: ./internal/protocol.config
   tcp_idle_timeout:
     description: TCPIdleTimeout is the timeout for idle TCP connections, it is ignored if transport being used is UDP.
     type: string

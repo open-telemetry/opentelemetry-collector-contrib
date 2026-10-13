@@ -27,6 +27,12 @@ type LogReceiverType interface {
 	InputConfig(component.Config) operator.Config
 }
 
+// LogReceiverTypeWithScope is an optional interface that allows a stanza-based receiver to provide a custom ScopeName.
+type LogReceiverTypeWithScope interface {
+	LogReceiverType
+	ScopeName() string
+}
+
 // NewFactory creates a factory for a Stanza-based receiver
 func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel, opts ...xrcvr.FactoryOption) rcvr.Factory {
 	allOpts := []xrcvr.FactoryOption{
@@ -62,9 +68,13 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		rcv := &receiver{
 			set:       params.TelemetrySettings,
 			id:        params.ID,
+			buildInfo: params.BuildInfo,
 			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,
+		}
+		if lrs, ok := logReceiverType.(LogReceiverTypeWithScope); ok {
+			rcv.scopeName = lrs.ScopeName()
 		}
 
 		var emitterOpts []helper.EmitterOption

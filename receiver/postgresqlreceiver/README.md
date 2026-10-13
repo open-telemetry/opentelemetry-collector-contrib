@@ -97,7 +97,14 @@ The following settings are optional:
 
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases. This list applies to metrics only; the query sample and top query collectors ignore it and are filtered solely by `exclude_databases`.
 
-- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the default `postgres` database for discovery and server-level queries, even if it is listed here.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the configured `connect_database` (default `postgres`) for discovery and server-level queries, even if it is listed here.
+
+- `connect_database` (default = `postgres`): The database the receiver connects to for discovery and server-level queries, including `pg_stat_statements`. Independent of `databases` — `pg_stat_statements` is tracked cluster-wide, so any database with the extension installed works as the connection target, regardless of which databases are being monitored. Use this if `pg_stat_statements` lives outside `postgres`, or if you connect through a dedicated monitoring-only database:
+  ```yaml
+  connect_database: "monitoring"   # extension lives here
+  databases:
+    - "mydb"                       # database being monitored
+  ```
 
 > [!NOTE]
 > Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:
@@ -165,12 +172,19 @@ We provide functionality to collect the most executed queries from PostgreSQL. I
 
 Along with those attributes, we will also report the query plan we gathered if it is possible. 
 
-By default, top query collection is disabled, also note, to use it, you will need 
-to create the extension to every database. Take the example from `testdata/integration/02-create-extension.sh`
+By default, top query collection is disabled, also note, to use it, you will need
+to create the extension in the database the receiver connects to (`connect_database`,
+default `postgres`) — `pg_stat_statements` is tracked cluster-wide, so it does not need to be
+created in every database. Take the example from `testdata/integration/02-create-extension.sh`
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 ```
+
+> [!NOTE]
+> This is different from [vector metrics](#vector-metrics) below, which query per-database
+> clients — `connect_database` has no effect there, and `pg_stat_statements` must be installed
+> in every scanned database for vector metrics to work.
 
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
@@ -183,6 +197,40 @@ separately. This could lead some resources usage and limit this will reduce the 
 This defines the cache's size for query plan.
 - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
 - `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+
+#### `db.server.query_plan`
+
+By default, `db.server.top_query` carries the query's execution plan in its `postgresql.query_plan`
+attribute. Enabling `db.server.query_plan` isolates the plan on a record of its own, where it can be
+filtered, routed or dropped independently of the query statistics, and where an oversized plan does
+not take those statistics with it when a batcher splits by size.
+
+`db.server.top_query` is then emitted **without** its `postgresql.query_plan` attribute, and the plan
+itself is reported on `db.server.query_plan`, joined back to its query via `postgresql.queryid`,
+`db.namespace` and `postgresql.rolname` — `queryid` alone can repeat across databases and across
+roles in the same database. A query with no plan available yet (not yet explained, or the `EXPLAIN`
+failed) produces no `db.server.query_plan` record. Leaving `db.server.query_plan` disabled preserves
+the previous behavior exactly.
+
+Known limitations of the join key:
+- It doesn't distinguish `toplevel`, so a top-level statement and a nested one it calls can still
+  collide (only with `pg_stat_statements.track = all`, not the default).
+- `postgresql.rolname` is empty once the role that ran the statement is dropped, so two rows from
+  different dropped roles can collide too (mainly with ephemeral roles or credential rotation).
+
+`db.server.query_plan` is sourced from the same collection as `db.server.top_query` and only splits
+the plan out of it, so it needs no grants of its own, and enabling it without `db.server.top_query`
+is a configuration error.
+
+```yaml
+receivers:
+  postgresql:
+    events:
+      db.server.top_query:
+        enabled: true
+      db.server.query_plan:                      # reports the execution plan on its own event, off db.server.top_query
+        enabled: true
+```
 
 ### Vector Metrics
 
