@@ -30,7 +30,7 @@ services:
       - otel-clickhouse
 
   clickhouse:
-    image: clickhouse/clickhouse-server:26.9.10@sha256:b01d1d45df540e487396838dd1397550215a07a8998aa6ac3b50b39802d62701
+    image: clickhouse/clickhouse-server:26.9.15@sha256:b32b9a19fadc2750880ff059dcf074907b1506922b5480fb40abd65efc48fb29
     ports:
       - "9000:9000"
       - "8123:8123"
