@@ -57,7 +57,7 @@ resourceLogs:
                   stringValue: table/sql/handler
               - key: mysql.wait_type
                 value:
-                  stringValue: CPU
+                  stringValue: wait/io/table/sql/handler
               - key: mysql.session.status
                 value:
                   stringValue: waiting

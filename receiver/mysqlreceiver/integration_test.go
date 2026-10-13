@@ -961,6 +961,23 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 						"record %d (GET_LOCK): mysql.events_waits_current.timer_wait must be >= 0", idx)
 				}
 
+				// mysql.wait_event.type and mysql.wait_event.name are derived from
+				// mysql.wait_type by splitting it on its first two '/'-separated
+				// segments. GET_LOCK is a genuine blocked wait (session.status is
+				// "waiting" here), so this record is where that derivation actually
+				// runs — reassembling the two must reproduce the raw value exactly.
+				if status, ok := attrs.Get("mysql.session.status"); ok && status.Str() == "waiting" {
+					waitType, hasWaitType := attrs.Get("mysql.wait_type")
+					waitEventType, hasWaitEventType := attrs.Get("mysql.wait_event.type")
+					waitEventName, hasWaitEventName := attrs.Get("mysql.wait_event.name")
+					assert.True(t, hasWaitType && hasWaitEventType && hasWaitEventName,
+						"record %d (GET_LOCK): mysql.wait_type/mysql.wait_event.type/mysql.wait_event.name missing on a waiting record", idx)
+					if hasWaitType && hasWaitEventType && hasWaitEventName {
+						assert.Equal(t, waitType.Str(), "wait/"+waitEventType.Str()+"/"+waitEventName.Str(),
+							"record %d (GET_LOCK): mysql.wait_event.type/.name must reassemble to mysql.wait_type", idx)
+					}
+				}
+
 				// Network attributes — non-negative integers (port may be 0 for Unix socket clients).
 				assertIntAttrNonNegative(t, attrs, "client.port", idx)
 				assertIntAttrNonNegative(t, attrs, "network.peer.port", idx)
