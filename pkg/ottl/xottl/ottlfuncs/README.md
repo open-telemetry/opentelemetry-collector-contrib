@@ -15,7 +15,7 @@ Available Editors:
 ### sanitize
 
 > [!IMPORTANT]
-> This function is experimental and may change in future releases.
+> This function is experimental and may change in future releases. It requires the [`pkg.ottl.functions.enableExperimental`](../../documentation.md#feature-gates) feature gate to be enabled.
 
 `sanitize(target, format, Optional[replacement])`
 

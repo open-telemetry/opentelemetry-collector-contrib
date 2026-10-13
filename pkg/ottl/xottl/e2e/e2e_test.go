@@ -221,6 +221,8 @@ func Test_e2e_converters(t *testing.T) {
 }
 
 func Test_e2e_editors(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true))
+
 	tests := []struct {
 		statement string
 		want      func(tCtx *ottllog.TransformContext)
@@ -315,6 +317,13 @@ func Test_e2e_editors(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_e2e_experimental_gate_disabled(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, false))
+
+	_, err := parseStatementWithAndWithoutPathContext(`sanitize(body, "utf-8")`)
+	require.ErrorContains(t, err, "function \"sanitize\" is experimental and requires the `pkg.ottl.functions.enableExperimental` feature gate to be enabled")
 }
 
 func Test_e2e_lambda_gate_disabled(t *testing.T) {
