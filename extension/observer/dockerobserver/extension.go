@@ -5,6 +5,7 @@ package dockerobserver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -105,11 +106,8 @@ func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.StopListAndWatch()
 	d.cancel()
 	err := d.wg.Wait()
-	// Close the docker client to clean up underlying connections.
 	if d.dClient != nil {
-		if closeErr := d.dClient.Close(); closeErr != nil && err == nil {
-			err = closeErr
-		}
+		return errors.Join(err, d.dClient.Close())
 	}
 	return err
 }
