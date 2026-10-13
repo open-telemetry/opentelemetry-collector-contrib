@@ -95,13 +95,13 @@ type BaoKeyConfig struct {
 }
 
 type DeadLetterConfig struct {
-	Enabled               bool          `mapstructure:"enabled"`
-	StorageID             component.ID  `mapstructure:"storage"`
-	KeyPrefix             string        `mapstructure:"key_prefix"`
-	IncludeRecord         *bool         `mapstructure:"include_record"`
-	IncludeResource       *bool         `mapstructure:"include_resource"`
-	Reasons               []string      `mapstructure:"reasons"`
-	FailureModes          []string      `mapstructure:"failure_modes"`
+	Enabled         bool         `mapstructure:"enabled"`
+	StorageID       component.ID `mapstructure:"storage"`
+	KeyPrefix       string       `mapstructure:"key_prefix"`
+	IncludeRecord   *bool        `mapstructure:"include_record"`
+	IncludeResource *bool        `mapstructure:"include_resource"`
+	Reasons         []string     `mapstructure:"reasons"`
+	FailureModes    []string     `mapstructure:"failure_modes"`
 	// TODO: validate bounds when DLQ is implemented (e.g. >0 and an upper cap).
 	MaxEntrySizeBytes     int           `mapstructure:"max_entry_size_bytes"`
 	FailOnStorageError    *bool         `mapstructure:"fail_on_storage_error"`
