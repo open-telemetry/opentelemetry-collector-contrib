@@ -18,8 +18,8 @@ type tracesRouter struct {
 	*baseFailoverRouter[consumer.Traces]
 }
 
-func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config, logger *zap.Logger) (*tracesRouter, error) {
-	failover, err := newBaseFailoverRouter(provider, cfg, logger)
+func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config, set connector.Settings) (*tracesRouter, error) {
+	failover, err := newBaseFailoverRouter(provider, cfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func newTracesToTraces(set connector.Settings, cfg component.Config, traces cons
 		return nil, errors.New("consumer is not of type TracesRouter")
 	}
 
-	failover, err := newTracesRouter(tr.Consumer, config, set.Logger)
+	failover, err := newTracesRouter(tr.Consumer, config, set)
 	if err != nil {
 		return nil, err
 	}
