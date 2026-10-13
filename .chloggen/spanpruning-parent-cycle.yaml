@@ -7,7 +7,7 @@ change_type: bug_fix
 component: processor/span_pruning
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Skip traces whose parent links form a cycle instead of looping forever.
+note: Skip traces whose parent links form a cycle to avoid looping forever.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52022]
