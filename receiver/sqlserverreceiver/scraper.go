@@ -72,6 +72,7 @@ type sqlServerScraperHelper struct {
 	sqlQuery                  string
 	clientProviderFunc        sqlquery.ClientProviderFunc
 	dbProviderFunc            sqlquery.DbProviderFunc
+	startProviderFunc         func(component.Host) error
 	logger                    *zap.Logger
 	telemetry                 sqlquery.TelemetryConfig
 	client                    sqlquery.DbClient
@@ -146,7 +147,13 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 	return s.id
 }
 
-func (s *sqlServerScraperHelper) Start(_ context.Context, _ component.Host) error {
+func (s *sqlServerScraperHelper) Start(_ context.Context, host component.Host) error {
+	// Resolve the auth extension credential (no-op when auth is not configured).
+	if s.startProviderFunc != nil {
+		if err := s.startProviderFunc(host); err != nil {
+			return fmt.Errorf("failed to initialize auth extension: %w", err)
+		}
+	}
 	// The connection pool is owned by the receiver and shared across all
 	// scrapers. Fetch the shared pool (opened once by the provider) rather than
 	// opening a new one here.

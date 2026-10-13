@@ -1,0 +1,57 @@
+# Manual integration test: sqlserverreceiver with azure_auth (service principal)
+#
+# This config demonstrates the azure_auth extension injecting Azure AD credentials
+# into the sqlserverreceiver without storing secrets in the config file.
+#
+# Prerequisites
+# -------------
+# 1. An Azure SQL server and database.
+# 2. A service principal with db_datareader on that database:
+#
+#      CREATE USER [<app-name>] FROM EXTERNAL PROVIDER;
+#      ALTER ROLE db_datareader ADD MEMBER [<app-name>];
+#
+# 3. Set the four environment variables below.
+#
+# Usage
+# -----
+#   export AZURE_TENANT_ID=<your-tenant-id>
+#   export AZURE_CLIENT_ID=<your-client-id>
+#   export AZURE_CLIENT_SECRET=<your-client-secret>
+#   export AZURE_SQL_SERVER=<your-server>.database.windows.net
+#
+#   ./bin/otelcontribcol_local --config receiver/sqlserverreceiver/testdata/azure-auth-config.yaml
+#
+# Expected output
+# ---------------
+# The debug exporter will print sqlserver.* metrics to stdout every 30 s.
+# A "no such host" or "login failed" error means the credentials or server
+# name are wrong. Any other error is a bug worth reporting.
+
+extensions:
+  azure_auth:
+    service_principal:
+      tenant_id: ${AZURE_TENANT_ID}
+      client_id: ${AZURE_CLIENT_ID}
+      client_secret: ${AZURE_CLIENT_SECRET}
+
+receivers:
+  sqlserver:
+    collection_interval: 30s
+    server: ${AZURE_SQL_SERVER}
+    port: 1433
+    auth: azure_auth
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  extensions: [azure_auth]
+  pipelines:
+    metrics:
+      receivers: [sqlserver]
+      exporters: [debug]
