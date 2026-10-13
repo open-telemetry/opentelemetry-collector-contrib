@@ -71,19 +71,25 @@ func TestAssignDepths(t *testing.T) {
 	grandchild := &spanNode{parent: child}
 	orphan := &spanNode{}
 	acyclic := map[pcommon.SpanID]*spanNode{{1}: grandchild, {2}: child, {3}: root, {4}: orphan}
-	require.True(t, assignDepths(acyclic))
+	require.NoError(t, assignDepths(acyclic))
 	assert.Equal(t, 0, root.depth())
 	assert.Equal(t, 1, child.depth())
 	assert.Equal(t, 2, grandchild.depth())
 	assert.Equal(t, 0, orphan.depth())
 
-	a, b, c := &spanNode{}, &spanNode{}, &spanNode{}
+	withID := func(b byte) *spanNode {
+		span := ptrace.NewSpan()
+		span.SetSpanID(pcommon.SpanID{b})
+		return &spanNode{span: span}
+	}
+	a, b, c := withID(4), withID(5), withID(6)
 	a.parent, b.parent, c.parent = b, c, a
 	under := &spanNode{parent: a}
 	cyclic := map[pcommon.SpanID]*spanNode{{1}: root, {2}: child, {4}: a, {5}: b, {6}: c, {7}: under}
-	assert.False(t, assignDepths(cyclic), "a three span cycle")
+	assert.ErrorContains(t, assignDepths(cyclic), "parent cycle through span 0", "a three span cycle")
 
-	self := &spanNode{}
+	self := withID(1)
 	self.parent = self
-	assert.False(t, assignDepths(map[pcommon.SpanID]*spanNode{{1}: self}), "a self parent")
+	assert.EqualError(t, assignDepths(map[pcommon.SpanID]*spanNode{{1}: self}),
+		"parent cycle through span "+pcommon.SpanID{1}.String(), "a self parent")
 }

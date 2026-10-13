@@ -5,6 +5,7 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"bytes"
+	"fmt"
 	"slices"
 	"sort"
 
@@ -87,9 +88,9 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 
 	// A span that is its own ancestor would make every upward walk loop
 	// forever, so skip the trace when assigning depths finds a cycle.
-	if !assignDepths(tree.nodeByID) {
+	if err := assignDepths(tree.nodeByID); err != nil {
 		tree.hasCycle = true
-		p.logger.Debug("parent cycle detected, skipping trace")
+		p.logger.Debug("skipping trace", zap.Error(err))
 		return tree
 	}
 
@@ -125,9 +126,9 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 
 // assignDepths sets each node's depth by walking up from it until it reaches a
 // root, an orphan, or a node already assigned, so every node is walked once.
-// It reports false if a walk reaches a node already on its own path, which
+// It returns an error if a walk reaches a node already on its own path, which
 // means the parent links form a cycle.
-func assignDepths(nodeByID map[pcommon.SpanID]*spanNode) bool {
+func assignDepths(nodeByID map[pcommon.SpanID]*spanNode) error {
 	const (
 		unvisited = iota
 		onPath
@@ -143,7 +144,7 @@ func assignDepths(nodeByID map[pcommon.SpanID]*spanNode) bool {
 			n = n.parent
 		}
 		if n != nil && state[n] == onPath {
-			return false
+			return fmt.Errorf("parent cycle through span %s", n.span.SpanID())
 		}
 		d := -1
 		if n != nil {
@@ -156,7 +157,7 @@ func assignDepths(nodeByID map[pcommon.SpanID]*spanNode) bool {
 		}
 		path = path[:0]
 	}
-	return true
+	return nil
 }
 
 // getLeaves returns the pre-computed leaf nodes (spans with no children).
