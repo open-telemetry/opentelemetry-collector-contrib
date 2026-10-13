@@ -69,6 +69,9 @@ type TopQueryCollection struct {
 // QueryPlanCache controls the receiver's in-memory cache of obfuscated XML plans.
 type QueryPlanCache struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for a sqlserver receiver.
