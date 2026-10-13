@@ -60,3 +60,21 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts)
 	require.Equal(t, expectedEndpoints, endpoints)
 }
+
+func TestPodObjectToPortEndpointIPv6(t *testing.T) {
+	pod := podWithNamedPorts.DeepCopy()
+	pod.Status.PodIP = "2001:db8::10"
+
+	endpoints := convertPodToEndpoints("namespace", pod)
+	require.Len(t, endpoints, 3)
+
+	endpoint := endpoints[2]
+	require.Equal(t, "[2001:db8::10]:443", endpoint.Target)
+
+	env, err := endpoint.Env()
+	require.NoError(t, err)
+	require.Equal(t, "[2001:db8::10]:443", env["endpoint"])
+	require.Equal(t, "2001:db8::10", env["host"])
+	require.Equal(t, string(observer.PortType), env["type"])
+	require.Equal(t, uint16(443), env["port"])
+}

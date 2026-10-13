@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
 
 const (
@@ -394,7 +395,9 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			}
 			group[logStreamName] = resourceLogs
 
-			_ = resourceLogs.ScopeLogs().AppendEmpty()
+			scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+			scopeLogs.Scope().SetName(metadata.ScopeName)
+			scopeLogs.Scope().SetVersion(l.settings.BuildInfo.Version)
 		}
 
 		// Now we know resourceLogs is initialized and has one scopeLogs so we don't have to handle any special cases.

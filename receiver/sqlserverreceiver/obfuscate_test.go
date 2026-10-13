@@ -164,7 +164,7 @@ func TestObfuscateQueryPlanCacheReportsOutcomes(t *testing.T) {
 	telemetry := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.WithoutCancel(t.Context()))) })
 	obf := newObfuscator(zap.NewNop(), true)
-	obf.initCacheMetrics(telemetry.NewTelemetrySettings(), component.MustNewIDWithName("sqlserver", "cache-test"))
+	obf.initCacheMetrics(telemetry.NewTelemetrySettings(), component.MustNewIDWithName("sql_server", "cache-test"))
 	plan := `<ShowPlanXML StatementText="SELECT 42"></ShowPlanXML>`
 	for range 2 {
 		_, err := obf.obfuscateXMLPlan(plan)
@@ -183,7 +183,7 @@ func TestObfuscateQueryPlanCacheReportsOutcomes(t *testing.T) {
 		require.True(t, ok)
 		receiver, ok := point.Attributes.Value(attribute.Key("receiver"))
 		require.True(t, ok)
-		assert.Equal(t, "sqlserver/cache-test", receiver.AsString())
+		assert.Equal(t, "sql_server/cache-test", receiver.AsString())
 		counts[outcome.AsString()] = point.Value
 	}
 	assert.Equal(t, map[string]int64{"hit": 1, "miss": 1, "bypass": 1}, counts)

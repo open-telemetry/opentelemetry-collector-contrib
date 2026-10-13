@@ -1107,6 +1107,10 @@ func (mockOpAMPClient) SetCapabilities(*protobufs.AgentCapabilities) error {
 	return nil
 }
 
+func (mockOpAMPClient) SetConnectionSettingsStatus(*protobufs.ConnectionSettingsStatus) error {
+	return nil
+}
+
 func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
 	return nil
 }

@@ -1,11 +1,11 @@
-sqlserver:
+sql_server:
   collection_interval: 10s
 
-sqlserver/omitted_cache:
+sql_server/omitted_cache:
   top_query_collection:
     collection_interval: 30s
 
-sqlserver/named:
+sql_server/named:
   collection_interval: 10s
   computer_name: CustomServer
   instance_name: CustomInstance

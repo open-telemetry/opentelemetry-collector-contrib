@@ -41,37 +41,37 @@ func TestBodyIsSignedForEveryType(t *testing.T) {
 		{
 			name: "string body",
 			set:  func(lr plog.LogRecord) { lr.Body().SetStr("hello") },
-			want: `"body":"hello"`,
+			want: `"body":{"stringValue":"hello"}`,
 		},
 		{
 			name: "int body",
 			set:  func(lr plog.LogRecord) { lr.Body().SetInt(42) },
-			want: `"body":42`,
+			want: `"body":{"intValue":"42"}`,
 		},
 		{
 			name: "double body",
 			set:  func(lr plog.LogRecord) { lr.Body().SetDouble(1.5) },
-			want: `"body":1.5`,
+			want: `"body":{"doubleValue":1.5}`,
 		},
 		{
 			name: "bool body",
 			set:  func(lr plog.LogRecord) { lr.Body().SetBool(true) },
-			want: `"body":true`,
+			want: `"body":{"boolValue":true}`,
 		},
 		{
 			name: "bytes body",
 			set:  func(lr plog.LogRecord) { lr.Body().SetEmptyBytes().Append(0xDE, 0xAD) },
-			want: `"body":"3q0="`,
+			want: `"body":{"bytesValue":"3q0="}`,
 		},
 		{
 			name: "slice body",
 			set:  func(lr plog.LogRecord) { lr.Body().SetEmptySlice().AppendEmpty().SetStr("x") },
-			want: `"body":["x"]`,
+			want: `"body":[{"stringValue":"x"}]`,
 		},
 		{
 			name: "map body",
 			set:  func(lr plog.LogRecord) { lr.Body().SetEmptyMap().PutStr("action", "delete-all") },
-			want: `"body":{"action":"delete-all"}`,
+			want: `"body":{"action":{"stringValue":"delete-all"}}`,
 		},
 	}
 

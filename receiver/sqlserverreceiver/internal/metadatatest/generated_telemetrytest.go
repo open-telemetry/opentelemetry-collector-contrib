@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	set := receivertest.NewNopSettings(receivertest.NopType)
-	set.ID = component.NewID(component.MustNewType("sqlserver"))
+	set.ID = component.NewID(component.MustNewType("sql_server"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }

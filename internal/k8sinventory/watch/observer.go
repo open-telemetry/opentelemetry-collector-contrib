@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -28,8 +28,12 @@ import (
 )
 
 const (
-	defaultResourceVersion    = "1"
-	defaultCheckpointInterval = 5 * time.Second
+	defaultResourceVersion       = "1"
+	defaultCheckpointInterval    = 5 * time.Second
+	resourceVersionRetryInterval = 5 * time.Second
+	resourceVersionRetryCap      = 60 * time.Second
+	resourceVersionRetryFactor   = 2
+	resourceVersionRetryJitter   = 0.2
 )
 
 type Config struct {
@@ -45,7 +49,8 @@ type Observer struct {
 	client dynamic.Interface
 	logger *zap.Logger
 
-	handleWatchEventFunc func(event *apiWatch.Event)
+	handleWatchEventFunc        func(event *apiWatch.Event)
+	resourceVersionRetryBackoff wait.Backoff
 }
 
 func New(client dynamic.Interface, config Config, logger *zap.Logger, storageClient storage.Client, handleWatchEventFunc func(event *apiWatch.Event)) (*Observer, error) {
@@ -54,6 +59,13 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, storageCli
 		config:               config,
 		logger:               logger,
 		handleWatchEventFunc: handleWatchEventFunc,
+		resourceVersionRetryBackoff: wait.Backoff{
+			Duration: resourceVersionRetryInterval,
+			Factor:   resourceVersionRetryFactor,
+			Jitter:   resourceVersionRetryJitter,
+			Cap:      resourceVersionRetryCap,
+			Steps:    math.MaxInt32,
+		},
 	}
 
 	// Initialize checkpointer if a storage client is provided
@@ -141,10 +153,10 @@ func (o *Observer) startCheckpointFlusher(ctx context.Context, namespace string)
 func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInterface, namespace string, stopperChan chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+	watchFunc := func(watchCtx context.Context, options metav1.ListOptions) (apiWatch.Interface, error) {
 		options.FieldSelector = o.config.FieldSelector
 		options.LabelSelector = o.config.LabelSelector
-		return resource.Watch(ctx, options)
+		return resource.Watch(watchCtx, options)
 	}
 
 	cancelCtx, cancel := context.WithCancel(ctx)
@@ -180,7 +192,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 			initialListRV = ""
 		} else {
 			var err error
-			resourceVersion, err = o.getResourceVersion(newCtx, resource, namespace)
+			resourceVersion, err = o.getResourceVersionWithRetry(newCtx, resource, namespace, stopperChan)
 			if err != nil {
 				o.logger.Error("could not retrieve a resourceVersion",
 					zap.String("resource", o.config.Gvr.String()),
@@ -212,6 +224,42 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 			}
 		}
 	}, 0)
+}
+
+// getResourceVersionWithRetry retries getResourceVersion using an exponential
+// backoff until it succeeds, the context is cancelled, or the stopper is signaled.
+func (o *Observer) getResourceVersionWithRetry(ctx context.Context, resource dynamic.ResourceInterface, namespace string, stopperChan chan struct{}) (string, error) {
+	backoff := o.resourceVersionRetryBackoff
+	for {
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-stopperChan:
+			return "", context.Canceled
+		default:
+		}
+
+		resourceVersion, err := o.getResourceVersion(ctx, resource, namespace)
+		if err == nil {
+			return resourceVersion, nil
+		}
+
+		o.logger.Warn("could not retrieve a resourceVersion, will retry",
+			zap.String("resource", o.config.Gvr.String()),
+			zap.String("namespace", namespace),
+			zap.Error(err))
+
+		timer := time.NewTimer(backoff.Step())
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return "", ctx.Err()
+		case <-stopperChan:
+			timer.Stop()
+			return "", context.Canceled
+		case <-timer.C:
+		}
+	}
 }
 
 // sendInitialState sends the current state of objects as synthetic Added events.
@@ -311,10 +359,8 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 // doWatch returns true when watching is done, false when watching should be restarted.
 // setLatestRV is called with each new resourceVersion to update the in-memory value
 // that the periodic checkpoint flush will persist.
-func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
-	// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50432
-	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc}) //nolint:staticcheck
+func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(ctx context.Context, options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
+	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFuncWithContext: watchFunc})
 	if err != nil {
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),
@@ -327,21 +373,17 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 	for {
 		select {
 		case data, ok := <-res:
-			if data.Type == apiWatch.Error {
-				errObject := apierrors.FromObject(data.Object)
-				//nolint:errorlint
-				if errObject.(*apierrors.StatusError).ErrStatus.Code == http.StatusGone {
-					o.logger.Info("received a 410, grabbing new resource version",
-						zap.Any("data", data))
-					// we received a 410 so we need to restart
-					return false
-				}
-			}
-
 			if !ok {
 				o.logger.Warn("Watch channel closed unexpectedly",
 					zap.String("resource", o.config.Gvr.String()))
 				return true
+			}
+
+			if isExpiredResourceVersionEvent(data) {
+				o.logger.Info("received a 410, grabbing new resource version",
+					zap.Any("data", data))
+				// we received a 410 so we need to restart
+				return false
 			}
 
 			if o.config.Exclude[data.Type] {
@@ -376,12 +418,21 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 	}
 }
 
+func isExpiredResourceVersionEvent(data apiWatch.Event) bool {
+	if data.Type != apiWatch.Error {
+		return false
+	}
+	errObject := apierrors.FromObject(data.Object)
+	return apierrors.IsResourceExpired(errObject) || apierrors.IsGone(errObject)
+}
+
 // fetchListResourceVersion performs a List operation and returns the latest resourceVersion.
 // Returns defaultResourceVersion if the API returns an empty or zero version.
 func (o *Observer) fetchListResourceVersion(ctx context.Context, resource dynamic.ResourceInterface) (string, error) {
 	objects, err := resource.List(ctx, metav1.ListOptions{
 		FieldSelector: o.config.FieldSelector,
 		LabelSelector: o.config.LabelSelector,
+		Limit:         1,
 	})
 	if err != nil {
 		return "", fmt.Errorf("could not perform initial list for watch on %s, %w", o.config.Gvr.String(), err)

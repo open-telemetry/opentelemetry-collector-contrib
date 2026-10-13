@@ -102,13 +102,18 @@ The following settings can be optionally configured:
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
     - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. When
-    disabled, the client does not make the initial request to broker at the
-    startup.
+  - `full` (deprecated): No longer has any effect. Metadata is only fetched for
+    the topics the client consumes from.
   - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
   - `retry`
-    - `max` (default = 3): The number of retries to get metadata
-    - `backoff` (default = 250ms): How long to wait between metadata retries
+    - `max` (default = 20): The number of times to retry a retriable request.
+      Applies to consumer group and offset commit/fetch requests. It does not
+      apply to fetch requests, nor to the client's internal metadata refresh,
+      which caps itself at 3 retries.
+    - `backoff` (default = 250ms): The minimum time to wait before retrying a
+      request. Each successive retry doubles the wait, with jitter applied,
+      capped at `max(5s, backoff)`. Unlike `max`, this applies to every retry
+      path, including fetches.
 - `autocommit`
   - `enable`: (default = true) Whether or not to auto-commit updated offsets back to the broker
   - `interval`: (default = 1s) How frequently to commit updated offsets. Ineffective unless auto-commit is enabled
@@ -121,6 +126,8 @@ The following settings can be optionally configured:
 - `partition_processing`:
   - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
   - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
+  - `max_in_flight`:
+    - `records` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Applies only when `independent` is true. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -172,8 +179,11 @@ consumed message:
 
 Additionally, all Kafka message headers are included in the request metadata.
 
-This metadata can then be used throughout the pipeline, for example to set attributes using the
-[attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md).
+This metadata can then be used throughout the pipeline, for example to set attributes using the [attributes processor](../../processor/attributesprocessor/README.md).
+
+### Trace context propagation
+
+The receiver extracts the trace context from record headers, using the propagators configured in `service::telemetry::traces::propagators`. The receiver span starts a new trace and links to the extracted trace context. Propagators are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted.
 
 ### Example configurations
 
@@ -304,13 +314,23 @@ In the example above:
 
 > **NOTE**: Independent partition processing requires `autocommit.enable: true`. The receiver rejects configurations that combine independent processing with manual commits.
 
-Independent partition processing keeps records ordered within each partition while allowing other assigned partitions to continue when one downstream consumer is blocked. Each partition has a bounded mailbox. A full mailbox pauses only that partition and resumes it when capacity becomes available.
+Independent partition processing runs each assigned partition in its own worker. A blocked partition does not block polling or workers for other partitions.
 
-The receiver creates one worker and mailbox per assigned partition. `max_buffered_batches` limits the number of fetched batches waiting in each mailbox, not the number of records or workers.
+Each partition has one worker and one mailbox. `max_buffered_batches` is how many fetched batches may wait in that mailbox. It is not a record count or a worker count. A full mailbox pauses only that partition. The partition resumes when a slot is free.
 
-Resource usage grows with the number of assigned partitions and `max_buffered_batches`. Increasing mailbox capacity allows more fetched data to remain in memory while waiting for processing.
+`max_in_flight.records` (default 1) is how many unmarshal-plus-Consume calls one partition worker may run at once. The worker starts those calls only for records already in a fetched batch. An idle partition still has one worker. At 1, records stay in offset order inside the partition. Above 1, later records in the same fetch can reach Consume before earlier ones finish.
 
-When a partition is revoked, its worker is cancelled and queued batches are discarded. The next owner fetches those records again from the committed offset, so standard Kafka at-least-once delivery and possible duplication still apply.
+Unmarshal must be safe for concurrent calls. The receiver uses one unmarshaler for all workers. It cannot clone encoding extensions. Independent workers call Unmarshal at the same time across partitions. `max_in_flight.records` above 1 does the same inside a partition. 
+
+> **WARNING**: Built-in `text` and `text_*` encodings keep one decoder and are not concurrent-safe. Encoding extensions must be concurrent-safe as well.
+
+When `max_in_flight.records` is above 1, the worker marks the contiguous accepted prefix as soon as those records finish. Message marking can put a rejected record in that prefix. This happens when `after` is false, or when `on_error` or `on_permanent_error` is true. Later records in the same fetch can still be in Consume. The worker always marks after processing, so `message_marking.after: false` does not mark before Consume. Kafka commits marks on the autocommit interval (default 1s). A crash re-fetches from the last committed offset, which can lag the marks.
+
+Above 1, an unmarked failure stops new calls on that partition. The worker waits for calls already in Consume, then rewinds or pauses. Before a rewind, it remembers offsets it already finished above the failed record and skips Consume for them on the next fetch. A new owner after pause or rebalance does not skip those offsets, so they can reach Consume again. While the failed call still runs, including backoff, other slots can start more records from the same fetch.
+
+Resource usage grows with the number of assigned partitions and `max_buffered_batches`. A larger mailbox keeps more fetched data in memory. A larger `max_in_flight.records` starts more in-flight pipeline calls per partition.
+
+When a partition is revoked, its worker is cancelled and queued batches are discarded. The next owner fetches from the committed offset. Standard Kafka at-least-once delivery still applies.
 
 ```yaml
 receivers:
@@ -318,4 +338,6 @@ receivers:
     partition_processing:
       independent: true
       max_buffered_batches: 1
+      max_in_flight:
+        records: 4
 ```
