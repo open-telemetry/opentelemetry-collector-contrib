@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/alicebob/miniredis/v2 v2.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fleettracker/redisfleettrackerextension v0.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fleettracker/redisfleettrackerextension v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor v0.162.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.1-0.20261009162812-02beb4e3f10f
 	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261009162812-02beb4e3f10f
