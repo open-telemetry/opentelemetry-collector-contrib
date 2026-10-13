@@ -367,7 +367,8 @@ FROM (
 	planHashValueAttr = "PLAN_HASH_VALUE"
 
 	// Procedure metrics columns
-	lastActiveTimeAttr = "LAST_ACTIVE_TIME"
+	lastActiveTimeAttr  = "LAST_ACTIVE_TIME"
+	definitionAttr      = "DEFINITION"
 )
 
 var (
@@ -609,6 +610,11 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	if s.useCDBDictionaryViews {
 		s.logger.Debug("oracledbreceiver: using container-qualified dictionary joins for query-sample collection")
 	}
+	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled &&
+		!s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		s.logger.Warn("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted")
+	}
+
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	if s.instanceInfo.connectedToPDB {
@@ -2225,6 +2231,7 @@ type procedureMetricCacheHit struct {
 	service        string
 	firstLoadTime  string
 	lastActiveTime string
+	definition     string
 	metrics        map[string]int64
 }
 
@@ -2285,6 +2292,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 				service:        row[serviceAttr],
 				firstLoadTime:  row[firstLoadTimeAttr],
 				lastActiveTime: row[lastActiveTimeAttr],
+				definition:     row[definitionAttr],
 				metrics:        make(map[string]int64, len(metricNames)),
 			}
 			if row[objectIDAttr] != "" {
@@ -2365,6 +2373,16 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			hit.metrics[physicalWriteBytesMetric],
 			hit.firstLoadTime,
 			hit.lastActiveTime)
+
+		if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
+			s.lb.RecordDbServerProcedureDefinitionEvent(context.Background(),
+				pcommon.NewTimestampFromTime(collectionTime),
+				dbSystemNameVal,
+				hit.dbNamespace,
+				hit.programID,
+				hit.procedureName,
+				hit.definition)
+		}
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())

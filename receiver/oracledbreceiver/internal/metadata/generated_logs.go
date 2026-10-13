@@ -13,6 +13,46 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type eventDbServerProcedureDefinition struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerProcedureDefinition) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, oracledbProcedureIDAttributeValue int64, oracledbProcedureNameAttributeValue string, oracledbProcedureDefinitionAttributeValue string) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.procedure_definition")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutInt("oracledb.procedure_id", oracledbProcedureIDAttributeValue)
+	dp.Attributes().PutStr("oracledb.procedure_name", oracledbProcedureNameAttributeValue)
+	dp.Attributes().PutStr("oracledb.procedure.definition", oracledbProcedureDefinitionAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerProcedureDefinition) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerProcedureDefinition(cfg EventConfig) eventDbServerProcedureDefinition {
+	e := eventDbServerProcedureDefinition{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 type eventDbServerQueryPlan struct {
 	data   plog.LogRecordSlice // data buffer for generated log records.
 	config EventConfig         // event config provided by user.
@@ -302,17 +342,18 @@ func newEventDbServerTopQuery(cfg EventConfig) eventDbServerTopQuery {
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {
-	config                         LogsBuilderConfig // config of the logs builder.
-	logsBuffer                     plog.Logs
-	logRecordsBuffer               plog.LogRecordSlice
-	buildInfo                      component.BuildInfo // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
-	eventDbServerQueryPlan         eventDbServerQueryPlan
-	eventDbServerQuerySample       eventDbServerQuerySample
-	eventDbServerSessionWaitSample eventDbServerSessionWaitSample
-	eventDbServerTopProcedure      eventDbServerTopProcedure
-	eventDbServerTopQuery          eventDbServerTopQuery
+	config                           LogsBuilderConfig // config of the logs builder.
+	logsBuffer                       plog.Logs
+	logRecordsBuffer                 plog.LogRecordSlice
+	buildInfo                        component.BuildInfo // contains version information.
+	resourceAttributeIncludeFilter   map[string]filter.Filter
+	resourceAttributeExcludeFilter   map[string]filter.Filter
+	eventDbServerProcedureDefinition eventDbServerProcedureDefinition
+	eventDbServerQueryPlan           eventDbServerQueryPlan
+	eventDbServerQuerySample         eventDbServerQuerySample
+	eventDbServerSessionWaitSample   eventDbServerSessionWaitSample
+	eventDbServerTopProcedure        eventDbServerTopProcedure
+	eventDbServerTopQuery            eventDbServerTopQuery
 }
 
 // LogBuilderOption applies changes to default logs builder.
@@ -322,17 +363,18 @@ type LogBuilderOption interface {
 
 func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuilder {
 	lb := &LogsBuilder{
-		config:                         lbc,
-		logsBuffer:                     plog.NewLogs(),
-		logRecordsBuffer:               plog.NewLogRecordSlice(),
-		buildInfo:                      settings.BuildInfo,
-		eventDbServerQueryPlan:         newEventDbServerQueryPlan(lbc.Events.DbServerQueryPlan),
-		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
-		eventDbServerSessionWaitSample: newEventDbServerSessionWaitSample(lbc.Events.DbServerSessionWaitSample),
-		eventDbServerTopProcedure:      newEventDbServerTopProcedure(lbc.Events.DbServerTopProcedure),
-		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		config:                           lbc,
+		logsBuffer:                       plog.NewLogs(),
+		logRecordsBuffer:                 plog.NewLogRecordSlice(),
+		buildInfo:                        settings.BuildInfo,
+		eventDbServerProcedureDefinition: newEventDbServerProcedureDefinition(lbc.Events.DbServerProcedureDefinition),
+		eventDbServerQueryPlan:           newEventDbServerQueryPlan(lbc.Events.DbServerQueryPlan),
+		eventDbServerQuerySample:         newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
+		eventDbServerSessionWaitSample:   newEventDbServerSessionWaitSample(lbc.Events.DbServerSessionWaitSample),
+		eventDbServerTopProcedure:        newEventDbServerTopProcedure(lbc.Events.DbServerTopProcedure),
+		eventDbServerTopQuery:            newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
+		resourceAttributeIncludeFilter:   make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:   make(map[string]filter.Filter),
 	}
 	if lbc.ResourceAttributes.HostName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsInclude)
@@ -449,6 +491,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils := rl.ScopeLogs().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
+	lb.eventDbServerProcedureDefinition.emit(ils.LogRecords())
 	lb.eventDbServerQueryPlan.emit(ils.LogRecords())
 	lb.eventDbServerQuerySample.emit(ils.LogRecords())
 	lb.eventDbServerSessionWaitSample.emit(ils.LogRecords())
@@ -488,6 +531,11 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	logs := lb.logsBuffer
 	lb.logsBuffer = plog.NewLogs()
 	return logs
+}
+
+// RecordDbServerProcedureDefinitionEvent adds a log record of db.server.procedure_definition event.
+func (lb *LogsBuilder) RecordDbServerProcedureDefinitionEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, oracledbProcedureIDAttributeValue int64, oracledbProcedureNameAttributeValue string, oracledbProcedureDefinitionAttributeValue string) {
+	lb.eventDbServerProcedureDefinition.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbNamespaceAttributeValue, oracledbProcedureIDAttributeValue, oracledbProcedureNameAttributeValue, oracledbProcedureDefinitionAttributeValue)
 }
 
 // RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.

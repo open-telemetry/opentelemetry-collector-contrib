@@ -246,6 +246,10 @@ attributes:
   oracledb.plan_hash_value:
     description: Numeric representation of the execution plan.
     type: string
+  oracledb.procedure.definition:
+    description: The SQL source text of the stored procedure as returned by DBA_SOURCE (or CDB_SOURCE for CDB environments). Empty string when the procedure is encrypted (WRAPPED) or the source is unavailable.
+    type: string
+    requirement_level: recommended
   oracledb.procedure.first_load_time:
     description: "Earliest load time across the procedure's cached statements, in ISO 8601 format (UTC)."
     type: string
@@ -403,6 +407,16 @@ attributes:
     type: string
 
 events:
+  db.server.procedure_definition:
+    enabled: false
+    description: The SQL source text of stored procedures observed in db.server.top_procedure. Correlates with db.server.top_procedure via oracledb.procedure_id and db.namespace.
+    attributes:
+      - db.system.name
+      - db.namespace
+      - oracledb.procedure_id
+      - oracledb.procedure_name
+      - oracledb.procedure.definition
+
   db.server.query_plan:
     enabled: false
     description: The execution plan for a query.

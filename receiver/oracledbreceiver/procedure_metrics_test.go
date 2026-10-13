@@ -9,6 +9,7 @@ import (
 	"errors"
 	"maps"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -108,6 +109,7 @@ func procedureRow(service string, overrides map[string]string) metricRow {
 		"BUFFER_GETS": "3997614", "DISK_READS": "15", "DIRECT_WRITES": "10",
 		"ROWS_PROCESSED": "399856", "PHYSICAL_READ_BYTES": "400", "PHYSICAL_WRITE_BYTES": "18",
 		"FIRST_LOAD_TIME": "2025-12-31T23:00:00Z", "LAST_ACTIVE_TIME": "2026-01-01T12:00:00Z",
+		"DEFINITION": "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;",
 	}
 	maps.Copy(row, overrides)
 	return row
@@ -170,8 +172,12 @@ func TestBuildProcedureMetricsSQL(t *testing.T) {
 func TestProcedureMetricsSQLDoesNotRankInDatabase(t *testing.T) {
 	for _, useCDB := range []bool{true, false} {
 		scrpr := oracleScraper{useCDBProceduresView: useCDB}
+		sql := scrpr.buildProcedureMetricsSQL()
 
-		assert.NotContains(t, scrpr.buildProcedureMetricsSQL(), "ORDER BY",
+		// WITHIN GROUP (ORDER BY LINE) inside LISTAGG is an aggregate ordering, not a ranking clause — allowed.
+		// A top-level ORDER BY would push ranking into the database over cumulative totals rather than deltas.
+		sqlWithoutAggregateOrdering := strings.ReplaceAll(sql, "WITHIN GROUP (ORDER BY LINE)", "")
+		assert.NotContains(t, sqlWithoutAggregateOrdering, "ORDER BY",
 			"ranking must happen in the collector over deltas, not in SQL over cumulative totals")
 	}
 }
@@ -443,6 +449,83 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, scrpr.lastProcedureMetricsTimestamp.After(beforeOpen),
 		"procedure_metrics collection must run after the collection interval has elapsed")
+}
+
+func TestProcedureDefinitionEvent(t *testing.T) {
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), procedureCacheValue)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	eventNames := make([]string, records.Len())
+	for i := range records.Len() {
+		eventNames[i] = records.At(i).EventName()
+	}
+	assert.Contains(t, eventNames, "db.server.top_procedure")
+	assert.Contains(t, eventNames, "db.server.procedure_definition")
+
+	for i := range records.Len() {
+		if records.At(i).EventName() == "db.server.procedure_definition" {
+			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
+			require.True(t, ok)
+			assert.Equal(t, "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;", def.Str())
+			return
+		}
+	}
+	t.Fatal("expected a db.server.procedure_definition event")
+}
+
+func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), procedureCacheValue)
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+			"procedure_definition must not be emitted when disabled")
+	}
+}
+
+func TestProcedureDefinitionEmptyWhenMissing(t *testing.T) {
+	row := maps.Clone(procedureRow("ORCLPDB1", nil))
+	row["DEFINITION"] = ""
+	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{row}), procedureCacheValue)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		if records.At(i).EventName() == "db.server.procedure_definition" {
+			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
+			require.True(t, ok)
+			assert.Empty(t, def.Str(), "empty definition should be emitted as empty string")
+			return
+		}
+	}
+	t.Fatal("expected a db.server.procedure_definition event")
+}
+
+func TestProcedureDefinitionWarningWhenTopProcedureDisabled(t *testing.T) {
+	core, observed := observer.New(zapcore.WarnLevel)
+
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), nil)
+	scrpr.logger = zap.New(core)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.logsBuilderConfig.Events.DbServerTopProcedure.Enabled = false
+
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	entries := observed.FilterMessage("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted").All()
+	require.Len(t, entries, 1)
 }
 
 // A discarded interval is otherwise indistinguishable from "the procedure did not run", and one child
