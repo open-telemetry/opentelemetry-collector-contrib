@@ -40,9 +40,11 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 
 func TestNewLogsExporter(t *testing.T) {
 	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{
-		Region: "ap-beijing",
-		LogSet: "demo-logset",
-		Topic:  "demo-topic",
+		Region:    "ap-beijing",
+		LogSet:    "demo-logset",
+		Topic:     "demo-topic",
+		SecretID:  "access-id",
+		SecretKey: "secret-key",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
@@ -50,10 +52,15 @@ func TestNewLogsExporter(t *testing.T) {
 	// This will put log data to send buffer and return success.
 	// Tip: Unit tests require valid access credential.
 	_ = got.ConsumeLogs(t.Context(), createSimpleLogData(3))
+
+	// Shutdown flushes the buffered logs and stops the SDK background workers.
+	assert.NoError(t, got.Shutdown(t.Context()))
 }
 
-func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
+func TestNewLogsExporterFailsWithEmptyConfig(t *testing.T) {
+	// The CLS SDK rejects a producer without credentials, so an empty config is an error
+	// rather than a silently unusable exporter.
 	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{})
-	assert.NoError(t, err)
-	require.NotNil(t, got)
+	assert.Error(t, err)
+	require.Nil(t, got)
 }
