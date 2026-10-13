@@ -62,19 +62,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorDrainClustersActive, err = builder.meter.Int64Gauge(
 		"otelcol_processor_drain_clusters_active",
 		metric.WithDescription("Current number of active clusters in the Drain parse tree. [Development]"),
-		metric.WithUnit("{clusters}"),
+		metric.WithUnit("{cluster}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorDrainLogRecordsAnnotated, err = builder.meter.Int64Counter(
 		"otelcol_processor_drain_log_records_annotated",
 		metric.WithDescription("Number of log records successfully annotated with a template. [Development]"),
-		metric.WithUnit("{records}"),
+		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorDrainMasksDuplicates, err = builder.meter.Int64Counter(
 		"otelcol_processor_drain_masks_duplicates",
 		metric.WithDescription("Number of records where a mask name matched more than one position in the matched template. Incremented once per record per duplicated mask name; the losing values are discarded and first-match wins. [Development]"),
-		metric.WithUnit("{records}"),
+		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

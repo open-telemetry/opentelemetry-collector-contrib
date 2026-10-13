@@ -66,7 +66,8 @@ func (p *Provider) fillHostInfo() {
 
 func (p *Provider) Source(context.Context) (source.Source, error) {
 	p.fillHostInfo()
-	return source.Source{Kind: source.HostnameKind, Identifier: p.hostInfo.GetHostname(p.logger)}, nil
+	hostname := p.hostInfo.GetHostname(p.logger)
+	return source.Source{Kind: source.HostnameKind, Identifier: hostname, SourceIdentifier: source.SourceIdentifier{Primary: hostname}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 }
 
 func (p *Provider) HostInfo() *HostInfo {

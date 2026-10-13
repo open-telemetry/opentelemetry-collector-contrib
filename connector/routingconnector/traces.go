@@ -41,8 +41,7 @@ func newTracesConnector(
 	}
 
 	r, err := newRouter(
-		cfg.Table,
-		cfg.DefaultPipelines,
+		cfg,
 		tr.Consumer,
 		set.TelemetrySettings,
 	)

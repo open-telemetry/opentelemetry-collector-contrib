@@ -7,6 +7,15 @@ import (
 	"errors"
 )
 
+const (
+	defaultSockets = 1
+	defaultWorkers = 2
+	// The default UDP packet buffer size in GoFlow2 is 9000 bytes, which means
+	// that for a full queue of 1000 messages, the size in memory will be 9MB.
+	// Source: https://github.com/netsampler/goflow2/blob/v2.2.1/README.md#security-notes-and-assumptions
+	defaultQueueSize = 1_000
+)
+
 // Config represents the receiver config settings within the collector's config.yaml
 type Config struct {
 	// The scheme defines the type of flow data that the listener will receive

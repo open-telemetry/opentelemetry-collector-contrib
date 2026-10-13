@@ -661,6 +661,20 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+The execution plan for a query.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` | - |
+| postgresql.queryid | Hash code to identify identical normalized queries. | Any Str | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | - |
+| postgresql.rolname | The name of the PostgreSQL role that executed the query. | Any Str | - |
+| postgresql.query_plan | The execution plan used by PostgreSQL for the query. | Any Str | - |
+
 ### db.server.query_sample
 
 query sample
@@ -675,6 +689,7 @@ query sample
 | user.name | Name of the user logged into this backend. | Any Str | - |
 | postgresql.state | Current overall state of this backend | Any Str | - |
 | postgresql.pid | Process ID of this backend. | Any Int | - |
+| postgresql.backend.connection.start | UTC timestamp (RFC3339) when this backend was started. | Any Str | - |
 | postgresql.application_name | Name of the application that is connected to this backend. | Any Str | - |
 | network.peer.address | IP address of the client connected to this backend. | Any Str | - |
 | network.peer.port | TCP port number that the client is using for communication with this backend. | Any Int | - |
@@ -721,6 +736,7 @@ top query
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.version | The database version of the instance. Examples include "13.18" and "17.2". | Any Str | false | - | - |
 | postgresql.database.name | The name of the database. | Any Str | true | - | - |
 | postgresql.index.name | The name of the index on a table. | Any Str | true | - | - |
 | postgresql.schema.name | The schema name. | Any Str | true | - | - |

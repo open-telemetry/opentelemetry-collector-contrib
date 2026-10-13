@@ -2234,8 +2234,9 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 	for _, ic := range icms.Entries {
 		if ic.Content.RollingRestartOrUpgrade {
 			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
+		} else {
+			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 		}
-		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 	}
 }
 

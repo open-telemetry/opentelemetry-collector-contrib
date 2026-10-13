@@ -35,7 +35,8 @@ resourceLogs:
             spanId: ""
             timeUnixNano: "1665166251014000000"
             traceId: ""
-        scope: {}
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
   - resource:
       attributes:
         - key: aws.region
@@ -72,4 +73,5 @@ resourceLogs:
             spanId: ""
             timeUnixNano: "1665166251014000000"
             traceId: ""
-        scope: {}
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
