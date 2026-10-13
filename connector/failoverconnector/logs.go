@@ -52,7 +52,7 @@ func (f *logsRouter) consumeByHealthyPipeline(ctx context.Context, ld plog.Logs)
 
 		if err := tc.ConsumeLogs(ctx, ld); err != nil {
 			if f.shouldFailoverOnError(err) {
-				f.reportConsumerError(idx)
+				f.reportConsumerError(idx, err)
 				continue
 			}
 			return err

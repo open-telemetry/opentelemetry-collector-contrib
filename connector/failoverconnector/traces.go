@@ -53,7 +53,7 @@ func (f *tracesRouter) consumeByHealthyPipeline(ctx context.Context, td ptrace.T
 
 		if err := tc.ConsumeTraces(ctx, td); err != nil {
 			if f.shouldFailoverOnError(err) {
-				f.reportConsumerError(idx)
+				f.reportConsumerError(idx, err)
 				continue
 			}
 			return err

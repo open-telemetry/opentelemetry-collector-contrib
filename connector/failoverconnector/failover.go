@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
@@ -33,6 +34,7 @@ type baseFailoverRouter[C any] struct {
 	notifyRetry chan struct{}
 	done        chan struct{}
 	conditions  Condition
+	logger      *zap.Logger
 
 	telemetryBuilder *metadata.TelemetryBuilder
 }
@@ -53,7 +55,10 @@ func (f *baseFailoverRouter[C]) getConsumerAtIndex(idx int) C {
 }
 
 // reportConsumerError ensures only one consumer is reporting an error at a time to avoid multiple failovers
-func (f *baseFailoverRouter[C]) reportConsumerError(idx int) {
+func (f *baseFailoverRouter[C]) reportConsumerError(idx int, err error) {
+	if f.conditions != nil {
+		f.logger.Debug("Downstream error matched failover condition; moving to the next pipeline level", zap.Error(err), zap.Int("pipeline_level", idx))
+	}
 	f.errTryLock.TryExecute(f.pS.HandleError, idx)
 }
 
@@ -119,6 +124,7 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config, set
 		done:        done,
 		notifyRetry: notifyRetry,
 		conditions:  buildCondition(cfg.Condition.Get()),
+		logger:      set.Logger,
 	}
 	if err := f.registerTelemetry(set); err != nil {
 		return nil, err

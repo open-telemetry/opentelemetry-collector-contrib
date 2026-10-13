@@ -52,7 +52,7 @@ func (f *metricsRouter) consumeByHealthyPipeline(ctx context.Context, md pmetric
 
 		if err := tc.ConsumeMetrics(ctx, md); err != nil {
 			if f.shouldFailoverOnError(err) {
-				f.reportConsumerError(idx)
+				f.reportConsumerError(idx, err)
 				continue
 			}
 			return err

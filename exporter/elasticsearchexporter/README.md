@@ -2,8 +2,8 @@
 # Elasticsearch Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: metrics, profiles   |
-|               | [beta]: traces, logs   |
+| Stability     | [development]: profiles   |
+|               | [beta]: traces, logs, metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Felasticsearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Felasticsearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Felasticsearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Felasticsearch) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_elasticsearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_elasticsearch&displayType=list) |
@@ -407,6 +407,24 @@ Settings related to node discovery are:
   - `interval` (optional): Interval to update the list of Elasticsearch nodes.
 
 Node discovery can be disabled by setting `discover.interval` to 0.
+
+### Elasticsearch version detection
+
+On startup, the Elasticsearch Exporter queries each configured endpoint for its
+version and build flavor and logs the result. This information is used to
+automatically enable features supported by the connected Elasticsearch version,
+so no per-feature configuration is required.
+
+- `version_detection`:
+  - `enabled` (default `true`): If enabled, the exporter queries Elasticsearch
+    at startup to detect its version and build flavor. When disabled, the
+    exporter does not query Elasticsearch and assumes only the baseline
+    capability set is available.
+
+The query is best-effort: if it fails (for example, when Elasticsearch is
+temporarily unreachable), startup is not blocked. Version detection cannot be
+performed when the endpoint is resolved at request time (for example, when a
+routing middleware rewrites the destination per request).
 
 ### Telemetry settings
 
