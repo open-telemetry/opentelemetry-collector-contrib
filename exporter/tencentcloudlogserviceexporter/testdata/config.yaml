@@ -10,3 +10,16 @@ tencentcloud_logservice/2:
   secret_id: "demo-secret-id"
   # TencentCloud secret key
   secret_key: "demo-secret-key"
+tencentcloud_logservice/3:
+  # LogService's Endpoint, takes precedence over region
+  endpoint: "ap-beijing.cls.tencentcs.com"
+  # LogService's LogSet ID
+  logset: "demo-logset"
+  # LogService's Topic ID
+  topic: "demo-topic"
+  # TencentCloud secret id
+  secret_id: "demo-secret-id"
+  # TencentCloud secret key
+  secret_key: "demo-secret-key"
+  # Use the TencentCloud intranet endpoint
+  is_intranet: true
