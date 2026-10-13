@@ -106,8 +106,34 @@ attributes:
     description: Name of the network interface.
     requirement_level: recommended
     type: string
+  psi.type:
+    description: The PSI pressure type (some = at least one task stalled; full = all tasks stalled).
+    type: string
+    enum: [some, full]
+  psi.window:
+    description: The averaging window for PSI stall percentage metrics.
+    type: string
+    enum: ["10s", "60s", "300s"]
 
 metrics:
+  container.cpu.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  container.cpu.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   container.cpu.time:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
@@ -150,6 +176,24 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  container.io.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  container.io.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   container.memory.available:
     enabled: true
     description: "Container memory available"
@@ -174,6 +218,24 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  container.memory.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  container.memory.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   container.memory.rss:
     enabled: true
     description: "Container memory rss"
@@ -270,6 +332,24 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  k8s.node.cpu.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  k8s.node.cpu.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   k8s.node.cpu.time:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
@@ -332,6 +412,24 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.node.io.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  k8s.node.io.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   k8s.node.memory.available:
     enabled: true
     description: "Node memory available"
@@ -356,6 +454,24 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.node.memory.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  k8s.node.memory.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   k8s.node.memory.rss:
     enabled: true
     description: "Node memory rss"
@@ -454,6 +570,24 @@ metrics:
     attributes: []
     warnings:
       if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use."
+  k8s.pod.cpu.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  k8s.pod.cpu.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   k8s.pod.cpu.time:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
@@ -512,6 +646,24 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.pod.io.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  k8s.pod.io.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   k8s.pod.memory.available:
     enabled: true
     description: "Pod memory available"
@@ -546,6 +698,24 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.pod.memory.pressure.avg:
+    enabled: false
+    description: "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100."
+    unit: "%"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [psi.type, psi.window]
+  k8s.pod.memory.pressure.time:
+    enabled: false
+    description: "Cumulative total time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2."
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [psi.type]
   k8s.pod.memory.rss:
     enabled: true
     description: "Pod memory rss"
