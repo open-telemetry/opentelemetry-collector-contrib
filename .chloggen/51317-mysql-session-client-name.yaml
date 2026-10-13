@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: receiver/mysql
 
-note: Add `mysql.session.client_name` to `db.server.query_sample`, the client driver's self-reported identity from `performance_schema.session_connect_attrs`.
+note: Add `mysql.client.name` to `db.server.query_sample`, the client driver's self-reported identity.
 
 issues: [51317]
 
