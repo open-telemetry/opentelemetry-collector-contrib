@@ -37,19 +37,18 @@ type traceTree struct {
 	nodeByID map[pcommon.SpanID]*spanNode
 	leaves   []*spanNode // nodes with no children, populated during build
 	orphans  []*spanNode // spans whose parent is not in the trace
-	hasCycle bool        // true if parent links form a cycle; the tree must not be walked
 }
 
 // buildTraceTree constructs parent/child links for a trace and records
 // leaves, roots, and orphans so aggregation decisions can account for
 // incomplete traces.
-func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
+func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) (*traceTree, error) {
 	tree := &traceTree{
 		nodeByID: make(map[pcommon.SpanID]*spanNode, len(spans)),
 	}
 
 	if len(spans) == 0 {
-		return tree
+		return tree, nil
 	}
 
 	// First pass: create nodes for all spans, initially mark all as leaves
@@ -87,11 +86,9 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	}
 
 	// A span that is its own ancestor would make every upward walk loop
-	// forever, so skip the trace when assigning depths finds a cycle.
+	// forever, so a trace with a parent cycle gets no tree.
 	if err := assignDepths(tree.nodeByID); err != nil {
-		tree.hasCycle = true
-		p.logger.Debug("skipping trace", zap.Error(err))
-		return tree
+		return nil, err
 	}
 
 	// Third pass: collect leaves (nodes still marked as leaf). nodeByID is a
@@ -121,7 +118,7 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 			zap.Int("orphanCount", len(tree.orphans)))
 	}
 
-	return tree
+	return tree, nil
 }
 
 // assignDepths sets each node's depth by walking up from it until it reaches a

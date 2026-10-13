@@ -6,6 +6,7 @@ package spanpruningprocessor
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -54,7 +55,7 @@ func BenchmarkBuildTraceTree(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		_ = proc.buildTraceTree(spans)
+		_, _ = proc.buildTraceTree(spans)
 	}
 }
 
@@ -62,7 +63,8 @@ func BenchmarkBuildTraceTree(b *testing.B) {
 func BenchmarkGroupLeafNodes(b *testing.B) {
 	proc := newBenchmarkProcessor(b, 5)
 	spans := generateTestSpans(1000, 50)
-	tree := proc.buildTraceTree(spans)
+	tree, err := proc.buildTraceTree(spans)
+	require.NoError(b, err)
 	leaves := tree.getLeaves()
 
 	b.ResetTimer()
@@ -78,7 +80,8 @@ func BenchmarkGroupLeafNodes(b *testing.B) {
 func BenchmarkEligibleParents(b *testing.B) {
 	proc := newBenchmarkProcessor(b, 5)
 	spans := generateTestSpans(1000, 50)
-	tree := proc.buildTraceTree(spans)
+	tree, err := proc.buildTraceTree(spans)
+	require.NoError(b, err)
 	leaves := tree.getLeaves()
 
 	for _, leaf := range leaves {
@@ -118,7 +121,8 @@ func BenchmarkExecuteAggregations(b *testing.B) {
 		base.CopyTo(td)
 
 		spans := spanInfosFromTraces(td)
-		tree := proc.buildTraceTree(spans)
+		tree, err := proc.buildTraceTree(spans)
+		require.NoError(b, err)
 		leafGroups := proc.groupLeafNodesByKey(tree.getLeaves())
 
 		groups := make(map[string]aggregationGroup, len(leafGroups))
