@@ -1291,6 +1291,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			clientPort,
 			networkPeerAddress,
 			networkPeerPort,
+			sample.statementTimerStart,
 		)
 
 		// The plan describes the statement rather than this execution of it, so it carries neither the
