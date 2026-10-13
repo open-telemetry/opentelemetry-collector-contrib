@@ -65,19 +65,25 @@ func TestParentCycleSkipsTrace(t *testing.T) {
 	}
 }
 
-func TestHasParentCycle(t *testing.T) {
+func TestAssignDepths(t *testing.T) {
 	root := &spanNode{}
 	child := &spanNode{parent: root}
-	root.children = []*spanNode{child}
+	grandchild := &spanNode{parent: child}
 	orphan := &spanNode{}
-	acyclic := map[pcommon.SpanID]*spanNode{{1}: root, {2}: child, {3}: orphan}
-	assert.False(t, hasParentCycle(acyclic))
+	acyclic := map[pcommon.SpanID]*spanNode{{1}: grandchild, {2}: child, {3}: root, {4}: orphan}
+	require.True(t, assignDepths(acyclic))
+	assert.Equal(t, 0, root.depth())
+	assert.Equal(t, 1, child.depth())
+	assert.Equal(t, 2, grandchild.depth())
+	assert.Equal(t, 0, orphan.depth())
 
-	a, b := &spanNode{}, &spanNode{}
-	a.parent, b.parent = b, a
-	a.children, b.children = []*spanNode{b}, []*spanNode{a}
+	a, b, c := &spanNode{}, &spanNode{}, &spanNode{}
+	a.parent, b.parent, c.parent = b, c, a
 	under := &spanNode{parent: a}
-	a.children = append(a.children, under)
-	cyclic := map[pcommon.SpanID]*spanNode{{1}: root, {2}: child, {4}: a, {5}: b, {6}: under}
-	assert.True(t, hasParentCycle(cyclic))
+	cyclic := map[pcommon.SpanID]*spanNode{{1}: root, {2}: child, {4}: a, {5}: b, {6}: c, {7}: under}
+	assert.False(t, assignDepths(cyclic), "a three span cycle")
+
+	self := &spanNode{}
+	self.parent = self
+	assert.False(t, assignDepths(map[pcommon.SpanID]*spanNode{{1}: self}), "a self parent")
 }

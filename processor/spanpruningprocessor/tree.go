@@ -5,6 +5,7 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"bytes"
+	"slices"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -22,6 +23,7 @@ type spanNode struct {
 	groupKey           string         // cached group key for leaf spans
 	replacementSpanID  pcommon.SpanID // summary span ID that replaced this node's group
 	isLeaf             bool           // true if node has no children
+	treeDepth          int            // distance from the root or orphan above it, set by assignDepths
 	markedForRemoval   bool           // true if node will be aggregated
 	isPreservedOutlier bool           // true if this node is the root of a preserved outlier subtree
 	isExemplar         bool           // true if this node is the root of a sampled exemplar subtree
@@ -84,8 +86,8 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	}
 
 	// A span that is its own ancestor would make every upward walk loop
-	// forever, so flag the trace when some span is unreachable from the top.
-	if hasParentCycle(tree.nodeByID) {
+	// forever, so skip the trace when assigning depths finds a cycle.
+	if !assignDepths(tree.nodeByID) {
 		tree.hasCycle = true
 		p.logger.Debug("parent cycle detected, skipping trace")
 		return tree
@@ -121,20 +123,40 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	return tree
 }
 
-// hasParentCycle reports whether any span is unreachable from the spans with
-// no linked parent (roots and orphans), which happens exactly when it is in, or
-// beneath, a cycle of parent links.
-func hasParentCycle(nodeByID map[pcommon.SpanID]*spanNode) bool {
-	queue := make([]*spanNode, 0, len(nodeByID))
-	for _, n := range nodeByID {
-		if n.parent == nil {
-			queue = append(queue, n)
+// assignDepths sets each node's depth by walking up from it until it reaches a
+// root, an orphan, or a node already assigned, so every node is walked once.
+// It reports false if a walk reaches a node already on its own path, which
+// means the parent links form a cycle.
+func assignDepths(nodeByID map[pcommon.SpanID]*spanNode) bool {
+	const (
+		unvisited = iota
+		onPath
+		assigned
+	)
+	state := make(map[*spanNode]uint8, len(nodeByID))
+	var path []*spanNode
+	for _, start := range nodeByID {
+		n := start
+		for n != nil && state[n] == unvisited {
+			state[n] = onPath
+			path = append(path, n)
+			n = n.parent
 		}
+		if n != nil && state[n] == onPath {
+			return false
+		}
+		d := -1
+		if n != nil {
+			d = n.treeDepth
+		}
+		for _, pn := range slices.Backward(path) {
+			d++
+			pn.treeDepth = d
+			state[pn] = assigned
+		}
+		path = path[:0]
 	}
-	for i := 0; i < len(queue); i++ {
-		queue = append(queue, queue[i].children...)
-	}
-	return len(queue) < len(nodeByID)
+	return true
 }
 
 // getLeaves returns the pre-computed leaf nodes (spans with no children).
@@ -155,14 +177,9 @@ func nodeOrderLess(a, b *spanNode) bool {
 }
 
 // depth returns the node's depth in the trace tree (root spans and orphans are
-// depth 0). It walks the cached parent chain, so cost is proportional to tree
-// height.
+// depth 0), as assigned when the tree was built.
 func (n *spanNode) depth() int {
-	d := 0
-	for p := n.parent; p != nil; p = p.parent {
-		d++
-	}
-	return d
+	return n.treeDepth
 }
 
 // markOutlierSubtree records root as a preserved-outlier root and marks every
