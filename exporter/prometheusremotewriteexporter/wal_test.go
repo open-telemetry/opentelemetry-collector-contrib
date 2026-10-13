@@ -429,7 +429,6 @@ func TestWALLag_Telemetry(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		// Do nothing
 	}))
-	defer server.Close()
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
@@ -443,6 +442,7 @@ func TestWALLag_Telemetry(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, prw.Shutdown(context.Background())) //nolint:usetesting
+		server.Close()
 	})
 
 	// Create test data to write to WAL
@@ -485,7 +485,6 @@ func TestWAL_IdleFlush(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, body)
 	}))
-	defer server.Close()
 
 	cfg := &Config{
 		WAL: configoptional.Some(WALConfig{
@@ -515,6 +514,7 @@ func TestWAL_IdleFlush(t *testing.T) {
 	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		assert.NoError(t, prwe.Shutdown(context.Background())) //nolint:usetesting
+		server.Close()
 	})
 
 	metrics := map[string]*prompb.TimeSeries{

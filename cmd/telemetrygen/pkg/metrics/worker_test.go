@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -644,6 +645,86 @@ func TestUniqueSumTimeseries(t *testing.T) {
 		actualValue, exist = attr.Value(timeBoxAttributeName)
 		assert.True(t, exist, "it should have the timebox attribute")
 		assert.LessOrEqual(t, actualValue.AsInt64(), int64(4), "it should be between 0 and 4")
+	}
+}
+
+func TestUniqueTimeseriesAttributesAreIterationLocal(t *testing.T) {
+	metricTypes := []MetricType{
+		MetricTypeGauge,
+		MetricTypeSum,
+		MetricTypeHistogram,
+		MetricTypeExponentialHistogram,
+	}
+
+	for _, metricType := range metricTypes {
+		t.Run(string(metricType), func(t *testing.T) {
+			const qty = 4
+
+			// Leave spare capacity after the base attribute so the original
+			// implementation's repeated append mutates observable backing storage.
+			backingAttrs := make([]attribute.KeyValue, qty+1)
+			backingAttrs[0] = attribute.String(telemetryAttrKeyOne, telemetryAttrValueOne)
+			for i := 1; i < len(backingAttrs); i++ {
+				backingAttrs[i] = attribute.Int("sentinel", i)
+			}
+			expectedBackingAttrs := append([]attribute.KeyValue(nil), backingAttrs...)
+			signalAttrs := backingAttrs[:1]
+
+			m := &mockExporter{}
+			running := &atomic.Bool{}
+			running.Store(true)
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
+			w := worker{
+				metricName:     "test_metric",
+				metricType:     metricType,
+				numMetrics:     qty,
+				enforceUnique:  true,
+				running:        running,
+				limitPerSecond: rate.Inf,
+				logger:         zap.NewNop(),
+				wg:             wg,
+				clock:          &realClock{},
+				rand:           rand.New(rand.NewPCG(1, 2)),
+			}
+			tb := &timeBox{
+				enforceUnique: true,
+				mutex:         &sync.Mutex{},
+			}
+
+			w.simulateMetrics(resource.Default(), m, signalAttrs, tb)
+			wg.Wait()
+
+			require.Len(t, m.rms, qty)
+			assert.Equal(t, expectedBackingAttrs, backingAttrs, "signalAttrs backing storage must not be mutated")
+
+			seenTimeboxes := make(map[int64]struct{}, qty)
+			for _, rm := range m.rms {
+				ms := rm.ScopeMetrics[0].Metrics[0]
+				var attrs attribute.Set
+				switch data := ms.Data.(type) {
+				case metricdata.Gauge[int64]:
+					attrs = data.DataPoints[0].Attributes
+				case metricdata.Sum[int64]:
+					attrs = data.DataPoints[0].Attributes
+				case metricdata.Histogram[int64]:
+					attrs = data.DataPoints[0].Attributes
+				case metricdata.ExponentialHistogram[int64]:
+					attrs = data.DataPoints[0].Attributes
+				default:
+					t.Fatalf("unsupported metric data type %T", ms.Data)
+				}
+
+				require.Equal(t, 2, attrs.Len())
+				baseValue, exists := attrs.Value(telemetryAttrKeyOne)
+				require.True(t, exists)
+				assert.Equal(t, telemetryAttrValueOne, baseValue.AsString())
+				timeboxValue, exists := attrs.Value(timeBoxAttributeName)
+				require.True(t, exists)
+				seenTimeboxes[timeboxValue.AsInt64()] = struct{}{}
+			}
+			assert.Len(t, seenTimeboxes, qty, "each data point should have a distinct timebox attribute")
+		})
 	}
 }
 

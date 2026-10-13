@@ -9,5 +9,6 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `awsemf.nodimrollupdefault` | alpha | Changes the default AWS EMF Exporter Dimension rollup option to NoDimensionRollup | v0.83.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997) |
+| `exporter.awsemf.DisableLegacyResourceToTelemetryConversion` | alpha | When enabled, the deprecated enabled and exclude_service_attributes fields in resource_to_telemetry_conversion are disabled, and included/excluded patterns must be used instead | v0.160.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

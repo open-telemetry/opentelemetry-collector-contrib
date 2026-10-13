@@ -25,7 +25,7 @@ var attrHashBufPool = sync.Pool{
 }
 
 // sum128 returns a 128-bit hash of b.buf using the same two-pass xxhash
-// algorithm as pdatautil.MapHash.
+// algorithm as xhash.MapHash.
 func (b *attrHashBuf) sum128() [16]byte {
 	var d xxhash.Digest
 	var result [16]byte

@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pipeline"
 
@@ -109,7 +110,7 @@ func TestComponentStatus(t *testing.T) {
 	assert.Equal(t, componentstatus.StatusStopping, st.Status())
 }
 
-func TestNotifyConfig(t *testing.T) {
+func TestNotifyConfigSnapshot(t *testing.T) {
 	confMap, err := confmaptest.LoadConf(
 		filepath.Join("internal", "httpserver", "testdata", "config.yaml"),
 	)
@@ -152,7 +153,8 @@ func TestNotifyConfig(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	require.NoError(t, resp.Body.Close())
 
-	require.NoError(t, ext.NotifyConfig(ctx, confMap))
+	snapshot := extensioncapabilities.NewConfigSnapshot(confMap, nil)
+	require.NoError(t, ext.NotifyConfigSnapshot(ctx, snapshot))
 
 	resp, err = client.Get(url)
 	require.NoError(t, err)

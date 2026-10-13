@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 func Test_update_attribute_inheritance(t *testing.T) {
@@ -134,7 +134,7 @@ func Test_update_attribute_inheritance(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, spansCounter)
 			m := spansCounter.counts[defaultMetricNameSpans]
-			expectKey := pdatautil.MapHash(tt.expectedAttr)
+			expectKey := xhash.MapHash(tt.expectedAttr)
 			attrCount, ok := m[expectKey]
 			require.True(t, ok)
 			require.NotNil(t, attrCount)
@@ -227,7 +227,7 @@ func Test_update_attributes_types(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, spansCounter)
 			m := spansCounter.counts[defaultMetricNameSpans]
-			expectKey := pdatautil.MapHash(tt.expectedAttr)
+			expectKey := xhash.MapHash(tt.expectedAttr)
 			attrCount, ok := m[expectKey]
 			require.True(t, ok)
 			require.NotNil(t, attrCount)

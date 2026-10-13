@@ -317,3 +317,73 @@ func TestScraperScrape(t *testing.T) {
 		})
 	}
 }
+
+func TestClusterNameResourceAttribute(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqClusterName.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqConsumerCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFree.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqExchangeMessagesPublishedIn.Enabled = true
+
+	queue := &models.Queue{Name: "queue", Node: "node", VHost: "/"}
+	node := &models.Node{Name: "node"}
+	exchange := &models.Exchange{Name: "exchange", Type: "direct", VHost: "/"}
+
+	mockClient := mocks.MockClient{}
+	mockClient.On("GetClusterName", mock.Anything).Return("rabbitmq-cluster", nil).Once()
+	mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{queue}, nil).Once()
+	mockClient.On("GetNodes", mock.Anything).Return([]*models.Node{node}, nil).Once()
+	mockClient.On("GetExchanges", mock.Anything).Return([]*models.Exchange{exchange}, nil).Once()
+
+	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+	scraper.client = &mockClient
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 3, metrics.ResourceMetrics().Len())
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		value, ok := metrics.ResourceMetrics().At(i).Resource().Attributes().Get("rabbitmq.cluster.name")
+		require.True(t, ok)
+		require.Equal(t, "rabbitmq-cluster", value.Str())
+	}
+	mockClient.AssertExpectations(t)
+}
+
+func TestClusterNameResourceAttributeDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	mockClient := mocks.MockClient{}
+	mockClient.On("GetQueues", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
+
+	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+	scraper.client = &mockClient
+
+	_, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	mockClient.AssertNotCalled(t, "GetClusterName", mock.Anything)
+	mockClient.AssertExpectations(t)
+}
+
+func TestClusterNameResourceAttributeFailure(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqClusterName.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqConsumerCount.Enabled = true
+
+	mockClient := mocks.MockClient{}
+	mockClient.On("GetClusterName", mock.Anything).Return("", errors.New("some api error")).Once()
+	mockClient.On("GetQueues", mock.Anything).Return([]*models.Queue{{Name: "queue"}}, nil).Once()
+	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
+
+	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+	scraper.client = &mockClient
+
+	metrics, err := scraper.scrape(t.Context())
+	require.ErrorContains(t, err, "failed to collect cluster name: some api error")
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	_, ok := metrics.ResourceMetrics().At(0).Resource().Attributes().Get("rabbitmq.cluster.name")
+	require.False(t, ok)
+	mockClient.AssertExpectations(t)
+}

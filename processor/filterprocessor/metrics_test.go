@@ -1782,7 +1782,7 @@ func Test_ResourceSkipExpr_With_Bridge(t *testing.T) {
 			resource := pcommon.NewResource()
 			resource.Attributes().PutStr("test", "test")
 
-			tCtx := ottlresource.NewTransformContextPtr(resource, pmetric.NewResourceMetrics())
+			tCtx := ottlresource.NewTransformContext(resource, pmetric.NewResourceMetrics())
 			defer tCtx.Close()
 
 			includeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(tt.condition.Include)

@@ -212,8 +212,16 @@ Supported OpenInference message fields:
 - `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.name`
 - `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.arguments`
 - `llm.{input,output}_messages.N.message.tool_call_id`
+- `llm.{input,output}_messages.N.message.contents.M.message_content.type`
+- `llm.{input,output}_messages.N.message.contents.M.message_content.text`
 
-**Not supported:** multimodal content arrays (`llm.{input,output}_messages.N.message.contents.M.message_content.*`). OpenInference's indexed content array format for images, audio, and other modalities is not reconstructed. Only the flat `message.content` string field is handled. Multimodal spans pass through with the original flattened attributes intact.
+##### Indexed content arrays
+
+Some instrumentors never set the flat `message.content` string. Provider APIs that model content as a list (AWS Bedrock's `converse` takes `content` as an array even for plain text) emit the indexed array form for every message.
+
+Text entries are reconstructed into `parts` in source order, one part per block. An entry counts as text when `message_content.type` is `text`, or when `message_content.text` is set and no type is declared. When both forms are present, the flat `message.content` string wins.
+
+**Still not supported:** non-text entries (`message_content.image`, audio, `reasoning`, other modalities). They carry their payload in fields the processor does not read and are skipped, so a message with only non-text entries still yields `"parts": []`.
 
 ##### Role inference
 
@@ -231,10 +239,10 @@ The following part types are defined in the [GenAI input messages schema](https:
 
 | Part type | Applies to | Reason not produced |
 |-----------|------------|---------------------|
-| `blob` | input & output | Multimodal — OpenInference uses the `message.contents.M.message_content.*` indexed array, which is not reconstructed (see multimodal limitation above) |
-| `file` | input & output | Same multimodal limitation |
-| `uri` | input & output | Same multimodal limitation |
-| `reasoning` | input & output | OpenInference carries reasoning inside the `message.contents` indexed array (type `"reasoning"`), not as a top-level message field; blocked by the same multimodal limitation |
+| `blob` | input & output | Non-text entries in the `message.contents` indexed array are not reconstructed (see above) |
+| `file` | input & output | Same limitation |
+| `uri` | input & output | Same limitation |
+| `reasoning` | input & output | OpenInference carries reasoning inside the `message.contents` indexed array (type `"reasoning"`), not as a top-level message field; blocked by the same limitation |
 | `server_tool_call` (incl. nested `GenericServerToolCall`) | input & output | OpenInference does not model server-side tool calls (e.g. `code_interpreter`, `web_search`) as flattened span attributes |
 | `server_tool_call_response` (incl. nested `GenericServerToolCallResponse`) | input & output | Same — no OpenInference source attributes exist for server tool responses |
 | `compaction` | input & output | OpenInference does not emit compaction/context-window summary data |

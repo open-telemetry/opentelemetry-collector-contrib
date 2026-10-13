@@ -31,6 +31,8 @@ data:
             enabled: true
           k8s.persistentvolumeclaim.storage.request:
             enabled: true
+          k8s.statefulset.pod.available:
+            enabled: true
         resource_attributes:
           k8s.service.traffic_distribution:
             enabled: true

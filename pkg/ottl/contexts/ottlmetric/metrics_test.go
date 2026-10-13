@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
@@ -194,7 +195,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			metric := createTelemetry()
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -221,7 +222,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := rm.ScopeMetrics().AppendEmpty().Scope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContextPtr(rm, rm.ScopeMetrics().At(0), pmetric.NewMetric())
+	ctx := NewTransformContext(rm, rm.ScopeMetrics().At(0), pmetric.NewMetric())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -330,7 +331,7 @@ func Test_newPathGetSetter_RelaxedNames(t *testing.T) {
 			metric := pmetric.NewMetric()
 			metric.SetName("original")
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			err := accessor.Set(t.Context(), ctx, name)
@@ -416,4 +417,21 @@ func Test_ParseEnum_False(t *testing.T) {
 			assert.Nil(t, actual)
 		})
 	}
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext: func(options ...TransformContextOption) *TransformContext {
+			return NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), options...)
+		},
+		WithCache: WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }

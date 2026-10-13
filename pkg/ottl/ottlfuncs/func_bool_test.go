@@ -186,14 +186,14 @@ func Test_BoolFactory(t *testing.T) {
 		factory := NewBoolFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &BoolArguments[any]{}, args)
+		assert.IsType(t, &boolArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewBoolFactory[any]()
 		args := factory.CreateDefaultArguments()
-		boolArgs, ok := args.(*BoolArguments[any])
+		boolArgs, ok := args.(*boolArguments[any])
 		require.True(t, ok)
 		boolArgs.Target = &ottl.StandardBoolLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -208,6 +208,21 @@ func Test_BoolFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createBoolFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "BoolFactory args must be of type *BoolArguments[K]")
+		assert.ErrorContains(t, err, "BoolFactory args must be of type *boolArguments[K]")
 	})
+}
+
+func BenchmarkBool(b *testing.B) {
+	exprFunc := boolFunc[any](&ottl.StandardBoolLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "true", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

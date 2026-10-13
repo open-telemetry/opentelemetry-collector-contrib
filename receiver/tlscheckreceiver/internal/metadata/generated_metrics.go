@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -20,10 +21,19 @@ const (
 	AggregationStrategyMax = "max"
 )
 
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+	)
+}
+
 var MetricsInfo = metricsInfo{
 	TlscheckTimeLeft: metricInfo{
 		Name:       "tlscheck.time_left",
-		Attributes: []string{"tlscheck.x509.issuer", "tlscheck.x509.cn", "tlscheck.x509.san"},
+		Attributes: []string{"tlscheck.x509.issuer", "tlscheck.x509.cn", "tlscheck.x509.san", "tlscheck.x509.fingerprint"},
 	},
 }
 
@@ -41,6 +51,7 @@ type metricTlscheckTimeLeft struct {
 	config        TlscheckTimeLeftMetricConfig // metric config provided by user.
 	capacity      int                          // max observed number of data points added to the metric.
 	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int               // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills tlscheck.time_left metric with initial data.
@@ -51,9 +62,10 @@ func (m *metricTlscheckTimeLeft) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any) {
+func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any, tlscheckX509FingerprintAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -70,33 +82,36 @@ func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pco
 	if slices.Contains(m.config.EnabledAttributes, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San) {
 		dp.Attributes().PutEmptySlice("tlscheck.x509.san").FromRaw(tlscheckX509SanAttributeValue)
 	}
+	if slices.Contains(m.config.EnabledAttributes, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Fingerprint) {
+		dp.Attributes().PutStr("tlscheck.x509.fingerprint", tlscheckX509FingerprintAttributeValue)
+	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -279,8 +294,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordTlscheckTimeLeftDataPoint adds a data point to tlscheck.time_left metric.
-func (mb *MetricsBuilder) RecordTlscheckTimeLeftDataPoint(ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any) {
-	mb.metricTlscheckTimeLeft.recordDataPoint(mb.startTime, ts, val, tlscheckX509IssuerAttributeValue, tlscheckX509CnAttributeValue, tlscheckX509SanAttributeValue)
+func (mb *MetricsBuilder) RecordTlscheckTimeLeftDataPoint(ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any, tlscheckX509FingerprintAttributeValue string) {
+	mb.metricTlscheckTimeLeft.recordDataPoint(mb.startTime, ts, val, tlscheckX509IssuerAttributeValue, tlscheckX509CnAttributeValue, tlscheckX509SanAttributeValue, tlscheckX509FingerprintAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
