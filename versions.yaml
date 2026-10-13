@@ -107,6 +107,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/filetelemetrypolicyextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fleettracker/redisfleettrackerextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
@@ -368,3 +369,4 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/altreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/integrationtest
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fleettracker/redisfleettrackerextension/integrationtest
