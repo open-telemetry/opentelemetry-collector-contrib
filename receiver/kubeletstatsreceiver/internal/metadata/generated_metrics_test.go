@@ -242,6 +242,12 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordK8sNodePidLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodePidUsageDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordK8sNodeSystemContainerCPUTimeDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -928,6 +934,34 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("direction")
 						assert.False(t, ok)
 					}
+				case "k8s.node.pid.limit":
+					assert.False(t, validatedMetrics["k8s.node.pid.limit"], "Found a duplicate in the metrics slice: k8s.node.pid.limit")
+					validatedMetrics["k8s.node.pid.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of processes/threads allowed by the operating system on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the system-wide task limit (the lower of kernel.pid_max and kernel.threads-max).", mi.Description())
+					assert.Equal(t, "{thread}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.pid.usage":
+					assert.False(t, validatedMetrics["k8s.node.pid.usage"], "Found a duplicate in the metrics slice: k8s.node.pid.usage")
+					validatedMetrics["k8s.node.pid.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of existing processes and threads on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.", mi.Description())
+					assert.Equal(t, "{thread}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.system_container.cpu.time":
 					assert.False(t, validatedMetrics["k8s.node.system_container.cpu.time"], "Found a duplicate in the metrics slice: k8s.node.system_container.cpu.time")
 					validatedMetrics["k8s.node.system_container.cpu.time"] = true

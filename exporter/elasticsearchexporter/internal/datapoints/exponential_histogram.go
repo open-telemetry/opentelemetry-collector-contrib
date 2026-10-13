@@ -14,31 +14,34 @@ import (
 type ExponentialHistogram struct {
 	pmetric.ExponentialHistogramDataPoint
 	elasticsearch.MappingHintGetter
-	metric pmetric.Metric
+	metric           pmetric.Metric
+	histogramMapping HistogramMapping
 }
 
-func NewExponentialHistogram(metric pmetric.Metric, dp pmetric.ExponentialHistogramDataPoint) ExponentialHistogram {
+func NewExponentialHistogram(metric pmetric.Metric, dp pmetric.ExponentialHistogramDataPoint, hm HistogramMapping) ExponentialHistogram {
 	return ExponentialHistogram{
 		ExponentialHistogramDataPoint: dp,
 		MappingHintGetter:             elasticsearch.NewMappingHintGetter(dp.Attributes()),
 		metric:                        metric,
+		histogramMapping:              hm,
 	}
 }
 
 func (dp ExponentialHistogram) Value() (pcommon.Value, error) {
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+	var counts []int64
+	var values []float64
+	switch dp.resolvedMapping() {
+	case HistogramMappingExponential:
+		return exphistogram.ToNativeExponentialHistogram(dp.ExponentialHistogramDataPoint), nil
+	case HistogramMappingRaw:
+		counts, values = exphistogram.ToRaw(dp.ExponentialHistogramDataPoint)
+	case HistogramMappingAggregateMetricDouble:
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
 		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
-	}
-
-	var counts []int64
-	var values []float64
-	if dp.HasMappingHint(elasticsearch.HintHistogramRaw) {
-		counts, values = exphistogram.ToRaw(dp.ExponentialHistogramDataPoint)
-	} else {
+	default:
 		counts, values = exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
 	}
 
@@ -65,10 +68,15 @@ func (dp ExponentialHistogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTem
 		}
 		return "histogram_metrics"
 	}
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+	// Default mode is otel
+	switch dp.resolvedMapping() {
+	case HistogramMappingAggregateMetricDouble:
 		return "summary"
+	case HistogramMappingExponential:
+		return "exponential_histogram"
+	default:
+		return "histogram"
 	}
-	return "histogram"
 }
 
 func (dp ExponentialHistogram) DocCount() uint64 {
@@ -77,4 +85,14 @@ func (dp ExponentialHistogram) DocCount() uint64 {
 
 func (dp ExponentialHistogram) Metric() pmetric.Metric {
 	return dp.metric
+}
+
+func (dp ExponentialHistogram) resolvedMapping() HistogramMapping {
+	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+		return HistogramMappingAggregateMetricDouble
+	}
+	if dp.HasMappingHint(elasticsearch.HintHistogramRaw) {
+		return HistogramMappingRaw
+	}
+	return dp.histogramMapping
 }
