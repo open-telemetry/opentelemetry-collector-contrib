@@ -111,10 +111,24 @@ func BenchmarkConsumeMetrics_Passthrough(b *testing.B) {
 // pipeline cost when every data point triggers a cardinality-limit drop.
 // This exercises the most expensive path: HLL estimation + attribute removal.
 func BenchmarkConsumeMetrics_HighCardinality(b *testing.B) {
-	cfg := &Config{
+	benchmarkHighCardinality(b, &Config{
 		MaxCardinalityDeltaPerEpoch: 5, // Tiny limit — almost everything gets dropped
 		EpochDurationSeconds:        300,
-	}
+	})
+}
+
+// BenchmarkConsumeMetrics_Observe runs the HighCardinality payload in observe mode.
+func BenchmarkConsumeMetrics_Observe(b *testing.B) {
+	benchmarkHighCardinality(b, &Config{
+		MaxCardinalityDeltaPerEpoch: 5,
+		EpochDurationSeconds:        300,
+		EnforcementMode:             EnforcementObserve,
+		TopOffendersCount:           10,
+		HighCardinalityThreshold:    1000,
+	})
+}
+
+func benchmarkHighCardinality(b *testing.B, cfg *Config) {
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)

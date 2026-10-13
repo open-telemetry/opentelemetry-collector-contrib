@@ -75,6 +75,15 @@ type tracker struct {
 	insertCount uint64
 	// idleEpochs counts consecutive zero-insert rotations; eviction at staleSweepEpochs.
 	idleEpochs int
+	// rotations counts completed epochs since creation. Observe mode uses it to
+	// tell whether the previous epoch was a full one.
+	rotations uint32
+	// kind is the metric kind observe mode has seen for this tracker.
+	kind metricKind
+	// service is the first service.name observe mode saw; multiService is set
+	// once another one arrives.
+	service      string
+	multiService bool
 }
 
 // insert feeds a pre-hashed value into the current sketch via InsertHash —
@@ -88,6 +97,11 @@ type tracker struct {
 func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	return t.insertLocked(hashVal)
+}
+
+// insertLocked is insert for callers that already hold t.mu.
+func (t *tracker) insertLocked(hashVal uint64) (curr, prev uint64) {
 	t.current.InsertHash(hashVal)
 	t.insertCount++
 	if t.insertCount <= estimateInterval || t.insertCount&(estimateInterval-1) == 0 {
@@ -102,6 +116,7 @@ func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
 // zero inserts during the epoch that just ended.
 func (t *tracker) rotate(fresh *hyperloglog.Sketch) (idle bool) {
 	t.mu.Lock()
+	t.rotations++
 	idle = t.insertCount == 0
 	if idle {
 		t.idleEpochs++
@@ -284,16 +299,22 @@ func (p *cardinalityProcessor) getShard(metricName string) *trackerShard {
 // receives. Setting MutatesData: true causes the Collector to clone the metric
 // batch before passing it to this processor, ensuring that modifications to
 // attributes do not race with other pipeline components that may be consuming
-// the same in-memory batch concurrently.
-func (*cardinalityProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
+// the same in-memory batch concurrently. Observe mode only reads the batch.
+func (p *cardinalityProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: p.enforcementMode != EnforcementObserve}
 }
 
-// ConsumeMetrics is the entry point for incoming metric batches. It walks the
+// ConsumeMetrics is the entry point for incoming metric batches. In observe
+// mode it records the batch and forwards it unchanged. Otherwise it walks the
 // three-level OTel hierarchy (ResourceMetrics → ScopeMetrics → Metric) and
 // delegates per-metric enforcement to processMetric. After all enforcement is
 // complete the (potentially mutated) batch is forwarded to the next consumer.
 func (p *cardinalityProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if p.enforcementMode == EnforcementObserve {
+		p.observeMetrics(md)
+		return p.next.ConsumeMetrics(ctx, md)
+	}
+
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		resMetrics := rm.At(i)
@@ -535,6 +556,13 @@ func (p *cardinalityProcessor) rotate() {
 		topBuf = make([]offenderEntry, 0, topN)
 	}
 
+	observe := p.enforcementMode == EnforcementObserve
+	var findings []finding
+	flagged := 0
+	if observe {
+		findings = make([]finding, 0, p.config.TopOffendersCount)
+	}
+
 	for i := range p.shards {
 		shard := p.shards[i]
 		// Snapshot tracker references under a shard read lock — no sketch
@@ -550,6 +578,9 @@ func (p *cardinalityProcessor) rotate() {
 
 		// Snapshot deltas before rotation resets the cached estimates.
 		topBuf = collectShardDeltas(entries, topBuf, topN)
+		if observe {
+			findings, flagged = p.collectFindings(entries, findings, flagged)
+		}
 
 		// Pull fresh sketches from the pool entirely outside any lock.
 		fresh := make([]*hyperloglog.Sketch, len(entries))
@@ -585,7 +616,10 @@ func (p *cardinalityProcessor) rotate() {
 	}
 
 	// Reset the warning flag so we can log again next epoch if still bounded
-	p.rejectionWarned.Store(false)
+	limitReached := p.rejectionWarned.Swap(false)
+	if observe {
+		p.logReport(findings, flagged, limitReached)
+	}
 
 	// Emit suppression summary and reset drop log counters for the new epoch
 	totalDrops := p.dropsThisEpoch.Swap(0)
@@ -665,10 +699,13 @@ func (p *cardinalityProcessor) publishTopOffenders(topBuf []offenderEntry) {
 	p.topOffenders = topBuf
 	p.topOffendersMu.Unlock()
 
-	p.logger.Info("Top cardinality offender",
-		zap.String("metric", topBuf[0].metricName),
-		zap.String("label", topBuf[0].labelKey),
-		zap.Uint64("delta", topBuf[0].delta))
+	// Observe mode reports through logReport.
+	if p.enforcementMode != EnforcementObserve {
+		p.logger.Info("Top cardinality offender",
+			zap.String("metric", topBuf[0].metricName),
+			zap.String("label", topBuf[0].labelKey),
+			zap.Uint64("delta", topBuf[0].delta))
+	}
 }
 
 // sortOffenders performs an insertion sort on a small offenderEntry slice in
@@ -747,18 +784,12 @@ func (p *cardinalityProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-// shouldDrop returns true when the unique-value count for (metricName, attrKey)
-// has grown by more than MaxCardinalityDeltaPerEpoch since the last epoch
-// rotation. The fast path is a shard RLock; a missed tracker triggers
-// double-checked locking to install one. curr ≤ prev is treated as no growth
-// to guard against uint64 underflow from HLL variance near sketch boundaries.
-func (p *cardinalityProcessor) shouldDrop(metricName, attrKey string, attrVal pcommon.Value) bool {
+// getOrCreateTracker returns the tracker for (metricName, attrKey), creating it
+// on first use. The fast path is a shard RLock; a missed tracker triggers
+// double-checked locking to install one. It returns nil when MaxTrackerCount is
+// reached, so the caller skips tracking for this attribute.
+func (p *cardinalityProcessor) getOrCreateTracker(metricName, attrKey string) *tracker {
 	key := trackerKey{metricName: metricName, attrKey: attrKey}
-
-	// Hash the attribute value before acquiring any lock. hashAttrValue keeps
-	// Str/Int/Double/Bool/Bytes on a zero-allocation path; Map/Slice fall back
-	// to AsString (JSON-marshal).
-	hashVal := hashAttrValue(attrVal)
 
 	// Route to 1/256th of the total key space.
 	shard := p.getShard(metricName)
@@ -767,28 +798,46 @@ func (p *cardinalityProcessor) shouldDrop(metricName, attrKey string, attrVal pc
 	shard.mu.RLock()
 	t, ok := shard.trackers[key]
 	shard.mu.RUnlock()
+	if ok {
+		return t
+	}
 
+	// Phase 2: write lock — only for first-time insertion into the shard.
+	// Double-check after acquiring the write lock: another goroutine may
+	// have inserted the same key while we waited.
+	shard.mu.Lock()
+	t, ok = shard.trackers[key]
 	if !ok {
-		// Phase 2: write lock — only for first-time insertion into the shard.
-		// Double-check after acquiring the write lock: another goroutine may
-		// have inserted the same key while we waited.
-		shard.mu.Lock()
-		t, ok = shard.trackers[key]
-		if !ok {
-			if maxT := p.config.MaxTrackerCount; maxT > 0 && p.trackerCount.Load() >= int64(maxT) {
-				shard.mu.Unlock()
-				p.trackersRejected.Add(1)
-				if p.rejectionWarned.CompareAndSwap(false, true) {
-					p.logger.Warn("MaxTrackerCount reached; ignoring new metric attributes until next epoch rotation",
-						zap.Int("limit", maxT))
-				}
-				return false
+		if maxT := p.config.MaxTrackerCount; maxT > 0 && p.trackerCount.Load() >= int64(maxT) {
+			shard.mu.Unlock()
+			p.trackersRejected.Add(1)
+			if p.rejectionWarned.CompareAndSwap(false, true) {
+				p.logger.Warn("MaxTrackerCount reached; ignoring new metric attributes until next epoch rotation",
+					zap.Int("limit", maxT))
 			}
-			t = newTracker()
-			shard.trackers[key] = t
-			p.trackerCount.Add(1)
+			return nil
 		}
-		shard.mu.Unlock()
+		t = newTracker()
+		shard.trackers[key] = t
+		p.trackerCount.Add(1)
+	}
+	shard.mu.Unlock()
+	return t
+}
+
+// shouldDrop returns true when the unique-value count for (metricName, attrKey)
+// has grown by more than MaxCardinalityDeltaPerEpoch since the last epoch
+// rotation. curr ≤ prev is treated as no growth to guard against uint64
+// underflow from HLL variance near sketch boundaries.
+func (p *cardinalityProcessor) shouldDrop(metricName, attrKey string, attrVal pcommon.Value) bool {
+	// Hash the attribute value before acquiring any lock. hashAttrValue keeps
+	// Str/Int/Double/Bool/Bytes on a zero-allocation path; Map/Slice fall back
+	// to AsString (JSON-marshal).
+	hashVal := hashAttrValue(attrVal)
+
+	t := p.getOrCreateTracker(metricName, attrKey)
+	if t == nil {
+		return false
 	}
 
 	// HLL insert and estimate happen under the per-tracker lock, completely

@@ -78,6 +78,9 @@ type Config struct {
 	//     Cumulative Sums, Histograms, and ExponentialHistograms fall back to
 	//     tag_only behavior with a warning log.
 	//
+	//   - "observe" — tracks cardinality and logs a report with recommendations
+	//     at each epoch rotation. Data is never changed.
+	//
 	// If empty, defaults to "tag_only".
 	EnforcementMode EnforcementMode `mapstructure:"enforcement_mode"`
 
@@ -97,8 +100,10 @@ type Config struct {
 	// to report via the "otelcol_processor_cardinality_top_offenders" gauge. The snapshot is
 	// computed once per epoch rotation, so it adds no hot-path cost.
 	//
+	// In observe mode it also caps the number of findings per report.
+	//
 	// Set to 0 to disable the Top-N gauge entirely.
-	// Must be ≥ 0.
+	// Must be ≥ 0, and greater than 0 in observe mode.
 	TopOffendersCount int `mapstructure:"top_offenders_count"`
 
 	// MaxTrackerCount is the absolute maximum number of concurrent
@@ -127,6 +132,11 @@ type Config struct {
 	// Set to 0 to disable the cap (log every drop — not recommended at scale).
 	// Must be ≥ 0.
 	DropLogMaxPerEpoch int `mapstructure:"drop_log_max_per_epoch"`
+
+	// HighCardinalityThreshold is the number of distinct values in an epoch at
+	// which observe mode reports a label as HIGH. Ignored in the other modes.
+	// Must be greater than 0 in observe mode.
+	HighCardinalityThreshold int `mapstructure:"high_cardinality_threshold"`
 }
 
 // EnforcementMode determines how the processor handles attributes that exceed
@@ -148,6 +158,10 @@ const (
 	// performs inline spatial reaggregation to merge data points that now
 	// share the same identity. Currently supports Delta Sum and Gauge.
 	EnforcementStripAndReaggregate EnforcementMode = "strip_and_reaggregate"
+
+	// EnforcementObserve tracks cardinality and logs a per-epoch report with
+	// recommendations. It never changes data.
+	EnforcementObserve EnforcementMode = "observe"
 )
 
 // resolvedEnforcementMode returns the effective enforcement mode.
@@ -193,11 +207,25 @@ func (c *Config) Validate() error {
 	if c.EnforcementMode != "" {
 		normalized := EnforcementMode(strings.ToLower(string(c.EnforcementMode)))
 		switch normalized {
-		case EnforcementTagOnly, EnforcementOverflowAttribute, EnforcementStripAndReaggregate:
+		case EnforcementTagOnly, EnforcementOverflowAttribute, EnforcementStripAndReaggregate, EnforcementObserve:
 			// valid
 		default:
-			return fmt.Errorf("enforcement_mode must be one of: tag_only, overflow_attribute, strip_and_reaggregate; got %q", c.EnforcementMode)
+			return fmt.Errorf("enforcement_mode must be one of: tag_only, overflow_attribute, strip_and_reaggregate, observe; got %q", c.EnforcementMode)
 		}
+	}
+	return c.validateObserve()
+}
+
+// validateObserve checks the settings only observe mode uses.
+func (c *Config) validateObserve() error {
+	if c.resolvedEnforcementMode() != EnforcementObserve {
+		return nil
+	}
+	if c.HighCardinalityThreshold <= 0 {
+		return errors.New("high_cardinality_threshold must be greater than 0 in observe mode")
+	}
+	if c.TopOffendersCount == 0 {
+		return errors.New("top_offenders_count must be greater than 0 in observe mode")
 	}
 	return nil
 }

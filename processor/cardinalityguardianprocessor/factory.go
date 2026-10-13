@@ -42,6 +42,7 @@ func createDefaultConfig() component.Config {
 		MaxTrackerCount:             0,    // Default to unlimited
 		MetricOverrides:             nil,  // No per-metric overrides by default
 		DropLogMaxPerEpoch:          10,   // Only log the first 10 drops per epoch
+		HighCardinalityThreshold:    1000, // observe mode only
 	}
 }
 

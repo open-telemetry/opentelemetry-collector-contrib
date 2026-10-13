@@ -27,6 +27,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	oCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 	assert.NoError(t, oCfg.Validate())
+	assert.Equal(t, 1000, oCfg.HighCardinalityThreshold)
 }
 
 func TestCreateMetricsProcessor(t *testing.T) {

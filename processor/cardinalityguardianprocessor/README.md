@@ -22,7 +22,7 @@ The processor strips only the exploding label — not the entire data point. You
 
 A code change introduces raw exception strings into `error.type`. Yesterday that label had 5 unique values. Today it has 50,000 and climbing. Your TSDB bill noticed before you did.
 
-This processor sits in your OTel pipeline and detects labels with abnormal growth. It either strips them (enforcement mode) or tags them for routing (tag-only mode). The metric stays intact — only the bad label is removed.
+This processor sits in your OTel pipeline and detects labels with abnormal growth. It either strips them (enforcement mode) or tags them for routing (tag-only mode). The metric stays intact — only the bad label is removed. In [observe mode](#observe) it only reports problem labels, with recommendations, and changes no data.
 
 ```
 Before:  {region="us-east", status="200", error.type="Lock wait timeout; txn=a3f9c..."}
@@ -38,7 +38,9 @@ flowchart LR
     A[Metric arrives] --> B[Hash metric name]
     B --> C[Select 1 of 256 shards]
     C --> D[For each label: hash value, insert into HLL++ sketch]
-    D --> E{Delta > threshold?}
+    D --> O{enforcement_mode: observe?}
+    O -- Yes --> P[Forward unchanged; report at epoch rotation]
+    O -- No --> E{Delta > threshold?}
     E -- No --> F[Pass through]
     E -- Yes --> G{enforcement_mode?}
     G -- tag_only --> H[Add otel.metric.overflow tag]
@@ -85,7 +87,7 @@ processors:
     # Epoch rotation interval (seconds, minimum 10)
     epoch_duration_seconds: 300
 
-    # Enforcement mode: tag_only | overflow_attribute | strip_and_reaggregate
+    # Enforcement mode: tag_only | overflow_attribute | strip_and_reaggregate | observe
     enforcement_mode: tag_only
 
     # Labels that are never stripped regardless of cardinality
@@ -99,7 +101,8 @@ processors:
       http.server.request.duration: 5000
       db.query.duration: 50
 
-    # Emit gauge with top N highest-delta trackers
+    # Emit gauge with top N highest-delta trackers; in observe mode also the
+    # maximum findings per report (must be > 0 there)
     top_offenders_count: 10
 
     # Max tracked metric+label pairs (0 = unlimited)
@@ -110,6 +113,9 @@ processors:
 
     # Cap enforcement Warn logs per epoch (0 = unlimited)
     drop_log_max_per_epoch: 10
+
+    # observe mode only: distinct values at which a label is reported as HIGH
+    high_cardinality_threshold: 1000
 ```
 
 ## Enforcement Modes
@@ -152,6 +158,98 @@ Both `strip_and_reaggregate` and `overflow_attribute` modes utilize the spatial 
 | **Summary** | ⚠️ Falls back to `tag_only` | Quantile merging is mathematically invalid |
 
 > **Note:** For metric types that don't yet support reaggregation, the processor automatically falls back to `tag_only` behavior with an `otel.metric.overflow` tag, ensuring no data corruption.
+
+### Observe
+
+```yaml
+enforcement_mode: observe
+high_cardinality_threshold: 1000
+top_offenders_count: 10
+```
+
+Tracks cardinality and writes a report at each epoch rotation without changing data: no attribute is
+added, removed or rewritten, and every batch is forwarded as it arrived. The default mode is
+`tag_only`, which adds `otel.metric.overflow`, so `observe` must be set explicitly.
+
+A (metric, label) pair is reported when it matches a rule:
+
+| Status | Condition |
+|---|---|
+| `HIGH` | Distinct values in the epoch ≥ `high_cardinality_threshold` |
+| `GROWING` | Growth since the previous epoch > `max_cardinality_delta_per_epoch`, or the `metric_overrides` value. Evaluated only once the pair has completed two epochs and was active in the previous one. |
+| `PROTECTED` | Added to a `HIGH` or `GROWING` finding whose label is in `never_drop_labels` |
+
+Each report is an Info summary line, then one Warn line per finding, sorted by distinct values and
+limited to `top_offenders_count`. Lines carry metric and label names, metric types, counts, statuses and
+recommendations, never attribute values:
+
+```text
+info  Cardinality report  {"epoch_duration_seconds": 300, "trackers_active": 4210, "flagged": 1, "shown": 1, "tracker_limit_reached": false}
+warn  High-cardinality recommendation {"metric": "checkout_requests", "label": "error_type", "metric_type": "delta_sum", "status": "GROWING,HIGH", "distinct_values": 12400, "delta": 11900, "recommendation": "Remove label error_type from metric checkout_requests and re-aggregate with sum. Apply ottl_statements in a transformprocessor as two metric_statements groups, in order.", "ottl_statements": ["delete_key(datapoint.attributes, \"error_type\") where metric.name == \"checkout_requests\"", "aggregate_on_attributes(\"sum\") where metric.name == \"checkout_requests\""]}
+```
+
+The collector's default log sampling keeps the first 10 lines with the same message, then 1 in 100,
+every 10 seconds, shared by all components. With more than one observe-mode instance, or `top_offenders_count` above 10,
+raise `service.telemetry.logs.sampling.initial` or disable sampling.
+
+`tracker_limit_reached: true` means `max_tracker_count` was hit during the epoch, so the report may
+be incomplete. When nothing is flagged, only a Debug line is written.
+
+Recommendations are text; the processor never applies them. The first matching row applies:
+
+| Finding | Recommendation |
+|---|---|
+| Label in `never_drop_labels` | Reduce the label's values at the source |
+| Metric seen from more than one `service.name` | Check the label per service before removing it; the count combines all services |
+| Delta sum | Remove the label and re-aggregate with `sum`, with `ottl_statements` for a `transformprocessor` |
+| Gauge | Same, with `<fn>` to replace by `max`, `min`, `mean` or `median` |
+| Cumulative sum, histogram, exponential histogram, summary, or a name used with several types | Reduce the label's values at the source; merging these series in the collector is unsafe across batches or collectors |
+
+A metric or label name containing `"`, `\` or a non-printable character gets the source advice, since
+the statements would need escaping.
+
+Apply the two statements as separate groups, in order:
+
+```yaml
+transform:
+  metric_statements:
+    - statements:
+        - delete_key(datapoint.attributes, "error_type") where metric.name == "checkout_requests"
+    - statements:
+        - aggregate_on_attributes("sum") where metric.name == "checkout_requests"
+```
+
+If a metric or label name contains `: ` or ` #`, single-quote the statement so the YAML parses.
+
+A tracker that has seen a second service or type keeps that advice until it is evicted after two idle
+epochs. On a gateway, standard metric names such as `http.server.request.duration` usually arrive from
+many services, so most of their findings get the per-service advice and no `ottl_statements`.
+
+Counts are HyperLogLog++ estimates: close to exact at low counts, and about 0.81% standard error once a
+sketch switches to its dense form, at several thousand distinct values.
+
+Observe mode is not a dry run of the other modes:
+
+| | Enforcing modes | Observe |
+|---|---|---|
+| Baseline | None; a new pair compares against 0 | Two completed epochs, previous one active |
+| When evaluated | On every insert | Once per epoch, at rotation |
+| Protected labels | Not tracked | Tracked and reported |
+| Absolute threshold | None | `HIGH` |
+
+Limitations:
+
+- Trackers are keyed by metric name and label key. Counts combine every resource and service that
+  sends the metric, and resource attributes are not tracked.
+- Counts are distinct values per label, not series per metric.
+- The GROWING baseline removes most false positives, but an epoch in which a sender stopped part-way
+  counts as active, so the next full epoch can read as growth.
+- `aggregate_on_attributes` merges data points within one batch, so the recommended delta-sum fix can
+  still send more than one point per series and interval when a series spans batches.
+
+Tracking `never_drop_labels` adds trackers, so set `max_tracker_count` on large pipelines. The "Top
+cardinality offender" log line is not written in observe mode; the
+`processor_cardinality_top.offenders` gauge keeps ranking by growth.
 
 ## Warnings
 
