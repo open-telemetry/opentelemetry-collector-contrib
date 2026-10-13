@@ -226,25 +226,25 @@ func Test_e2e_editors(t *testing.T) {
 		want      func(tCtx *ottllog.TransformContext)
 	}{
 		{
-			statement: `sanitize_utf8(body)`,
+			statement: `sanitize(body, "utf-8")`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
 			},
 		},
 		{
-			statement: `sanitize_utf8(body, "?")`,
+			statement: `sanitize(body, "utf-8", "?")`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Body().SetStr("operation?A")
 			},
 		},
 		{
-			statement: `sanitize_utf8(attributes["invalid"])`,
+			statement: `sanitize(attributes["invalid"], "utf-8")`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("invalid", "bad\uFFFDvalue")
 			},
 		},
 		{
-			statement: `sanitize_utf8(attributes)`,
+			statement: `sanitize(attributes, "utf-8")`,
 			want: func(tCtx *ottllog.TransformContext) {
 				attrs := tCtx.GetLogRecord().Attributes()
 				attrs.PutStr("invalid", "bad\uFFFDvalue")
@@ -255,20 +255,32 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `sanitize_utf8(resource.attributes)`,
+			statement: `sanitize(resource.attributes, "utf-8")`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetResource().Attributes().PutStr("resource.invalid", "res\uFFFD")
 			},
 		},
 		{
-			statement: `sanitize_utf8(instrumentation_scope.name)`,
+			statement: `sanitize(instrumentation_scope.name, "utf-8")`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetInstrumentationScope().SetName("scope\uFFFD")
 			},
 		},
 		{
-			statement: `sanitize_utf8(attributes["http.method"])`,
+			statement: `sanitize(attributes["http.method"], "utf-8")`,
 			want:      func(*ottllog.TransformContext) {},
+		},
+		{
+			statement: `sanitize(body, "UTF8")`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
+			},
+		},
+		{
+			statement: `sanitize(body, attributes["format"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
+			},
 		},
 	}
 
@@ -276,6 +288,7 @@ func Test_e2e_editors(t *testing.T) {
 		tCtx := constructLogTransformContext()
 		tCtx.GetLogRecord().Body().SetStr("operation\xffA")
 		tCtx.GetLogRecord().Attributes().PutStr("invalid", "bad\xffvalue")
+		tCtx.GetLogRecord().Attributes().PutStr("format", "utf-8")
 		tCtx.GetLogRecord().Attributes().PutStr("bad\xffkey", "value")
 		tCtx.GetLogRecord().Attributes().PutEmptyMap("nested").PutStr("inner", "nested\xff")
 		tCtx.GetResource().Attributes().PutStr("resource.invalid", "res\xff")

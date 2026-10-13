@@ -16,10 +16,53 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_sanitizeUTF8_string(t *testing.T) {
+func utf8Format(tb testing.TB) ottl.StringGetter[any] {
+	tb.Helper()
+	return literalFormat(tb, "utf-8")
+}
+
+func literalFormat(tb testing.TB, format string) ottl.StringGetter[any] {
+	tb.Helper()
+	g, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return format, nil
+		},
+	})
+	require.NoError(tb, err)
+	return g
+}
+
+func runtimeFormat(format string) ottl.StringGetter[any] {
+	return &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return format, nil
+		},
+	}
+}
+
+func mapTarget(t *testing.T, called *bool) ottl.GetSetter[pcommon.Map] {
+	t.Helper()
+	return &ottl.StandardGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, val any) error {
+			if called != nil {
+				*called = true
+			}
+			m, ok := val.(pcommon.Map)
+			require.True(t, ok)
+			m.CopyTo(tCtx)
+			return nil
+		},
+	}
+}
+
+func Test_sanitize_string(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       string
+		format      ottl.StringGetter[any]
 		replacement ottl.Optional[string]
 		want        string
 		wantSet     bool
@@ -55,6 +98,27 @@ func Test_sanitizeUTF8_string(t *testing.T) {
 			want:        "ab",
 			wantSet:     true,
 		},
+		{
+			name:    "format alias utf8",
+			input:   "a\xffb",
+			format:  literalFormat(t, "utf8"),
+			want:    "a�b",
+			wantSet: true,
+		},
+		{
+			name:    "format is case-insensitive",
+			input:   "a\xffb",
+			format:  literalFormat(t, "UTF-8"),
+			want:    "a�b",
+			wantSet: true,
+		},
+		{
+			name:    "format resolved at runtime",
+			input:   "a\xffb",
+			format:  runtimeFormat("utf-8"),
+			want:    "a�b",
+			wantSet: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,8 +134,12 @@ func Test_sanitizeUTF8_string(t *testing.T) {
 					return nil
 				},
 			}
+			format := tt.format
+			if format == nil {
+				format = utf8Format(t)
+			}
 
-			exprFunc, err := sanitizeUTF8[any](target, tt.replacement)
+			exprFunc, err := sanitize[any](target, format, tt.replacement)
 			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
@@ -82,7 +150,7 @@ func Test_sanitizeUTF8_string(t *testing.T) {
 	}
 }
 
-func Test_sanitizeUTF8_map(t *testing.T) {
+func Test_sanitize_map(t *testing.T) {
 	input := pcommon.NewMap()
 	input.PutStr("valid", "ok")
 	input.PutStr("invalid_value", "a\xffb")
@@ -110,20 +178,12 @@ func Test_sanitizeUTF8_map(t *testing.T) {
 	expected.PutStr("invalid_key�", "c�d")
 
 	setterCalled := false
-	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, val any) error {
-			setterCalled = true
-			m, ok := val.(pcommon.Map)
-			require.True(t, ok)
-			m.CopyTo(tCtx)
-			return nil
-		},
-	}
+	format, err := ottl.NewTestingLiteralGetter[pcommon.Map, string](true, &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "utf-8", nil },
+	})
+	require.NoError(t, err)
 
-	exprFunc, err := sanitizeUTF8[pcommon.Map](target, ottl.Optional[string]{})
+	exprFunc, err := sanitize[pcommon.Map](mapTarget(t, &setterCalled), format, ottl.Optional[string]{})
 	require.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	require.NoError(t, err)
@@ -131,28 +191,24 @@ func Test_sanitizeUTF8_map(t *testing.T) {
 	assert.Equal(t, expected.AsRaw(), input.AsRaw())
 }
 
-func Test_sanitizeUTF8_map_key_conflict(t *testing.T) {
+func Test_sanitize_map_key_conflict(t *testing.T) {
 	input := pcommon.NewMap()
 	input.PutStr("key�", "existing")
 	input.PutStr("key\xff", "moved")
 
-	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, _ pcommon.Map, _ any) error {
-			return nil
-		},
-	}
+	format, err := ottl.NewTestingLiteralGetter[pcommon.Map, string](true, &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "utf-8", nil },
+	})
+	require.NoError(t, err)
 
-	exprFunc, err := sanitizeUTF8[pcommon.Map](target, ottl.Optional[string]{})
+	exprFunc, err := sanitize[pcommon.Map](mapTarget(t, nil), format, ottl.Optional[string]{})
 	require.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"key�": "moved"}, input.AsRaw())
 }
 
-func Test_sanitizeUTF8_value(t *testing.T) {
+func Test_sanitize_value(t *testing.T) {
 	tests := []struct {
 		name  string
 		input func() pcommon.Value
@@ -216,8 +272,12 @@ func Test_sanitizeUTF8_value(t *testing.T) {
 					return nil
 				},
 			}
+			format, err := ottl.NewTestingLiteralGetter[pcommon.Value, string](true, &ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(_ context.Context, _ pcommon.Value) (any, error) { return "utf-8", nil },
+			})
+			require.NoError(t, err)
 
-			exprFunc, err := sanitizeUTF8[pcommon.Value](target, ottl.Optional[string]{})
+			exprFunc, err := sanitize[pcommon.Value](target, format, ottl.Optional[string]{})
 			require.NoError(t, err)
 			_, err = exprFunc(nil, value)
 			require.NoError(t, err)
@@ -226,7 +286,7 @@ func Test_sanitizeUTF8_value(t *testing.T) {
 	}
 }
 
-func Test_sanitizeUTF8_slice(t *testing.T) {
+func Test_sanitize_slice(t *testing.T) {
 	input := pcommon.NewSlice()
 	input.AppendEmpty().SetStr("a\xff")
 	input.AppendEmpty().SetEmptyMap().PutStr("k\xff", "v\xff")
@@ -246,15 +306,19 @@ func Test_sanitizeUTF8_slice(t *testing.T) {
 			return nil
 		},
 	}
+	format, err := ottl.NewTestingLiteralGetter[pcommon.Slice, string](true, &ottl.StandardStringGetter[pcommon.Slice]{
+		Getter: func(_ context.Context, _ pcommon.Slice) (any, error) { return "utf-8", nil },
+	})
+	require.NoError(t, err)
 
-	exprFunc, err := sanitizeUTF8[pcommon.Slice](target, ottl.Optional[string]{})
+	exprFunc, err := sanitize[pcommon.Slice](target, format, ottl.Optional[string]{})
 	require.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	require.NoError(t, err)
 	assert.Equal(t, expected.AsRaw(), input.AsRaw())
 }
 
-func Test_sanitizeUTF8_scalars_are_noop(t *testing.T) {
+func Test_sanitize_scalars_are_noop(t *testing.T) {
 	for _, val := range []any{nil, true, int64(1), 1.5, []byte{0xff}} {
 		t.Run(fmt.Sprintf("%T", val), func(t *testing.T) {
 			target := &ottl.StandardGetSetter[any]{
@@ -266,7 +330,7 @@ func Test_sanitizeUTF8_scalars_are_noop(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := sanitizeUTF8[any](target, ottl.Optional[string]{})
+			exprFunc, err := sanitize[any](target, utf8Format(t), ottl.Optional[string]{})
 			require.NoError(t, err)
 			_, err = exprFunc(nil, nil)
 			require.NoError(t, err)
@@ -274,33 +338,68 @@ func Test_sanitizeUTF8_scalars_are_noop(t *testing.T) {
 	}
 }
 
-func Test_sanitizeUTF8_unsupported_type(t *testing.T) {
+func Test_sanitize_unsupported_type(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return pcommon.NewTraceIDEmpty(), nil
 		},
 	}
 
-	exprFunc, err := sanitizeUTF8[any](target, ottl.Optional[string]{})
+	exprFunc, err := sanitize[any](target, utf8Format(t), ottl.Optional[string]{})
 	require.NoError(t, err)
 	_, err = exprFunc(nil, nil)
-	require.ErrorContains(t, err, "sanitize_utf8 target must be a string, map or slice")
+	require.ErrorContains(t, err, "sanitize target must be a string, map or slice")
 }
 
-func Test_sanitizeUTF8_getter_error(t *testing.T) {
+func Test_sanitize_unsupported_format(t *testing.T) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "a\xff", nil
+		},
+		Setter: func(_ context.Context, _, _ any) error {
+			return errors.New("setter must not be called")
+		},
+	}
+
+	t.Run("literal format fails at parse time", func(t *testing.T) {
+		_, err := sanitize[any](target, literalFormat(t, "latin1"), ottl.Optional[string]{})
+		require.ErrorContains(t, err, `unsupported format for sanitize function: "latin1"`)
+	})
+
+	t.Run("runtime format fails at execution time", func(t *testing.T) {
+		exprFunc, err := sanitize[any](target, runtimeFormat("latin1"), ottl.Optional[string]{})
+		require.NoError(t, err)
+		_, err = exprFunc(nil, nil)
+		require.ErrorContains(t, err, `unsupported format for sanitize function: "latin1"`)
+	})
+
+	t.Run("runtime format getter error", func(t *testing.T) {
+		format := &ottl.StandardStringGetter[any]{
+			Getter: func(_ context.Context, _ any) (any, error) {
+				return nil, errors.New("format getter failed")
+			},
+		}
+		exprFunc, err := sanitize[any](target, format, ottl.Optional[string]{})
+		require.NoError(t, err)
+		_, err = exprFunc(nil, nil)
+		require.ErrorContains(t, err, "format getter failed")
+	})
+}
+
+func Test_sanitize_getter_error(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return nil, errors.New("getter failed")
 		},
 	}
 
-	exprFunc, err := sanitizeUTF8[any](target, ottl.Optional[string]{})
+	exprFunc, err := sanitize[any](target, utf8Format(t), ottl.Optional[string]{})
 	require.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	require.EqualError(t, err, "getter failed")
 }
 
-func Test_sanitizeUTF8_setter_error(t *testing.T) {
+func Test_sanitize_setter_error(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "a\xff", nil
@@ -310,44 +409,45 @@ func Test_sanitizeUTF8_setter_error(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := sanitizeUTF8[any](target, ottl.Optional[string]{})
+	exprFunc, err := sanitize[any](target, utf8Format(t), ottl.Optional[string]{})
 	require.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	require.EqualError(t, err, "setter failed")
 }
 
-func Test_sanitizeUTF8_invalid_replacement(t *testing.T) {
+func Test_sanitize_invalid_replacement(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{}
-	_, err := sanitizeUTF8[any](target, ottl.NewTestingOptional("\xff"))
+	_, err := sanitize[any](target, utf8Format(t), ottl.NewTestingOptional("\xff"))
 	require.ErrorContains(t, err, "is not valid UTF-8")
 }
 
-func Test_sanitizeUTF8_factory(t *testing.T) {
+func Test_sanitize_factory(t *testing.T) {
 	t.Run("factory creation", func(t *testing.T) {
-		factory := NewSanitizeUTF8Factory[any]()
-		assert.Equal(t, "sanitize_utf8", factory.Name())
+		factory := NewSanitizeFactory[any]()
+		assert.Equal(t, "sanitize", factory.Name())
 	})
 
 	t.Run("default arguments", func(t *testing.T) {
-		factory := NewSanitizeUTF8Factory[any]()
+		factory := NewSanitizeFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &sanitizeUTF8Arguments[any]{}, args)
-		assertArgumentFieldNames(t, args, []string{"Target", "Replacement"})
+		assert.IsType(t, &sanitizeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Format", "Replacement"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
-		factory := NewSanitizeUTF8Factory[any]()
+		factory := NewSanitizeFactory[any]()
 		args := factory.CreateDefaultArguments()
-		sanitizeArgs, ok := args.(*sanitizeUTF8Arguments[any])
+		sanitizeArgs, ok := args.(*sanitizeArguments[any])
 		require.True(t, ok)
 		sanitizeArgs.Target = &ottl.StandardGetSetter[any]{
 			Getter: func(_ context.Context, _ any) (any, error) { return "a\xff", nil },
 			Setter: func(_ context.Context, _, val any) error {
-				assert.Equal(t, "a\uFFFD", val)
+				assert.Equal(t, "a�", val)
 				return nil
 			},
 		}
+		sanitizeArgs.Format = runtimeFormat("utf-8")
 
 		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
@@ -356,7 +456,7 @@ func Test_sanitizeUTF8_factory(t *testing.T) {
 	})
 
 	t.Run("bad arguments", func(t *testing.T) {
-		_, err := createSanitizeUTF8Function[any](ottl.FunctionContext{}, nil)
+		_, err := createSanitizeFunction[any](ottl.FunctionContext{}, nil)
 		require.Error(t, err)
 	})
 }

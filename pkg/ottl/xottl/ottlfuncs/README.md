@@ -10,29 +10,33 @@ them available by merging `ExperimentalConverters` and `ExperimentalEditors` int
 
 Available Editors:
 
-- [sanitize_utf8](#sanitize_utf8)
+- [sanitize](#sanitize)
 
-### sanitize_utf8
+### sanitize
 
 > [!IMPORTANT]
 > This function is experimental and may change in future releases.
 
-`sanitize_utf8(target, Optional[replacement])`
+`sanitize(target, format, Optional[replacement])`
 
-The `sanitize_utf8` function replaces every run of invalid UTF-8 bytes in the target with a replacement string, so the target only contains valid UTF-8 afterwards.
+The `sanitize` function replaces every sequence in the target that is invalid in the given `format` with a replacement string, so the target only contains valid data for that format afterwards.
 
-`target` is a path expression to a string, a `pcommon.Value`, a `pcommon.Map` or a `pcommon.Slice` field. `replacement` is an optional string (default: the Unicode replacement character `U+FFFD`, rendered as `�`) that is inserted in place of each run of invalid bytes. An empty `replacement` removes the invalid bytes. The function returns an error at parse time when `replacement` itself is not valid UTF-8.
+`target` is a path expression to a string, a `pcommon.Value`, a `pcommon.Map` or a `pcommon.Slice` field.
 
-When `target` is a map or a slice, all nested string values are sanitized, including the values of nested maps and slices. Map keys that contain invalid UTF-8 are moved to the sanitized key. If the sanitized key already exists in the map, its value is overwritten. Non-string values, such as integers, booleans and byte arrays, are left untouched. When `target` is a string that is already valid UTF-8, nothing is written back.
+`format` is the format to sanitize for. The only supported value today is `utf-8` (also accepted as `utf8`, case-insensitive). With `utf-8`, every run of invalid UTF-8 bytes is replaced. Other values return an error; when `format` is a literal the error is returned at parse time, otherwise when the statement runs.
+
+`replacement` is an optional string (default: the Unicode replacement character `U+FFFD`, rendered as `�`) that is inserted in place of each invalid sequence. An empty `replacement` removes the invalid bytes. The function returns an error at parse time when `replacement` itself is not valid UTF-8.
+
+When `target` is a map or a slice, all nested string values are sanitized, including the values of nested maps and slices. Map keys that are invalid are moved to the sanitized key. If the sanitized key already exists in the map, its value is overwritten. Non-string values, such as integers, booleans and byte arrays, are left untouched. When `target` is a string that is already valid, nothing is written back.
 
 Examples:
 
-- `sanitize_utf8(log.body)`
-- `sanitize_utf8(log.attributes)`
-- `sanitize_utf8(resource.attributes)`
-- `sanitize_utf8(span.name)`
-- `sanitize_utf8(log.attributes["message"], "?")`
-- `sanitize_utf8(log.attributes, replacement = "")`
+- `sanitize(log.body, "utf-8")`
+- `sanitize(log.attributes, "utf-8")`
+- `sanitize(resource.attributes, "utf-8")`
+- `sanitize(span.name, "utf-8")`
+- `sanitize(log.attributes["message"], "utf-8", "?")`
+- `sanitize(log.attributes, "utf-8", replacement = "")`
 
 
 ## Converters

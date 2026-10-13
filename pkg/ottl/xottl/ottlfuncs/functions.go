@@ -36,7 +36,7 @@ func WithExperimentalConverters[K any](funcs map[string]ottl.Factory[K]) map[str
 // them available in OTTL statements.
 func ExperimentalEditors[K any]() []ottl.Factory[K] {
 	return []ottl.Factory[K]{
-		NewSanitizeUTF8Factory[K](),
+		NewSanitizeFactory[K](),
 	}
 }
 

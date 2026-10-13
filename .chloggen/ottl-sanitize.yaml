@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl/xottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the experimental `sanitize_utf8` editor to replace invalid UTF-8 byte sequences in strings, maps and slices with a replacement string
+note: Add the experimental `sanitize` editor to replace byte sequences that are invalid in a given format, currently `utf-8`, in strings, maps and slices with a replacement string
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51717]
