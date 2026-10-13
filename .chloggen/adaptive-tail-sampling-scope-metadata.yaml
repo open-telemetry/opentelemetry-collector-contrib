@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: processor/adaptive_tail_sampling
+note: Preserve original scope groups, scope metadata, and schema URLs when splitting spans by trace ID, including late spans handled by the decision cache.
+issues: [51461]
+subtext:
+change_logs: [user]
