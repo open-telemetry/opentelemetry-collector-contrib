@@ -445,6 +445,8 @@ func TestReadGzipInvalidStream(t *testing.T) {
 			require.NoError(t, writer.Close())
 
 			f, sink := testFactory(t, withCompression("gzip"))
+			core, logs := observer.New(zap.ErrorLevel)
+			f.Logger = zap.New(core)
 			temp := filetest.OpenTemp(t, t.TempDir())
 			_, err := temp.Write(corrupt(buf.Bytes()))
 			require.NoError(t, err)
@@ -463,6 +465,11 @@ func TestReadGzipInvalidStream(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, info.Size(), reader.Offset)
 			require.Zero(t, reader.DecompressedBytesToSkip)
+
+			// The error says which part of the file was skipped.
+			invalid := logs.FilterMessageSnippet("invalid gzip data").All()
+			require.Len(t, invalid, 1)
+			require.Equal(t, info.Size(), invalid[0].ContextMap()["file_size"])
 		})
 	}
 }

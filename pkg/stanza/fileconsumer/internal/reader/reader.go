@@ -166,7 +166,8 @@ func (r *Reader) createGzipReader() (*gzipMembersReader, error) {
 		if errors.Is(err, io.ErrUnexpectedEOF) {
 			r.setIncompleteGzip(currentEOF)
 		} else if !errors.Is(err, io.EOF) {
-			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
+			r.set.Logger.Error("failed to create gzip reader", zap.Error(err),
+				zap.Int64("offset", r.Offset), zap.Int64("file_size", currentEOF))
 		}
 		return nil, err
 	}
@@ -177,7 +178,9 @@ func (r *Reader) createGzipReader() (*gzipMembersReader, error) {
 			if errors.Is(err, io.ErrUnexpectedEOF) {
 				r.setIncompleteGzip(currentEOF)
 			} else {
-				r.set.Logger.Error("failed to skip already-consumed decompressed bytes", zap.Error(err))
+				r.set.Logger.Error("failed to skip already-consumed decompressed bytes", zap.Error(err),
+					zap.Int64("offset", r.Offset), zap.Int64("decompressed_bytes_to_skip", r.DecompressedBytesToSkip),
+					zap.Int64("file_size", currentEOF))
 			}
 			return nil, err
 		}
@@ -193,6 +196,15 @@ func (r *Reader) createGzipReader() (*gzipMembersReader, error) {
 func (r *Reader) updateGzipOffset(g *gzipMembersReader) {
 	if g.err != nil && !errors.Is(g.err, io.ErrUnexpectedEOF) {
 		// The file was read to its end, or as far as it could be decompressed.
+		if !errors.Is(g.err, io.EOF) {
+			validEnd := g.start
+			if len(g.ends) > 0 {
+				validEnd += g.ends[len(g.ends)-1].compressed
+			}
+			r.set.Logger.Error("invalid gzip data, the rest of the file after the last complete gzip member is skipped",
+				zap.Error(g.err), zap.Int64("last_complete_gzip_member_end", validEnd),
+				zap.Int64("skipped_bytes", g.eof-validEnd), zap.Int64("file_size", g.eof))
+		}
 		r.Offset, r.DecompressedBytesToSkip = g.eof, 0
 		r.incompleteGzipSize, r.incompleteGzipSince, r.incompleteGzipWarned = 0, time.Time{}, false
 		return
@@ -223,7 +235,8 @@ func (r *Reader) handleUnchangedIncompleteGzip() {
 	unchangedFor := time.Since(r.incompleteGzipSince)
 	if !r.incompleteGzipWarned && unchangedFor >= incompleteGzipWarnAfter {
 		r.set.Logger.Warn("gzip member is incomplete and the file has not grown, the rest of it will be read once it is written",
-			zap.Duration("unchanged_for", unchangedFor))
+			zap.Duration("unchanged_for", unchangedFor), zap.Int64("offset", r.Offset),
+			zap.Int64("decompressed_bytes_read", r.DecompressedBytesToSkip), zap.Int64("file_size", r.incompleteGzipSize))
 		r.incompleteGzipWarned = true
 	}
 }
