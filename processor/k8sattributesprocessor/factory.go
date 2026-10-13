@@ -53,7 +53,8 @@ func createDefaultConfig() component.Config {
 		WatchSyncPeriod:        5 * time.Minute,
 		PodDeleteGracePeriod:   120 * time.Second,
 		Kubelet: KubeletConfig{
-			PollInterval: 10 * time.Second,
+			PollInterval:   10 * time.Second,
+			RequestTimeout: 10 * time.Second,
 		},
 	}
 }

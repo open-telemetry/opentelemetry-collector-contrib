@@ -334,6 +334,7 @@ k8s_attributes/kubelet:
   kubelet:
     enabled: true
     poll_interval: 15s
+    request_timeout: 5s
     insecure_skip_verify: true
     allow_insecure_http: true
 
@@ -351,6 +352,13 @@ k8s_attributes/bad_kubelet_poll_interval:
     node: ip-111.us-west-2.compute.internal
   kubelet:
     poll_interval: 0s
+
+k8s_attributes/bad_kubelet_request_timeout:
+  filter:
+    node: ip-111.us-west-2.compute.internal
+  kubelet:
+    enabled: true
+    request_timeout: 0s
 
 k8s_attributes/bad_kubelet_node:
   kubelet:

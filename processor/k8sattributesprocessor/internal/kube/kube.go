@@ -107,6 +107,7 @@ type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, Extra
 type KubeletConfig struct {
 	Enabled            bool
 	PollInterval       time.Duration
+	RequestTimeout     time.Duration
 	Endpoint           string
 	InsecureSkipVerify bool
 	AllowInsecureHTTP  bool

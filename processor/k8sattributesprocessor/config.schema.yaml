@@ -102,6 +102,10 @@ $defs:
       poll_interval:
         type: string
         format: duration
+      request_timeout:
+        description: RequestTimeout bounds each kubelet /pods request so a stalled kubelet connection cannot block polling or shutdown indefinitely.
+        type: string
+        format: duration
   pod_association_config:
     description: PodAssociationConfig contain single rule how to associate Pod metadata with logs, spans and metrics
     type: object

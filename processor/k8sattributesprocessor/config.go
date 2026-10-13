@@ -77,6 +77,9 @@ func (cfg *Config) Validate() error {
 	if cfg.Kubelet.Enabled && cfg.Kubelet.PollInterval <= 0 {
 		return errors.New("kubelet.poll_interval must be greater than 0")
 	}
+	if cfg.Kubelet.Enabled && cfg.Kubelet.RequestTimeout <= 0 {
+		return errors.New("kubelet.request_timeout must be greater than 0")
+	}
 	if cfg.Kubelet.Enabled {
 		if !metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate.IsEnabled() {
 			return errors.New("kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
@@ -187,6 +190,7 @@ func podAssociationKey(assoc PodAssociationConfig) string {
 type KubeletConfig struct {
 	Enabled            bool          `mapstructure:"enabled"`
 	PollInterval       time.Duration `mapstructure:"poll_interval"`
+	RequestTimeout     time.Duration `mapstructure:"request_timeout"`
 	Endpoint           string        `mapstructure:"endpoint"`
 	InsecureSkipVerify bool          `mapstructure:"insecure_skip_verify"`
 	AllowInsecureHTTP  bool          `mapstructure:"allow_insecure_http"`

@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
@@ -23,7 +24,8 @@ const (
 )
 
 type kubeletPodLister struct {
-	client kubelet.Client
+	client         kubelet.Client
+	requestTimeout time.Duration
 }
 
 func newKubeletPodLister(apiCfg k8sconfig.APIConfig, cfg KubeletConfig, node string, logger *zap.Logger) (*kubeletPodLister, error) {
@@ -67,14 +69,19 @@ func newKubeletPodLister(apiCfg k8sconfig.APIConfig, cfg KubeletConfig, node str
 	if err != nil {
 		return nil, err
 	}
-	return &kubeletPodLister{client: client}, nil
+	return &kubeletPodLister{client: client, requestTimeout: cfg.RequestTimeout}, nil
 }
 
 func (l *kubeletPodLister) listPods(ctx context.Context) (*api_v1.PodList, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	body, err := l.client.Get(kubeletPodsPath)
+	if l.requestTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, l.requestTimeout)
+		defer cancel()
+	}
+	body, err := l.get(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,4 +90,11 @@ func (l *kubeletPodLister) listPods(ctx context.Context) (*api_v1.PodList, error
 		return nil, err
 	}
 	return &pods, nil
+}
+
+func (l *kubeletPodLister) get(ctx context.Context) ([]byte, error) {
+	if cc, ok := l.client.(kubelet.ContextClient); ok {
+		return cc.GetWithContext(ctx, kubeletPodsPath)
+	}
+	return l.client.Get(kubeletPodsPath)
 }

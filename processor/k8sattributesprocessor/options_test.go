@@ -65,6 +65,7 @@ func TestWithKubeletConfig(t *testing.T) {
 	assert.NoError(t, withKubeletConfig(KubeletConfig{
 		Enabled:            true,
 		PollInterval:       time.Second,
+		RequestTimeout:     2 * time.Second,
 		Endpoint:           "https://node:10250",
 		InsecureSkipVerify: true,
 		AllowInsecureHTTP:  true,
@@ -72,6 +73,7 @@ func TestWithKubeletConfig(t *testing.T) {
 	assert.Equal(t, kube.KubeletConfig{
 		Enabled:            true,
 		PollInterval:       time.Second,
+		RequestTimeout:     2 * time.Second,
 		Endpoint:           "https://node:10250",
 		InsecureSkipVerify: true,
 		AllowInsecureHTTP:  true,

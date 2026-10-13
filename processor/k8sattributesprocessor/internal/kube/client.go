@@ -569,13 +569,23 @@ func (c *WatchClient) matchesPodFilters(pod *api_v1.Pod, labelSelector labels.Se
 
 func podFieldsSet(pod *api_v1.Pod) fields.Set {
 	// Kubelet /pods returns plain pod objects without apiserver field-selector support,
-	// so keep the apiserver pod field names here to apply the same filters locally.
+	// so mirror the apiserver's selectable pod fields (pkg/registry/core/pod.ToSelectableFields)
+	// to apply the same filters locally.
+	podIP := pod.Status.PodIP
+	if len(pod.Status.PodIPs) > 0 {
+		podIP = pod.Status.PodIPs[0].IP
+	}
 	return fields.Set{
-		"metadata.name":      pod.Name,
-		"metadata.namespace": pod.Namespace,
-		podNodeField:         pod.Spec.NodeName,
-		"status.phase":       string(pod.Status.Phase),
-		"status.podIP":       pod.Status.PodIP,
+		"metadata.name":            pod.Name,
+		"metadata.namespace":       pod.Namespace,
+		podNodeField:               pod.Spec.NodeName,
+		"spec.restartPolicy":       string(pod.Spec.RestartPolicy),
+		"spec.schedulerName":       pod.Spec.SchedulerName,
+		"spec.serviceAccountName":  pod.Spec.ServiceAccountName,
+		"spec.hostNetwork":         strconv.FormatBool(pod.Spec.HostNetwork),
+		"status.phase":             string(pod.Status.Phase),
+		"status.podIP":             podIP,
+		"status.nominatedNodeName": pod.Status.NominatedNodeName,
 	}
 }
 
@@ -639,7 +649,9 @@ func (c *WatchClient) handleKubeletPodUpdate(pod *api_v1.Pod) {
 		c.telemetryBuilder.K8sWatcherPodUpdated.Add(context.Background(), 1)
 	}
 	c.addOrUpdatePod(pod)
+	c.m.RLock()
 	podTableSize := len(c.Pods)
+	c.m.RUnlock()
 	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
 	}

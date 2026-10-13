@@ -3294,15 +3294,188 @@ func TestNewKubeletPodListerEndpoint(t *testing.T) {
 	require.ErrorContains(t, err, "kubelet.endpoint must be a node name when auth_type is kubeConfig")
 }
 
-var _ sharedkubelet.Client = fakeKubeletClient{}
+var _ sharedkubelet.ContextClient = fakeKubeletClient{}
 
 type fakeKubeletClient struct {
 	body []byte
 	err  error
+	seen chan context.Context
 }
 
 func (f fakeKubeletClient) Get(string) ([]byte, error) {
 	return f.body, f.err
+}
+
+func (f fakeKubeletClient) GetWithContext(ctx context.Context, _ string) ([]byte, error) {
+	if f.seen != nil {
+		f.seen <- ctx
+	}
+	return f.body, f.err
+}
+
+type fakeLegacyKubeletClient struct {
+	body []byte
+}
+
+func (f fakeLegacyKubeletClient) Get(string) ([]byte, error) {
+	return f.body, nil
+}
+
+func TestKubeletPodListerAppliesRequestTimeout(t *testing.T) {
+	seen := make(chan context.Context, 1)
+	lister := kubeletPodLister{
+		client:         fakeKubeletClient{body: mustMarshalPodList(t, api_v1.PodList{}), seen: seen},
+		requestTimeout: time.Minute,
+	}
+	_, err := lister.listPods(t.Context())
+	require.NoError(t, err)
+	ctx := <-seen
+	deadline, ok := ctx.Deadline()
+	require.True(t, ok, "request context must carry the request timeout deadline")
+	assert.WithinDuration(t, time.Now().Add(time.Minute), deadline, 10*time.Second)
+}
+
+func TestKubeletPodListerNoTimeoutWithoutConfig(t *testing.T) {
+	seen := make(chan context.Context, 1)
+	lister := kubeletPodLister{client: fakeKubeletClient{body: mustMarshalPodList(t, api_v1.PodList{}), seen: seen}}
+	_, err := lister.listPods(t.Context())
+	require.NoError(t, err)
+	_, ok := (<-seen).Deadline()
+	assert.False(t, ok)
+}
+
+func TestKubeletPodListerFallsBackToLegacyClient(t *testing.T) {
+	lister := kubeletPodLister{client: fakeLegacyKubeletClient{body: mustMarshalPodList(t, api_v1.PodList{Items: []api_v1.Pod{
+		kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil),
+	}})}}
+	pods, err := lister.listPods(t.Context())
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+}
+
+func TestKubeletPodListerTimeoutInterruptsStalledKubelet(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		// Accept the connection and stall until the client gives up.
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	lister, err := newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{
+		Endpoint:          server.URL,
+		AllowInsecureHTTP: true,
+		RequestTimeout:    100 * time.Millisecond,
+	}, "ignored", zap.NewNop())
+	require.NoError(t, err)
+
+	start := time.Now()
+	_, err = lister.listPods(t.Context())
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Less(t, time.Since(start), 5*time.Second)
+}
+
+func TestKubeletPodListerStopInterruptsStalledKubelet(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	defer server.Close()
+
+	lister, err := newKubeletPodLister(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, KubeletConfig{
+		Endpoint:          server.URL,
+		AllowInsecureHTTP: true,
+		RequestTimeout:    time.Hour,
+	}, "ignored", zap.NewNop())
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() {
+		_, listErr := lister.listPods(ctx)
+		done <- listErr
+	}()
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+	select {
+	case listErr := <-done:
+		require.ErrorIs(t, listErr, context.Canceled)
+	case <-time.After(5 * time.Second):
+		t.Fatal("listPods did not return after context cancellation")
+	}
+}
+
+func TestPodFieldsSetMatchesAPIServerSelectableFields(t *testing.T) {
+	pod := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	pod.Spec.RestartPolicy = api_v1.RestartPolicyNever
+	pod.Spec.SchedulerName = "custom-scheduler"
+	pod.Spec.ServiceAccountName = "otel-sa"
+	pod.Spec.HostNetwork = true
+	pod.Status.PodIPs = []api_v1.PodIP{{IP: "10.0.0.1"}, {IP: "fd00::1"}}
+	pod.Status.NominatedNodeName = "node-b"
+
+	assert.Equal(t, fields.Set{
+		"metadata.name":            "pod-a",
+		"metadata.namespace":       "ns-a",
+		"spec.nodeName":            "node-a",
+		"spec.restartPolicy":       "Never",
+		"spec.schedulerName":       "custom-scheduler",
+		"spec.serviceAccountName":  "otel-sa",
+		"spec.hostNetwork":         "true",
+		"status.phase":             "Running",
+		"status.podIP":             "10.0.0.1",
+		"status.nominatedNodeName": "node-b",
+	}, podFieldsSet(&pod))
+
+	legacy := kubeletTestPod("uid-b", "pod-b", "ns-a", "node-a", "10.0.0.2", nil)
+	assert.Equal(t, "10.0.0.2", podFieldsSet(&legacy)["status.podIP"])
+	assert.Equal(t, "false", podFieldsSet(&legacy)["spec.hostNetwork"])
+}
+
+func TestReconcileKubeletPodsFiltersOnExtendedFields(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{
+		Fields: []FieldFilter{
+			{Key: "spec.serviceAccountName", Value: "otel-sa", Op: selection.Equals},
+			{Key: "spec.hostNetwork", Value: "true", Op: selection.NotEquals},
+		},
+	})
+	c.kubeletPods = map[string]*api_v1.Pod{}
+
+	match := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	match.Spec.ServiceAccountName = "otel-sa"
+	otherSA := kubeletTestPod("uid-b", "pod-b", "ns-a", "node-a", "10.0.0.2", nil)
+	otherSA.Spec.ServiceAccountName = "default"
+	hostNet := kubeletTestPod("uid-c", "pod-c", "ns-a", "node-a", "10.0.0.3", nil)
+	hostNet.Spec.ServiceAccountName = "otel-sa"
+	hostNet.Spec.HostNetwork = true
+
+	c.reconcileKubeletPods([]api_v1.Pod{match, otherSA, hostNet})
+
+	assert.Len(t, c.kubeletPods, 1)
+	_, ok := c.GetPod(newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-a"))
+	assert.True(t, ok)
+}
+
+func TestHandleKubeletPodUpdateConcurrentWithDeleteLoop(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.kubeletPods = map[string]*api_v1.Pod{}
+	pod := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	c.handlePodAdd(&pod)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 200; i++ {
+			c.handleKubeletPodUpdate(&pod)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 200; i++ {
+			c.forgetPod(&pod)
+			c.deleteLoopProcessing(0)
+			c.handlePodAdd(&pod)
+		}
+	}()
+	wg.Wait()
 }
 
 func mustMarshalPodList(t *testing.T, pods api_v1.PodList) []byte {
