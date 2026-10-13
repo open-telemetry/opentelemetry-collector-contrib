@@ -133,7 +133,8 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 					// Fail the broker read before waking the poll. The Fetch already on the
 					// socket was built while this partition was paused, so the broker answers
 					// that request as sent and will not include this partition. The next
-					// PollRecords would otherwise wait out MaxFetchWait for that response.					c.client.ResumeFetchPartitions(partition)
+					// PollRecords would otherwise wait out MaxFetchWait for that response.
+					c.client.ResumeFetchPartitions(partition)
 					c.abortInFlightFetches()
 					c.interruptPoll()
 				}
