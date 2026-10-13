@@ -463,7 +463,7 @@ func (c *franzConsumer) interruptPoll() {
 // abortInFlightFetches unblocks broker reads so a Fetch that omitted a paused
 // partition does not occupy the connection until MaxFetchWait.
 //
-// Cancelling the poll context only returns PollRecords. The Fetch request
+// Canceling the poll context only returns PollRecords. The Fetch request
 // itself is bound to the consumer session, and franz-go retries a failed read
 // after at least the metadata retry backoff. Aborting is faster than waiting
 // only when MaxFetchWait is longer than that backoff.
