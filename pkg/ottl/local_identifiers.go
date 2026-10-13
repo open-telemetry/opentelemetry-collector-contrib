@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/lambda"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 )
 
 // localScopeFrame is the set of local identifier lexemes declared in one scope frame. (parse time only)
@@ -68,13 +69,13 @@ type localIdentifierGetter[K any] struct {
 
 func (p *parseContext[K]) newLocalIdentifierGetter(identifier *basePath[K]) (GetSetter[K], error) {
 	if !identifier.localIdentifier {
-		return nil, fmt.Errorf("%q is not a valid local identifier", identifier.originalText)
+		return nil, ottlerror.Errorf(identifier.pos, "%q is not a valid local identifier", identifier.originalText)
 	}
 	if p.localScopes.empty() {
-		return nil, fmt.Errorf("local identifier %q is only valid inside a scoped context", identifier.name)
+		return nil, ottlerror.Errorf(identifier.pos, "local identifier %q is only valid inside a scoped context", identifier.name)
 	}
 	if !p.localScopes.inScope(identifier.name) {
-		return nil, fmt.Errorf("local identifier %q is not defined in the local scope", identifier.name)
+		return nil, ottlerror.Errorf(identifier.pos, "local identifier %q is not defined in the local scope", identifier.name)
 	}
 	return &localIdentifierGetter[K]{identifier: identifier}, nil
 }
