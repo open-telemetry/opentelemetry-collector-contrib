@@ -71,6 +71,7 @@ func TestToLabelValue(t *testing.T) {
 		"String slice label value metadata":       {StringSliceValueType, stringSliceLabelValue{}, []string{stringValue, stringValue}, stringValue + "," + stringValue},
 		"Byte slice label value metadata":         {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
 		"Lock request slice label value metadata": {LockRequestSliceValueType, lockRequestSliceLabelValue{}, []*lockRequest{{"lockMode", "column", "transactionTag"}}, "{lockMode,column,transactionTag}"},
+		"Lock request json label value metadata":  {LockRequestJSONValueType, lockRequestJSONLabelValue{}, `[{"lock_mode":"lockMode","column":"column","transaction_tag":"transactionTag"}]`, "{lockMode,column,transactionTag}"},
 	}
 
 	for name, testCase := range testCases {
@@ -99,6 +100,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 	stringSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringSliceValueType)
 	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType)
 	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
+	lockRequestJSONLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestJSONLabelName", "lockRequestJSONLabelColumnName", LockRequestJSONValueType)
 	queryLabelValuesMetadata := []LabelValueMetadata{
 		stringLabelValueMetadata,
 		boolLabelValueMetadata,
@@ -106,6 +108,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		stringSliceLabelValueMetadata,
 		byteSliceLabelValueMetadata,
 		lockRequestSliceLabelValueMetadata,
+		lockRequestJSONLabelValueMetadata,
 	}
 	metadata := MetricsMetadata{QueryLabelValuesMetadata: queryLabelValuesMetadata}
 	row, _ := spanner.NewRow(
@@ -116,6 +119,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			stringSliceLabelValueMetadata.ColumnName(),
 			byteSliceLabelValueMetadata.ColumnName(),
 			lockRequestSliceLabelValueMetadata.ColumnName(),
+			lockRequestJSONLabelValueMetadata.ColumnName(),
 		},
 		[]any{
 			stringValue,
@@ -124,6 +128,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			[]string{stringValue, stringValue},
 			[]byte(stringValue),
 			[]*lockRequest{{}},
+			`[{"lock_mode":"lockMode","column":"column"}]`,
 		},
 	)
 
@@ -138,6 +143,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		stringSliceLabelValue{},
 		byteSliceLabelValue{},
 		lockRequestSliceLabelValue{},
+		lockRequestJSONLabelValue{},
 	}
 
 	for i, expectedType := range expectedTypes {

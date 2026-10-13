@@ -15,6 +15,7 @@ const (
 	StringSliceValueType      ValueType = "string_slice"
 	ByteSliceValueType        ValueType = "byte_slice"
 	LockRequestSliceValueType ValueType = "lock_request_slice"
+	LockRequestJSONValueType  ValueType = "lock_request_json"
 )
 
 type ValueMetadata interface {
