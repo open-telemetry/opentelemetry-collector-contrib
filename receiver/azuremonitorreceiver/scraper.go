@@ -53,6 +53,7 @@ const (
 	attributeName          = "name"
 	attributeResourceGroup = "resource_group"
 	attributeResourceType  = "type"
+	attributeTimeGrain     = "timegrain"
 	metadataPrefix         = "metadata_"
 	tagPrefix              = "tags_"
 	truncateTimeGrain      = time.Minute
@@ -358,7 +359,9 @@ func (s *azureScraper) loadResources(ctx context.Context, subscriptionID string)
 		s.settings.Logger.Debug("Collected Resource list from Azure", logFields...)
 		page++
 
-		for _, resource := range s.processResources(nextResult.Value) {
+		resources := filterResourcesByTags(nextResult.Value, s.cfg.ResourceTags)
+
+		for _, resource := range s.processResources(resources) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -556,7 +559,7 @@ func (s *azureScraper) collectMetricDefinitions(
 				continue
 			}
 
-			timeGrain := *v.MetricAvailabilities[0].TimeGrain
+			timeGrain := getMetricTimeGrain(metricNamespace, metricName, s.cfg.TimeGrainOverrides, *v.MetricAvailabilities[0].TimeGrain)
 			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, *s.resources[subscriptionID][resourceID].resourceType, metricName)
 			compositeKey := metricsCompositeKey{
 				namespace:    metricNamespace,
@@ -671,6 +674,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 						name := tagPrefix + tagName
 						attributes[name] = value
 					}
+					attributes[attributeTimeGrain] = &compositeKey.timeGrain
 
 					var metricName string
 					if metric.Name != nil && metric.Name.Value != nil {
@@ -801,6 +805,20 @@ func getMetricAggregations(metricNamespace, metricName string, filters NestedLis
 	}
 
 	return out
+}
+
+func getMetricTimeGrain(metricNamespace, metricName string, overrides MetricTimeGrainOverrides, defaultTimeGrain string) string {
+	namespaceOverrides, ok := mapFindInsensitive(overrides, metricNamespace)
+	if !ok {
+		return defaultTimeGrain
+	}
+
+	timeGrain, ok := mapFindInsensitive(namespaceOverrides, metricName)
+	if !ok {
+		return defaultTimeGrain
+	}
+
+	return strings.ToUpper(timeGrain)
 }
 
 func convertAggregationsToStr(aggregations []*armmonitor.AggregationType) []string {

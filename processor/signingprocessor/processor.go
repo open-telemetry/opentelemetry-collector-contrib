@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -35,7 +36,9 @@ const (
 	// Slice/Map values onto the Go call stack. A fatal stack overflow from
 	// deep nesting cannot be caught by recover(); the Go runtime kills the
 	// collector at roughly 700k–800k levels for json.Marshal and somewhat
-	// higher for valueToInterface itself.
+	// higher for valueToInterface itself. 128 is a conservative cap for
+	// operator-supplied data; legitimate attribute nesting rarely exceeds
+	// single digits.
 	jsonMaxDepth = 128
 	// jsonMaxInputBytes caps the serialized JSON size before JCS canonicalization.
 	jsonMaxInputBytes = 1 << 21 // 2 MiB
@@ -51,9 +54,7 @@ type signingProcessor struct {
 	certRef      string // audit.integrity.certificate value (fingerprint or full DER)
 }
 
-func newProcessor(cfg *Config, nextLogs consumer.Logs, settings processor.Settings) (*signingProcessor, error) {
-	ctx := context.Background()
-
+func newProcessor(ctx context.Context, cfg *Config, nextLogs consumer.Logs, settings processor.Settings) (*signingProcessor, error) {
 	provider, err := newKeyMaterialProvider(ctx, cfg, settings.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize key material provider: %w", err)
@@ -127,9 +128,15 @@ func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error 
 }
 
 // processLogRecord computes a canonical JSON hash (RFC 8785) of the log record
-// (excluding audit.integrity.* attributes) and signs it with the configured algorithm.
-// It adds one attribute:
-//   - audit.integrity.value: base64-encoded signature
+// and signs it with the configured algorithm. It adds two attributes:
+//   - audit.integrity.value:  base64-encoded signature
+//   - audit.integrity.signer: "collector"
+//
+// Fields excluded from the signed payload (per spec or by design):
+//   - audit.integrity.* attributes (carry the proof itself)
+//   - SeverityNumber / SeverityText (SHOULD NOT be set on audit records per spec)
+//   - Flags (W3C trace-context sampling bit; observability concept, not audit-relevant;
+//     may be modified by intermediaries without breaking audit semantics)
 func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
 	logData, err := p.serializeLogRecord(lr)
 	if err != nil {
@@ -142,6 +149,7 @@ func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
 	}
 
 	lr.Attributes().PutStr("audit.integrity.value", base64.StdEncoding.EncodeToString(signature))
+	lr.Attributes().PutStr("audit.integrity.signer", "collector")
 	return nil
 }
 
@@ -202,13 +210,18 @@ func (p *signingProcessor) sign(payload []byte) ([]byte, error) {
 	}
 }
 
-// serializeLogRecord produces a canonical JSON representation of the full log
-// record. All audit.integrity.* attributes are excluded because they are added
-// after serialization and must not be part of the signed payload.
+// serializeLogRecord produces a canonical JSON representation of the log record
+// for signing. Excluded from the signed payload:
+//   - audit.integrity.* attributes (carry the proof; must not be part of the input)
+//   - SeverityNumber, SeverityText (SHOULD NOT be set on audit records per spec)
+//   - Flags (W3C trace-context sampling bit; not audit-relevant)
 func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
 	data := make(map[string]any)
 
 	if lr.EventName() != "" {
+		if err := checkUTF8(lr.EventName(), "event name"); err != nil {
+			return nil, err
+		}
 		data["event_name"] = lr.EventName()
 	}
 
@@ -221,19 +234,11 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 	}
 
 	if lr.Timestamp() != 0 {
-		data["timestamp"] = lr.Timestamp().AsTime().UnixNano()
+		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 	}
 
 	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = lr.ObservedTimestamp().AsTime().UnixNano()
-	}
-
-	if lr.SeverityNumber() != 0 {
-		data["severity_number"] = lr.SeverityNumber()
-	}
-
-	if lr.SeverityText() != "" {
-		data["severity_text"] = lr.SeverityText()
+		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
 	}
 
 	if !lr.TraceID().IsEmpty() {
@@ -249,6 +254,10 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if strings.HasPrefix(k, "audit.integrity.") {
 			return true
+		}
+		if err := checkUTF8(k, "attribute key"); err != nil {
+			attrErr = err
+			return false
 		}
 		val, err := p.valueToInterface(v, 0)
 		if err != nil {
@@ -289,18 +298,18 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
 		s := v.Str()
-		if !utf8.ValidString(s) {
-			return nil, errors.New("string value contains invalid UTF-8")
+		if err := checkUTF8(s, "string value"); err != nil {
+			return nil, err
 		}
-		return s, nil
+		return map[string]any{"stringValue": s}, nil
 	case pcommon.ValueTypeInt:
-		return v.Int(), nil
+		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}, nil
 	case pcommon.ValueTypeDouble:
-		return v.Double(), nil
+		return map[string]any{"doubleValue": v.Double()}, nil
 	case pcommon.ValueTypeBool:
-		return v.Bool(), nil
+		return map[string]any{"boolValue": v.Bool()}, nil
 	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw()), nil
+		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}, nil
 	case pcommon.ValueTypeSlice:
 		slice := make([]any, v.Slice().Len())
 		for i := 0; i < v.Slice().Len(); i++ {
@@ -315,6 +324,10 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 		m := make(map[string]any)
 		var mapErr error
 		v.Map().Range(func(k string, val pcommon.Value) bool {
+			if err := checkUTF8(k, "map key"); err != nil {
+				mapErr = err
+				return false
+			}
 			converted, err := p.valueToInterface(val, depth+1) // recursive call!
 			if err != nil {
 				mapErr = err
@@ -330,6 +343,18 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 	default:
 		return nil, nil
 	}
+}
+
+// checkUTF8 refuses a string that is not valid UTF-8. json.Marshal would
+// otherwise replace each invalid byte with U+FFFD, so two records that differ
+// only in such bytes would canonicalize to the same payload and share a
+// signature. Every string that reaches the payload passes through here: the
+// event name, attribute keys, nested map keys, and string values.
+func checkUTF8(s, what string) error {
+	if !utf8.ValidString(s) {
+		return fmt.Errorf("%s contains invalid UTF-8", what)
+	}
+	return nil
 }
 
 func (*signingProcessor) Start(_ context.Context, _ component.Host) error {

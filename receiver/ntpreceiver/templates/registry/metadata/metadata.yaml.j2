@@ -1,4 +1,8 @@
+display_name: NTP Receiver
 type: ntp
+
+description: |
+  This receiver periodically retrieves the clock offset from a NTP server.
 
 status:
   class: receiver
@@ -6,7 +10,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [atoulme]
+    active: [atoulme, paulojmdias]
     seeking_new: true
 
 resource_attributes:
@@ -19,8 +23,7 @@ metrics:
 {% for m in ctx.groups | selectattr("type", "equalto", "metric") %}  {{ m.id | safe }}:
     description: {{ m.brief | safe }}
     enabled: {{ m.annotations.scraper.enabled | safe }}
-    stability:
-      level: {{ m.stability | safe }}
+    stability: {{ m.stability | safe }}
     {% if m.instrument == "updowncounter" %}sum:
       monotonic: false
       aggregation_temporality: cumulative

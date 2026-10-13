@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: exporter/datadog
-note: Trim whitespace from the Datadog exporter hostname.
-issues: [50935]
-subtext:
-change_logs: [user]

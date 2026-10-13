@@ -69,6 +69,8 @@ type TestConfig struct {
 }
 type TestReceiverType struct{}
 
+func (TestReceiverType) ScopeName() string { return "testScope" }
+
 func (TestReceiverType) Type() component.Type {
 	return testType
 }

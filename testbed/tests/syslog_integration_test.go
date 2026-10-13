@@ -163,7 +163,10 @@ service:
 	expectedAttributes := []map[string]any{}
 	expectedLogs := plog.NewLogs()
 	rl := expectedLogs.ResourceLogs().AppendEmpty()
-	lrs := rl.ScopeLogs().AppendEmpty().LogRecords()
+	scopeLogs := rl.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver")
+	scopeLogs.Scope().SetVersion("latest")
+	lrs := scopeLogs.LogRecords()
 
 	for _, e := range expectedData {
 		lr := lrs.AppendEmpty()

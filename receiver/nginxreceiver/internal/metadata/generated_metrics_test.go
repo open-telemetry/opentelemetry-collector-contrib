@@ -75,6 +75,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNginxConnectionsCurrentDataPoint(ts, 3, AttributeStateReading)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNginxConnectionsCurrentDataPoint(ts+1, 3, AttributeStateReading)
+				assert.Equal(t, 2, mb.metricNginxConnectionsCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -150,7 +153,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nginx.connections_current"], "Found a duplicate in the metrics slice: nginx.connections_current")
 						validatedMetrics["nginx.connections_current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current number of nginx connections by state", mi.Description())
 						assert.Equal(t, "{connections}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

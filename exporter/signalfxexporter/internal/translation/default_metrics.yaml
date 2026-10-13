@@ -1,11 +1,12 @@
 # exclude_metrics holds the list of hard-coded metrics that will be added to the
 # exclude list by default. It includes non-default metrics collected by receivers.
-# This list is determined by categorization of metrics in the Splunk Obserability.
+# This list is determined by categorization of metrics in the Splunk Observability.
 exclude_metrics:
 
 # Metrics in SignalFx Agent Format.
 - metric_names:
   # CPU metrics.
+  - container_cpu_utilization
   - cpu.interrupt
   - cpu.nice
   - cpu.softirq

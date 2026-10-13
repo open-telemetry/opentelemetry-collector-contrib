@@ -403,6 +403,7 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	}
 
 	attrs.PutStr(AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
+	attrs.PutInt(AttributeGitLabProjectID, e.Project.ID)
 	attrs.PutStr(AttributeGitLabProjectNamespace, e.Project.Namespace)
 	attrs.PutStr(AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
 

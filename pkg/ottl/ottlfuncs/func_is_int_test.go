@@ -99,14 +99,14 @@ func Test_IsIntFactory(t *testing.T) {
 		factory := NewIsIntFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IsIntArguments[any]{}, args)
+		assert.IsType(t, &isIntArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewIsIntFactory[any]()
 		args := factory.CreateDefaultArguments()
-		isIntArgs, ok := args.(*IsIntArguments[any])
+		isIntArgs, ok := args.(*isIntArguments[any])
 		require.True(t, ok)
 		isIntArgs.Target = &ottl.StandardIntGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -121,6 +121,21 @@ func Test_IsIntFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createIsIntFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "IsIntFactory args must be of type *IsIntArguments[K]")
+		assert.ErrorContains(t, err, "IsIntFactory args must be of type *isIntArguments[K]")
 	})
+}
+
+func BenchmarkIsInt(b *testing.B) {
+	exprFunc := isInt[any](&ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(42), nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

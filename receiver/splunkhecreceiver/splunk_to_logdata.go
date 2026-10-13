@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"sort"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -31,6 +32,7 @@ var errCannotConvertValue = errors.New("cannot convert field value to attribute"
 // splunkHecToLogData transforms splunk events into logs
 func splunkHecToLogData(logger *zap.Logger, events []*translator.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
 	ld := plog.NewLogs()
+	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
 	scopeLogsMap := make(map[[4]string]plog.ScopeLogs)
 	for _, event := range events {
 		key := [4]string{event.Host, event.Source, event.SourceType, event.Index}
@@ -53,6 +55,7 @@ func splunkHecToLogData(logger *zap.Logger, events []*translator.Event, resource
 		}
 
 		logRecord.SetTimestamp(convertTimestamp(event.Time))
+		logRecord.SetObservedTimestamp(observedTimestamp)
 
 		// Set event fields first, so the specialized attributes overwrite them if needed.
 		keys := make([]string, 0, len(event.Fields))
@@ -75,6 +78,7 @@ func splunkHecToLogData(logger *zap.Logger, events []*translator.Event, resource
 // splunkHecRawToLogData transforms raw splunk event into log
 func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config, timestamp pcommon.Timestamp) (plog.Logs, int, error) {
 	ld := plog.NewLogs()
+	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
 	rl := ld.ResourceLogs().AppendEmpty()
 
 	appendSplunkMetadata(rl, config.HecToOtelAttrs, query.Get(host), query.Get(source), query.Get(sourcetype), query.Get(index))
@@ -90,6 +94,7 @@ func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCusto
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(string(b))
 		logRecord.SetTimestamp(timestamp)
+		logRecord.SetObservedTimestamp(observedTimestamp)
 	} else {
 		sc := bufio.NewScanner(bodyReader)
 		for sc.Scan() {
@@ -97,6 +102,7 @@ func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCusto
 			logLine := sc.Text()
 			logRecord.Body().SetStr(logLine)
 			logRecord.SetTimestamp(timestamp)
+			logRecord.SetObservedTimestamp(observedTimestamp)
 		}
 	}
 
