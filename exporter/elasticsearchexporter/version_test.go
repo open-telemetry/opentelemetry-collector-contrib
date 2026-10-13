@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -95,16 +96,17 @@ func TestFetchESInfo(t *testing.T) {
 	}
 }
 
-func TestLogElasticsearchVersions(t *testing.T) {
+func TestGetElasticsearchVersions(t *testing.T) {
 	for _, tc := range []struct {
-		name            string
-		handler         http.HandlerFunc
-		expectConnected bool
-		expectedVersion string
-		expectedFlavor  string
+		name                  string
+		handler               http.HandlerFunc
+		expectConnected       bool
+		expectSemverParseFail bool
+		expectedVersion       string
+		expectedFlavor        string
 	}{
 		{
-			name: "logs version and build flavor on success",
+			name: "returns and logs version and build flavor on success",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte(`{"version":{"number":"9.6.0","build_flavor":"default"}}`))
@@ -114,12 +116,31 @@ func TestLogElasticsearchVersions(t *testing.T) {
 			expectedFlavor:  "default",
 		},
 		{
+			name: "returns and logs version and build flavor for snapshot on success",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"version":{"number":"9.6.0-SNAPSHOT","build_flavor":"default"}}`))
+			},
+			expectConnected: true,
+			expectedVersion: "9.6.0-SNAPSHOT",
+			expectedFlavor:  "default",
+		},
+		{
 			name: "warns and does not log connection when info fetch fails",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 				_, _ = w.Write([]byte(`{"error":"boom"}`))
 			},
 			expectConnected: false,
+		},
+		{
+			name: "warns that version number could not be parsed",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"version":{"number":"bad-version","build_flavor":"default"}}`))
+			},
+			expectConnected:       true,
+			expectSemverParseFail: true,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -133,7 +154,7 @@ func TestLogElasticsearchVersions(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoints = []string{srv.URL}
 
-			logElasticsearchVersions(t.Context(), cfg, set, componenttest.NewNopHost())
+			actualVersion := getElasticsearchVersions(t.Context(), cfg, set, componenttest.NewNopHost())
 
 			connected := observed.FilterMessage("Connected to Elasticsearch").All()
 			if !tc.expectConnected {
@@ -142,11 +163,57 @@ func TestLogElasticsearchVersions(t *testing.T) {
 				return
 			}
 
+			if tc.expectSemverParseFail {
+				assert.NotEmpty(t, observed.FilterMessage("could not parse Elasticsearch version").All())
+				assert.Nil(t, actualVersion)
+				assert.Empty(t, connected)
+				return
+			}
+
 			require.Len(t, connected, 1)
 			fields := connected[0].ContextMap()
 			assert.Equal(t, tc.expectedVersion, fields["version"])
 			assert.Equal(t, tc.expectedFlavor, fields["build_flavor"])
 			assert.Equal(t, srv.URL, fields["endpoint"])
+
+			assert.Equal(t, tc.expectedVersion, actualVersion.String())
+			t.Logf("actualVersion: %s\n", actualVersion.String())
+		})
+	}
+}
+
+func TestSupportsExponentialHistograms(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		v               string
+		expectedSupport bool
+	}{
+		{
+			name:            "exponential histograms are supported",
+			v:               "9.3.0",
+			expectedSupport: true,
+		},
+		{
+			name:            "exponential histograms are supported for 9.3.0 SNAPSHOT",
+			v:               "9.3.0-SNAPSHOT",
+			expectedSupport: true,
+		},
+		{
+			name:            "exponential histograms are supported for SNAPSHOT",
+			v:               "9.6.0-SNAPSHOT",
+			expectedSupport: true,
+		},
+		{
+			name:            "exponential histgorams are not supported",
+			v:               "9.2.0",
+			expectedSupport: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v, err := semver.NewVersion(tc.v)
+			require.NoError(t, err)
+			actualSupported := supportsExponentialHistograms(v)
+			assert.Equal(t, tc.expectedSupport, actualSupported)
 		})
 	}
 }
