@@ -7,6 +7,12 @@ receivers:
       period: 300s
       discovery:
         filters:
-          namespace: AWS/EC2
+          - namespace: AWS/EC2
+            metric_names: [CPUUtilization, NetworkIn, NetworkOut]
+            stats: [Average, Maximum]
+          - namespace: AWS/EC2
+            metric_names: [StatusCheckFailed_Instance]
+            # no stats → Summary of Sum, SampleCount, Minimum, Maximum
+          - namespace: AWS/RDS
+            # no metric_names → all metrics in the namespace
         limit: 50
-

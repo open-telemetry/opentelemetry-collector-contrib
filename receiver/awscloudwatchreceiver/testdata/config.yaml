@@ -79,6 +79,7 @@ aws_cloudwatch/metrics-explicit-gauge:
         metric_name: CPUUtilization
         stats: [Average, p99]
 
+# Deprecated single-object filters form, kept to cover backward compatibility.
 aws_cloudwatch/metrics-discovery:
   region: us-east-1
   metrics:
@@ -96,9 +97,9 @@ aws_cloudwatch/metrics-discovery-gauge:
     period: 300s
     discovery:
       filters:
-        namespace: AWS/EC2
+        - namespace: AWS/EC2
+          stats: [Sum, Average]
       limit: 100
-      stats: [Sum, Average]
 
 aws_cloudwatch/metrics-discovery-no-namespace:
   region: us-west-2
@@ -107,3 +108,59 @@ aws_cloudwatch/metrics-discovery-no-namespace:
     period: 120s
     discovery:
       limit: 50
+
+aws_cloudwatch/metrics-discovery-filter-list:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    discovery:
+      limit: 500
+      filters:
+        - namespace: AWS/EC2
+          metric_names: [CPUUtilization]
+          stats: [Average, Maximum]
+        - namespace: AWS/EC2
+          metric_names: [NetworkIn, NetworkOut]
+          stats: [Sum]
+        - namespace: AWS/EC2
+          metric_names: [StatusCheckFailed_Instance]
+        - namespace: AWS/RDS
+
+# Deprecated single-object filters form with a metric name.
+aws_cloudwatch/metrics-discovery-legacy-filters:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    discovery:
+      filters:
+        namespace: AWS/EC2
+        metric_name: CPUUtilization
+      limit: 100
+
+# Deprecated top-level stats used as the fallback for entries without their own stats.
+aws_cloudwatch/metrics-discovery-legacy-global-stats:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    discovery:
+      limit: 100
+      stats: [Sum, Average]
+      filters:
+        - namespace: AWS/EC2
+          stats: [Maximum]
+        - namespace: AWS/RDS
+
+# Deprecated single-object filters form without a namespace: filters by metric name across
+# all namespaces.
+aws_cloudwatch/metrics-discovery-legacy-metric-name-only:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    discovery:
+      filters:
+        metric_name: CPUUtilization
+      limit: 100
