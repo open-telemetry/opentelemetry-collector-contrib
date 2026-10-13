@@ -136,7 +136,8 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 			awsxray.AWSRequestIDAttribute2:
 			requestID = value.Str()
 		case awsxray.AWSQueueURLAttribute,
-			awsxray.AWSQueueURLAttribute2:
+			awsxray.AWSQueueURLAttribute2,
+			string(conventions.AWSSQSQueueURLKey):
 			queueURL = value.Str()
 		case awsxray.AWSTableNameAttribute,
 			awsxray.AWSTableNameAttribute2:
@@ -153,11 +154,6 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	// TODO: Remove "messaging.url" fallback when exporter.awsxray.DontEmitV0HTTPNetworkConventions is removed.
 	if !metadata.ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate.IsEnabled() {
 		if value, ok := attributes["messaging.url"]; ok {
-			queueURL = value.Str()
-		}
-	}
-	if metadata.ExporterAwsxrayEmitV1HTTPNetworkConventionsFeatureGate.IsEnabled() {
-		if value, ok := attributes[string(conventions.MessagingDestinationNameKey)]; ok {
 			queueURL = value.Str()
 		}
 	}

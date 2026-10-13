@@ -4,6 +4,8 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
+	"cmp"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -22,6 +24,11 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 		dbInstance         string
 		dbStatement        string
 		dbUser             string
+		// Legacy v1.12.0 values are kept apart so the new keys win regardless of map iteration order.
+		legacySystem    string
+		legacyInstance  string
+		legacyStatement string
+		legacyUser      string
 	)
 
 	for key, value := range attributes {
@@ -61,25 +68,25 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 			}
 		case "db.name":
 			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
-				dbInstance = value.Str()
+				legacyInstance = value.Str()
 			} else {
 				filtered[key] = value
 			}
 		case "db.statement":
 			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
-				dbStatement = value.Str()
+				legacyStatement = value.Str()
 			} else {
 				filtered[key] = value
 			}
 		case "db.system":
 			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
-				dbSystem = value.Str()
+				legacySystem = value.Str()
 			} else {
 				filtered[key] = value
 			}
 		case "db.user":
 			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
-				dbUser = value.Str()
+				legacyUser = value.Str()
 			} else {
 				filtered[key] = value
 			}
@@ -87,6 +94,11 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 			filtered[key] = value
 		}
 	}
+
+	dbSystem = cmp.Or(dbSystem, legacySystem)
+	dbInstance = cmp.Or(dbInstance, legacyInstance)
+	dbStatement = cmp.Or(dbStatement, legacyStatement)
+	dbUser = cmp.Or(dbUser, legacyUser)
 
 	if !isSQL(dbSystem) {
 		// Either no DB attributes or this is not an SQL DB.

@@ -409,8 +409,17 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	if name == "" {
+		// For database queries, the segment name convention is <db name>@<db host>.
+		if xraymetadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
+			if dbInstance, ok := attributes.Get(string(conventions.DBNamespaceKey)); ok {
+				name = dbInstance.Str()
+				if host, ok := attributes.Get(string(conventions.ServerAddressKey)); ok && host.Str() != "" {
+					name += "@" + host.Str()
+				}
+			}
+		}
 		// TODO: Remove old DB key lookups when exporter.awsxray.DontEmitV0DBConventions is removed.
-		if !xraymetadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
+		if name == "" && !xraymetadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
 			if dbInstance, ok := attributes.Get("db.name"); ok {
 				// For database queries, the segment name convention is <db name>@<db host>
 				name = dbInstance.Str()
@@ -424,11 +433,6 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 						}
 					}
 				}
-			}
-		}
-		if name == "" && xraymetadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
-			if dbInstance, ok := attributes.Get(string(conventions.DBNamespaceKey)); ok {
-				name = dbInstance.Str()
 			}
 		}
 	}

@@ -277,19 +277,30 @@ func constructClientURL(urlParts map[string]string) string {
 		scheme = "http"
 	}
 	port := ""
+	// server.address/server.port replace net.peer.name/net.peer.port for client spans:
+	// https://opentelemetry.io/docs/specs/semconv/non-normative/http-migration/#http-client-span-attributes
+	emitV1 := metadata.ExporterAwsxrayEmitV1HTTPNetworkConventionsFeatureGate.IsEnabled()
+	v1Host, hasV1Host := urlParts[string(conventions.ServerAddressKey)]
 	// TODO: Remove old-key lookups when exporter.awsxray.DontEmitV0HTTPNetworkConventions is removed.
 	host, ok := urlParts[string("http.host")]
-	if !ok {
-		host, ok = urlParts[string("net.peer.name")]
-		if !ok {
-			host, ok = urlParts[string("net.peer.ip")]
+	if !ok || (emitV1 && hasV1Host) {
+		if emitV1 && hasV1Host {
+			host = v1Host
+		} else {
+			host, ok = urlParts[string("net.peer.name")]
 			if !ok {
-				host = urlParts[string(conventions.ServerAddressKey)]
+				host, ok = urlParts[string("net.peer.ip")]
+				if !ok {
+					host = v1Host
+				}
 			}
 		}
-		port, ok = urlParts[string("net.peer.port")]
-		if !ok {
-			port = urlParts[string(conventions.NetworkPeerPortKey)]
+		port, ok = urlParts[string(conventions.ServerPortKey)]
+		if !ok || !emitV1 {
+			port, ok = urlParts[string("net.peer.port")]
+			if !ok {
+				port = urlParts[string(conventions.NetworkPeerPortKey)]
+			}
 		}
 	}
 	url = scheme + "://" + host
