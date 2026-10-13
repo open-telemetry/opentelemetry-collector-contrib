@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
-		QueueSettings: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 

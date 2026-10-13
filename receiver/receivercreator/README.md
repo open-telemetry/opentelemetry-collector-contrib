@@ -342,7 +342,7 @@ receivers:
         # Set a resource attribute based on endpoint value.
         rule: type == "port" && port == 6379
 
-      sqlserver:
+      sql_server:
         rule: type == "port" && pod.name matches "(?i)mssql"
         config:
           server: '`host`'
