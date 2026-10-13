@@ -4274,7 +4274,8 @@ func testSupervisorStartsCollectorOverLocalSocket(t *testing.T, configType strin
 
 				return &protobufs.ServerToAgent{}
 			},
-		})
+		},
+	)
 
 	extraConfig["url"] = server.addr
 	extraConfig["storage_dir"] = t.TempDir()
