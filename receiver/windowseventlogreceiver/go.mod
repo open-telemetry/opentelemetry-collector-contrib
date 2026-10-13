@@ -21,6 +21,7 @@ require (
 require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261009162812-02beb4e3f10f
+	go.opentelemetry.io/collector/config/configopaque v1.68.1-0.20261009162812-02beb4e3f10f
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.1-0.20261009162812-02beb4e3f10f
 	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261009162812-02beb4e3f10f
 	go.opentelemetry.io/collector/pdata v1.68.1-0.20261009162812-02beb4e3f10f

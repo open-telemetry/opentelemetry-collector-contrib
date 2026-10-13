@@ -15,6 +15,7 @@ import (
 	"github.com/alexbrainman/sspi"
 	"github.com/alexbrainman/sspi/ntlm"
 	"github.com/go-ldap/ldap/v3"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
@@ -249,7 +250,7 @@ var GetJoinedDomainControllersRemoteConfig = func(logger *zap.Logger, username, 
 		return nil, errors.New("no domain controllers found during discovery")
 	}
 	for _, dc := range domainControllers {
-		config := stanza.RemoteConfig{Server: dc, Username: username, Password: password, Domain: domain}
+		config := stanza.RemoteConfig{Server: dc, Username: username, Password: configopaque.String(password), Domain: domain}
 		domainControllerConfigs = append(domainControllerConfigs, config)
 	}
 	logger.Info("Discovered domain controllers", zap.Int("count", len(domainControllers)))

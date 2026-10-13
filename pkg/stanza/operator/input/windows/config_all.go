@@ -6,6 +6,8 @@ package windows // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -71,10 +73,11 @@ type Config struct {
 	Path                     *string         `mapstructure:"path,omitempty"`
 }
 
-// RemoteConfig is the configuration for a remote server.
+// RemoteConfig is the configuration for a remote server or group of servers.
 type RemoteConfig struct {
-	Server   string `mapstructure:"server"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Domain   string `mapstructure:"domain,omitempty"`
+	Server   string              `mapstructure:"server"`
+	Servers  []string            `mapstructure:"servers,omitempty"`
+	Username string              `mapstructure:"username"`
+	Password configopaque.String `mapstructure:"password"`
+	Domain   string              `mapstructure:"domain,omitempty"`
 }

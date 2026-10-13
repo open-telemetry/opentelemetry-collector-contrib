@@ -1,0 +1,8 @@
+windows_event_log:
+  channel: security
+  start_at: end
+  remote:
+    servers: [host1, host2, host3]
+    username: admin
+    password: secret
+    domain: example.com
