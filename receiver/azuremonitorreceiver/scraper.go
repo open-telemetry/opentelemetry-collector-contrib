@@ -53,6 +53,7 @@ const (
 	attributeName          = "name"
 	attributeResourceGroup = "resource_group"
 	attributeResourceType  = "type"
+	attributeTimeGrain     = "timegrain"
 	metadataPrefix         = "metadata_"
 	tagPrefix              = "tags_"
 	truncateTimeGrain      = time.Minute
@@ -358,7 +359,9 @@ func (s *azureScraper) loadResources(ctx context.Context, subscriptionID string)
 		s.settings.Logger.Debug("Collected Resource list from Azure", logFields...)
 		page++
 
-		for _, resource := range s.processResources(nextResult.Value) {
+		resources := filterResourcesByTags(nextResult.Value, s.cfg.ResourceTags)
+
+		for _, resource := range s.processResources(resources) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -671,6 +674,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 						name := tagPrefix + tagName
 						attributes[name] = value
 					}
+					attributes[attributeTimeGrain] = &compositeKey.timeGrain
 
 					var metricName string
 					if metric.Name != nil && metric.Name.Value != nil {

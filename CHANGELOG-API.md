@@ -7,6 +7,161 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.1.0/v0.162.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove the `pkg/pdatautil` module. Its hash helpers moved to `go.opentelemetry.io/collector/pdata/xpdata/xhash` in opentelemetry-collector. (#51108)
+  Replace imports of `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil`
+  (`Hash`, `Hash64`, `MapHash`, `ValueHash`, and the `With*` options) with
+  `go.opentelemetry.io/collector/pdata/xpdata/xhash`.
+  
+- `exporter/elasticsearch`: Remove the deprecated `flush` and `num_workers` configuration settings. (#42718)
+  Migrate `num_workers` to `sending_queue::num_consumers`, `flush::interval` to
+  `sending_queue::batch::flush_timeout`, and `flush::bytes` to
+  `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes`.
+  This also removes `Config.NumWorkers`, `Config.Flush`, and `FlushSettings` from
+  the exported Go API.
+  
+- `pkg/ottl`: Unexport the implementations of the standard OTTL functions (#50927)
+- `pkg/ottl`: Move profiles support into a separate `pkg/ottl/contexts/xprofile` module so it is excluded from OTTL's stability guarantees. (#50906)
+  The `ottlprofile` and `ottlprofilesample` contexts moved to
+  `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile`,
+  and the `ProfileID` converter and `NewProfileIDFactory` moved from `ottlfuncs` into that
+  module's `ottlfuncs` package. `ProfileID` is no longer part of `StandardFuncs` and
+  `StandardConverters`. Importers must update their import paths, depend on the new module,
+  and merge the profiles converters (for example via
+  `xprofilefuncs.WithProfileConverters`) to keep `ProfileID` available.
+  
+- `pkg/ottl`: Remove the unused `Strp`, `Floatp`, `Intp`, and `Boolp` helpers from the `ottltest` package. (#51037)
+- `pkg/ottl`: Move the experimental lambda converters into the `pkg/ottl/xottl` module so they are excluded from OTTL's stability guarantees. (#51563)
+  The `All`, `Any`, `Filter`, `Find`, `MapEach`, `MapKeys`, `Reduce`, and `When` converters and their `New*Factory`
+  functions moved to `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs`. They are no
+  longer part of `StandardFuncs` and `StandardConverters`; merge them (for example via
+  `xottlfuncs.WithExperimentalConverters`) to keep them available.
+  
+- `pkg/ottl`: Unexport the `ParserCollection` `Settings` and `ErrorMode` fields in favor of read-only `Settings()` and `ErrorMode()` accessor methods (#51156)
+- `pkg/ottl`: `SliceGetter.Range` now returns (bool, error); the boolean reports whether the underlying slice is non-nil. (#51494)
+- `pkg/ottl`: Remove the `ottltest` package and its `SetFeatureGateForTest` function from the public API. (#47305)
+- `pkg/ottl`: Remove the stable `ottl.PanicDuplicateName` and `ottl.contexts.enableOTelColContext` feature gates. (#44630, #46437)
+- `pkg/ottl`: Unexport the argument structs of the standard OTTL functions (#51023)
+- `receiver/carbon`: Move the `protocol` package to `internal/protocol`, removing it from the public API. (#51500)
+
+### 🚀 New components 🚀
+
+- `pkg/ottl/xottl`: Add the `pkg/ottl/xottl` module to hold OTTL's experimental Go API outside of OTTL's stability guarantees. (#51561)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `Experimental()` to the `Factory` interface and a `WithExperimental` option so functions can declare whether they are covered by stability guarantees. (#50927)
+- `pkg/pdatatest`: Add the `/count` collection operator to `pmetricassert` for `resources`, `scopes`, `metrics`, and `datapoints`. (#48472)
+  `<collection>/count` takes `exact`, or `min` and/or `max`, and composes with
+  `/include`. Pairing it with an exact `<collection>` list is a schema error.
+  
+- `pkg/pdatatest`: Add `WithAttributeExists` and `WithAttributeRegex` options to pmetricassert snapshot generation. (#49734)
+- `pkg/pdatatest`: Add the `/include` collection operator to `pmetricassert` for `resources`, `scopes`, `metrics`, and `datapoints`. (#48472)
+  Collections without an operator keep matching exactly. Within an item matched
+  by `/include`, an omitted nested collection asserts nothing about it.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Fix `SliceGetter.Get` and literal slice folding so a coerced typed-nil slice (for example `[]string(nil)` when elements are getters) is treated as nil instead of an empty non-nil slice. (#51494)
+- `pkg/ottl`: Fix `GetLiteralValues` and `GetScalarLiteralValues` so they do not evaluate dynamic slices when checking for literal values. (#51438)
+- `pkg/ottl`: Prevent `SliceGetter.Get` and `SliceGetter.Range` from panicking when constructed from `nil`. (#51174)
+- `processor/transform`: Fix exponential-to-explicit histogram conversion (#50737)
+  The conversion now handles positive, negative, and zero buckets, includes the
+  required overflow bucket, preserves data point metadata, and uses the
+  exponential histogram mapping implementation for bucket boundaries.
+  
+
+<!-- previous-version -->
+
+## v0.161.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Change `ConcatArguments.Vals` to use `ottl.SliceGetter`. (#27821, #38690)
+- `pkg/ottl`: Remove the deprecated `Base64Decode` converter. Use the `Decode` converter with the `base64` encoding instead. (#50875)
+- `pkg/ottl`: Rename `NewTransformContextPtr` to `NewTransformContext` in all OTTL contexts. (#50869)
+- `processor/filter`: Removing deprecated funcs (#50898)
+  Remove the deprecated *FunctionsNew aliases (WithResourceFunctionsNew, WithDataPointFunctionsNew, WithLogFunctionsNew,
+  WithMetricFunctionsNew, WithSpanEventFunctionsNew, WithSpanFunctionsNew, WithProfileFunctionsNew, DefaultLogFunctionsNew,
+  DefaultMetricFunctionsNew, DefaultDataPointFunctionsNew, DefaultSpanFunctionsNew, DefaultSpanEventFunctionsNew,
+  DefaultProfileFunctionsNew) in favour of their non-New equivalents, deprecated since v0.152.0.
+  
+- `processor/transform`: Remove deprecated options and "default functions" functions (#50899)
+
+### 💡 Enhancements 💡
+
+- `extension/datadog`: Migrate from NotifyConfig to NotifyConfigSnapshot (#50928)
+- `pkg/ottl`: Export the `SchemaURLItem` interface so it can be named by callers of the exported context API. (#50901)
+- `pkg/stanza`: Add optional server authenticator support to the `tcp_input` operator via a new `auth` configuration block. (#49339)
+  When `auth.authenticator` references a server auth extension, the `tcp_input` operator authenticates each
+  accepted connection before reading logs, closing the connection if authentication fails. The connection's
+  remote address is exposed to the authenticator through the `client.Info` in the context. This is also
+  available to receivers built on the operator, such as `tcplogreceiver` and `syslogreceiver`.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/batchperresourceattr`: keep Metadata from context in injectAttrMetadata (#50315)
+  Headers set via headers_setter on downstream exporters (e.g. splunkhecexporter) were being silently dropped whenever a batched resource had one of the injected attribute keys set.
+
+<!-- previous-version -->
+
+## v0.160.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/datadog`: Remove deprecated func: StaticAPIKeyCheck (#50599)
+- `pkg/ottl`: Remove the deprecated `ottlprofile.NewTransformContext` and `ottlprofilesample.NewTransformContext`. Use `NewTransformContextPtr` instead. (#50399)
+- `pkg/ottl`: Change the "Like" Getters to return a value and a bool instead of a pointer (#50564)
+  `StringLikeGetter`, `FloatLikeGetter`, `IntLikeGetter`, `BoolLikeGetter`, and `ByteSliceLikeGetter`
+  now return the value by-value plus a `bool` that is `true` when a value was found and `false`
+  when the underlying value was nil, instead of returning a pointer.
+  
+- `processor/adaptive_tail_sampling`: Rename the `dynamic_sampling` processor to `adaptive_tail_sampling`. There is no alias, the old name stops working. (#50367)
+  The rename covers every surface that carried the old name:
+  the config id (`dynamic_sampling` -> `adaptive_tail_sampling`), the sampler types
+  (`dynamic_percentage` -> `adaptive_percentage`, `dynamic_throughput` -> `adaptive_throughput`),
+  the metric prefix (`otelcol_processor_dynamic_sampling_*` -> `otelcol_processor_adaptive_tail_sampling_*`),
+  the span attribute namespace (`otelcol.processor.dynamic_sampling.*` -> `otelcol.processor.adaptive_tail_sampling.*`),
+  and the Go module path (`processor/dynamicsamplingprocessor` -> `processor/adaptivetailsamplingprocessor`).
+  
+
+### 🚀 New components 🚀
+
+- `pkg/semconvtest`: Add pkg/semconvtest for validating component telemetry against OpenTelemetry Semantic Conventions using Weaver (#44905)
+  Provides a Go testing API that spins up a Weaver container via testcontainers-go,
+  sends logs/metrics/traces via OTLP gRPC, and parses live-check results for semconv violations.
+  Includes a sample receiver demonstrating the intended usage pattern for component authors.
+  
+
+### 💡 Enhancements 💡
+
+- `internal/k8sinventory`: Add informer-based observer implementation (#43602)
+- `pkg/ottl`: Add `ottl.SliceGetter` so functions can take slice arguments as either static literals or dynamic expressions. (#49341)
+  Unlike bare slice arguments, `ottl.SliceGetter` accepts literal lists or a getter
+  expression that resolves to a slice at runtime. Element type may be a typed
+  `ottl.Getter` (e.g. `ottl.StringGetter`) or a scalar.
+  
+- `pkg/ottl`: Add `WithCache` options to `TransformContext` creation functions (#50563)
+  This enables passing in a custom cache, for example to allow sharing between contexts.
+- `pkg/pdatatest`: add pmetricassert attribute include matcher (#48471)
+- `pkg/resourcetotelemetry`: Add `Included` and `Excluded` pattern matching to `Settings`. (#48861, #48862)
+  Supports wildcard patterns via `included` and `excluded` lists to selectively convert resource attributes to telemetry attributes, and deprecates `Enabled` and `ExcludeServiceAttributes`.
+  
+- `pkg/translator/prometheusremotewrite`: `FromMetricsV2` now translates the start timestamp of cumulative sums, histograms and summaries into `start_timestamp`. (#50089)
+- `receiver/windows_perf_counters`: Allow Windows performance counter wildcard queries to include their aggregation instance (#29054)
+  Existing `instances: "*"` configurations continue to omit `_Total`. Use `instances: ["*", "_Total"]` to retain it. For a custom aggregate such as `_Global_`, set `aggregation_name` and list that name beside the wildcard to retain it.
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: The `IntLikeGetter` now returns an error when a string value cannot be parsed as an int (#50564)
+
+<!-- previous-version -->
+
 ## v0.159.0
 
 ### 🛑 Breaking changes 🛑

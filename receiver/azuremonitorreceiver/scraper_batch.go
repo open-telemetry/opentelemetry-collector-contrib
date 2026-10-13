@@ -316,7 +316,9 @@ func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscript
 		s.settings.Logger.Debug("Collected Resource list from Azure", logFields...)
 		page++
 
-		for _, resource := range s.processResources(nextResult.Value) {
+		resources := filterResourcesByTags(nextResult.Value, s.cfg.ResourceTags)
+
+		for _, resource := range s.processResources(resources) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -664,7 +666,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 									name := tagPrefix + tagName
 									attributes[name] = value
 								}
-								attributes["timegrain"] = &compositeKey.timeGrain
+								attributes[attributeTimeGrain] = &compositeKey.timeGrain
 
 								var metricName string
 								if metric.Name != nil && metric.Name.Value != nil {

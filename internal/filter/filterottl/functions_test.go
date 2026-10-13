@@ -9,8 +9,29 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
+
+func Test_StandardFuncsIncludeExperimentalConverters(t *testing.T) {
+	assertHasExperimentalConverters(t, StandardSpanFuncs())
+	assertHasExperimentalConverters(t, StandardSpanEventFuncs())
+	assertHasExperimentalConverters(t, StandardMetricFuncs())
+	assertHasExperimentalConverters(t, StandardDataPointFuncs())
+	assertHasExperimentalConverters(t, StandardExemplarFuncs())
+	assertHasExperimentalConverters(t, StandardScopeFuncs())
+	assertHasExperimentalConverters(t, StandardLogFuncs())
+	assertHasExperimentalConverters(t, StandardProfileFuncs())
+	assertHasExperimentalConverters(t, StandardResourceFuncs())
+}
+
+func assertHasExperimentalConverters[K any](t *testing.T, funcs map[string]ottl.Factory[K]) {
+	t.Helper()
+	for _, f := range xottlfuncs.ExperimentalConverters[K]() {
+		assert.Contains(t, funcs, f.Name())
+	}
+}
 
 func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 	tests := []struct {
@@ -124,7 +145,7 @@ func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := hasAttributeKeyOnDatapoint(tt.key)
 			assert.NoError(t, err)
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
 			defer tCtx.Close()
 			result, err := exprFunc(t.Context(), tCtx)
 			assert.NoError(t, err)
@@ -351,7 +372,7 @@ func Test_HasAttrOnDatapoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := hasAttributeOnDatapoint(tt.key, tt.expectedVal)
 			assert.NoError(t, err)
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
 			defer tCtx.Close()
 			result, err := exprFunc(t.Context(), tCtx)
 			assert.NoError(t, err)

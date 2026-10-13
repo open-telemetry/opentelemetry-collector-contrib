@@ -1,4 +1,8 @@
-type: filestats
+display_name: File Stats Receiver
+type: file_stats
+deprecated_type: filestats
+
+description: The File Stats receiver collects metrics from files specified with a glob pattern.
 
 status:
   class: receiver
@@ -26,8 +30,7 @@ metrics:
 {% for m in ctx.groups | selectattr("type", "equalto", "metric") %}  {{ m.id | safe }}:
     description: {{ m.brief | safe }}
     enabled: {{ m.annotations.scraper.enabled | safe }}
-    stability:
-      level: {{ m.stability | safe }}
+    stability: {{ m.stability | safe }}
     {% if m.instrument == "counter" %}sum:
       aggregation_temporality: cumulative
       monotonic: true

@@ -46,6 +46,17 @@ Collecting query samples requires the `performance_schema` to be enabled:
 GRANT SELECT ON performance_schema.* TO <your-user>@'%';
 ```
 
+Collecting disabled-by-default InnoDB redo-log LSN and checkpoint-age metrics requires
+MySQL 8.0.11 or later. For MySQL 8.0.11 through 8.0.29, grant the receiver user
+`SELECT` on `performance_schema` and the `BACKUP_ADMIN` dynamic privilege:
+
+```sql
+GRANT SELECT ON performance_schema.* TO '<your-user>'@'%';
+GRANT BACKUP_ADMIN ON *.* TO '<your-user>'@'%';
+```
+
+MySQL 8.0.30 and later versions do not require `BACKUP_ADMIN` for these metrics.
+
 ## Configuration
 
 
@@ -56,7 +67,26 @@ The following settings are optional:
   - `insecure_skip_verify`: (default = `false`) Set this to `true` to enable TLS but not verify the certificate.
   - `server_name_override`: This sets the ServerName in the TLSConfig.  
 - `username`: (default = `root`)
-- `password`: The password to the username.
+- `password`: A static MySQL password.
+- `db_auth`: Component ID of a `dbauth` provider extension (for example `aws_iam_db_auth`). Mutually exclusive with `password`. Requires TLS (`tls.insecure: false`). RDS MySQL/Aurora MySQL only. Cleartext password auth (`mysql_clear_password`) is enabled automatically for IAM tokens over TLS.
+
+```yaml
+extensions:
+  aws_iam_db_auth:
+    region: us-east-2
+
+receivers:
+  mysql:
+    endpoint: my-database.example.com:3306
+    username: monitor
+    db_auth: aws_iam_db_auth
+    tls:
+      insecure: false
+
+service:
+  extensions: [aws_iam_db_auth]
+```
+
 - `allow_native_passwords`: (default = `true`)
 - `database`: The database name. If not specified, metrics will be collected for all databases.
 
@@ -105,6 +135,30 @@ receivers:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
+### Resource attributes
+
+The receiver reports the network location of the monitored instance as the `server.address` and
+`server.port` resource attributes.
+
+When `endpoint` is a loopback address (for example `localhost:3306` or `127.0.0.1:3306`),
+`server.address` reports the host name of the machine running the collector rather than the
+configured host. A loopback endpoint is only reachable when the instance is co-located with the
+collector, so the collector host's name is the instance's real network identity; reported verbatim,
+every monitored host would emit the same address. A non-loopback endpoint is reported as configured.
+With `transport: unix`, `server.address` is the socket path and `server.port` is not reported.
+
+Both attributes are enabled by default and can be turned off individually:
+
+```yaml
+receivers:
+  mysql:
+    resource_attributes:
+      server.address:
+        enabled: false
+      server.port:
+        enabled: false
+```
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
@@ -141,6 +195,58 @@ If a statement is truncated (the stored text ends with `...`), the receiver skip
 that statement on all versions. Truncation is controlled by
 [`performance_schema_max_sql_text_length`](https://dev.mysql.com/doc/refman/8.0/en/performance-schema-system-variables.html#sysvar_performance_schema_max_sql_text_length)
 (default 1024). Setting it to `4096` is recommended — see the requirements table below.
+
+### Splitting the execution plan onto its own event
+
+`db.server.top_query` and `db.server.query_sample` each carry the statement's execution plan in their
+`mysql.query_plan` attribute. The plan is the output of `EXPLAIN FORMAT=json`, a nested document with
+one object per table access, so it can dominate the record it travels on.
+
+Enabling `db.server.query_plan` reports the plan on a record of its own, where it can be filtered,
+routed or dropped independently of the query statistics and the session activity, and where an
+oversized plan does not take those with it when a batcher splits by size.
+
+It is disabled by default. It reports plans that `db.server.top_query` and `db.server.query_sample`
+already collect, so it adds no queries and needs no grants of its own, and enabling it without either
+of those events is a configuration error. Each of them contributes plans only while it is itself
+enabled.
+
+```yaml
+events:
+  db.server.top_query:
+    enabled: true
+  db.server.query_sample:
+    enabled: true
+  db.server.query_plan:   # both events above lose their mysql.query_plan
+    enabled: true
+```
+
+Both source events are then emitted **without** their `mysql.query_plan` attribute, and the plan is
+reported on `db.server.query_plan`, joined back via `mysql.query_plan.hash` and `db.namespace`. A
+statement with no plan available produces no record.
+
+`mysql.query_plan.source` holds the name of the event each plan was reported for, so one literal
+matches both the attribute and the record's event name in a routing rule, and plans from one source
+can be routed or dropped without touching the other. The two differ in cadence and volume: top query
+plans follow `top_query_collection.collection_interval` and are bounded by `top_query_count`, while
+sample plans follow the receiver's `collection_interval`.
+
+Several sessions can be running one statement when a sample scrape fires, and they share a plan, so
+sample plans are reported once per scrape rather than once per sample. Plans are identified by
+`db.namespace` and `mysql.query_plan.hash`, which means:
+
+- One digest executed in several databases produces one record per database, since the plan is
+  collected per database. `performance_schema.events_statements_summary_by_digest` is keyed on schema
+  and digest, so such a digest also produces one `db.server.top_query` record per database, and
+  `db.namespace` is what pairs each of those with its own plan.
+- `db.server.top_query` reports the database as the `schema_name` the statement was summarized under,
+  while `db.server.query_sample` reports the session's current database. For one statement these can
+  differ, so the same plan can appear under two `db.namespace` values across the two events.
+
+On MySQL 5.7 and MariaDB there is no `query_sample_text` to explain, so `db.server.top_query` has no
+plan to report on those versions (see the table under [Supported database
+versions](#supported-database-versions)) and enabling `db.server.query_plan` there reports sample
+plans only.
 
 ### MySQL Requirements to enable log collection
 

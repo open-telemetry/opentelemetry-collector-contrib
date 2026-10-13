@@ -33,13 +33,13 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	qConfig := exporterhelper.NewDefaultQueueConfig()
 	qConfig.QueueSize = 1024000
-	qConfig.Batch = configoptional.Default(exporterhelper.BatchConfig{
-		FlushTimeout: 1 * time.Second,
-		Sizer:        exporterhelper.RequestSizerTypeItems,
-		MinSize:      1024,
-		MaxSize:      2048,
-	})
-	qs := configoptional.Default(qConfig)
+	batchCfg := *qConfig.Batch.GetOrInsertDefault()
+	batchCfg.FlushTimeout = 1 * time.Second
+	batchCfg.Sizer = exporterhelper.RequestSizerTypeItems
+	batchCfg.MinSize = 1024
+	batchCfg.MaxSize = 2048
+	qConfig.Batch = configoptional.Some(batchCfg)
+	qs := configoptional.Some(qConfig)
 	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.Multiplier = DefaultRetryOnFailureMultiplier
 	retryConfig.MaxInterval = DefaultRetryOnFailureMaxInterval

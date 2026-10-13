@@ -85,30 +85,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemNetworkErrorsDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkErrorsDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemNetworkErrorsDataPoint(ts+1, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				assert.Equal(t, 2, mb.metricSystemNetworkErrors.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkInterfaceStatusDataPoint(ts, 1, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkInterfaceStatusDataPoint(ts, 3, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemNetworkInterfaceStatusDataPoint(ts+1, 3, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				assert.Equal(t, 2, mb.metricSystemNetworkInterfaceStatus.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkIoDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkIoDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemNetworkIoDataPoint(ts+1, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				assert.Equal(t, 2, mb.metricSystemNetworkIo.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkPacketCountDataPoint(ts, 1, AttributeNetworkPacketTypeMulticast, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkPacketCountDataPoint(ts, 3, AttributeNetworkPacketTypeBroadcast, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemNetworkPacketCountDataPoint(ts+1, 3, AttributeNetworkPacketTypeBroadcast, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				assert.Equal(t, 2, mb.metricSystemNetworkPacketCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkPacketDroppedDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemNetworkPacketDroppedDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemNetworkPacketDroppedDataPoint(ts+1, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+				assert.Equal(t, 2, mb.metricSystemNetworkPacketDropped.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -184,7 +199,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.network.errors"], "Found a duplicate in the metrics slice: system.network.errors")
 						validatedMetrics["system.network.errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of errors encountered", mi.Description())
 						assert.Equal(t, "{errors}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -243,7 +260,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.network.interface.status"], "Found a duplicate in the metrics slice: system.network.interface.status")
 						validatedMetrics["system.network.interface.status"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Interface operational status (1 = up, 0 = down)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -303,7 +322,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.network.io"], "Found a duplicate in the metrics slice: system.network.io")
 						validatedMetrics["system.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of bytes transmitted and received", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -367,7 +388,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.network.packet.count"], "Found a duplicate in the metrics slice: system.network.packet.count")
 						validatedMetrics["system.network.packet.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of packets transmitted or received, categorized by type", mi.Description())
 						assert.Equal(t, "{packets}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -431,7 +454,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.network.packet.dropped"], "Found a duplicate in the metrics slice: system.network.packet.dropped")
 						validatedMetrics["system.network.packet.dropped"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of packets dropped", mi.Description())
 						assert.Equal(t, "{packets}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

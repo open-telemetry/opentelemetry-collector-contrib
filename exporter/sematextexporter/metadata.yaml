@@ -9,5 +9,8 @@ status:
   codeowners:
     active: [AkhigbeEromo]
 
+sending_queue:
+  support: default
+
 tests:
   expect_consumer_error: true

@@ -1,7 +1,0 @@
-change_type: enhancement
-component: pkg/resourcetotelemetry
-note: "Add `Included` and `Excluded` pattern matching to `Settings`."
-issues: [48861, 48862]
-subtext: |
-  Supports wildcard patterns via `included` and `excluded` lists to selectively convert resource attributes to telemetry attributes, and deprecates `Enabled` and `ExcludeServiceAttributes`.
-change_logs: [api, user]

@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/prometheus_simple
+
+note: Validate that `endpoint` is set and `collection_interval` is positive, so an invalid configuration is rejected at startup instead of failing later
+
+issues: [11504]
+
+subtext: ""
+
+change_logs: []

@@ -103,7 +103,7 @@ resourceLogs:
               - key: error.code
                 value:
                   stringValue: BadRequest
-              - key: error.message
+              - key: exception.message
                 value:
                   stringValue: SubCode=40000. Partitioning cannot be changed for Queue. To know more visit https://aka.ms/sbResourceMgrExceptions
             body: {}

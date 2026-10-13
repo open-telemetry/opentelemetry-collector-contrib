@@ -357,7 +357,7 @@ func dataPointParser(set component.TelemetrySettings) ottl.ParserCollectionOptio
 
 func commonResourceParser[R any](converter func([]*ottl.Condition[*ottlresource.TransformContext]) R) ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
-		parser, err := ottlresource.NewParser(filterottl.StandardResourceFuncs(), pc.Settings, ottlresource.EnablePathContextNames())
+		parser, err := ottlresource.NewParser(filterottl.StandardResourceFuncs(), pc.Settings(), ottlresource.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
@@ -373,7 +373,7 @@ func commonResourceParser[R any](converter func([]*ottl.Condition[*ottlresource.
 
 func commonScopeParser[R any](converter func([]*ottl.Condition[*ottlscope.TransformContext]) R) ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
-		parser, err := ottlscope.NewParser(filterottl.StandardScopeFuncs(), pc.Settings, ottlscope.EnablePathContextNames())
+		parser, err := ottlscope.NewParser(filterottl.StandardScopeFuncs(), pc.Settings(), ottlscope.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
@@ -479,7 +479,7 @@ func (s *traceSkipper) skipResource(ctx context.Context, rs ptrace.ResourceSpans
 	if s == nil || s.resource == nil {
 		return false, nil
 	}
-	tCtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
+	tCtx := ottlresource.NewTransformContext(rs.Resource(), rs)
 	defer tCtx.Close()
 	return s.resource.Eval(ctx, tCtx)
 }
@@ -488,7 +488,7 @@ func (s *traceSkipper) skipScope(ctx context.Context, rs ptrace.ResourceSpans, s
 	if s == nil || s.scope == nil {
 		return false, nil
 	}
-	tCtx := ottlscope.NewTransformContextPtr(ss.Scope(), rs.Resource(), ss, rs)
+	tCtx := ottlscope.NewTransformContext(ss.Scope(), rs.Resource(), ss, rs)
 	defer tCtx.Close()
 	return s.scope.Eval(ctx, tCtx)
 }
@@ -497,7 +497,7 @@ func (s *traceSkipper) skipSpan(ctx context.Context, rs ptrace.ResourceSpans, ss
 	if s == nil || s.span == nil {
 		return false, nil
 	}
-	tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+	tCtx := ottlspan.NewTransformContext(rs, ss, span)
 	defer tCtx.Close()
 	return s.span.Eval(ctx, tCtx)
 }
@@ -506,7 +506,7 @@ func (s *traceSkipper) skipSpanEvent(ctx context.Context, rs ptrace.ResourceSpan
 	if s == nil || s.spanEvent == nil {
 		return false, nil
 	}
-	tCtx := ottlspanevent.NewTransformContextPtr(rs, ss, span, spanEvent)
+	tCtx := ottlspanevent.NewTransformContext(rs, ss, span, spanEvent)
 	defer tCtx.Close()
 	return s.spanEvent.Eval(ctx, tCtx)
 }
@@ -515,7 +515,7 @@ func (s *logSkipper) skipResource(ctx context.Context, rl plog.ResourceLogs) (bo
 	if s == nil || s.resource == nil {
 		return false, nil
 	}
-	tCtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
+	tCtx := ottlresource.NewTransformContext(rl.Resource(), rl)
 	defer tCtx.Close()
 	return s.resource.Eval(ctx, tCtx)
 }
@@ -524,7 +524,7 @@ func (s *logSkipper) skipScope(ctx context.Context, rl plog.ResourceLogs, sl plo
 	if s == nil || s.scope == nil {
 		return false, nil
 	}
-	tCtx := ottlscope.NewTransformContextPtr(sl.Scope(), rl.Resource(), sl, rl)
+	tCtx := ottlscope.NewTransformContext(sl.Scope(), rl.Resource(), sl, rl)
 	defer tCtx.Close()
 	return s.scope.Eval(ctx, tCtx)
 }
@@ -533,7 +533,7 @@ func (s *logSkipper) skipLogRecord(ctx context.Context, rl plog.ResourceLogs, sl
 	if s == nil || s.log == nil {
 		return false, nil
 	}
-	tCtx := ottllog.NewTransformContextPtr(rl, sl, lr)
+	tCtx := ottllog.NewTransformContext(rl, sl, lr)
 	defer tCtx.Close()
 	return s.log.Eval(ctx, tCtx)
 }
@@ -542,7 +542,7 @@ func (s *metricSkipper) skipResource(ctx context.Context, rm pmetric.ResourceMet
 	if s == nil || s.resource == nil {
 		return false, nil
 	}
-	tCtx := ottlresource.NewTransformContextPtr(rm.Resource(), rm)
+	tCtx := ottlresource.NewTransformContext(rm.Resource(), rm)
 	defer tCtx.Close()
 	return s.resource.Eval(ctx, tCtx)
 }
@@ -551,7 +551,7 @@ func (s *metricSkipper) skipScope(ctx context.Context, rm pmetric.ResourceMetric
 	if s == nil || s.scope == nil {
 		return false, nil
 	}
-	tCtx := ottlscope.NewTransformContextPtr(sm.Scope(), rm.Resource(), sm, rm)
+	tCtx := ottlscope.NewTransformContext(sm.Scope(), rm.Resource(), sm, rm)
 	defer tCtx.Close()
 	return s.scope.Eval(ctx, tCtx)
 }
@@ -560,7 +560,7 @@ func (s *metricSkipper) skipMetric(ctx context.Context, rm pmetric.ResourceMetri
 	if s == nil || s.metric == nil {
 		return false, nil
 	}
-	tCtx := ottlmetric.NewTransformContextPtr(rm, sm, metric)
+	tCtx := ottlmetric.NewTransformContext(rm, sm, metric)
 	defer tCtx.Close()
 	return s.metric.Eval(ctx, tCtx)
 }
@@ -569,7 +569,7 @@ func (s *metricSkipper) skipNumberDataPoint(ctx context.Context, rm pmetric.Reso
 	if s == nil || s.dataPoint == nil {
 		return false, nil
 	}
-	tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, metric, dp)
+	tCtx := ottldatapoint.NewTransformContext(rm, sm, metric, dp)
 	defer tCtx.Close()
 	return s.dataPoint.Eval(ctx, tCtx)
 }
@@ -578,7 +578,7 @@ func (s *metricSkipper) skipHistogramDataPoint(ctx context.Context, rm pmetric.R
 	if s == nil || s.dataPoint == nil {
 		return false, nil
 	}
-	tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, metric, dp)
+	tCtx := ottldatapoint.NewTransformContext(rm, sm, metric, dp)
 	defer tCtx.Close()
 	return s.dataPoint.Eval(ctx, tCtx)
 }
@@ -587,7 +587,7 @@ func (s *metricSkipper) skipExponentialHistogramDataPoint(ctx context.Context, r
 	if s == nil || s.dataPoint == nil {
 		return false, nil
 	}
-	tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, metric, dp)
+	tCtx := ottldatapoint.NewTransformContext(rm, sm, metric, dp)
 	defer tCtx.Close()
 	return s.dataPoint.Eval(ctx, tCtx)
 }
@@ -596,7 +596,7 @@ func (s *metricSkipper) skipSummaryDataPoint(ctx context.Context, rm pmetric.Res
 	if s == nil || s.dataPoint == nil {
 		return false, nil
 	}
-	tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, metric, dp)
+	tCtx := ottldatapoint.NewTransformContext(rm, sm, metric, dp)
 	defer tCtx.Close()
 	return s.dataPoint.Eval(ctx, tCtx)
 }

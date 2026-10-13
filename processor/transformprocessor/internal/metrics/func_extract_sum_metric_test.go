@@ -308,7 +308,7 @@ func Test_extractSumMetric(t *testing.T) {
 			evaluate, err := extractSumMetric(tt.monotonicity, tt.suffix)
 			require.NoError(t, err)
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), sMetrics, tt.input)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, tt.input)
 			defer tCtx.Close()
 			_, err = evaluate(t.Context(), tCtx)
 			assert.Equal(t, tt.wantErr, err)
@@ -319,5 +319,29 @@ func Test_extractSumMetric(t *testing.T) {
 				assert.Equal(t, expected, sMetrics.Metrics())
 			}
 		})
+	}
+}
+
+func BenchmarkExtractSumMetric(b *testing.B) {
+	template := getTestHistogramMetric()
+	metric := pmetric.NewMetric()
+	resourceMetrics := pmetric.NewResourceMetrics()
+	scopeMetrics := pmetric.NewScopeMetrics()
+	transformContext := ottlmetric.NewTransformContext(resourceMetrics, scopeMetrics, metric)
+	b.Cleanup(transformContext.Close)
+
+	expr, err := extractSumMetric(true, ottl.Optional[string]{})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		scopeMetrics.Metrics().RemoveIf(func(pmetric.Metric) bool { return true })
+		_, err = expr(b.Context(), transformContext)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }

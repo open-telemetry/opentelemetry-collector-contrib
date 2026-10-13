@@ -6,15 +6,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ProcessorTransformDefaultErrorModeIgnoreFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.transform.defaultErrorModeIgnore",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("Changes the default error_mode of the transform processor from propagate to ignore"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47231"),
-	featuregate.WithRegisterFromVersion("v0.150.0"),
-	featuregate.WithRegisterToVersion("v0.159.0"),
-)
-
 var TransformFlattenLogsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"transform.flatten.logs",
 	featuregate.StageAlpha,
