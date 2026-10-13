@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,13 +29,13 @@ func TestObfuscateSQL(t *testing.T) {
 	input, err := os.ReadFile(filepath.Join("testdata", "inputSQL.sql"))
 	assert.NoError(t, err)
 
-	result, err := newObfuscator(zap.NewNop(), true).obfuscateSQLString(string(input))
+	result, err := newObfuscator(zap.NewNop(), false).obfuscateSQLString(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSQL, result)
 }
 
 func TestObfuscateInvalidSQL(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
+	obf := newObfuscator(zap.NewNop(), false)
 
 	// The go-sqllexer engine (ObfuscateAndNormalize) is tolerant of malformed
 	// SQL: instead of failing, it obfuscates what it can. An unclosed bracket
@@ -56,7 +55,7 @@ func TestObfuscateInvalidSQL(t *testing.T) {
 }
 
 func TestObfuscateCommentOnlyStatement(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
+	obf := newObfuscator(zap.NewNop(), false)
 
 	// Comment-only statements (e.g. Blue Prism banners captured in
 	// sys.dm_exec_sql_text) have no obfuscatable content. The legacy tokenizer
@@ -84,7 +83,7 @@ func TestObfuscateQueryPlan(t *testing.T) {
 	input, err := os.ReadFile(filepath.Join("testdata", "inputQueryPlan.xml"))
 	assert.NoError(t, err)
 
-	result, err := newObfuscator(zap.NewNop(), true).obfuscateXMLPlan(string(input))
+	result, err := newObfuscator(zap.NewNop(), false).obfuscateXMLPlan(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedQueryPlan, result)
 }
@@ -92,7 +91,7 @@ func TestObfuscateQueryPlan(t *testing.T) {
 func TestObfuscateQueryPlanRepeatedSensitiveValue(t *testing.T) {
 	plan := `<ShowPlanXML><Const ConstValue="42"/><Const ConstValue="42"/></ShowPlanXML>`
 
-	result, err := newObfuscator(zap.NewNop(), true).obfuscateXMLPlan(plan)
+	result, err := newObfuscator(zap.NewNop(), false).obfuscateXMLPlan(plan)
 
 	assert.NoError(t, err)
 	assert.NotContains(t, result, "42")
@@ -190,13 +189,6 @@ func TestObfuscateQueryPlanCacheReportsOutcomes(t *testing.T) {
 	assert.Equal(t, map[string]int64{"hit": 1, "miss": 1, "bypass": 1}, counts)
 }
 
-func TestObfuscateQueryPlanCacheWithoutTelemetry(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
-	obf.initCacheMetrics(component.TelemetrySettings{}, component.MustNewID("sqlserver"))
-	_, err := obf.obfuscateXMLPlan(`<ShowPlanXML StatementText="SELECT 42"/>`)
-	require.NoError(t, err)
-}
-
 func TestObfuscateQueryPlanCacheDisabled(t *testing.T) {
 	obf := newObfuscator(zap.NewNop(), false)
 	plan := `<ShowPlanXML StatementText="SELECT 42"/>`
@@ -208,59 +200,8 @@ func TestObfuscateQueryPlanCacheDisabled(t *testing.T) {
 	assert.Nil(t, obf.xmlPlanCache)
 }
 
-func TestObfuscateQueryPlanCacheConcurrentHits(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
-	plan := `<ShowPlanXML StatementText="SELECT 42"></ShowPlanXML>`
-	expected, err := obf.obfuscateXMLPlan(plan)
-	require.NoError(t, err)
-
-	results := make(chan string, 16)
-	var workers sync.WaitGroup
-	for range 16 {
-		workers.Go(func() {
-			result, err := obf.obfuscateXMLPlan(plan)
-			if err != nil {
-				results <- err.Error()
-				return
-			}
-			results <- result
-		})
-	}
-	workers.Wait()
-	close(results)
-	for result := range results {
-		assert.Equal(t, expected, result)
-	}
-}
-
-func TestObfuscateQueryPlanCacheConcurrentMisses(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
-	plan := `<ShowPlanXML StatementText="SELECT 42"></ShowPlanXML>`
-	start := make(chan struct{})
-	results := make(chan string, 16)
-	var workers sync.WaitGroup
-	for range 16 {
-		workers.Go(func() {
-			<-start
-			result, err := obf.obfuscateXMLPlan(plan)
-			if err != nil {
-				results <- err.Error()
-				return
-			}
-			results <- result
-		})
-	}
-	close(start)
-	workers.Wait()
-	close(results)
-	for result := range results {
-		assert.Equal(t, `<ShowPlanXML StatementText="SELECT ?"></ShowPlanXML>`, result)
-	}
-	assert.Equal(t, 1, obf.xmlPlanCache.Len())
-}
-
 func TestInvalidQueryPlans(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
+	obf := newObfuscator(zap.NewNop(), false)
 
 	plan := `<ShowPlanXml</ShowPlanXML>`
 	result, err := obf.obfuscateXMLPlan(plan)
@@ -288,7 +229,7 @@ func TestInvalidQueryPlans(t *testing.T) {
 }
 
 func TestValidQueryPlans(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
+	obf := newObfuscator(zap.NewNop(), false)
 
 	plan := `<ShowPlanXML value="abc"></ShowPlanXML>`
 	_, err := obf.obfuscateXMLPlan(plan)
@@ -304,7 +245,7 @@ func TestValidQueryPlans(t *testing.T) {
 }
 
 func TestSanitizeSQL(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
+	obf := newObfuscator(zap.NewNop(), false)
 
 	tests := []struct {
 		name     string
@@ -363,7 +304,7 @@ func TestSanitizeSQL(t *testing.T) {
 }
 
 func TestObfuscateQueryPlanWithZeroWidthSpace(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
+	obf := newObfuscator(zap.NewNop(), false)
 
 	plan := "<ShowPlanXML StatementText=\"SELECT \u200b* FROM table\"></ShowPlanXML>"
 	result, err := obf.obfuscateXMLPlan(plan)
@@ -372,7 +313,7 @@ func TestObfuscateQueryPlanWithZeroWidthSpace(t *testing.T) {
 }
 
 func TestObfuscateSQLServerBackslashLiteral(t *testing.T) {
-	obf := newObfuscator(zap.NewNop(), true)
+	obf := newObfuscator(zap.NewNop(), false)
 
 	result, err := obf.obfuscateSQLString(
 		`SELECT REPLACE(@@SERVERNAME, '\', ':'), HOST_NAME(), 42`,

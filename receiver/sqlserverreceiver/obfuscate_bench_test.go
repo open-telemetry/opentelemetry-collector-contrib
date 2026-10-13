@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func BenchmarkObfuscateXMLPlan(b *testing.B) {
+func BenchmarkObfuscateXMLPlanWithCache(b *testing.B) {
 	content, err := os.ReadFile(filepath.Join("testdata", "inputQueryPlan.xml"))
 	if err != nil {
 		b.Fatal(err)
@@ -33,7 +33,7 @@ func BenchmarkObfuscateXMLPlan(b *testing.B) {
 	}
 }
 
-func BenchmarkObfuscateXMLPlanDistinct(b *testing.B) {
+func BenchmarkObfuscateXMLPlanWithCacheDistinct(b *testing.B) {
 	content, err := os.ReadFile(filepath.Join("testdata", "inputQueryPlan.xml"))
 	if err != nil {
 		b.Fatal(err)
