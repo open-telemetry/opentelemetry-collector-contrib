@@ -17,11 +17,21 @@ This exporter supports sending OpenTelemetry log data to [LogService](https://cl
 
 # Configuration options:
 
-- `region` (required): LogService's [Region](https://cloud.tencent.com/document/product/614/56473).
+- `region` (required unless `endpoint` is set): LogService's [Region](https://cloud.tencent.com/document/product/614/56473).
+  The endpoint is derived from it, eg `ap-beijing` becomes `ap-beijing.cls.tencentcs.com`.
+- `endpoint` (optional): LogService's endpoint, useful for private deployments or proxies.
+  Takes precedence over `region` when set, eg `ap-beijing.cls.tencentcs.com`.
 - `logset` (required): LogService's LogSet ID.
 - `topic` (required): LogService's topic ID.
 - `secret_id` (optional): TencentCloud secret id.
 - `secret_key` (optional): TencentCloud secret key.
+- `is_intranet` (optional): Use the TencentCloud intranet endpoint (`ap-{region}.cls.tencentyun.com`)
+  instead of the public one. Only takes effect when `endpoint` is empty. Defaults to `false`.
+
+Logs are handed over to the [CLS SDK](https://github.com/tencentcloud/tencentcloud-cls-sdk-go), which
+buffers, batches, compresses and retries them asynchronously. `ConsumeLogs` therefore returns as soon
+as the logs are buffered, and delivery failures are reported through the exporter log rather than as
+an error. Buffered logs are flushed when the collector shuts down.
 
 # Example:
 ## Simple Log Data

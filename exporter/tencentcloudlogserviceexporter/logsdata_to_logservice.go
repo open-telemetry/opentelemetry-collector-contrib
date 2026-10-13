@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
+	cls "github.com/tencentcloud/tencentcloud-cls-sdk-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
-	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/proto"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
