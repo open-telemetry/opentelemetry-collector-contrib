@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: receiver/azure_monitor
+
+note: Add per-metric time grain overrides for Azure Monitor metric queries.
+
+issues: [51295]
+
+change_logs: [user]

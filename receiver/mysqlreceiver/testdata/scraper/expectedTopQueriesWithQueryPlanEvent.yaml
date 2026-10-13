@@ -44,9 +44,9 @@ resourceLogs:
               - key: db.query.text
                 value:
                   stringValue: SELECT COALESCE ( schema_name, ? ) COALESCE ( digest, ? ) COALESCE ( digest_text, ? ) count_star, sum_timer_wait, query_sample_text FROM performance_schema.events_statements_summary_by_digest WHERE last_seen >= NOW ( ) - INTERVAL ? second AND ( ( digest_text NOT LIKE ? AND digest_text NOT LIKE ? ) OR digest_text IS ? ) ORDER BY count_star DESC LIMIT ?
-              - key: mysql.events_statements_summary_by_digest.sum_timer_wait
+              - key: mysql.events_statements_summary_by_digest.returned_rows
                 value:
-                  doubleValue: 0.001021918999
+                  intValue: "0"
               - key: mysql.query_plan.hash
                 value:
                   stringValue: c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739
@@ -56,6 +56,12 @@ resourceLogs:
               - key: mysql.events_statements_summary_by_digest.count_star
                 value:
                   intValue: "5"
+              - key: mysql.events_statements_summary_by_digest.sum_timer_wait
+                value:
+                  doubleValue: 0.001021918999
+              - key: mysql.events_statements_summary_by_digest.examined_rows
+                value:
+                  intValue: "0"
             body: {}
             eventName: db.server.top_query
             timeUnixNano: "1790080291955067000"

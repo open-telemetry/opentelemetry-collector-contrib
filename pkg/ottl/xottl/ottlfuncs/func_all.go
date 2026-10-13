@@ -11,12 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type allArguments[K any] struct {
 	Source    ottl.Getter[K]
-	Predicate *ottl.LambdaExpression[K]
+	Predicate *xottl.LambdaExpression[K]
 }
 
 // NewAllFactory returns a factory for the All OTTL function.
@@ -35,7 +36,7 @@ func createAllFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	return allMatch(args.Source, args.Predicate)
 }
 
-func allMatch[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
+func allMatch[K any](source ottl.Getter[K], predicate *xottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
 	err := predicate.ValidateArity(2)
 	if err != nil {
 		return nil, err
@@ -64,7 +65,7 @@ func allMatch[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K])
 	}, nil
 }
 
-func allSliceValuesMatch[K any](tCtx K, source pcommon.Slice, lambda *ottl.LambdaActivation[K]) (bool, error) {
+func allSliceValuesMatch[K any](tCtx K, source pcommon.Slice, lambda *xottl.LambdaActivation[K]) (bool, error) {
 	for i, v := range source.All() {
 		match, err := funcutil.EvaluateBiPredicate(tCtx, lambda, int64(i), v)
 		if err != nil {
@@ -77,7 +78,7 @@ func allSliceValuesMatch[K any](tCtx K, source pcommon.Slice, lambda *ottl.Lambd
 	return true, nil
 }
 
-func allMapValuesMatch[K any](tCtx K, source pcommon.Map, lambda *ottl.LambdaActivation[K]) (bool, error) {
+func allMapValuesMatch[K any](tCtx K, source pcommon.Map, lambda *xottl.LambdaActivation[K]) (bool, error) {
 	for k, v := range source.All() {
 		match, err := funcutil.EvaluateBiPredicate(tCtx, lambda, k, v)
 		if err != nil {

@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -114,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, confmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, tt.expected, cfg)
 		})
 	}
 }
@@ -459,6 +460,88 @@ func TestValidateConfig(t *testing.T) {
 	}
 }
 
+func TestValidateConfigRejectsInvalidOTTL(t *testing.T) {
+	t.Run("inferred context", func(t *testing.T) {
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		cfg.Table = []RoutingTableItem{
+			{
+				Condition: `resource.attributes["attr"] ==`,
+				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+			},
+		}
+
+		require.Error(t, confmap.Validate(cfg))
+	})
+
+	t.Run("multiple invalid routes", func(t *testing.T) {
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		cfg.Table = []RoutingTableItem{
+			{
+				Context:   "span",
+				Condition: `UnknownFirst()`,
+				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+			},
+			{
+				Context:   "span",
+				Statement: `route() where UnknownSecond()`,
+				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+			},
+		}
+
+		err := confmap.Validate(cfg)
+		require.ErrorContains(t, err, "table[0]")
+		require.ErrorContains(t, err, `undefined function "UnknownFirst"`)
+		require.ErrorContains(t, err, "table[1]")
+		require.ErrorContains(t, err, `undefined function "UnknownSecond"`)
+	})
+
+	for _, contextName := range []string{"resource", "span", "metric", "datapoint", "log", "otelcol"} {
+		t.Run(contextName+" condition", func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.Table = []RoutingTableItem{
+				{
+					Context:   contextName,
+					Condition: `UnknownFunction()`,
+					Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+				},
+			}
+
+			require.ErrorContains(t, confmap.Validate(cfg), `undefined function "UnknownFunction"`)
+		})
+
+		t.Run(contextName+" statement", func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.Table = []RoutingTableItem{
+				{
+					Context:   contextName,
+					Statement: `route() where UnknownFunction()`,
+					Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+				},
+			}
+
+			require.ErrorContains(t, confmap.Validate(cfg), `undefined function "UnknownFunction"`)
+		})
+	}
+}
+
+func TestValidateConfigUsesCustomFunctions(t *testing.T) {
+	factory := NewFactoryWithOptions(
+		WithSpanFunctions([]ottl.Factory[*ottlspan.TransformContext]{
+			createTestFuncFactory[*ottlspan.TransformContext]("TestSpanFunc"),
+		}),
+	)
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Table = []RoutingTableItem{
+		{
+			Context:   "span",
+			Condition: `TestSpanFunc()`,
+			Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalTraces, "otlp")},
+		},
+	}
+
+	require.NoError(t, confmap.Validate(cfg))
+}
+
 type testConfigOption func(*Config)
 
 func withRoute(context, condition string, pipelines ...pipeline.ID) testConfigOption {
@@ -479,7 +562,7 @@ func withDefault(pipelines ...pipeline.ID) testConfigOption {
 }
 
 func testConfig(opts ...testConfigOption) *Config {
-	cfg := createDefaultConfig().(*Config)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	for _, opt := range opts {
 		opt(cfg)
 	}

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 )
 
 func Test_reduce(t *testing.T) {
@@ -20,7 +21,7 @@ func Test_reduce(t *testing.T) {
 		name        string
 		source      ottl.Getter[any]
 		seed        any
-		accumulator *ottl.LambdaExpression[any]
+		accumulator *xottl.LambdaExpression[any]
 		want        any
 	}{
 		{
@@ -34,7 +35,7 @@ func Test_reduce(t *testing.T) {
 				},
 			},
 			seed: int64(0),
-			accumulator: ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			accumulator: xottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				acc := resolveBinding("acc")
 				v := resolveBinding("v")
 				return acc.(int64) + v.(int64), nil
@@ -51,7 +52,7 @@ func Test_reduce(t *testing.T) {
 				},
 			},
 			seed: "",
-			accumulator: ottl.NewTestingLambdaExpression[any]([]string{"acc", "k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			accumulator: xottl.NewTestingLambdaExpression[any]([]string{"acc", "k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				v := resolveBinding("v")
 				return k.(string) + "=" + v.(string), nil
@@ -66,7 +67,7 @@ func Test_reduce(t *testing.T) {
 				},
 			},
 			seed: "seed",
-			accumulator: ottl.NewTestingLambdaExpression[any]([]string{"acc", "k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			accumulator: xottl.NewTestingLambdaExpression[any]([]string{"acc", "k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				acc := resolveBinding("acc")
 				return acc, nil
 			}),
@@ -84,7 +85,7 @@ func Test_reduce(t *testing.T) {
 				}
 			}(),
 			seed: int64(0),
-			accumulator: ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			accumulator: xottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				acc := resolveBinding("acc")
 				v := resolveBinding("v")
 				return acc.(int64) + v.(int64), nil
@@ -103,7 +104,7 @@ func Test_reduce(t *testing.T) {
 				}
 			}(),
 			seed: int64(42),
-			accumulator: ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			accumulator: xottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				acc := resolveBinding("acc")
 				return acc, nil
 			}),
@@ -121,7 +122,7 @@ func Test_reduce(t *testing.T) {
 				}
 			}(),
 			seed: int64(0),
-			accumulator: ottl.NewTestingLambdaExpression[any]([]string{"acc", "i", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			accumulator: xottl.NewTestingLambdaExpression[any]([]string{"acc", "i", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				acc := resolveBinding("acc")
 				i := resolveBinding("i")
 				return acc.(int64) + i.(int64), nil
@@ -152,7 +153,7 @@ func Test_reduce_error(t *testing.T) {
 			return int64(0), nil
 		},
 	}
-	accumulator := ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	accumulator := xottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		acc := resolveBinding("acc")
 		return acc, nil
 	})
@@ -203,7 +204,7 @@ func Test_reduce_error(t *testing.T) {
 				return m, nil
 			},
 		}
-		failingAccumulator := ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		failingAccumulator := xottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return nil, errors.New("accumulator failed")
 		})
 
@@ -223,7 +224,7 @@ func Test_reduce_error(t *testing.T) {
 				return s, nil
 			},
 		}
-		failingAccumulator := ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		failingAccumulator := xottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return nil, errors.New("accumulator failed")
 		})
 
@@ -265,7 +266,7 @@ func Test_ReduceFactory(t *testing.T) {
 				return int64(0), nil
 			},
 		}
-		reduceArgs.Accumulator = ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		reduceArgs.Accumulator = xottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 			return resolveBinding("acc"), nil
 		})
 
@@ -294,7 +295,7 @@ func BenchmarkReduce(b *testing.B) {
 			return int64(0), nil
 		},
 	}
-	accumulator := ottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	accumulator := xottl.NewTestingLambdaExpression[any]([]string{"acc", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		acc := resolveBinding("acc")
 		v := resolveBinding("v")
 		return acc.(int64) + v.(int64), nil
