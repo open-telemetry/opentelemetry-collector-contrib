@@ -436,22 +436,37 @@ type inflightBatch struct {
 // limits. It returns false when a record has failed or the partition context is
 // done, so a revoked partition does not start another Consume after this wait.
 func (b *inflightBatch) acquire(size int) bool {
-	cfg := b.c.config.PartitionProcessing.MaxInFlight
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	// An empty window always admits one record, so a record above bytes runs alone
-	// instead of blocking the partition. A waiter is woken by a call finishing,
-	// so it sees a cancelled context at the next release.
-	for !b.failed && b.pc.ctx.Err() == nil &&
-		b.inflight > 0 && (b.inflight >= cfg.Records || (cfg.Bytes > 0 && b.inflightBytes+size > cfg.Bytes)) {
+	// A waiter is woken by a call finishing, so it sees a cancelled context at
+	// the next release.
+	for {
+		if b.failed || b.pc.ctx.Err() != nil {
+			return false
+		}
+		if b.hasRoom(size) {
+			break
+		}
 		b.room.Wait()
-	}
-	if b.failed || b.pc.ctx.Err() != nil {
-		return false
 	}
 	b.inflight++
 	b.inflightBytes += size
 	return true
+}
+
+// hasRoom reports whether a record of size bytes fits under both max_in_flight
+// limits. The caller must hold b.mu.
+func (b *inflightBatch) hasRoom(size int) bool {
+	cfg := b.c.config.PartitionProcessing.MaxInFlight
+	// An empty window always admits one record, so a record above bytes runs
+	// alone instead of blocking the partition.
+	if b.inflight == 0 {
+		return true
+	}
+	if b.inflight >= cfg.Records {
+		return false
+	}
+	return cfg.Bytes == 0 || b.inflightBytes+size <= cfg.Bytes
 }
 
 // start runs handleMessage for record i on its own goroutine. The caller must
