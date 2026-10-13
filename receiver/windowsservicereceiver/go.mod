@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.162.1-0.20261009162812-02beb4e3f10f
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	golang.org/x/sys v0.48.0
+	golang.org/x/sys v0.49.0
 )
 
 require (
