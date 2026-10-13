@@ -5,6 +5,8 @@ package libhoneyreceiver
 
 import (
 	"bytes"
+	"compress/flate"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,8 +16,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"compress/flate"
-    "compress/gzip"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
@@ -1369,14 +1369,14 @@ func TestReceiverDecompressionLimits(t *testing.T) {
 			encoding:         "gzip",
 			payload:          makeGzip(t, limit),
 			expectedStatus:   http.StatusBadRequest,
-			expectedErrMatch: "failed to decode events", 
+			expectedErrMatch: "failed to decode events",
 		},
 		{
 			name:             "gzip_one_byte_over",
 			encoding:         "gzip",
 			payload:          makeGzip(t, limit+1),
 			expectedStatus:   http.StatusBadRequest,
-			expectedErrMatch: "exceeds limit", 
+			expectedErrMatch: "exceeds limit",
 		},
 		{
 			name:             "deflate_exact_limit",

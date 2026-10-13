@@ -285,31 +285,31 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	}()
 
 	var body []byte
-    func() {
-        defer func() {
-            if panicVal := recover(); panicVal != nil {
-                // Log the panic but don't expose internal details to the client
-                r.settings.Logger.Error("Panic during decompression (likely malformed compressed data)",
-                    zap.Any("panic", panicVal),
-                    zap.String("content-encoding", contentEncoding),
-                    zap.String("content-type", req.Header.Get("Content-Type")),
-                    zap.Int("compressed-size", len(compressedBody)),
-                    zap.String("endpoint", req.RequestURI),
-                    zap.String("api-key-masked", maskedKey))
-                err = errors.New("failed to decompress: panic during decompression")
-            }
-        }()
-        
-        // Wrap the reader
-        limitedReader := io.LimitReader(bodyReader, maxDecodedBodySize+1)
-        
-        // Pass the limitedReader to io.ReadAll!
-        body, err = io.ReadAll(limitedReader) 
-        
-        if err == nil && int64(len(body)) > maxDecodedBodySize {
-            err = fmt.Errorf("decoded request body exceeds limit of %d bytes", maxDecodedBodySize)
-        }
-    }()
+	func() {
+		defer func() {
+			if panicVal := recover(); panicVal != nil {
+				// Log the panic but don't expose internal details to the client
+				r.settings.Logger.Error("Panic during decompression (likely malformed compressed data)",
+					zap.Any("panic", panicVal),
+					zap.String("content-encoding", contentEncoding),
+					zap.String("content-type", req.Header.Get("Content-Type")),
+					zap.Int("compressed-size", len(compressedBody)),
+					zap.String("endpoint", req.RequestURI),
+					zap.String("api-key-masked", maskedKey))
+				err = errors.New("failed to decompress: panic during decompression")
+			}
+		}()
+
+		// Wrap the reader
+		limitedReader := io.LimitReader(bodyReader, maxDecodedBodySize+1)
+
+		// Pass the limitedReader to io.ReadAll!
+		body, err = io.ReadAll(limitedReader)
+
+		if err == nil && int64(len(body)) > maxDecodedBodySize {
+			err = fmt.Errorf("decoded request body exceeds limit of %d bytes", maxDecodedBodySize)
+		}
+	}()
 
 	if err != nil {
 		r.settings.Logger.Error("Failed to decompress buffered body",
