@@ -130,9 +130,10 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 					// Resume before cancelling. A cancelled poll returns immediately, and the
 					// consume loop can start the next PollRecords before this callback finishes.
 					// The partition must already be eligible or that fetch omits it again.
-					// Abort the broker read before waking the poll: the Fetch already in
-					// flight omitted this partition and will not notice the resume.
-					c.client.ResumeFetchPartitions(partition)
+					// Fail the broker read before waking the poll. The Fetch already on the
+					// socket was built while this partition was paused, so the broker answers
+					// that request as sent and will not include this partition. The next
+					// PollRecords would otherwise wait out MaxFetchWait for that response.					c.client.ResumeFetchPartitions(partition)
 					c.abortInFlightFetches()
 					c.interruptPoll()
 				}
