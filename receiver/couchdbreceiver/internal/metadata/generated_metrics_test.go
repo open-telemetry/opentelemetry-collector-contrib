@@ -90,6 +90,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 1, AttributeOperationWrites)
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 3, AttributeOperationReads)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordCouchdbDatabaseOperationsDataPoint(ts+1, 3, AttributeOperationReads)
+				assert.Equal(t, 2, mb.metricCouchdbDatabaseOperations.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -102,18 +105,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordCouchdbHttpdRequestsDataPoint(ts, 1, AttributeHTTPMethodCOPY)
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbHttpdRequestsDataPoint(ts, 3, AttributeHTTPMethodDELETE)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordCouchdbHttpdRequestsDataPoint(ts+1, 3, AttributeHTTPMethodDELETE)
+				assert.Equal(t, 2, mb.metricCouchdbHttpdRequests.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdResponsesDataPoint(ts, 1, "http.status_code-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbHttpdResponsesDataPoint(ts, 3, "http.status_code-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordCouchdbHttpdResponsesDataPoint(ts+1, 3, "http.status_code-val-2")
+				assert.Equal(t, 2, mb.metricCouchdbHttpdResponses.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordCouchdbHttpdViewsDataPoint(ts, 1, AttributeViewTemporaryViewReads)
 			if tt.name == "reaggregate_set" {
 				mb.RecordCouchdbHttpdViewsDataPoint(ts, 3, AttributeViewViewReads)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordCouchdbHttpdViewsDataPoint(ts+1, 3, AttributeViewViewReads)
+				assert.Equal(t, 2, mb.metricCouchdbHttpdViews.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -200,7 +212,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["couchdb.database.operations"], "Found a duplicate in the metrics slice: couchdb.database.operations")
 						validatedMetrics["couchdb.database.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of database operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -272,7 +286,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["couchdb.httpd.requests"], "Found a duplicate in the metrics slice: couchdb.httpd.requests")
 						validatedMetrics["couchdb.httpd.requests"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of HTTP requests by method.", mi.Description())
 						assert.Equal(t, "{requests}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -316,7 +332,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["couchdb.httpd.responses"], "Found a duplicate in the metrics slice: couchdb.httpd.responses")
 						validatedMetrics["couchdb.httpd.responses"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of each HTTP status code.", mi.Description())
 						assert.Equal(t, "{responses}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -360,7 +378,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["couchdb.httpd.views"], "Found a duplicate in the metrics slice: couchdb.httpd.views")
 						validatedMetrics["couchdb.httpd.views"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of views read.", mi.Description())
 						assert.Equal(t, "{views}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
