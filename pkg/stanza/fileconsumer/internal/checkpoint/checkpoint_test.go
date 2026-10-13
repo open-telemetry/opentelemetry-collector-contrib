@@ -363,8 +363,9 @@ func TestProtobufWithComplexMetadata(t *testing.T) {
 				"boolean_attr":  true,
 				"array_attr":    []any{"item1", "item2"},
 			},
-			HeaderFinalized: true,
-			FileType:        ".log",
+			HeaderFinalized:         true,
+			FileType:                ".gz",
+			DecompressedBytesToSkip: 123,
 		},
 	}
 

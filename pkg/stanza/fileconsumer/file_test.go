@@ -1637,9 +1637,8 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 	sink.ExpectToken(t, []byte("testlog4"))
 }
 
-// TestReadGzipCompressedLogsWhileBeingWritten tests that a gzip stream which is still being written is only
-// read once it is complete, instead of being read partially and then failing with "gzip: invalid header"
-// because the stored offset points into the middle of the compressed stream.
+// TestReadGzipCompressedLogsWhileBeingWritten tests that the lines of a gzip compressed file are read while
+// it is still being written, without errors and without reading any line twice.
 func TestReadGzipCompressedLogsWhileBeingWritten(t *testing.T) {
 	t.Parallel()
 
@@ -1651,39 +1650,47 @@ func TestReadGzipCompressedLogsWhileBeingWritten(t *testing.T) {
 	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
 	writer := gzip.NewWriter(temp)
 
-	// The first line is flushed to disk, but the gzip stream is not finished yet.
+	// The first line is flushed to disk, but the gzip member is not finished yet.
 	_, err := writer.Write([]byte("testlog1\n"))
 	require.NoError(t, err)
 	require.NoError(t, writer.Flush())
 	operator.poll(t.Context())
-	sink.ExpectNoCalls(t)
+	sink.ExpectToken(t, []byte("testlog1"))
 
 	_, err = writer.Write([]byte("testlog2\n"))
 	require.NoError(t, err)
 	require.NoError(t, writer.Flush())
 	operator.poll(t.Context())
-	sink.ExpectNoCalls(t)
+	sink.ExpectToken(t, []byte("testlog2"))
 
-	// Once the stream is complete, all of its lines are read.
 	_, err = writer.Write([]byte("testlog3\n"))
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
 	operator.poll(t.Context())
-	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"), []byte("testlog3"))
+	sink.ExpectToken(t, []byte("testlog3"))
 
-	// A gzip member appended afterward is read from the correct offset.
+	// A complete gzip member and a gzip member that is still being written are appended.
 	writer = gzip.NewWriter(temp)
 	_, err = writer.Write([]byte("testlog4\n"))
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
+	writer = gzip.NewWriter(temp)
+	_, err = writer.Write([]byte("testlog5\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
 	operator.poll(t.Context())
-	sink.ExpectToken(t, []byte("testlog4"))
+	sink.ExpectTokens(t, []byte("testlog4"), []byte("testlog5"))
+
+	_, err = writer.Write([]byte("testlog6\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog6"))
 	sink.ExpectNoCalls(t)
 }
 
 // TestReadGzipCompressedLogsAfterRotationWhileBeingWritten tests that when a partially read plaintext file is
-// rotated into a gzip file that is still being written, already read lines are not emitted again once the gzip
-// stream is complete.
+// rotated into a gzip file that is still being written, already read lines are not emitted again.
 func TestReadGzipCompressedLogsAfterRotationWhileBeingWritten(t *testing.T) {
 	t.Parallel()
 
@@ -1698,7 +1705,7 @@ func TestReadGzipCompressedLogsAfterRotationWhileBeingWritten(t *testing.T) {
 	operator.poll(t.Context())
 	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
 
-	// Rotate: the plaintext file is replaced by a gzip file whose stream is not finished yet.
+	// Rotate: the plaintext file is replaced by a gzip file whose gzip member is not finished yet.
 	require.NoError(t, os.Remove(plainPath))
 	gzFile := filetest.OpenFile(t, plainPath+".gz")
 	writer := gzip.NewWriter(gzFile)
@@ -1706,12 +1713,13 @@ func TestReadGzipCompressedLogsAfterRotationWhileBeingWritten(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, writer.Flush())
 	operator.poll(t.Context())
-	sink.ExpectNoCalls(t)
+	sink.ExpectToken(t, []byte("testlog3"))
 
-	// Once the stream is complete, only the lines that were not read before are emitted.
+	_, err = writer.Write([]byte("testlog4\n"))
+	require.NoError(t, err)
 	require.NoError(t, writer.Close())
 	operator.poll(t.Context())
-	sink.ExpectToken(t, []byte("testlog3"))
+	sink.ExpectToken(t, []byte("testlog4"))
 	sink.ExpectNoCalls(t)
 }
 

@@ -123,8 +123,9 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 			// decompressed bytes already consumed. Decompress the .gz
 			// from byte 0 and skip that many decompressed bytes so we only emit
 			// new lines.
+			m.DecompressedBytesToSkip = 0
 			if m.FileType == "" && newFileType == gzipExtension {
-				r.decompressedBytesToSkip = m.Offset
+				m.DecompressedBytesToSkip = m.Offset
 			}
 			// Zero the persisted offset so that if ReadToEnd is skipped (e.g. due to
 			// context cancellation) and Close() is called immediately, the saved

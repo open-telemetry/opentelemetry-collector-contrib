@@ -71,10 +71,11 @@ func saveKeyProto(ctx context.Context, persister operator.Persister, rmds []*rea
 // metadataToPb converts reader.Metadata to protobuf Metadata
 func metadataToPb(rmd *reader.Metadata) (*pb.Metadata, error) {
 	pbMeta := &pb.Metadata{
-		Offset:          rmd.Offset,
-		RecordNum:       rmd.RecordNum,
-		HeaderFinalized: rmd.HeaderFinalized,
-		FileType:        rmd.FileType,
+		Offset:                  rmd.Offset,
+		RecordNum:               rmd.RecordNum,
+		HeaderFinalized:         rmd.HeaderFinalized,
+		FileType:                rmd.FileType,
+		DecompressedBytesToSkip: rmd.DecompressedBytesToSkip,
 	}
 
 	// Convert Fingerprint — Bytes() already returns a copy
@@ -113,11 +114,12 @@ func metadataToPb(rmd *reader.Metadata) (*pb.Metadata, error) {
 // pbToMetadata converts protobuf Metadata to reader.Metadata
 func pbToMetadata(pbMeta *pb.Metadata) (*reader.Metadata, error) {
 	rmd := &reader.Metadata{
-		Offset:          pbMeta.Offset,
-		RecordNum:       pbMeta.RecordNum,
-		HeaderFinalized: pbMeta.HeaderFinalized,
-		FileType:        pbMeta.FileType,
-		FileAttributes:  make(map[string]any),
+		Offset:                  pbMeta.Offset,
+		RecordNum:               pbMeta.RecordNum,
+		HeaderFinalized:         pbMeta.HeaderFinalized,
+		FileType:                pbMeta.FileType,
+		DecompressedBytesToSkip: pbMeta.DecompressedBytesToSkip,
+		FileAttributes:          make(map[string]any),
 	}
 
 	// Convert Fingerprint

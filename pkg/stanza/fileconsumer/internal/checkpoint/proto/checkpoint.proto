@@ -40,6 +40,9 @@ message Metadata {
 
   // File type (e.g., ".gz")
   string file_type = 8;
+
+  // Number of decompressed bytes at the offset of a gzip compressed file that were already read
+  int64 decompressed_bytes_to_skip = 9;
 }
 
 // Fingerprint identifies a file by its first N bytes
