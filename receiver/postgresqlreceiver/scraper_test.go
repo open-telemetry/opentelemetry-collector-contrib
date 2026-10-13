@@ -749,6 +749,7 @@ var topQueryColumns = []string{
 	tempBlksWrittenColumnName,
 	"query",
 	queryidColumnName,
+	"userid",
 	"rolname",
 	rowsColumnName,
 	totalExecTimeColumnName,
@@ -1456,7 +1457,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	queryid := "114514"
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
-	cacheKeyPrefix := "postgres\x00master\x00" + queryid + "\x00"
+	cacheKeyPrefix := "postgres\x0016415\x00" + queryid + "\x00"
 	scraper.cache.Add(cacheKeyPrefix+totalExecTimeColumnName, 10)
 	scraper.cache.Add(cacheKeyPrefix+totalPlanTimeColumnName, 11)
 	scraper.cache.Add(cacheKeyPrefix+callsColumnName, 120)
@@ -1480,6 +1481,7 @@ func TestScrapeTopQueries(t *testing.T) {
 		tempBlksWrittenColumnName:   "1116",
 		"query":                     "select * from pg_stat_activity where id = 32",
 		queryidColumnName:           queryid,
+		"userid":                    "16415",
 		"rolname":                   "master",
 		rowsColumnName:              "30",
 		totalExecTimeColumnName:     "11000",
@@ -1548,6 +1550,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			tempBlksWrittenColumnName:   "1116",
 			"query":                     "select * from pg_stat_activity where id = 32",
 			queryidColumnName:           "114514",
+			"userid":                    "16415",
 			"rolname":                   "master",
 			rowsColumnName:              "30",
 			totalExecTimeColumnName:     "11000",
@@ -1583,6 +1586,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			tempBlksWrittenColumnName:   "1116",
 			"query":                     "select * from pg_stat_activity where id = 32",
 			queryidColumnName:           "114514",
+			"userid":                    "16415",
 			"rolname":                   "master",
 			rowsColumnName:              "30",
 			totalExecTimeColumnName:     "11000",
@@ -1609,11 +1613,12 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 		assert.False(t, hasPlan, "postgresql.query_plan must be removed from db.server.top_query once db.server.query_plan is enabled")
 
 		queryPlan := records.At(byEventName["db.server.query_plan"])
-		assert.Equal(t, 5, queryPlan.Attributes().Len())
+		assert.Equal(t, 6, queryPlan.Attributes().Len())
 		for attribute, want := range map[string]string{
 			"db.system.name":        "postgresql",
 			"postgresql.queryid":    "114514",
 			"db.namespace":          "postgres",
+			"postgresql.userid":     "16415",
 			"postgresql.rolname":    "master",
 			"postgresql.query_plan": `[{"Plan":{"Node Type":"Seq Scan"}}]`,
 		} {
@@ -1637,6 +1642,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			tempBlksWrittenColumnName:   "1116",
 			"query":                     "select * from pg_stat_activity where id = 32",
 			queryidColumnName:           "114514",
+			"userid":                    "16415",
 			"rolname":                   "master",
 			rowsColumnName:              "30",
 			totalExecTimeColumnName:     "11000",
@@ -1653,20 +1659,17 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 		assert.Equal(t, 0, actualLogs.LogRecordCount())
 	})
 
-	// TestScrapeTopQueriesDbServerQueryPlanEvent covers the collision pg_stat_statements allows:
-	// two roles running the same statement in the same database share (queryid, db.namespace), so
-	// postgresql.rolname has to be part of the join key or the two db.server.query_plan records
-	// become indistinguishable.
+	// Two roles running the same statement in the same database share (queryid, db.namespace).
 	t.Run("two roles sharing a queryid get distinct db.server.query_plan records", func(t *testing.T) {
 		scraper, mock := newScraper(t, true, true)
 
 		rows := sqlmock.NewRows(topQueryColumns).
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
-				"select * from pg_stat_activity where id = 32", "114514", "roleA", "30", "11000", "12000").
+				"select * from pg_stat_activity where id = 32", "114514", "16415", "roleA", "30", "11000", "12000").
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
-				"select * from pg_stat_activity where id = 32", "114514", "roleB", "30", "22000", "23000")
+				"select * from pg_stat_activity where id = 32", "114514", "16416", "roleB", "30", "22000", "23000")
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
-		// The plan cache is keyed per role, so each role is explained separately.
+		// Same queryid, different rolname: each role still gets its own EXPLAIN cycle.
 		for range 2 {
 			mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
 			mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
@@ -1688,6 +1691,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 		require.Len(t, queryPlanRecords, 2, "both roles must produce their own db.server.query_plan record")
 
 		gotRolnames := make(map[string]bool, 2)
+		gotUserids := make(map[string]bool, 2)
 		for _, lr := range queryPlanRecords {
 			queryID, ok := lr.Attributes().Get("postgresql.queryid")
 			require.True(t, ok)
@@ -1695,11 +1699,60 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			namespace, ok := lr.Attributes().Get("db.namespace")
 			require.True(t, ok)
 			assert.Equal(t, "postgres", namespace.Str())
+			userid, ok := lr.Attributes().Get("postgresql.userid")
+			require.True(t, ok)
+			gotUserids[userid.Str()] = true
 			rolname, ok := lr.Attributes().Get("postgresql.rolname")
 			require.True(t, ok, "postgresql.rolname must be present to disambiguate records sharing (queryid, db.namespace)")
 			gotRolnames[rolname.Str()] = true
 		}
 		assert.Equal(t, map[string]bool{"roleA": true, "roleB": true}, gotRolnames)
+		assert.Equal(t, map[string]bool{"16415": true, "16416": true}, gotUserids)
+	})
+
+	// Same queryid and database, both dropped roles (empty rolname): userid still
+	// tells them apart.
+	t.Run("two dropped roles sharing a queryid stay distinct via userid", func(t *testing.T) {
+		scraper, mock := newScraper(t, true, true)
+
+		rows := sqlmock.NewRows(topQueryColumns).
+			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
+				"select * from pg_stat_activity where id = 32", "114514", "16415", "", "30", "11000", "12000").
+			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
+				"select * from pg_stat_activity where id = 32", "114514", "16416", "", "30", "22000", "23000")
+		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
+		// Different userid, so each still gets its own EXPLAIN cycle.
+		for range 2 {
+			mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+			mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
+				WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+			mock.ExpectQuery("EXPLAIN(FORMAT JSON) EXECUTE otel_114514;").WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+			mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_114514").WillReturnResult(sqlmock.NewResult(0, 0))
+		}
+
+		actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+		require.NoError(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
+
+		records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		var queryPlanRecords []plog.LogRecord
+		for i := 0; i < records.Len(); i++ {
+			if records.At(i).EventName() == "db.server.query_plan" {
+				queryPlanRecords = append(queryPlanRecords, records.At(i))
+			}
+		}
+		require.Len(t, queryPlanRecords, 2, "both dropped-role rows must produce their own db.server.query_plan record")
+
+		gotUserids := make(map[string]bool, 2)
+		for _, lr := range queryPlanRecords {
+			rolname, ok := lr.Attributes().Get("postgresql.rolname")
+			require.True(t, ok)
+			assert.Empty(t, rolname.Str(), "rolname is empty for a dropped role")
+			userid, ok := lr.Attributes().Get("postgresql.userid")
+			require.True(t, ok, "postgresql.userid must be present to disambiguate records with empty rolname")
+			gotUserids[userid.Str()] = true
+		}
+		assert.Equal(t, map[string]bool{"16415": true, "16416": true}, gotUserids)
 	})
 
 	t.Run("no plan available yields db.server.top_query only", func(t *testing.T) {
@@ -1718,6 +1771,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 			tempBlksWrittenColumnName:   "1116",
 			"query":                     "GRANT SELECT ON pg_locks TO demo",
 			queryidColumnName:           "114514",
+			"userid":                    "16415",
 			"rolname":                   "master",
 			rowsColumnName:              "30",
 			totalExecTimeColumnName:     "11000",

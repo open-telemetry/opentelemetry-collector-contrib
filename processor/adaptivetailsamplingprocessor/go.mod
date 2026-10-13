@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.162.0
 	github.com/stretchr/testify v1.12.1
+	go.opentelemetry.io/collector/client v1.68.1-0.20261009162812-02beb4e3f10f
 	go.opentelemetry.io/collector/component v1.68.1-0.20261009162812-02beb4e3f10f
 	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261009162812-02beb4e3f10f
 	go.opentelemetry.io/collector/confmap v1.68.1-0.20261009162812-02beb4e3f10f
@@ -58,11 +59,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.162.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.162.0 // indirect
-	github.com/twmb/murmur3 v1.2.0 // indirect
+	github.com/twmb/murmur3 v1.2.1 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.68.1-0.20261009162812-02beb4e3f10f // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.162.1-0.20261009162812-02beb4e3f10f // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.162.1-0.20261009162812-02beb4e3f10f // indirect
 	go.opentelemetry.io/collector/featuregate v1.68.1-0.20261009162812-02beb4e3f10f // indirect
@@ -79,7 +79,7 @@ require (
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/grpc v1.84.0 // indirect
 )
 

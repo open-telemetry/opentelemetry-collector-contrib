@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e
-	github.com/go-ldap/ldap/v3 v3.4.14
+	github.com/go-ldap/ldap/v3 v3.4.15
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.162.0
 	github.com/stretchr/testify v1.12.1
@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/goleak v1.3.0
-	golang.org/x/sys v0.48.0
+	golang.org/x/sys v0.49.0
 )
 
 require (
@@ -74,7 +74,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800 // indirect
 	google.golang.org/grpc v1.84.0 // indirect
