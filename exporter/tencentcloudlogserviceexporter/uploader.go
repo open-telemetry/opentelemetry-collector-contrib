@@ -4,76 +4,129 @@
 package tencentcloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 
 import (
-	"github.com/pierrec/lz4"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
-	tchttp "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/http"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
-	"go.uber.org/zap"
-	pb "google.golang.org/protobuf/proto"
+	"context"
+	"fmt"
+	"strings"
 
-	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/proto"
+	cls "github.com/tencentcloud/tencentcloud-cls-sdk-go"
+	"go.uber.org/zap"
 )
+
+// shutdownTimeoutMs is the maximum time given to the producer to flush the logs
+// still buffered while shutting down.
+const shutdownTimeoutMs int64 = 10000
+
+// defaultEndpointScheme is applied to endpoints that carry no scheme. The CLS SDK falls back to
+// plain HTTP when the host has no scheme, so the scheme has to be made explicit to keep sending
+// over HTTPS as the previous client did.
+const defaultEndpointScheme = "https://"
+
+// ensureEndpointScheme adds the default scheme to endpoints that do not carry one, leaving
+// endpoints that already declare http:// or https:// untouched.
+func ensureEndpointScheme(endpoint string) string {
+	if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
+		return endpoint
+	}
+	return defaultEndpointScheme + endpoint
+}
 
 // logServiceClient log Service's client wrapper
 type logServiceClient interface {
 	// sendLogs send message to LogService
 	sendLogs(logs []*cls.Log) error
+	// shutdown flushes the logs buffered by the SDK and stops its background workers
+	shutdown(context.Context) error
 }
 
 type logServiceClientImpl struct {
-	clientInstance *common.Client
+	clientInstance *cls.AsyncProducerClient
 	logset         string
 	topic          string
-	hashkey        string
 	logger         *zap.Logger
 }
 
+// newProducerConfig builds the CLS producer configuration. The endpoint is taken from
+// Endpoint when set, otherwise it is derived from Region and the requested network type.
+// In both cases the endpoint ends up with an explicit scheme, defaulting to https://.
+func newProducerConfig(config *Config) *cls.AsyncProducerClientConfig {
+	producerConfig := cls.GetDefaultAsyncProducerClientConfig()
+	if config.Endpoint != "" {
+		producerConfig.Endpoint = ensureEndpointScheme(config.Endpoint)
+	} else {
+		networkType := cls.Extranet
+		if config.IsIntranet {
+			networkType = cls.Intranet
+		}
+		producerConfig.SetEndpointByRegionAndNetworkType(cls.Region(config.Region), networkType)
+		producerConfig.Endpoint = ensureEndpointScheme(producerConfig.Endpoint)
+	}
+
+	producerConfig.AccessKeyID = config.SecretID
+	producerConfig.AccessKeySecret = string(config.SecretKey)
+	return producerConfig
+}
+
 // newLogServiceClient Create Log Service client
-func newLogServiceClient(config *Config, logger *zap.Logger) logServiceClient {
-	credential := common.NewCredential(config.SecretID, string(config.SecretKey))
+func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, error) {
+	producerConfig := newProducerConfig(config)
+
+	producerInstance, err := cls.NewAsyncProducerClient(producerConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CLS LogService client: %w", err)
+	}
+	producerInstance.Start()
 
 	c := &logServiceClientImpl{
-		clientInstance: common.NewCommonClient(credential, config.Region, profile.NewClientProfile()),
+		clientInstance: producerInstance,
 		logset:         config.LogSet,
 		topic:          config.Topic,
 		logger:         logger,
 	}
 
-	logger.Info("Create LogService client success", zap.String("logset", config.LogSet), zap.String("topic", config.Topic))
-	return c
+	logger.Info("Create CLS LogService client success",
+		zap.String("endpoint", producerConfig.Endpoint),
+		zap.String("logset", config.LogSet),
+		zap.String("topic", config.Topic))
+	return c, nil
 }
 
-// sendLogs send message to LogService
+// sendLogs hands the logs over to the SDK, which takes care of batching, compression
+// and retries. The outcome of each batch is reported through the CallBack methods.
 func (c *logServiceClientImpl) sendLogs(logs []*cls.Log) error {
-	headers := map[string]string{
-		"X-CLS-TopicId": c.topic,
-		"X-CLS-HashKey": c.hashkey,
+	if len(logs) == 0 {
+		return nil
 	}
-	commpresstype := ""
+	return c.clientInstance.SendLogList(c.topic, logs, c)
+}
 
-	logGroup := cls.LogGroup{
-		Logs: logs,
+// shutdown flushes the logs buffered by the SDK and stops its background workers.
+func (c *logServiceClientImpl) shutdown(ctx context.Context) error {
+	ch := make(chan error)
+	go func() {
+		ch <- c.clientInstance.Close(shutdownTimeoutMs)
+	}()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-ch:
+		return err
 	}
-	logGroupList := cls.LogGroupList{
-		LogGroupList: []*cls.LogGroup{
-			&logGroup,
-		},
-	}
-	data, _ := pb.Marshal(&logGroupList)
+}
 
-	length := lz4.CompressBlockBound(len(data)) + 1
-	compressbody := make([]byte, length)
-	n, err := lz4.CompressBlock(data, compressbody, nil)
-	if err == nil && n > 0 {
-		commpresstype = "lz4"
-		data = compressbody[0:n]
-	}
-	headers["X-CLS-CompressType"] = commpresstype
+// Success log service send log success
+func (c *logServiceClientImpl) Success(result *cls.Result) {
+	c.logger.Debug("Send to CLS LogService success",
+		zap.String("logset", c.logset),
+		zap.String("topic", c.topic),
+		zap.String("request_id", result.GetRequestId()))
+}
 
-	request := tchttp.NewCommonRequest("cls", "2020-10-16", "UploadLog")
-	request.SetOctetStreamParameters(headers, data)
-
-	response := tchttp.NewCommonResponse()
-
-	return c.clientInstance.SendOctetStream(request, response)
+// Fail log service send log failed
+func (c *logServiceClientImpl) Fail(result *cls.Result) {
+	c.logger.Warn("Send to CLS LogService failed",
+		zap.String("logset", c.logset),
+		zap.String("topic", c.topic),
+		zap.String("code", result.GetErrorCode()),
+		zap.String("error_message", result.GetErrorMessage()),
+		zap.String("request_id", result.GetRequestId()))
 }
