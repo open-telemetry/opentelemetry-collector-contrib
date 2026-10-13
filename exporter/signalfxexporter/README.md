@@ -55,11 +55,9 @@ The following configuration options can also be configured:
 - `access_token_passthrough`: (default = `true`) Whether to use
   `"com.splunk.signalfx.access_token"` metric resource attribute, if any, as the
   SignalFx access token.  In either case this attribute will be dropped during
-  final translation, in this exporter only.  Intended to be used in tandem with
-  identical configuration option for [SignalFx
-  receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
-  origin for only this exporter, as others will reveal the organization access token
-  by not filtering the attribute.
+  final translation, in this exporter only. This preserves datapoint origin while
+  preventing other exporters from exposing the organization access token by forwarding
+  the attribute.
 - `exclude_metrics`: List of metric filters that will determine metrics to be
   excluded from sending to Signalfx backend. The filtering is applied after the default 
   translations controlled by `disable_default_translation_rules` option.
@@ -138,8 +136,8 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
-- `ingest_tls`: (no default) exposes a list of TLS settings to establish a secure connection with signafx receiver configured on another collector instance.
-  - `ca_file` needs to be set if the exporter's `ingest_url` is pointing to a signalfx receiver
+- `ingest_tls`: (no default) exposes a list of TLS settings for the SignalFx ingest endpoint.
+  - `ca_file` needs to be set if the exporter's `ingest_url` points to an endpoint
   with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
   Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration) 
   The following example instructs the signalfx exporter ingest client to use a custom `ca_file` to verify the server certificate.
@@ -254,17 +252,16 @@ exporters:
       batch:
 ```
 
-> :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
 
 ```yaml
 service:
   pipelines:
     metrics:
-      receivers: [signalfx]
+      receivers: [otlp]
       processors: [memory_limiter]
       exporters: [signalfx]
     logs:
-      receivers: [signalfx]
+      receivers: [otlp]
       processors: [memory_limiter]
       exporters: [signalfx]
     traces:

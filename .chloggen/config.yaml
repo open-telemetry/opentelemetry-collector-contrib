@@ -332,7 +332,6 @@ components:
     - receiver/redis
     - receiver/riak
     - receiver/saphana
-    - receiver/signalfx
     - receiver/skywalking
     - receiver/snmp
     - receiver/snowflake

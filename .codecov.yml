@@ -1081,10 +1081,6 @@ component_management:
     name: receiver_saphana
     paths:
     - receiver/saphanareceiver/**
-  - component_id: receiver_signalfx
-    name: receiver_signalfx
-    paths:
-    - receiver/signalfxreceiver/**
   - component_id: receiver_simpleprometheus
     name: receiver_simpleprometheus
     paths:
