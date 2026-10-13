@@ -49,8 +49,8 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
-	md, err := d.client.GetMetadata()
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	md, err := d.client.GetMetadataWithContext(ctx)
 	if err != nil || md == nil {
 		d.logger.Debug("Scaleway detector: not running on Scaleway or metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {

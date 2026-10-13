@@ -225,8 +225,11 @@ func TestTraceIntegrity(t *testing.T) {
 
 	mpe1.SetDecision(samplingpolicy.Sampled)
 
-	// Generate and deliver first span
-	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
+	// Generate and deliver first span. The processor moves spans out of its
+	// input, so hand it a copy and keep spans for comparison.
+	input := ptrace.NewTraces()
+	traces.CopyTo(input)
+	require.NoError(t, p.ConsumeTraces(t.Context(), input))
 
 	// The first tick won't do anything
 	controller.waitForTick()
@@ -323,6 +326,15 @@ func TestSplitResourceSpansByTrace(t *testing.T) {
 	require.Equal(t, 1, b.rss.ScopeSpans().Len())
 	require.Equal(t, "lib-a", b.rss.ScopeSpans().At(0).Scope().Name())
 	require.Equal(t, uInt64ToSpanID(2), b.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
+
+	// Spans are moved out of the source; the resource and scopes are copied.
+	for _, ss := range rss.ScopeSpans().All() {
+		for _, span := range ss.Spans().All() {
+			require.True(t, span.SpanID().IsEmpty())
+		}
+	}
+	require.Equal(t, "frontend", rss.Resource().Attributes().AsRaw()["service.name"])
+	require.Equal(t, "lib-a", rss.ScopeSpans().At(0).Scope().Name())
 }
 
 func TestSequentialTraceArrival(t *testing.T) {
@@ -408,6 +420,9 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		// Add the same traceId twice.
 		wg.Add(2)
 		concurrencyLimiter <- struct{}{}
+		// The processor moves spans out of its input, so each call needs its own copy.
+		dup := ptrace.NewTraces()
+		batch.CopyTo(dup)
 		go func(td ptrace.Traces) {
 			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			wg.Done()
@@ -418,7 +433,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			wg.Done()
 			<-concurrencyLimiter
-		}(batch)
+		}(dup)
 	}
 
 	wg.Wait()
@@ -470,12 +485,18 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
+			// The processor moves spans out of its input, so each call needs its own copy.
+			consume := func() {
+				input := ptrace.NewTraces()
+				td.CopyTo(input)
+				assert.NoError(t, sp.ConsumeTraces(t.Context(), input))
+			}
 			for range 10 {
-				assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+				consume()
 			}
 			controller.concurrentWithTick(func() {
 				for range 10 {
-					assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+					consume()
 				}
 			})
 			wg.Done()
@@ -611,7 +632,10 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			// until the time must have passed.
 			for time.Since(start) < 2*cfg.DecisionWait {
 				expectedSpans.Add(int64(batch.SpanCount()))
-				err := tsp.ConsumeTraces(t.Context(), batch)
+				// The processor moves spans out of its input, so each call needs its own copy.
+				input := ptrace.NewTraces()
+				batch.CopyTo(input)
+				err := tsp.ConsumeTraces(t.Context(), input)
 				if err != nil {
 					errCh <- err
 				}

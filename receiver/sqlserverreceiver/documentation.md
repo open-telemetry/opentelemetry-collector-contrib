@@ -48,7 +48,7 @@ Number of lock requests resulting in a wait.
 
 Average wait time for all lock requests that had to wait.
 
-This metric is only available when running on Windows.
+This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -76,7 +76,7 @@ This metric is only available when running on Windows.
 
 Number of lazy writes moving dirty pages to disk.
 
-This metric is only available when running on Windows.
+This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -100,7 +100,7 @@ Time a page will stay in the buffer pool.
 
 Number of physical database page operations issued.
 
-This metric is only available when running on Windows.
+This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -126,7 +126,7 @@ This metric is only available when running on Windows.
 
 Number of transactions started for the database (not including XTP-only transactions).
 
-This metric is only available when running on Windows.
+This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -176,7 +176,7 @@ This metric is only available when running on Windows.
 
 Total number of transaction log expansions for a database.
 
-This metric is only available when running on Windows.
+This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -1382,4 +1382,5 @@ top query
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
 | sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true | - | - |
+| sqlserver.db.edition | The edition of the SQL Server instance (e.g. "standard", "enterprise", "express"). | Str: ``standard``, ``enterprise``, ``express``, ``azure_sql_database``, ``managed_instance``, ``unknown`` | false | - | - |
 | sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
