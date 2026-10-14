@@ -254,6 +254,10 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordCPUMemoryMetrics(ctx)
 	case getSQLServerDiskIOQuery():
 		err = s.recordDiskIOMetrics(ctx)
+	case getSQLServerTempDBQuery():
+		err = s.recordTempDBMetrics(ctx)
+	case getSQLServerTempDBFileQuery():
+		err = s.recordTempDBFileMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -2811,6 +2815,109 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 			s.mb.RecordSqlserverDiskIoDataPoint(now, wBytes.(int64), metadata.AttributeDiskIoDirectionWrite, drive)
 		}
 
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+// recordTempDBMetrics records the single-row tempdb diagnostics: space usage by allocation
+// category, data-file count, pagelatch contention waiters, and allocation-page wait time.
+func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error {
+	const (
+		kbUserObjects     = "kb_user_objects"
+		kbInternalObjects = "kb_internal_objects"
+		dataFileCount     = "data_file_count"
+		pagelatchWaiters  = "pagelatch_waiters"
+		gamMs             = "gam_ms"
+		sgamMs            = "sgam_ms"
+		pfsMs             = "pfs_ms"
+		otherMs           = "other_ms"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		errs = append(errs,
+			s.mb.RecordSqlserverTempdbDataFilesCountDataPoint(now, row[dataFileCount]),
+			s.mb.RecordSqlserverTempdbContentionWaitersCountDataPoint(now, row[pagelatchWaiters]),
+		)
+
+		for _, w := range []struct {
+			col   string
+			value metadata.AttributeTempdbState
+		}{
+			{kbUserObjects, metadata.AttributeTempdbStateUserObjects},
+			{kbInternalObjects, metadata.AttributeTempdbStateInternalObjects},
+		} {
+			val, parseErr := retrieveInt(row, w.col)
+			if parseErr != nil {
+				errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", w.col, i, parseErr))
+				continue
+			}
+			s.mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(now, val.(int64), w.value)
+		}
+
+		for _, w := range []struct {
+			col   string
+			value metadata.AttributeSqlserverTempdbAllocationPageType
+		}{
+			{gamMs, metadata.AttributeSqlserverTempdbAllocationPageTypeGam},
+			{sgamMs, metadata.AttributeSqlserverTempdbAllocationPageTypeSgam},
+			{pfsMs, metadata.AttributeSqlserverTempdbAllocationPageTypePfs},
+			{otherMs, metadata.AttributeSqlserverTempdbAllocationPageTypeOther},
+		} {
+			val, parseErr := retrieveFloat(row, w.col)
+			if parseErr != nil {
+				errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", w.col, i, parseErr))
+				continue
+			}
+			s.mb.RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(now, val.(float64)/1e3, w.value)
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+// recordTempDBFileMetrics records one data point per tempdb data/log file.
+func (s *sqlServerScraperHelper) recordTempDBFileMetrics(ctx context.Context) error {
+	const (
+		fileID    = "file_id"
+		fileType  = "file_type"
+		sizeBytes = "size_bytes"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		idVal, parseErr := retrieveInt(row, fileID)
+		if parseErr != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", fileID, i, parseErr))
+			continue
+		}
+		errs = append(errs, s.mb.RecordSqlserverTempdbFileSizeDataPoint(now, row[sizeBytes], row[fileType], idVal.(int64)))
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 

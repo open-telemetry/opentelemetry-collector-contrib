@@ -372,6 +372,15 @@ attributes:
     description: Status of the session (e.g., running, sleeping).
     type: string
     requirement_level: recommended
+  sqlserver.tempdb.allocation.page_type:
+    description: TempDB allocation-page wait type.
+    type: string
+    requirement_level: recommended
+    enum: [gam, sgam, pfs, other]
+  sqlserver.tempdb.file.id:
+    description: Numeric identifier of the tempdb file.
+    type: int
+    requirement_level: recommended
   sqlserver.total_elapsed_time:
     description: Total elapsed time for completed executions of this plan, reported in delta seconds.
     type: double
@@ -462,7 +471,7 @@ attributes:
     description: The status of the tempdb space usage.
     type: string
     requirement_level: recommended
-    enum: [free, used]
+    enum: [free, used, user_objects, internal_objects]
   transition.direction:
     description: The direction of a superlatch transition.
     type: string
@@ -807,7 +816,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.space:
     enabled: false
-    description: Total free space in temporary DB.
+    description: TempDB space usage, broken down by state.
     stability: development
     unit: kBy
     sum:
@@ -1362,6 +1371,47 @@ metrics:
     gauge:
       value_type: double
     attributes: [task.result]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.tempdb.allocation.wait_time.total:
+    enabled: false
+    description: Cumulative wait time on tempdb allocation pages, broken down by page type.
+    stability: development
+    unit: s
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    attributes: [sqlserver.tempdb.allocation.page_type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.tempdb.contention.waiters.count:
+    enabled: false
+    description: Number of tempdb pagelatch wait types with at least one active waiter.
+    stability: development
+    unit: "{waiters}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.tempdb.data_files.count:
+    enabled: false
+    description: Number of tempdb data files configured on the instance.
+    stability: development
+    unit: "{files}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.tempdb.file.size:
+    enabled: false
+    description: Size of each tempdb data or log file.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [file_type, sqlserver.tempdb.file.id]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.delay:
     enabled: false

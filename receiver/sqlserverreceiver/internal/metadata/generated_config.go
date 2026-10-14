@@ -2631,6 +2631,143 @@ func (ms *SqlserverTaskRateMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.allocation.wait_time.total metric.
+type SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey string
+
+const (
+	SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKeySqlserverTempdbAllocationPageType SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey = "sqlserver.tempdb.allocation.page_type"
+)
+
+// SqlserverTempdbAllocationWaitTimeTotalMetricConfig provides config for the sqlserver.tempdb.allocation.wait_time.total metric.
+type SqlserverTempdbAllocationWaitTimeTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverTempdbAllocationWaitTimeTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverTempdbAllocationWaitTimeTotalMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKeySqlserverTempdbAllocationPageType:
+		default:
+			return fmt.Errorf("metric sqlserver.tempdb.allocation.wait_time.total doesn't have an attribute %v, valid attributes: [sqlserver.tempdb.allocation.page_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverTempdbContentionWaitersCountMetricConfig provides config for the sqlserver.tempdb.contention.waiters.count metric.
+type SqlserverTempdbContentionWaitersCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverTempdbContentionWaitersCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverTempdbDataFilesCountMetricConfig provides config for the sqlserver.tempdb.data_files.count metric.
+type SqlserverTempdbDataFilesCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverTempdbDataFilesCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverTempdbFileSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.file.size metric.
+type SqlserverTempdbFileSizeMetricAttributeKey string
+
+const (
+	SqlserverTempdbFileSizeMetricAttributeKeyFileType              SqlserverTempdbFileSizeMetricAttributeKey = "file_type"
+	SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID SqlserverTempdbFileSizeMetricAttributeKey = "sqlserver.tempdb.file.id"
+)
+
+// SqlserverTempdbFileSizeMetricConfig provides config for the sqlserver.tempdb.file.size metric.
+type SqlserverTempdbFileSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverTempdbFileSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverTempdbFileSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverTempdbFileSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID:
+		default:
+			return fmt.Errorf("metric sqlserver.tempdb.file.size doesn't have an attribute %v, valid attributes: [file_type, sqlserver.tempdb.file.id]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverTransactionDelayMetricConfig provides config for the sqlserver.transaction.delay metric.
 type SqlserverTransactionDelayMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -3055,6 +3192,10 @@ type MetricsConfig struct {
 	SqlserverTableCount                                   SqlserverTableCountMetricConfig                                   `mapstructure:"sqlserver.table.count"`
 	SqlserverTaskCount                                    SqlserverTaskCountMetricConfig                                    `mapstructure:"sqlserver.task.count"`
 	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
+	SqlserverTempdbAllocationWaitTimeTotal                SqlserverTempdbAllocationWaitTimeTotalMetricConfig                `mapstructure:"sqlserver.tempdb.allocation.wait_time.total"`
+	SqlserverTempdbContentionWaitersCount                 SqlserverTempdbContentionWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.contention.waiters.count"`
+	SqlserverTempdbDataFilesCount                         SqlserverTempdbDataFilesCountMetricConfig                         `mapstructure:"sqlserver.tempdb.data_files.count"`
+	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
 	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
@@ -3392,6 +3533,22 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskResult},
+		},
+		SqlserverTempdbAllocationWaitTimeTotal: SqlserverTempdbAllocationWaitTimeTotalMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey{SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKeySqlserverTempdbAllocationPageType},
+		},
+		SqlserverTempdbContentionWaitersCount: SqlserverTempdbContentionWaitersCountMetricConfig{
+			Enabled: false,
+		},
+		SqlserverTempdbDataFilesCount: SqlserverTempdbDataFilesCountMetricConfig{
+			Enabled: false,
+		},
+		SqlserverTempdbFileSize: SqlserverTempdbFileSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
 		},
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,

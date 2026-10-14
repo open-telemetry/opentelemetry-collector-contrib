@@ -1389,3 +1389,83 @@ EXEC sp_executesql @SqlStatement
 func getSQLServerDiskIOQuery() string {
 	return sqlServerDiskIOQuery
 }
+
+// sqlServerTempDBQuery returns a single row of tempdb diagnostics covering space usage,
+// data-file count, pagelatch waiters, and allocation-page wait time.
+const sqlServerTempDBQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.* metrics.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+;
+WITH
+file_space AS (
+	SELECT
+		CAST(SUM(user_object_reserved_page_count)     AS BIGINT) * 8 AS kb_user_objects,
+		CAST(SUM(internal_object_reserved_page_count) AS BIGINT) * 8 AS kb_internal_objects
+	FROM tempdb.sys.dm_db_file_space_usage WITH (NOLOCK)
+),
+files AS (
+	SELECT CAST(COUNT(*) AS BIGINT) AS data_file_count
+	FROM sys.master_files WITH (NOLOCK)
+	WHERE database_id = 2 AND type = 0
+),
+contention AS (
+	SELECT CAST(COUNT(*) AS BIGINT) AS pagelatch_waiters
+	FROM sys.dm_os_wait_stats WITH (NOLOCK)
+	WHERE wait_type IN ('PAGELATCH_IO','PAGELATCH_SH','PAGELATCH_EX','PAGELATCH_UP')
+	  AND waiting_tasks_count > 0
+),
+alloc AS (
+	SELECT
+		ISNULL((SELECT SUM(wait_time_ms) FROM sys.dm_os_wait_stats WITH (NOLOCK) WHERE wait_type LIKE '%GAM%'  AND wait_type NOT LIKE '%SGAM%'), 0) AS gam_ms,
+		ISNULL((SELECT SUM(wait_time_ms) FROM sys.dm_os_wait_stats WITH (NOLOCK) WHERE wait_type LIKE '%SGAM%'), 0) AS sgam_ms,
+		ISNULL((SELECT SUM(wait_time_ms) FROM sys.dm_os_wait_stats WITH (NOLOCK) WHERE wait_type LIKE '%PFS%'),  0) AS pfs_ms,
+		ISNULL((SELECT SUM(wait_time_ms) FROM sys.dm_os_wait_stats WITH (NOLOCK)
+		        WHERE wait_type LIKE '%ALLOCATION%'
+		          AND wait_type NOT LIKE '%GAM%'
+		          AND wait_type NOT LIKE '%SGAM%'
+		          AND wait_type NOT LIKE '%PFS%'), 0) AS other_ms
+)
+SELECT
+	'sqlserver_tempdb' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	file_space.kb_user_objects,
+	file_space.kb_internal_objects,
+	files.data_file_count,
+	contention.pagelatch_waiters,
+	alloc.gam_ms,
+	alloc.sgam_ms,
+	alloc.pfs_ms,
+	alloc.other_ms
+FROM file_space, files, contention, alloc
+`
+
+func getSQLServerTempDBQuery() string {
+	return sqlServerTempDBQuery
+}
+
+// sqlServerTempDBFileQuery returns one row per tempdb data/log file.
+const sqlServerTempDBFileQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.file.size.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	'sqlserver_tempdb_file' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(file_id AS BIGINT) AS [file_id],
+	CASE type WHEN 0 THEN 'data' WHEN 1 THEN 'log' ELSE 'other' END AS [file_type],
+	CAST(size AS BIGINT) * 8 * 1024 AS [size_bytes]
+FROM sys.master_files WITH (NOLOCK)
+WHERE database_id = 2 AND type IN (0, 1)
+`
+
+func getSQLServerTempDBFileQuery() string {
+	return sqlServerTempDBFileQuery
+}

@@ -52,6 +52,10 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseOperations.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbDataFilesCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbContentionWaitersCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbAllocationWaitTimeTotal.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDeadlockRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskOperations.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskIo.Enabled = enabled
@@ -375,6 +379,10 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedCPUMemory.yaml")
 				case getSQLServerDiskIOQuery():
 					expectedFile = filepath.Join("testdata", "expectedDiskIO.yaml")
+				case getSQLServerTempDBQuery():
+					expectedFile = filepath.Join("testdata", "expectedTempDB.yaml")
+				case getSQLServerTempDBFileQuery():
+					expectedFile = filepath.Join("testdata", "expectedTempDBFile.yaml")
 				}
 
 				// Uncomment line below to re-generate expected metrics.
@@ -1305,6 +1313,10 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("cpuMemoryQueryData.txt")
 	case getSQLServerDiskIOQuery():
 		queryResults, err = readFile("diskIOQueryData.txt")
+	case getSQLServerTempDBQuery():
+		queryResults, err = readFile("tempDBQueryData.txt")
+	case getSQLServerTempDBFileQuery():
+		queryResults, err = readFile("tempDBFileQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
@@ -2731,6 +2743,139 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 12, totalDP)
+}
+
+func TestRecordTempDBMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbDataFilesCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbContentionWaitersCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbAllocationWaitTimeTotal.Enabled = true
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
+
+	var tempDBScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerTempDBQuery() {
+			tempDBScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, tempDBScraper, "tempdb scraper should be present")
+
+	err := tempDBScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, tempDBScraper.Shutdown(t.Context()))
+
+	tempDBScraper.client = mockClient{
+		SQL: tempDBScraper.sqlQuery,
+	}
+
+	actualMetrics, err := tempDBScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// 2 tempdb.space states (user_objects, internal_objects) + 1 data-file count +
+	// 1 contention-waiters count + 4 allocation wait types = 8 data points
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				switch m.Name() {
+				case metadata.MetricsInfo.SqlserverDatabaseTempdbSpace.Name:
+					totalDP += m.Sum().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverTempdbDataFilesCount.Name:
+					totalDP += m.Gauge().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverTempdbContentionWaitersCount.Name:
+					totalDP += m.Gauge().DataPoints().Len()
+				case metadata.MetricsInfo.SqlserverTempdbAllocationWaitTimeTotal.Name:
+					totalDP += m.Sum().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 8, totalDP)
+}
+
+func TestRecordTempDBFileMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled = true
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
+
+	var tempDBFileScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerTempDBFileQuery() {
+			tempDBFileScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, tempDBFileScraper, "tempdb file scraper should be present")
+
+	err := tempDBFileScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, tempDBFileScraper.Shutdown(t.Context()))
+
+	tempDBFileScraper.client = mockClient{
+		SQL: tempDBFileScraper.sqlQuery,
+	}
+
+	actualMetrics, err := tempDBFileScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// 2 tempdb files (1 data, 1 log) = 2 data points
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				if m.Name() == metadata.MetricsInfo.SqlserverTempdbFileSize.Name {
+					totalDP += m.Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 2, totalDP)
+}
+
+func TestIsTempDBQueryEnabled(t *testing.T) {
+	assert.False(t, isTempDBQueryEnabled(nil))
+
+	metrics := &metadata.MetricsConfig{}
+	assert.False(t, isTempDBQueryEnabled(metrics))
+
+	metrics.SqlserverDatabaseTempdbSpace.Enabled = true
+	assert.True(t, isTempDBQueryEnabled(metrics))
+
+	metrics.SqlserverDatabaseTempdbSpace.Enabled = false
+	metrics.SqlserverTempdbDataFilesCount.Enabled = true
+	assert.True(t, isTempDBQueryEnabled(metrics))
+
+	metrics.SqlserverTempdbDataFilesCount.Enabled = false
+	metrics.SqlserverTempdbContentionWaitersCount.Enabled = true
+	assert.True(t, isTempDBQueryEnabled(metrics))
+
+	metrics.SqlserverTempdbContentionWaitersCount.Enabled = false
+	metrics.SqlserverTempdbAllocationWaitTimeTotal.Enabled = true
+	assert.True(t, isTempDBQueryEnabled(metrics))
 }
 
 func TestIsCPUMemoryQueryEnabled(t *testing.T) {

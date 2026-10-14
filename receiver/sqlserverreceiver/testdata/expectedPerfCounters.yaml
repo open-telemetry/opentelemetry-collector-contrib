@@ -2578,7 +2578,7 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total free space in temporary DB.
+          - description: TempDB space usage, broken down by state.
             name: sqlserver.database.tempdb.space
             sum:
               aggregationTemporality: 2

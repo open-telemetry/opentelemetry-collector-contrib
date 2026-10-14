@@ -98,6 +98,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.table.count"] = mb.metricSqlserverTableCount.config.AggregationStrategy
 			aggMap["sqlserver.task.count"] = mb.metricSqlserverTaskCount.config.AggregationStrategy
 			aggMap["sqlserver.task.rate"] = mb.metricSqlserverTaskRate.config.AggregationStrategy
+			aggMap["sqlserver.tempdb.allocation.wait_time.total"] = mb.metricSqlserverTempdbAllocationWaitTimeTotal.config.AggregationStrategy
+			aggMap["sqlserver.tempdb.file.size"] = mb.metricSqlserverTempdbFileSize.config.AggregationStrategy
 			aggMap["sqlserver.worker.request.count"] = mb.metricSqlserverWorkerRequestCount.config.AggregationStrategy
 			aggMap["sqlserver.worker.thread.count"] = mb.metricSqlserverWorkerThreadCount.config.AggregationStrategy
 
@@ -554,6 +556,30 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(ts, 1, AttributeSqlserverTempdbAllocationPageTypeGam)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(ts, 3, AttributeSqlserverTempdbAllocationPageTypeSgam)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(ts+1, 3, AttributeSqlserverTempdbAllocationPageTypeSgam)
+				assert.Equal(t, 2, mb.metricSqlserverTempdbAllocationWaitTimeTotal.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverTempdbContentionWaitersCountDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordSqlserverTempdbDataFilesCountDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordSqlserverTempdbFileSizeDataPoint(ts, "1", "file_type-val", 24)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverTempdbFileSizeDataPoint(ts, "3", "file_type-val-2", 25)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverTempdbFileSizeDataPoint(ts+1, "3", "file_type-val-2", 25)
+				assert.Equal(t, 2, mb.metricSqlserverTempdbFileSize.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
 			mb.RecordSqlserverTransactionDelayDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -653,6 +679,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverTableCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTaskCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTaskRate.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverTempdbAllocationWaitTimeTotal.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverTempdbFileSize.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverWorkerRequestCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverWorkerThreadCount.aggDataPoints)
 			}
@@ -1303,7 +1331,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.database.tempdb.space"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total free space in temporary DB.", mi.Description())
+						assert.Equal(t, "TempDB space usage, broken down by state.", mi.Description())
 						assert.Equal(t, "kBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1322,7 +1350,7 @@ func TestMetricsBuilder(t *testing.T) {
 						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
 						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
 						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
-						assert.Equal(t, "Total free space in temporary DB.", mi.Description())
+						assert.Equal(t, "TempDB space usage, broken down by state.", mi.Description())
 						assert.Equal(t, "kBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -2872,6 +2900,123 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
 						_, ok := dp.Attributes().Get("task.result")
+						assert.False(t, ok)
+					}
+				case "sqlserver.tempdb.allocation.wait_time.total":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.tempdb.allocation.wait_time.total"], "Found a duplicate in the metrics slice: sqlserver.tempdb.allocation.wait_time.total")
+						validatedMetrics["sqlserver.tempdb.allocation.wait_time.total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative wait time on tempdb allocation pages, broken down by page type.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						sqlserverTempdbAllocationPageTypeAttrVal, ok := dp.Attributes().Get("sqlserver.tempdb.allocation.page_type")
+						assert.True(t, ok)
+						assert.Equal(t, "gam", sqlserverTempdbAllocationPageTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.tempdb.allocation.wait_time.total"], "Found a duplicate in the metrics slice: sqlserver.tempdb.allocation.wait_time.total")
+						validatedMetrics["sqlserver.tempdb.allocation.wait_time.total"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Cumulative wait time on tempdb allocation pages, broken down by page type.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.tempdb.allocation.wait_time.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("sqlserver.tempdb.allocation.page_type")
+						assert.False(t, ok)
+					}
+				case "sqlserver.tempdb.contention.waiters.count":
+					assert.False(t, validatedMetrics["sqlserver.tempdb.contention.waiters.count"], "Found a duplicate in the metrics slice: sqlserver.tempdb.contention.waiters.count")
+					validatedMetrics["sqlserver.tempdb.contention.waiters.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of tempdb pagelatch wait types with at least one active waiter.", mi.Description())
+					assert.Equal(t, "{waiters}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.tempdb.data_files.count":
+					assert.False(t, validatedMetrics["sqlserver.tempdb.data_files.count"], "Found a duplicate in the metrics slice: sqlserver.tempdb.data_files.count")
+					validatedMetrics["sqlserver.tempdb.data_files.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of tempdb data files configured on the instance.", mi.Description())
+					assert.Equal(t, "{files}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.tempdb.file.size":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.tempdb.file.size"], "Found a duplicate in the metrics slice: sqlserver.tempdb.file.size")
+						validatedMetrics["sqlserver.tempdb.file.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Size of each tempdb data or log file.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						fileTypeAttrVal, ok := dp.Attributes().Get("file_type")
+						assert.True(t, ok)
+						assert.Equal(t, "file_type-val", fileTypeAttrVal.Str())
+						sqlserverTempdbFileIDAttrVal, ok := dp.Attributes().Get("sqlserver.tempdb.file.id")
+						assert.True(t, ok)
+						assert.EqualValues(t, 24, sqlserverTempdbFileIDAttrVal.Int())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.tempdb.file.size"], "Found a duplicate in the metrics slice: sqlserver.tempdb.file.size")
+						validatedMetrics["sqlserver.tempdb.file.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Size of each tempdb data or log file.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.tempdb.file.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("file_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("sqlserver.tempdb.file.id")
 						assert.False(t, ok)
 					}
 				case "sqlserver.transaction.delay":

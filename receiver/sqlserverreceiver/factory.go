@@ -112,6 +112,14 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerDiskIOQuery())
 	}
 
+	if isTempDBQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerTempDBQuery())
+	}
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled {
+		queries = append(queries, getSQLServerTempDBFileQuery())
+	}
+
 	return queries
 }
 
@@ -622,6 +630,17 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverDiskOperations.Enabled ||
 		metrics.SqlserverDiskIo.Enabled
+}
+
+func isTempDBQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverDatabaseTempdbSpace.Enabled ||
+		metrics.SqlserverTempdbDataFilesCount.Enabled ||
+		metrics.SqlserverTempdbContentionWaitersCount.Enabled ||
+		metrics.SqlserverTempdbAllocationWaitTimeTotal.Enabled
 }
 
 func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {
