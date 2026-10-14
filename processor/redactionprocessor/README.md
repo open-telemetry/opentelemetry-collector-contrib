@@ -119,6 +119,12 @@ processors:
       # When enabled, span names containing "/" will be sanitized to reduce cardinality
       # Set to false to disable span name sanitization while keeping attribute sanitization active
       sanitize_span_name: true
+    # skip_conditions is a list of OTTL-style expressions used to bypass redaction
+    # for matching telemetry. Conditions may reference resource, scope, span, spanevent,
+    # log, metric, or datapoint paths when those contexts exist in the current signal.
+    skip_conditions:
+      - resource.attributes["service.name"] == "payments"
+      - spanevent.name == "grpc.timeout"
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration

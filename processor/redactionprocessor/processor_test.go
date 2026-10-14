@@ -14,6 +14,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -34,6 +36,14 @@ type testConfig struct {
 	allowedValues map[string]pcommon.Value
 	logBody       *pcommon.Value
 	config        *Config
+}
+
+func newTestTelemetrySettings(tb testing.TB) component.TelemetrySettings {
+	tb.Helper()
+
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zaptest.NewLogger(tb)
+	return settings
 }
 
 // TestRedactUnknownAttributes validates that the processor deletes span
@@ -1081,7 +1091,7 @@ func TestBlockedValuesAppliedInConfigOrder(t *testing.T) {
 					AllowAllKeys:  true,
 					BlockedValues: tt.blockedValues,
 				}
-				processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+				processor, err := newRedaction(t.Context(), config, newTestTelemetrySettings(t))
 				require.NoError(t, err)
 
 				attrs := pcommon.NewMap()
@@ -1107,7 +1117,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		Summary:       "debug",
 	}
-	processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), config, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	attrs := pcommon.NewMap()
@@ -1161,7 +1171,7 @@ func TestSummaryAcrossChainedProcessors(t *testing.T) {
 				// Three processors with the identical configuration, as a
 				// chained pipeline would apply them.
 				for pass := 1; pass <= 3; pass++ {
-					processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+					processor, err := newRedaction(t.Context(), config, newTestTelemetrySettings(t))
 					require.NoError(t, err)
 					processor.processAttrs(t.Context(), attrs)
 				}
@@ -1193,7 +1203,7 @@ func TestSummaryAcrossChainedProcessors(t *testing.T) {
 		// Each processor redacts a different key, so the summary describes
 		// both by the time the data leaves the chain.
 		for _, allowed := range [][]string{{"keep", "first"}, {"keep"}} {
-			processor, err := newRedaction(t.Context(), &Config{AllowedKeys: allowed, Summary: debug}, zaptest.NewLogger(t))
+			processor, err := newRedaction(t.Context(), &Config{AllowedKeys: allowed, Summary: debug}, newTestTelemetrySettings(t))
 			require.NoError(t, err)
 			processor.processAttrs(t.Context(), attrs)
 		}
@@ -1214,7 +1224,7 @@ func TestSummaryAcrossChainedProcessors(t *testing.T) {
 			AllowedKeys:   []string{"email"},
 			AllowedValues: []string{`.+@mycompany\.com`},
 			Summary:       debug,
-		}, zaptest.NewLogger(t))
+		}, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		upstream.processAttrs(t.Context(), attrs)
 		_, found := attrs.Get(redactionAllowedKeys)
@@ -1225,7 +1235,7 @@ func TestSummaryAcrossChainedProcessors(t *testing.T) {
 		downstream, err := newRedaction(t.Context(), &Config{
 			AllowedKeys: []string{"email"},
 			Summary:     debug,
-		}, zaptest.NewLogger(t))
+		}, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		downstream.processAttrs(t.Context(), attrs)
 
@@ -1321,7 +1331,7 @@ func TestDiagnosticAttrsSurviveReentry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := reentryConfig()
 			tt.mutate(config)
-			processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+			processor, err := newRedaction(t.Context(), config, newTestTelemetrySettings(t))
 			require.NoError(t, err)
 
 			logs, record := reentryRecord()
@@ -1438,7 +1448,7 @@ func TestDiagnosticAttrsStrippedWhenSilent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			upstream, err := newRedaction(t.Context(), reentryConfig(), zaptest.NewLogger(t))
+			upstream, err := newRedaction(t.Context(), reentryConfig(), newTestTelemetrySettings(t))
 			require.NoError(t, err)
 
 			logs, record := reentryRecord()
@@ -1456,7 +1466,7 @@ func TestDiagnosticAttrsStrippedWhenSilent(t *testing.T) {
 				}
 			}
 
-			egress, err := newRedaction(t.Context(), tt.egress, zaptest.NewLogger(t))
+			egress, err := newRedaction(t.Context(), tt.egress, newTestTelemetrySettings(t))
 			require.NoError(t, err)
 			_, err = egress.processLogs(t.Context(), logs)
 			require.NoError(t, err)
@@ -1486,7 +1496,7 @@ func TestDiagnosticAttrsStrippedWhenSilent(t *testing.T) {
 // attributes, so such a key in a body carries user data and must not inherit
 // the exemption that the attributes get.
 func TestSummaryAttrNamesInLogBodyAreUserData(t *testing.T) {
-	processor, err := newRedaction(t.Context(), &Config{AllowedKeys: []string{"id"}, Summary: debug}, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), &Config{AllowedKeys: []string{"id"}, Summary: debug}, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	logs := plog.NewLogs()
@@ -1665,7 +1675,7 @@ func TestSpanEventRedacted(t *testing.T) {
 		BlockedValues: []string{"xyzxyz"},
 		Summary:       "debug",
 	}
-	processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), config, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	outTraces, err := processor.processTraces(t.Context(), inBatch)
@@ -1882,7 +1892,7 @@ func runTest(
 
 	// test
 	ctx := t.Context()
-	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
+	processor, err := newRedaction(ctx, cfg.config, newTestTelemetrySettings(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processTraces(ctx, inBatch)
 
@@ -1954,7 +1964,7 @@ func runLogsTest(
 
 	// test
 	ctx := t.Context()
-	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
+	processor, err := newRedaction(ctx, cfg.config, newTestTelemetrySettings(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processLogs(ctx, inBatch)
 
@@ -2030,13 +2040,297 @@ func runMetricsTest(
 
 	// test
 	ctx := t.Context()
-	processor, err := newRedaction(ctx, cfg.config, zaptest.NewLogger(t))
+	processor, err := newRedaction(ctx, cfg.config, newTestTelemetrySettings(t))
 	assert.NoError(t, err)
 	outBatch, err := processor.processMetrics(ctx, inBatch)
 
 	// verify
 	assert.NoError(t, err)
 	return outBatch
+}
+
+func TestFilterSkipConditionsForSignal(t *testing.T) {
+	conditions := []string{
+		`resource.attributes["service.name"] == "payments"`,
+		`spanevent.name == "grpc.timeout"`,
+		`log.attributes["skip"] == "true"`,
+	}
+
+	filtered := filterSkipConditionsForSignal(conditions, map[string]struct{}{
+		"resource": {},
+		"log":      {},
+	})
+
+	assert.Equal(t, []string{
+		`resource.attributes["service.name"] == "payments"`,
+		`log.attributes["skip"] == "true"`,
+	}, filtered)
+	assert.True(t, skipConditionUsesUnsupportedContext(`spanevent.name == "grpc.timeout"`, map[string]struct{}{"resource": {}}))
+	assert.False(t, skipConditionUsesUnsupportedContext(`attributes["skip"] == "true"`, map[string]struct{}{"span": {}}))
+}
+
+func TestSkipConditionsTraceResource(t *testing.T) {
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "payments")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().Attributes().PutStr("scope.secret", "top-secret")
+	span := ss.Spans().AppendEmpty()
+	span.Attributes().PutStr("span.secret", "top-secret")
+
+	processor, err := newRedaction(t.Context(), &Config{
+		SkipConditions: []string{`resource.attributes["service.name"] == "payments"`},
+	}, newTestTelemetrySettings(t))
+	require.NoError(t, err)
+
+	out, err := processor.processTraces(t.Context(), inBatch)
+	require.NoError(t, err)
+
+	resourceAttrs := out.ResourceSpans().At(0).Resource().Attributes()
+	scopeAttrs := out.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes()
+	spanAttrs := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	serviceName, _ := resourceAttrs.Get("service.name")
+	scopeSecret, _ := scopeAttrs.Get("scope.secret")
+	spanSecret, _ := spanAttrs.Get("span.secret")
+	assert.Equal(t, "payments", serviceName.Str())
+	assert.Equal(t, "top-secret", scopeSecret.Str())
+	assert.Equal(t, "top-secret", spanSecret.Str())
+}
+
+func TestSkipConditionsTraceSpanAndSpanEvent(t *testing.T) {
+	t.Run("span", func(t *testing.T) {
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("resource.secret", "hide")
+		ss := rs.ScopeSpans().AppendEmpty()
+		ss.Scope().Attributes().PutStr("scope.secret", "hide")
+		span := ss.Spans().AppendEmpty()
+		span.Attributes().PutStr("skip", "true")
+		span.Attributes().PutStr("span.secret", "hide")
+		event := span.Events().AppendEmpty()
+		event.SetName("grpc.timeout")
+		event.Attributes().PutStr("event.secret", "hide")
+
+		processor, err := newRedaction(t.Context(), &Config{
+			SkipConditions: []string{`span.attributes["skip"] == "true"`},
+		}, newTestTelemetrySettings(t))
+		require.NoError(t, err)
+
+		out, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		assert.Equal(t, 0, out.ResourceSpans().At(0).Resource().Attributes().Len())
+		assert.Equal(t, 0, out.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Len())
+		spanAttrs := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+		eventAttrs := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes()
+		assert.Equal(t, "hide", spanAttrs.AsRaw()["span.secret"])
+		assert.Equal(t, "hide", eventAttrs.AsRaw()["event.secret"])
+	})
+
+	t.Run("spanevent", func(t *testing.T) {
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ss := rs.ScopeSpans().AppendEmpty()
+		span := ss.Spans().AppendEmpty()
+		span.Attributes().PutStr("span.secret", "hide")
+		skippedEvent := span.Events().AppendEmpty()
+		skippedEvent.SetName("grpc.timeout")
+		skippedEvent.Attributes().PutStr("event.secret", "hide")
+		processedEvent := span.Events().AppendEmpty()
+		processedEvent.SetName("other")
+		processedEvent.Attributes().PutStr("event.secret", "hide")
+
+		processor, err := newRedaction(t.Context(), &Config{
+			SkipConditions: []string{`spanevent.name == "grpc.timeout"`},
+		}, newTestTelemetrySettings(t))
+		require.NoError(t, err)
+
+		out, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		assert.Equal(t, 0, out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Len())
+		firstEventAttrs := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes()
+		secondEventAttrs := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(1).Attributes()
+		assert.Equal(t, "hide", firstEventAttrs.AsRaw()["event.secret"])
+		assert.Equal(t, 0, secondEventAttrs.Len())
+	})
+}
+
+func TestSkipConditionsLogs(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			SkipConditions: []string{
+				`spanevent.name == "grpc.timeout"`,
+				`log.attributes["skip"] == "true"`,
+			},
+		},
+		allowed: map[string]pcommon.Value{
+			"skip": pcommon.NewValueStr("true"),
+		},
+		masked: map[string]pcommon.Value{
+			"log.secret": pcommon.NewValueStr("hide"),
+		},
+	}
+
+	out := runLogsTest(t, tc)
+	resourceAttrs := out.ResourceLogs().At(0).Resource().Attributes()
+	scopeAttrs := out.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes()
+	logAttrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	bodyAttrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map()
+
+	assert.Equal(t, 0, resourceAttrs.Len())
+	assert.Equal(t, 0, scopeAttrs.Len())
+	assert.Equal(t, "hide", logAttrs.AsRaw()["log.secret"])
+	assert.Equal(t, "hide", bodyAttrs.AsRaw()["log.secret"])
+}
+
+func TestSkipConditionsMetrics(t *testing.T) {
+	tests := []pmetric.MetricType{
+		pmetric.MetricTypeGauge,
+		pmetric.MetricTypeSum,
+		pmetric.MetricTypeHistogram,
+		pmetric.MetricTypeExponentialHistogram,
+		pmetric.MetricTypeSummary,
+	}
+
+	for _, metricType := range tests {
+		t.Run(metricType.String(), func(t *testing.T) {
+			tc := testConfig{
+				config: &Config{
+					SkipConditions: []string{`datapoint.attributes["skip"] == "true"`},
+				},
+				allowed: map[string]pcommon.Value{
+					"skip": pcommon.NewValueStr("true"),
+				},
+				masked: map[string]pcommon.Value{
+					"metric.secret": pcommon.NewValueStr("hide"),
+				},
+			}
+
+			out := runMetricsTest(t, tc, metricType)
+			resourceAttrs := out.ResourceMetrics().At(0).Resource().Attributes()
+			scopeAttrs := out.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes()
+			assert.Equal(t, 0, resourceAttrs.Len())
+			assert.Equal(t, 0, scopeAttrs.Len())
+
+			var attrs pcommon.Map
+			switch metricType {
+			case pmetric.MetricTypeGauge:
+				attrs = out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes()
+			case pmetric.MetricTypeSum:
+				attrs = out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes()
+			case pmetric.MetricTypeHistogram:
+				attrs = out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes()
+			case pmetric.MetricTypeExponentialHistogram:
+				attrs = out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes()
+			case pmetric.MetricTypeSummary:
+				attrs = out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes()
+			default:
+				t.Fatal("unexpected metric type")
+			}
+			assert.Equal(t, "hide", attrs.AsRaw()["metric.secret"])
+		})
+	}
+}
+
+func TestSkipConditionsMetricLevel(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			SkipConditions: []string{`metric.description == "first-batch-first-metric"`},
+		},
+		masked: map[string]pcommon.Value{
+			"metric.secret": pcommon.NewValueStr("hide"),
+		},
+	}
+
+	out := runMetricsTest(t, tc, pmetric.MetricTypeGauge)
+	attrs := out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes()
+	assert.Equal(t, "hide", attrs.AsRaw()["metric.secret"])
+}
+
+func TestSkipConditionHelpers(t *testing.T) {
+	settings := newTestTelemetrySettings(t)
+
+	traceSkipper, err := newTraceSkipper(nil, settings)
+	require.NoError(t, err)
+	require.Nil(t, traceSkipper)
+
+	logSkipper, err := newLogSkipper(nil, settings)
+	require.NoError(t, err)
+	require.Nil(t, logSkipper)
+
+	metricSkipper, err := newMetricSkipper(nil, settings)
+	require.NoError(t, err)
+	require.Nil(t, metricSkipper)
+
+	require.Nil(t, newTraceScopeSequence(nil, settings))
+	require.Nil(t, newLogScopeSequence(nil, settings))
+	require.Nil(t, newMetricScopeSequence(nil, settings))
+
+	_, err = newTraceSkipper([]string{`span.attributes[`}, settings)
+	require.Error(t, err)
+	_, err = newLogSkipper([]string{`log.attributes[`}, settings)
+	require.Error(t, err)
+	_, err = newMetricSkipper([]string{`metric.name == `}, settings)
+	require.Error(t, err)
+
+	td := ptrace.NewTraces()
+	traceRS := td.ResourceSpans().AppendEmpty()
+	traceRS.Resource().Attributes().PutStr("service.name", "payments")
+	traceSS := traceRS.ScopeSpans().AppendEmpty()
+	traceSS.Scope().SetName("first-library")
+	traceSpan := traceSS.Spans().AppendEmpty()
+	traceSpan.Attributes().PutStr("span.attr", "value")
+	traceEvent := traceSpan.Events().AppendEmpty()
+	traceEvent.SetName("event")
+
+	traceSkipper, err = newTraceSkipper([]string{`scope.name == "first-library"`}, settings)
+	require.NoError(t, err)
+	skip, err := traceSkipper.skipScope(t.Context(), traceRS, traceSS)
+	require.NoError(t, err)
+	assert.True(t, skip)
+
+	ld := plog.NewLogs()
+	logRL := ld.ResourceLogs().AppendEmpty()
+	logRL.Resource().Attributes().PutStr("service.name", "payments")
+	logSL := logRL.ScopeLogs().AppendEmpty()
+	logSL.Scope().SetName("first-library")
+	logRecord := logSL.LogRecords().AppendEmpty()
+	logRecord.Attributes().PutStr("log.attr", "value")
+
+	logSkipper, err = newLogSkipper([]string{
+		`resource.attributes["service.name"] == "payments"`,
+		`scope.name == "first-library"`,
+	}, settings)
+	require.NoError(t, err)
+	skip, err = logSkipper.skipResource(t.Context(), logRL)
+	require.NoError(t, err)
+	assert.True(t, skip)
+	skip, err = logSkipper.skipScope(t.Context(), logRL, logSL)
+	require.NoError(t, err)
+	assert.True(t, skip)
+
+	md := pmetric.NewMetrics()
+	metricRM := md.ResourceMetrics().AppendEmpty()
+	metricRM.Resource().Attributes().PutStr("service.name", "payments")
+	metricSM := metricRM.ScopeMetrics().AppendEmpty()
+	metricSM.Scope().SetName("first-library")
+	metric := metricSM.Metrics().AppendEmpty()
+	metric.SetName("requests")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("dp.attr", "value")
+
+	metricSkipper, err = newMetricSkipper([]string{
+		`resource.attributes["service.name"] == "payments"`,
+		`scope.name == "first-library"`,
+	}, settings)
+	require.NoError(t, err)
+	skip, err = metricSkipper.skipResource(t.Context(), metricRM)
+	require.NoError(t, err)
+	assert.True(t, skip)
+	skip, err = metricSkipper.skipScope(t.Context(), metricRM, metricSM)
+	require.NoError(t, err)
+	assert.True(t, skip)
 }
 
 // BenchmarkRedactSummaryDebug measures the performance impact of running the processor
@@ -2064,7 +2358,7 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 		"credit_card": pcommon.NewValueStr("would be nice"),
 	}
 	ctx := b.Context()
-	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
+	processor, _ := newRedaction(ctx, config, newTestTelemetrySettings(b))
 
 	for b.Loop() {
 		runBenchmark(allowed, redacted, masked, ignored, processor)
@@ -2095,7 +2389,7 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 		"also_safe":      pcommon.NewValueStr("suspicious 4111111111111113"),
 	}
 	ctx := b.Context()
-	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
+	processor, _ := newRedaction(ctx, config, newTestTelemetrySettings(b))
 
 	for b.Loop() {
 		runBenchmark(allowed, nil, masked, ignored, processor)
@@ -2121,7 +2415,7 @@ func BenchmarkMaskBlockedKeyPatterns(b *testing.B) {
 		"name":     pcommon.NewValueStr("placeholder"),
 	}
 	ctx := b.Context()
-	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
+	processor, _ := newRedaction(ctx, config, newTestTelemetrySettings(b))
 
 	b.ReportAllocs()
 	for b.Loop() {
@@ -2369,7 +2663,7 @@ func TestDBObfuscationUsesDBSystemForAttributes(t *testing.T) {
 	redisSpan.Attributes().PutStr("db.system", "redis")
 	redisSpan.Attributes().PutStr("db.statement", "SET user:12345 my-secret")
 
-	processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	outTraces, err := processor.processTraces(t.Context(), inBatch)
@@ -2409,7 +2703,7 @@ func TestDBObfuscationUsesDBSystemNameForAttributes(t *testing.T) {
 	sqlSpan.Attributes().PutStr("db.system.name", "postgresql")
 	sqlSpan.Attributes().PutStr("db.statement", "SELECT email FROM users WHERE email = 'foo@bar.com'")
 
-	processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	outTraces, err := processor.processTraces(t.Context(), inBatch)
@@ -2435,7 +2729,7 @@ func TestDBObfuscationConcurrentProcessingUsesLocalDBSystem(t *testing.T) {
 		},
 	}
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	const workers = 16
@@ -2521,7 +2815,7 @@ func TestDBObfuscationAttributesWithoutDBSystemDoesNothing(t *testing.T) {
 	redisSpan.SetKind(ptrace.SpanKindClient)
 	redisSpan.Attributes().PutStr("db.statement", "SET user:999 secret")
 
-	processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	outTraces, err := processor.processTraces(t.Context(), inBatch)
@@ -2551,7 +2845,7 @@ func TestLogAttributesObfuscationWithoutDBSystem(t *testing.T) {
 
 	cfg.DBSanitizer.AllowFallbackWithoutSystem = true
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	logs := plog.NewLogs()
@@ -2579,7 +2873,7 @@ func TestMetricAttributesDBObfuscationWithSystem(t *testing.T) {
 		},
 	}
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	metrics := pmetric.NewMetrics()
@@ -2612,7 +2906,7 @@ func TestMetricAttributesDBObfuscationWithoutSystem(t *testing.T) {
 		},
 	}
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
 	metrics := pmetric.NewMetrics()
@@ -2651,7 +2945,7 @@ func TestSanitizeSpanNameFlag(t *testing.T) {
 		span.SetName("/users/123/profile")
 		span.SetKind(ptrace.SpanKindClient)
 
-		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		outTraces, err := processor.processTraces(t.Context(), inBatch)
 		require.NoError(t, err)
@@ -2679,7 +2973,7 @@ func TestSanitizeSpanNameFlag(t *testing.T) {
 		span.SetName("/users/123/profile")
 		span.SetKind(ptrace.SpanKindClient)
 
-		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		outTraces, err := processor.processTraces(t.Context(), inBatch)
 		require.NoError(t, err)
@@ -2707,7 +3001,7 @@ func TestSanitizeSpanNameFlag(t *testing.T) {
 		span.SetName("/users/123/profile")
 		span.SetKind(ptrace.SpanKindClient)
 
-		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		outTraces, err := processor.processTraces(t.Context(), inBatch)
 		require.NoError(t, err)
@@ -2736,7 +3030,7 @@ func TestSanitizeSpanNameFlag(t *testing.T) {
 		span.SetKind(ptrace.SpanKindClient)
 		span.Attributes().PutStr("db.system", "mysql")
 
-		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		outTraces, err := processor.processTraces(t.Context(), inBatch)
 		require.NoError(t, err)
@@ -2766,7 +3060,7 @@ func TestSanitizeSpanNameFlag(t *testing.T) {
 		span.SetName("SELECT * FROM users WHERE id = 123")
 		span.SetKind(ptrace.SpanKindClient)
 
-		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		outTraces, err := processor.processTraces(t.Context(), inBatch)
 		require.NoError(t, err)
@@ -2797,7 +3091,7 @@ func TestSanitizeSpanNameFlag(t *testing.T) {
 		span.SetKind(ptrace.SpanKindClient)
 		span.Attributes().PutStr("db.system", "mysql")
 
-		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		outTraces, err := processor.processTraces(t.Context(), inBatch)
 		require.NoError(t, err)
@@ -2832,7 +3126,7 @@ func TestSanitizeSpanNameFlag(t *testing.T) {
 		span.SetName("/api/users/123")
 		span.SetKind(ptrace.SpanKindClient)
 
-		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		processor, err := newRedaction(t.Context(), tc.config, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 		outTraces, err := processor.processTraces(t.Context(), inBatch)
 		require.NoError(t, err)
@@ -2858,7 +3152,7 @@ func TestURLSanitizationOnAttributes(t *testing.T) {
 	span.SetName("test-span")
 	span.Attributes().PutStr("http.url", "/api/users/12345/profile")
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 	outTraces, err := processor.processTraces(t.Context(), inBatch)
 	require.NoError(t, err)
@@ -2886,7 +3180,7 @@ func TestDBObfuscationOnLogBody(t *testing.T) {
 	logRecord := ils.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("SELECT password FROM users WHERE id = 42")
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 	outLogs, err := processor.processLogs(t.Context(), inLogs)
 	require.NoError(t, err)
@@ -2909,7 +3203,7 @@ func TestURLSanitizationOnLogBody(t *testing.T) {
 	logRecord := ils.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("/api/orders/12345/details")
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 	outLogs, err := processor.processLogs(t.Context(), inLogs)
 	require.NoError(t, err)
@@ -2937,7 +3231,7 @@ func TestDBObfuscationErrorInAttribute(t *testing.T) {
 	span.Attributes().PutStr("db.system", "mysql")
 	span.Attributes().PutStr("db.statement", "SELECT * FROM users WHERE id = 123")
 
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	processor, err := newRedaction(t.Context(), cfg, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 	outTraces, err := processor.processTraces(t.Context(), inBatch)
 	require.NoError(t, err)
