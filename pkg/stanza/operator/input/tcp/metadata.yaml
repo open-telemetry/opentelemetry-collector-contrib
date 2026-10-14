@@ -3,7 +3,10 @@ type: tcp_input
 status:
   class: pkg
   stability:
-    unmaintained: [logs]
+    beta: [logs]
+  codeowners:
+    active: [VihasMakwana]
+
 
 telemetry:
   metrics:
