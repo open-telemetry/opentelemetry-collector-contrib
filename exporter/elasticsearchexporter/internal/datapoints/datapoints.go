@@ -20,6 +20,15 @@ const (
 	DynamicTemplateModeECS
 )
 
+type HistogramMapping int
+
+const (
+	HistogramMappingTDigest HistogramMapping = iota
+	HistogramMappingRaw
+	HistogramMappingExponential
+	HistogramMappingAggregateMetricDouble
+)
+
 // DataPoint is an interface that allows specifying behavior for each type of data point
 type DataPoint interface {
 	Timestamp() pcommon.Timestamp
