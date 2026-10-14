@@ -5,6 +5,7 @@ package k8seventsreceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,6 +34,7 @@ func TestDefaultConfig(t *testing.T) {
 			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
+		CacheSyncTimeout: 10 * time.Second,
 	}, rCfg)
 }
 
