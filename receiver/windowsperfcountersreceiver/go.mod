@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/window
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.162.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.162.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.162.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.163.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.69.0
 	go.opentelemetry.io/collector/component/componenttest v0.163.0
