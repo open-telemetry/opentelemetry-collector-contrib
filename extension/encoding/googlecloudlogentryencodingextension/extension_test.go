@@ -243,6 +243,28 @@ func TestUnmarshalLogsInvalidTraceAndSpanID(t *testing.T) {
 	}
 }
 
+func TestUnmarshalLogsInvalidRequestURL(t *testing.T) {
+	t.Parallel()
+
+	extension := newTestExtension(t, Config{
+		HandleJSONPayloadAs:  HandleAsJSON,
+		HandleProtoPayloadAs: HandleAsJSON,
+	})
+	line := `{"httpRequest":{"protocol":"HTTP/1.1","remoteIp":"192.0.2.1","requestMethod":"GET","requestUrl":"https://example.com/x/%u2028foo","status":400},"jsonPayload":{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","statusDetails":"response_sent_by_backend"},"logName":"projects/example-project/logs/requests","resource":{"type":"http_load_balancer"},"timestamp":"2026-10-14T11:46:14.764182Z"}`
+	logs, err := extension.UnmarshalLogs([]byte(line))
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	urlFull, ok := attrs.Get("url.full")
+	require.True(t, ok)
+	require.Equal(t, "https://example.com/x/%u2028foo", urlFull.Str())
+	for _, key := range []string{"url.path", "url.query", "url.domain"} {
+		_, ok := attrs.Get(key)
+		require.False(t, ok, key)
+	}
+}
+
 func TestPayloads(t *testing.T) {
 	t.Parallel()
 

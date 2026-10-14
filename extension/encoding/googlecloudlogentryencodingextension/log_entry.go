@@ -225,13 +225,12 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 
 	if req.RequestURL != "" {
 		attributes.PutStr(string(conventions.URLFullKey), req.RequestURL)
-		u, err := url.Parse(req.RequestURL)
-		if err != nil {
-			return fmt.Errorf("failed to parse request url %q: %w", req.RequestURL, err)
+		// requestUrl is client-controlled and may not parse.
+		if u, err := url.Parse(req.RequestURL); err == nil {
+			shared.PutStr(string(conventions.URLPathKey), u.Path, attributes)
+			shared.PutStr(string(conventions.URLQueryKey), u.RawQuery, attributes)
+			shared.PutStr(string(conventions.URLDomainKey), u.Host, attributes)
 		}
-		shared.PutStr(string(conventions.URLPathKey), u.Path, attributes)
-		shared.PutStr(string(conventions.URLQueryKey), u.RawQuery, attributes)
-		shared.PutStr(string(conventions.URLDomainKey), u.Host, attributes)
 	}
 
 	if req.Protocol != "" {
