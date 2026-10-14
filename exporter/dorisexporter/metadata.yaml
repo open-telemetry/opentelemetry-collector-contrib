@@ -10,3 +10,6 @@ status:
   codeowners:
     active: [joker-star-l]
     emeritus: [atoulme]
+
+sending_queue:
+  support: default
