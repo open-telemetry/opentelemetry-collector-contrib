@@ -74,8 +74,14 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) error 
 			&metricModelSummary{},
 		}
 
+		expectedPartitions := e.cfg.expectedInitialPartitionCount()
 		for _, model := range models {
 			table := e.cfg.Table.Metrics + model.tableSuffix()
+			if err = waitForPartitionsReady(ctx, conn, e.logger, e.cfg.Database, table, expectedPartitions); err != nil {
+				e.logger.Warn("partitions not ready, skipping materialized view",
+					zap.String("table", table), zap.Error(err))
+				continue
+			}
 			view := fmt.Sprintf(metricsView, table, table)
 			_, err = conn.ExecContext(ctx, view)
 			if err != nil {

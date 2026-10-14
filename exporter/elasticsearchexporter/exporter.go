@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -27,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
 
@@ -45,6 +47,8 @@ type elasticsearchExporter struct {
 	spanEventDocumentRouters [NumMappingModes]documentRouter
 
 	telemetryBuilder *metadata.TelemetryBuilder
+
+	defaultHistogramMapping datapoints.HistogramMapping
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
@@ -86,6 +90,10 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) error {
 	if err := e.bulkIndexers.start(ctx, e.config, e.set, host, e.allowedMappingModes); err != nil {
 		return fmt.Errorf("error starting bulk indexers: %w", err)
+	}
+	if e.config.VersionDetection.Enabled {
+		esVersion := getElasticsearchVersions(ctx, e.config, e.set, host)
+		e.defaultHistogramMapping = resolveDefaultHistogramMapping(e.config, esVersion)
 	}
 	return nil
 }
@@ -288,8 +296,12 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 						validationErrs = append(validationErrs, fmt.Errorf("dropping cumulative temporality exponential histogram %q", metric.Name()))
 						continue
 					}
+					hm := e.defaultHistogramMapping
+					if mappingMode != MappingOTel {
+						hm = datapoints.HistogramMappingTDigest
+					}
 					for _, dp := range metric.ExponentialHistogram().DataPoints().All() {
-						if err := upsertDataPoint(datapoints.NewExponentialHistogram(metric, dp)); err != nil {
+						if err := upsertDataPoint(datapoints.NewExponentialHistogram(metric, dp, hm)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -602,6 +614,12 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 		}
 		errs = append(errs, err)
 	}
+	if err := scopeMappingModeSessions.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
@@ -615,20 +633,25 @@ func (*elasticsearchExporter) pushProfileRecord(
 ) error {
 	return encoder.encodeProfile(ec, dic, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
-		case otelserializer.StackTraceIndex:
+		case otelserializer.StackTraceIndex, ecsserializer.StackTraceIndex:
 			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.StackFrameIndex:
+		case otelserializer.StackFrameIndex, ecsserializer.StackFrameIndex:
 			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.AllEventsIndex:
+		case otelserializer.AllEventsIndex, ecsserializer.AllEventsIndex:
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
+			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
+		case ecsserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
-		case otelserializer.ExecutablesSymQueueIndex,
-			otelserializer.LeafFramesSymQueueIndex,
+		case ecsserializer.ExecutablesSymQueueIndex,
+			ecsserializer.LeafFramesSymQueueIndex,
+			ecsserializer.HostsMetadataIndex,
 			otelserializer.HostsMetadataIndex:
 			// These regular indices have a low write-frequency and can share the executablesSession.
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		default:
+			// Covers the downsampled events indices (profiling-events-5powNN,
+			// profiling-events-5powNN.otel-default).
 			return defaultSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		}
 	})
@@ -731,4 +754,11 @@ func newDataPointHasher(mode MappingMode) metricgroup.DataPointHasher {
 		// Defaults to ECS for backward compatibility
 		return &metricgroup.ECSDataPointHasher{}
 	}
+}
+
+func resolveDefaultHistogramMapping(cfg *Config, v *semver.Version) datapoints.HistogramMapping {
+	if cfg != nil && cfg.VersionDetection.Enabled && supportsExponentialHistograms(v) {
+		return datapoints.HistogramMappingExponential
+	}
+	return datapoints.HistogramMappingTDigest
 }

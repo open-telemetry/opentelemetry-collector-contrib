@@ -89,6 +89,16 @@ var (
 	TracesCreateTsViewTmpl  = newTemplate("traces_id_ts_lookup_mv", TracesCreateTsView)
 )
 
+// TracesTsTableData contains the template parameters for the trace ID timestamp lookup table.
+type TracesTsTableData struct {
+	Database          string
+	TableName         string
+	ClusterString     string
+	Engine            string
+	TTL               string
+	AggregatingEngine bool
+}
+
 // TracesTsMVData contains the template parameters for the trace ID timestamp materialized view.
 type TracesTsMVData struct {
 	Database        string

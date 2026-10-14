@@ -1135,6 +1135,385 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	assert.Equal(t, int64(2), val.Int())
 }
 
+// TestSummaryAcrossChainedProcessors validates how each outcome behaves when
+// data passes through more than one redaction processor. Redacting a key and
+// masking a value are events a later pass cannot observe again, so they add up
+// across the chain. Allowing and ignoring a key describe the record as it now
+// stands, and every pass re-derives those in full, so the later pass replaces
+// what it finds instead of counting the same attribute twice.
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50770
+func TestSummaryAcrossChainedProcessors(t *testing.T) {
+	t.Run("re-derived outcomes do not double", func(t *testing.T) {
+		for _, summary := range []string{debug, info} {
+			t.Run(summary, func(t *testing.T) {
+				config := &Config{
+					AllowedKeys:   []string{"email", "id"},
+					IgnoredKeys:   []string{"trace_id"},
+					AllowedValues: []string{`.+@mycompany\.com`},
+					Summary:       summary,
+				}
+				attrs := pcommon.NewMap()
+				attrs.PutStr("email", "someone@mycompany.com")
+				attrs.PutStr("id", "5")
+				attrs.PutStr("trace_id", "abc")
+				attrs.PutStr("unknown", "dropped")
+
+				// Three processors with the identical configuration, as a
+				// chained pipeline would apply them.
+				for pass := 1; pass <= 3; pass++ {
+					processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+					require.NoError(t, err)
+					processor.processAttrs(t.Context(), attrs)
+				}
+
+				// One attribute was allowed and one ignored, however many
+				// processors looked at them.
+				value, found := attrs.Get(redactionAllowedCount)
+				require.True(t, found)
+				assert.Equal(t, int64(1), value.Int(), "the same allowed attribute was counted once per pass")
+				value, found = attrs.Get(redactionIgnoredCount)
+				require.True(t, found)
+				assert.Equal(t, int64(1), value.Int(), "the same ignored attribute was counted once per pass")
+
+				if summary == debug {
+					value, found = attrs.Get(redactionAllowedKeys)
+					require.True(t, found)
+					assert.Equal(t, "email", value.Str(), "the same allowed attribute was listed once per pass")
+				}
+			})
+		}
+	})
+
+	t.Run("completed work accumulates", func(t *testing.T) {
+		attrs := pcommon.NewMap()
+		attrs.PutStr("keep", "1")
+		attrs.PutStr("first", "2")
+		attrs.PutStr("second", "3")
+
+		// Each processor redacts a different key, so the summary describes
+		// both by the time the data leaves the chain.
+		for _, allowed := range [][]string{{"keep", "first"}, {"keep"}} {
+			processor, err := newRedaction(t.Context(), &Config{AllowedKeys: allowed, Summary: debug}, zaptest.NewLogger(t))
+			require.NoError(t, err)
+			processor.processAttrs(t.Context(), attrs)
+		}
+
+		value, found := attrs.Get(redactionRedactedKeys)
+		require.True(t, found)
+		assert.Equal(t, "first,second", value.Str())
+		value, found = attrs.Get(redactionRedactedCount)
+		require.True(t, found)
+		assert.Equal(t, int64(2), value.Int())
+	})
+
+	t.Run("a pass that re-derives nothing clears the upstream value", func(t *testing.T) {
+		attrs := pcommon.NewMap()
+		attrs.PutStr("email", "someone@mycompany.com")
+
+		upstream, err := newRedaction(t.Context(), &Config{
+			AllowedKeys:   []string{"email"},
+			AllowedValues: []string{`.+@mycompany\.com`},
+			Summary:       debug,
+		}, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		upstream.processAttrs(t.Context(), attrs)
+		_, found := attrs.Get(redactionAllowedKeys)
+		require.True(t, found, "the upstream processor allowed nothing to report on")
+
+		// The same attribute, but this processor has no allowed_values, so it
+		// allows nothing. The upstream summary no longer describes the record.
+		downstream, err := newRedaction(t.Context(), &Config{
+			AllowedKeys: []string{"email"},
+			Summary:     debug,
+		}, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		downstream.processAttrs(t.Context(), attrs)
+
+		_, found = attrs.Get(redactionAllowedKeys)
+		assert.False(t, found, "a stale allowed key list survived a pass that allowed nothing")
+		_, found = attrs.Get(redactionAllowedCount)
+		assert.False(t, found, "a stale allowed count survived a pass that allowed nothing")
+	})
+}
+
+// summaryAttrPrefix is the prefix every attribute the processor writes about
+// its own work shares. The tests discover the summary attributes through it
+// rather than listing them, so an attribute added to the processor later is
+// covered without the tests needing to be updated.
+const summaryAttrPrefix = "redaction."
+
+// reentryRecord builds a log record that produces every outcome the processor
+// reports on -- redacted, masked, allowed and ignored -- in the attributes and
+// in the log body, and returns the logs along with the record inside them.
+func reentryRecord() (plog.Logs, plog.LogRecord) {
+	logs := plog.NewLogs()
+	record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	attrs := record.Attributes()
+	attrs.PutStr("id", "5")
+	attrs.PutStr("mail", "someone@mycompany.com")
+	attrs.PutStr("card", "4111111111111111")
+	attrs.PutStr("unknown", "dropped")
+	attrs.PutStr("ignored", "untouched")
+
+	body := record.Body().SetEmptyMap()
+	body.PutStr("body_mail", "someone@mycompany.com")
+	body.PutStr("body_card", "4111111111111111")
+	body.PutStr("body_unknown", "dropped")
+	body.PutStr("ignored", "untouched")
+
+	return logs, record
+}
+
+// reentryConfig is the configuration reentryRecord is written against.
+func reentryConfig() *Config {
+	return &Config{
+		AllowedKeys:   []string{"id", "mail", "card", "body_mail", "body_card"},
+		IgnoredKeys:   []string{"ignored"},
+		AllowedValues: []string{`.+@mycompany\.com`},
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+		Summary:       debug,
+	}
+}
+
+// collectSummaryAttrs returns a detached copy of every attribute the processor
+// wrote about its own work.
+func collectSummaryAttrs(attrs pcommon.Map) pcommon.Map {
+	found := pcommon.NewMap()
+	for key, value := range attrs.All() {
+		if strings.HasPrefix(key, summaryAttrPrefix) {
+			value.CopyTo(found.PutEmpty(key))
+		}
+	}
+	return found
+}
+
+// TestDiagnosticAttrsSurviveReentry validates that the summary attributes the
+// processor writes pass through a second redaction processor as the processor's
+// own bookkeeping, rather than being deleted, masked or counted as user data.
+//
+// Each case adds a rule that reaches a summary attribute only on the second
+// pass, so it corrupts the summary if the processor does not exempt its own
+// attributes.
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50770
+func TestDiagnosticAttrsSurviveReentry(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*Config)
+	}{
+		{"no rule reaches the summary", func(*Config) {}},
+		{"blocked key patterns match the summary keys", func(c *Config) {
+			c.BlockedKeyPatterns = []string{`.*\.keys$`, `.*\.count$`}
+		}},
+		{"blocked values match the summary values", func(c *Config) {
+			c.BlockedValues = append(c.BlockedValues, "unknown")
+		}},
+		{"allowed values match the summary values", func(c *Config) {
+			c.AllowedValues = append(c.AllowedValues, "^unknown$", "^body_unknown$")
+		}},
+		{"redact all types exposes the summary counts", func(c *Config) {
+			c.RedactAllTypes = true
+			c.BlockedKeyPatterns = []string{`.*\.count$`}
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := reentryConfig()
+			tt.mutate(config)
+			processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+			require.NoError(t, err)
+
+			logs, record := reentryRecord()
+			_, err = processor.processLogs(t.Context(), logs)
+			require.NoError(t, err)
+
+			// The first pass must actually redact, otherwise the assertions
+			// below hold trivially.
+			_, found := record.Attributes().Get("unknown")
+			require.False(t, found, "the unknown attribute was not redacted")
+			_, found = record.Body().Map().Get("body_unknown")
+			require.False(t, found, "the unknown log body key was not redacted")
+
+			firstPass := collectSummaryAttrs(record.Attributes())
+
+			// Guard against the fixture drifting so that an outcome, or one of
+			// the two code paths that report outcomes, stops being exercised.
+			for _, outcome := range []string{"redacted", "masked", "allowed", "ignored"} {
+				var sawAttr, sawBody bool
+				for key := range firstPass.All() {
+					if !strings.Contains(key, outcome) {
+						continue
+					}
+					if strings.HasPrefix(key, summaryAttrPrefix+"body.") {
+						sawBody = true
+					} else {
+						sawAttr = true
+					}
+				}
+				require.Truef(t, sawAttr, "the first pass reported no attribute %s outcome", outcome)
+				require.Truef(t, sawBody, "the first pass reported no log body %s outcome", outcome)
+			}
+
+			// Send the same record through a second time, as a chained
+			// pipeline would.
+			_, err = processor.processLogs(t.Context(), logs)
+			require.NoError(t, err)
+
+			for key, before := range firstPass.All() {
+				value, found := record.Attributes().Get(key)
+				if !assert.Truef(t, found, "%s was deleted on re-entry", key) {
+					continue
+				}
+				if strings.HasSuffix(key, ".count") {
+					// A masked count is rewritten as a string, which makes the
+					// running total read back as zero at the next hop.
+					if !assert.Equalf(t, pcommon.ValueTypeInt, value.Type(),
+						"%s was rewritten as a string on re-entry", key) {
+						continue
+					}
+					assert.GreaterOrEqualf(t, value.Int(), before.Int(),
+						"%s went backwards on re-entry", key)
+					continue
+				}
+				// Masking replaces the whole value, so a merged list that still
+				// carries every name it started with was left alone.
+				names := strings.Split(value.Str(), attrValuesSeparator)
+				for name := range strings.SplitSeq(before.Str(), attrValuesSeparator) {
+					assert.Containsf(t, names, name, "%s lost %q on re-entry", key, name)
+				}
+			}
+
+			// Nothing the processor wrote may be reported as user data.
+			for key, value := range collectSummaryAttrs(record.Attributes()).All() {
+				if !strings.HasSuffix(key, ".keys") {
+					continue
+				}
+				for name := range strings.SplitSeq(value.Str(), attrValuesSeparator) {
+					assert.Falsef(t, isSummaryAttr(name), "%s was reported as user data in %s", name, key)
+				}
+			}
+
+			// With nothing left to redact, the redacted totals must not move.
+			for _, key := range []string{redactionRedactedCount, redactionBodyRedactedCount} {
+				before, found := firstPass.Get(key)
+				require.Truef(t, found, "the first pass wrote no %s", key)
+				after, found := record.Attributes().Get(key)
+				require.Truef(t, found, "%s was deleted on re-entry", key)
+				assert.Equalf(t, before.Int(), after.Int(),
+					"the second pass redacted data it should have passed through, per %s", key)
+			}
+		})
+	}
+}
+
+// TestDiagnosticAttrsStrippedWhenSilent validates that a processor whose
+// summary is silent claims no ownership of an audit trail it finds: it emits
+// no summary of its own, so the ordinary allow list decides what survives,
+// which is what lets a strict egress processor strip an upstream trail.
+func TestDiagnosticAttrsStrippedWhenSilent(t *testing.T) {
+	tests := []struct {
+		name string
+		// egress is the configuration of the second processor. Its summary is
+		// left unset throughout, which is silent by default.
+		egress *Config
+		// kept lists the summary attributes expected to survive it.
+		kept []string
+	}{
+		{
+			name:   "an allow list that omits them strips the trail",
+			egress: &Config{AllowedKeys: []string{"id"}},
+		},
+		{
+			name:   "allowing every key keeps the trail",
+			egress: &Config{AllowedKeys: []string{"id"}, AllowAllKeys: true},
+			kept:   nil, // filled in below with everything the first pass wrote
+		},
+		{
+			name:   "an allow list that names one keeps only that one",
+			egress: &Config{AllowedKeys: []string{"id", redactionRedactedCount}},
+			kept:   []string{redactionRedactedCount},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			upstream, err := newRedaction(t.Context(), reentryConfig(), zaptest.NewLogger(t))
+			require.NoError(t, err)
+
+			logs, record := reentryRecord()
+			_, err = upstream.processLogs(t.Context(), logs)
+			require.NoError(t, err)
+
+			trail := collectSummaryAttrs(record.Attributes())
+			require.NotEqual(t, 0, trail.Len(), "the upstream processor left no audit trail to strip")
+
+			want := tt.kept
+			if tt.egress.AllowAllKeys {
+				// Nothing is redacted at all, so the whole trail is expected.
+				for key := range trail.All() {
+					want = append(want, key)
+				}
+			}
+
+			egress, err := newRedaction(t.Context(), tt.egress, zaptest.NewLogger(t))
+			require.NoError(t, err)
+			_, err = egress.processLogs(t.Context(), logs)
+			require.NoError(t, err)
+
+			survived := collectSummaryAttrs(record.Attributes())
+			assert.Equal(t, len(want), survived.Len(),
+				"unexpected number of summary attributes survived the egress processor")
+			for _, key := range want {
+				before, found := trail.Get(key)
+				require.Truef(t, found, "the first pass wrote no %s", key)
+				after, found := survived.Get(key)
+				if !assert.Truef(t, found, "%s was stripped", key) {
+					continue
+				}
+				assert.Equalf(t, before.AsRaw(), after.AsRaw(), "%s was modified by the egress processor", key)
+			}
+
+			_, found := record.Attributes().Get("id")
+			assert.True(t, found, "the allowed attribute was stripped")
+		})
+	}
+}
+
+// TestSummaryAttrNamesInLogBodyAreUserData validates that a log body key that
+// happens to be named after a summary attribute is redacted like any other
+// unknown key. The processor only ever writes its summary to the record
+// attributes, so such a key in a body carries user data and must not inherit
+// the exemption that the attributes get.
+func TestSummaryAttrNamesInLogBodyAreUserData(t *testing.T) {
+	processor, err := newRedaction(t.Context(), &Config{AllowedKeys: []string{"id"}, Summary: debug}, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	logs := plog.NewLogs()
+	record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	body := record.Body().SetEmptyMap()
+	for key := range summaryAttrs {
+		body.PutStr(key, "user data")
+	}
+	body.PutStr("id", "5")
+
+	_, err = processor.processLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	for key := range summaryAttrs {
+		_, found := record.Body().Map().Get(key)
+		assert.Falsef(t, found, "the log body key %s was not redacted", key)
+	}
+	_, found := record.Body().Map().Get("id")
+	assert.True(t, found, "the allowed log body key was redacted")
+
+	// The record attributes carry the summary, and it describes the body keys
+	// that were dropped rather than inheriting their names as its own.
+	count, found := record.Attributes().Get(redactionBodyRedactedCount)
+	require.True(t, found)
+	assert.Equal(t, int64(len(summaryAttrs)), count.Int())
+}
+
 // TestRedactAllTypesFalse validates that not all types are redacted when the setting is false
 func TestRedactAllTypesFalse(t *testing.T) {
 	tc := testConfig{

@@ -103,3 +103,40 @@ func TestConfigValidate_TCPMissingEndpoint(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), ErrNoEndpoint)
 }
+
+// db.server.query_plan reports plans collected for the other two events, so on its own it reports
+// nothing.
+func TestConfigValidate_QueryPlanEventWithoutSource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), ErrQueryPlanWithoutSource)
+}
+
+func TestConfigValidate_QueryPlanEventWithSource(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		enable func(cfg *Config)
+	}{
+		{
+			name:   "top query",
+			enable: func(cfg *Config) { cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true },
+		},
+		{
+			name:   "query sample",
+			enable: func(cfg *Config) { cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true },
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Username = "otel"
+			cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+			tc.enable(cfg)
+
+			require.NoError(t, cfg.Validate())
+		})
+	}
+}

@@ -29,7 +29,7 @@ func TestProvider(t *testing.T) {
 	src, err := provider.Source(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, source.HostnameKind, src.Kind)
-	assert.Equal(t, "vmID", src.Identifier)
+	assert.Equal(t, "vmID", src.SourceIdentifier.Primary)
 
 	clusterName, err := provider.ClusterName(t.Context())
 	require.NoError(t, err)

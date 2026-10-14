@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"hash"
 	"math/big"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -76,16 +77,10 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 		data["body"] = rawValue(lr.Body())
 	}
 	if lr.Timestamp() != 0 {
-		data["timestamp"] = lr.Timestamp().AsTime().UnixNano()
+		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 	}
 	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = lr.ObservedTimestamp().AsTime().UnixNano()
-	}
-	if lr.SeverityNumber() != 0 {
-		data["severity_number"] = lr.SeverityNumber()
-	}
-	if lr.SeverityText() != "" {
-		data["severity_text"] = lr.SeverityText()
+		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
 	}
 	if !lr.TraceID().IsEmpty() {
 		data["trace_id"] = lr.TraceID().String()
@@ -96,7 +91,7 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	attrs := make(map[string]any)
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if !strings.HasPrefix(k, "audit.integrity.") {
-			attrs[k] = v.Str()
+			attrs[k] = map[string]any{"stringValue": v.Str()}
 		}
 		return true
 	})
@@ -152,9 +147,10 @@ func TestSignVerifyBasic(t *testing.T) {
 	verifyRecord(t, lr, &prov.key.PublicKey)
 }
 
-// TestSignVerifyWithSeverityAndTrace covers the "sign complete log record" commit:
-// severity_number, severity_text, trace_id, span_id must be part of the signed payload.
-func TestSignVerifyWithSeverityAndTrace(t *testing.T) {
+// TestSignVerifyWithTraceCorrelation covers trace_id and span_id being part of
+// the signed payload. SeverityNumber/SeverityText are intentionally excluded
+// (SHOULD NOT be set on audit records per spec).
+func TestSignVerifyWithTraceCorrelation(t *testing.T) {
 	prov := newTestProvider(t)
 	p := &signingProcessor{
 		config:       &Config{Algorithm: "RS256", CertificateRef: CertificateRefFingerprint},
@@ -167,8 +163,6 @@ func TestSignVerifyWithSeverityAndTrace(t *testing.T) {
 	lr := plog.NewLogRecord()
 	lr.Body().SetStr("database.query")
 	lr.SetTimestamp(pcommon.Timestamp(1714041700000000000))
-	lr.SetSeverityNumber(plog.SeverityNumberWarn)
-	lr.SetSeverityText("WARN")
 	var traceID pcommon.TraceID
 	copy(traceID[:], []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	lr.SetTraceID(traceID)
@@ -291,19 +285,21 @@ func TestSignVerifyEventName(t *testing.T) {
 // rawValue converts a pcommon.Value to the shape the signed payload carries.
 // It is written out independently of the processor's own valueToInterface so
 // this helper stays a genuine re-derivation rather than a mirror of the code
-// under test.
+// under test. Scalars are wrapped in typed envelopes matching the OTLP JSON
+// encoding to avoid ambiguity between distinct pcommon types that share the
+// same JSON representation (e.g. int 1 vs bool true vs string "1").
 func rawValue(v pcommon.Value) any {
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
-		return v.Str()
+		return map[string]any{"stringValue": v.Str()}
 	case pcommon.ValueTypeInt:
-		return v.Int()
+		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}
 	case pcommon.ValueTypeDouble:
-		return v.Double()
+		return map[string]any{"doubleValue": v.Double()}
 	case pcommon.ValueTypeBool:
-		return v.Bool()
+		return map[string]any{"boolValue": v.Bool()}
 	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())
+		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}
 	case pcommon.ValueTypeSlice:
 		out := make([]any, 0, v.Slice().Len())
 		for i := 0; i < v.Slice().Len(); i++ {

@@ -85,17 +85,38 @@ func TestRenderCreateTraceIDTsTableSQL(t *testing.T) {
 		c.TTL = 72 * time.Hour
 	})
 
-	sql, err := renderCreateTraceIDTsTableSQL(cfg)
-	require.NoError(t, err)
+	t.Run("aggregating engine collapses by TraceId", func(t *testing.T) {
+		sql, err := renderCreateTraceIDTsTableSQL(cfg)
+		require.NoError(t, err)
 
-	require.Contains(t, sql, "`test_db`.`otel_traces_trace_id_ts`")
-	require.Contains(t, sql, "ENGINE = AggregatingMergeTree()")
-	require.Contains(t, sql, "Start SimpleAggregateFunction(min, DateTime)")
-	require.Contains(t, sql, "End SimpleAggregateFunction(max, DateTime)")
-	require.Contains(t, sql, "PARTITION BY toStartOfWeek(Start)")
-	require.Contains(t, sql, "ORDER BY (TraceId)")
-	require.NotContains(t, sql, "bloom_filter")
-	require.Contains(t, sql, "TTL toDateTime(Start) + toIntervalDay(3)")
+		require.Contains(t, sql, "`test_db`.`otel_traces_trace_id_ts`")
+		require.Contains(t, sql, "ENGINE = AggregatingMergeTree()")
+		require.Contains(t, sql, "Start SimpleAggregateFunction(min, DateTime)")
+		require.Contains(t, sql, "End SimpleAggregateFunction(max, DateTime)")
+		require.Contains(t, sql, "PARTITION BY toStartOfWeek(Start)")
+		require.Contains(t, sql, "ORDER BY (TraceId)\n")
+		require.NotContains(t, sql, "ORDER BY (TraceId, Start)")
+		require.NotContains(t, sql, "bloom_filter")
+		require.Contains(t, sql, "TTL toDateTime(Start) + toIntervalDay(3)")
+	})
+
+	t.Run("non-aggregating engine keeps Start in the sorting key", func(t *testing.T) {
+		replacingCfg := withDefaultConfig(func(c *Config) {
+			c.Endpoint = defaultEndpoint
+			c.Database = "test_db"
+			c.TracesTableName = "otel_traces"
+			c.TableEngine = TableEngine{Name: "ReplacingMergeTree"}
+		})
+
+		sql, err := renderCreateTraceIDTsTableSQL(replacingCfg)
+		require.NoError(t, err)
+
+		require.Contains(t, sql, "ENGINE = ReplacingMergeTree()")
+		require.Contains(t, sql, "ORDER BY (TraceId, Start)")
+		require.Contains(t, sql, "Start DateTime CODEC(ZSTD(1))")
+		require.Contains(t, sql, "End DateTime CODEC(ZSTD(1))")
+		require.NotContains(t, sql, "SimpleAggregateFunction")
+	})
 }
 
 func TestRenderTraceIDTsMaterializedViewSQL(t *testing.T) {
@@ -114,23 +135,38 @@ func TestRenderTraceIDTsMaterializedViewSQL(t *testing.T) {
 	require.Contains(t, sql, "GROUP BY TraceId")
 }
 
-func TestTraceIDTsTableEngineString(t *testing.T) {
+func TestTraceIDTsTableEngine(t *testing.T) {
 	tests := []struct {
-		name     string
-		engine   TableEngine
-		expected string
+		name        string
+		engine      TableEngine
+		expected    string
+		aggregating bool
 	}{
-		{name: "default", engine: TableEngine{}, expected: "AggregatingMergeTree()"},
-		{name: "explicit MergeTree", engine: TableEngine{Name: "MergeTree"}, expected: "AggregatingMergeTree()"},
+		{name: "default", engine: TableEngine{}, expected: "AggregatingMergeTree()", aggregating: true},
+		{name: "explicit MergeTree", engine: TableEngine{Name: "MergeTree"}, expected: "AggregatingMergeTree()", aggregating: true},
 		{
-			name:     "ReplicatedMergeTree",
-			engine:   TableEngine{Name: "ReplicatedMergeTree", Params: "'/clickhouse/tables/{shard}/table_name', '{replica}'"},
-			expected: "ReplicatedAggregatingMergeTree('/clickhouse/tables/{shard}/table_name', '{replica}')",
+			name:        "ReplicatedMergeTree",
+			engine:      TableEngine{Name: "ReplicatedMergeTree", Params: "'/clickhouse/tables/{shard}/table_name', '{replica}'"},
+			expected:    "ReplicatedAggregatingMergeTree('/clickhouse/tables/{shard}/table_name', '{replica}')",
+			aggregating: true,
 		},
 		{
-			name:     "custom engine unchanged",
-			engine:   TableEngine{Name: "SharedMergeTree", Params: "'a', 'b'"},
-			expected: "SharedMergeTree('a', 'b')",
+			name:        "ReplacingMergeTree unchanged, not aggregating",
+			engine:      TableEngine{Name: "ReplacingMergeTree"},
+			expected:    "ReplacingMergeTree()",
+			aggregating: false,
+		},
+		{
+			name:        "custom engine unchanged",
+			engine:      TableEngine{Name: "SharedMergeTree", Params: "'a', 'b'"},
+			expected:    "SharedMergeTree('a', 'b')",
+			aggregating: false,
+		},
+		{
+			name:        "user-specified aggregating engine",
+			engine:      TableEngine{Name: "SharedAggregatingMergeTree", Params: "'a', 'b'"},
+			expected:    "SharedAggregatingMergeTree('a', 'b')",
+			aggregating: true,
 		},
 	}
 
@@ -140,7 +176,9 @@ func TestTraceIDTsTableEngineString(t *testing.T) {
 				c.TableEngine = tt.engine
 			})
 
-			require.Equal(t, tt.expected, cfg.traceIDTsTableEngineString())
+			engine, aggregating := cfg.traceIDTsTableEngine()
+			require.Equal(t, tt.expected, engine)
+			require.Equal(t, tt.aggregating, aggregating)
 		})
 	}
 }

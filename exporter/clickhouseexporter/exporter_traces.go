@@ -49,7 +49,7 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	if e.cfg.shouldCreateSchema() {
-		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
+		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString(), e.cfg.databaseEngineString()); err != nil {
 			return err
 		}
 
@@ -207,7 +207,7 @@ func renderCreateTracesTableSQL(cfg *Config, hasFullTextSearch bool) (string, er
 	data := sqltemplates.CreateTableData{
 		Database:          cfg.database(),
 		TableName:         cfg.TracesTableName,
-		ClusterString:     cfg.clusterString(),
+		ClusterString:     cfg.tableClusterString(),
 		Engine:            cfg.tableEngineString(),
 		TTL:               ttlExpr,
 		HasFullTextSearch: hasFullTextSearch,
@@ -223,12 +223,14 @@ func renderCreateTracesTableSQL(cfg *Config, hasFullTextSearch bool) (string, er
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) (string, error) {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Start)")
-	data := sqltemplates.CreateTableData{
-		Database:      cfg.database(),
-		TableName:     cfg.TracesTableName + "_trace_id_ts",
-		ClusterString: cfg.clusterString(),
-		Engine:        cfg.traceIDTsTableEngineString(),
-		TTL:           ttlExpr,
+	engine, aggregating := cfg.traceIDTsTableEngine()
+	data := sqltemplates.TracesTsTableData{
+		Database:          cfg.database(),
+		TableName:         cfg.TracesTableName + "_trace_id_ts",
+		ClusterString:     cfg.tableClusterString(),
+		Engine:            engine,
+		TTL:               ttlExpr,
+		AggregatingEngine: aggregating,
 	}
 
 	var buf bytes.Buffer
@@ -245,7 +247,7 @@ func renderTraceIDTsMaterializedViewSQL(cfg *Config) (string, error) {
 		ViewName:        cfg.TracesTableName + "_trace_id_ts_mv",
 		TableName:       cfg.TracesTableName + "_trace_id_ts",
 		SourceTableName: cfg.TracesTableName,
-		ClusterString:   cfg.clusterString(),
+		ClusterString:   cfg.tableClusterString(),
 	}
 
 	var buf bytes.Buffer

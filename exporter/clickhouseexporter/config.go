@@ -40,6 +40,8 @@ type Config struct {
 	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
+	// DatabaseEngine is the database engine to use when creating the database. default is the server default.
+	DatabaseEngine DatabaseEngine `mapstructure:"database_engine"`
 	// TLS is the TLS config for connecting to ClickHouse.
 	TLS configtls.ClientConfig `mapstructure:"tls"`
 	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
@@ -60,7 +62,7 @@ type Config struct {
 	TTL time.Duration `mapstructure:"ttl"`
 	// TableEngine is the table engine to use. default is `MergeTree()`.
 	TableEngine TableEngine `mapstructure:"table_engine"`
-	// ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
+	// ClusterName if set will append `ON CLUSTER` with the provided name when creating the database and tables.
 	ClusterName string `mapstructure:"cluster_name"`
 	// CreateSchema if set to true will run the DDL for creating the database and tables. default is true.
 	CreateSchema bool `mapstructure:"create_schema"`
@@ -92,6 +94,12 @@ type MetricTablesConfig struct {
 	ExponentialHistogram metrics.MetricTypeConfig `mapstructure:"exponential_histogram"`
 }
 
+// DatabaseEngine defines the ENGINE string value when creating the database.
+type DatabaseEngine struct {
+	Name   string `mapstructure:"name"`
+	Params string `mapstructure:"params"`
+}
+
 // TableEngine defines the ENGINE string value when creating the table.
 type TableEngine struct {
 	Name   string `mapstructure:"name"`
@@ -99,6 +107,7 @@ type TableEngine struct {
 }
 
 const (
+	replicatedDatabaseEngine  = "Replicated"
 	defaultDatabase           = "default"
 	defaultTableEngineName    = "MergeTree"
 	defaultMetricTableName    = "otel_metrics"
@@ -286,9 +295,11 @@ func (cfg *Config) tableEngineString() string {
 	return fmt.Sprintf("%s(%s)", engine, params)
 }
 
-// traceIDTsTableEngineString generates the ENGINE string for the trace ID timestamp lookup
-// table, which requires an aggregating engine to collapse rows with the same TraceId.
-func (cfg *Config) traceIDTsTableEngineString() string {
+// traceIDTsTableEngine generates the ENGINE string for the trace ID timestamp lookup table,
+// preferring an aggregating engine so rows with the same TraceId collapse during merges.
+// The returned bool reports whether the engine is aggregating; non-aggregating engines
+// (e.g. ReplacingMergeTree) must keep Start in the sorting key to avoid losing rows.
+func (cfg *Config) traceIDTsTableEngine() (string, bool) {
 	engine := cfg.TableEngine.Name
 	params := cfg.TableEngine.Params
 
@@ -302,7 +313,20 @@ func (cfg *Config) traceIDTsTableEngineString() string {
 		engine = "ReplicatedAggregatingMergeTree"
 	}
 
-	return fmt.Sprintf("%s(%s)", engine, params)
+	return fmt.Sprintf("%s(%s)", engine, params), strings.HasSuffix(engine, "AggregatingMergeTree")
+}
+
+// databaseEngineString generates the ENGINE clause for creating the database. Returns empty string if not set.
+func (cfg *Config) databaseEngineString() string {
+	if cfg.DatabaseEngine.Name == "" {
+		return ""
+	}
+
+	if cfg.DatabaseEngine.Params == "" {
+		return "ENGINE = " + cfg.DatabaseEngine.Name
+	}
+
+	return fmt.Sprintf("ENGINE = %s(%s)", cfg.DatabaseEngine.Name, cfg.DatabaseEngine.Params)
 }
 
 // database returns the preferred database for creating tables and inserting data.
@@ -338,4 +362,14 @@ func (cfg *Config) clusterString() string {
 	}
 	escaped := strings.ReplaceAll(cfg.ClusterName, "`", "``")
 	return fmt.Sprintf("ON CLUSTER `%s`", escaped)
+}
+
+// tableClusterString generates the ON CLUSTER string for table DDL.
+// Returns empty string for Replicated databases, since they replicate table DDL themselves and reject ON CLUSTER.
+func (cfg *Config) tableClusterString() string {
+	if cfg.DatabaseEngine.Name == replicatedDatabaseEngine && cfg.database() != defaultDatabase {
+		return ""
+	}
+
+	return cfg.clusterString()
 }

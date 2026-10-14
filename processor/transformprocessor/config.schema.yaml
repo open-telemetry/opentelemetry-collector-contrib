@@ -15,6 +15,7 @@ properties:
     items:
       $ref: ./internal/common.context_statements
   profile_statements:
+    description: 'ProfileStatements configures the OTTL statements executed against profile data. Experimental: *NOTE* this API is subject to change or removal in the future.'
     type: array
     items:
       $ref: ./internal/common.context_statements

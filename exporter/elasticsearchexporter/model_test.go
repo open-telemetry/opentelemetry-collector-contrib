@@ -90,6 +90,14 @@ func TestDynamicTemplateMode(t *testing.T) {
 	summaryDp.SetSum(10)
 	summaryDp.SetCount(5)
 
+	m5 := pmetric.NewMetric()
+	m5.SetName("exphist")
+	exphist := m5.SetEmptyExponentialHistogram()
+	exphistDp := exphist.DataPoints().AppendEmpty()
+	exphistDp.SetTimestamp(ts)
+	exphistDp.Negative().BucketCounts().FromRaw([]uint64{1, 2})
+	exphistDp.Positive().BucketCounts().FromRaw([]uint64{1, 2, 3})
+
 	metrics := []struct {
 		m  pmetric.Metric
 		dp datapoints.DataPoint
@@ -98,6 +106,7 @@ func TestDynamicTemplateMode(t *testing.T) {
 		{m2, datapoints.NewNumber(m2, dp2)},
 		{m3, datapoints.NewHistogram(m3, histDp)},
 		{m4, datapoints.NewSummary(m4, summaryDp)},
+		{m5, datapoints.NewExponentialHistogram(m5, exphistDp, datapoints.HistogramMappingExponential)},
 	}
 
 	tests := []struct {
@@ -108,12 +117,12 @@ func TestDynamicTemplateMode(t *testing.T) {
 		{
 			name:          "OTel",
 			mode:          datapoints.DynamicTemplateModeOTel,
-			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary"},
+			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary", "exponential_histogram"},
 		},
 		{
 			name:          "ECS",
 			mode:          datapoints.DynamicTemplateModeECS,
-			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics"},
+			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics", "histogram_metrics"},
 		},
 	}
 

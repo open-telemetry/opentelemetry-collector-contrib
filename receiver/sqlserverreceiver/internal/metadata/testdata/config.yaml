@@ -244,6 +244,8 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     host.name:
       enabled: true
     server.address:
@@ -259,6 +261,8 @@ all_set:
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
+      enabled: true
+    sqlserver.db.edition:
       enabled: true
     sqlserver.instance.name:
       enabled: true
@@ -507,6 +511,8 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     host.name:
       enabled: true
     server.address:
@@ -522,6 +528,8 @@ reaggregate_set:
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
+      enabled: true
+    sqlserver.db.edition:
       enabled: true
     sqlserver.instance.name:
       enabled: true
@@ -770,6 +778,8 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.version:
+      enabled: false
     host.name:
       enabled: false
     server.address:
@@ -786,10 +796,15 @@ none_set:
       enabled: false
     sqlserver.database.name:
       enabled: false
+    sqlserver.db.edition:
+      enabled: false
     sqlserver.instance.name:
       enabled: false
 override_set:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      override_value: "override-db.system.version"
     host.name:
       enabled: true
       override_value: "override-host.name"
@@ -814,11 +829,20 @@ override_set:
     sqlserver.database.name:
       enabled: true
       override_value: "override-sqlserver.database.name"
+    sqlserver.db.edition:
+      enabled: true
+      override_value: "standard"
     sqlserver.instance.name:
       enabled: true
       override_value: "override-sqlserver.instance.name"
 filter_set_include:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     host.name:
       enabled: true
       metrics_include:
@@ -862,6 +886,12 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     sqlserver.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    sqlserver.db.edition:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -875,6 +905,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     host.name:
       enabled: true
       metrics_exclude:
@@ -923,6 +959,12 @@ filter_set_exclude:
         - strict: "sqlserver.database.name-val"
       events_exclude:
         - strict: "sqlserver.database.name-val"
+    sqlserver.db.edition:
+      enabled: true
+      metrics_exclude:
+        - strict: "standard"
+      events_exclude:
+        - strict: "standard"
     sqlserver.instance.name:
       enabled: true
       metrics_exclude:
