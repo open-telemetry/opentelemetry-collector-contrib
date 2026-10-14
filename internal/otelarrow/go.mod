@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelar
 go 1.26.0
 
 require (
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.162.0
 	github.com/open-telemetry/otel-arrow/go v0.60.0
@@ -33,7 +33,7 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.2.0 // indirect
-	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/Microsoft/go-winio v0.6.3 // indirect
 	github.com/apache/arrow-go/v18 v18.6.0 // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
 	github.com/brianvoe/gofakeit/v6 v6.28.0 // indirect
