@@ -28,12 +28,6 @@ $defs:
     properties:
       enabled:
         type: boolean
-  dynamic_index_setting:
-    type: object
-    properties:
-      enabled:
-        description: 'Enabled enables dynamic index routing. Deprecated: [v0.122.0] This config is now ignored. Dynamic index routing is always done by default.'
-        type: boolean
   dynamic_pipeline_settings:
     type: object
     properties:
@@ -56,9 +50,6 @@ $defs:
         type: array
         items:
           type: string
-      mode:
-        description: 'Deprecated: [v0.145.0] Mode is ignored. The default mapping mode is "otel". The mode may be overridden in two ways: - by the client metadata key X-Elastic-Mapping-Mode, if specified - by the scope attribute elastic.mapping.mode, if specified The order of precedence is: scope attribute > client metadata > default mode.'
-        type: string
   retry_settings:
     description: RetrySettings defines settings for the HTTP request retries in the Elasticsearch exporter. Failed sends are retried with exponential backoff.
     type: object
@@ -74,9 +65,6 @@ $defs:
         description: MaxInterval configures the max waiting time if consecutive requests failed.
         type: string
         format: duration
-      max_requests:
-        description: 'MaxRequests configures how often an HTTP request is attempted before it is assumed to be failed. Deprecated: use MaxRetries instead.'
-        type: integer
       max_retries:
         description: MaxRetries configures how many times an HTTP request is retried.
         type: integer
@@ -132,8 +120,6 @@ properties:
   logs_dynamic_id:
     description: LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
     $ref: dynamic_id_settings
-  logs_dynamic_index:
-    $ref: dynamic_index_setting
   logs_dynamic_pipeline:
     description: LogsDynamicPipeline configures whether log record attribute `elasticsearch.document_pipeline` is set as the document ingest pipeline for ES.
     $ref: dynamic_pipeline_settings
@@ -149,8 +135,6 @@ properties:
     type: array
     items:
       type: string
-  metrics_dynamic_index:
-    $ref: dynamic_index_setting
   metrics_index:
     description: MetricsIndex configures the static index used for document routing for metrics. It should be empty if dynamic document routing is preferred.
     type: string
@@ -172,8 +156,6 @@ properties:
   traces_dynamic_id:
     description: TracesDynamicID configures whether span attribute `elasticsearch.document_id` is set as the document ID in ES.
     $ref: dynamic_id_settings
-  traces_dynamic_index:
-    $ref: dynamic_index_setting
   traces_index:
     description: TracesIndex configures the static index used for document routing for metrics. It should be empty if dynamic document routing is preferred.
     type: string
