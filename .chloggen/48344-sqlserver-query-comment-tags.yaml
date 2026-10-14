@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: receiver/sqlserver
+component: receiver/sql_server
 
 note: Add opt-in `collect_full_query_text` and `allowed_comment_keys` options to `top_query_collection` and `query_sample_collection`, reporting the whole SQL batch in `db.query.text` and exporting allow-listed `key=value` pairs from its leading comment as `db.query.comment_tags`.
 
