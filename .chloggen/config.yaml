@@ -282,6 +282,7 @@ components:
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
+    - receiver/gnmi
     - receiver/google_cloud_spanner
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub

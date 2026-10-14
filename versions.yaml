@@ -3,12 +3,12 @@
 
 module-sets:
   stable-base:
-    version: v1.1.0
+    version: v1.2.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
 
   contrib-base:
-    version: v0.162.0
+    version: v0.163.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -276,6 +276,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gnmireceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
