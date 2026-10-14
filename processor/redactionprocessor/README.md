@@ -348,7 +348,7 @@ processors:
 The database sanitizer will:
 - Remove sensitive data like literal values from SQL queries
 - Redact command arguments from Redis/Memcached commands
-- Sanitize MongoDB queries and JSON payloads
+- Sanitize MongoDB, OpenSearch, and Elasticsearch queries and JSON payloads
 - Process only specified attributes if provided
 - Preserve query structure while removing sensitive data
 - Sanitize span names containing database queries (can be controlled with `sanitize_span_name`)

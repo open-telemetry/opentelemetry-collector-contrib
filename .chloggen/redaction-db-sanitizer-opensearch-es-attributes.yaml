@@ -1,0 +1,19 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: bug_fix
+
+component: processor/redaction
+
+note: Apply configured `db_sanitizer.opensearch.attributes` and `db_sanitizer.es.attributes` to OpenSearch and Elasticsearch span attributes instead of ignoring them.
+
+issues: [52050]
+
+subtext: |
+  `db_sanitizer.opensearch.attributes` and `db_sanitizer.es.attributes` were
+  accepted by the config but never wired into the sanitizers, so span
+  attributes such as `db.statement` and `db.query.text` on OpenSearch and
+  Elasticsearch spans were exported unsanitized. The configured attribute
+  lists are now honored, matching the documented behavior for the other
+  supported database systems.
+
+change_logs: [user]

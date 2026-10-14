@@ -2420,6 +2420,68 @@ func TestDBObfuscationUsesDBSystemNameForAttributes(t *testing.T) {
 	assert.Equal(t, "SELECT email FROM users WHERE email = ?", stmt.Str())
 }
 
+func TestDBObfuscationOpenSearchAndESAttributes(t *testing.T) {
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys: true,
+			DBSanitizer: db.DBSanitizerConfig{
+				OpenSearchConfig: db.OpenSearchConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+				ESConfig: db.ESConfig{
+					Enabled:    true,
+					Attributes: []string{"db.statement"},
+				},
+			},
+		},
+	}
+
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
+
+	openSearchSpan := ils.Spans().AppendEmpty()
+	openSearchSpan.SetName("GET /index/_search")
+	openSearchSpan.SetKind(ptrace.SpanKindClient)
+	openSearchSpan.Attributes().PutStr("db.system.name", "opensearch")
+	openSearchSpan.Attributes().PutStr("db.query.text", `{"query":{"match":{"email":"user@example.com"}}}`)
+
+	// An attribute key that is configured for Elasticsearch but not for OpenSearch
+	// must stay untouched on OpenSearch spans even when both sanitizers are enabled.
+	openSearchUnmatchedSpan := ils.Spans().AppendEmpty()
+	openSearchUnmatchedSpan.SetName("GET /index/_search")
+	openSearchUnmatchedSpan.SetKind(ptrace.SpanKindClient)
+	openSearchUnmatchedSpan.Attributes().PutStr("db.system.name", "opensearch")
+	openSearchUnmatchedSpan.Attributes().PutStr("db.statement", `{"query":{"match":{"email":"user@example.com"}}}`)
+
+	esSpan := ils.Spans().AppendEmpty()
+	esSpan.SetName("GET /index/_search")
+	esSpan.SetKind(ptrace.SpanKindClient)
+	esSpan.Attributes().PutStr("db.system.name", "elasticsearch")
+	esSpan.Attributes().PutStr("db.statement", `{"query":{"term":{"ssn":"123-45-6789"}}}`)
+
+	processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	outTraces, err := processor.processTraces(t.Context(), inBatch)
+	require.NoError(t, err)
+
+	spans := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+
+	openSearchQuery, ok := spans.At(0).Attributes().Get("db.query.text")
+	require.True(t, ok)
+	assert.Equal(t, `{"query":{"match":{"email":"?"}}}`, openSearchQuery.Str())
+
+	unmatchedStmt, ok := spans.At(1).Attributes().Get("db.statement")
+	require.True(t, ok)
+	assert.Equal(t, `{"query":{"match":{"email":"user@example.com"}}}`, unmatchedStmt.Str())
+
+	esStmt, ok := spans.At(2).Attributes().Get("db.statement")
+	require.True(t, ok)
+	assert.Equal(t, `{"query":{"term":{"ssn":"?"}}}`, esStmt.Str())
+}
+
 func TestDBObfuscationConcurrentProcessingUsesLocalDBSystem(t *testing.T) {
 	cfg := &Config{
 		AllowAllKeys: true,

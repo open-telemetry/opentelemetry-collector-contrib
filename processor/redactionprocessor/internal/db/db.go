@@ -136,7 +136,7 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 	}
 
 	if cfg.OpenSearchConfig.Enabled {
-		dbAttrs := newDBAttributes([]string{}, []string{
+		dbAttrs := newDBAttributes(cfg.OpenSearchConfig.Attributes, []string{
 			semconv138.DBSystemNameOpenSearch.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &opensearchObfuscator{
@@ -147,7 +147,7 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 	}
 
 	if cfg.ESConfig.Enabled {
-		dbAttrs := newDBAttributes([]string{}, []string{
+		dbAttrs := newDBAttributes(cfg.ESConfig.Attributes, []string{
 			semconv138.DBSystemNameElasticsearch.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &esObfuscator{
@@ -165,7 +165,9 @@ func hasDBSanitizerAttributes(cfg DBSanitizerConfig) bool {
 		cfg.RedisConfig.Enabled && len(cfg.RedisConfig.Attributes) > 0 ||
 		cfg.ValkeyConfig.Enabled && len(cfg.ValkeyConfig.Attributes) > 0 ||
 		cfg.MemcachedConfig.Enabled && len(cfg.MemcachedConfig.Attributes) > 0 ||
-		cfg.MongoConfig.Enabled && len(cfg.MongoConfig.Attributes) > 0
+		cfg.MongoConfig.Enabled && len(cfg.MongoConfig.Attributes) > 0 ||
+		cfg.OpenSearchConfig.Enabled && len(cfg.OpenSearchConfig.Attributes) > 0 ||
+		cfg.ESConfig.Enabled && len(cfg.ESConfig.Attributes) > 0
 }
 
 func (o *Obfuscator) Obfuscate(s string) (string, error) {
