@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -2995,6 +2996,27 @@ func TestCollectIndexesSkipsUnavailableSize(t *testing.T) {
 	counts := dataPointCounts(scraper.mb.Emit())
 	assert.Equal(t, 1, counts["postgresql.index.size"], "the dropped index must not report a size")
 	assert.Equal(t, 2, counts["postgresql.index.scans"], "both indexes keep their scan count")
+}
+
+func TestCollectIndexesKeepsRowsReadBeforeError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getIndexStats", mock.Anything, "otel").Return(map[indexIdentifer]indexStat{
+		indexKey("otel", "public", "t", "idx_1"): {database: "otel", schema: "public", table: "t", index: "idx_1", size: 16384, scans: 1},
+		indexKey("otel", "public", "t", "idx_2"): {database: "otel", schema: "public", table: "t", index: "idx_2", size: 16384, scans: 2},
+	}, errors.New("connection reset by peer"))
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	var errs errsMux
+	scraper.collectIndexes(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+	require.ErrorContains(t, errs.combine(), "connection reset by peer")
+	require.True(t, scrapererror.IsPartialScrapeError(errs.combine()))
+
+	counts := dataPointCounts(scraper.mb.Emit())
+	assert.Equal(t, 2, counts["postgresql.index.scans"], "indexes read before the error are still reported")
+	assert.Equal(t, 2, counts["postgresql.index.size"])
 }
 
 func dataPointCounts(md pmetric.Metrics) map[string]int {

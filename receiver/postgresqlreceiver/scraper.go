@@ -915,7 +915,6 @@ func (p *postgreSQLScraper) collectIndexes(
 	idxStats, err := client.getIndexStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
-		return
 	}
 
 	for _, stat := range idxStats {
