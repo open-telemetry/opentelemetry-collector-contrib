@@ -134,9 +134,12 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 
 	// Process each trace independently
 	tracesProcessed := int64(0)
+	tracesInvalid := int64(0)
 	for traceID := range matchedTraces {
 		if err := p.processTrace(ctx, traceSpans[traceID]); err != nil {
-			p.logger.Debug("skipping trace", zap.Stringer("trace.id", traceID), zap.Error(err))
+			p.logger.Warn("leaving trace unpruned", zap.Stringer("trace.id", traceID), zap.Error(err))
+			tracesInvalid++
+			continue
 		}
 		tracesProcessed++
 	}
@@ -149,6 +152,9 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	}
 	if tracesSkipped > 0 {
 		p.telemetryBuilder.ProcessorSpanpruningTracesSkipped.Add(ctx, tracesSkipped)
+	}
+	if tracesInvalid > 0 {
+		p.telemetryBuilder.ProcessorSpanpruningInvalidTraces.Add(ctx, tracesInvalid)
 	}
 
 	// Measure bytes emitted after pruning to capture the reduction in trace size.

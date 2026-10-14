@@ -29,6 +29,9 @@ type spanNode struct {
 	isPreservedOutlier bool           // true if this node is the root of a preserved outlier subtree
 	isExemplar         bool           // true if this node is the root of a sampled exemplar subtree
 	protected          bool           // true if this node is within a preserved outlier or exemplar subtree (never aggregated)
+
+	// walkState is scratch space for assignDepths. Do not use it elsewhere.
+	walkState uint8
 }
 
 // traceTree holds span nodes indexed by ID plus quick leaf/orphan lists for
@@ -121,26 +124,27 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) (*traceTree, err
 	return tree, nil
 }
 
+// spanNode.walkState values used by assignDepths.
+const (
+	unvisited uint8 = iota
+	onPath
+	assigned
+)
+
 // assignDepths sets each node's depth by walking up from it until it reaches a
 // root, an orphan, or a node already assigned, so every node is walked once.
 // It returns an error if a walk reaches a node already on its own path, which
 // means the parent links form a cycle.
 func assignDepths(nodeByID map[pcommon.SpanID]*spanNode) error {
-	const (
-		unvisited = iota
-		onPath
-		assigned
-	)
-	state := make(map[*spanNode]uint8, len(nodeByID))
 	var path []*spanNode
 	for _, start := range nodeByID {
 		n := start
-		for n != nil && state[n] == unvisited {
-			state[n] = onPath
+		for n != nil && n.walkState == unvisited {
+			n.walkState = onPath
 			path = append(path, n)
 			n = n.parent
 		}
-		if n != nil && state[n] == onPath {
+		if n != nil && n.walkState == onPath {
 			return fmt.Errorf("parent cycle through span %s", n.span.SpanID())
 		}
 		d := -1
@@ -150,7 +154,7 @@ func assignDepths(nodeByID map[pcommon.SpanID]*spanNode) error {
 		for _, pn := range slices.Backward(path) {
 			d++
 			pn.treeDepth = d
-			state[pn] = assigned
+			pn.walkState = assigned
 		}
 		path = path[:0]
 	}

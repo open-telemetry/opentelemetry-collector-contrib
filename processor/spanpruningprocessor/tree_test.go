@@ -4,17 +4,20 @@
 package spanpruningprocessor
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadatatest"
 )
 
 func TestParentCycleSkipsTrace(t *testing.T) {
@@ -48,19 +51,25 @@ func TestParentCycleSkipsTrace(t *testing.T) {
 			}
 			before := countSpans(td)
 
+			tel := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
-			tp, err := NewFactory().CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			tp, err := NewFactory().CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
 			done := make(chan error, 1)
 			go func() { done <- tp.ConsumeTraces(t.Context(), td) }()
 			select {
-			case err := <-done:
-				require.NoError(t, err)
+			case consumeErr := <-done:
+				require.NoError(t, consumeErr)
 			case <-time.After(5 * time.Second):
 				t.Fatal("processing a trace with a parent cycle did not return")
 			}
 			assert.Equal(t, before, countSpans(td), "a trace with a parent cycle is left untouched")
+			metadatatest.AssertEqualProcessorSpanpruningInvalidTraces(t, tel,
+				[]metricdata.DataPoint[int64]{{Value: 1}}, metricdatatest.IgnoreTimestamp())
+			_, err = tel.GetMetric("otelcol_processor_spanpruning_traces_processed")
+			assert.Error(t, err, "an unpruned trace is not counted as processed")
 		})
 	}
 }
@@ -82,11 +91,18 @@ func TestAssignDepths(t *testing.T) {
 		span.SetSpanID(pcommon.SpanID{b})
 		return &spanNode{span: span}
 	}
-	a, b, c := withID(4), withID(5), withID(6)
+	a, b, c := withID(0xa0), withID(0xb0), withID(0xc0)
 	a.parent, b.parent, c.parent = b, c, a
 	under := &spanNode{parent: a}
-	cyclic := map[pcommon.SpanID]*spanNode{{1}: root, {2}: child, {4}: a, {5}: b, {6}: c, {7}: under}
-	assert.ErrorContains(t, assignDepths(cyclic), "parent cycle through span 0", "a three span cycle")
+	cyclic := map[pcommon.SpanID]*spanNode{{1}: root, {2}: child, {0xa0}: a, {0xb0}: b, {0xc0}: c, {7}: under}
+	err := assignDepths(cyclic)
+	require.Error(t, err, "a three span cycle")
+	// Which cycle member is named depends on map iteration order.
+	assert.Contains(t, []string{
+		"parent cycle through span " + a.span.SpanID().String(),
+		"parent cycle through span " + b.span.SpanID().String(),
+		"parent cycle through span " + c.span.SpanID().String(),
+	}, err.Error())
 
 	self := withID(1)
 	self.parent = self
