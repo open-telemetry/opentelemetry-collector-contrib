@@ -6,6 +6,9 @@ $defs:
       audience:
         description: Audience specifies the audience claim used for generating ID token.
         type: string
+      principal:
+        description: Principal specifies the email of the principal the google_managed_kafka token is issued for. If unspecified, it is the client_email of the service account key, or the email of the default service account reported by the metadata server.
+        type: string
       project:
         description: Project is the project telemetry is sent to if the gcp.project.id resource attribute is not set. If unspecified, this is determined using application default credentials.
         type: string

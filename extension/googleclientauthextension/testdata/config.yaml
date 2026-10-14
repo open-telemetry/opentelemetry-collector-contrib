@@ -6,3 +6,6 @@ googleclientauth/customname:
   - "https://www.something.com/world"
   quota_project: other-project
   audience: my-audience
+googleclientauth/kafka:
+  token_type: google_managed_kafka
+  principal: kafka-client@my-project.iam.gserviceaccount.com
