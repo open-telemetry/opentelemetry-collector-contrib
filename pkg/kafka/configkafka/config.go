@@ -494,9 +494,12 @@ type SASLConfig struct {
 	// Password to be used on authentication
 	Password string `mapstructure:"password"`
 	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER,
-	// SCRAM-SHA-256 or SCRAM-SHA-512).
+	// SCRAM-SHA-256 or SCRAM-SHA-512). AWS_MSK_IAM_OAUTHBEARER is deprecated; use OAUTHBEARER
+	// with the sigv4auth extension configured as oauthbearer_token_source instead.
 	Mechanism string `mapstructure:"mechanism"`
 	// AWSMSK holds configuration specific to AWS MSK.
+	// Deprecated [v0.163.0]: use the sigv4auth extension with OAUTHBEARER
+	// instead. This configuration will be removed in a future release.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
 	// ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism,
 	// typically named "oauth2client"
@@ -530,11 +533,14 @@ func (c SASLConfig) Validate() error {
 	return nil
 }
 
-// AWSMSKConfig defines the additional SASL authentication
-// measures needed to use the AWS_MSK_IAM_OAUTHBEARER mechanism
+// AWSMSKConfig defines the additional SASL authentication configuration for AWS MSK.
 type AWSMSKConfig struct {
-	// Region is the AWS region the MSK cluster is based in
+	// Region is the AWS region the MSK cluster is based in.
+	//
+	// Deprecated [v0.163.0]: use the sigv4auth extension with OAUTHBEARER
+	// instead. This configuration will be removed in a future release.
 	Region string `mapstructure:"region"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

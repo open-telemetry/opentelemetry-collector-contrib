@@ -89,9 +89,9 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use.
-    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, or PLAIN)
-    - `aws_msk`
-      - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
+    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, or PLAIN). AWS_MSK_IAM_OAUTHBEARER is deprecated; use OAUTHBEARER with the sigv4auth extension configured as oauthbearer_token_source instead.
+    - `aws_msk` (deprecated): Legacy AWS MSK authentication configuration. Use the sigv4auth extension with OAUTHBEARER instead.
+      - `region`: AWS Region for the legacy AWS_MSK_IAM_OAUTHBEARER mechanism.
     - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
