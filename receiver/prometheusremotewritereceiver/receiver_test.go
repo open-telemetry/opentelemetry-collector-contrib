@@ -622,13 +622,16 @@ func TestMalformedNHCBIsNotTruncated(t *testing.T) {
 	// The dense form is as long as the bounds, so spans and deltas that describe a different
 	// shape have no translation. Reading as far as the shorter of the two and reporting what
 	// that produced would drop observations the sender wrote, with a count that agrees with
-	// the buckets and says nothing about what went missing.
+	// the buckets and says nothing about what went missing. A negative range is refused for
+	// the same reason: these bounds describe no bucket it could go in.
 	for _, tc := range []struct {
-		name   string
-		bounds []float64
-		spans  []writev2.BucketSpan
-		deltas []int64
-		count  uint64
+		name      string
+		bounds    []float64
+		spans     []writev2.BucketSpan
+		deltas    []int64
+		count     uint64
+		negSpans  []writev2.BucketSpan
+		negDeltas []int64
 	}{
 		{
 			name:   "more buckets than the bounds allow",
@@ -650,6 +653,22 @@ func TestMalformedNHCBIsNotTruncated(t *testing.T) {
 			spans:  []writev2.BucketSpan{{Offset: 10, Length: 1}},
 			deltas: []int64{5},
 			count:  5,
+		},
+		{
+			name:      "deltas for a negative range",
+			bounds:    []float64{1},
+			spans:     []writev2.BucketSpan{{Offset: 0, Length: 2}},
+			deltas:    []int64{1, 0},
+			count:     2,
+			negDeltas: []int64{1},
+		},
+		{
+			name:     "a span in the negative range",
+			bounds:   []float64{1},
+			spans:    []writev2.BucketSpan{{Offset: 0, Length: 2}},
+			deltas:   []int64{1, 0},
+			count:    2,
+			negSpans: []writev2.BucketSpan{{Offset: 0, Length: 1}},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -674,6 +693,8 @@ func TestMalformedNHCBIsNotTruncated(t *testing.T) {
 							CustomValues:   tc.bounds,
 							PositiveSpans:  tc.spans,
 							PositiveDeltas: tc.deltas,
+							NegativeSpans:  tc.negSpans,
+							NegativeDeltas: tc.negDeltas,
 						}},
 					},
 				},

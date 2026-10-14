@@ -879,19 +879,11 @@ func addPopulations(values ...uint64) (uint64, bool) {
 	return total, true
 }
 
-// hasNegativeCounts reports whether any bucket of an integer histogram resolves to a negative
+// hasNegativeCounts reports whether a run of cumulative bucket deltas ever resolves to a negative
 // population. Float histograms are dropped before they reach this.
-func hasNegativeCounts(histogram *writev2.Histogram) bool {
+func hasNegativeCounts(deltas []int64) bool {
 	var absolute int64
-	for _, delta := range histogram.NegativeDeltas {
-		absolute += delta
-		if absolute < 0 {
-			return true
-		}
-	}
-
-	absolute = 0
-	for _, delta := range histogram.PositiveDeltas {
+	for _, delta := range deltas {
 		absolute += delta
 		if absolute < 0 {
 			return true
@@ -1004,7 +996,7 @@ func validateNHCB(histogram *writev2.Histogram) error {
 	if histogram.GetZeroCountInt() != 0 || histogram.ZeroThreshold != 0 {
 		return errors.New("custom buckets have no zero bucket")
 	}
-	if hasNegativeCounts(histogram) {
+	if hasNegativeCounts(histogram.PositiveDeltas) {
 		return errors.New("histogram has negative counts")
 	}
 
