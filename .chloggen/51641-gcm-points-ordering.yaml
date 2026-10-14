@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: receiver/googlecloudmonitoring
-note: Emit data points in chronological order to prevent data loss in downstream processors.
-issues: [51641]
-subtext:
