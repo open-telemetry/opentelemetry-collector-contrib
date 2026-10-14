@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: extension/datadog
+
+note: Add `NewFactoryWithOptions` so a host embedding the collector can supply extra Agent-config options, for example to propagate an API key rotation into the extension's forwarder.
+
+issues: [51877]
+
+change_logs: [api]
