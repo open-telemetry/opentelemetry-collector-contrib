@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -54,12 +55,12 @@ func BenchmarkExporter(b *testing.B) {
 }
 
 func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
-	ctx, cancel := context.WithCancel(b.Context())
+	ctx, cancel := context.WithCancel(withMappingMode(b.Context(), mappingMode))
 	defer cancel()
 
 	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
+	runnerCfg := prepareBenchmark(b, batchSize)
 	exporter, err := runnerCfg.factory.CreateLogs(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -83,12 +84,12 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 }
 
 func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
-	ctx, cancel := context.WithCancel(b.Context())
+	ctx, cancel := context.WithCancel(withMappingMode(b.Context(), mappingMode))
 	defer cancel()
 
 	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
+	runnerCfg := prepareBenchmark(b, batchSize)
 	exporter, err := runnerCfg.factory.CreateMetrics(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -112,12 +113,12 @@ func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
 }
 
 func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
-	ctx, cancel := context.WithCancel(b.Context())
+	ctx, cancel := context.WithCancel(withMappingMode(b.Context(), mappingMode))
 	defer cancel()
 
 	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
+	runnerCfg := prepareBenchmark(b, batchSize)
 	exporter, err := runnerCfg.factory.CreateTraces(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -140,6 +141,12 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, exporter.Shutdown(ctx))
 }
 
+func withMappingMode(ctx context.Context, mappingMode string) context.Context {
+	return client.NewContext(ctx, client.Info{
+		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {mappingMode}}),
+	})
+}
+
 type benchRunnerCfg struct {
 	factory  exporter.Factory
 	provider testbed.DataProvider
@@ -151,7 +158,6 @@ type benchRunnerCfg struct {
 func prepareBenchmark(
 	b *testing.B,
 	batchSize int,
-	mappingMode string,
 ) *benchRunnerCfg {
 	b.Helper()
 
@@ -163,7 +169,6 @@ func prepareBenchmark(
 
 	cfg.factory = elasticsearchexporter.NewFactory()
 	cfg.esCfg = cfg.factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
-	cfg.esCfg.Mapping.Mode = mappingMode //nolint:staticcheck
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.MetricsIndex = TestMetricsIndex

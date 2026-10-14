@@ -42,18 +42,15 @@ type Config struct {
 
 	// LogsIndex configures the static index used for document routing for logs.
 	// It should be empty if dynamic document routing is preferred.
-	LogsIndex        string              `mapstructure:"logs_index"`
-	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
+	LogsIndex string `mapstructure:"logs_index"`
 
 	// MetricsIndex configures the static index used for document routing for metrics.
 	// It should be empty if dynamic document routing is preferred.
-	MetricsIndex        string              `mapstructure:"metrics_index"`
-	MetricsDynamicIndex DynamicIndexSetting `mapstructure:"metrics_dynamic_index"`
+	MetricsIndex string `mapstructure:"metrics_index"`
 
 	// TracesIndex configures the static index used for document routing for metrics.
 	// It should be empty if dynamic document routing is preferred.
-	TracesIndex        string              `mapstructure:"traces_index"`
-	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
+	TracesIndex string `mapstructure:"traces_index"`
 
 	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
 	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
@@ -168,16 +165,6 @@ type LogstashFormatSettings struct {
 	_ struct{}
 }
 
-type DynamicIndexSetting struct {
-	// Enabled enables dynamic index routing.
-	//
-	// Deprecated: [v0.122.0] This config is now ignored. Dynamic index routing is always done by default.
-	Enabled bool `mapstructure:"enabled"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 type DynamicIDSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
@@ -237,11 +224,6 @@ type RetrySettings struct {
 	// Enabled allows users to disable retry without having to comment out all settings.
 	Enabled bool `mapstructure:"enabled"`
 
-	// MaxRequests configures how often an HTTP request is attempted before it is assumed to be failed.
-	//
-	// Deprecated: use MaxRetries instead.
-	MaxRequests int `mapstructure:"max_requests"`
-
 	// MaxRetries configures how many times an HTTP request is retried.
 	MaxRetries int `mapstructure:"max_retries"`
 
@@ -260,16 +242,6 @@ type RetrySettings struct {
 }
 
 type MappingsSettings struct {
-	// Deprecated: [v0.145.0] Mode is ignored. The default mapping mode is "otel".
-	//
-	// The mode may be overridden in two ways:
-	//  - by the client metadata key X-Elastic-Mapping-Mode, if specified
-	//  - by the scope attribute elastic.mapping.mode, if specified
-	//
-	// The order of precedence is:
-	//   scope attribute > client metadata > default mode.
-	Mode string `mapstructure:"mode"`
-
 	// AllowedModes controls the allowed document mapping modes
 	// specified through X-Elastic-Mapping-Mode client metadata.
 	//
@@ -366,24 +338,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("compression must be one of [none, gzip]")
 	}
 
-	if cfg.Retry.MaxRequests != 0 && cfg.Retry.MaxRetries != 0 {
-		return errors.New("must not specify both retry::max_requests and retry::max_retries")
-	}
-	if cfg.Retry.MaxRequests < 0 {
-		return errors.New("retry::max_requests should be non-negative")
-	}
 	if cfg.Retry.MaxRetries < 0 {
 		return errors.New("retry::max_retries should be non-negative")
-	}
-
-	if cfg.LogsIndex != "" && cfg.LogsDynamicIndex.Enabled {
-		return errors.New("must not specify both logs_index and logs_dynamic_index; logs_index should be empty unless all documents should be sent to the same index")
-	}
-	if cfg.MetricsIndex != "" && cfg.MetricsDynamicIndex.Enabled {
-		return errors.New("must not specify both metrics_index and metrics_dynamic_index; metrics_index should be empty unless all documents should be sent to the same index")
-	}
-	if cfg.TracesIndex != "" && cfg.TracesDynamicIndex.Enabled {
-		return errors.New("must not specify both traces_index and traces_dynamic_index; traces_index should be empty unless all documents should be sent to the same index")
 	}
 
 	uniq := map[string]struct{}{}
@@ -498,26 +454,6 @@ func parseCloudID(input string) (*url.URL, error) {
 		return nil, fmt.Errorf("invalid decoded CloudID %q", string(decoded))
 	}
 	return url.Parse(fmt.Sprintf("https://%s.%s", parts[1], parts[0]))
-}
-
-func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
-	if cfg.Retry.MaxRequests != 0 {
-		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
-		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
-		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
-	}
-	if canonicalMappingModeName(cfg.Mapping.Mode) != MappingOTel.String() {
-		logger.Warn("mapping::mode config option is deprecated and ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. See the README for migration instructions.")
-	}
-	if cfg.LogsDynamicIndex.Enabled {
-		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
-	}
-	if cfg.MetricsDynamicIndex.Enabled {
-		logger.Warn("metrics_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
-	}
-	if cfg.TracesDynamicIndex.Enabled {
-		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
-	}
 }
 
 func handleTelemetryConfig(cfg *Config, logger *zap.Logger) {
