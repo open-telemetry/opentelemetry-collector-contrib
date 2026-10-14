@@ -1116,11 +1116,13 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, deltas []int64, finite
 			if start+int64(i) > int64(finiteLimit) {
 				continue
 			}
-			total, ok := addPopulations(layout.retained, uint64(bucketCount))
-			if !ok {
+			// Written out rather than calling addPopulations, which costs noticeably more in a
+			// loop that runs once per bucket.
+			retained := layout.retained + uint64(bucketCount)
+			if retained < layout.retained {
 				return bucketSpanLayout{}, errors.New("bucket populations are too large to represent")
 			}
-			layout.retained = total
+			layout.retained = retained
 		}
 
 		// The overflow bucket itself is consumed but dropped, so it must not widen the range.
