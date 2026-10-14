@@ -19,6 +19,9 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: oracle
               - key: oracledb.sql_id
                 value:
                   stringValue: fxk8aq3nds8aw
@@ -41,6 +44,9 @@ resourceLogs:
             eventName: db.server.query_plan
             timeUnixNano: "1789958605886293000"
           - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: oracle
               - key: oracledb.sql_id
                 value:
                   stringValue: fxk8aq3nds8aw
