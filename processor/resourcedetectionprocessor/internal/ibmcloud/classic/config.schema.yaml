@@ -1,5 +1,0 @@
-description: Config defines user-specified configurations unique to the IBM Cloud Classic detector.
-type: object
-properties:
-  resource_attributes:
-    $ref: ./internal/metadata.resource_attributes_config

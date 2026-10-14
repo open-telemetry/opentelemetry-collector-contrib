@@ -3,7 +3,7 @@
 
 //go:build !remove_all_resourcedetection_detectors || enable_resourcedetection_tencent_cvm_detector
 
-package resourcedetectionprocessor
+package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
 	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"

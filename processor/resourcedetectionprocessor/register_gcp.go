@@ -3,7 +3,7 @@
 
 //go:build !remove_all_resourcedetection_detectors || enable_resourcedetection_gcp_detector
 
-package resourcedetectionprocessor
+package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"

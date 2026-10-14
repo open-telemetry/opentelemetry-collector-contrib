@@ -3,7 +3,7 @@
 
 //go:build !remove_all_resourcedetection_detectors
 
-package resourcedetectionprocessor
+package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import "go.uber.org/zap"
 
