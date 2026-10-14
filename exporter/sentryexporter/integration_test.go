@@ -178,7 +178,10 @@ func TestIntegration_ProjectAutoCreateAndSend(t *testing.T) {
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
-		return len(ts.recorded(http.MethodGet, "/api/0/projects/org/newproj/keys/")) >= 2
+		state.projectMapMu.RLock()
+		defer state.projectMapMu.RUnlock()
+		_, ok := state.projectToEndpoint["newproj"]
+		return ok
 	}, 3*time.Second, 50*time.Millisecond)
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
@@ -433,7 +436,10 @@ func TestIntegration_EndpointFetchRateLimitedThenSucceeds(t *testing.T) {
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
-		return len(ts.recorded(http.MethodGet, "/api/0/projects/org/newproj/keys/")) >= 2
+		state.projectMapMu.RLock()
+		defer state.projectMapMu.RUnlock()
+		_, ok := state.projectToEndpoint["newproj"]
+		return ok
 	}, 2*time.Second, 50*time.Millisecond)
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
