@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_gcp
+
 package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 
 import (
@@ -22,11 +24,7 @@ import (
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr        = "gcp"
-	gceLabelPrefix = "gcp.gce.instance.labels."
-)
+const gceLabelPrefix = "gcp.gce.instance.labels."
 
 // NewDetector returns a detector which can detect resource attributes on:
 // * Google Compute Engine (GCE).

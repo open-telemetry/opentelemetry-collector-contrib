@@ -16,7 +16,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 )
 
 // SecurityManager manages security features for the gRPC receiver
@@ -127,33 +129,52 @@ func (*SecurityManager) getClientAuthType(authType string) (tls.ClientAuthType, 
 	return tls.NoClientCert, fmt.Errorf("invalid client auth type: %s", authType)
 }
 
-// CreateSecurityInterceptor creates a gRPC interceptor for security enforcement
+// checkClient enforces the IP allowlist and rate limit for a single client, identified by the
+// peer address found in ctx. It is the shared admission check for both unary and streaming RPCs.
+func (sm *SecurityManager) checkClient(ctx context.Context, fullMethod string) error {
+	clientIP, err := sm.getClientIP(ctx)
+	if err != nil {
+		sm.logger.Warn("Failed to get client IP", zap.Error(err))
+		clientIP = "unknown"
+	}
+
+	// Check IP allowlist if configured
+	if len(sm.allowedClients) > 0 && !sm.isIPAllowed(clientIP) {
+		sm.logger.Warn("Client IP not in allowlist", zap.String("client_ip", clientIP))
+		return status.Error(codes.PermissionDenied, "client IP not allowed")
+	}
+
+	// Apply rate limiting if enabled
+	if sm.rateLimiter != nil && !sm.rateLimiter.Allow(clientIP) {
+		sm.logger.Warn("Rate limit exceeded", zap.String("client_ip", clientIP))
+		return status.Error(codes.ResourceExhausted, "rate limit exceeded")
+	}
+
+	sm.logger.Debug("Security check passed",
+		zap.String("client_ip", clientIP),
+		zap.String("method", fullMethod))
+
+	return nil
+}
+
+// CreateSecurityInterceptor creates a gRPC interceptor for security enforcement on unary RPCs
 func (sm *SecurityManager) CreateSecurityInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		// Get client IP
-		clientIP, err := sm.getClientIP(ctx)
-		if err != nil {
-			sm.logger.Warn("Failed to get client IP", zap.Error(err))
-			clientIP = "unknown"
+		if err := sm.checkClient(ctx, info.FullMethod); err != nil {
+			return nil, err
 		}
-
-		// Check IP allowlist if configured
-		if len(sm.allowedClients) > 0 && !sm.isIPAllowed(clientIP) {
-			sm.logger.Warn("Client IP not in allowlist", zap.String("client_ip", clientIP))
-			return nil, errors.New("client IP not allowed")
-		}
-
-		// Apply rate limiting if enabled
-		if sm.rateLimiter != nil && !sm.rateLimiter.Allow(clientIP) {
-			sm.logger.Warn("Rate limit exceeded", zap.String("client_ip", clientIP))
-			return nil, errors.New("rate limit exceeded")
-		}
-
-		sm.logger.Debug("Security check passed",
-			zap.String("client_ip", clientIP),
-			zap.String("method", info.FullMethod))
-
 		return handler(ctx, req)
+	}
+}
+
+// CreateStreamSecurityInterceptor creates a gRPC interceptor for security enforcement on streaming
+// RPCs, applied once at stream open.
+func (sm *SecurityManager) CreateStreamSecurityInterceptor() grpc.StreamServerInterceptor {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		if err := sm.checkClient(ss.Context(), info.FullMethod); err != nil {
+			return err
+		}
+		return handler(srv, ss)
 	}
 }
 

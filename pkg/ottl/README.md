@@ -84,6 +84,10 @@ There is a lot more OTTL can do, like nested functions, arithmetic, indexing, an
 
 The `ottl.functions.enableLambda` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) controls whether OTTL functions may accept [Lambda Expression](LANGUAGE.md#lambda-expressions) arguments. This gate is `alpha` and disabled by default; when disabled, lambda arguments are rejected.
 
+### `pkg.ottl.functions.enableDynamicSliceArguments`
+
+The `pkg.ottl.functions.enableDynamicSliceArguments` feature gate controls whether slice arguments of stable OTTL functions, such as the `values` of [Concat](ottlfuncs/README.md#concat), may be a path or converter that resolves to a slice at runtime. This gate is `beta` and enabled by default; when disabled, these arguments only accept list literals.
+
 ## Benchmarks
 
 OTTL's performance under a realistic end-to-end pipeline is measured continuously through the

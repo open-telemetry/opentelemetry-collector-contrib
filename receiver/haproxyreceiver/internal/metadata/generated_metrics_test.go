@@ -147,6 +147,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordHaproxyRequestsTotalDataPoint(ts, "1", AttributeStatusCode1xx)
 			if tt.name == "reaggregate_set" {
 				mb.RecordHaproxyRequestsTotalDataPoint(ts, "3", AttributeStatusCode2xx)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordHaproxyRequestsTotalDataPoint(ts+1, "3", AttributeStatusCode2xx)
+				assert.Equal(t, 2, mb.metricHaproxyRequestsTotal.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -533,7 +536,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["haproxy.requests.total"], "Found a duplicate in the metrics slice: haproxy.requests.total")
 						validatedMetrics["haproxy.requests.total"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

@@ -27,7 +27,9 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		OnReadError: ReadErrorPolicyDropTrace,
+	}
 }
 
 func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {

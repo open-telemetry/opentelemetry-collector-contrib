@@ -340,6 +340,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
 	}
+	if lbc.ResourceAttributes.OracleDbEdition.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.edition"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbEdition.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbEdition.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.edition"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbEdition.EventsExclude)
+	}
 	if lbc.ResourceAttributes.OracleDbHostingType.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsInclude)
 	}
