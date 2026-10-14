@@ -657,10 +657,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			)
 		}
 
-		// A stale marker leaves the rest of the histogram unread, but its bounds are copied to
-		// the data point either way, so they are checked before the marker takes the short cut.
-		// Only the custom bucket schema has bounds; on any other one they are wire data nothing
-		// would go looking for.
+		// A stale marker still copies its bounds to the data point, so they are checked before it
+		// takes the short cut below.
 		if histogramType == "nhcb" {
 			if err := validateCustomBounds(histogram.CustomValues); err != nil {
 				dropped(err)
@@ -671,8 +669,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			continue
 		}
 
-		// Checked before anything is built, so a histogram that is going to be dropped never
-		// reserves budget or leaves an empty metric behind.
+		// Validate everything that can be checked without allocating, so that a histogram which
+		// is going to be dropped never reserves budget or leaves an empty metric behind. A stale
+		// marker is exempt because its remaining fields are ignored rather than translated.
 		var expLayout exponentialHistogramLayout
 		if !value.IsStaleNaN(histogram.Sum) {
 			var err error
@@ -963,7 +962,7 @@ func exponentialHistogramFiniteLimit(histogramSchema int32) int32 {
 }
 
 // isFloatFlavored reports whether any of a histogram's counts arrived on the float side of its
-// oneof. A count field can be left unset on the wire, so the bucket lists decide it too.
+// oneof. A count can be left unset on the wire, so the bucket lists decide it too.
 func isFloatFlavored(histogram *writev2.Histogram) bool {
 	if histogram.IsFloatHistogram() || len(histogram.PositiveCounts) > 0 || len(histogram.NegativeCounts) > 0 {
 		return true
@@ -973,8 +972,8 @@ func isFloatFlavored(histogram *writev2.Histogram) bool {
 }
 
 // validateCustomBounds checks the bounds a custom bucket histogram carries. They become OTLP
-// ExplicitBounds unchanged, where anything but a finite increasing sequence describes a bucket
-// that can hold nothing.
+// ExplicitBounds unchanged, so anything but a finite increasing sequence describes a bucket that
+// can hold nothing.
 func validateCustomBounds(bounds []float64) error {
 	prev := math.Inf(-1)
 	for i, bound := range bounds {
@@ -989,16 +988,15 @@ func validateCustomBounds(bounds []float64) error {
 	return nil
 }
 
-// nhcbBucketCount is how many buckets a custom bucket histogram's bounds separate. Bounds sit
-// between buckets, so there is always one more bucket than bound, the last of them holding
-// everything above the last bound.
+// nhcbBucketCount returns how many buckets a histogram's custom bounds separate: one ending at
+// each bound, plus one above the last.
 func nhcbBucketCount(histogram *writev2.Histogram) int {
 	return len(histogram.CustomValues) + 1
 }
 
 // validateNHCB checks that the spans and deltas of a custom bucket histogram describe exactly the
-// buckets its bounds separate. Count is left out on purpose: it is rebuilt from the buckets, the
-// way the exponential schemas rebuild theirs, so the count that arrived does not have to agree.
+// buckets its bounds separate. Count is left out on purpose: it is rebuilt from the buckets, so
+// the count that arrived does not have to agree.
 func validateNHCB(histogram *writev2.Histogram) error {
 	if len(histogram.NegativeSpans) > 0 || len(histogram.NegativeDeltas) > 0 {
 		return errors.New("custom buckets have no negative range")
@@ -1032,7 +1030,7 @@ func validateNHCB(histogram *writev2.Histogram) error {
 func validateExponentialHistogram(histogram *writev2.Histogram) (exponentialHistogramLayout, error) {
 	finiteLimit := exponentialHistogramFiniteLimit(histogram.Schema)
 
-	// Validated before the budget is reserved, so a histogram that is going to be dropped never
+	// Checked before the budget is reserved, so a histogram that is going to be dropped never
 	// takes buckets a later valid one needs.
 	positive, err := validateBucketSpanLayout(histogram.PositiveSpans, histogram.PositiveDeltas, finiteLimit)
 	if err != nil {
@@ -1051,9 +1049,9 @@ func validateExponentialHistogram(histogram *writev2.Histogram) (exponentialHist
 		)
 	}
 
-	// The compatibility specification derives Count from what the data point actually holds,
-	// rather than from the count Prometheus sent. The two differ whenever observations are not
-	// represented by a bucket, which happens for NaN observations and for the overflow bucket.
+	// The compatibility specification derives Count from what the data point holds, not from the
+	// count Prometheus sent. The two differ whenever an observation reaches no kept bucket, which
+	// is the case for NaN and for overflow.
 	count, ok := addPopulations(histogram.GetZeroCountInt(), positive.retained, negative.retained)
 	if !ok {
 		return exponentialHistogramLayout{}, errors.New("bucket populations are too large to represent")
@@ -1106,9 +1104,9 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, deltas []int64, finite
 			return bucketSpanLayout{}, fmt.Errorf("bucket index %d is past the overflow bucket at %d", nextIndex-1, finiteLimit+1)
 		}
 
-		// Reading the deltas on the pass that already walks the spans lets a histogram no data
-		// point can hold be dropped before one is built for it. A bucket is kept exactly when its
-		// index is within the finite range, which is known here because indexes only move forwards.
+		// Reading the deltas on this pass drops a histogram no data point can hold before one is
+		// built for it. A bucket is kept when its index is inside the finite range, which is known
+		// here because indexes only move forwards.
 		for i := uint32(0); i < span.Length; i++ {
 			bucketCount += deltas[valueIdx]
 			valueIdx++
@@ -1154,8 +1152,8 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, deltas []int64, finite
 }
 
 // convertDeltaBuckets converts Prometheus spans and deltas to OTLP bucket counts. Deltas are
-// cumulative: 1,2,-2 means 1,3,1. layout comes from validateBucketSpanLayout for the same spans,
-// which has already read the same deltas and rejected anything a data point cannot hold.
+// cumulative: 1,2,-2 means counts of 1,3,1. layout must come from validateBucketSpanLayout for
+// the same spans.
 func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, dest pmetric.ExponentialHistogramDataPointBuckets, layout bucketSpanLayout) {
 	buckets := prepareBuckets(dest, layout)
 
@@ -1295,8 +1293,8 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 
-	// The count is the bucket total rather than the one that arrived, which an observation of
-	// NaN raises without landing anywhere.
+	// The count is the bucket total, not the one that arrived: an observation of NaN raises that
+	// one without landing in a bucket.
 	dp.SetCount(count)
 	if count > 0 {
 		// OTLP requires a data point with no count to carry no sum.
@@ -1311,7 +1309,7 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 }
 
 // convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts. validateNHCB has
-// already ruled out the shapes the bounds checks below catch, which are here to hold if it misses.
+// already ruled out the shapes the checks below catch, which stand in case it misses one.
 func convertNHCBBuckets(histogram *writev2.Histogram) ([]uint64, bool) {
 	bucketCounts := make([]uint64, nhcbBucketCount(histogram))
 
