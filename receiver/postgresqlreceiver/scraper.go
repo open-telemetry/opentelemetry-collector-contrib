@@ -862,7 +862,9 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, metadata.AttributeOperationDel, namespace, tm.table)
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, metadata.AttributeOperationUpd, namespace, tm.table)
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd, namespace, tm.table)
-		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size, namespace, tm.table)
+		if tm.size >= 0 {
+			p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size, namespace, tm.table)
+		}
 		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount, namespace, tm.table)
 		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans, namespace, tm.table)
 
@@ -913,14 +915,15 @@ func (p *postgreSQLScraper) collectIndexes(
 	idxStats, err := client.getIndexStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
-		return
 	}
 
 	for _, stat := range idxStats {
 		namespace := formatNamespace(database, stat.schema)
 
 		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans, namespace, stat.table, stat.index)
-		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size, namespace, stat.table, stat.index)
+		if stat.size >= 0 {
+			p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size, namespace, stat.table, stat.index)
+		}
 
 		if !p.useOTelSemconv {
 			var schemaName string
