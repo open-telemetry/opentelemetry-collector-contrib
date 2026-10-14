@@ -4,12 +4,11 @@
 package sigv4authextension
 
 import (
-	"errors"
-	"time"
-
 	"context"
+	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
