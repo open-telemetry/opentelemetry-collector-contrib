@@ -1278,7 +1278,7 @@ query sample
 | client.address | Hostname or address of the client. | Any Str | - |
 | client.port | TCP port used by the client. | Any Int | - |
 | db.namespace | The database name. | Any Str | - |
-| db.query.text | The text of the database query being executed. This is the statement that ran, unless collect_full_query_text is set for the collection emitting this event, in which case it is the whole SQL batch the statement came from. | Any Str | - |
+| db.query.text | The text of the database query being executed. This is the statement that ran, unless collect_full_query_text is set for the collection emitting this event, in which case it is the whole SQL batch the statement came from. On db.server.top_query, whose metrics are per statement, that makes every record from a multi-statement batch report the same text while keeping its own metrics, so group by sqlserver.query_hash rather than by this attribute. | Any Str | - |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
@@ -1351,7 +1351,7 @@ top query
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | sqlserver.total_worker_time | Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds. | Any Double | - |
-| db.query.text | The text of the database query being executed. This is the statement that ran, unless collect_full_query_text is set for the collection emitting this event, in which case it is the whole SQL batch the statement came from. | Any Str | - |
+| db.query.text | The text of the database query being executed. This is the statement that ran, unless collect_full_query_text is set for the collection emitting this event, in which case it is the whole SQL batch the statement came from. On db.server.top_query, whose metrics are per statement, that makes every record from a multi-statement batch report the same text while keeping its own metrics, so group by sqlserver.query_hash rather than by this attribute. | Any Str | - |
 | db.namespace | The database name. | Any Str | - |
 | sqlserver.execution_count | Number of times that the plan has been executed since it was last compiled, reported in delta value. | Any Int | - |
 | sqlserver.total_logical_reads | Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
