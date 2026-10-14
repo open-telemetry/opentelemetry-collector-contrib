@@ -4,11 +4,10 @@ display_name: Azure Data Explorer Exporter
 status:
   class: exporter
   stability:
-    beta: [traces, metrics, logs]
+    unmaintained: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [ag-ramachandran]
-    emeritus: [asaharn]
+    emeritus: [asaharn, ag-ramachandran]
 
 # TODO: Update the exporter to pass the tests
 sending_queue:
