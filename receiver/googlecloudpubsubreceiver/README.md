@@ -43,8 +43,9 @@ The following configuration options are supported:
   * `ack` (default): acknowledge and drop the message.
   * `nack`: negatively acknowledge the message, so the subscription retry policy or dead-letter policy applies.
 * `ignore_encoding_error` (Deprecated): Use `on_decode_error: ignore` instead. Ignore errors when the configured
-  encoder fails to decoding a PubSub messages. Setting this to `true` behaves as `on_decode_error: ignore`;
-  setting both to conflicting values is a configuration error.
+  encoder fails to decode a Pub/Sub message. Setting it behaves as `on_decode_error: ignore`, which is the default,
+  and logs a deprecation warning at startup; setting it together with `on_decode_error` is a configuration error.
+  Deprecated in v0.164.0 and removed no earlier than v0.177.0, six months later.
 * `flow_control` (Optional): Allows to fine tune the flow control settings for the subscription stream. See
   [Flow control](#flow-control) for more details.
 

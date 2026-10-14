@@ -545,7 +545,8 @@ func TestHandleLogEncodingErrorIgnored(t *testing.T) {
 	recv, logs := createObservedReceiver(t, srv)
 	recv.logsConsumer = consumertest.NewNop()
 	recv.logsUnmarshaler = &plog.ProtoUnmarshaler{}
-	recv.config.IgnoreEncodingError = true
+	ignore := true
+	recv.config.IgnoreEncodingError = &ignore
 
 	// No error returned when IgnoreEncodingError is true
 	assert.NoError(t, recv.handleLog(ctx, invalidMessage("msg-ignored-001"), uncompressed))
@@ -582,7 +583,9 @@ func TestDecodeErrorPolicies(t *testing.T) {
 			recv.logsConsumer = consumertest.NewNop()
 			recv.logsUnmarshaler = &plog.ProtoUnmarshaler{}
 			recv.config.OnDecodeError = tt.onDecodeError
-			recv.config.IgnoreEncodingError = tt.ignoreEncodingError
+			if tt.ignoreEncodingError {
+				recv.config.IgnoreEncodingError = &tt.ignoreEncodingError
+			}
 
 			err := recv.handleLog(t.Context(), invalidMessage("msg-policy-001"), uncompressed)
 			switch {

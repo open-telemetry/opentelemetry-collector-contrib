@@ -46,13 +46,18 @@ type Config struct {
 	// Lock down the compression of the payload, leave empty for attribute based detection
 	Compression string `mapstructure:"compression"`
 
-	// Ignore errors when the configured encoder fails to decoding a PubSub messages.
+	// Ignore errors when the configured encoder fails to decode a Pub/Sub message.
 	// This asks for the behavior of on_decode_error set to "ignore", which is also the
-	// default, so setting it changes nothing on its own; setting it together with a
-	// conflicting on_decode_error fails validation.
+	// default, so setting it changes nothing on its own. Setting it at all logs a
+	// deprecation warning, and setting it together with on_decode_error fails
+	// validation. A pointer so that an explicit value in the configuration can be
+	// told apart from the option being absent.
 	//
-	// Deprecated: use on_decode_error set to "ignore" instead.
-	IgnoreEncodingError bool `mapstructure:"ignore_encoding_error"`
+	// Deprecated: use on_decode_error set to "ignore" instead. Deprecated in v0.164.0;
+	// removed no earlier than v0.177.0, six months later, following the collector's
+	// component stability policy. See the Error handling section of the README for
+	// the migration.
+	IgnoreEncodingError *bool `mapstructure:"ignore_encoding_error"`
 
 	// on_decode_error sets how a message that the configured encoding fails to decode is
 	// handled. "ignore" (the default) acknowledges and drops the message, counting it in
@@ -111,7 +116,7 @@ func (fcc *FlowControlConfig) getInternalConfig() *internal.FlowControlConfig {
 // decodeErrorPolicy resolves the effective on_decode_error policy. The
 // deprecated ignore_encoding_error flag asks for "ignore", which is also the
 // default, so an unset on_decode_error resolves to "ignore" either way; setting
-// the flag together with a conflicting on_decode_error fails validation.
+// the flag together with on_decode_error fails validation.
 func (config *Config) decodeErrorPolicy() string {
 	if config.OnDecodeError != "" {
 		return config.OnDecodeError
@@ -134,9 +139,6 @@ func (config *Config) validate() error {
 	default:
 		return fmt.Errorf("on_decode_error %q is not supported. supported values: [propagate, ignore, nack]", config.OnDecodeError)
 	}
-	if config.IgnoreEncodingError && config.OnDecodeError != "" && config.OnDecodeError != onErrorIgnore {
-		return fmt.Errorf("ignore_encoding_error conflicts with on_decode_error %q. remove the deprecated ignore_encoding_error, or set on_decode_error to \"ignore\"", config.OnDecodeError)
-	}
 	switch config.OnPipelineError {
 	case "", onErrorAck, onErrorNack:
 	default:
@@ -144,6 +146,10 @@ func (config *Config) validate() error {
 	}
 	if config.FlowControlConfig.TriggerAckBatchSize < 0 {
 		return fmt.Errorf("trigger_ack_batch_size %d is not supported. use a positive value, or 0 to disable the size trigger", config.FlowControlConfig.TriggerAckBatchSize)
+	}
+	// Kept for the ignore_encoding_error deprecation window; remove with the option.
+	if config.IgnoreEncodingError != nil && config.OnDecodeError != "" {
+		return fmt.Errorf("ignore_encoding_error cannot be set together with on_decode_error %q. remove the deprecated ignore_encoding_error", config.OnDecodeError)
 	}
 	return nil
 }

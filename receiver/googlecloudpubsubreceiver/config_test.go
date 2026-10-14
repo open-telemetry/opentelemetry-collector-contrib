@@ -139,18 +139,18 @@ func TestConfigValidationErrorPolicies(t *testing.T) {
 	c.OnDecodeError = "drop"
 	assert.ErrorContains(t, c.validate(), "on_decode_error")
 
-	// the deprecated ignore_encoding_error maps to ignore, and conflicts with
-	// any other explicitly set on_decode_error
-	c = newConfig()
-	c.IgnoreEncodingError = true
-	assert.NoError(t, c.validate())
-	assert.Equal(t, "ignore", c.decodeErrorPolicy())
-	c.OnDecodeError = "ignore"
-	assert.NoError(t, c.validate())
-	c.OnDecodeError = "propagate"
-	assert.ErrorContains(t, c.validate(), "ignore_encoding_error conflicts with on_decode_error")
-	c.OnDecodeError = "nack"
-	assert.ErrorContains(t, c.validate(), "ignore_encoding_error conflicts with on_decode_error")
+	// the deprecated ignore_encoding_error maps to ignore on its own, and cannot be
+	// combined with on_decode_error at all, whatever either is set to
+	for _, flag := range []bool{true, false} {
+		c = newConfig()
+		c.IgnoreEncodingError = &flag
+		assert.NoError(t, c.validate())
+		assert.Equal(t, "ignore", c.decodeErrorPolicy())
+		for _, policy := range []string{"ignore", "propagate", "nack"} {
+			c.OnDecodeError = policy
+			assert.ErrorContains(t, c.validate(), "ignore_encoding_error cannot be set together with on_decode_error")
+		}
+	}
 
 	// on_pipeline_error accepts ack and nack
 	for _, policy := range []string{"ack", "nack"} {
@@ -169,7 +169,8 @@ func TestDecodeErrorPolicyDefaults(t *testing.T) {
 	c.OnDecodeError = "propagate"
 	assert.Equal(t, "propagate", c.decodeErrorPolicy())
 	c.OnDecodeError = ""
-	c.IgnoreEncodingError = true
+	ignore := true
+	c.IgnoreEncodingError = &ignore
 	assert.Equal(t, "ignore", c.decodeErrorPolicy())
 	c.OnDecodeError = "nack"
 	assert.Equal(t, "nack", c.decodeErrorPolicy())
