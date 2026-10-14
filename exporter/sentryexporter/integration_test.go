@@ -116,7 +116,7 @@ func TestIntegration_OTLPRetryAfter429(t *testing.T) {
 	err = state.pushTraceData(t.Context(), zap.NewNop(), td)
 	require.Error(t, err)
 
-	recs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/1/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
 }
 
@@ -186,7 +186,7 @@ func TestIntegration_ProjectAutoCreateAndSend(t *testing.T) {
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
-	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
 }
 
@@ -242,7 +242,7 @@ func TestIntegration_ForbiddenWithProjectIDRejectedEvictsCacheAndRetries(t *test
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
-	recs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/1/integration/otlp/v1/traces/")
 	require.Len(t, recs, 2)
 }
 
@@ -293,8 +293,8 @@ func TestIntegration_ExistingProjectSend(t *testing.T) {
 	ld := logsForProject("proj")
 	require.NoError(t, state.pushLogData(t.Context(), zap.NewNop(), ld))
 
-	traceRecs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
-	logRecs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/logs/")
+	traceRecs := ts.recordedPosts("/api/1/integration/otlp/v1/traces/")
+	logRecs := ts.recordedPosts("/api/1/integration/otlp/v1/logs/")
 	require.Len(t, traceRecs, 1)
 	require.Len(t, logRecs, 1)
 }
@@ -363,12 +363,15 @@ func TestIntegration_ProjectCreateRateLimitedThenSucceeds(t *testing.T) {
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
-		return len(ts.recorded(http.MethodPost, "/api/0/teams/org/team/projects/")) >= 2
+		state.projectMapMu.RLock()
+		defer state.projectMapMu.RUnlock()
+		_, ok := state.projectToEndpoint["newproj"]
+		return ok
 	}, 2*time.Second, 50*time.Millisecond)
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
-	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
 }
 
@@ -444,7 +447,7 @@ func TestIntegration_EndpointFetchRateLimitedThenSucceeds(t *testing.T) {
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
-	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
 }
 
