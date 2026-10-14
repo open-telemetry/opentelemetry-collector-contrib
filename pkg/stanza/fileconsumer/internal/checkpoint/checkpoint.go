@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"maps"
 
-	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -24,10 +23,6 @@ const knownFilesKey = "knownFiles"
 // Save syncs the most recent set of files to the database using protobuf encoding
 func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata) error {
 	return SaveKey(ctx, persister, rmds, knownFilesKey)
-}
-
-func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
-	return saveKeyProto(ctx, persister, rmds, key, ops...)
 }
 
 // Load loads the most recent set of files from the database
