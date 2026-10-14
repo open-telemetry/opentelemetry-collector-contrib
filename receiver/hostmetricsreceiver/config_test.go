@@ -204,6 +204,48 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	require.ErrorContains(t, confmap.Validate(cfg), "must specify at least one scraper when using host_metrics receiver")
 }
 
+func TestConfigValidate_MetadataCollectionInterval(t *testing.T) {
+	tests := []struct {
+		name        string
+		interval    time.Duration
+		expectError bool
+	}{
+		{
+			name:        "invalid interval - negative",
+			interval:    -time.Second,
+			expectError: true,
+		},
+		{
+			name:        "valid interval - zero",
+			interval:    0,
+			expectError: false,
+		},
+		{
+			name:        "valid interval - positive",
+			interval:    time.Second,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cpu := cpuscraper.NewFactory()
+			cfg := createDefaultConfig().(*Config)
+			cfg.MetadataCollectionInterval = tt.interval
+			cfg.Scrapers = map[component.Type]component.Config{
+				cpu.Type(): cpu.CreateDefaultConfig(),
+			}
+
+			err := confmap.Validate(cfg)
+			if tt.expectError {
+				require.ErrorContains(t, err, "metadata_collection_interval must not be negative")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()

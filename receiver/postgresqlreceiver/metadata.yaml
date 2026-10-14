@@ -256,6 +256,9 @@ attributes:
   postgresql.total_plan_time:
     description: Total time spent planning the statement, in delta seconds.
     type: double
+  postgresql.userid:
+    description: OID of the role that executed the statement. Stays set even after the role is dropped.
+    type: string
   postgresql.wait_event:
     description: Wait event name if backend is currently waiting, otherwise NULL.
     type: string
@@ -305,6 +308,7 @@ events:
       - db.system.name
       - postgresql.queryid
       - db.namespace
+      - postgresql.userid
       - postgresql.rolname
       - postgresql.query_plan
 
@@ -351,6 +355,7 @@ events:
       - postgresql.temp_blks_read
       - postgresql.temp_blks_written
       - postgresql.queryid
+      - postgresql.userid
       - postgresql.rolname
       - postgresql.total_exec_time
       - postgresql.total_plan_time
@@ -530,6 +535,9 @@ metrics:
       value_type: int
     unit: "By"
     attributes: [db.namespace, db.collection.name, postgresql.index.name]
+    extended_documentation: |
+      No data point is reported for an index that is dropped while the receiver is collecting,
+      because its size is no longer measurable.
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
@@ -618,6 +626,9 @@ metrics:
       monotonic: false
       value_type: int
     attributes: [db.namespace, db.collection.name]
+    extended_documentation: |
+      No data point is reported for a table that is dropped while the receiver is collecting,
+      because its size is no longer measurable. The table's other metrics are still reported.
   postgresql.table.vacuum.count:
     description: Number of times a table has manually been vacuumed.
     stability: development
