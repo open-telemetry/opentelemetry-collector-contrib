@@ -4,7 +4,7 @@ component: receiver/riak
 
 note: Update the stability of the receiver from `beta` to `unmaintained`
 
-issues: []
+issues: [52051]
 
 subtext: ""
 
