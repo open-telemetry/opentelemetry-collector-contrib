@@ -17,7 +17,7 @@ properties:
     type: string
     format: duration
   database_name_attributes:
-    description: DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority. The default value is {"db.name"}.
+    description: DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority. The default value is {"db.name", "db.namespace"}.
     type: array
     items:
       type: string
