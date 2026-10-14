@@ -435,6 +435,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasContextSwitchType := dp.Attributes().Get("type")
 									assert.True(t, hasContextSwitchType, "expected legacy attr context_switch_type")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasContextSwitchType := dp.Attributes().Get("type")
+									assert.False(t, hasContextSwitchType, "didn't expect legacy attr context_switch_type")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -519,6 +522,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasState := dp.Attributes().Get("state")
 									assert.True(t, hasState, "expected legacy attr state")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasState := dp.Attributes().Get("state")
+									assert.False(t, hasState, "didn't expect legacy attr state")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -603,6 +609,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasState := dp.Attributes().Get("state")
 									assert.True(t, hasState, "expected legacy attr state")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasState := dp.Attributes().Get("state")
+									assert.False(t, hasState, "didn't expect legacy attr state")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -687,6 +696,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasDirection := dp.Attributes().Get("direction")
 									assert.True(t, hasDirection, "expected legacy attr direction")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasDirection := dp.Attributes().Get("direction")
+									assert.False(t, hasDirection, "didn't expect legacy attr direction")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -941,6 +953,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasPagingFaultType := dp.Attributes().Get("type")
 									assert.True(t, hasPagingFaultType, "expected legacy attr paging_fault_type")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasPagingFaultType := dp.Attributes().Get("type")
+									assert.False(t, hasPagingFaultType, "didn't expect legacy attr paging_fault_type")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
