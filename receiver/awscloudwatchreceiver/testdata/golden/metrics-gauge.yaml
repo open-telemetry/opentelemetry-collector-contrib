@@ -54,3 +54,4 @@ resourceMetrics:
             name: amazonaws.com/AWS/EC2/CPUUtilization
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
+          version: test

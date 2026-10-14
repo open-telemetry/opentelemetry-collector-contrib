@@ -102,6 +102,13 @@ $defs:
         type: boolean
       log_response_body:
         type: boolean
+  version_detection_settings:
+    description: VersionDetectionSettings defines settings controlling whether the exporter queries Elasticsearch at startup for its version and build flavor. This information is used to automatically enable features supported by the connected Elasticsearch version, so no per-feature configuration is required. When disabled, the exporter does not query Elasticsearch and assumes only the baseline capability set is available.
+    type: object
+    properties:
+      enabled:
+        description: Enabled controls whether version detection is performed at startup. It defaults to true.
+        type: boolean
 description: Config defines configuration for Elastic exporter.
 type: object
 properties:
@@ -170,6 +177,9 @@ properties:
   traces_index:
     description: TracesIndex configures the static index used for document routing for metrics. It should be empty if dynamic document routing is preferred.
     type: string
+  version_detection:
+    description: VersionDetection configures whether the exporter queries Elasticsearch at startup for its version and build flavor.
+    $ref: version_detection_settings
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
   - $ref: authentication_settings

@@ -129,7 +129,10 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 	jexp, err := newClientUDP(agentEndpoint, jr.config.ThriftBinaryUDP.HasValue())
 	require.NoError(t, err, "Failed to create the Jaeger OpenTelemetry exporter for the live application")
 
-	// 3. Now finally send some spans
+	// 3. An unsupported legacy Zipkin batch must not stop the receiver.
+	require.NoError(t, jexp.EmitZipkinBatch(t.Context(), nil))
+
+	// 4. Now finally send some spans
 	td := generateTraceData()
 	batches := jaeger.ProtoFromTraces(td)
 	for _, batch := range batches {
