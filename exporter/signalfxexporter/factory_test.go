@@ -20,9 +20,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
@@ -40,6 +42,61 @@ func TestCreateMetrics(t *testing.T) {
 
 	_, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
+}
+
+func TestLogDeprecatedMetricsWarnings(t *testing.T) {
+	deprecatedMetricName := "container_cpu_utilization"
+	deprecationWarning := "The metric \"container_cpu_utilization\" has been deprecated and will be removed in a future release. Please use \"container.cpu.usage\" instead."
+
+	tests := []struct {
+		name           string
+		includeMetrics []dpfilters.MetricFilter
+		wantWarning    bool
+	}{
+		{
+			name:           "metric is not included",
+			includeMetrics: []dpfilters.MetricFilter{},
+			wantWarning:    false,
+		},
+		{
+			name: "include_metrics:metric_name",
+			includeMetrics: []dpfilters.MetricFilter{{
+				MetricName: deprecatedMetricName,
+			}},
+			wantWarning: true,
+		},
+		{
+			name: "include_metrics:metric_names",
+			includeMetrics: []dpfilters.MetricFilter{{
+				MetricNames: []string{deprecatedMetricName},
+			}},
+			wantWarning: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.AccessToken = "access_token"
+			cfg.Realm = "us0"
+			cfg.IncludeMetrics = tt.includeMetrics
+
+			observedCore, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(observedCore)
+			settings := exportertest.NewNopSettings(metadata.Type)
+			settings.Logger = logger
+
+			_, err := NewFactory().CreateMetrics(t.Context(), settings, cfg)
+			require.NoError(t, err)
+
+			if tt.wantWarning {
+				require.Equal(t, 1, observedLogs.Len())
+				assert.Equal(t, deprecationWarning, observedLogs.All()[0].Message)
+				return
+			}
+			assert.Zero(t, observedLogs.Len())
+		})
+	}
 }
 
 func TestCreateTraces(t *testing.T) {
@@ -659,6 +716,54 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.Equal(t, 45, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Empty(t, dps)
+}
+
+func TestIncludeExcludeTranslatedCPUMetric(t *testing.T) {
+	tests := []struct {
+		name                string
+		includeMetric       string
+		expectedMetricNames []string
+	}{
+		{
+			name: "default excludes",
+			expectedMetricNames: []string{
+				"container.cpu.usage",
+			},
+		},
+		{
+			name:          "include overrides excludes",
+			includeMetric: "container_cpu_utilization",
+			expectedMetricNames: []string{
+				"container.cpu.usage",
+				"container_cpu_utilization",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := NewFactory()
+			cfg := f.CreateDefaultConfig().(*Config)
+			if tt.includeMetric != "" {
+				cfg.IncludeMetrics = []dpfilters.MetricFilter{{MetricNames: []string{tt.includeMetric}}}
+			}
+			require.NoError(t, setDefaultExcludes(cfg))
+
+			converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
+			require.NoError(t, err)
+
+			metrics := []map[string]string{
+				{"container.cpu.time": ""},
+				{"container.cpu.usage": ""},
+			}
+			dps := converter.MetricsToSignalFxV2(getMetrics(metrics))
+			metricNames := make([]string, 0, len(dps))
+			for _, dp := range dps {
+				metricNames = append(metricNames, dp.Metric)
+			}
+			require.ElementsMatch(t, tt.expectedMetricNames, metricNames)
+		})
+	}
 }
 
 func TestDefaultExcludesKubeletMemoryMetrics(t *testing.T) {
