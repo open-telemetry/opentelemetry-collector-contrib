@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/elastic/go-docappender/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,6 +45,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -270,7 +272,7 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("publish with headers", func(t *testing.T) {
 		done := make(chan struct{}, 1)
-		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+		server := newESTestServerBulkHandlerFunc(t, "", func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t,
 				fmt.Sprintf("OpenTelemetry Collector/latest (%s/%s)", runtime.GOOS, runtime.GOARCH),
 				r.UserAgent(),
@@ -295,7 +297,7 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("publish with configured user-agent header", func(t *testing.T) {
 		done := make(chan struct{}, 1)
-		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+		server := newESTestServerBulkHandlerFunc(t, "", func(w http.ResponseWriter, r *http.Request) {
 			// User the configured User-Agent header, rather than
 			// the default one derived from BuildInfo.
 			assert.Equal(t, "overridden", r.UserAgent())
@@ -1308,6 +1310,152 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("exponential histogram falls back to t-digest in ECS mode on ES >= 9.3.0", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "9.3.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetZeroCount(2)
+		dp.Positive().SetOffset(1)
+		dp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+		dp.Negative().SetOffset(1)
+		dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action: []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,1,2,1,1],"values":[
+ -24.0,-3.0,0.0,6.0,12.0]}}}`),
+			},
+		}
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("exponential histogram falls back to t-digest in ECS mode on ES < 9.3.0", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "7.0.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetZeroCount(2)
+		dp.Positive().SetOffset(1)
+		dp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+		dp.Negative().SetOffset(1)
+		dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action: []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,1,2,1,1],"values":[
+ -24.0,-3.0,0.0,6.0,12.0]}}}`),
+			},
+		}
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("exponential histogram falls back to t-digest when mode is otel and ES < 9.3.0", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "7.0.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetZeroCount(2)
+		dp.Positive().SetOffset(1)
+		dp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+		dp.Negative().SetOffset(1)
+		dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"counts":[1,1,2,1,1],"values":[-24.0,-3.0,0.0,6.0,12.0]}},"_metric_names_hash":"b23939f78dc5f649"}`),
+			},
+		}
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("publishes exponential histogram when mode is otel and ES >= 9.3.0", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "9.3.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetZeroCount(2)
+		dp.Positive().SetOffset(1)
+		dp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+		dp.Negative().SetOffset(1)
+		dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"exponential_histogram"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"scale":0,"zero":{"count":2},"negative":{"indices":[1,4],"counts":[1,1]},"positive":{"indices":[2,3],"counts":[1,1]}}},"_metric_names_hash":"b23939f78dc5f649"}`),
+			},
+		}
 		assertRecordedItems(t, expected, rec, false)
 	})
 
@@ -3743,7 +3891,7 @@ func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
 	var count atomic.Int32
 	done := make(chan struct{}, 1)
 	defer close(done)
-	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+	server := newESTestServerBulkHandlerFunc(t, "", func(w http.ResponseWriter, _ *http.Request) {
 		if count.Add(1) == 1 {
 			<-done
 		}
@@ -3774,7 +3922,7 @@ func TestExporterTimeout_Independent(t *testing.T) {
 	// checking the total time elapsed across attempts exceeds configured timeout
 	successfulOnAttempt := 3
 	var count atomic.Int32
-	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+	server := newESTestServerBulkHandlerFunc(t, "", func(w http.ResponseWriter, _ *http.Request) {
 		if int(count.Add(1)) < successfulOnAttempt {
 			w.WriteHeader(http.StatusTooManyRequests)
 			return
@@ -3857,4 +4005,82 @@ func TestExporterProfiles(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestResolveDefaultHistogramMapping(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		cfg               *Config
+		v                 string
+		expected          datapoints.HistogramMapping
+		expectSemverError bool
+	}{
+		{
+			name: "exponential histogram is returned when version is 9.3.0",
+			cfg: &Config{
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
+				},
+			},
+			v:        "9.3.0",
+			expected: datapoints.HistogramMappingExponential,
+		},
+		{
+			name: "exponential histogram is returned when version is 9.3.0-SNAPSHOT",
+			cfg: &Config{
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
+				},
+			},
+			v:        "9.3.0-SNAPSHOT",
+			expected: datapoints.HistogramMappingExponential,
+		},
+		{
+			name: "T-Digest histogram is returned when version detection is off",
+			cfg: &Config{
+				VersionDetection: VersionDetectionSettings{
+					Enabled: false,
+				},
+			},
+			v:        "9.6.0",
+			expected: datapoints.HistogramMappingTDigest,
+		},
+		{
+			name: "T-Digest is returned when ES version is less than 9.3.0",
+			cfg: &Config{
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
+				},
+			},
+			v:        "1.2.3",
+			expected: datapoints.HistogramMappingTDigest,
+		},
+		{
+			name:              "T-Digest is returned when config is nil",
+			cfg:               nil,
+			v:                 "",
+			expectSemverError: true,
+			expected:          datapoints.HistogramMappingTDigest,
+		},
+		{
+			name: "T-Digest is returned when version is empty",
+			cfg: &Config{
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
+				},
+			},
+			expected:          datapoints.HistogramMappingTDigest,
+			expectSemverError: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v, err := semver.NewVersion(tc.v)
+			if !tc.expectSemverError {
+				require.NoError(t, err)
+			}
+
+			actual := resolveDefaultHistogramMapping(tc.cfg, v)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }
