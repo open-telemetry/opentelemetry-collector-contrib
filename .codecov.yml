@@ -885,6 +885,10 @@ component_management:
     name: receiver_gitlab
     paths:
     - receiver/gitlabreceiver/**
+  - component_id: receiver_gnmi
+    name: receiver_gnmi
+    paths:
+    - receiver/gnmireceiver/**
   - component_id: receiver_googlecloudmonitoring
     name: receiver_googlecloudmonitoring
     paths:
