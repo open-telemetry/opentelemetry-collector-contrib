@@ -20,7 +20,15 @@ func TestNewFactory(t *testing.T) {
 
 	ext, _ := createExtension(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	fext, _ := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
-	assert.Equal(t, fext, ext)
+	assert.IsType(t, (*sigv4Auth)(nil), ext)
+	assert.IsType(t, (*sigv4Auth)(nil), fext)
+
+	actual := fext.(*sigv4Auth)
+	expected := ext.(*sigv4Auth)
+
+	assert.Equal(t, expected.cfg, actual.cfg)
+	assert.Equal(t, expected.awsSDKInfo, actual.awsSDKInfo)
+	assert.NotNil(t, actual.tokenGenerator)
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
