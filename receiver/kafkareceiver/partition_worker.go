@@ -43,7 +43,7 @@ type pc struct {
 	// marked prefix advances past them, and the map dies with pc on rebalance.
 	skipConsume map[int64]struct{}
 	// window tracks the records in flight when max_in_flight.records is above
-	// 1. Only the worker goroutine sets it.
+	// 1, across fetches. Only the worker goroutine sets it.
 	window *inflightWindow
 	// pauseReasons stores a bitmask of partitionPauseReason values.
 	pauseReasons atomic.Uint32
@@ -116,8 +116,14 @@ func (p *pc) logProcessError(record *kgo.Record, err error) {
 // the shared poll loop or workers for other partitions.
 func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 	defer pc.wg.Done()
+	// Nil on the sequential path, meaning it never fires in the select below.
+	var windowFailed <-chan struct{}
 	if c.maxInFlight() > 1 {
 		pc.window = newInflightWindow(c, pc)
+		windowFailed = pc.window.failedCh
+		// This runs before pc.wg.Done, so revoke and shutdown wait for every call
+		// the window started, whichever fetch it came from.
+		defer pc.window.wg.Wait()
 	}
 	partition := map[string][]int32{tp.topic: {tp.partition}}
 	for {
@@ -125,17 +131,30 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 		case <-pc.ctx.Done():
 			return
 		case <-pc.mailbox.notify:
+		case <-windowFailed:
 		}
 
 		for {
 			if pc.ctx.Err() != nil {
 				return
 			}
-			batch, ok := pc.mailbox.dequeue(func() {
-				if pc.clearPauseReasons(partitionPauseBackpressure) {
-					c.client.ResumeFetchPartitions(partition)
+			var batch kgo.FetchTopicPartition
+			ok := true
+			if pc.window != nil && pc.window.hasFailed() {
+				// A record failed, so stop taking new batches. Processing an empty
+				// batch waits for the window to drain, then rewinds or pauses at the
+				// failed record.
+				batch = kgo.FetchTopicPartition{
+					Topic:          tp.topic,
+					FetchPartition: kgo.FetchPartition{Partition: tp.partition},
 				}
-			})
+			} else {
+				batch, ok = pc.mailbox.dequeue(func() {
+					if pc.clearPauseReasons(partitionPauseBackpressure) {
+						c.client.ResumeFetchPartitions(partition)
+					}
+				})
+			}
 			if !ok {
 				if !pc.mailbox.hasPendingOffsetChange() {
 					break
@@ -193,7 +212,9 @@ func (c *franzConsumer) applyMailboxRewind(pc *pc, tp topicPartition, partition 
 //   - Independent with max_in_flight above 1 always marks after processing,
 //     because concurrent calls have no single record to mark before.
 //     processRecordsConcurrent also marks the contiguous prefix as soon as
-//     earlier in-flight records finish.
+//     earlier in-flight records finish. With window cross_fetch it returns
+//     once the batch's records have started, and their calls keep running in
+//     the partition window.
 func (c *franzConsumer) processPartitionBatch(pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
 	var fatalRecord *kgo.Record
 	fatalIsPermanent := false
@@ -359,15 +380,16 @@ func (c *franzConsumer) maxInFlight() int {
 
 // processRecordsConcurrent starts a handleMessage call for each record of the
 // fetch in the partition window. The window allows max_in_flight.records calls
-// and max_in_flight.bytes bytes. As records finish, it
+// and max_in_flight.bytes bytes, counted across fetches. As records finish, it
 // marks up to the first record that isn't accepted yet, in fetch order. A
 // failure that message marking is configured to skip counts as accepted.
 //
 // When a record fails and isn't skipped, it starts no new calls, waits for the
 // ones running, and returns the failed record and whether the error is
 // permanent. Before a rewind it remembers which records above the failed one
-// already finished, so the next fetch doesn't send them to Consume again. It
-// waits for every call it started before it returns.
+// already finished, so the next fetch doesn't send them to Consume again. With
+// window per_fetch it also waits for the window when nothing failed, so calls
+// never span fetches.
 func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartition) (fatalRecord *kgo.Record, fatalIsPermanent bool) {
 	w := pc.window
 	for _, msg := range p.Records {
@@ -385,11 +407,17 @@ func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartiti
 		}
 		w.start(w.push(msg, p.HighWatermark, size))
 	}
-	w.wg.Wait()
+	// Only this goroutine starts calls, so once the wait returns nothing is
+	// running and failed can't change. If a call fails right after the check,
+	// failedCh wakes the worker and the next pass handles it.
+	waited := c.config.PartitionProcessing.MaxInFlight.Window != InFlightWindowCrossFetch || w.hasFailed()
+	if waited {
+		w.wg.Wait()
+	}
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.failed {
+	if waited && w.failed {
 		// After wg.Wait every call is done and its writes are visible here. The
 		// first entry is the record the mark can't pass.
 		hole := w.entries[0]
@@ -421,12 +449,15 @@ type inflightEntry struct {
 	err error
 }
 
-// inflightWindow holds the in-flight calls of one partition.
+// inflightWindow holds the in-flight calls of one partition across fetches.
 type inflightWindow struct {
 	c  *franzConsumer
 	pc *pc
 	// wg tracks every call the window started.
 	wg sync.WaitGroup
+	// failedCh wakes an idle worker after the first failure, so it rewinds
+	// even when no new batch arrives.
+	failedCh chan struct{}
 
 	mu sync.Mutex
 	// room is signaled when a call finishes. Only the goroutine that starts
@@ -448,9 +479,15 @@ type inflightWindow struct {
 }
 
 func newInflightWindow(c *franzConsumer, pc *pc) *inflightWindow {
-	w := &inflightWindow{c: c, pc: pc}
+	w := &inflightWindow{c: c, pc: pc, failedCh: make(chan struct{}, 1)}
 	w.room = sync.NewCond(&w.mu)
 	return w
+}
+
+func (w *inflightWindow) hasFailed() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.failed
 }
 
 // push appends rec to the FIFO and counts its size bytes until the mark passes
@@ -518,8 +555,12 @@ func (w *inflightWindow) complete(e *inflightEntry, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	e.done, e.err = true, err
-	if err != nil {
+	if err != nil && !w.failed {
 		w.failed = true
+		select {
+		case w.failedCh <- struct{}{}:
+		default:
+		}
 	}
 	var last *inflightEntry
 	for len(w.entries) > 0 && w.entries[0].done && w.entries[0].err == nil {
@@ -561,6 +602,10 @@ func (w *inflightWindow) reset() {
 	// still hold their bytes. Drop them all at once.
 	w.inflightBytes = 0
 	w.failed = false
+	select {
+	case <-w.failedCh:
+	default:
+	}
 }
 
 // dropSkipConsume removes skip entries at or below the last marked record. The
