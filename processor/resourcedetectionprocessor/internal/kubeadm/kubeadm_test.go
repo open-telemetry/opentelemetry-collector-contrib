@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm/internal/metadata"
 )
@@ -41,7 +41,7 @@ func TestDetect(t *testing.T) {
 	md.On("ClusterUID").Return("uid-1", nil)
 	cfg := CreateDefaultConfig()
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
@@ -67,7 +67,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	cfg.ResourceAttributes.K8sClusterName.Enabled = false
 	cfg.ResourceAttributes.K8sClusterUID.Enabled = false
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
