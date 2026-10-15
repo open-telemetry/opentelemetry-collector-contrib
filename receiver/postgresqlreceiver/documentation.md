@@ -164,6 +164,9 @@ The number of index scans on a table.
 
 The size of the index on disk.
 
+No data point is reported for an index that is dropped while the receiver is collecting,
+because its size is no longer measurable.
+
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
@@ -253,6 +256,9 @@ Number of user tables in a database.
 ### postgresql.table.size
 
 Total disk space used by a table, including its indexes and TOAST data.
+
+No data point is reported for a table that is dropped while the receiver is collecting,
+because its size is no longer measurable. The table's other metrics are still reported.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
