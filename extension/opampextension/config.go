@@ -91,6 +91,9 @@ type Capabilities struct {
 	ReportsAvailableComponents bool `mapstructure:"reports_available_components"`
 	// AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)
 	AcceptsRestartCommand bool `mapstructure:"accepts_restart_command"`
+	// ReportsHeartbeat enables the OpAMP ReportsHeartbeat Capability, allowing the server to
+	// adjust the agent's heartbeat interval via ConnectionSettingsOffers. (default: true)
+	ReportsHeartbeat bool `mapstructure:"reports_heartbeat"`
 }
 
 func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
@@ -108,6 +111,9 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 	}
 	if caps.AcceptsRestartCommand {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+	}
+	if caps.ReportsHeartbeat {
+		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
 	}
 
 	return agentCapabilities

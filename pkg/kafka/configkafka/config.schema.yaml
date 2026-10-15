@@ -46,6 +46,10 @@ $defs:
         description: ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
         type: string
         format: duration
+      dial_timeout:
+        description: DialTimeout specifies the time allowed to establish a connection to a broker (default 10s).
+        type: string
+        format: duration
       metadata:
         description: Metadata holds metadata-related configuration for producers and consumers.
         $ref: metadata_config
