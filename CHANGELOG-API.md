@@ -7,6 +7,38 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.2.0/v0.163.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: `FunctionContext` and the `Standard*Getter` structs can no longer be initialized with unkeyed struct literals. (#47305)
+- `pkg/ottl`: Move the experimental lambda expression Go API into the `pkg/ottl/xottl` module so it is excluded from OTTL's stability guarantees. (#51566)
+  `LambdaExpression`, `LambdaActivation`, and `NewTestingLambdaExpression` moved to
+  `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl`. `LocalIdentifierDecl` and
+  `LambdaExpression.Formals` were removed.
+  
+- `pkg/ottl`: Move the experimental `SliceGetter` API to the `xottl` module. (#51565)
+  `ottl.SliceGetter`, `ottl.GetLiteralValues`, `ottl.GetScalarLiteralValues`, and `ottl.NewTestingSliceGetter` are now in `xottl`.
+
+### 💡 Enhancements 💡
+
+- `connector/routing`: Create `With*Functions` factory options to allow custom OTTL functions registration. (#51709)
+- `pkg/ottl`: Improve OTTL parse error diagnostics by reporting the line and column of the input where available. (#51680)
+  Not all parse errors carry a position: errors that aggregate multiple statements, and some
+  inner errors that didn't already carry one, are still returned without one. The exact
+  wording and position of statement, condition, and value expression parse error messages
+  has changed as a result. The position is exposed programmatically via the new experimental
+  `xottl.Error` type.
+  
+- `pkg/ottl`: Add `WithCache` option to the `ottlotelcol` `TransformContext`. (#51652)
+- `pkg/pdatatest`: Add pmetricassert numeric comparison operators (#48470)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Preserve the distinction between nil and empty slices in the `xottl` `GetScalarLiteralValues` and `GetLiteralValues` helpers. (#51814)
+
+<!-- previous-version -->
+
 ## v1.1.0/v0.162.0
 
 ### 🛑 Breaking changes 🛑
