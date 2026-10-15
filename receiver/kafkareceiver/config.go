@@ -217,9 +217,10 @@ type MaxInFlightConfig struct {
 	// Records is how many calls may run at once. Default 1.
 	Records int `mapstructure:"records"`
 
-	// Bytes caps the key and value bytes of the records in those calls, counted
-	// after decompression. Headers are not counted. 0 means no cap. A record
-	// above the cap still runs, alone. It has no effect when Records is 1.
+	// Bytes caps the key and value bytes of the records in flight, from the start
+	// of their call until the mark passes them, counted after decompression.
+	// Headers are not counted. 0 means no cap. A record above the cap still runs,
+	// alone. It has no effect when Records is 1.
 	Bytes int `mapstructure:"bytes"`
 
 	_ struct{} // avoids unkeyed_literal_initialization.
