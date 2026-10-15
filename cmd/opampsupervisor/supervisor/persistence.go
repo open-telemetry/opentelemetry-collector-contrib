@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -29,8 +30,8 @@ type persistentState struct {
 // RemoteConfigStatus is a custom struct that is used to marshal/unmarshal the remote config status.
 // LastRemoteConfigHash is a hex encoded string of the last remote config hash for human readability.
 type RemoteConfigStatus struct {
-	// Status is the status of the last remote config.
-	Status protobufs.RemoteConfigStatuses `yaml:"status"`
+	// Status is stored cleanly as a plain string inside the YAML file ("applied", "failed", etc.)
+	Status string `yaml:"status"`
 	// LastRemoteConfigHash is a hex encoded string of the last remote config hash for human readability.
 	LastRemoteConfigHash string `yaml:"last_remote_config_hash"`
 	// ErrorMessage is the error message of the last remote config.
@@ -42,9 +43,41 @@ func (p *persistentState) SetInstanceID(id uuid.UUID) error {
 	return p.writeState()
 }
 
-func (p *persistentState) SetLastRemoteConfigStatus(status *protobufs.RemoteConfigStatus) error {
+func remoteConfigStatusToString(status protobufs.RemoteConfigStatuses) string {
+	switch status {
+	case protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED:
+		return "applied"
+	case protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING:
+		return "applying"
+	case protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED:
+		return "failed"
+	case protobufs.RemoteConfigStatuses_RemoteConfigStatuses_UNSET:
+		return "unset"
+	default:
+		return "unset"
+	}
+}
+
+func remoteConfigStatusFromString(status string) protobufs.RemoteConfigStatuses {
+	switch strings.ToLower(status) {
+	case "applied":
+		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
+	case "applying":
+		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
+	case "failed":
+		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+	case "unset":
+		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_UNSET
+	default:
+		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_UNSET
+	}
+}
+
+func (p *persistentState) SetLastRemoteConfigStatus(
+	status *protobufs.RemoteConfigStatus,
+) error {
 	p.LastRemoteConfigStatus = &RemoteConfigStatus{
-		Status:               status.Status,
+		Status:               remoteConfigStatusToString(status.Status),
 		LastRemoteConfigHash: hex.EncodeToString(status.LastRemoteConfigHash),
 		ErrorMessage:         status.ErrorMessage,
 	}
@@ -60,8 +93,15 @@ func (p *persistentState) GetLastRemoteConfigStatus() *protobufs.RemoteConfigSta
 		p.logger.Error("Failed to decode last remote config hash, returning empty status", zap.Error(err))
 		return nil
 	}
+
+	// Stably parse the plain text YAML string back to the native protobuf integer enum
+	var protobufStatus protobufs.RemoteConfigStatuses
+	protobufStatus = remoteConfigStatusFromString(
+		p.LastRemoteConfigStatus.Status,
+	)
+
 	return &protobufs.RemoteConfigStatus{
-		Status:               p.LastRemoteConfigStatus.Status,
+		Status:               protobufStatus,
 		LastRemoteConfigHash: lastRemoteConfigHash,
 		ErrorMessage:         p.LastRemoteConfigStatus.ErrorMessage,
 	}
