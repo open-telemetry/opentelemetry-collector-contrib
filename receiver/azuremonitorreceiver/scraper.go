@@ -508,13 +508,7 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 	// when the metricnamespace query parameter is set explicitly. Make additional calls
 	// only for namespaces applicable to this resource that were not already returned
 	// by the default call above.
-	for configNamespace := range s.cfg.Metrics {
-		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
-			continue
-		}
-		if !isNamespaceApplicable(configNamespace, resourceType) {
-			continue
-		}
+	for _, configNamespace := range dedupAlreadyCollectedNamespaces(s.cfg.Metrics, discoveredNamespaces, resourceType) {
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
 			Metricnamespace: new(configNamespace),
 		}
@@ -879,28 +873,32 @@ func serializeArmMetadataValues(metadataValues []*armmonitor.MetadataValue) stri
 	return strings.Join(parts, ",")
 }
 
-// isNamespaceApplicable returns true if the configured metric namespace applies to
-// the given Azure resource type.
+// dedupAlreadyCollectedNamespaces returns configured metric namespaces that require an
+// explicit Definitions query for the given resourceType.
 //
-// In Azure ARM, resource types always follow the format "<provider>/<type>" (e.g.
-// "Microsoft.Compute/virtualMachines", "Microsoft.Storage/storageAccounts/blobServices").
-// Metric namespaces for ARM resource types only apply to resources of that exact type
-// (case-insensitive). Querying a resource with another resource type's namespace
-// (including parent or child resource types) results in a 400 BadRequest error from Azure Monitor.
-//
-// Custom metric namespaces (e.g. "azure.vm.linux.guestmetrics") do not follow the ARM
-// resource type format and can be associated with any resource where custom metrics are emitted.
-func isNamespaceApplicable(configNamespace, resourceType string) bool {
-	configNamespace = strings.TrimSpace(configNamespace)
+//  1. Namespaces already discovered by the default call are skipped.
+//  2. ARM resource types ("<provider>/<type>") for other services are skipped to prevent 400 BadRequest.
+//  3. Custom metric namespaces (e.g. "azure.vm.linux.guestmetrics", which do not contain '/')
+//     are retained because Azure Monitor only returns their definitions when explicitly requested.
+func dedupAlreadyCollectedNamespaces(metricsConfig NestedListAlias, discoveredNamespaces map[string]struct{}, resourceType string) []string {
 	resourceType = strings.TrimSpace(resourceType)
-	if configNamespace == "" || resourceType == "" {
-		return false
+	if resourceType == "" {
+		return nil
 	}
-	if strings.EqualFold(configNamespace, resourceType) {
-		return true
+
+	var toCollect []string
+	for configNamespace := range metricsConfig {
+		trimmed := strings.TrimSpace(configNamespace)
+		if trimmed == "" {
+			continue
+		}
+		if _, found := discoveredNamespaces[strings.ToLower(trimmed)]; found {
+			continue
+		}
+		if strings.Contains(trimmed, "/") && !strings.EqualFold(trimmed, resourceType) {
+			continue
+		}
+		toCollect = append(toCollect, configNamespace)
 	}
-	if strings.Contains(configNamespace, "/") {
-		return false
-	}
-	return true
+	return toCollect
 }
