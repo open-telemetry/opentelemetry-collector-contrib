@@ -56,6 +56,7 @@ func TestClientConfig(t *testing.T) {
 				RackID:          "rack1",
 				UseLeaderEpoch:  true,
 				ConnIdleTimeout: 5 * time.Minute,
+				DialTimeout:     30 * time.Second,
 			},
 		},
 
@@ -96,6 +97,13 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"dial_timeout": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.DialTimeout = 30 * time.Second
+				return cfg
+			}(),
+		},
 		"metadata_retry_backoff": {
 			// Only backoff is configured, so the retry defaults must match the
 			// franz-go defaults these fields were unwired to.
@@ -112,6 +120,7 @@ func TestClientConfig(t *testing.T) {
 				},
 				UseLeaderEpoch:  true,
 				ConnIdleTimeout: 9 * time.Minute,
+				DialTimeout:     10 * time.Second,
 			},
 		},
 
@@ -142,6 +151,9 @@ func TestClientConfig(t *testing.T) {
 		},
 		"sasl_and_kerberos": {
 			expectedErr: "auth: only one of sasl or kerberos authentication can be configured",
+		},
+		"invalid_dial_timeout": {
+			expectedErr: "dial_timeout (-1s) must be positive",
 		},
 	})
 }
