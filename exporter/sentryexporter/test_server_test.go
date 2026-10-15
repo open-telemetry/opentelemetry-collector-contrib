@@ -92,10 +92,10 @@ func (ts *testServer) queue(method, path string, resp testServerResponse) {
 	ts.scripts[key] = append(ts.scripts[key], resp)
 }
 
-func (ts *testServer) recorded(method, path string) []testServerRequest {
+func (ts *testServer) recordedPosts(path string) []testServerRequest {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
-	key := method + " " + path
+	key := http.MethodPost + " " + path
 	out := append([]testServerRequest(nil), ts.requests[key]...)
 	return out
 }

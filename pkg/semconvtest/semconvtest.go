@@ -51,8 +51,9 @@ const (
 	// defaultWeaverVersion is the otel/weaver image version used when a test
 	// does not select one with WithVersion. Renovate watches the line below
 	// and opens an update PR when a new Weaver release appears.
+	//
 	// renovate: datasource=docker depName=otel/weaver
-	defaultWeaverVersion = "v0.27.0"
+	defaultWeaverVersion = "v0.28.0"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
