@@ -123,7 +123,7 @@ extension/k8sleaderelector/                                      @open-telemetry
 extension/mcp/                                                   @open-telemetry/collector-contrib-approvers @pavolloffay @codeboten @dmitryax
 extension/oauth2clientauthextension/                             @open-telemetry/collector-contrib-approvers @pavankrish123
 extension/observer/                                              @open-telemetry/collector-contrib-approvers @dmitryax
-extension/observer/cfgardenobserver/                             @open-telemetry/collector-contrib-approvers @crobert-1 @jriguera
+extension/observer/cfgardenobserver/                             @open-telemetry/collector-contrib-approvers @crobert-1
 extension/observer/dockerobserver/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/ecsobserver/                                  @open-telemetry/collector-contrib-approvers @dmitryax
 extension/observer/hostobserver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy

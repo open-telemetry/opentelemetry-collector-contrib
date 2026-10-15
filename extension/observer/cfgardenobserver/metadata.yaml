@@ -7,5 +7,5 @@ status:
   stability:
     alpha: [extension]
   codeowners:
-    active: [crobert-1, jriguera]
-    emeritus: [m1rp, cemdk]
+    active: [crobert-1]
+    emeritus: [m1rp, cemdk, jriguera]
