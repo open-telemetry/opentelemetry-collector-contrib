@@ -498,6 +498,24 @@ func TestObfuscateAttribute(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name: "mismatched system leaves attribute unchanged",
+			config: DBSanitizerConfig{
+				SQLConfig: SQLConfig{
+					Enabled:    true,
+					Attributes: []string{"db.statement"},
+				},
+				RedisConfig: RedisConfig{
+					Enabled:    true,
+					Attributes: []string{"db.statement"},
+				},
+			},
+			value:    "SET user:123 john",
+			key:      "db.statement",
+			dbSystem: "cassandra",
+			expected: "SET user:123 john",
+			wantErr:  false,
+		},
+		{
 			name: "opensearch system sanitizes configured attribute",
 			config: DBSanitizerConfig{
 				OpenSearchConfig: OpenSearchConfig{
@@ -583,6 +601,25 @@ func TestObfuscateAttribute(t *testing.T) {
 			dbSystem: "opensearch",
 			expected: `{"query":{"match":{"email":"user@example.com"}}}`,
 			wantErr:  false,
+		},
+		{
+			name: "opensearch and es both configured, fallback chain masks once and result is idempotent",
+			config: DBSanitizerConfig{
+				OpenSearchConfig: OpenSearchConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+				ESConfig: ESConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+			},
+			value:    `{"query":{"match":{"email":"user@example.com"}}}`,
+			key:      "db.query.text",
+			dbSystem: "",
+			expected: `{"query":{"match":{"email":"?"}}}`,
+			wantErr:  false,
+			fallback: true,
 		},
 	}
 

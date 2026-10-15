@@ -2461,6 +2461,20 @@ func TestDBObfuscationOpenSearchAndESAttributes(t *testing.T) {
 	esSpan.Attributes().PutStr("db.system.name", "elasticsearch")
 	esSpan.Attributes().PutStr("db.statement", `{"query":{"term":{"ssn":"123-45-6789"}}}`)
 
+	// The legacy `db.system` attribute key must resolve the engine the same
+	// way as `db.system.name` does (GetDBSystem falls back to it).
+	openSearchLegacySpan := ils.Spans().AppendEmpty()
+	openSearchLegacySpan.SetName("GET /index/_search")
+	openSearchLegacySpan.SetKind(ptrace.SpanKindClient)
+	openSearchLegacySpan.Attributes().PutStr("db.system", "opensearch")
+	openSearchLegacySpan.Attributes().PutStr("db.query.text", `{"query":{"match":{"email":"user@example.com"}}}`)
+
+	esLegacySpan := ils.Spans().AppendEmpty()
+	esLegacySpan.SetName("GET /index/_search")
+	esLegacySpan.SetKind(ptrace.SpanKindClient)
+	esLegacySpan.Attributes().PutStr("db.system", "elasticsearch")
+	esLegacySpan.Attributes().PutStr("db.statement", `{"query":{"term":{"ssn":"123-45-6789"}}}`)
+
 	processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
@@ -2480,6 +2494,14 @@ func TestDBObfuscationOpenSearchAndESAttributes(t *testing.T) {
 	esStmt, ok := spans.At(2).Attributes().Get("db.statement")
 	require.True(t, ok)
 	assert.Equal(t, `{"query":{"term":{"ssn":"?"}}}`, esStmt.Str())
+
+	openSearchLegacyQuery, ok := spans.At(3).Attributes().Get("db.query.text")
+	require.True(t, ok)
+	assert.Equal(t, `{"query":{"match":{"email":"?"}}}`, openSearchLegacyQuery.Str())
+
+	esLegacyStmt, ok := spans.At(4).Attributes().Get("db.statement")
+	require.True(t, ok)
+	assert.Equal(t, `{"query":{"term":{"ssn":"?"}}}`, esLegacyStmt.Str())
 }
 
 func TestDBObfuscationConcurrentProcessingUsesLocalDBSystem(t *testing.T) {
