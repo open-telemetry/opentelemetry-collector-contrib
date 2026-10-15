@@ -1659,7 +1659,7 @@ service:
 		initialRemoteConfigHash := sha256.Sum256([]byte(initialConfigMessage))
 		startingPersistentState := &persistentState{InstanceID: testUUID, LastRemoteConfigStatus: &RemoteConfigStatus{
 			LastRemoteConfigHash: string(initialRemoteConfigHash[:]),
-			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+			Status:               "applied",
 			ErrorMessage:         "",
 		}}
 
@@ -3356,7 +3356,7 @@ service:
 			persistentState: &persistentState{
 				InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
 				LastRemoteConfigStatus: &RemoteConfigStatus{
-					Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+					Status:               "failed",
 					LastRemoteConfigHash: fmt.Sprintf("%x", lastReceivedRemoteConfig.ConfigHash),
 					ErrorMessage:         "boom",
 				},
