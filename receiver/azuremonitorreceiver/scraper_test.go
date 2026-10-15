@@ -1306,85 +1306,134 @@ func TestAzureScraperDefinitionsDiscoveryAvoidsInvalidProbes(t *testing.T) {
 	assert.Empty(t, probedCalls, "expected 0 invalid namespace probes, but got: %+v", probedCalls)
 }
 
-func TestIsNamespaceApplicable(t *testing.T) {
+func TestDedupAlreadyCollectedNamespaces(t *testing.T) {
 	tests := []struct {
-		name            string
-		configNamespace string
-		resourceType    string
-		want            bool
+		name                 string
+		metricsConfig        NestedListAlias
+		discoveredNamespaces map[string]struct{}
+		resourceType         string
+		want                 []string
 	}{
 		{
-			name:            "exact matching ARM resource type",
-			configNamespace: "Microsoft.Compute/virtualMachines",
-			resourceType:    "Microsoft.Compute/virtualMachines",
-			want:            true,
+			name: "skips already discovered namespace",
+			metricsConfig: NestedListAlias{
+				"Microsoft.Compute/virtualMachines": {},
+			},
+			discoveredNamespaces: map[string]struct{}{
+				"microsoft.compute/virtualmachines": {},
+			},
+			resourceType: "Microsoft.Compute/virtualMachines",
+			want:         nil,
 		},
 		{
-			name:            "case-insensitive matching ARM resource type",
-			configNamespace: "microsoft.compute/virtualmachines",
-			resourceType:    "Microsoft.Compute/virtualMachines",
-			want:            true,
+			name: "skips unrelated ARM resource type to avoid 400",
+			metricsConfig: NestedListAlias{
+				"Microsoft.ServiceBus/namespaces": {},
+			},
+			discoveredNamespaces: map[string]struct{}{
+				"microsoft.cache/redisenterprise": {},
+			},
+			resourceType: "Microsoft.Cache/redisEnterprise",
+			want:         nil,
 		},
 		{
-			name:            "different ARM resource types",
-			configNamespace: "Microsoft.ServiceBus/namespaces",
-			resourceType:    "Microsoft.Cache/redisEnterprise",
-			want:            false,
+			name: "skips parent ARM namespace on child resource",
+			metricsConfig: NestedListAlias{
+				"Microsoft.Storage/storageAccounts": {},
+			},
+			discoveredNamespaces: map[string]struct{}{
+				"microsoft.storage/storageaccounts/blobservices": {},
+			},
+			resourceType: "Microsoft.Storage/storageAccounts/blobServices",
+			want:         nil,
 		},
 		{
-			name:            "parent namespace does not apply to child resource",
-			configNamespace: "Microsoft.Storage/storageAccounts",
-			resourceType:    "Microsoft.Storage/storageAccounts/blobServices",
-			want:            false,
+			name: "skips child ARM namespace on parent resource",
+			metricsConfig: NestedListAlias{
+				"Microsoft.Storage/storageAccounts/blobServices": {},
+			},
+			discoveredNamespaces: map[string]struct{}{
+				"microsoft.storage/storageaccounts": {},
+			},
+			resourceType: "Microsoft.Storage/storageAccounts",
+			want:         nil,
 		},
 		{
-			name:            "child namespace does not apply to parent resource",
-			configNamespace: "Microsoft.Storage/storageAccounts/blobServices",
-			resourceType:    "Microsoft.Storage/storageAccounts",
-			want:            false,
+			name: "retains custom metric namespace without slash",
+			metricsConfig: NestedListAlias{
+				"azure.vm.linux.guestmetrics": {},
+			},
+			discoveredNamespaces: map[string]struct{}{
+				"microsoft.compute/virtualmachines": {},
+			},
+			resourceType: "Microsoft.Compute/virtualMachines",
+			want:         []string{"azure.vm.linux.guestmetrics"},
 		},
 		{
-			name:            "parent website namespace does not apply to slot child resource",
-			configNamespace: "Microsoft.Web/sites",
-			resourceType:    "Microsoft.Web/sites/slots",
-			want:            false,
+			name: "retains matching ARM namespace when not yet discovered",
+			metricsConfig: NestedListAlias{
+				"microsoft.compute/virtualmachines": {},
+			},
+			discoveredNamespaces: map[string]struct{}{},
+			resourceType:         "Microsoft.Compute/virtualMachines",
+			want:                 []string{"microsoft.compute/virtualmachines"},
 		},
 		{
-			name:            "child slot namespace does not apply to parent website resource",
-			configNamespace: "Microsoft.Web/sites/slots",
-			resourceType:    "Microsoft.Web/sites",
-			want:            false,
+			name: "filters mixed configuration correctly",
+			metricsConfig: NestedListAlias{
+				"microsoft.compute/virtualmachines": {},
+				"Microsoft.Storage/storageAccounts": {},
+				"azure.vm.linux.guestmetrics":       {},
+			},
+			discoveredNamespaces: map[string]struct{}{
+				"microsoft.compute/virtualmachines": {},
+			},
+			resourceType: "Microsoft.Compute/virtualMachines",
+			want:         []string{"azure.vm.linux.guestmetrics"},
 		},
 		{
-			name:            "custom metric namespace applies to resource",
-			configNamespace: "azure.vm.linux.guestmetrics",
-			resourceType:    "Microsoft.Compute/virtualMachines",
-			want:            true,
+			name: "skips empty or whitespace namespace",
+			metricsConfig: NestedListAlias{
+				"":    {},
+				"   ": {},
+			},
+			discoveredNamespaces: map[string]struct{}{},
+			resourceType:         "Microsoft.Compute/virtualMachines",
+			want:                 nil,
 		},
 		{
-			name:            "empty config namespace returns false",
-			configNamespace: "",
-			resourceType:    "Microsoft.Compute/virtualMachines",
-			want:            false,
+			name: "returns nil on empty resource type",
+			metricsConfig: NestedListAlias{
+				"azure.vm.linux.guestmetrics": {},
+			},
+			discoveredNamespaces: map[string]struct{}{},
+			resourceType:         "",
+			want:                 nil,
 		},
 		{
-			name:            "empty resource type returns false",
-			configNamespace: "Microsoft.Compute/virtualMachines",
-			resourceType:    "",
-			want:            false,
+			name: "returns nil on whitespace resource type",
+			metricsConfig: NestedListAlias{
+				"azure.vm.linux.guestmetrics": {},
+			},
+			discoveredNamespaces: map[string]struct{}{},
+			resourceType:         "   ",
+			want:                 nil,
 		},
 		{
-			name:            "whitespace strings return false",
-			configNamespace: "   ",
-			resourceType:    "   ",
-			want:            false,
+			name: "preserves original configured string without trimming when returned",
+			metricsConfig: NestedListAlias{
+				" azure.vm.linux.guestmetrics ": {},
+			},
+			discoveredNamespaces: map[string]struct{}{},
+			resourceType:         "Microsoft.Compute/virtualMachines",
+			want:                 []string{" azure.vm.linux.guestmetrics "},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isNamespaceApplicable(tt.configNamespace, tt.resourceType)
-			assert.Equal(t, tt.want, got)
+			got := dedupAlreadyCollectedNamespaces(tt.metricsConfig, tt.discoveredNamespaces, tt.resourceType)
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 }

@@ -452,13 +452,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 	// when the metricnamespace query parameter is set explicitly. Make additional calls
 	// only for namespaces applicable to this resource that were not already returned
 	// by the default call above.
-	for configNamespace := range s.cfg.Metrics {
-		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
-			continue
-		}
-		if !isNamespaceApplicable(configNamespace, resourceType) {
-			continue
-		}
+	for _, configNamespace := range dedupAlreadyCollectedNamespaces(s.cfg.Metrics, discoveredNamespaces, resourceType) {
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
 			Metricnamespace: new(configNamespace),
 		}
