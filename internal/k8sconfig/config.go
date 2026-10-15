@@ -260,21 +260,17 @@ func MakeOpenShiftQuotaClient(apiConf APIConfig) (quotaclientset.Interface, erro
 func NewNodeSharedInformer(client k8s.Interface, nodeName string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
-			// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).ListFunc is deprecated: use ListWithContext instead.
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
-			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) { //nolint:staticcheck
+			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				if nodeName != "" {
 					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 				}
-				return client.CoreV1().Nodes().List(context.Background(), opts)
+				return client.CoreV1().Nodes().List(ctx, opts)
 			},
-			// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
-			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) { //nolint:staticcheck
+			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 				if nodeName != "" {
 					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 				}
-				return client.CoreV1().Nodes().Watch(context.Background(), opts)
+				return client.CoreV1().Nodes().Watch(ctx, opts)
 			},
 		},
 		&api_v1.Node{},
