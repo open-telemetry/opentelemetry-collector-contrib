@@ -12,6 +12,9 @@ $defs:
     description: MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one partition worker.
     type: object
     properties:
+      bytes:
+        description: Bytes caps the key and value bytes of the records in those calls, counted after decompression. Headers are not counted. 0 means no cap. A record above the cap still runs, alone. It has no effect when Records is 1.
+        type: integer
       records:
         description: Records is how many calls may run at once. Default 1.
         type: integer
