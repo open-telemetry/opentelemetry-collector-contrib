@@ -136,6 +136,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+internal/natsclient
 exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
@@ -167,6 +168,9 @@ extension/encoding/skywalkingencodingextension
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/filetelemetrypolicyextension
+extension/fleettracker/redisfleettrackerextension
+processor/adaptivetailsamplingprocessor
+extension/fleettracker/redisfleettrackerextension/integrationtest
 extension/googleclientauthextension
 extension/headerssetterextension
 pkg/status
@@ -219,7 +223,6 @@ internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
-processor/adaptivetailsamplingprocessor
 processor/attributesprocessor
 processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
@@ -310,6 +313,7 @@ receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
 receiver/mysqlreceiver
 receiver/namedpipereceiver
+receiver/natsreceiver
 receiver/netflowreceiver
 receiver/nginxreceiver
 receiver/nsxtreceiver
