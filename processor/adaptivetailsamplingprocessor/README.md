@@ -591,7 +591,7 @@ Caveats:
 - The division is integer, so a goal that does not divide evenly under-delivers slightly (e.g. `goal_throughput: 10` across 4 instances yields an effective goal of `2`, not `2.5`, for a fleet total of `8`); see [honeycombio/dynsampler-go#112](https://github.com/honeycombio/dynsampler-go/issues/112).
 - When N is larger than `goal_throughput`, the per-instance goal floors at 1 span/s (it is never divided below 1), so the fleet emits up to N, more than the configured budget (e.g. `goal_throughput: 10` with `N: 40` emits up to 40 total).
 
-No `fleet_tracker` extension ships in this repository yet. The method signature above is the whole contract an implementation has to satisfy (a `redis_fleet_tracker` extension that heartbeats fleet membership into Redis is maintained separately).
+[`redis_fleet_tracker`](../../extension/fleettracker/redisfleettrackerextension) satisfies this contract by tracking fleet membership in Redis. The method signature above is the whole contract, so any extension implementing it works without importing this package.
 
 ## Known limitations
 
