@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -123,7 +125,22 @@ func (c *Config) Validate() error {
 			return errors.New("invalid context: " + item.Context)
 		}
 	}
-	return nil
+
+	settings := component.TelemetrySettings{Logger: zap.NewNop()}
+	parserCollection, err := newParserCollection(c, settings)
+	if err != nil {
+		return err
+	}
+	var parseErrors []error
+	for i, item := range c.Table {
+		if item.Context == "request" {
+			continue
+		}
+		if _, err := parseRoutingStatement(parserCollection, item.Context, item.ottlStatement(), settings.Logger); err != nil {
+			parseErrors = append(parseErrors, fmt.Errorf("table[%d]: %w", i, err))
+		}
+	}
+	return errors.Join(parseErrors...)
 }
 
 // RoutingTableItem specifies how data should be routed to the different pipelines
@@ -155,4 +172,11 @@ type RoutingTableItem struct {
 	Pipelines []pipeline.ID `mapstructure:"pipelines"`
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+func (item RoutingTableItem) ottlStatement() string {
+	if item.Condition != "" {
+		return fmt.Sprintf("route() where %s", item.Condition)
+	}
+	return item.Statement
 }

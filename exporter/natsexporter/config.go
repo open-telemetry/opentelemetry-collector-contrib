@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient"
 )
 
 const (
@@ -69,82 +69,11 @@ type JetStreamConfig struct {
 	_ struct{}
 }
 
-// TokenConfig defines the configuration for token auth.
-type TokenConfig struct {
-	Token configopaque.String `mapstructure:"token"`
-
-	// Prevent unkeyed literal initialization.
-	_ struct{}
-}
-
-// UserConfig defines the configuration for username/password auth.
-type UserConfig struct {
-	Username string              `mapstructure:"username"`
-	Password configopaque.String `mapstructure:"password"`
-
-	// Prevent unkeyed literal initialization.
-	_ struct{}
-}
-
-// NkeyConfig defines the configuration for NKey auth.
-type NkeyConfig struct {
-	PublicKey string `mapstructure:"public_key"`
-	Seed      []byte `mapstructure:"seed"`
-
-	// Prevent unkeyed literal initialization.
-	_ struct{}
-}
-
-// NkeyJWTConfig defines the configuration for NKey auth via JWT.
-type NkeyJWTConfig struct {
-	JWT  configopaque.String `mapstructure:"jwt"`
-	Seed []byte              `mapstructure:"seed"`
-
-	// Prevent unkeyed literal initialization.
-	_ struct{}
-}
-
-// NkeyUserFileConfig defines the configuration for NKey auth via a credentials
-// (user) file.
-type NkeyUserFileConfig struct {
-	UserFilePath string `mapstructure:"user_file"`
-
-	// Prevent unkeyed literal initialization.
-	_ struct{}
-}
-
-// AuthConfig defines the auth configuration for the NATS client. At most one
-// auth method may be configured.
-//
-// See: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro
-type AuthConfig struct {
-	Token        *TokenConfig        `mapstructure:"token"`
-	User         *UserConfig         `mapstructure:"user"`
-	Nkey         *NkeyConfig         `mapstructure:"nkey"`
-	NkeyJWT      *NkeyJWTConfig      `mapstructure:"nkey_jwt"`
-	NkeyUserFile *NkeyUserFileConfig `mapstructure:"nkey_user_file"`
-
-	// Prevent unkeyed literal initialization.
-	_ struct{}
-}
-
 // Config defines the configuration for the NATS exporter.
 type Config struct {
-	// Endpoint is the NATS server URL.
-	Endpoint string `mapstructure:"endpoint"`
-
-	// Pedantic enables NATS pedantic mode, which makes the server strictly
-	// validate the subjects this connection publishes to. It defaults to false
-	// to mirror the NATS client default. Enabling it is useful here because
-	// signal subjects are produced from user-authored OTTL expressions: a
-	// malformed subject (e.g. an empty token, stray whitespace, or a wildcard)
-	// then surfaces as a publish error instead of being silently misrouted.
-	//
-	// See: https://docs.nats.io/reference/reference-protocols/nats-protocol#connect
-	Pedantic bool `mapstructure:"pedantic"`
-
-	// TLS holds the TLS configuration for the NATS client.
-	TLS configtls.ClientConfig `mapstructure:"tls"`
+	// ClientConfig holds the NATS connection settings (endpoint, pedantic, tls,
+	// and auth).
+	ClientConfig natsclient.ClientConfig `mapstructure:",squash"`
 
 	// JetStream, when set, publishes via NATS JetStream (durable, acknowledged
 	// delivery) instead of core NATS.
@@ -156,9 +85,6 @@ type Config struct {
 	Metrics SignalConfig `mapstructure:"metrics"`
 	// Traces holds the configuration for the traces signal.
 	Traces SignalConfig `mapstructure:"traces"`
-
-	// Auth holds the configuration for NATS auth.
-	Auth AuthConfig `mapstructure:"auth"`
 
 	// Prevent unkeyed literal initialization.
 	_ struct{}
@@ -186,72 +112,6 @@ func (c *SignalConfig) Validate() error {
 	return nil
 }
 
-func (c *TokenConfig) Validate() error {
-	if c.Token == "" {
-		return errors.New("incomplete token auth configuration")
-	}
-	return nil
-}
-
-func (c *UserConfig) Validate() error {
-	if c.Username == "" || c.Password == "" {
-		return errors.New("incomplete username/password auth configuration")
-	}
-	return nil
-}
-
-func (c *NkeyConfig) Validate() error {
-	if c.PublicKey == "" || c.Seed == nil {
-		return errors.New("incomplete NKey auth configuration")
-	}
-	return nil
-}
-
-func (c *NkeyJWTConfig) Validate() error {
-	if c.JWT == "" || c.Seed == nil {
-		return errors.New("incomplete NKey auth (via JWT) configuration")
-	}
-	return nil
-}
-
-func (c *NkeyUserFileConfig) Validate() error {
-	if c.UserFilePath == "" {
-		return errors.New("incomplete NKey auth (via user file) configuration")
-	}
-	return nil
-}
-
-func (c *AuthConfig) Validate() error {
-	var errs error
-	configured := 0
-	if c.Token != nil {
-		configured++
-		errs = multierr.Append(errs, c.Token.Validate())
-	}
-	if c.User != nil {
-		configured++
-		errs = multierr.Append(errs, c.User.Validate())
-	}
-	if c.Nkey != nil {
-		configured++
-		errs = multierr.Append(errs, c.Nkey.Validate())
-	}
-	if c.NkeyJWT != nil {
-		configured++
-		errs = multierr.Append(errs, c.NkeyJWT.Validate())
-	}
-	if c.NkeyUserFile != nil {
-		configured++
-		errs = multierr.Append(errs, c.NkeyUserFile.Validate())
-	}
-
-	// At most one auth method may be configured.
-	if configured > 1 {
-		errs = multierr.Append(errs, errors.New("more than one auth method configured"))
-	}
-	return errs
-}
-
 func (c *JetStreamConfig) Validate() error {
 	if c.PublishTimeout < 0 {
 		return errors.New("jetstream publish_timeout must not be negative")
@@ -261,11 +121,11 @@ func (c *JetStreamConfig) Validate() error {
 
 func (c *Config) Validate() error {
 	var errs error
-	errs = multierr.Append(errs, c.TLS.Validate())
+	errs = multierr.Append(errs, c.ClientConfig.TLS.Validate())
 	errs = multierr.Append(errs, c.Logs.Validate())
 	errs = multierr.Append(errs, c.Metrics.Validate())
 	errs = multierr.Append(errs, c.Traces.Validate())
-	errs = multierr.Append(errs, c.Auth.Validate())
+	errs = multierr.Append(errs, c.ClientConfig.Auth.Validate())
 	if c.JetStream != nil {
 		errs = multierr.Append(errs, c.JetStream.Validate())
 	}

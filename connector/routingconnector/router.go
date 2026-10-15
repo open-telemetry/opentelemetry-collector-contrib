@@ -58,7 +58,9 @@ func newRouter[C any](
 		consumerProvider: provider,
 	}
 
-	if err := r.buildParsers(cfg, settings); err != nil {
+	var err error
+	r.parserCollection, err = newParserCollection(cfg, settings)
+	if err != nil {
 		return nil, err
 	}
 
@@ -90,14 +92,14 @@ func parserFunctions[T any](functions map[string]ottl.Factory[T], defaultFunc fu
 	return functions
 }
 
-func (r *router[C]) buildParsers(cfg *Config, settings component.TelemetrySettings) error {
+func newParserCollection(cfg *Config, settings component.TelemetrySettings) (*ottl.ParserCollection[any], error) {
 	otelcolParser, err := ottlotelcol.NewParser(
 		parserFunctions(cfg.otelColFunctions, defaultOtelColFunctionsMap),
 		settings,
 		ottlotelcol.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resourceParser, err := ottlresource.NewParser(
 		parserFunctions(cfg.resourceFunctions, defaultResourceFunctionsMap),
@@ -105,7 +107,7 @@ func (r *router[C]) buildParsers(cfg *Config, settings component.TelemetrySettin
 		ottlresource.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	spanParser, err := ottlspan.NewParser(
 		parserFunctions(cfg.spanFunctions, defaultSpanFunctionsMap),
@@ -113,7 +115,7 @@ func (r *router[C]) buildParsers(cfg *Config, settings component.TelemetrySettin
 		ottlspan.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	metricParser, err := ottlmetric.NewParser(
 		parserFunctions(cfg.metricFunctions, defaultMetricFunctionsMap),
@@ -121,7 +123,7 @@ func (r *router[C]) buildParsers(cfg *Config, settings component.TelemetrySettin
 		ottlmetric.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	dataPointParser, err := ottldatapoint.NewParser(
 		parserFunctions(cfg.dataPointFunctions, defaultDataPointFunctionsMap),
@@ -129,7 +131,7 @@ func (r *router[C]) buildParsers(cfg *Config, settings component.TelemetrySettin
 		ottldatapoint.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	logParser, err := ottllog.NewParser(
 		parserFunctions(cfg.logFunctions, defaultLogFunctionsMap),
@@ -137,10 +139,10 @@ func (r *router[C]) buildParsers(cfg *Config, settings component.TelemetrySettin
 		ottllog.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	r.parserCollection, err = ottl.NewParserCollection(
+	return ottl.NewParserCollection(
 		settings,
 		ottl.EnableParserCollectionModifiedPathsLogging[any](true),
 		ottl.WithParserCollectionContext(
@@ -174,7 +176,6 @@ func (r *router[C]) buildParsers(cfg *Config, settings component.TelemetrySettin
 			ottl.WithStatementConverter(singleStatementConverter[*ottllog.TransformContext]()),
 		),
 	)
-	return err
 }
 
 // singleStatementConverter extracts a single parsed statement from the parser output.
@@ -225,9 +226,7 @@ func (r *router[C]) registerDefaultConsumer(pipelineIDs []pipeline.ID) error {
 func (r *router[C]) normalizeConditions() {
 	for i := range r.table {
 		item := &r.table[i]
-		if item.Condition != "" {
-			item.Statement = fmt.Sprintf("route() where %s", item.Condition)
-		}
+		item.Statement = item.ottlStatement()
 	}
 }
 
@@ -248,25 +247,8 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			route.statementContext = "request"
 			route.statementText = item.Condition
 		} else {
-			statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
 			var result any
-			if item.Context == "" {
-				// Try context inference first. If that fails, fall back to "resource" for
-				// backward compatibility: unqualified paths (e.g. attributes["x"]) previously
-				// implied resource context.
-				result, err = r.parserCollection.ParseStatements(statementsGetter)
-				if err != nil {
-					r.logger.Debug("Failed to parse statement with context inference, retrying with 'resource' context.", zap.Error(err))
-					var retryErr error
-					result, retryErr = r.parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
-					if retryErr == nil {
-						err = nil
-					}
-				}
-			} else {
-				result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter, true)
-			}
-
+			result, err = parseRoutingStatement(r.parserCollection, item.Context, item.Statement, r.logger)
 			if err != nil {
 				return err
 			}
@@ -327,6 +309,33 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 		r.routes[k] = route
 	}
 	return nil
+}
+
+func parseRoutingStatement(
+	parserCollection *ottl.ParserCollection[any],
+	contextName string,
+	statement string,
+	logger *zap.Logger,
+) (any, error) {
+	statementsGetter := ottl.NewStatementsGetter([]string{statement})
+	if contextName != "" {
+		return parserCollection.ParseStatementsWithContext(contextName, statementsGetter, true)
+	}
+
+	// Try context inference first. If that fails, fall back to "resource" for
+	// backward compatibility: unqualified paths (e.g. attributes["x"]) previously
+	// implied resource context.
+	result, err := parserCollection.ParseStatements(statementsGetter)
+	if err == nil {
+		return result, nil
+	}
+
+	logger.Debug("Failed to parse statement with context inference, retrying with 'resource' context.", zap.Error(err))
+	result, retryErr := parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
+	if retryErr == nil {
+		return result, nil
+	}
+	return nil, err
 }
 
 func key(resolvedContext, ottlText string) string {

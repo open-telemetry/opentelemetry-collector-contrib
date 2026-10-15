@@ -74,22 +74,18 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 }
 
 func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogRecordSlice, startTime time.Time) error {
+	severity, err := logSeverity(envelope.GetLog().GetType())
+	if err != nil {
+		return err
+	}
+
 	log := logSlice.AppendEmpty()
 	log.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 	log.SetObservedTimestamp(pcommon.NewTimestampFromTime(startTime))
 	logLine := string(envelope.GetLog().GetPayload())
 	log.Body().SetStr(logLine)
-	//exhaustive:enforce
-	switch envelope.GetLog().GetType() {
-	case loggregator_v2.Log_OUT:
-		log.SetSeverityText(plog.SeverityNumberInfo.String())
-		log.SetSeverityNumber(plog.SeverityNumberInfo)
-	case loggregator_v2.Log_ERR:
-		log.SetSeverityText(plog.SeverityNumberError.String())
-		log.SetSeverityNumber(plog.SeverityNumberError)
-	default:
-		return fmt.Errorf("unsupported envelope log type: %s", envelope.GetLog().GetType())
-	}
+	log.SetSeverityText(severity.String())
+	log.SetSeverityNumber(severity)
 	if metadata.CloudfoundryResourceAttributesAllowFeatureGate.IsEnabled() {
 		attrs := getEnvelopeDataAttributes(envelope)
 		attrs.CopyTo(log.Attributes())
@@ -97,6 +93,18 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 		copyEnvelopeAttributes(log.Attributes(), envelope)
 	}
 	return nil
+}
+
+func logSeverity(logType loggregator_v2.Log_Type) (plog.SeverityNumber, error) {
+	//exhaustive:enforce
+	switch logType {
+	case loggregator_v2.Log_OUT:
+		return plog.SeverityNumberInfo, nil
+	case loggregator_v2.Log_ERR:
+		return plog.SeverityNumberError, nil
+	default:
+		return plog.SeverityNumberUnspecified, fmt.Errorf("unsupported envelope log type: %s", logType)
+	}
 }
 
 func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Envelope) {
