@@ -12,3 +12,10 @@ partitioning/case_collision:
   keys:
     Tenant: 'resource.attributes["a"]'
     tenant: 'resource.attributes["b"]'
+partitioning/invalid_expression:
+  keys:
+    tenant_id: 'not_a_valid_expression('
+partitioning/mixed_signals:
+  keys:
+    severity: 'log.severity_text'
+    span_name: 'span.name'
