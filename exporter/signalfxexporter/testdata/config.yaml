@@ -5,8 +5,9 @@ signalfx/allsettings:
   access_token: testToken
   realm: "us1"
   timeout: 2s
-  max_idle_conns: 70
-  max_idle_conns_per_host: 70
+  keepalive:
+    max_idle_conns: 70
+    max_idle_conns_per_host: 70
   sending_queue:
     enabled: true
     num_consumers: 2
