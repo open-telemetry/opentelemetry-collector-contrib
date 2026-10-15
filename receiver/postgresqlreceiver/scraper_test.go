@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -2949,6 +2950,90 @@ func TestCollectDatabaseLocksError(t *testing.T) {
 	var errs errsMux
 	scraper.collectDatabaseLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
 	require.Error(t, errs.combine())
+}
+
+func TestCollectTablesSkipsUnavailableSize(t *testing.T) {
+	c := new(mockClient)
+	c.On("getBlocksReadByTable", mock.Anything, "otel").Return(map[tableIdentifier]tableIOStats{}, nil)
+	c.On("getDatabaseTableMetrics", mock.Anything, "otel").Return(map[tableIdentifier]tableStats{
+		tableKey("otel", "public", "kept"):    {database: "otel", schema: "public", table: "kept", live: 10, size: 8192},
+		tableKey("otel", "public", "dropped"): {database: "otel", schema: "public", table: "dropped", live: 11, size: -1},
+	}, nil)
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	var errs errsMux
+	numTables := scraper.collectTables(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+	require.NoError(t, errs.combine())
+	assert.Equal(t, int64(2), numTables)
+
+	counts := dataPointCounts(scraper.mb.Emit())
+	assert.Equal(t, 1, counts["postgresql.table.size"], "the dropped table must not report a size")
+	assert.Equal(t, 4, counts["postgresql.rows"], "both tables keep their live and dead row counts")
+	assert.Equal(t, 8, counts["postgresql.operations"])
+	assert.Equal(t, 2, counts["postgresql.table.vacuum.count"])
+	assert.Equal(t, 2, counts["postgresql.sequential_scans"])
+}
+
+func TestCollectIndexesSkipsUnavailableSize(t *testing.T) {
+	c := new(mockClient)
+	c.On("getIndexStats", mock.Anything, "otel").Return(map[indexIdentifer]indexStat{
+		indexKey("otel", "public", "t", "kept_idx"):    {database: "otel", schema: "public", table: "t", index: "kept_idx", size: 16384, scans: 9},
+		indexKey("otel", "public", "t", "dropped_idx"): {database: "otel", schema: "public", table: "t", index: "dropped_idx", size: -1, scans: 3},
+	}, nil)
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	var errs errsMux
+	scraper.collectIndexes(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+	require.NoError(t, errs.combine())
+
+	counts := dataPointCounts(scraper.mb.Emit())
+	assert.Equal(t, 1, counts["postgresql.index.size"], "the dropped index must not report a size")
+	assert.Equal(t, 2, counts["postgresql.index.scans"], "both indexes keep their scan count")
+}
+
+func TestCollectIndexesKeepsRowsReadBeforeError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getIndexStats", mock.Anything, "otel").Return(map[indexIdentifer]indexStat{
+		indexKey("otel", "public", "t", "idx_1"): {database: "otel", schema: "public", table: "t", index: "idx_1", size: 16384, scans: 1},
+		indexKey("otel", "public", "t", "idx_2"): {database: "otel", schema: "public", table: "t", index: "idx_2", size: 16384, scans: 2},
+	}, errors.New("connection reset by peer"))
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	var errs errsMux
+	scraper.collectIndexes(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+	require.ErrorContains(t, errs.combine(), "connection reset by peer")
+	require.True(t, scrapererror.IsPartialScrapeError(errs.combine()))
+
+	counts := dataPointCounts(scraper.mb.Emit())
+	assert.Equal(t, 2, counts["postgresql.index.scans"], "indexes read before the error are still reported")
+	assert.Equal(t, 2, counts["postgresql.index.size"])
+}
+
+func dataPointCounts(md pmetric.Metrics) map[string]int {
+	counts := map[string]int{}
+	for _, rm := range md.ResourceMetrics().All() {
+		for _, sm := range rm.ScopeMetrics().All() {
+			for _, m := range sm.Metrics().All() {
+				switch m.Type() {
+				case pmetric.MetricTypeSum:
+					counts[m.Name()] += m.Sum().DataPoints().Len()
+				case pmetric.MetricTypeGauge:
+					counts[m.Name()] += m.Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	return counts
 }
 
 func TestCollectServerScopedLocksError(t *testing.T) {

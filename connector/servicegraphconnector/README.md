@@ -3,6 +3,7 @@
 | Status        |           |
 | ------------- |-----------|
 | Distributions | [contrib], [k8s] |
+| Warnings      | [Statefulness](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fservicegraph%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fservicegraph) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fservicegraph%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fservicegraph) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_servicegraph)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_servicegraph&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mapno](https://www.github.com/mapno), [@JaredTan95](https://www.github.com/JaredTan95) |
@@ -219,3 +220,7 @@ service:
       receivers: [service_graph]
       exporters: [prometheus/servicegraph]
 ```
+
+## Warnings
+
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The `service_graph` connector keeps every span that can be paired up to form a request in an in-memory store, periodically cleaned by `cache_loop`. All spans for a given request must be sent to the same collector instance, or the connector will be unable to pair them and the resulting service graph metrics will be incomplete.
