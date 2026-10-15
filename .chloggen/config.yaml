@@ -144,6 +144,7 @@ components:
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
+    - internal/natsclient
     - internal/pdatautil
     - internal/rabbitmq
     - internal/sharedcomponent
@@ -221,6 +222,7 @@ components:
     - processor/metricsgeneration
     - processor/novadetector
     - processor/oracleclouddetector
+    - processor/partitioning
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
@@ -281,6 +283,7 @@ components:
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
+    - receiver/gnmi
     - receiver/google_cloud_spanner
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
@@ -308,6 +311,7 @@ components:
     - receiver/mongodb_atlas
     - receiver/mysql
     - receiver/named_pipe
+    - receiver/nats
     - receiver/netflow
     - receiver/nginx
     - receiver/nsxt
@@ -339,7 +343,7 @@ components:
     - receiver/splunk_enterprise
     - receiver/splunk_hec
     - receiver/sql_query
-    - receiver/sqlserver
+    - receiver/sql_server
     - receiver/ssh_check
     - receiver/statsd
     - receiver/stef

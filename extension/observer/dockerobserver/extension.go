@@ -6,6 +6,8 @@ package dockerobserver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
@@ -177,11 +179,8 @@ func (d *dockerObserver) containerHost(c *ctypes.InspectResponse) string {
 	if d.config.UseHostnameIfPresent && c.Config.Hostname != "" {
 		return c.Config.Hostname
 	}
-	for _, n := range c.NetworkSettings.Networks {
-		if n.IPAddress.IsValid() {
-			return n.IPAddress.String()
-		}
-		break
+	if host := containerNetworkAddress(c.NetworkSettings.Networks); host != "" {
+		return host
 	}
 	if d.config.UseHostBindings {
 		return "127.0.0.1"
@@ -232,12 +231,7 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 	} else {
 		// Use the IP Address of the first network we iterate over.
 		// This can be made configurable if so desired.
-		for _, n := range c.NetworkSettings.Networks {
-			if n.IPAddress.IsValid() {
-				details.Host = n.IPAddress.String()
-			}
-			break
-		}
+		details.Host = containerNetworkAddress(c.NetworkSettings.Networks)
 
 		// If we still haven't gotten a host at this point and we are using
 		// host bindings, just make it localhost.
@@ -251,8 +245,12 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 		details.Host = mappedIP
 		details.Port = mappedPort
 		details.AlternatePort = port
-		if details.Host == "0.0.0.0" {
+		ip, err := netip.ParseAddr(details.Host)
+		switch {
+		case err == nil && ip.IsUnspecified() && ip.Is4():
 			details.Host = "127.0.0.1"
+		case err == nil && ip.IsUnspecified() && ip.Is6():
+			details.Host = "::1"
 		}
 	} else {
 		details.Port = port
@@ -261,11 +259,27 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 
 	endpoint = observer.Endpoint{
 		ID:      id,
-		Target:  fmt.Sprintf("%s:%d", details.Host, details.Port),
+		Target:  net.JoinHostPort(details.Host, strconv.Itoa(int(details.Port))),
 		Details: details,
 	}
 
 	return &endpoint
+}
+
+func containerNetworkAddress(networks map[string]*network.EndpointSettings) string {
+	for _, networkSettings := range networks {
+		if networkSettings == nil {
+			return ""
+		}
+		if address := networkSettings.IPAddress; address.IsValid() {
+			return address.String()
+		}
+		if address := networkSettings.GlobalIPv6Address; address.IsValid() {
+			return address.String()
+		}
+		return ""
+	}
+	return ""
 }
 
 // FindHostMappedPort returns the port number of the docker port binding to the
