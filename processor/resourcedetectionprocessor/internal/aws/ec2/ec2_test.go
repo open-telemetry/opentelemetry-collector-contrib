@@ -169,7 +169,7 @@ func TestNewDetector_FailOnMissingMetadataResolution(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{FailOnMissingMetadata: tt.perDetector}, tt.topLevel) //nolint:staticcheck // Verify compatibility with the deprecated per-detector setting.
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{FailOnMissingMetadata: tt.perDetector}, tt.topLevel)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, d.(*Detector).failOnMissingMetadata)
 		})

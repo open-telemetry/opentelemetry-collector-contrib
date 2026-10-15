@@ -82,7 +82,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		logger:                set.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		ec2ClientBuilder:      &ec2ClientBuilder{},
-		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata, //nolint:staticcheck // Preserve the deprecated per-detector setting.
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 		tagsFromIMDS:          cfg.TagsFromIMDS,
 	}, nil
 }

@@ -150,7 +150,7 @@ func TestVultrDetector_FailOnMissingMetadata(t *testing.T) {
 	withFakeDetector(t, sdkresource.Empty(), nil)
 
 	cfg := CreateDefaultConfig()
-	cfg.FailOnMissingMetadata = true //nolint:staticcheck // Verify compatibility with the deprecated per-detector setting.
+	cfg.FailOnMissingMetadata = true
 
 	// Inject top-level false: the deprecated per-detector flag alone must still
 	// trigger fail-on-missing for this detector (backward compatibility).

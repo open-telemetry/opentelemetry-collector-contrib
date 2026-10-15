@@ -104,7 +104,7 @@ func TestUpcloudDetector_FailOnMissingMetadata(t *testing.T) {
 	withFakeProvider(t, &fakeProvider{err: errors.New("no metadata")})
 
 	cfg := CreateDefaultConfig()
-	cfg.FailOnMissingMetadata = true //nolint:staticcheck // Verify compatibility with the deprecated per-detector setting.
+	cfg.FailOnMissingMetadata = true
 
 	// Inject top-level false: the deprecated per-detector flag alone must still
 	// trigger fail-on-missing for this detector (backward compatibility).

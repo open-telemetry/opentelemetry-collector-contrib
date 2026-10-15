@@ -46,7 +46,7 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 		detector:              newResourceDetector(),
 		logger:                p.Logger,
 		resourceAttributes:    cfg.ResourceAttributes,
-		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata, //nolint:staticcheck // Preserve the deprecated per-detector setting.
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 
