@@ -13,13 +13,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 )
 
 func Test_mapEach(t *testing.T) {
 	tests := []struct {
 		name   string
 		source ottl.Getter[any]
-		mapper *ottl.LambdaExpression[any]
+		mapper *xottl.LambdaExpression[any]
 		want   any
 	}{
 		{
@@ -32,7 +33,7 @@ func Test_mapEach(t *testing.T) {
 					return m, nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				v := resolveBinding("v")
 				return v.(int64) * 2, nil
 			}),
@@ -47,7 +48,7 @@ func Test_mapEach(t *testing.T) {
 					return m, nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				v := resolveBinding("v")
 				return k.(string) + v.(string), nil
@@ -61,7 +62,7 @@ func Test_mapEach(t *testing.T) {
 					return pcommon.NewMap(), nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return "unused", nil
 			}),
 			want: map[string]any{},
@@ -77,7 +78,7 @@ func Test_mapEach(t *testing.T) {
 					},
 				}
 			}(),
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				i := resolveBinding("i")
 				v := resolveBinding("v")
 				return i.(int64) + v.(int64), nil
@@ -91,7 +92,7 @@ func Test_mapEach(t *testing.T) {
 					return pcommon.NewSlice(), nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return "unused", nil
 			}),
 			want: []any{},
@@ -107,7 +108,7 @@ func Test_mapEach(t *testing.T) {
 					},
 				}
 			}(),
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				m := pcommon.NewMap()
 				m.PutInt("index", resolveBinding("i").(int64))
 				m.PutStr("value", resolveBinding("v").(string))
@@ -129,7 +130,7 @@ func Test_mapEach(t *testing.T) {
 					},
 				}
 			}(),
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				inner := pcommon.NewSlice()
 				inner.AppendEmpty().SetInt(resolveBinding("i").(int64))
 				inner.AppendEmpty().SetInt(resolveBinding("v").(int64))
@@ -151,7 +152,7 @@ func Test_mapEach(t *testing.T) {
 					},
 				}
 			}(),
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				return pcommon.NewValueStr(resolveBinding("v").(string)), nil
 			}),
 			want: []any{"x", "y"},
@@ -165,7 +166,7 @@ func Test_mapEach(t *testing.T) {
 					return m, nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				nested := pcommon.NewMap()
 				nested.PutStr("key", resolveBinding("k").(string))
 				nested.PutStr("value", resolveBinding("v").(string))
@@ -184,7 +185,7 @@ func Test_mapEach(t *testing.T) {
 					return m, nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				s := pcommon.NewSlice()
 				s.AppendEmpty().SetStr(resolveBinding("k").(string))
 				s.AppendEmpty().SetInt(resolveBinding("v").(int64))
@@ -203,7 +204,7 @@ func Test_mapEach(t *testing.T) {
 					return m, nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				return pcommon.NewValueInt(resolveBinding("v").(int64)), nil
 			}),
 			want: map[string]any{"n": int64(7)},
@@ -233,7 +234,7 @@ func Test_mapEach_errors(t *testing.T) {
 	tests := []struct {
 		name           string
 		source         ottl.Getter[any]
-		mapper         *ottl.LambdaExpression[any]
+		mapper         *xottl.LambdaExpression[any]
 		wantErrorsWith []string
 	}{
 		{
@@ -243,7 +244,7 @@ func Test_mapEach_errors(t *testing.T) {
 					return 123, nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return nil, nil
 			}),
 			wantErrorsWith: []string{"unsupported type"},
@@ -257,7 +258,7 @@ func Test_mapEach_errors(t *testing.T) {
 					return m, nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return nil, errors.New("eval failed")
 			}),
 			wantErrorsWith: []string{
@@ -276,7 +277,7 @@ func Test_mapEach_errors(t *testing.T) {
 					},
 				}
 			}(),
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return nil, errors.New("eval failed")
 			}),
 			wantErrorsWith: []string{
@@ -293,7 +294,7 @@ func Test_mapEach_errors(t *testing.T) {
 					return m, nil
 				},
 			},
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return make(chan int), nil
 			}),
 			wantErrorsWith: []string{
@@ -312,7 +313,7 @@ func Test_mapEach_errors(t *testing.T) {
 					},
 				}
 			}(),
-			mapper: ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			mapper: xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return make(chan int), nil
 			}),
 			wantErrorsWith: []string{
@@ -359,7 +360,7 @@ func Test_MapEachFactory(t *testing.T) {
 				return pcommon.NewMap(), nil
 			},
 		}
-		mapEachArgs.Mapper = ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		mapEachArgs.Mapper = xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return "ok", nil
 		})
 
@@ -384,7 +385,7 @@ func BenchmarkMapEach(b *testing.B) {
 			return m, nil
 		},
 	}
-	mapper := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	mapper := xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		return resolveBinding("v").(int64) * 2, nil
 	})
 	exprFunc, err := mapEach(source, mapper)

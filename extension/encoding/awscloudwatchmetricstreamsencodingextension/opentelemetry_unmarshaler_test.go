@@ -54,6 +54,20 @@ func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 			record:            []byte("a"),
 			expectedErrRegexp: "unable to read OTLP metric message",
 		},
+		// A length prefix claiming far more bytes than the record holds must not
+		// be used to size an allocation.
+		"length_prefix_1TiB": {
+			record:            binary.AppendUvarint(nil, 1<<40),
+			expectedErrRegexp: "unable to read OTLP metric message",
+		},
+		"length_prefix_exceeds_max_int": {
+			record:            binary.AppendUvarint(nil, 1<<62),
+			expectedErrRegexp: "unable to read OTLP metric message",
+		},
+		"length_prefix_overflows_int64": {
+			record:            binary.AppendUvarint(nil, 1<<63),
+			expectedErrRegexp: "unable to read OTLP metric message",
+		},
 	}
 
 	for name, test := range tests {

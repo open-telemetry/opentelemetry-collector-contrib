@@ -1,0 +1,53 @@
+# This GitHub action is used to compare API state snapshots of Main
+# to Head of the PR in order to validate releases are not breaking
+# backwards compatibility.
+#
+# This GitHub action will fail if there are incompatible changes.
+#
+name: "Inform Incompatible PRs"
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: read-all
+
+jobs:
+  Check-Compatibility:
+    runs-on: ubuntu-latest
+    env:
+      BASE_REF: ${{ github.base_ref }}
+    steps:
+      - name: Checkout-HEAD
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout-Main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.base_ref }}
+          path: ${{ github.base_ref }}
+          persist-credentials: false
+
+      - uses: $/.github/actions/setup-go-tools
+        with:
+          gomoddownload: "false"
+
+      # Generate apidiff states of Main
+      - name: Generate-States
+        run: |
+          cd "$BASE_REF"
+          make apidiff-build
+
+      # Compare apidiff states of Main with PR
+      - name: Compare-States
+        env:
+          APIDIFF_DATA_DIR: "${{ github.base_ref }}/internal/data/apidiff"
+        run: make apidiff-compare
+
+      # Fail GitHub Action if there are incompatible changes
+      - name: Check-States
+        env:
+          APIDIFF_DATA_DIR: "${{ github.base_ref }}/internal/data/apidiff"
+        run: make apidiff-check

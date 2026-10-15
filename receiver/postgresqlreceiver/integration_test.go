@@ -715,9 +715,10 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	defer db.Close()
 
 	cfg := Config{
-		Databases: []string{"postgres"},
-		Username:  "otelu",
-		Password:  "otelp",
+		Databases:       []string{"postgres"},
+		Username:        "otelu",
+		Password:        "otelp",
+		ConnectDatabase: "postgres",
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 		},
