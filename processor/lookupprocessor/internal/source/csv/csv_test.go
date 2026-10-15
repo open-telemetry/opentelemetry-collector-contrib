@@ -81,6 +81,28 @@ func TestConfigValidate(t *testing.T) {
 			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: true, Delimiter: ",", KeyColumn: "id", ValueColumn: "v", ValueColumnIndex: new(1)},
 			wantErr: "only one of value_column or value_column_index",
 		},
+		{
+			name: "negative value index",
+			config: &Config{
+				FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"},
+				HasHeader:        true,
+				Delimiter:        ",",
+				KeyColumn:        "id",
+				ValueColumnIndex: new(-1),
+			},
+			wantErr: "value_column_index must not be negative",
+		},
+		{
+			name: "value column by name without header",
+			config: &Config{
+				FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"},
+				HasHeader:        false,
+				Delimiter:        ",",
+				KeyColumnIndex:   new(0),
+				ValueColumn:      "val",
+			},
+			wantErr: "value_column (by name) requires has_header: true",
+		},
 	}
 
 	for _, tt := range tests {
@@ -229,59 +251,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, csvCfg.HasHeader)
 	assert.Equal(t, ",", csvCfg.Delimiter)
-}
-
-func TestConfigValidation_EdgeCases(t *testing.T) {
-	intPtr := func(v int) *int { return &v }
-
-	tests := []struct {
-		name        string
-		cfg         Config
-		expectedErr string
-	}{
-		{
-			name: "negative value_column_index",
-			cfg: Config{
-				FileSourceConfig: lookupsource.FileSourceConfig{Path: "data.csv"},
-				Delimiter:        ",",
-				KeyColumn:        "id",
-				HasHeader:        true,
-				ValueColumnIndex: intPtr(-1),
-			},
-			expectedErr: "value_column_index must not be negative",
-		},
-		{
-			name: "value_column by name without header",
-			cfg: Config{
-				FileSourceConfig: lookupsource.FileSourceConfig{Path: "data.csv"},
-				Delimiter:        ",",
-				KeyColumnIndex:   intPtr(0),
-				HasHeader:        false,
-				ValueColumn:      "val",
-			},
-			expectedErr: "value_column (by name) requires has_header: true",
-		},
-		{
-			name: "both value_column and value_column_index set",
-			cfg: Config{
-				FileSourceConfig: lookupsource.FileSourceConfig{Path: "data.csv"},
-				Delimiter:        ",",
-				KeyColumn:        "id",
-				HasHeader:        true,
-				ValueColumn:      "val",
-				ValueColumnIndex: intPtr(1),
-			},
-			expectedErr: "only one of value_column or value_column_index may be set",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.cfg.Validate()
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.expectedErr)
-		})
-	}
 }
 
 func TestMakeParse_ShortRowsSkipped(t *testing.T) {

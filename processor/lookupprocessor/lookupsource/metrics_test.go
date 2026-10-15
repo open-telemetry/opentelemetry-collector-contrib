@@ -8,14 +8,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestNewReloadMetrics(t *testing.T) {
-	ts := component.TelemetrySettings{
-		MeterProvider: noop.NewMeterProvider(),
-	}
+	ts := componenttest.NewNopTelemetrySettings()
 
 	rm, err := NewReloadMetrics(ts, "test_scope")
 	require.NoError(t, err)
@@ -25,9 +22,7 @@ func TestNewReloadMetrics(t *testing.T) {
 }
 
 func TestReloadMetrics_Record(t *testing.T) {
-	ts := component.TelemetrySettings{
-		MeterProvider: noop.NewMeterProvider(),
-	}
+	ts := componenttest.NewNopTelemetrySettings()
 
 	rm, err := NewReloadMetrics(ts, "test_scope")
 	require.NoError(t, err)
