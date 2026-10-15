@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/google/uuid"
@@ -989,6 +990,61 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 	require.True(t, sa.unsubscribed)
 }
 
+func TestHealthReportingReportsAttributeChanges(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+		statusUpdateChannel := make(chan *status.AggregateStatus)
+		sa := &mockStatusAggregator{
+			statusChan: statusUpdateChannel,
+		}
+
+		receivedHealthUpdates := 0
+		mockOpampClient := &mockOpAMPClient{
+			setHealthFunc: func(_ *protobufs.ComponentHealth) error {
+				receivedHealthUpdates++
+				return nil
+			},
+		}
+
+		o := newTestOpampAgent(cfg, set, mockOpampClient, sa)
+		o.initHealthReporting()
+		assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+
+		now := time.Now()
+		sendUpdate := func(attrs pcommon.Map) {
+			attrCopy := pcommon.NewMap()
+			attrs.CopyTo(attrCopy)
+			statusUpdateChannel <- &status.AggregateStatus{
+				Event: &mockStatusEvent{
+					status:     componentstatus.StatusOK,
+					timestamp:  now,
+					attributes: &attrCopy,
+				},
+			}
+			synctest.Wait()
+		}
+
+		attrsV1 := pcommon.NewMap()
+		attrsV1.PutStr("detail", "v1")
+		sendUpdate(attrsV1)
+		require.GreaterOrEqual(t, receivedHealthUpdates, 2)
+
+		countAfterFirst := receivedHealthUpdates
+		sendUpdate(attrsV1)
+		require.Equal(t, countAfterFirst, receivedHealthUpdates)
+
+		attrsV2 := pcommon.NewMap()
+		attrsV2.PutStr("detail", "v2")
+		sendUpdate(attrsV2)
+		require.Equal(t, countAfterFirst+1, receivedHealthUpdates)
+
+		assert.NoError(t, o.Shutdown(t.Context()))
+		require.True(t, sa.unsubscribed)
+	})
+}
+
 func TestHealthReportingDisabled(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
@@ -1275,25 +1331,29 @@ func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) er
 }
 
 type mockStatusEvent struct {
-	status    componentstatus.Status
-	err       error
-	timestamp time.Time
+	status     componentstatus.Status
+	err        error
+	timestamp  time.Time
+	attributes *pcommon.Map
 }
 
-func (m mockStatusEvent) Status() componentstatus.Status {
+func (m *mockStatusEvent) Status() componentstatus.Status {
 	return m.status
 }
 
-func (m mockStatusEvent) Err() error {
+func (m *mockStatusEvent) Err() error {
 	return m.err
 }
 
-func (m mockStatusEvent) Timestamp() time.Time {
+func (m *mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
 }
 
-func (mockStatusEvent) Attributes() pcommon.Map {
-	return pcommon.NewMap()
+func (m *mockStatusEvent) Attributes() pcommon.Map {
+	if m.attributes == nil {
+		return pcommon.NewMap()
+	}
+	return *m.attributes
 }
 
 func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *mockOpAMPClient, sa *mockStatusAggregator) *opampAgent {

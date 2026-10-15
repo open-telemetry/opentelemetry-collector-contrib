@@ -227,12 +227,17 @@ func TestLoadConfig(t *testing.T) {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.PartitionProcessing.Independent = true
 				cfg.PartitionProcessing.MaxInFlight.Records = 4
+				cfg.PartitionProcessing.MaxInFlight.Bytes = 33554432
 				return cfg
 			}(),
 		},
 		{
 			name:        "kafka/invalid_partition_processing_zero_max_in_flight",
 			expectedErr: "partition_processing.max_in_flight.records must be greater than zero",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_negative_max_in_flight_bytes",
+			expectedErr: "partition_processing.max_in_flight.bytes must not be negative",
 		},
 	}
 
