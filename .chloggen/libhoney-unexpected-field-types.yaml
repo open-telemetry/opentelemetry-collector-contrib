@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: receiver/libhoney
+note: Fix panics when event fields have an unexpected type, such as an integer `duration_ms` or a null `trace.parent_id`
+issues: [52072]
+subtext: |
+  Values from the request body were converted with unchecked type assertions, so a valid but unexpected type
+  (for example an integer duration sent with msgpack, or a JSON null parent id) panicked the request handler and
+  dropped the whole batch. Integer durations are now accepted, and fields with an unexpected type are ignored.
+change_logs: [user]

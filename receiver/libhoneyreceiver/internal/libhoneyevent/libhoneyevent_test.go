@@ -220,6 +220,22 @@ func TestLibHoneyEvent_GetService(t *testing.T) {
 			want:    "default-dataset",
 			wantErr: true,
 		},
+		{
+			name: "service name is not a string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"service.name": int64(123),
+				},
+			},
+			fields: FieldMapConfig{
+				Resources: ResourcesConfig{
+					ServiceName: "service.name",
+				},
+			},
+			dataset: "default-dataset",
+			want:    "default-dataset",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1102,6 +1118,195 @@ func TestLibhoneyEvent_UnmarshalMsgpack(t *testing.T) {
 					}
 				}
 			}
+		})
+	}
+}
+
+func TestToPTraceSpan_IntegerDuration(t *testing.T) {
+	now := time.Now()
+	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "duration_ms"}
+	testCfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			Name:           "name",
+			TraceID:        "trace.trace_id",
+			SpanID:         "trace.span_id",
+			ParentID:       "trace.parent_id",
+			Error:          "error",
+			SpanKind:       "kind",
+			DurationFields: []string{"duration_ms"},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		duration any
+	}{
+		{name: "float64 (JSON)", duration: 250.0},
+		{name: "int64 (msgpack)", duration: int64(250)},
+		{name: "uint64 (msgpack)", duration: uint64(250)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := LibhoneyEvent{
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    tt.duration,
+				},
+			}
+
+			span := ptrace.NewSpan()
+			var err error
+			require.NotPanics(t, func() {
+				err = event.ToPTraceSpan(&span, &alreadyUsedFields, testCfg, *zap.NewNop())
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 250*time.Millisecond, time.Duration(span.EndTimestamp()-span.StartTimestamp()))
+		})
+	}
+}
+
+func TestToPTraceSpan_UnexpectedFieldTypes(t *testing.T) {
+	now := time.Now()
+	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "trace.parent_id", "duration_ms"}
+	testCfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			Name:           "name",
+			TraceID:        "trace.trace_id",
+			SpanID:         "trace.span_id",
+			ParentID:       "trace.parent_id",
+			Error:          "error",
+			SpanKind:       "kind",
+			DurationFields: []string{"duration_ms"},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		data      map[string]any
+		checkFunc func(t *testing.T, span ptrace.Span)
+	}{
+		{
+			name: "null parent id",
+			data: map[string]any{
+				"name":            "root-span",
+				"trace.trace_id":  "1234567890abcdef1234567890abcdef",
+				"trace.span_id":   "1234567890abcdef",
+				"trace.parent_id": nil,
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				assert.True(t, span.ParentSpanID().IsEmpty())
+				assert.Equal(t, "root-span", span.Name())
+			},
+		},
+		{
+			name: "non-string name, ids, kind and status message",
+			data: map[string]any{
+				"name":            int64(1),
+				"trace.trace_id":  int64(2),
+				"trace.span_id":   true,
+				"trace.parent_id": 3.0,
+				"kind":            int64(4),
+				"status_message":  int64(5),
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				assert.Empty(t, span.Name())
+				assert.True(t, span.ParentSpanID().IsEmpty())
+				assert.Equal(t, ptrace.SpanKindUnspecified, span.Kind())
+				assert.Empty(t, span.Status().Message())
+			},
+		},
+		{
+			name: "non-numeric duration",
+			data: map[string]any{
+				"name":           "test-span",
+				"trace.trace_id": "1234567890abcdef1234567890abcdef",
+				"trace.span_id":  "1234567890abcdef",
+				"duration_ms":    "fast",
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				assert.Equal(t, span.StartTimestamp(), span.EndTimestamp())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := LibhoneyEvent{
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data:             tt.data,
+			}
+
+			span := ptrace.NewSpan()
+			var err error
+			require.NotPanics(t, func() {
+				err = event.ToPTraceSpan(&span, &alreadyUsedFields, testCfg, *zap.NewNop())
+			})
+			require.NoError(t, err)
+			tt.checkFunc(t, span)
+		})
+	}
+}
+
+func TestToPLogRecord_UnexpectedFieldTypes(t *testing.T) {
+	now := time.Now()
+
+	tests := []struct {
+		name      string
+		data      map[string]any
+		checkFunc func(t *testing.T, lr plog.LogRecord)
+	}{
+		{
+			name: "integer body",
+			data: map[string]any{
+				"body": int64(42),
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, pcommon.ValueTypeInt, lr.Body().Type())
+				assert.Equal(t, int64(42), lr.Body().Int())
+			},
+		},
+		{
+			name: "null body",
+			data: map[string]any{
+				"body": nil,
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, pcommon.ValueTypeEmpty, lr.Body().Type())
+			},
+		},
+		{
+			name: "non-string severity text",
+			data: map[string]any{
+				"severity_text": int64(3),
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Empty(t, lr.SeverityText())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := LibhoneyEvent{
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data:             tt.data,
+			}
+
+			lr := plog.NewLogRecord()
+			alreadyUsedFields := []string{}
+			var err error
+			require.NotPanics(t, func() {
+				err = event.ToPLogRecord(&lr, &alreadyUsedFields, *zap.NewNop())
+			})
+			require.NoError(t, err)
+			tt.checkFunc(t, lr)
 		})
 	}
 }
