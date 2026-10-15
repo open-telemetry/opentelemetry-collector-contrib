@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add `mysql.blocking.blockers` and `mysql.blocking.blocker.count` attributes to `db.server.query_sample`, surfacing concurrent InnoDB row-lock blockers for a sampled session.
+
+issues: [51307]
+
+subtext:
+
+change_logs: [user]
