@@ -27,22 +27,26 @@ func (p *PipelineSelector) HandleError(idx int) {
 	if idx != p.currentPipeline {
 		return
 	}
-	p.currentPipeline++
-	p.tryEnableRetry()
+	p.NextStableLevel()
+	p.TryEnableRetry()
 }
 
-func (p *PipelineSelector) tryEnableRetry() {
-	select {
-	case <-p.done:
-		return
-	default:
-	}
+// NextStableLevel increments the level to the next in the priority list
+func (p *PipelineSelector) NextStableLevel() {
+	p.currentPipeline++
+}
+
+// TryEnableRetry checks if a retry is already in effect and if not starts the retry goroutine
+func (p *PipelineSelector) TryEnableRetry() {
 	select {
 	case <-p.retryEnabledToken:
+		p.LaunchRetry()
 	default:
-		return
 	}
+}
 
+// LaunchRetry invokes the goroutine responsible for notifying the failover component to retry
+func (p *PipelineSelector) LaunchRetry() {
 	ctx, cancel := context.WithCancel(context.Background())
 	p.retryCancel.UpdateFn(cancel)
 
