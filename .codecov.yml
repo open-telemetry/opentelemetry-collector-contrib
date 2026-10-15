@@ -885,6 +885,10 @@ component_management:
     name: receiver_gitlab
     paths:
     - receiver/gitlabreceiver/**
+  - component_id: receiver_gnmi
+    name: receiver_gnmi
+    paths:
+    - receiver/gnmireceiver/**
   - component_id: receiver_googlecloudmonitoring
     name: receiver_googlecloudmonitoring
     paths:
@@ -993,6 +997,10 @@ component_management:
     name: receiver_namedpipe
     paths:
     - receiver/namedpipereceiver/**
+  - component_id: receiver_nats
+    name: receiver_nats
+    paths:
+    - receiver/natsreceiver/**
   - component_id: receiver_netflow
     name: receiver_netflow
     paths:
