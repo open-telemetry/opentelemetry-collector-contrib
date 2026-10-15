@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
@@ -49,6 +50,14 @@ func (f *eventhubReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
+	// Validate before creating the shared receiver so that a failure is not cached.
+	if receiverConfig, ok := cfg.(*Config); ok && receiverConfig.Encoding == nil &&
+		logFormat(receiverConfig.Format) != rawLogFormat && receiverConfig.ApplySemanticConventions {
+		if err := azurelogs.CheckFeatureGates(settings.Logger); err != nil {
+			return nil, err
+		}
+	}
+
 	receiver, err := f.getReceiver(pipeline.SignalLogs, cfg, settings)
 	if err != nil {
 		return nil, err

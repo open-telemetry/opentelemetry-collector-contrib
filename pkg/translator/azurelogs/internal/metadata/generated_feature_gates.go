@@ -8,16 +8,16 @@ import (
 
 var PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.azurelogs.DontEmitV0LogConventions",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, v0 semconv attribute names are not emitted."),
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, the deprecated semconv attributes code.function and code.filepath are not emitted. Requires pkg.translator.azurelogs.EmitV1LogConventions to also be enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
 )
 
 var PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.azurelogs.EmitV1LogConventions",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, v1 semconv attribute names are emitted."),
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, the stable semconv attributes code.function.name and code.file.path are emitted."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
 )

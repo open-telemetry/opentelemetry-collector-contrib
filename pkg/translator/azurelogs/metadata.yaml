@@ -10,12 +10,15 @@ status:
 
 feature_gates:
   - id: pkg.translator.azurelogs.DontEmitV0LogConventions
-    stage: alpha
-    description: When enabled, v0 semconv attribute names are not emitted.
+    stage: beta
+    description: >-
+      When enabled, the deprecated semconv attributes code.function and code.filepath are not emitted.
+      Requires pkg.translator.azurelogs.EmitV1LogConventions to also be enabled.
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033
   - id: pkg.translator.azurelogs.EmitV1LogConventions
-    stage: alpha
-    description: When enabled, v1 semconv attribute names are emitted.
+    stage: beta
+    description: >-
+      When enabled, the stable semconv attributes code.function.name and code.file.path are emitted.
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033

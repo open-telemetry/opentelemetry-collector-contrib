@@ -76,7 +76,7 @@ When `blob_checkpoint_store` is set, the receiver uses the Azure SDK [Processor]
 |-------|------|----------|---------|-------------|
 | `format` | string | No | `azure` | Message format: `azure`, `raw`, or `""`. Mutually exclusive with `encoding`. See [Format](#format) section. |
 | `encoding` | string | No | | ID of an [encoding extension] used to unmarshal the message body. Mutually exclusive with `format`. See [Encoding](#encoding) section. |
-| `apply_semantic_conventions` | bool | No | `false` | Translate Azure Resource Logs using OpenTelemetry semantic convention attribute names. |
+| `apply_semantic_conventions` | bool | No | `false` | Translate Azure Resource Logs using OpenTelemetry semantic convention attribute names. The semantic convention version is controlled by the `pkg.translator.azurelogs.EmitV1LogConventions` and `pkg.translator.azurelogs.DontEmitV0LogConventions` feature gates. See the [translator documentation](../../pkg/translator/azurelogs/documentation.md). |
 | `time_formats.logs` | []string | No | | Custom time formats for logs. Uses [Go time layout](https://pkg.go.dev/time#Layout). Falls back to ISO8601. |
 | `time_formats.metrics` | []string | No | | Custom time formats for metrics. |
 | `time_formats.traces` | []string | No | | Custom time formats for traces. |
