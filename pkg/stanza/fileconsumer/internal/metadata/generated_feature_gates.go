@@ -32,10 +32,11 @@ var FilelogMtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 
 var FilelogProtobufCheckpointEncodingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.protobufCheckpointEncoding",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Use protobuf encoding for checkpoint storage instead of JSON."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
+	featuregate.WithRegisterToVersion("v0.165.0"),
 )
 
 var FilelogRequireExplicitTopNFeatureGate = featuregate.GlobalRegistry().MustRegister(
