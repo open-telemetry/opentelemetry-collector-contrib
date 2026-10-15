@@ -42,6 +42,6 @@ func FuzzShouldDrop(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, metricName, attrKey, attrVal string) {
 		// The goal isn't to check the boolean result, but simply to prove
 		// that this function never panics, regardless of the input.
-		_ = cp.shouldDrop(metricName, attrKey, pcommon.NewValueStr(attrVal))
+		_ = cp.shouldDrop(metricName, attrKey, pcommon.NewValueStr(attrVal), metricInfo{})
 	})
 }

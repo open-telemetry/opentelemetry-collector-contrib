@@ -29,6 +29,7 @@ type TelemetryBuilder struct {
 	registrations                        []metric.Registration
 	ProcessorCardinalityLabelsStripped   metric.Int64ObservableCounter
 	ProcessorCardinalitySavingsEstimated metric.Float64ObservableCounter
+	ProcessorCardinalityTopDistinct      metric.Int64ObservableGauge
 	ProcessorCardinalityTopOffenders     metric.Int64ObservableGauge
 	ProcessorCardinalityTrackersActive   metric.Int64ObservableGauge
 	ProcessorCardinalityTrackersRejected metric.Int64ObservableCounter
@@ -66,6 +67,21 @@ func (builder *TelemetryBuilder) RegisterProcessorCardinalitySavingsEstimatedCal
 		cb(ctx, &observerFloat64{inst: builder.ProcessorCardinalitySavingsEstimated, obs: o})
 		return nil
 	}, builder.ProcessorCardinalitySavingsEstimated)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterProcessorCardinalityTopDistinctCallback sets callback for observable ProcessorCardinalityTopDistinct metric.
+func (builder *TelemetryBuilder) RegisterProcessorCardinalityTopDistinctCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorCardinalityTopDistinct, obs: o})
+		return nil
+	}, builder.ProcessorCardinalityTopDistinct)
 	if err != nil {
 		return err
 	}
@@ -168,6 +184,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_cardinality_savings.estimated",
 		metric.WithDescription("Cumulative estimated dollar value of time-series churn prevented by the processor. [Development]"),
 		metric.WithUnit("{dollar}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorCardinalityTopDistinct, err = builder.meter.Int64ObservableGauge(
+		"otelcol_processor_cardinality_top.distinct",
+		metric.WithDescription("Distinct values in the last epoch of the top-N (metric, label) pairs, with a recommendation for each. [Development]"),
+		metric.WithUnit("{value}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorCardinalityTopOffenders, err = builder.meter.Int64ObservableGauge(

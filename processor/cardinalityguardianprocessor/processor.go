@@ -75,13 +75,12 @@ type tracker struct {
 	insertCount uint64
 	// idleEpochs counts consecutive zero-insert rotations; eviction at staleSweepEpochs.
 	idleEpochs int
-	// rotations counts completed epochs since creation. Observe mode uses it to
-	// tell whether the previous epoch was a full one.
-	rotations uint32
-	// kind is the metric kind observe mode has seen for this tracker.
+	// kind is the metric kind seen for this tracker; it becomes kindMixed if a
+	// second one arrives.
 	kind metricKind
-	// service is the first service.name observe mode saw; multiService is set
-	// once another one arrives.
+	// service is the first non-empty service.name seen; multiService is set once
+	// another one arrives. Neither is reset, so the tracker keeps the safer
+	// recommendation until it is evicted.
 	service      string
 	multiService bool
 }
@@ -94,18 +93,29 @@ type tracker struct {
 // on every insert so the limit can't be overshot by up to estimateInterval
 // elements before drops activate. After that, refresh every estimateInterval
 // inserts (bitmask check). cachedPrev is only updated in rotate().
-func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
+//
+// It also records mInfo, ignoring an unknown kind or empty service.
+func (t *tracker) insert(hashVal uint64, mInfo metricInfo) (curr, prev uint64) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	return t.insertLocked(hashVal)
-}
-
-// insertLocked is insert for callers that already hold t.mu.
-func (t *tracker) insertLocked(hashVal uint64) (curr, prev uint64) {
 	t.current.InsertHash(hashVal)
 	t.insertCount++
 	if t.insertCount <= estimateInterval || t.insertCount&(estimateInterval-1) == 0 {
 		t.cachedCurr = t.current.Estimate()
+	}
+	switch {
+	case mInfo.kind == kindUnknown:
+	case t.kind == kindUnknown:
+		t.kind = mInfo.kind
+	case t.kind != mInfo.kind:
+		t.kind = kindMixed
+	}
+	switch {
+	case mInfo.service == "":
+	case t.service == "":
+		t.service = mInfo.service
+	case t.service != mInfo.service:
+		t.multiService = true
 	}
 	return t.cachedCurr, t.cachedPrev
 }
@@ -116,7 +126,6 @@ func (t *tracker) insertLocked(hashVal uint64) (curr, prev uint64) {
 // zero inserts during the epoch that just ended.
 func (t *tracker) rotate(fresh *hyperloglog.Sketch) (idle bool) {
 	t.mu.Lock()
-	t.rotations++
 	idle = t.insertCount == 0
 	if idle {
 		t.idleEpochs++
@@ -174,6 +183,7 @@ type cardinalityProcessor struct {
 	// enforcementMode mirrors config.resolvedEnforcementMode() to skip the
 	// method call on every data point.
 	enforcementMode EnforcementMode
+	readOnly        bool
 
 	labelsStripped   atomic.Int64
 	trackerCount     atomic.Int64
@@ -189,6 +199,9 @@ type cardinalityProcessor struct {
 
 	topOffenders   []offenderEntry
 	topOffendersMu sync.RWMutex
+
+	topDistinct   []distinctEntry
+	topDistinctMu sync.RWMutex
 
 	// wg tracks the rotation goroutine so Shutdown blocks until it exits.
 	wg sync.WaitGroup
@@ -213,6 +226,7 @@ func newCardinalityProcessor(_ context.Context, cfg *Config, set processor.Setti
 		seed:            maphash.MakeSeed(),
 		cancel:          cancel,
 		enforcementMode: cfg.resolvedEnforcementMode(),
+		readOnly:        cfg.ReadOnly,
 	}
 
 	for i := range p.shards {
@@ -283,6 +297,26 @@ func newCardinalityProcessor(_ context.Context, cfg *Config, set processor.Setti
 		return nil, err
 	}
 
+	err = builder.RegisterProcessorCardinalityTopDistinctCallback(func(_ context.Context, o metric.Int64Observer) error {
+		p.topDistinctMu.RLock()
+		for _, entry := range p.topDistinct {
+			o.Observe(int64(entry.distinct),
+				metric.WithAttributes(
+					attribute.String("metric_name", entry.metricName),
+					attribute.String("label_key", entry.labelKey),
+					attribute.String("metric_type", entry.kind.String()),
+					attribute.Bool("multi_service", entry.multiService),
+					attribute.String("recommendation", recommendation(entry.kind, entry.multiService)),
+				),
+			)
+		}
+		p.topDistinctMu.RUnlock()
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return p, nil
 }
 
@@ -299,32 +333,36 @@ func (p *cardinalityProcessor) getShard(metricName string) *trackerShard {
 // receives. Setting MutatesData: true causes the Collector to clone the metric
 // batch before passing it to this processor, ensuring that modifications to
 // attributes do not race with other pipeline components that may be consuming
-// the same in-memory batch concurrently. Observe mode only reads the batch.
+// the same in-memory batch concurrently. In read-only mode it only reads the batch.
 func (p *cardinalityProcessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: p.enforcementMode != EnforcementObserve}
+	return consumer.Capabilities{MutatesData: !p.readOnly}
 }
 
-// ConsumeMetrics is the entry point for incoming metric batches. In observe
+// ConsumeMetrics is the entry point for incoming metric batches. In read-only
 // mode it records the batch and forwards it unchanged. Otherwise it walks the
 // three-level OTel hierarchy (ResourceMetrics → ScopeMetrics → Metric) and
 // delegates per-metric enforcement to processMetric. After all enforcement is
 // complete the (potentially mutated) batch is forwarded to the next consumer.
 func (p *cardinalityProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	if p.enforcementMode == EnforcementObserve {
-		p.observeMetrics(md)
+	if p.readOnly {
+		p.recordMetrics(md)
 		return p.next.ConsumeMetrics(ctx, md)
 	}
 
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		resMetrics := rm.At(i)
+		var service string
+		if v, ok := resMetrics.Resource().Attributes().Get("service.name"); ok {
+			service = v.AsString()
+		}
 		sm := resMetrics.ScopeMetrics()
 		for j := 0; j < sm.Len(); j++ {
 			scopeMetrics := sm.At(j)
 			ms := scopeMetrics.Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				// Process each metric
-				p.processMetric(ms.At(k))
+				p.processMetric(ms.At(k), service)
 			}
 		}
 	}
@@ -340,12 +378,13 @@ func (p *cardinalityProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Me
 // spatial reaggregation is performed after attribute mutation for supported
 // metric types (Delta Sum and Gauge). Unsupported metric types (Cumulative Sum,
 // Histogram, ExponentialHistogram, Summary) fall back to tag_only behavior.
-func (p *cardinalityProcessor) processMetric(m pmetric.Metric) {
+func (p *cardinalityProcessor) processMetric(m pmetric.Metric, service string) {
 	reaggMode := p.enforcementMode == EnforcementStripAndReaggregate || p.enforcementMode == EnforcementOverflowAttribute
+	mInfo := metricInfo{kind: kindOf(m), service: service}
 
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
-		p.processNumberDataPoints(m.Name(), m.Gauge().DataPoints())
+		p.processNumberDataPoints(m.Name(), mInfo, m.Gauge().DataPoints())
 		if reaggMode {
 			reaggregateNumberDataPoints(m.Gauge().DataPoints(), pmetric.MetricTypeGauge, false)
 		}
@@ -354,9 +393,9 @@ func (p *cardinalityProcessor) processMetric(m pmetric.Metric) {
 		if reaggMode && !isDelta {
 			// Cumulative Sums are not yet supported for reaggregation.
 			// Fall back to tag_only behavior for this specific metric to avoid collisions.
-			p.processNumberDataPointsWithMode(m.Name(), m.Sum().DataPoints(), EnforcementTagOnly)
+			p.processNumberDataPointsWithMode(m.Name(), mInfo, m.Sum().DataPoints(), EnforcementTagOnly)
 		} else {
-			p.processNumberDataPoints(m.Name(), m.Sum().DataPoints())
+			p.processNumberDataPoints(m.Name(), mInfo, m.Sum().DataPoints())
 			if reaggMode && isDelta {
 				reaggregateNumberDataPoints(m.Sum().DataPoints(), pmetric.MetricTypeSum, true)
 			}
@@ -364,21 +403,21 @@ func (p *cardinalityProcessor) processMetric(m pmetric.Metric) {
 	case pmetric.MetricTypeHistogram:
 		if reaggMode {
 			// Histograms are not yet supported for reaggregation.
-			p.processHistogramDataPointsWithMode(m.Name(), m.Histogram().DataPoints(), EnforcementTagOnly)
+			p.processHistogramDataPointsWithMode(m.Name(), mInfo, m.Histogram().DataPoints(), EnforcementTagOnly)
 		} else {
-			p.processHistogramDataPoints(m.Name(), m.Histogram().DataPoints())
+			p.processHistogramDataPoints(m.Name(), mInfo, m.Histogram().DataPoints())
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		if reaggMode {
-			p.processExponentialHistogramDataPointsWithMode(m.Name(), m.ExponentialHistogram().DataPoints(), EnforcementTagOnly)
+			p.processExponentialHistogramDataPointsWithMode(m.Name(), mInfo, m.ExponentialHistogram().DataPoints(), EnforcementTagOnly)
 		} else {
-			p.processExponentialHistogramDataPoints(m.Name(), m.ExponentialHistogram().DataPoints())
+			p.processExponentialHistogramDataPoints(m.Name(), mInfo, m.ExponentialHistogram().DataPoints())
 		}
 	case pmetric.MetricTypeSummary:
 		if reaggMode {
-			p.processSummaryDataPointsWithMode(m.Name(), m.Summary().DataPoints(), EnforcementTagOnly)
+			p.processSummaryDataPointsWithMode(m.Name(), mInfo, m.Summary().DataPoints(), EnforcementTagOnly)
 		} else {
-			p.processSummaryDataPoints(m.Name(), m.Summary().DataPoints())
+			p.processSummaryDataPoints(m.Name(), mInfo, m.Summary().DataPoints())
 		}
 	}
 }
@@ -386,33 +425,33 @@ func (p *cardinalityProcessor) processMetric(m pmetric.Metric) {
 // processNumberDataPoints iterates over a NumberDataPointSlice and calls
 // handleAttributes for each data point. Both Gauge and Sum metric types use
 // this slice type, so a single method covers both.
-func (p *cardinalityProcessor) processNumberDataPoints(metricName string, dps pmetric.NumberDataPointSlice) {
+func (p *cardinalityProcessor) processNumberDataPoints(metricName string, mInfo metricInfo, dps pmetric.NumberDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
-		p.handleAttributes(metricName, dps.At(i).Attributes())
+		p.handleAttributes(metricName, mInfo, dps.At(i).Attributes())
 	}
 }
 
 // processHistogramDataPoints iterates over a HistogramDataPointSlice and calls
 // handleAttributes for each data point.
-func (p *cardinalityProcessor) processHistogramDataPoints(metricName string, dps pmetric.HistogramDataPointSlice) {
+func (p *cardinalityProcessor) processHistogramDataPoints(metricName string, mInfo metricInfo, dps pmetric.HistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
-		p.handleAttributes(metricName, dps.At(i).Attributes())
+		p.handleAttributes(metricName, mInfo, dps.At(i).Attributes())
 	}
 }
 
 // processExponentialHistogramDataPoints iterates over an ExponentialHistogramDataPointSlice
 // and calls handleAttributes for each data point.
-func (p *cardinalityProcessor) processExponentialHistogramDataPoints(metricName string, dps pmetric.ExponentialHistogramDataPointSlice) {
+func (p *cardinalityProcessor) processExponentialHistogramDataPoints(metricName string, mInfo metricInfo, dps pmetric.ExponentialHistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
-		p.handleAttributes(metricName, dps.At(i).Attributes())
+		p.handleAttributes(metricName, mInfo, dps.At(i).Attributes())
 	}
 }
 
 // processSummaryDataPoints iterates over a SummaryDataPointSlice and calls
 // handleAttributes for each data point.
-func (p *cardinalityProcessor) processSummaryDataPoints(metricName string, dps pmetric.SummaryDataPointSlice) {
+func (p *cardinalityProcessor) processSummaryDataPoints(metricName string, mInfo metricInfo, dps pmetric.SummaryDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
-		p.handleAttributes(metricName, dps.At(i).Attributes())
+		p.handleAttributes(metricName, mInfo, dps.At(i).Attributes())
 	}
 }
 
@@ -421,14 +460,14 @@ func (p *cardinalityProcessor) processSummaryDataPoints(metricName string, dps p
 // after RemoveIf completes — a PutBool/PutStr inside the callback could
 // reallocate the pdata KeyValueList while RemoveIf still holds its internal
 // cursor.
-func (p *cardinalityProcessor) handleAttributes(metricName string, attrs pcommon.Map) {
-	p.handleAttributesWithMode(metricName, attrs, p.enforcementMode)
+func (p *cardinalityProcessor) handleAttributes(metricName string, mInfo metricInfo, attrs pcommon.Map) {
+	p.handleAttributesWithMode(metricName, mInfo, attrs, p.enforcementMode)
 }
 
 // handleAttributesWithMode is the mode-parameterized version of handleAttributes.
 // It allows callers (like processMetric) to override the enforcement mode for
 // specific metric types that don't support reaggregation.
-func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, attrs pcommon.Map, mode EnforcementMode) {
+func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, mInfo metricInfo, attrs pcommon.Map, mode EnforcementMode) {
 	// shouldTag is set when tag_only mode decides an attribute should be tagged.
 	// overflowKeys collects keys whose values should be replaced with the sentinel.
 	// Both are deferred until after RemoveIf completes to avoid mutating the map
@@ -441,7 +480,7 @@ func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, attrs
 			return false
 		}
 
-		if p.shouldDrop(metricName, k, v) {
+		if p.shouldDrop(metricName, k, v, mInfo) {
 			switch mode {
 			case EnforcementTagOnly:
 				// DUAL-ROUTE MODE: record the decision, keep the attribute.
@@ -500,33 +539,33 @@ func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, attrs
 // processNumberDataPointsWithMode processes data points with an overridden
 // enforcement mode. Used when the metric type doesn't support the configured
 // mode (e.g., Cumulative Sums falling back to tag_only).
-func (p *cardinalityProcessor) processNumberDataPointsWithMode(metricName string, dps pmetric.NumberDataPointSlice, mode EnforcementMode) {
+func (p *cardinalityProcessor) processNumberDataPointsWithMode(metricName string, mInfo metricInfo, dps pmetric.NumberDataPointSlice, mode EnforcementMode) {
 	for i := 0; i < dps.Len(); i++ {
-		p.handleAttributesWithMode(metricName, dps.At(i).Attributes(), mode)
+		p.handleAttributesWithMode(metricName, mInfo, dps.At(i).Attributes(), mode)
 	}
 }
 
 // processHistogramDataPointsWithMode processes histogram data points with an
 // overridden enforcement mode.
-func (p *cardinalityProcessor) processHistogramDataPointsWithMode(metricName string, dps pmetric.HistogramDataPointSlice, mode EnforcementMode) {
+func (p *cardinalityProcessor) processHistogramDataPointsWithMode(metricName string, mInfo metricInfo, dps pmetric.HistogramDataPointSlice, mode EnforcementMode) {
 	for i := 0; i < dps.Len(); i++ {
-		p.handleAttributesWithMode(metricName, dps.At(i).Attributes(), mode)
+		p.handleAttributesWithMode(metricName, mInfo, dps.At(i).Attributes(), mode)
 	}
 }
 
 // processExponentialHistogramDataPointsWithMode processes exponential histogram
 // data points with an overridden enforcement mode.
-func (p *cardinalityProcessor) processExponentialHistogramDataPointsWithMode(metricName string, dps pmetric.ExponentialHistogramDataPointSlice, mode EnforcementMode) {
+func (p *cardinalityProcessor) processExponentialHistogramDataPointsWithMode(metricName string, mInfo metricInfo, dps pmetric.ExponentialHistogramDataPointSlice, mode EnforcementMode) {
 	for i := 0; i < dps.Len(); i++ {
-		p.handleAttributesWithMode(metricName, dps.At(i).Attributes(), mode)
+		p.handleAttributesWithMode(metricName, mInfo, dps.At(i).Attributes(), mode)
 	}
 }
 
 // processSummaryDataPointsWithMode processes summary data points with an
 // overridden enforcement mode.
-func (p *cardinalityProcessor) processSummaryDataPointsWithMode(metricName string, dps pmetric.SummaryDataPointSlice, mode EnforcementMode) {
+func (p *cardinalityProcessor) processSummaryDataPointsWithMode(metricName string, mInfo metricInfo, dps pmetric.SummaryDataPointSlice, mode EnforcementMode) {
 	for i := 0; i < dps.Len(); i++ {
-		p.handleAttributesWithMode(metricName, dps.At(i).Attributes(), mode)
+		p.handleAttributesWithMode(metricName, mInfo, dps.At(i).Attributes(), mode)
 	}
 }
 
@@ -556,11 +595,9 @@ func (p *cardinalityProcessor) rotate() {
 		topBuf = make([]offenderEntry, 0, topN)
 	}
 
-	observe := p.enforcementMode == EnforcementObserve
-	var findings []finding
-	flagged := 0
-	if observe {
-		findings = make([]finding, 0, p.config.TopOffendersCount)
+	var distinctBuf []distinctEntry
+	if topN > 0 {
+		distinctBuf = make([]distinctEntry, 0, topN)
 	}
 
 	for i := range p.shards {
@@ -578,9 +615,7 @@ func (p *cardinalityProcessor) rotate() {
 
 		// Snapshot deltas before rotation resets the cached estimates.
 		topBuf = collectShardDeltas(entries, topBuf, topN)
-		if observe {
-			findings, flagged = p.collectFindings(entries, findings, flagged)
-		}
+		distinctBuf = collectShardDistinct(entries, distinctBuf, topN)
 
 		// Pull fresh sketches from the pool entirely outside any lock.
 		fresh := make([]*hyperloglog.Sketch, len(entries))
@@ -616,10 +651,7 @@ func (p *cardinalityProcessor) rotate() {
 	}
 
 	// Reset the warning flag so we can log again next epoch if still bounded
-	limitReached := p.rejectionWarned.Swap(false)
-	if observe {
-		p.logReport(findings, flagged, limitReached)
-	}
+	p.rejectionWarned.Store(false)
 
 	// Emit suppression summary and reset drop log counters for the new epoch
 	totalDrops := p.dropsThisEpoch.Swap(0)
@@ -632,6 +664,7 @@ func (p *cardinalityProcessor) rotate() {
 	}
 
 	p.publishTopOffenders(topBuf)
+	p.publishTopDistinct(distinctBuf)
 }
 
 // collectShardDeltas maintains a bounded top-N buffer of the highest-delta
@@ -699,13 +732,10 @@ func (p *cardinalityProcessor) publishTopOffenders(topBuf []offenderEntry) {
 	p.topOffenders = topBuf
 	p.topOffendersMu.Unlock()
 
-	// Observe mode reports through logReport.
-	if p.enforcementMode != EnforcementObserve {
-		p.logger.Info("Top cardinality offender",
-			zap.String("metric", topBuf[0].metricName),
-			zap.String("label", topBuf[0].labelKey),
-			zap.Uint64("delta", topBuf[0].delta))
-	}
+	p.logger.Info("Top cardinality offender",
+		zap.String("metric", topBuf[0].metricName),
+		zap.String("label", topBuf[0].labelKey),
+		zap.Uint64("delta", topBuf[0].delta))
 }
 
 // sortOffenders performs an insertion sort on a small offenderEntry slice in
@@ -828,8 +858,9 @@ func (p *cardinalityProcessor) getOrCreateTracker(metricName, attrKey string) *t
 // shouldDrop returns true when the unique-value count for (metricName, attrKey)
 // has grown by more than MaxCardinalityDeltaPerEpoch since the last epoch
 // rotation. curr ≤ prev is treated as no growth to guard against uint64
-// underflow from HLL variance near sketch boundaries.
-func (p *cardinalityProcessor) shouldDrop(metricName, attrKey string, attrVal pcommon.Value) bool {
+// underflow from HLL variance near sketch boundaries. It also records mInfo on
+// the tracker for the distinct-value gauge.
+func (p *cardinalityProcessor) shouldDrop(metricName, attrKey string, attrVal pcommon.Value, mInfo metricInfo) bool {
 	// Hash the attribute value before acquiring any lock. hashAttrValue keeps
 	// Str/Int/Double/Bool/Bytes on a zero-allocation path; Map/Slice fall back
 	// to AsString (JSON-marshal).
@@ -842,7 +873,7 @@ func (p *cardinalityProcessor) shouldDrop(metricName, attrKey string, attrVal pc
 
 	// HLL insert and estimate happen under the per-tracker lock, completely
 	// independent of the shard lock.
-	currCount, prevCount := t.insert(hashVal)
+	currCount, prevCount := t.insert(hashVal, mInfo)
 
 	// Guard against uint64 underflow caused by HLL probabilistic estimation
 	// variance — if the current count has not grown, nothing should be dropped.

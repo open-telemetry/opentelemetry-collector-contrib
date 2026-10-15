@@ -116,60 +116,6 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expectedErr: "drop_log_max_per_epoch must be >= 0",
 		},
-		{
-			name: "observe mode valid",
-			cfg: &Config{
-				MaxCardinalityDeltaPerEpoch: 50,
-				EpochDurationSeconds:        300,
-				EnforcementMode:             EnforcementObserve,
-				TopOffendersCount:           10,
-				HighCardinalityThreshold:    1000,
-			},
-			expectedErr: "",
-		},
-		{
-			name: "observe mode mixed case valid",
-			cfg: &Config{
-				MaxCardinalityDeltaPerEpoch: 50,
-				EpochDurationSeconds:        300,
-				EnforcementMode:             "OBSERVE",
-				TopOffendersCount:           10,
-				HighCardinalityThreshold:    1000,
-			},
-			expectedErr: "",
-		},
-		{
-			name: "observe mode zero threshold",
-			cfg: &Config{
-				MaxCardinalityDeltaPerEpoch: 50,
-				EpochDurationSeconds:        300,
-				EnforcementMode:             EnforcementObserve,
-				TopOffendersCount:           10,
-				HighCardinalityThreshold:    0,
-			},
-			expectedErr: "high_cardinality_threshold must be greater than 0 in observe mode",
-		},
-		{
-			name: "observe mode zero top_offenders_count",
-			cfg: &Config{
-				MaxCardinalityDeltaPerEpoch: 50,
-				EpochDurationSeconds:        300,
-				EnforcementMode:             EnforcementObserve,
-				TopOffendersCount:           0,
-				HighCardinalityThreshold:    1000,
-			},
-			expectedErr: "top_offenders_count must be greater than 0 in observe mode",
-		},
-		{
-			name: "threshold ignored outside observe mode",
-			cfg: &Config{
-				MaxCardinalityDeltaPerEpoch: 50,
-				EpochDurationSeconds:        300,
-				EnforcementMode:             EnforcementTagOnly,
-				HighCardinalityThreshold:    0,
-			},
-			expectedErr: "",
-		},
 	}
 
 	for _, tt := range tests {

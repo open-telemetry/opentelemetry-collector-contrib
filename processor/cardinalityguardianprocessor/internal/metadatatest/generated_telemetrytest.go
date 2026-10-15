@@ -53,6 +53,20 @@ func AssertEqualProcessorCardinalitySavingsEstimated(t *testing.T, tt *component
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualProcessorCardinalityTopDistinct(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_cardinality_top.distinct",
+		Description: "Distinct values in the last epoch of the top-N (metric, label) pairs, with a recommendation for each. [Development]",
+		Unit:        "{value}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_cardinality_top.distinct")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorCardinalityTopOffenders(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_cardinality_top.offenders",

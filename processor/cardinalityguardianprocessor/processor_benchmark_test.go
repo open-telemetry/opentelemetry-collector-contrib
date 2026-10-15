@@ -54,7 +54,7 @@ func BenchmarkShouldDrop_HighThroughput(b *testing.B) {
 	keys := make([]string, numKeys)
 	for i := range keys {
 		keys[i] = fmt.Sprintf("bench_key_%d", i)
-		p.shouldDrop("bench_metric", keys[i], val)
+		p.shouldDrop("bench_metric", keys[i], val, metricInfo{})
 	}
 
 	b.ReportAllocs()
@@ -67,7 +67,7 @@ func BenchmarkShouldDrop_HighThroughput(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		key := keys[int(counter.Add(1))%numKeys]
 		for pb.Next() {
-			p.shouldDrop("bench_metric", key, val)
+			p.shouldDrop("bench_metric", key, val, metricInfo{})
 		}
 	})
 }
@@ -117,14 +117,12 @@ func BenchmarkConsumeMetrics_HighCardinality(b *testing.B) {
 	})
 }
 
-// BenchmarkConsumeMetrics_Observe runs the HighCardinality payload in observe mode.
-func BenchmarkConsumeMetrics_Observe(b *testing.B) {
+// BenchmarkConsumeMetrics_ReadOnly runs the HighCardinality payload in read-only mode.
+func BenchmarkConsumeMetrics_ReadOnly(b *testing.B) {
 	benchmarkHighCardinality(b, &Config{
 		MaxCardinalityDeltaPerEpoch: 5,
 		EpochDurationSeconds:        300,
-		EnforcementMode:             EnforcementObserve,
-		TopOffendersCount:           10,
-		HighCardinalityThreshold:    1000,
+		ReadOnly:                    true,
 	})
 }
 
