@@ -64,7 +64,25 @@ processors:
 
     # Observations a baseline must accumulate before spans are labeled against it.
     warmup_count: 30
+
+    # If non-empty, only spans whose kind matches one of these values (plus any
+    # matched by include_root_spans) are tracked and labeled. Accepted values
+    # (case-insensitive): INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER.
+    # Default: empty, meaning no span_kind-based filtering.
+    span_kinds: [SERVER, CONSUMER]
+
+    # If true, root spans (spans with no parent span ID) are tracked and
+    # labeled regardless of span_kinds. Default: false.
+    include_root_spans: false
 ```
+
+## Filtering which spans are evaluated
+
+By default, with both `span_kinds` and `include_root_spans` left unset, every span is tracked and
+eligible for labeling. Setting either option switches the processor into filtering mode: only spans
+matching `span_kinds`, or root spans when `include_root_spans: true`, are tracked and eligible for a
+label — spans that don't match either are passed through unmodified and never contribute to a
+baseline.
 
 ## Warnings
 
