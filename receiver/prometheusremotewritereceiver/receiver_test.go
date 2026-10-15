@@ -653,6 +653,34 @@ func TestTranslateV2(t *testing.T) {
 			expectError: "help ref 3 is out of bounds of symbolsTable",
 		},
 		{
+			name: "UnitRef bigger than symbols length on target_info",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "unit ref 3 is out of bounds of symbolsTable",
+		},
+		{
+			name: "HelpRef bigger than symbols length on target_info",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "help ref 3 is out of bounds of symbolsTable",
+		},
+		{
 			name: "accept unspecified metric type as gauge",
 			request: &writev2.Request{
 				Symbols: []string{"", "__name__", "test_metric", "job", "test_job", "instance", "test_instance"},
@@ -3903,6 +3931,39 @@ func TestTranslateV2(t *testing.T) {
 			assert.Equal(t, buildMetaDataMapByID(tc.expectedMetrics), buildMetaDataMapByID(metrics))
 		})
 	}
+}
+
+func TestRefusedTargetInfoIsNotCountedAsWritten(t *testing.T) {
+	// target_info produces no metric but still reports its samples as written, so a series the
+	// receiver refuses has to stop being counted as well as stop being read.
+	prwReceiver := setupMetricsReceiver(t)
+
+	request := func(unitRef uint32) *writev2.Request {
+		return &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "target_info", // 1, 2
+				"job", "test_job", // 3, 4
+				"instance", "test_instance", // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: unitRef},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+			},
+		}
+	}
+
+	_, stats, err := prwReceiver.translateV2(t.Context(), request(1))
+	require.NoError(t, err)
+	assert.Equal(t, 1, stats.Samples, "a reference in range leaves target_info reporting its sample")
+
+	prwReceiver.rmCache.Purge()
+	_, stats, err = prwReceiver.translateV2(t.Context(), request(7))
+	assert.ErrorContains(t, err, "unit ref 7 is out of bounds of symbolsTable")
+	assert.Equal(t, 0, stats.Samples, "a refused series reports nothing written")
 }
 
 func TestValidateBucketSpanLayout(t *testing.T) {
