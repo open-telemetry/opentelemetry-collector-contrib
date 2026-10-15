@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_aws_ecs
+
 package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 
 import (
@@ -18,11 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs/internal/metadata"
-)
-
-const (
-	// TypeStr is type of detector.
-	TypeStr = "ecs"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -126,7 +123,7 @@ func constructClusterArn(cluster, region, account string) string {
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#ecs-resource-ids
 func parseTaskARN(taskARN string) (region, account, taskID string) {
 	parts := strings.Split(taskARN, ":")
-	if len(parts) >= 5 {
+	if len(parts) >= 6 {
 		region := parts[3]
 		account := parts[4]
 

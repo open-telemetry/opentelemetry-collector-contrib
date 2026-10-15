@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -479,6 +480,74 @@ func TestGetInnodbTransactionStats(t *testing.T) {
 	assert.Equal(t, int64(17), got.maxActiveTransactionDuration)
 }
 
+func TestRowsIterationErrorIsReturned(t *testing.T) {
+	// sql.Rows.Next() returns false both at the end of the result set and when
+	// iteration fails, so each query method must check rows.Err() before
+	// returning. Without that check these methods return the rows collected so
+	// far together with a nil error, reporting a partial scrape as a success.
+	tests := []struct {
+		name    string
+		columns []string
+		values  []driver.Value
+		call    func(*mySQLClient) (any, error)
+	}{
+		{
+			name:    "getGlobalStats",
+			columns: []string{"Variable_name", "Value"},
+			values:  []driver.Value{"Threads_connected", "12"},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getGlobalStats()
+			},
+		},
+		{
+			name:    "getTableStats",
+			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "TABLE_ROWS", "AVG_ROW_LENGTH", "DATA_LENGTH", "INDEX_LENGTH"},
+			values:  []driver.Value{"schema", "table", 1, 2, 3, 4},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getTableStats()
+			},
+		},
+		{
+			name:    "getTableIoWaitsStats",
+			columns: []string{"OBJECT_SCHEMA", "OBJECT_NAME", "COUNT_DELETE", "COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "SUM_TIMER_DELETE", "SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE"},
+			values:  []driver.Value{"schema", "table", 1, 2, 3, 4, 5, 6, 7, 8},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getTableIoWaitsStats()
+			},
+		},
+		{
+			name:    "getIndexIoWaitsStats",
+			columns: []string{"OBJECT_SCHEMA", "OBJECT_NAME", "INDEX_NAME", "COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "COUNT_DELETE", "SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE", "SUM_TIMER_DELETE"},
+			values:  []driver.Value{"schema", "table", "index", 1, 2, 3, 4, 5, 6, 7, 8},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getIndexIoWaitsStats()
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			// The first row scans fine; iteration then fails on the second.
+			rows := sqlmock.NewRows(tt.columns).
+				AddRow(tt.values...).
+				AddRow(tt.values...).
+				RowError(1, assert.AnError)
+			mock.ExpectQuery(".*").WillReturnRows(rows)
+
+			c := &mySQLClient{client: db}
+			got, err := tt.call(c)
+			require.Error(t, err, "iteration error must not be swallowed")
+			assert.ErrorIs(t, err, assert.AnError)
+			assert.Nil(t, got, "no partial results should be returned alongside the error")
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestCheckDBAvailability(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -732,4 +801,26 @@ func TestDBVersionHelperMethods(t *testing.T) {
 	t.Run("systemName zero value defaults to mysql", func(t *testing.T) {
 		assert.Equal(t, "mysql", dbVersion{}.systemName())
 	})
+}
+
+// TestIndexIoWaitsQueryColumnOrder guards against the mismatch fixed for index io_waits metrics:
+// getIndexIoWaitsStats scans columns positionally into countDelete, countFetch, countInsert,
+// countUpdate (and the matching time fields), so indexIoWaitsQuery must list the COUNT_ and
+// SUM_TIMER_ columns in DELETE, FETCH, INSERT, UPDATE order. Previously they were listed as
+// FETCH, INSERT, UPDATE, DELETE, so every mysql.index.io.wait.* datapoint was reported under the
+// wrong operation attribute.
+func TestIndexIoWaitsQueryColumnOrder(t *testing.T) {
+	for _, prefix := range []string{"COUNT_", "SUM_TIMER_"} {
+		del := strings.Index(indexIoWaitsQuery, prefix+"DELETE")
+		fetch := strings.Index(indexIoWaitsQuery, prefix+"FETCH")
+		insert := strings.Index(indexIoWaitsQuery, prefix+"INSERT")
+		update := strings.Index(indexIoWaitsQuery, prefix+"UPDATE")
+		require.NotEqual(t, -1, del, "%sDELETE column missing from indexIoWaitsQuery", prefix)
+		require.NotEqual(t, -1, fetch, "%sFETCH column missing from indexIoWaitsQuery", prefix)
+		require.NotEqual(t, -1, insert, "%sINSERT column missing from indexIoWaitsQuery", prefix)
+		require.NotEqual(t, -1, update, "%sUPDATE column missing from indexIoWaitsQuery", prefix)
+		assert.True(t, del < fetch && fetch < insert && insert < update,
+			"%s columns must appear in DELETE, FETCH, INSERT, UPDATE order to match the scan; got delete=%d fetch=%d insert=%d update=%d",
+			prefix, del, fetch, insert, update)
+	}
 }

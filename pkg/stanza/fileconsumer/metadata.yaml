@@ -29,10 +29,11 @@ feature_gates:
     from_version: v0.89.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812
   - id: filelog.protobufCheckpointEncoding
-    stage: beta
+    stage: stable
     description: >-
       Use protobuf encoding for checkpoint storage instead of JSON.
     from_version: v0.148.0
+    to_version: v0.165.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266
   - id: filelog.requireExplicitTopN
     stage: alpha

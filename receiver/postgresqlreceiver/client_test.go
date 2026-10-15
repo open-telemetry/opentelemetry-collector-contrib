@@ -639,6 +639,58 @@ func TestRepairNormalizedQuery(t *testing.T) {
 	}
 }
 
+func TestGetVersion(t *testing.T) {
+	tests := []struct {
+		name        string
+		serverValue string
+		want        string
+		wantErr     bool
+	}{
+		{
+			name:        "plain version",
+			serverValue: "17.2",
+			want:        "17.2",
+		},
+		{
+			name:        "debian packaging suffix stripped",
+			serverValue: "17.2 (Debian 17.2-1.pgdg120+1)",
+			want:        "17.2",
+		},
+		{
+			name:        "alpine/minimal build no suffix",
+			serverValue: "16.1",
+			want:        "16.1",
+		},
+		{
+			name:        "empty response is an error",
+			serverValue: "",
+			wantErr:     true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+			mock.ExpectQuery("SHOW server_version;").
+				WillReturnRows(sqlmock.NewRows([]string{"server_version"}).AddRow(tc.serverValue))
+
+			got, err := client.getVersion(t.Context())
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestProtectedSpans(t *testing.T) {
 	tests := []struct {
 		name string
@@ -723,4 +775,124 @@ func TestProtectedSpans(t *testing.T) {
 			assert.Equal(t, tc.want, string(got), "query: %s", tc.query)
 		})
 	}
+}
+
+func TestGetDatabaseTableMetricsUnavailableSize(t *testing.T) {
+	columns := []string{"schema", "table", "live", "dead", "ins", "upd", "del", "hot_upd", "seq_scans", "table_size", "vacuum_count"}
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+	// The size function returns NULL for a relation dropped mid-query; the
+	// query must coalesce it so the scan never sees NULL.
+	mock.ExpectQuery(`coalesce\(pg_total_relation_size\(s\.relid\), -1\) AS table_size`).
+		WillReturnRows(sqlmock.NewRows(columns).
+			AddRow("public", "kept", 10, 1, 2, 3, 4, 5, 6, 8192, 7).
+			AddRow("public", "dropped", 11, 0, 1, 0, 0, 0, 2, -1, 0))
+
+	tables, err := client.getDatabaseTableMetrics(t.Context(), "otel")
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, tableStats{
+		database: "otel", schema: "public", table: "kept",
+		live: 10, dead: 1, inserts: 2, upd: 3, del: 4, hotUpd: 5, seqScans: 6, size: 8192, vacuumCount: 7,
+	}, tables[tableKey("otel", "public", "kept")])
+	assert.Equal(t, tableStats{
+		database: "otel", schema: "public", table: "dropped",
+		live: 11, inserts: 1, seqScans: 2, size: -1,
+	}, tables[tableKey("otel", "public", "dropped")])
+}
+
+func TestGetDatabaseTableMetricsRowsErr(t *testing.T) {
+	columns := []string{"schema", "table", "live", "dead", "ins", "upd", "del", "hot_upd", "seq_scans", "table_size", "vacuum_count"}
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+	iterErr := errors.New("connection reset mid-result")
+	mock.ExpectQuery("pg_stat_user_tables").
+		WillReturnRows(sqlmock.NewRows(columns).
+			AddRow("public", "first", 1, 0, 0, 0, 0, 0, 0, 8192, 0).
+			AddRow("public", "second", 1, 0, 0, 0, 0, 0, 0, 8192, 0).
+			RowError(1, iterErr))
+
+	tables, err := client.getDatabaseTableMetrics(t.Context(), "otel")
+	require.ErrorIs(t, err, iterErr)
+	assert.Len(t, tables, 1)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetBlocksReadByTableRowsErr(t *testing.T) {
+	columns := []string{"schema", "table", "heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit"}
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+	iterErr := errors.New("connection reset mid-result")
+	mock.ExpectQuery("pg_statio_user_tables").
+		WillReturnRows(sqlmock.NewRows(columns).
+			AddRow("public", "first", 1, 2, 3, 4, 5, 6, 7, 8).
+			AddRow("public", "second", 1, 2, 3, 4, 5, 6, 7, 8).
+			RowError(1, iterErr))
+
+	stats, err := client.getBlocksReadByTable(t.Context(), "otel")
+	require.ErrorIs(t, err, iterErr)
+	assert.Len(t, stats, 1)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetIndexStatsUnavailableSize(t *testing.T) {
+	columns := []string{"schemaname", "relname", "indexrelname", "index_size", "idx_scan"}
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+	mock.ExpectQuery(`coalesce\(pg_relation_size\(indexrelid\), -1\) AS index_size`).
+		WillReturnRows(sqlmock.NewRows(columns).
+			AddRow("public", "t", "kept_idx", 16384, 9).
+			AddRow("public", "t", "dropped_idx", -1, 3))
+
+	stats, err := client.getIndexStats(t.Context(), "otel")
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, indexStat{index: "kept_idx", table: "t", schema: "public", database: "otel", size: 16384, scans: 9},
+		stats[indexKey("otel", "public", "t", "kept_idx")])
+	assert.Equal(t, indexStat{index: "dropped_idx", table: "t", schema: "public", database: "otel", size: -1, scans: 3},
+		stats[indexKey("otel", "public", "t", "dropped_idx")])
+}
+
+func TestGetIndexStatsRowsErr(t *testing.T) {
+	columns := []string{"schemaname", "relname", "indexrelname", "index_size", "idx_scan"}
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+	iterErr := errors.New("connection reset mid-result")
+	mock.ExpectQuery("pg_stat_user_indexes").
+		WillReturnRows(sqlmock.NewRows(columns).
+			AddRow("public", "t", "first_idx", 16384, 1).
+			AddRow("public", "t", "second_idx", 16384, 1).
+			RowError(1, iterErr))
+
+	stats, err := client.getIndexStats(t.Context(), "otel")
+	require.ErrorIs(t, err, iterErr)
+	assert.Len(t, stats, 1)
+	require.NoError(t, mock.ExpectationsWereMet())
 }

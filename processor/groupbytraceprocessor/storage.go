@@ -8,9 +8,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// storage is an abstraction for the span storage used by the groupbytrace processor.
+// traceStorage is an abstraction for the span traceStorage used by the groupbytrace processor.
 // Implementations should be safe for concurrent use.
-type storage interface {
+type traceStorage interface {
 	// createOrAppend will check whether the given trace ID is already in the storage and
 	// will either append the given spans to the existing record, or create a new trace with
 	// the given spans from trace

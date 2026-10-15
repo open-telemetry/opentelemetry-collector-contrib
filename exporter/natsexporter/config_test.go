@@ -1,0 +1,164 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package natsexporter
+
+import (
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient"
+)
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id: component.NewIDWithName(component.MustNewType("nats"), ""),
+			expected: &Config{
+				ClientConfig: natsclient.ClientConfig{Endpoint: "nats://localhost:4222"},
+				// Signal subjects retain the factory defaults after merge.
+				Logs:    SignalConfig{Subject: defaultLogsSubject},
+				Metrics: SignalConfig{Subject: defaultMetricsSubject},
+				Traces:  SignalConfig{Subject: defaultTracesSubject},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("nats"), "full"),
+			expected: &Config{
+				ClientConfig: natsclient.ClientConfig{
+					Endpoint: "nats://nats.example.com:4222",
+					Pedantic: true,
+					Auth: natsclient.AuthConfig{
+						User: &natsclient.UserConfig{Username: "otel", Password: "s3cret"},
+					},
+				},
+				JetStream: &JetStreamConfig{
+					Domain:         "hub",
+					PublishTimeout: 5 * time.Second,
+				},
+				Logs:    SignalConfig{Subject: `"otel.logs"`, Marshaler: "otlp_proto"},
+				Metrics: SignalConfig{Subject: `"otel.metrics"`, Marshaler: "otlp_json"},
+				Traces:  SignalConfig{Subject: `"otel.spans"`, EncodingExtension: "otlp_encoding/nats"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.NoError(t, confmap.Validate(cfg))
+			// Only compare the fields exercised by testdata; TLS defaults are
+			// populated by CreateDefaultConfig and not asserted here.
+			got := cfg.(*Config)
+			exp := tt.expected.(*Config)
+			assert.Equal(t, exp.ClientConfig.Endpoint, got.ClientConfig.Endpoint)
+			assert.Equal(t, exp.ClientConfig.Pedantic, got.ClientConfig.Pedantic)
+			assert.Equal(t, exp.JetStream, got.JetStream)
+			assert.Equal(t, exp.Logs, got.Logs)
+			assert.Equal(t, exp.Metrics, got.Metrics)
+			assert.Equal(t, exp.Traces, got.Traces)
+			assert.Equal(t, exp.ClientConfig.Auth, got.ClientConfig.Auth)
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr string
+	}{
+		{
+			name: "valid",
+			cfg: &Config{
+				ClientConfig: natsclient.ClientConfig{Endpoint: "nats://localhost:4222"},
+				Logs:         SignalConfig{Marshaler: "otlp_proto"},
+			},
+		},
+		{
+			name: "unsupported marshaler",
+			cfg: &Config{
+				Logs: SignalConfig{Marshaler: "yaml"},
+			},
+			wantErr: "unsupported marshaler",
+		},
+		{
+			name: "marshaler configured twice",
+			cfg: &Config{
+				Metrics: SignalConfig{Marshaler: "otlp_proto", EncodingExtension: "otlp_encoding"},
+			},
+			wantErr: "marshaler configured more than once",
+		},
+		{
+			name: "incomplete user auth",
+			cfg: &Config{
+				ClientConfig: natsclient.ClientConfig{
+					Auth: natsclient.AuthConfig{User: &natsclient.UserConfig{Username: "otel"}},
+				},
+			},
+			wantErr: "incomplete username/password auth configuration",
+		},
+		{
+			name: "multiple nkey auth",
+			cfg: &Config{
+				ClientConfig: natsclient.ClientConfig{
+					Auth: natsclient.AuthConfig{
+						Nkey:         &natsclient.NkeyConfig{PublicKey: "k", Seed: []byte("s")},
+						NkeyUserFile: &natsclient.NkeyUserFileConfig{UserFilePath: "/creds"},
+					},
+				},
+			},
+			wantErr: "more than one auth method configured",
+		},
+		{
+			name: "multiple auth methods across families",
+			cfg: &Config{
+				ClientConfig: natsclient.ClientConfig{
+					Auth: natsclient.AuthConfig{
+						Token: &natsclient.TokenConfig{Token: "t"},
+						User:  &natsclient.UserConfig{Username: "u", Password: "p"},
+					},
+				},
+			},
+			wantErr: "more than one auth method configured",
+		},
+		{
+			name: "negative jetstream timeout",
+			cfg: &Config{
+				JetStream: &JetStreamConfig{PublishTimeout: -1},
+			},
+			wantErr: "publish_timeout must not be negative",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}

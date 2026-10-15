@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/kafka
+
+note: Add `partition_processing.max_in_flight.bytes` to cap the bytes held by in-flight Consume calls of each partition worker.
+
+issues: [51804]
+
+subtext:
+
+change_logs: [user]

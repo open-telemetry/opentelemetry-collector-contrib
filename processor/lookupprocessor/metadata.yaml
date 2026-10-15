@@ -9,7 +9,7 @@ description: |
 status:
   class: processor
   stability:
-    development: [logs, traces, metrics]
+    alpha: [logs, traces, metrics]
   distributions: []
   codeowners:
     active: [jsvd, dehaansa, VihasMakwana]

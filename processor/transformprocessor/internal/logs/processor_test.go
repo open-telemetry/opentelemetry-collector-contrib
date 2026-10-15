@@ -6,6 +6,7 @@ package logs
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -1414,6 +1415,103 @@ func Test_ProcessLogs_SharedCacheCrossContextAccess(t *testing.T) {
 			_, err := NewProcessor(tt.statements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.ErrorContains(t, err, tt.wantErr)
 		})
+	}
+}
+
+func Test_ProcessLogs_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
+	statements := []common.ContextStatements{
+		{
+			Statements:  []string{`set(log.cache["k"], "seen") where log.body == "operationA"`},
+			SharedCache: true,
+		},
+		{
+			Statements:  []string{`set(log.attributes["result"], "cache-detected") where log.cache["k"] != nil`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+	require.NoError(t, err)
+
+	// First call: operationA sets cache["k"]; all logs in group 2 see it.
+	ld1 := constructLogs()
+	_, err = processor.ProcessLogs(t.Context(), ld1)
+	require.NoError(t, err)
+
+	v0, ok0 := ld1.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("result")
+	require.True(t, ok0, "operationA log should have result attribute after first call")
+	assert.Equal(t, "cache-detected", v0.Str())
+
+	v1, ok1 := ld1.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get("result")
+	require.True(t, ok1, "operationB log should see shared cache from operationA in first call")
+	assert.Equal(t, "cache-detected", v1.Str())
+
+	// Second call: only operationB log, so cache["k"] should remain nil.
+	ld2 := plog.NewLogs()
+	rl := ld2.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	fillLogTwo(sl.LogRecords().AppendEmpty())
+
+	_, err = processor.ProcessLogs(t.Context(), ld2)
+	require.NoError(t, err)
+
+	_, hasResult := ld2.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("result")
+	assert.False(t, hasResult, "shared cache should be cleared between ProcessLogs calls")
+}
+
+func Test_ProcessLogs_SharedCacheConcurrentCalls(t *testing.T) {
+	const numGoroutines = 10
+
+	statements := []common.ContextStatements{
+		{
+			Context:     common.Log,
+			Statements:  []string{`set(cache["k"], "cached-value")`},
+			SharedCache: true,
+		},
+		{
+			Context:     common.Log,
+			Statements:  []string{`set(attributes["result"], cache["k"])`},
+			SharedCache: true,
+		},
+		{
+			Context:     common.Log,
+			Statements:  []string{`delete_key(cache, "k")`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	logs := make([]plog.Logs, numGoroutines)
+	errs := make([]error, numGoroutines)
+
+	for i := range numGoroutines {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			ld := constructLogs()
+			_, callErr := processor.ProcessLogs(t.Context(), ld)
+			errs[idx] = callErr
+			logs[idx] = ld
+		}(i)
+	}
+	wg.Wait()
+
+	for i, ld := range logs {
+		require.NoError(t, errs[i], "goroutine %d returned an error", i)
+		for _, rl := range ld.ResourceLogs().All() {
+			for _, sl := range rl.ScopeLogs().All() {
+				for _, log := range sl.LogRecords().All() {
+					result, ok := log.Attributes().Get("result")
+					assert.True(t, ok, "goroutine %d: log %q should have result attribute set from cache", i, log.Body().Str())
+					if ok {
+						assert.Equal(t, "cached-value", result.Str(), "goroutine %d: log %q result mismatch", i, log.Body().Str())
+					}
+				}
+			}
+		}
 	}
 }
 
