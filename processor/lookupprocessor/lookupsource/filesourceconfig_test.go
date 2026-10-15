@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,10 +54,9 @@ func TestFileSourceConfig_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.cfg.Validate()
 			if tt.expectedErr == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				require.Error(t, err)
-				assert.Equal(t, tt.expectedErr, err.Error())
+				require.EqualError(t, err, tt.expectedErr)
 			}
 		})
 	}
