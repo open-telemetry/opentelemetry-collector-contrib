@@ -574,6 +574,8 @@ processors:
             - resource.attributes["service.name"]
 ```
 
+Manual division is only correct while the instance count is fixed. Under autoscaling, or during a rolling deploy, a hardcoded divisor is wrong for as long as the real count differs from it. Scaling out is the unsafe direction, because each instance keeps targeting a goal sized for a smaller fleet, so the fleet overshoots its budget until the config catches up. Scaling in only under-delivers. Setting `fleet_tracker` follows the count instead, so the budget holds across scaling events with no config change.
+
 Behaviour:
 
 - The effective per-instance goal is `max(goal_throughput / N, 1)`, where N is the last-reported member count.
