@@ -1,0 +1,6 @@
+change_type: enhancement
+component: exporter/clickhouse
+note: Added a Bloom Filter data skipping index (idx_event_name) to the EventName column with a 0.01 false positive rate and granularity 1.
+issues: [49310]
+subtext: 
+change_logs: []
