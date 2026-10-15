@@ -74,15 +74,15 @@ func (cfg *Config) Validate() error {
 	if cfg.PodDeleteGracePeriod < 0 {
 		return errors.New("pod_delete_grace_period must be greater than or equal to 0")
 	}
-	if cfg.Kubelet.Enabled && cfg.Kubelet.PollInterval <= 0 {
-		return errors.New("kubelet.poll_interval must be greater than 0")
-	}
-	if cfg.Kubelet.Enabled && cfg.Kubelet.RequestTimeout <= 0 {
-		return errors.New("kubelet.request_timeout must be greater than 0")
-	}
 	if cfg.Kubelet.Enabled {
 		if !metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate.IsEnabled() {
 			return errors.New("kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
+		}
+		if cfg.Kubelet.PollInterval <= 0 {
+			return errors.New("kubelet.poll_interval must be greater than 0")
+		}
+		if cfg.Kubelet.RequestTimeout <= 0 {
+			return errors.New("kubelet.request_timeout must be greater than 0")
 		}
 		if cfg.Filter.NodeFromEnvVar != "" {
 			if err := cfg.Filter.Validate(); err != nil {

@@ -20,6 +20,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -543,10 +544,14 @@ func (c *WatchClient) reconcileKubeletPods(pods []api_v1.Pod) {
 			continue
 		}
 		current[uid] = pod
-		if _, ok := c.kubeletPods[uid]; ok {
-			c.handleKubeletPodUpdate(pod)
-		} else {
+		prev, seen := c.kubeletPods[uid]
+		switch {
+		case !seen:
 			c.handlePodAdd(pod)
+		case equality.Semantic.DeepEqual(prev, pod):
+			// Kubelet /pods returns the full list on every poll; an unchanged pod is not an update.
+		default:
+			c.handlePodUpdate(prev, pod)
 		}
 	}
 	for uid, pod := range c.kubeletPods {
@@ -630,25 +635,6 @@ func (c *WatchClient) handlePodUpdate(_, newPod any) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", newPod))
 	}
-	c.m.RLock()
-	podTableSize := len(c.Pods)
-	c.m.RUnlock()
-	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
-		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
-	}
-	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
-		c.telemetryBuilder.K8sWatcherPodCacheSize.Record(context.Background(), int64(podTableSize))
-	}
-}
-
-func (c *WatchClient) handleKubeletPodUpdate(pod *api_v1.Pod) {
-	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
-		c.telemetryBuilder.OtelsvcK8sPodUpdated.Add(context.Background(), 1)
-	}
-	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
-		c.telemetryBuilder.K8sWatcherPodUpdated.Add(context.Background(), 1)
-	}
-	c.addOrUpdatePod(pod)
 	c.m.RLock()
 	podTableSize := len(c.Pods)
 	c.m.RUnlock()

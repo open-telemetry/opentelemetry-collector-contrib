@@ -18,8 +18,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -36,9 +39,11 @@ import (
 	clientmetafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	sharedkubelet "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadatatest"
 )
 
 func newFakeAPIClientset(_ k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
@@ -3078,6 +3083,30 @@ func TestReconcileKubeletPodsUpdatesUnchangedResourceVersion(t *testing.T) {
 	assert.Equal(t, "pod-a", got.Name)
 }
 
+func TestReconcileKubeletPodsSkipsUnchangedPods(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate, true)()
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+	c := newTestClientWithTelemetry(t, metadatatest.NewSettings(tel).TelemetrySettings)
+	c.kubeletPods = map[string]*api_v1.Pod{}
+
+	pod := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	c.reconcileKubeletPods([]api_v1.Pod{pod})
+	c.reconcileKubeletPods([]api_v1.Pod{pod})
+	c.reconcileKubeletPods([]api_v1.Pod{pod})
+	metadatatest.AssertEqualK8sWatcherPodAdded(t, tel, []metricdata.DataPoint[int64]{{Value: 1}}, metricdatatest.IgnoreTimestamp())
+	_, err := tel.GetMetric("otelcol.k8s.watcher.pod.updated")
+	require.Error(t, err, "unchanged pods must not be counted as updates")
+
+	changed := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.2", nil)
+	c.reconcileKubeletPods([]api_v1.Pod{changed})
+	c.reconcileKubeletPods([]api_v1.Pod{changed})
+	metadatatest.AssertEqualK8sWatcherPodUpdated(t, tel, []metricdata.DataPoint[int64]{{Value: 1}}, metricdatatest.IgnoreTimestamp())
+	got, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.2"))
+	require.True(t, ok)
+	assert.Equal(t, "pod-a", got.Name)
+}
+
 func TestInformerPodUpdateKeepsStaleIdentifiers(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
@@ -3453,7 +3482,7 @@ func TestReconcileKubeletPodsFiltersOnExtendedFields(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestHandleKubeletPodUpdateConcurrentWithDeleteLoop(t *testing.T) {
+func TestHandlePodUpdateConcurrentWithDeleteLoop(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	c.kubeletPods = map[string]*api_v1.Pod{}
 	pod := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
@@ -3464,7 +3493,7 @@ func TestHandleKubeletPodUpdateConcurrentWithDeleteLoop(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for range 200 {
-			c.handleKubeletPodUpdate(&pod)
+			c.handlePodUpdate(nil, &pod)
 		}
 	}()
 	go func() {
@@ -4905,8 +4934,16 @@ func TestExtractCronJobLabelsAnnotations(t *testing.T) {
 	}
 }
 
+func newTestClientWithTelemetry(t *testing.T, set component.TelemetrySettings) *WatchClient {
+	c, _ := newTestClientWithSettings(t, set, Filters{})
+	return c
+}
+
 func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
-	set := componenttest.NewNopTelemetrySettings()
+	return newTestClientWithSettings(t, componenttest.NewNopTelemetrySettings(), f)
+}
+
+func newTestClientWithSettings(t *testing.T, set component.TelemetrySettings, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	set.Logger = zap.New(observedLogger)
 	exclude := Excludes{
