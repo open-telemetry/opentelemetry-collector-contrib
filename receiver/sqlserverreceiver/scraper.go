@@ -256,6 +256,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDiskIOMetrics(ctx)
 	case getSQLServerTempDBQuery():
 		err = s.recordTempDBMetrics(ctx)
+	case getSQLServerTempDBContentionQuery():
+		err = s.recordTempDBContentionMetrics(ctx)
 	case getSQLServerTempDBFileQuery():
 		err = s.recordTempDBFileMetrics(ctx)
 	default:
@@ -913,7 +915,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const failedAutoParamsPerSec = "Failed Auto-Params/sec"
 	const forcedParameterizationsPerSec = "Forced Parameterizations/sec"
 	const freeListStalls = "Free list stalls/sec"
-	const freeSpaceInTempdb = "Free Space in tempdb (KB)"
 	const freeSpaceScansPerSec = "FreeSpace Scans/sec"
 	const fullScansPerSec = "Full Scans/sec"
 	const guidedPlanExecutionsPerSec = "Guided plan executions/sec"
@@ -1316,14 +1317,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolFree)
-			}
-		case freeSpaceInTempdb:
-			val, err := retrieveInt(row, valueKey)
-			if err != nil {
-				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, freeSpaceInTempdb)
-				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(now, val.(int64), metadata.AttributeTempdbStateFree)
 			}
 		case freeSpaceScansPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -2823,16 +2816,16 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 
 // recordTempDBMetrics records the single-row tempdb diagnostics: space usage by allocation
 // category, data-file count, pagelatch contention waiters, and allocation-page wait time.
+// recordTempDBMetrics records the mutually exclusive tempdb space-usage breakdown and the
+// configured tempdb data-file count.
 func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error {
 	const (
 		kbUserObjects     = "kb_user_objects"
 		kbInternalObjects = "kb_internal_objects"
+		kbVersionStore    = "kb_version_store"
+		kbFree            = "kb_free"
+		kbMixedExtents    = "kb_mixed_extents"
 		dataFileCount     = "data_file_count"
-		pagelatchWaiters  = "pagelatch_waiters"
-		gamMs             = "gam_ms"
-		sgamMs            = "sgam_ms"
-		pfsMs             = "pfs_ms"
-		otherMs           = "other_ms"
 	)
 
 	rows, err := s.client.QueryRows(ctx)
@@ -2848,10 +2841,7 @@ func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error 
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 
-		errs = append(errs,
-			s.mb.RecordSqlserverTempdbDataFilesCountDataPoint(now, row[dataFileCount]),
-			s.mb.RecordSqlserverTempdbContentionWaitersCountDataPoint(now, row[pagelatchWaiters]),
-		)
+		errs = append(errs, s.mb.RecordSqlserverTempdbDataFilesCountDataPoint(now, row[dataFileCount]))
 
 		for _, w := range []struct {
 			col   string
@@ -2859,6 +2849,9 @@ func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error 
 		}{
 			{kbUserObjects, metadata.AttributeTempdbStateUserObjects},
 			{kbInternalObjects, metadata.AttributeTempdbStateInternalObjects},
+			{kbVersionStore, metadata.AttributeTempdbStateVersionStore},
+			{kbFree, metadata.AttributeTempdbStateFree},
+			{kbMixedExtents, metadata.AttributeTempdbStateMixedExtents},
 		} {
 			val, parseErr := retrieveInt(row, w.col)
 			if parseErr != nil {
@@ -2868,21 +2861,48 @@ func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error 
 			s.mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(now, val.(int64), w.value)
 		}
 
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+// recordTempDBContentionMetrics records the number of tasks currently waiting on tempdb
+// allocation pages (PAGELATCH_* waits), both in total and classified by allocation page type.
+func (s *sqlServerScraperHelper) recordTempDBContentionMetrics(ctx context.Context) error {
+	const (
+		totalWaiters = "total_waiters"
+		gamWaiters   = "gam_waiters"
+		sgamWaiters  = "sgam_waiters"
+		pfsWaiters   = "pfs_waiters"
+		otherWaiters = "other_waiters"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for _, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		errs = append(errs, s.mb.RecordSqlserverTempdbContentionWaitersCountDataPoint(now, row[totalWaiters]))
+
 		for _, w := range []struct {
 			col   string
 			value metadata.AttributeSqlserverTempdbAllocationPageType
 		}{
-			{gamMs, metadata.AttributeSqlserverTempdbAllocationPageTypeGam},
-			{sgamMs, metadata.AttributeSqlserverTempdbAllocationPageTypeSgam},
-			{pfsMs, metadata.AttributeSqlserverTempdbAllocationPageTypePfs},
-			{otherMs, metadata.AttributeSqlserverTempdbAllocationPageTypeOther},
+			{gamWaiters, metadata.AttributeSqlserverTempdbAllocationPageTypeGam},
+			{sgamWaiters, metadata.AttributeSqlserverTempdbAllocationPageTypeSgam},
+			{pfsWaiters, metadata.AttributeSqlserverTempdbAllocationPageTypePfs},
+			{otherWaiters, metadata.AttributeSqlserverTempdbAllocationPageTypeOther},
 		} {
-			val, parseErr := retrieveFloat(row, w.col)
-			if parseErr != nil {
-				errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", w.col, i, parseErr))
-				continue
-			}
-			s.mb.RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(now, val.(float64)/1e3, w.value)
+			errs = append(errs, s.mb.RecordSqlserverTempdbAllocationWaitersCountDataPoint(now, row[w.col], w.value))
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))

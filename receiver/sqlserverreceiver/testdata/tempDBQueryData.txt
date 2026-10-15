@@ -4,11 +4,9 @@
     "sql_instance": "testhost",
     "kb_user_objects": "8192",
     "kb_internal_objects": "4096",
-    "data_file_count": "4",
-    "pagelatch_waiters": "2",
-    "gam_ms": "150",
-    "sgam_ms": "25",
-    "pfs_ms": "10",
-    "other_ms": "5"
+    "kb_version_store": "2048",
+    "kb_free": "16384",
+    "kb_mixed_extents": "128",
+    "data_file_count": "4"
   }
 ]

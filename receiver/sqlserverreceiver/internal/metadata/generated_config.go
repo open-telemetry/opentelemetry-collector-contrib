@@ -2631,23 +2631,23 @@ func (ms *SqlserverTaskRateMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.allocation.wait_time.total metric.
-type SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey string
+// SqlserverTempdbAllocationWaitersCountMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.allocation.waiters.count metric.
+type SqlserverTempdbAllocationWaitersCountMetricAttributeKey string
 
 const (
-	SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKeySqlserverTempdbAllocationPageType SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey = "sqlserver.tempdb.allocation.page_type"
+	SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType SqlserverTempdbAllocationWaitersCountMetricAttributeKey = "sqlserver.tempdb.allocation.page_type"
 )
 
-// SqlserverTempdbAllocationWaitTimeTotalMetricConfig provides config for the sqlserver.tempdb.allocation.wait_time.total metric.
-type SqlserverTempdbAllocationWaitTimeTotalMetricConfig struct {
+// SqlserverTempdbAllocationWaitersCountMetricConfig provides config for the sqlserver.tempdb.allocation.waiters.count metric.
+type SqlserverTempdbAllocationWaitersCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverTempdbAllocationWaitersCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SqlserverTempdbAllocationWaitTimeTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverTempdbAllocationWaitersCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2661,12 +2661,12 @@ func (ms *SqlserverTempdbAllocationWaitTimeTotalMetricConfig) Unmarshal(parser *
 	return nil
 }
 
-func (ms *SqlserverTempdbAllocationWaitTimeTotalMetricConfig) Validate() error {
+func (ms *SqlserverTempdbAllocationWaitersCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKeySqlserverTempdbAllocationPageType:
+		case SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType:
 		default:
-			return fmt.Errorf("metric sqlserver.tempdb.allocation.wait_time.total doesn't have an attribute %v, valid attributes: [sqlserver.tempdb.allocation.page_type]", val)
+			return fmt.Errorf("metric sqlserver.tempdb.allocation.waiters.count doesn't have an attribute %v, valid attributes: [sqlserver.tempdb.allocation.page_type]", val)
 		}
 	}
 
@@ -3192,7 +3192,7 @@ type MetricsConfig struct {
 	SqlserverTableCount                                   SqlserverTableCountMetricConfig                                   `mapstructure:"sqlserver.table.count"`
 	SqlserverTaskCount                                    SqlserverTaskCountMetricConfig                                    `mapstructure:"sqlserver.task.count"`
 	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
-	SqlserverTempdbAllocationWaitTimeTotal                SqlserverTempdbAllocationWaitTimeTotalMetricConfig                `mapstructure:"sqlserver.tempdb.allocation.wait_time.total"`
+	SqlserverTempdbAllocationWaitersCount                 SqlserverTempdbAllocationWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.allocation.waiters.count"`
 	SqlserverTempdbContentionWaitersCount                 SqlserverTempdbContentionWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.contention.waiters.count"`
 	SqlserverTempdbDataFilesCount                         SqlserverTempdbDataFilesCountMetricConfig                         `mapstructure:"sqlserver.tempdb.data_files.count"`
 	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
@@ -3534,10 +3534,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskResult},
 		},
-		SqlserverTempdbAllocationWaitTimeTotal: SqlserverTempdbAllocationWaitTimeTotalMetricConfig{
+		SqlserverTempdbAllocationWaitersCount: SqlserverTempdbAllocationWaitersCountMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKey{SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKeySqlserverTempdbAllocationPageType},
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverTempdbAllocationWaitersCountMetricAttributeKey{SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType},
 		},
 		SqlserverTempdbContentionWaitersCount: SqlserverTempdbContentionWaitersCountMetricConfig{
 			Enabled: false,

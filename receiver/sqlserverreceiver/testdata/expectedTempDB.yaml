@@ -24,16 +24,30 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: TempDB space usage, broken down by state.
+          - description: TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.
             name: sqlserver.database.tempdb.space
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "16384"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4096"
                   attributes:
                     - key: tempdb.state
                       value:
                         stringValue: internal_objects
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "128"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: mixed_extents
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "8192"
@@ -43,50 +57,14 @@ resourceMetrics:
                         stringValue: user_objects
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "2048"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: version_store
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: kBy
-          - description: Cumulative wait time on tempdb allocation pages, broken down by page type.
-            name: sqlserver.tempdb.allocation.wait_time.total
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asDouble: 0.15
-                  attributes:
-                    - key: sqlserver.tempdb.allocation.page_type
-                      value:
-                        stringValue: gam
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 0.005
-                  attributes:
-                    - key: sqlserver.tempdb.allocation.page_type
-                      value:
-                        stringValue: other
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 0.01
-                  attributes:
-                    - key: sqlserver.tempdb.allocation.page_type
-                      value:
-                        stringValue: pfs
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 0.025
-                  attributes:
-                    - key: sqlserver.tempdb.allocation.page_type
-                      value:
-                        stringValue: sgam
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: s
-          - description: Number of tempdb pagelatch wait types with at least one active waiter.
-            gauge:
-              dataPoints:
-                - asInt: "2"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: sqlserver.tempdb.contention.waiters.count
-            unit: '{waiters}'
           - description: Number of tempdb data files configured on the instance.
             gauge:
               dataPoints:

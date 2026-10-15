@@ -373,7 +373,7 @@ attributes:
     type: string
     requirement_level: recommended
   sqlserver.tempdb.allocation.page_type:
-    description: TempDB allocation-page wait type.
+    description: The type of tempdb allocation page being waited on.
     type: string
     requirement_level: recommended
     enum: [gam, sgam, pfs, other]
@@ -468,10 +468,10 @@ attributes:
     requirement_level: recommended
     enum: [running, limit_reached]
   tempdb.state:
-    description: The status of the tempdb space usage.
+    description: The tempdb space usage category. The values are mutually exclusive and partition total tempdb space.
     type: string
     requirement_level: recommended
-    enum: [free, used, user_objects, internal_objects]
+    enum: [free, user_objects, internal_objects, version_store, mixed_extents]
   transition.direction:
     description: The direction of a superlatch transition.
     type: string
@@ -816,7 +816,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.space:
     enabled: false
-    description: TempDB space usage, broken down by state.
+    description: TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.
     stability: development
     unit: kBy
     sum:
@@ -824,6 +824,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [tempdb.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.version_store.size:
     enabled: false
     description: TempDB version store size.
@@ -1372,20 +1373,19 @@ metrics:
       value_type: double
     attributes: [task.result]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.tempdb.allocation.wait_time.total:
+  sqlserver.tempdb.allocation.waiters.count:
     enabled: false
-    description: Cumulative wait time on tempdb allocation pages, broken down by page type.
+    description: Number of tasks currently waiting on a tempdb allocation page, broken down by page type.
     stability: development
-    unit: s
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
-      value_type: double
+    unit: "{waiters}"
+    gauge:
+      value_type: int
+      input_type: string
     attributes: [sqlserver.tempdb.allocation.page_type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.tempdb.contention.waiters.count:
     enabled: false
-    description: Number of tempdb pagelatch wait types with at least one active waiter.
+    description: Number of tasks currently waiting on a tempdb allocation page.
     stability: development
     unit: "{waiters}"
     gauge:

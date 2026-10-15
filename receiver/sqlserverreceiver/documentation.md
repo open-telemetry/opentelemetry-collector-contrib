@@ -488,7 +488,9 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.database.tempdb.space
 
-TempDB space usage, broken down by state.
+TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -498,7 +500,7 @@ TempDB space usage, broken down by state.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| tempdb.state | The status of the tempdb space usage. | Str: ``free``, ``used``, ``user_objects``, ``internal_objects`` | Recommended | - |
+| tempdb.state | The tempdb space usage category. The values are mutually exclusive and partition total tempdb space. | Str: ``free``, ``user_objects``, ``internal_objects``, ``version_store``, ``mixed_extents`` | Recommended | - |
 
 ### sqlserver.database.tempdb.version_store.size
 
@@ -1175,25 +1177,25 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | task.result | The result of the task activation. | Str: ``started``, ``aborted`` | Recommended | - |
 
-### sqlserver.tempdb.allocation.wait_time.total
+### sqlserver.tempdb.allocation.waiters.count
 
-Cumulative wait time on tempdb allocation pages, broken down by page type.
+Number of tasks currently waiting on a tempdb allocation page, broken down by page type.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {waiters} | Gauge | Int | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.tempdb.allocation.page_type | TempDB allocation-page wait type. | Str: ``gam``, ``sgam``, ``pfs``, ``other`` | Recommended | - |
+| sqlserver.tempdb.allocation.page_type | The type of tempdb allocation page being waited on. | Str: ``gam``, ``sgam``, ``pfs``, ``other`` | Recommended | - |
 
 ### sqlserver.tempdb.contention.waiters.count
 
-Number of tempdb pagelatch wait types with at least one active waiter.
+Number of tasks currently waiting on a tempdb allocation page.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 

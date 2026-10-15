@@ -810,9 +810,10 @@ type AttributeTempdbState int
 const (
 	_ AttributeTempdbState = iota
 	AttributeTempdbStateFree
-	AttributeTempdbStateUsed
 	AttributeTempdbStateUserObjects
 	AttributeTempdbStateInternalObjects
+	AttributeTempdbStateVersionStore
+	AttributeTempdbStateMixedExtents
 )
 
 // String returns the string representation of the AttributeTempdbState.
@@ -820,12 +821,14 @@ func (av AttributeTempdbState) String() string {
 	switch av {
 	case AttributeTempdbStateFree:
 		return "free"
-	case AttributeTempdbStateUsed:
-		return "used"
 	case AttributeTempdbStateUserObjects:
 		return "user_objects"
 	case AttributeTempdbStateInternalObjects:
 		return "internal_objects"
+	case AttributeTempdbStateVersionStore:
+		return "version_store"
+	case AttributeTempdbStateMixedExtents:
+		return "mixed_extents"
 	}
 	return ""
 }
@@ -833,9 +836,10 @@ func (av AttributeTempdbState) String() string {
 // MapAttributeTempdbState is a helper map of string to AttributeTempdbState attribute value.
 var MapAttributeTempdbState = map[string]AttributeTempdbState{
 	"free":             AttributeTempdbStateFree,
-	"used":             AttributeTempdbStateUsed,
 	"user_objects":     AttributeTempdbStateUserObjects,
 	"internal_objects": AttributeTempdbStateInternalObjects,
+	"version_store":    AttributeTempdbStateVersionStore,
+	"mixed_extents":    AttributeTempdbStateMixedExtents,
 }
 
 // AttributeTransitionDirection specifies the value transition.direction attribute.
@@ -1195,8 +1199,8 @@ var MetricsInfo = metricsInfo{
 		Name:       "sqlserver.task.rate",
 		Attributes: []string{"task.result"},
 	},
-	SqlserverTempdbAllocationWaitTimeTotal: metricInfo{
-		Name:       "sqlserver.tempdb.allocation.wait_time.total",
+	SqlserverTempdbAllocationWaitersCount: metricInfo{
+		Name:       "sqlserver.tempdb.allocation.waiters.count",
 		Attributes: []string{"sqlserver.tempdb.allocation.page_type"},
 	},
 	SqlserverTempdbContentionWaitersCount: metricInfo{
@@ -1342,7 +1346,7 @@ type metricsInfo struct {
 	SqlserverTableCount                                   metricInfo
 	SqlserverTaskCount                                    metricInfo
 	SqlserverTaskRate                                     metricInfo
-	SqlserverTempdbAllocationWaitTimeTotal                metricInfo
+	SqlserverTempdbAllocationWaitersCount                 metricInfo
 	SqlserverTempdbContentionWaitersCount                 metricInfo
 	SqlserverTempdbDataFilesCount                         metricInfo
 	SqlserverTempdbFileSize                               metricInfo
@@ -2958,7 +2962,7 @@ type metricSqlserverDatabaseTempdbSpace struct {
 // init fills sqlserver.database.tempdb.space metric with initial data.
 func (m *metricSqlserverDatabaseTempdbSpace) init() {
 	m.data.SetName("sqlserver.database.tempdb.space")
-	m.data.SetDescription("TempDB space usage, broken down by state.")
+	m.data.SetDescription("TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.")
 	m.data.SetUnit("kBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -7079,28 +7083,26 @@ func newMetricSqlserverTaskRate(cfg SqlserverTaskRateMetricConfig) metricSqlserv
 	return m
 }
 
-type metricSqlserverTempdbAllocationWaitTimeTotal struct {
-	data          pmetric.Metric                                     // data buffer for generated metric.
-	config        SqlserverTempdbAllocationWaitTimeTotalMetricConfig // metric config provided by user.
-	capacity      int                                                // max observed number of data points added to the metric.
-	aggDataPoints []float64                                          // slice containing number of aggregated datapoints at each index
-	dpIndex       map[uint64]int                                     // maps a data point's hash to its index, for O(1) dedup lookup.
+type metricSqlserverTempdbAllocationWaitersCount struct {
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        SqlserverTempdbAllocationWaitersCountMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
-// init fills sqlserver.tempdb.allocation.wait_time.total metric with initial data.
-func (m *metricSqlserverTempdbAllocationWaitTimeTotal) init() {
-	m.data.SetName("sqlserver.tempdb.allocation.wait_time.total")
-	m.data.SetDescription("Cumulative wait time on tempdb allocation pages, broken down by page type.")
-	m.data.SetUnit("s")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+// init fills sqlserver.tempdb.allocation.waiters.count metric with initial data.
+func (m *metricSqlserverTempdbAllocationWaitersCount) init() {
+	m.data.SetName("sqlserver.tempdb.allocation.waiters.count")
+	m.data.SetDescription("Number of tasks currently waiting on a tempdb allocation page, broken down by page type.")
+	m.data.SetUnit("{waiters}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricSqlserverTempdbAllocationWaitTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverTempdbAllocationPageTypeAttributeValue string) {
+func (m *metricSqlserverTempdbAllocationWaitersCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverTempdbAllocationPageTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7108,52 +7110,52 @@ func (m *metricSqlserverTempdbAllocationWaitTimeTotal) recordDataPoint(start pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverTempdbAllocationWaitTimeTotalMetricAttributeKeySqlserverTempdbAllocationPageType) {
+	if slices.Contains(m.config.EnabledAttributes, SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType) {
 		dp.Attributes().PutStr("sqlserver.tempdb.allocation.page_type", sqlserverTempdbAllocationPageTypeAttributeValue)
 	}
 
 	var s string
 	key := dataPointKey(dp)
-	dps := m.data.Sum().DataPoints()
+	dps := m.data.Gauge().DataPoints()
 	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
 		switch s = m.config.AggregationStrategy; s {
 		case AggregationStrategySum, AggregationStrategyAvg:
-			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			dpi.SetIntValue(dpi.IntValue() + val)
 			m.aggDataPoints[i] += 1
 			return
 		case AggregationStrategyMin:
-			if dpi.DoubleValue() > val {
-				dpi.SetDoubleValue(val)
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
 			return
 		case AggregationStrategyMax:
-			if dpi.DoubleValue() < val {
-				dpi.SetDoubleValue(val)
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
 			}
 			return
 		}
 	}
 
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverTempdbAllocationWaitTimeTotal) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+func (m *metricSqlserverTempdbAllocationWaitersCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverTempdbAllocationWaitTimeTotal) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+func (m *metricSqlserverTempdbAllocationWaitersCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
 			}
 		}
 		m.updateCapacity()
@@ -7162,8 +7164,8 @@ func (m *metricSqlserverTempdbAllocationWaitTimeTotal) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricSqlserverTempdbAllocationWaitTimeTotal(cfg SqlserverTempdbAllocationWaitTimeTotalMetricConfig) metricSqlserverTempdbAllocationWaitTimeTotal {
-	m := metricSqlserverTempdbAllocationWaitTimeTotal{config: cfg}
+func newMetricSqlserverTempdbAllocationWaitersCount(cfg SqlserverTempdbAllocationWaitersCountMetricConfig) metricSqlserverTempdbAllocationWaitersCount {
+	m := metricSqlserverTempdbAllocationWaitersCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -7181,7 +7183,7 @@ type metricSqlserverTempdbContentionWaitersCount struct {
 // init fills sqlserver.tempdb.contention.waiters.count metric with initial data.
 func (m *metricSqlserverTempdbContentionWaitersCount) init() {
 	m.data.SetName("sqlserver.tempdb.contention.waiters.count")
-	m.data.SetDescription("Number of tempdb pagelatch wait types with at least one active waiter.")
+	m.data.SetDescription("Number of tasks currently waiting on a tempdb allocation page.")
 	m.data.SetUnit("{waiters}")
 	m.data.SetEmptyGauge()
 }
@@ -8250,7 +8252,7 @@ type MetricsBuilder struct {
 	metricSqlserverTableCount                                   metricSqlserverTableCount
 	metricSqlserverTaskCount                                    metricSqlserverTaskCount
 	metricSqlserverTaskRate                                     metricSqlserverTaskRate
-	metricSqlserverTempdbAllocationWaitTimeTotal                metricSqlserverTempdbAllocationWaitTimeTotal
+	metricSqlserverTempdbAllocationWaitersCount                 metricSqlserverTempdbAllocationWaitersCount
 	metricSqlserverTempdbContentionWaitersCount                 metricSqlserverTempdbContentionWaitersCount
 	metricSqlserverTempdbDataFilesCount                         metricSqlserverTempdbDataFilesCount
 	metricSqlserverTempdbFileSize                               metricSqlserverTempdbFileSize
@@ -8379,7 +8381,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTableCount:                                   newMetricSqlserverTableCount(mbc.Metrics.SqlserverTableCount),
 		metricSqlserverTaskCount:                                    newMetricSqlserverTaskCount(mbc.Metrics.SqlserverTaskCount),
 		metricSqlserverTaskRate:                                     newMetricSqlserverTaskRate(mbc.Metrics.SqlserverTaskRate),
-		metricSqlserverTempdbAllocationWaitTimeTotal:                newMetricSqlserverTempdbAllocationWaitTimeTotal(mbc.Metrics.SqlserverTempdbAllocationWaitTimeTotal),
+		metricSqlserverTempdbAllocationWaitersCount:                 newMetricSqlserverTempdbAllocationWaitersCount(mbc.Metrics.SqlserverTempdbAllocationWaitersCount),
 		metricSqlserverTempdbContentionWaitersCount:                 newMetricSqlserverTempdbContentionWaitersCount(mbc.Metrics.SqlserverTempdbContentionWaitersCount),
 		metricSqlserverTempdbDataFilesCount:                         newMetricSqlserverTempdbDataFilesCount(mbc.Metrics.SqlserverTempdbDataFilesCount),
 		metricSqlserverTempdbFileSize:                               newMetricSqlserverTempdbFileSize(mbc.Metrics.SqlserverTempdbFileSize),
@@ -8621,7 +8623,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTableCount.emit(ils.Metrics())
 	mb.metricSqlserverTaskCount.emit(ils.Metrics())
 	mb.metricSqlserverTaskRate.emit(ils.Metrics())
-	mb.metricSqlserverTempdbAllocationWaitTimeTotal.emit(ils.Metrics())
+	mb.metricSqlserverTempdbAllocationWaitersCount.emit(ils.Metrics())
 	mb.metricSqlserverTempdbContentionWaitersCount.emit(ils.Metrics())
 	mb.metricSqlserverTempdbDataFilesCount.emit(ils.Metrics())
 	mb.metricSqlserverTempdbFileSize.emit(ils.Metrics())
@@ -9155,9 +9157,14 @@ func (mb *MetricsBuilder) RecordSqlserverTaskRateDataPoint(ts pcommon.Timestamp,
 	mb.metricSqlserverTaskRate.recordDataPoint(mb.startTime, ts, val, taskResultAttributeValue.String())
 }
 
-// RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint adds a data point to sqlserver.tempdb.allocation.wait_time.total metric.
-func (mb *MetricsBuilder) RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(ts pcommon.Timestamp, val float64, sqlserverTempdbAllocationPageTypeAttributeValue AttributeSqlserverTempdbAllocationPageType) {
-	mb.metricSqlserverTempdbAllocationWaitTimeTotal.recordDataPoint(mb.startTime, ts, val, sqlserverTempdbAllocationPageTypeAttributeValue.String())
+// RecordSqlserverTempdbAllocationWaitersCountDataPoint adds a data point to sqlserver.tempdb.allocation.waiters.count metric.
+func (mb *MetricsBuilder) RecordSqlserverTempdbAllocationWaitersCountDataPoint(ts pcommon.Timestamp, inputVal string, sqlserverTempdbAllocationPageTypeAttributeValue AttributeSqlserverTempdbAllocationPageType) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverTempdbAllocationWaitersCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverTempdbAllocationWaitersCount.recordDataPoint(mb.startTime, ts, val, sqlserverTempdbAllocationPageTypeAttributeValue.String())
+	return nil
 }
 
 // RecordSqlserverTempdbContentionWaitersCountDataPoint adds a data point to sqlserver.tempdb.contention.waiters.count metric.

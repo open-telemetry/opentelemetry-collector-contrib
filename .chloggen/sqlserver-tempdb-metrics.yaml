@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: receiver/sql_server
 
-note: "Add `sqlserver.tempdb.file.size`, `sqlserver.tempdb.data_files.count`, `sqlserver.tempdb.contention.waiters.count`, and `sqlserver.tempdb.allocation.wait_time.total` metrics, and extend `sqlserver.database.tempdb.space`."
+note: "Add `sqlserver.tempdb.file.size`, `sqlserver.tempdb.data_files.count`, `sqlserver.tempdb.contention.waiters.count`, and `sqlserver.tempdb.allocation.waiters.count` metrics, and extend `sqlserver.database.tempdb.space`."
 
 issues: [52057]
 

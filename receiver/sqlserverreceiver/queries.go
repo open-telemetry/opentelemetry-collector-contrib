@@ -165,7 +165,6 @@ SELECT DISTINCT
 			,'Logical Connections'
 			,'Temp Tables Creation Rate'
 			,'Temp Tables For Destruction'
-			,'Free Space in tempdb (KB)'
 			,'Version Store Size (KB)'
 			,'Memory Grants Pending'
 			,'Memory Grants Outstanding'
@@ -1392,6 +1391,10 @@ func getSQLServerDiskIOQuery() string {
 
 // sqlServerTempDBQuery returns a single row of tempdb diagnostics covering space usage,
 // data-file count, pagelatch waiters, and allocation-page wait time.
+// sqlServerTempDBQuery returns a single row of tempdb space-usage and data-file-count
+// diagnostics. tempdb.sys.dm_db_file_space_usage is the sole source for the space breakdown so
+// that user_objects/internal_objects/version_store/free/mixed_extents form a mutually exclusive
+// partition of total tempdb space from one consistent snapshot.
 const sqlServerTempDBQuery string = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
@@ -1404,50 +1407,90 @@ WITH
 file_space AS (
 	SELECT
 		CAST(SUM(user_object_reserved_page_count)     AS BIGINT) * 8 AS kb_user_objects,
-		CAST(SUM(internal_object_reserved_page_count) AS BIGINT) * 8 AS kb_internal_objects
+		CAST(SUM(internal_object_reserved_page_count) AS BIGINT) * 8 AS kb_internal_objects,
+		CAST(SUM(version_store_reserved_page_count)   AS BIGINT) * 8 AS kb_version_store,
+		CAST(SUM(unallocated_extent_page_count)       AS BIGINT) * 8 AS kb_free,
+		CAST(SUM(mixed_extent_page_count)             AS BIGINT) * 8 AS kb_mixed_extents
 	FROM tempdb.sys.dm_db_file_space_usage WITH (NOLOCK)
 ),
 files AS (
 	SELECT CAST(COUNT(*) AS BIGINT) AS data_file_count
 	FROM sys.master_files WITH (NOLOCK)
 	WHERE database_id = 2 AND type = 0
-),
-contention AS (
-	SELECT CAST(COUNT(*) AS BIGINT) AS pagelatch_waiters
-	FROM sys.dm_os_wait_stats WITH (NOLOCK)
-	WHERE wait_type IN ('PAGELATCH_IO','PAGELATCH_SH','PAGELATCH_EX','PAGELATCH_UP')
-	  AND waiting_tasks_count > 0
-),
-alloc AS (
-	SELECT
-		ISNULL((SELECT SUM(wait_time_ms) FROM sys.dm_os_wait_stats WITH (NOLOCK) WHERE wait_type LIKE '%GAM%'  AND wait_type NOT LIKE '%SGAM%'), 0) AS gam_ms,
-		ISNULL((SELECT SUM(wait_time_ms) FROM sys.dm_os_wait_stats WITH (NOLOCK) WHERE wait_type LIKE '%SGAM%'), 0) AS sgam_ms,
-		ISNULL((SELECT SUM(wait_time_ms) FROM sys.dm_os_wait_stats WITH (NOLOCK) WHERE wait_type LIKE '%PFS%'),  0) AS pfs_ms,
-		ISNULL((SELECT SUM(wait_time_ms) FROM sys.dm_os_wait_stats WITH (NOLOCK)
-		        WHERE wait_type LIKE '%ALLOCATION%'
-		          AND wait_type NOT LIKE '%GAM%'
-		          AND wait_type NOT LIKE '%SGAM%'
-		          AND wait_type NOT LIKE '%PFS%'), 0) AS other_ms
 )
 SELECT
 	'sqlserver_tempdb' AS [measurement],
 	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
 	file_space.kb_user_objects,
 	file_space.kb_internal_objects,
-	files.data_file_count,
-	contention.pagelatch_waiters,
-	alloc.gam_ms,
-	alloc.sgam_ms,
-	alloc.pfs_ms,
-	alloc.other_ms
-FROM file_space, files, contention, alloc
+	file_space.kb_version_store,
+	file_space.kb_free,
+	file_space.kb_mixed_extents,
+	files.data_file_count
+FROM file_space, files
 `
 
 func getSQLServerTempDBQuery() string {
 	return sqlServerTempDBQuery
 }
 
-// sqlServerTempDBFileQuery returns one row per tempdb data/log file.
+// sqlServerTempDBContentionQuery returns one row per task currently waiting on a tempdb
+// allocation page (GAM/SGAM/PFS), classified from the page number encoded in
+// resource_description. Unlike sys.dm_os_wait_stats (cumulative since server startup, and keyed
+// by wait_type name rather than resource), sys.dm_os_waiting_tasks is a point-in-time snapshot of
+// tasks that are waiting right now, which is what "contention" and "wait time" should measure.
+// GAM/SGAM/PFS are page types, not wait_type names: contention on them surfaces as a generic
+// PAGELATCH_* wait, and the page being waited on must be identified from its position within the
+// file: PFS pages recur every 8,088 pages (first at page 1), GAM pages every 511,230 pages (first
+// at page 2), SGAM pages every 511,230 pages (first at page 3).
+const sqlServerTempDBContentionQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.contention.* and sqlserver.tempdb.allocation.* metrics.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+;
+WITH
+tempdb_pagelatch_waits AS (
+	SELECT
+		TRY_CAST(PARSENAME(REPLACE(wt.resource_description, ':', '.'), 1) AS BIGINT) AS page_id
+	FROM sys.dm_os_waiting_tasks AS wt WITH (NOLOCK)
+	WHERE wt.wait_type LIKE 'PAGELATCH_%'
+	  AND wt.resource_description LIKE '2:%'
+),
+valid_pages AS (
+	SELECT page_id FROM tempdb_pagelatch_waits WHERE page_id IS NOT NULL
+),
+classified AS (
+	SELECT
+		CASE
+			WHEN page_id % 511230 = 2 THEN 'gam'
+			WHEN page_id % 511230 = 3 THEN 'sgam'
+			WHEN page_id % 8088 = 1 THEN 'pfs'
+			ELSE 'other'
+		END AS page_type
+	FROM valid_pages
+)
+SELECT
+	'sqlserver_tempdb_contention' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(COUNT(*) AS BIGINT) AS total_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'gam' THEN 1 ELSE 0 END), 0) AS BIGINT) AS gam_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'sgam' THEN 1 ELSE 0 END), 0) AS BIGINT) AS sgam_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'pfs' THEN 1 ELSE 0 END), 0) AS BIGINT) AS pfs_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'other' THEN 1 ELSE 0 END), 0) AS BIGINT) AS other_waiters
+FROM classified
+`
+
+func getSQLServerTempDBContentionQuery() string {
+	return sqlServerTempDBContentionQuery
+}
+
+// sqlServerTempDBFileQuery returns one row per tempdb data/log file. Reads from
+// tempdb.sys.database_files, not sys.master_files: for tempdb specifically, sys.master_files.size
+// reflects the configured startup size, not the current size after autogrowth, since tempdb is
+// recreated from scratch on every server restart.
 const sqlServerTempDBFileQuery string = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
@@ -1462,8 +1505,8 @@ SELECT
 	CAST(file_id AS BIGINT) AS [file_id],
 	CASE type WHEN 0 THEN 'data' WHEN 1 THEN 'log' ELSE 'other' END AS [file_type],
 	CAST(size AS BIGINT) * 8 * 1024 AS [size_bytes]
-FROM sys.master_files WITH (NOLOCK)
-WHERE database_id = 2 AND type IN (0, 1)
+FROM tempdb.sys.database_files WITH (NOLOCK)
+WHERE type IN (0, 1)
 `
 
 func getSQLServerTempDBFileQuery() string {

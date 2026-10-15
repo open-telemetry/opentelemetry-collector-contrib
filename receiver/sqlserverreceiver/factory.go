@@ -116,6 +116,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerTempDBQuery())
 	}
 
+	if isTempDBContentionQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerTempDBContentionQuery())
+	}
+
 	if cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled {
 		queries = append(queries, getSQLServerTempDBFileQuery())
 	}
@@ -638,9 +642,16 @@ func isTempDBQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverDatabaseTempdbSpace.Enabled ||
-		metrics.SqlserverTempdbDataFilesCount.Enabled ||
-		metrics.SqlserverTempdbContentionWaitersCount.Enabled ||
-		metrics.SqlserverTempdbAllocationWaitTimeTotal.Enabled
+		metrics.SqlserverTempdbDataFilesCount.Enabled
+}
+
+func isTempDBContentionQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverTempdbContentionWaitersCount.Enabled ||
+		metrics.SqlserverTempdbAllocationWaitersCount.Enabled
 }
 
 func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {

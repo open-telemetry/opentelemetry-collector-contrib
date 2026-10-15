@@ -204,7 +204,7 @@ all_set:
     sqlserver.task.rate:
       enabled: true
       attributes: ["task.result"]
-    sqlserver.tempdb.allocation.wait_time.total:
+    sqlserver.tempdb.allocation.waiters.count:
       enabled: true
       attributes: ["sqlserver.tempdb.allocation.page_type"]
     sqlserver.tempdb.contention.waiters.count:
@@ -481,7 +481,7 @@ reaggregate_set:
     sqlserver.task.rate:
       enabled: true
       attributes: []
-    sqlserver.tempdb.allocation.wait_time.total:
+    sqlserver.tempdb.allocation.waiters.count:
       enabled: true
       attributes: []
     sqlserver.tempdb.contention.waiters.count:
@@ -758,7 +758,7 @@ none_set:
     sqlserver.task.rate:
       enabled: false
       attributes: ["task.result"]
-    sqlserver.tempdb.allocation.wait_time.total:
+    sqlserver.tempdb.allocation.waiters.count:
       enabled: false
       attributes: ["sqlserver.tempdb.allocation.page_type"]
     sqlserver.tempdb.contention.waiters.count:
