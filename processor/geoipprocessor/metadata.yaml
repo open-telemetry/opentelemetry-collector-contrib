@@ -12,4 +12,5 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [andrzej-stencel, michalpristas, rogercoll]
+    active: [andrzej-stencel, rogercoll]
+    emeritus: [michalpristas]
