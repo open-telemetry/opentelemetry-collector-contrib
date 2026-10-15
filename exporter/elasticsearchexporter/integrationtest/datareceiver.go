@@ -172,8 +172,6 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
     logs_index: %s
     metrics_index: %s
     traces_index: %s
-    mapping:
-      mode: otel
     retry:
       enabled: true
       initial_interval: 100ms

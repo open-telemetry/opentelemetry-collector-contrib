@@ -1086,47 +1086,6 @@ func TestExporterLogs(t *testing.T) {
 	})
 }
 
-func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
-	rec := newBulkRecorder()
-	server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-		rec.Record(docs)
-		// Ensure the produced index corresponds to OTel mapping (contains ".otel-")
-		require.GreaterOrEqual(t, len(docs), 1)
-		assert.Contains(t, string(docs[0].Action), ".otel-")
-		return itemsAllOK(docs)
-	})
-	params := exportertest.NewNopSettings(metadata.Type)
-
-	// create config that sets Mapping.Mode (deprecated) to ecs
-	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{server.URL}
-		cfg.QueueBatchConfig.Get().NumConsumers = 1
-		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
-		cfg.Mapping.Mode = "ecs"
-	})
-	require.NoError(t, confmap.Validate(cfg))
-
-	f := NewFactory()
-	exp, err := f.CreateLogs(t.Context(), params, cfg)
-	require.NoError(t, err)
-
-	// start exporter so bulk indexers are initialized
-	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, exp.Shutdown(t.Context()))
-	}()
-
-	// send a simple log record without any client metadata or scope attribute
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
-	lr := sl.LogRecords().AppendEmpty()
-	lr.Body().SetStr("hello")
-
-	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
-	rec.WaitItems(1)
-}
-
 func TestExporterMetrics(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
@@ -2391,9 +2350,8 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				testMetricsExporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = mode
-				})
+				testMetricsExporter := newTestMetricsExporter(t, server.URL)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {mode}})})
 
 				metrics := pmetric.NewMetrics()
 				resource := metrics.ResourceMetrics().AppendEmpty()
@@ -2421,7 +2379,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 				bazHints := bazDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
 				bazHints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
 
-				mustSendMetrics(t, testMetricsExporter, metrics)
+				mustSendMetricsWithCtx(ctx, t, testMetricsExporter, metrics)
 
 				rec.WaitItems(1)
 				assert.Len(t, rec.Items(), 1)
