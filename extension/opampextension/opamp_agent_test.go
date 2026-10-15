@@ -55,6 +55,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.NotEmpty(t, o.instanceUID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.True(t, o.capabilities.ReportsHealth)
+	assert.True(t, o.capabilities.ReportsHeartbeat)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 	assert.NoError(t, o.Shutdown(t.Context()))
@@ -178,6 +179,43 @@ func TestOpampAgentConnectsOverUnixSocket(t *testing.T) {
 
 			assert.NoError(t, o.Shutdown(t.Context()))
 			assert.NoError(t, srv.Stop(t.Context()))
+		})
+	}
+}
+
+func TestReportsHeartbeatCapabilityGating(t *testing.T) {
+	const heartbeatBit = protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
+
+	tests := []struct {
+		name             string
+		reportsHeartbeat bool
+		wantBitSet       bool
+	}{
+		{
+			name:             "explicitly enabled",
+			reportsHeartbeat: true,
+			wantBitSet:       true,
+		},
+		{
+			name:             "disabled",
+			reportsHeartbeat: false,
+			wantBitSet:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Capabilities.ReportsHeartbeat = tt.reportsHeartbeat
+
+			set := extensiontest.NewNopSettings(extensiontest.NopType)
+			o, err := newOpampAgent(cfg, set)
+			require.NoError(t, err)
+			t.Cleanup(func() { assert.NoError(t, o.Shutdown(t.Context())) })
+
+			caps := o.capabilities.toAgentCapabilities()
+			hasBit := caps&heartbeatBit != 0
+			assert.Equal(t, tt.wantBitSet, hasBit)
 		})
 	}
 }
