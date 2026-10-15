@@ -53,7 +53,6 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled = enabled
-	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbContentionWaitersCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbAllocationWaitersCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDeadlockRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskOperations.Enabled = enabled
@@ -2805,7 +2804,6 @@ func TestRecordTempDBContentionMetrics(t *testing.T) {
 	cfg.Server = "0.0.0.0"
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
-	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbContentionWaitersCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbAllocationWaitersCount.Enabled = true
 
 	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -2832,7 +2830,7 @@ func TestRecordTempDBContentionMetrics(t *testing.T) {
 	actualMetrics, err := contentionScraper.ScrapeMetrics(t.Context())
 	assert.NoError(t, err)
 
-	// 1 total contention-waiters count + 4 allocation page types = 5 data points
+	// 4 allocation page types = 4 data points
 	var totalDP int
 	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
 		rm := actualMetrics.ResourceMetrics().At(i)
@@ -2840,16 +2838,13 @@ func TestRecordTempDBContentionMetrics(t *testing.T) {
 			sm := rm.ScopeMetrics().At(j)
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				m := sm.Metrics().At(k)
-				switch m.Name() {
-				case metadata.MetricsInfo.SqlserverTempdbContentionWaitersCount.Name:
-					totalDP += m.Gauge().DataPoints().Len()
-				case metadata.MetricsInfo.SqlserverTempdbAllocationWaitersCount.Name:
+				if m.Name() == metadata.MetricsInfo.SqlserverTempdbAllocationWaitersCount.Name {
 					totalDP += m.Gauge().DataPoints().Len()
 				}
 			}
 		}
 	}
-	assert.Equal(t, 5, totalDP)
+	assert.Equal(t, 4, totalDP)
 }
 
 func TestRecordTempDBFileMetrics(t *testing.T) {
@@ -2918,10 +2913,6 @@ func TestIsTempDBContentionQueryEnabled(t *testing.T) {
 	metrics := &metadata.MetricsConfig{}
 	assert.False(t, isTempDBContentionQueryEnabled(metrics))
 
-	metrics.SqlserverTempdbContentionWaitersCount.Enabled = true
-	assert.True(t, isTempDBContentionQueryEnabled(metrics))
-
-	metrics.SqlserverTempdbContentionWaitersCount.Enabled = false
 	metrics.SqlserverTempdbAllocationWaitersCount.Enabled = true
 	assert.True(t, isTempDBContentionQueryEnabled(metrics))
 }

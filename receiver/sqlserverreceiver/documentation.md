@@ -1179,7 +1179,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.tempdb.allocation.waiters.count
 
-Number of tasks currently waiting on a tempdb allocation page, broken down by page type.
+Number of tasks currently waiting on a tempdb page latch, broken down by page type.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -1191,17 +1191,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.tempdb.allocation.page_type | The type of tempdb allocation page being waited on. | Str: ``gam``, ``sgam``, ``pfs``, ``other`` | Recommended | - |
-
-### sqlserver.tempdb.contention.waiters.count
-
-Number of tasks currently waiting on a tempdb allocation page.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {waiters} | Gauge | Int | Development |
+| sqlserver.tempdb.allocation.page_type | The type of tempdb page latch wait. `other` covers page latch waits on ordinary (non-allocation-map) pages. | Str: ``gam``, ``sgam``, ``pfs``, ``other`` | Recommended | - |
 
 ### sqlserver.tempdb.file.size
 

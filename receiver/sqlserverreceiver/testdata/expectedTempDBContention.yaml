@@ -24,7 +24,7 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: Number of tasks currently waiting on a tempdb allocation page, broken down by page type.
+          - description: Number of tasks currently waiting on a tempdb page latch, broken down by page type.
             gauge:
               dataPoints:
                 - asInt: "1"
@@ -56,14 +56,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.tempdb.allocation.waiters.count
-            unit: '{waiters}'
-          - description: Number of tasks currently waiting on a tempdb allocation page.
-            gauge:
-              dataPoints:
-                - asInt: "7"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: sqlserver.tempdb.contention.waiters.count
             unit: '{waiters}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

@@ -2,7 +2,6 @@
   {
     "measurement": "sqlserver_tempdb_contention",
     "sql_instance": "testhost",
-    "total_waiters": "7",
     "gam_waiters": "1",
     "sgam_waiters": "1",
     "pfs_waiters": "2",

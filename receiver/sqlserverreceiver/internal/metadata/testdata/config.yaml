@@ -207,8 +207,6 @@ all_set:
     sqlserver.tempdb.allocation.waiters.count:
       enabled: true
       attributes: ["sqlserver.tempdb.allocation.page_type"]
-    sqlserver.tempdb.contention.waiters.count:
-      enabled: true
     sqlserver.tempdb.file.size:
       enabled: true
       attributes: ["file_type","sqlserver.tempdb.file.id"]
@@ -482,8 +480,6 @@ reaggregate_set:
     sqlserver.tempdb.allocation.waiters.count:
       enabled: true
       attributes: []
-    sqlserver.tempdb.contention.waiters.count:
-      enabled: true
     sqlserver.tempdb.file.size:
       enabled: true
       attributes: []
@@ -757,8 +753,6 @@ none_set:
     sqlserver.tempdb.allocation.waiters.count:
       enabled: false
       attributes: ["sqlserver.tempdb.allocation.page_type"]
-    sqlserver.tempdb.contention.waiters.count:
-      enabled: false
     sqlserver.tempdb.file.size:
       enabled: false
       attributes: ["file_type","sqlserver.tempdb.file.id"]

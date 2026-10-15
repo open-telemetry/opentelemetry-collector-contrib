@@ -1389,12 +1389,9 @@ func getSQLServerDiskIOQuery() string {
 	return sqlServerDiskIOQuery
 }
 
-// sqlServerTempDBQuery returns a single row of tempdb diagnostics covering space usage,
-// data-file count, pagelatch waiters, and allocation-page wait time.
-// sqlServerTempDBQuery returns a single row of tempdb space-usage and data-file-count
-// diagnostics. tempdb.sys.dm_db_file_space_usage is the sole source for the space breakdown so
-// that user_objects/internal_objects/version_store/free/mixed_extents form a mutually exclusive
-// partition of total tempdb space from one consistent snapshot.
+// sqlServerTempDBQuery returns a single row of tempdb space usage from
+// tempdb.sys.dm_db_file_space_usage, broken down into a mutually exclusive partition:
+// user_objects/internal_objects/version_store/free/mixed_extents.
 const sqlServerTempDBQuery string = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
@@ -1418,19 +1415,13 @@ func getSQLServerTempDBQuery() string {
 	return sqlServerTempDBQuery
 }
 
-// sqlServerTempDBContentionQuery returns one row per task currently waiting on a tempdb
-// allocation page (GAM/SGAM/PFS), classified from the page number encoded in
-// resource_description. Unlike sys.dm_os_wait_stats (cumulative since server startup, and keyed
-// by wait_type name rather than resource), sys.dm_os_waiting_tasks is a point-in-time snapshot of
-// tasks that are waiting right now, which is what "contention" and "wait time" should measure.
-// GAM/SGAM/PFS are page types, not wait_type names: contention on them surfaces as a generic
-// PAGELATCH_* wait, and the page being waited on must be identified from its position within the
-// file: PFS pages recur every 8,088 pages (first at page 1), GAM pages every 511,230 pages (first
-// at page 2), SGAM pages every 511,230 pages (first at page 3).
+// sqlServerTempDBContentionQuery returns tempdb page latch waiters by page type (GAM/SGAM/PFS/
+// other), classified from the page number in resource_description. Uses sys.dm_os_waiting_tasks
+// (point-in-time) rather than sys.dm_os_wait_stats (cumulative, keyed by wait_type not resource).
 const sqlServerTempDBContentionQuery string = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
-	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.contention.* and sqlserver.tempdb.allocation.* metrics.';
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.allocation.* metrics.';
 	RAISERROR (@ErrorMessage,11,1)
 	RETURN
 END
@@ -1447,11 +1438,12 @@ valid_pages AS (
 	SELECT page_id FROM tempdb_pagelatch_waits WHERE page_id IS NOT NULL
 ),
 classified AS (
+	-- First PFS page is 1, next is 8088 (not 8089) -- verified via sys.dm_db_page_info.
 	SELECT
 		CASE
 			WHEN page_id % 511230 = 2 THEN 'gam'
 			WHEN page_id % 511230 = 3 THEN 'sgam'
-			WHEN page_id % 8088 = 1 THEN 'pfs'
+			WHEN page_id = 1 OR page_id % 8088 = 0 THEN 'pfs'
 			ELSE 'other'
 		END AS page_type
 	FROM valid_pages
@@ -1459,7 +1451,6 @@ classified AS (
 SELECT
 	'sqlserver_tempdb_contention' AS [measurement],
 	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
-	CAST(COUNT(*) AS BIGINT) AS total_waiters,
 	CAST(ISNULL(SUM(CASE WHEN page_type = 'gam' THEN 1 ELSE 0 END), 0) AS BIGINT) AS gam_waiters,
 	CAST(ISNULL(SUM(CASE WHEN page_type = 'sgam' THEN 1 ELSE 0 END), 0) AS BIGINT) AS sgam_waiters,
 	CAST(ISNULL(SUM(CASE WHEN page_type = 'pfs' THEN 1 ELSE 0 END), 0) AS BIGINT) AS pfs_waiters,

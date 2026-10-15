@@ -4,16 +4,15 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
-	"strconv"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"strconv"
+	"time"
 )
 
 const (
@@ -1203,9 +1202,6 @@ var MetricsInfo = metricsInfo{
 		Name:       "sqlserver.tempdb.allocation.waiters.count",
 		Attributes: []string{"sqlserver.tempdb.allocation.page_type"},
 	},
-	SqlserverTempdbContentionWaitersCount: metricInfo{
-		Name: "sqlserver.tempdb.contention.waiters.count",
-	},
 	SqlserverTempdbFileSize: metricInfo{
 		Name:       "sqlserver.tempdb.file.size",
 		Attributes: []string{"file_type", "sqlserver.tempdb.file.id"},
@@ -1344,7 +1340,6 @@ type metricsInfo struct {
 	SqlserverTaskCount                                    metricInfo
 	SqlserverTaskRate                                     metricInfo
 	SqlserverTempdbAllocationWaitersCount                 metricInfo
-	SqlserverTempdbContentionWaitersCount                 metricInfo
 	SqlserverTempdbFileSize                               metricInfo
 	SqlserverTransactionDelay                             metricInfo
 	SqlserverTransactionMirrorWriteRate                   metricInfo
@@ -7090,7 +7085,7 @@ type metricSqlserverTempdbAllocationWaitersCount struct {
 // init fills sqlserver.tempdb.allocation.waiters.count metric with initial data.
 func (m *metricSqlserverTempdbAllocationWaitersCount) init() {
 	m.data.SetName("sqlserver.tempdb.allocation.waiters.count")
-	m.data.SetDescription("Number of tasks currently waiting on a tempdb allocation page, broken down by page type.")
+	m.data.SetDescription("Number of tasks currently waiting on a tempdb page latch, broken down by page type.")
 	m.data.SetUnit("{waiters}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -7162,56 +7157,6 @@ func (m *metricSqlserverTempdbAllocationWaitersCount) emit(metrics pmetric.Metri
 
 func newMetricSqlserverTempdbAllocationWaitersCount(cfg SqlserverTempdbAllocationWaitersCountMetricConfig) metricSqlserverTempdbAllocationWaitersCount {
 	m := metricSqlserverTempdbAllocationWaitersCount{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSqlserverTempdbContentionWaitersCount struct {
-	data     pmetric.Metric                                    // data buffer for generated metric.
-	config   SqlserverTempdbContentionWaitersCountMetricConfig // metric config provided by user.
-	capacity int                                               // max observed number of data points added to the metric.
-}
-
-// init fills sqlserver.tempdb.contention.waiters.count metric with initial data.
-func (m *metricSqlserverTempdbContentionWaitersCount) init() {
-	m.data.SetName("sqlserver.tempdb.contention.waiters.count")
-	m.data.SetDescription("Number of tasks currently waiting on a tempdb allocation page.")
-	m.data.SetUnit("{waiters}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricSqlserverTempdbContentionWaitersCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverTempdbContentionWaitersCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverTempdbContentionWaitersCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSqlserverTempdbContentionWaitersCount(cfg SqlserverTempdbContentionWaitersCountMetricConfig) metricSqlserverTempdbContentionWaitersCount {
-	m := metricSqlserverTempdbContentionWaitersCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -8199,7 +8144,6 @@ type MetricsBuilder struct {
 	metricSqlserverTaskCount                                    metricSqlserverTaskCount
 	metricSqlserverTaskRate                                     metricSqlserverTaskRate
 	metricSqlserverTempdbAllocationWaitersCount                 metricSqlserverTempdbAllocationWaitersCount
-	metricSqlserverTempdbContentionWaitersCount                 metricSqlserverTempdbContentionWaitersCount
 	metricSqlserverTempdbFileSize                               metricSqlserverTempdbFileSize
 	metricSqlserverTransactionDelay                             metricSqlserverTransactionDelay
 	metricSqlserverTransactionMirrorWriteRate                   metricSqlserverTransactionMirrorWriteRate
@@ -8327,7 +8271,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTaskCount:                                    newMetricSqlserverTaskCount(mbc.Metrics.SqlserverTaskCount),
 		metricSqlserverTaskRate:                                     newMetricSqlserverTaskRate(mbc.Metrics.SqlserverTaskRate),
 		metricSqlserverTempdbAllocationWaitersCount:                 newMetricSqlserverTempdbAllocationWaitersCount(mbc.Metrics.SqlserverTempdbAllocationWaitersCount),
-		metricSqlserverTempdbContentionWaitersCount:                 newMetricSqlserverTempdbContentionWaitersCount(mbc.Metrics.SqlserverTempdbContentionWaitersCount),
 		metricSqlserverTempdbFileSize:                               newMetricSqlserverTempdbFileSize(mbc.Metrics.SqlserverTempdbFileSize),
 		metricSqlserverTransactionDelay:                             newMetricSqlserverTransactionDelay(mbc.Metrics.SqlserverTransactionDelay),
 		metricSqlserverTransactionMirrorWriteRate:                   newMetricSqlserverTransactionMirrorWriteRate(mbc.Metrics.SqlserverTransactionMirrorWriteRate),
@@ -8568,7 +8511,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTaskCount.emit(ils.Metrics())
 	mb.metricSqlserverTaskRate.emit(ils.Metrics())
 	mb.metricSqlserverTempdbAllocationWaitersCount.emit(ils.Metrics())
-	mb.metricSqlserverTempdbContentionWaitersCount.emit(ils.Metrics())
 	mb.metricSqlserverTempdbFileSize.emit(ils.Metrics())
 	mb.metricSqlserverTransactionDelay.emit(ils.Metrics())
 	mb.metricSqlserverTransactionMirrorWriteRate.emit(ils.Metrics())
@@ -9107,16 +9049,6 @@ func (mb *MetricsBuilder) RecordSqlserverTempdbAllocationWaitersCountDataPoint(t
 		return fmt.Errorf("failed to parse int64 for SqlserverTempdbAllocationWaitersCount, value was %s: %w", inputVal, err)
 	}
 	mb.metricSqlserverTempdbAllocationWaitersCount.recordDataPoint(mb.startTime, ts, val, sqlserverTempdbAllocationPageTypeAttributeValue.String())
-	return nil
-}
-
-// RecordSqlserverTempdbContentionWaitersCountDataPoint adds a data point to sqlserver.tempdb.contention.waiters.count metric.
-func (mb *MetricsBuilder) RecordSqlserverTempdbContentionWaitersCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for SqlserverTempdbContentionWaitersCount, value was %s: %w", inputVal, err)
-	}
-	mb.metricSqlserverTempdbContentionWaitersCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

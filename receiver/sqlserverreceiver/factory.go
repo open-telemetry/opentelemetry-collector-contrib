@@ -536,7 +536,6 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||
 		metrics.SqlserverDatabaseExecutionErrors.Enabled ||
 		metrics.SqlserverDatabaseFullScanRate.Enabled ||
-		metrics.SqlserverDatabaseTempdbSpace.Enabled ||
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverErrorRate.Enabled ||
@@ -649,8 +648,7 @@ func isTempDBContentionQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	return metrics.SqlserverTempdbContentionWaitersCount.Enabled ||
-		metrics.SqlserverTempdbAllocationWaitersCount.Enabled
+	return metrics.SqlserverTempdbAllocationWaitersCount.Enabled
 }
 
 func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {

@@ -2814,10 +2814,7 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 	return errors.Join(errs...)
 }
 
-// recordTempDBMetrics records the single-row tempdb diagnostics: space usage by allocation
-// category, data-file count, pagelatch contention waiters, and allocation-page wait time.
-// recordTempDBMetrics records the mutually exclusive tempdb space-usage breakdown and the
-// configured tempdb data-file count.
+// recordTempDBMetrics records the tempdb space-usage breakdown by allocation category.
 func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error {
 	const (
 		kbUserObjects     = "kb_user_objects"
@@ -2865,10 +2862,9 @@ func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error 
 }
 
 // recordTempDBContentionMetrics records the number of tasks currently waiting on tempdb
-// allocation pages (PAGELATCH_* waits), both in total and classified by allocation page type.
+// page latches (PAGELATCH_* waits), classified by allocation page type.
 func (s *sqlServerScraperHelper) recordTempDBContentionMetrics(ctx context.Context) error {
 	const (
-		totalWaiters = "total_waiters"
 		gamWaiters   = "gam_waiters"
 		sgamWaiters  = "sgam_waiters"
 		pfsWaiters   = "pfs_waiters"
@@ -2887,8 +2883,6 @@ func (s *sqlServerScraperHelper) recordTempDBContentionMetrics(ctx context.Conte
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
-
-		errs = append(errs, s.mb.RecordSqlserverTempdbContentionWaitersCountDataPoint(now, row[totalWaiters]))
 
 		for _, w := range []struct {
 			col   string

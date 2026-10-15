@@ -2679,26 +2679,6 @@ func (ms *SqlserverTempdbAllocationWaitersCountMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverTempdbContentionWaitersCountMetricConfig provides config for the sqlserver.tempdb.contention.waiters.count metric.
-type SqlserverTempdbContentionWaitersCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *SqlserverTempdbContentionWaitersCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // SqlserverTempdbFileSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.file.size metric.
 type SqlserverTempdbFileSizeMetricAttributeKey string
 
@@ -3173,7 +3153,6 @@ type MetricsConfig struct {
 	SqlserverTaskCount                                    SqlserverTaskCountMetricConfig                                    `mapstructure:"sqlserver.task.count"`
 	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
 	SqlserverTempdbAllocationWaitersCount                 SqlserverTempdbAllocationWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.allocation.waiters.count"`
-	SqlserverTempdbContentionWaitersCount                 SqlserverTempdbContentionWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.contention.waiters.count"`
 	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
 	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
@@ -3517,9 +3496,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverTempdbAllocationWaitersCountMetricAttributeKey{SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType},
-		},
-		SqlserverTempdbContentionWaitersCount: SqlserverTempdbContentionWaitersCountMetricConfig{
-			Enabled: false,
 		},
 		SqlserverTempdbFileSize: SqlserverTempdbFileSizeMetricConfig{
 			Enabled:             false,
