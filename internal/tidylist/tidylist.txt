@@ -4,6 +4,7 @@ pkg/pdatatest
 cmd/golden
 extension/internal/basicauth
 extension/internal/credentialsfile
+extension/internal/secretprovider
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/oauth2clientauthextension
@@ -135,6 +136,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+internal/natsclient
 exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
@@ -283,6 +285,7 @@ receiver/flinkmetricsreceiver
 receiver/fluentforwardreceiver
 receiver/githubreceiver
 receiver/gitlabreceiver
+receiver/gnmireceiver
 receiver/googlecloudmonitoringreceiver
 receiver/googlecloudpubsubpushreceiver
 receiver/googlecloudpubsubreceiver
@@ -308,6 +311,7 @@ receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
 receiver/mysqlreceiver
 receiver/namedpipereceiver
+receiver/natsreceiver
 receiver/netflowreceiver
 receiver/nginxreceiver
 receiver/nsxtreceiver
