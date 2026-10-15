@@ -1136,32 +1136,32 @@ The processor also accepts the [`confighttp` client settings](https://github.com
 
 Default builds compile every detector and require no build tags. Custom Collector
 distributions can reduce their reachable dependency and linked-binary surface by first
-removing all detector registrations and then opting selected detectors back in:
+excluding all detector implementations and then opting selected detectors back in:
 
 ```sh
 go build -tags 'remove_all_resourcedetection_detectors,enable_resourcedetection_env_detector,enable_resourcedetection_system_detector' ./...
 ```
 
 Use `remove_all_resourcedetection_detectors` together with one or more tags from this
-table. Positive tags without the removal tag do not trim the default build.
+table. Positive tags without the removal tag do not trim the default build. Existing `omit_detector_<name>` tags remain supported and take precedence over an opt-in tag. For example, `omit_detector_aws_ec2` excludes EC2 even if `enable_resourcedetection_aws_ec2_detector` is set. Opt-in suffixes match the existing omit-tag suffixes.
 
 | Detector in `detectors` | Opt-in build tag |
 | --- | --- |
 | `akamai` | `enable_resourcedetection_akamai_detector` |
-| `aks` | `enable_resourcedetection_aks_detector` |
+| `aks` | `enable_resourcedetection_azure_aks_detector` |
 | `alibaba_ecs` | `enable_resourcedetection_alibaba_ecs_detector` |
 | `azure` | `enable_resourcedetection_azure_detector` |
-| `azureappservice` | `enable_resourcedetection_azureappservice_detector` |
-| `azurecontainerapps` | `enable_resourcedetection_azurecontainerapps_detector` |
-| `azurefunctions` | `enable_resourcedetection_azurefunctions_detector` |
+| `azureappservice` | `enable_resourcedetection_azure_appservice_detector` |
+| `azurecontainerapps` | `enable_resourcedetection_azure_containerapps_detector` |
+| `azurefunctions` | `enable_resourcedetection_azure_functions_detector` |
 | `consul` | `enable_resourcedetection_consul_detector` |
 | `digitalocean` | `enable_resourcedetection_digitalocean_detector` |
 | `docker` | `enable_resourcedetection_docker_detector` |
 | `dynatrace` | `enable_resourcedetection_dynatrace_detector` |
-| `ec2` | `enable_resourcedetection_ec2_detector` |
-| `ecs` | `enable_resourcedetection_ecs_detector` |
-| `eks` | `enable_resourcedetection_eks_detector` |
-| `elastic_beanstalk` | `enable_resourcedetection_elastic_beanstalk_detector` |
+| `ec2` | `enable_resourcedetection_aws_ec2_detector` |
+| `ecs` | `enable_resourcedetection_aws_ecs_detector` |
+| `eks` | `enable_resourcedetection_aws_eks_detector` |
+| `elastic_beanstalk` | `enable_resourcedetection_aws_elastic_beanstalk_detector` |
 | `env` | `enable_resourcedetection_env_detector` |
 | `gcp` | `enable_resourcedetection_gcp_detector` |
 | `heroku` | `enable_resourcedetection_heroku_detector` |
@@ -1170,8 +1170,8 @@ table. Positive tags without the removal tag do not trim the default build.
 | `ibmcloud_vpc` | `enable_resourcedetection_ibmcloud_vpc_detector` |
 | `k8s_api` | `enable_resourcedetection_k8s_api_detector` |
 | `kubeadm` | `enable_resourcedetection_kubeadm_detector` |
-| `lambda` | `enable_resourcedetection_lambda_detector` |
-| `nova` | `enable_resourcedetection_nova_detector` |
+| `lambda` | `enable_resourcedetection_aws_lambda_detector` |
+| `nova` | `enable_resourcedetection_openstack_nova_detector` |
 | `openshift` | `enable_resourcedetection_openshift_detector` |
 | `oraclecloud` | `enable_resourcedetection_oraclecloud_detector` |
 | `scaleway` | `enable_resourcedetection_scaleway_detector` |
@@ -1190,14 +1190,16 @@ the removal tag compiles, but the resource detection processor must not be confi
 unless at least one detector is compiled and selected. Per-detector configuration blocks
 still decode and validate even when that detector is not compiled, which allows shared
 configuration files; naming an unavailable detector in `detectors` fails startup and
-reports the detectors compiled into that binary. Go silently ignores unknown build tags,
+reports the detectors compiled into that binary. The typed configuration stays in each detector package; implementation and omitted-factory files carry the build conditions.
+
+Go silently ignores unknown build tags,
 so verify tag spelling when a detector is unexpectedly unavailable.
 
 For an EC2-only distribution, build the Collector with
-`remove_all_resourcedetection_detectors,enable_resourcedetection_ec2_detector` and
+`remove_all_resourcedetection_detectors,enable_resourcedetection_aws_ec2_detector` and
 configure `detectors: [ec2]`. This excludes the EKS and Kubernetes detector
 implementations. Other enabled Collector components can still require Kubernetes
-dependencies. Build tags select compiled packages; they do not remove requirements
+dependencies. Build tags select compiled implementation files; they do not remove requirements
 from `go.mod` or isolate dependency versions selected by Go module tooling.
 
 You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:

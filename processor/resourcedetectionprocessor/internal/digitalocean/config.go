@@ -3,10 +3,16 @@
 
 package digitalocean // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 
-import digitaloceanconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean/config"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean/internal/metadata"
+)
 
-type Config = digitaloceanconfig.Config
+type Config struct {
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
 
 func CreateDefaultConfig() Config {
-	return digitaloceanconfig.CreateDefaultConfig()
+	return Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
 }

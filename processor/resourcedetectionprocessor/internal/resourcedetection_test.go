@@ -50,6 +50,20 @@ func (p *mockDetector) Detect(_ context.Context) (pcommon.Resource, string, erro
 
 type mockDetectorConfig struct{}
 
+func TestProviderFactoryExcludesUnavailableDetectors(t *testing.T) {
+	detectors := map[DetectorType]DetectorFactory{
+		"enabled": func(processor.Settings, DetectorConfig, bool) (Detector, error) {
+			return &mockDetector{}, nil
+		},
+		"omitted": nil,
+	}
+	factory := NewProviderFactory(detectors)
+	assert.Equal(t, []string{"enabled"}, factory.CompiledDetectorTypes())
+	assert.Contains(t, detectors, DetectorType("omitted"), "construction must not mutate the caller's map")
+	_, err := factory.getDetectors(processortest.NewNopSettings(metadata.Type), &mockDetectorConfig{}, []DetectorType{"omitted"}, false)
+	require.ErrorContains(t, err, `detector "omitted" is not compiled into this binary; compiled detectors: [enabled]`)
+}
+
 func (*mockDetectorConfig) GetConfigFromType(_ DetectorType) DetectorConfig {
 	return nil
 }

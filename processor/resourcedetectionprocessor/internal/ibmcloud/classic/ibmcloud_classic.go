@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_ibmcloud_classic
+//go:build (!remove_all_resourcedetection_detectors || enable_resourcedetection_ibmcloud_classic_detector) && !omit_detector_ibmcloud_classic
 
 package classic // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic"
 

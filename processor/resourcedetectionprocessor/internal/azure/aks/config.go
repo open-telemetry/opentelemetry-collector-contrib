@@ -3,10 +3,16 @@
 
 package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 
-import aksconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks/config"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks/internal/metadata"
+)
 
-type Config = aksconfig.Config
+type Config struct {
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
 
 func CreateDefaultConfig() Config {
-	return aksconfig.CreateDefaultConfig()
+	return Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
 }

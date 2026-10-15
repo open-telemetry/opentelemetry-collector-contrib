@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_openstack_nova
+//go:build (!remove_all_resourcedetection_detectors || enable_resourcedetection_openstack_nova_detector) && !omit_detector_openstack_nova
 
 package nova // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
 

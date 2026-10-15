@@ -1,8 +1,0 @@
-$defs:
-  config:
-    type: object
-    properties:
-      node_from_env_var:
-        type: string
-      resource_attributes:
-        $ref: /processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata.resource_attributes_config

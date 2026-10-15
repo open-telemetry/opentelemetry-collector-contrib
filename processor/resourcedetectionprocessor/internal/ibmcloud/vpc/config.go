@@ -3,10 +3,23 @@
 
 package vpc // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc"
 
-import vpcconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc/config"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc/internal/metadata"
+)
 
-type Config = vpcconfig.Config
+// Config defines user-specified configurations unique to the IBM Cloud VPC detector.
+type Config struct {
+	// Protocol selects the scheme used to reach the IMDS endpoint.
+	// Accepted values are "http" (default) and "https".
+	// Both use the host api.metadata.cloud.ibm.com.
+	Protocol           string                            `mapstructure:"protocol"`
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
 
+// CreateDefaultConfig returns the default configuration for the IBM Cloud VPC detector.
 func CreateDefaultConfig() Config {
-	return vpcconfig.CreateDefaultConfig()
+	return Config{
+		Protocol:           "http",
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
 }

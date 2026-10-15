@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build remove_all_resourcedetection_detectors && enable_resourcedetection_azurefunctions_detector
+//go:build remove_all_resourcedetection_detectors && enable_resourcedetection_azure_functions_detector && !omit_detector_azure_functions
 
 package resourcedetectionprocessor
 
@@ -17,7 +17,7 @@ import (
 )
 
 func TestAzureFunctionsTrimmedBuildCreatesConfiguredProcessor(t *testing.T) {
-	require.Contains(t, globalDetectorRegistry, internal.DetectorType("azurefunctions"))
+	require.Contains(t, availableDetectorFactories(), internal.DetectorType("azurefunctions"))
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Detectors = []string{"azurefunctions"}

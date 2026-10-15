@@ -11,36 +11,36 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	akamaiconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai/config"
-	alibabaecsconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs/config"
-	ec2config "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/config"
-	ecsconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs/config"
-	eksconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/config"
-	elasticbeanstalkconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk/config"
-	lambdaconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda/config"
-	aksconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks/config"
-	appserviceconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice/config"
-	azureconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/config"
-	containerappsconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps/config"
-	functionsconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/functions/config"
-	consulconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/config"
-	digitaloceanconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean/config"
-	dockerconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker/config"
-	gcpconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/config"
-	herokuconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku/config"
-	hetznerconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner/config"
-	ibmcloudclassicconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic/config"
-	ibmcloudvpcconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc/config"
-	k8sapiconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi/config"
-	kubeadmconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm/config"
-	openshiftconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/config"
-	novaconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova/config"
-	oraclecloudconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud/config"
-	scalewayconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway/config"
-	systemconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/config"
-	tencentcvmconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm/config"
-	upcloudconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud/config"
-	vultrconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
+	alibabaecs "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/functions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
+	ibmcloudclassic "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic"
+	ibmcloudvpc "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
 
 // Config defines configuration for Resource processor.
@@ -82,209 +82,201 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-// DetectorConfig contains user-specified configurations unique to all individual detectors.
-// The field types come from each detector's dependency-light config package rather than the
-// detector package itself, so that this always-compiled schema does not import any detector
-// implementation (and the vendor SDKs they carry).
+// DetectorConfig contains user-specified configurations unique to all individual detectors
 type DetectorConfig struct {
 	// AlibabaECSConfig contains user-specified configurations for the Alibaba Cloud ECS detector
-	AlibabaECSConfig alibabaecsconfig.Config `mapstructure:"alibaba_ecs"`
+	AlibabaECSConfig alibabaecs.Config `mapstructure:"alibaba_ecs"`
 
 	// EC2Config contains user-specified configurations for the EC2 detector
-	EC2Config ec2config.Config `mapstructure:"ec2"`
+	EC2Config ec2.Config `mapstructure:"ec2"`
 
 	// ECSConfig contains user-specified configurations for the ECS detector
-	ECSConfig ecsconfig.Config `mapstructure:"ecs"`
+	ECSConfig ecs.Config `mapstructure:"ecs"`
 
 	// EKSConfig contains user-specified configurations for the EKS detector
-	EKSConfig eksconfig.Config `mapstructure:"eks"`
+	EKSConfig eks.Config `mapstructure:"eks"`
 
 	// Elasticbeanstalk contains user-specified configurations for the elasticbeanstalk detector
-	ElasticbeanstalkConfig elasticbeanstalkconfig.Config `mapstructure:"elasticbeanstalk"`
+	ElasticbeanstalkConfig elasticbeanstalk.Config `mapstructure:"elasticbeanstalk"`
 
 	// Lambda contains user-specified configurations for the lambda detector
-	LambdaConfig lambdaconfig.Config `mapstructure:"lambda"`
+	LambdaConfig lambda.Config `mapstructure:"lambda"`
 
 	// Azure contains user-specified configurations for the azure detector
-	AzureConfig azureconfig.Config `mapstructure:"azure"`
+	AzureConfig azure.Config `mapstructure:"azure"`
 
 	// Aks contains user-specified configurations for the aks detector
-	AksConfig aksconfig.Config `mapstructure:"aks"`
+	AksConfig aks.Config `mapstructure:"aks"`
 
 	// AzureAppServiceConfig contains user-specified configurations for the Azure App Service detector
-	AzureAppServiceConfig appserviceconfig.Config `mapstructure:"azureappservice"`
+	AzureAppServiceConfig appservice.Config `mapstructure:"azureappservice"`
 
 	// AzureContainerAppsConfig contains user-specified configurations for the Azure Container Apps detector
-	AzureContainerAppsConfig containerappsconfig.Config `mapstructure:"azurecontainerapps"`
+	AzureContainerAppsConfig containerapps.Config `mapstructure:"azurecontainerapps"`
 
 	// AzureFunctionsConfig contains user-specified configurations for the Azure Functions detector
-	AzureFunctionsConfig functionsconfig.Config `mapstructure:"azurefunctions"`
+	AzureFunctionsConfig functions.Config `mapstructure:"azurefunctions"`
 
 	// ConsulConfig contains user-specified configurations for the Consul detector
-	ConsulConfig consulconfig.Config `mapstructure:"consul"`
+	ConsulConfig consul.Config `mapstructure:"consul"`
 
 	// DigitalOceanConfig contains user-specified configurations for the digitalocean detector
-	DigitalOceanConfig digitaloceanconfig.Config `mapstructure:"digitalocean"`
+	DigitalOceanConfig digitalocean.Config `mapstructure:"digitalocean"`
 
 	// DockerConfig contains user-specified configurations for the docker detector
-	DockerConfig dockerconfig.Config `mapstructure:"docker"`
+	DockerConfig docker.Config `mapstructure:"docker"`
 
 	// GcpConfig contains user-specified configurations for the gcp detector
-	GcpConfig gcpconfig.Config `mapstructure:"gcp"`
+	GcpConfig gcp.Config `mapstructure:"gcp"`
 
 	// HerokuConfig contains user-specified configurations for the heroku detector
-	HerokuConfig herokuconfig.Config `mapstructure:"heroku"`
+	HerokuConfig heroku.Config `mapstructure:"heroku"`
 
 	// HetznerConfig contains user-specified configurations for the hetzner detector
-	HetznerConfig hetznerconfig.Config `mapstructure:"hetzner"`
+	HetznerConfig hetzner.Config `mapstructure:"hetzner"`
 
 	// IBMCloudClassicConfig contains user-specified configurations for the IBM Cloud Classic detector
-	IBMCloudClassicConfig ibmcloudclassicconfig.Config `mapstructure:"ibmcloud_classic"`
+	IBMCloudClassicConfig ibmcloudclassic.Config `mapstructure:"ibmcloud_classic"`
 
 	// IBMCloudVPCConfig contains user-specified configurations for the IBM Cloud VPC detector
-	IBMCloudVPCConfig ibmcloudvpcconfig.Config `mapstructure:"ibmcloud_vpc"`
+	IBMCloudVPCConfig ibmcloudvpc.Config `mapstructure:"ibmcloud_vpc"`
 
 	// SystemConfig contains user-specified configurations for the System detector
-	SystemConfig systemconfig.Config `mapstructure:"system"`
+	SystemConfig system.Config `mapstructure:"system"`
 
 	// OpenShift contains user-specified configurations for the OpenShift detector
-	OpenShiftConfig openshiftconfig.Config `mapstructure:"openshift"`
+	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 
 	// OpenStackNovaConfig contains user-specified configurations for the OpenStackNova detector
-	OpenStackNovaConfig novaconfig.Config `mapstructure:"nova"`
+	OpenStackNovaConfig nova.Config `mapstructure:"nova"`
 
 	// OracleCloud contains user-specified configurations for the OracleCloud detector
-	OracleCloudConfig oraclecloudconfig.Config `mapstructure:"oraclecloud"`
+	OracleCloudConfig oraclecloud.Config `mapstructure:"oraclecloud"`
 
 	// K8SAPIConfig contains user-specified configurations for the K8S API detector
-	K8SAPIConfig k8sapiconfig.Config `mapstructure:"k8s_api"`
+	K8SAPIConfig k8sapi.Config `mapstructure:"k8s_api"`
 
 	// K8SNodeConfig contains user-specified configurations for the K8SNode detector (deprecated: use K8SAPIConfig)
-	K8SNodeConfig k8sapiconfig.Config `mapstructure:"k8snode"`
+	K8SNodeConfig k8sapi.Config `mapstructure:"k8snode"`
 
 	// Kubeadm contains user-specified configurations for the Kubeadm detector
-	KubeadmConfig kubeadmconfig.Config `mapstructure:"kubeadm"`
+	KubeadmConfig kubeadm.Config `mapstructure:"kubeadm"`
 
 	// AkamaiConfig contains user-specified configurations for the akamai detector
-	AkamaiConfig akamaiconfig.Config `mapstructure:"akamai"`
+	AkamaiConfig akamai.Config `mapstructure:"akamai"`
 
 	// ScalewayConfig contains user-specified configurations for the scaleway detector
-	ScalewayConfig scalewayconfig.Config `mapstructure:"scaleway"`
+	ScalewayConfig scaleway.Config `mapstructure:"scaleway"`
 
 	// TencentCVMConfig contains user-specified configurations for the Tencent Cloud CVM detector
-	TencentCVMConfig tencentcvmconfig.Config `mapstructure:"tencent_cvm"`
+	TencentCVMConfig tencentcvm.Config `mapstructure:"tencent_cvm"`
 
 	// UpcloudConfig contains user-specified configurations for the upcloud detector
-	UpcloudConfig upcloudconfig.Config `mapstructure:"upcloud"`
+	UpcloudConfig upcloud.Config `mapstructure:"upcloud"`
 
 	// VultrConfig contains user-specified configurations for the vultr detector
-	VultrConfig vultrconfig.Config `mapstructure:"vultr"`
+	VultrConfig vultr.Config `mapstructure:"vultr"`
 }
 
 func detectorCreateDefaultConfig() DetectorConfig {
 	return DetectorConfig{
-		AlibabaECSConfig:         alibabaecsconfig.CreateDefaultConfig(),
-		EC2Config:                ec2config.CreateDefaultConfig(),
-		ECSConfig:                ecsconfig.CreateDefaultConfig(),
-		EKSConfig:                eksconfig.CreateDefaultConfig(),
-		ElasticbeanstalkConfig:   elasticbeanstalkconfig.CreateDefaultConfig(),
-		LambdaConfig:             lambdaconfig.CreateDefaultConfig(),
-		AzureConfig:              azureconfig.CreateDefaultConfig(),
-		AzureAppServiceConfig:    appserviceconfig.CreateDefaultConfig(),
-		AksConfig:                aksconfig.CreateDefaultConfig(),
-		AzureContainerAppsConfig: containerappsconfig.CreateDefaultConfig(),
-		AzureFunctionsConfig:     functionsconfig.CreateDefaultConfig(),
-		ConsulConfig:             consulconfig.CreateDefaultConfig(),
-		DigitalOceanConfig:       digitaloceanconfig.CreateDefaultConfig(),
-		DockerConfig:             dockerconfig.CreateDefaultConfig(),
-		GcpConfig:                gcpconfig.CreateDefaultConfig(),
-		HerokuConfig:             herokuconfig.CreateDefaultConfig(),
-		HetznerConfig:            hetznerconfig.CreateDefaultConfig(),
-		IBMCloudClassicConfig:    ibmcloudclassicconfig.CreateDefaultConfig(),
-		IBMCloudVPCConfig:        ibmcloudvpcconfig.CreateDefaultConfig(),
-		SystemConfig:             systemconfig.CreateDefaultConfig(),
-		OpenShiftConfig:          openshiftconfig.CreateDefaultConfig(),
-		OpenStackNovaConfig:      novaconfig.CreateDefaultConfig(),
-		OracleCloudConfig:        oraclecloudconfig.CreateDefaultConfig(),
-		K8SAPIConfig:             k8sapiconfig.CreateDefaultConfig(),
-		K8SNodeConfig:            k8sapiconfig.CreateDefaultConfig(),
-		KubeadmConfig:            kubeadmconfig.CreateDefaultConfig(),
-		AkamaiConfig:             akamaiconfig.CreateDefaultConfig(),
-		ScalewayConfig:           scalewayconfig.CreateDefaultConfig(),
-		TencentCVMConfig:         tencentcvmconfig.CreateDefaultConfig(),
-		UpcloudConfig:            upcloudconfig.CreateDefaultConfig(),
-		VultrConfig:              vultrconfig.CreateDefaultConfig(),
+		AlibabaECSConfig:         alibabaecs.CreateDefaultConfig(),
+		EC2Config:                ec2.CreateDefaultConfig(),
+		ECSConfig:                ecs.CreateDefaultConfig(),
+		EKSConfig:                eks.CreateDefaultConfig(),
+		ElasticbeanstalkConfig:   elasticbeanstalk.CreateDefaultConfig(),
+		LambdaConfig:             lambda.CreateDefaultConfig(),
+		AzureConfig:              azure.CreateDefaultConfig(),
+		AksConfig:                aks.CreateDefaultConfig(),
+		AzureAppServiceConfig:    appservice.CreateDefaultConfig(),
+		AzureContainerAppsConfig: containerapps.CreateDefaultConfig(),
+		AzureFunctionsConfig:     functions.CreateDefaultConfig(),
+		ConsulConfig:             consul.CreateDefaultConfig(),
+		DigitalOceanConfig:       digitalocean.CreateDefaultConfig(),
+		DockerConfig:             docker.CreateDefaultConfig(),
+		GcpConfig:                gcp.CreateDefaultConfig(),
+		HerokuConfig:             heroku.CreateDefaultConfig(),
+		HetznerConfig:            hetzner.CreateDefaultConfig(),
+		IBMCloudClassicConfig:    ibmcloudclassic.CreateDefaultConfig(),
+		IBMCloudVPCConfig:        ibmcloudvpc.CreateDefaultConfig(),
+		SystemConfig:             system.CreateDefaultConfig(),
+		OpenShiftConfig:          openshift.CreateDefaultConfig(),
+		OpenStackNovaConfig:      nova.CreateDefaultConfig(),
+		OracleCloudConfig:        oraclecloud.CreateDefaultConfig(),
+		K8SAPIConfig:             k8sapi.CreateDefaultConfig(),
+		K8SNodeConfig:            k8sapi.CreateDefaultConfig(),
+		KubeadmConfig:            kubeadm.CreateDefaultConfig(),
+		AkamaiConfig:             akamai.CreateDefaultConfig(),
+		ScalewayConfig:           scaleway.CreateDefaultConfig(),
+		TencentCVMConfig:         tencentcvm.CreateDefaultConfig(),
+		UpcloudConfig:            upcloud.CreateDefaultConfig(),
+		VultrConfig:              vultr.CreateDefaultConfig(),
 	}
 }
 
-// GetConfigFromType returns the per-detector config for the given detector type.
-// The case values are the detectors' type strings (the same strings used as
-// mapstructure tags above and by the register_*.go files); string literals are
-// used instead of the detector packages' TypeStr constants so that this
-// always-compiled file does not import any detector implementation.
 func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig {
 	switch detectorType {
-	case "alibaba_ecs":
+	case alibabaecs.TypeStr:
 		return d.AlibabaECSConfig
-	case "ec2":
+	case ec2.TypeStr:
 		return d.EC2Config
-	case "ecs":
+	case ecs.TypeStr:
 		return d.ECSConfig
-	case "eks":
+	case eks.TypeStr:
 		return d.EKSConfig
-	case "elastic_beanstalk":
+	case elasticbeanstalk.TypeStr:
 		return d.ElasticbeanstalkConfig
-	case "lambda":
+	case lambda.TypeStr:
 		return d.LambdaConfig
-	case "azure":
+	case azure.TypeStr:
 		return d.AzureConfig
-	case "aks":
+	case aks.TypeStr:
 		return d.AksConfig
-	case "azureappservice":
+	case appservice.TypeStr:
 		return d.AzureAppServiceConfig
-	case "azurecontainerapps":
+	case containerapps.TypeStr:
 		return d.AzureContainerAppsConfig
-	case "azurefunctions":
+	case functions.TypeStr:
 		return d.AzureFunctionsConfig
-	case "consul":
+	case consul.TypeStr:
 		return d.ConsulConfig
-	case "digitalocean":
+	case digitalocean.TypeStr:
 		return d.DigitalOceanConfig
-	case "docker":
+	case docker.TypeStr:
 		return d.DockerConfig
-	case "gcp":
+	case gcp.TypeStr:
 		return d.GcpConfig
-	case "heroku":
+	case heroku.TypeStr:
 		return d.HerokuConfig
-	case "hetzner":
+	case hetzner.TypeStr:
 		return d.HetznerConfig
-	case "ibmcloud_classic":
+	case ibmcloudclassic.TypeStr:
 		return d.IBMCloudClassicConfig
-	case "ibmcloud_vpc":
+	case ibmcloudvpc.TypeStr:
 		return d.IBMCloudVPCConfig
-	case "system":
+	case system.TypeStr:
 		return d.SystemConfig
-	case "openshift":
+	case openshift.TypeStr:
 		return d.OpenShiftConfig
-	case "nova":
+	case nova.TypeStr:
 		return d.OpenStackNovaConfig
-	case "oraclecloud":
+	case oraclecloud.TypeStr:
 		return d.OracleCloudConfig
-	case "k8s_api":
+	case k8sapi.TypeStr:
 		return d.K8SAPIConfig
-	case "k8snode":
+	case k8sapi.TypeStrAlias:
 		return d.K8SNodeConfig
-	case "kubeadm":
+	case kubeadm.TypeStr:
 		return d.KubeadmConfig
-	case "akamai":
+	case akamai.TypeStr:
 		return d.AkamaiConfig
-	case "scaleway":
+	case scaleway.TypeStr:
 		return d.ScalewayConfig
-	case "tencent_cvm":
+	case tencentcvm.TypeStr:
 		return d.TencentCVMConfig
-	case "upcloud":
+	case upcloud.TypeStr:
 		return d.UpcloudConfig
-	case "vultr":
+	case vultr.TypeStr:
 		return d.VultrConfig
 	default:
 		return nil

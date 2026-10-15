@@ -3,10 +3,18 @@
 
 package classic // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic"
 
-import classicconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic/config"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic/internal/metadata"
+)
 
-type Config = classicconfig.Config
+// Config defines user-specified configurations unique to the IBM Cloud Classic detector.
+type Config struct {
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
 
+// CreateDefaultConfig returns the default configuration for the IBM Cloud Classic detector.
 func CreateDefaultConfig() Config {
-	return classicconfig.CreateDefaultConfig()
+	return Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
 }

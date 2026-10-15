@@ -1,0 +1,14 @@
+description: Config can contain user-specified inputs to overwrite default values. See `openshift.go#NewDetector` for more information.
+type: object
+properties:
+  address:
+    description: Address is the address of the openshift api server
+    type: string
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config
+  tls:
+    description: TLSs contains TLS configurations that are specific to client connection used to communicate with the OpenShift API.
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  token:
+    description: Token is used to identify against the openshift api server
+    type: string

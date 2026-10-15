@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build remove_all_resourcedetection_detectors && enable_resourcedetection_azureappservice_detector
+//go:build remove_all_resourcedetection_detectors && enable_resourcedetection_azure_appservice_detector && !omit_detector_azure_appservice
 
 package resourcedetectionprocessor
 
@@ -17,7 +17,7 @@ import (
 )
 
 func TestAzureAppServiceTrimmedBuildCreatesConfiguredProcessor(t *testing.T) {
-	require.Contains(t, globalDetectorRegistry, internal.DetectorType("azureappservice"))
+	require.Contains(t, availableDetectorFactories(), internal.DetectorType("azureappservice"))
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Detectors = []string{"azureappservice"}

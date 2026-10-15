@@ -6,7 +6,7 @@
 // `<key1>=<value1>,<key2>=<value2>,...` is accepted. Domain names and
 // paths are accepted as label keys.
 
-//go:build !omit_detector_env
+//go:build (!remove_all_resourcedetection_detectors || enable_resourcedetection_env_detector) && !omit_detector_env
 
 package env // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 

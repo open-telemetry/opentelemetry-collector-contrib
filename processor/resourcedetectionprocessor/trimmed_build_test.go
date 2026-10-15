@@ -19,7 +19,7 @@ import (
 )
 
 func TestTrimmedBuildRegistryFactories(t *testing.T) {
-	for detectorType, factory := range globalDetectorRegistry {
+	for detectorType, factory := range availableDetectorFactories() {
 		require.NotNil(t, factory, "factory should not be nil for %q", detectorType)
 	}
 }
@@ -45,7 +45,7 @@ func TestTrimmedBuildRejectsDetectorThatIsNotCompiled(t *testing.T) {
 
 	var disabled internal.DetectorType
 	for _, detectorType := range allDetectorTypes {
-		if _, ok := globalDetectorRegistry[detectorType]; !ok {
+		if _, ok := availableDetectorFactories()[detectorType]; !ok {
 			disabled = detectorType
 			break
 		}
@@ -64,7 +64,7 @@ func TestTrimmedBuildRejectsDetectorThatIsNotCompiled(t *testing.T) {
 }
 
 func TestTrimmedBuildDefaultRequiresEnvDetector(t *testing.T) {
-	if _, ok := globalDetectorRegistry[internal.DetectorType("env")]; ok {
+	if _, ok := availableDetectorFactories()[internal.DetectorType("env")]; ok {
 		t.Skip("env is compiled")
 	}
 

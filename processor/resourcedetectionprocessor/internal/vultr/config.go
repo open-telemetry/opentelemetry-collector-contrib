@@ -3,10 +3,19 @@
 
 package vultr // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 
-import vultrconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr/config"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr/internal/metadata"
+)
 
-type Config = vultrconfig.Config
+type Config struct {
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	// Deprecated: Use the top-level fail_on_missing_metadata in the processor config instead.
+	// This field will be removed in a future release.
+	FailOnMissingMetadata bool `mapstructure:"fail_on_missing_metadata"`
+}
 
 func CreateDefaultConfig() Config {
-	return vultrconfig.CreateDefaultConfig()
+	return Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
 }

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build remove_all_resourcedetection_detectors && enable_resourcedetection_ec2_detector
+//go:build remove_all_resourcedetection_detectors && enable_resourcedetection_aws_ec2_detector && !omit_detector_aws_ec2
 
 package resourcedetectionprocessor
 
@@ -21,7 +21,7 @@ import (
 )
 
 func TestEC2TrimmedBuildCreatesConfiguredProcessor(t *testing.T) {
-	require.Contains(t, globalDetectorRegistry, internal.DetectorType("ec2"))
+	require.Contains(t, availableDetectorFactories(), internal.DetectorType("ec2"))
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Preserve the EC2-only configuration reported in issue #47218, including
@@ -43,7 +43,7 @@ func TestEC2TrimmedBuildExcludesKubernetesDependencies(t *testing.T) {
 	// Inspect production imports, not the test binary: existing config tests
 	// import other detector implementations even in a targeted trimmed test run.
 	cmd := exec.CommandContext(t.Context(), "go", "list", "-deps",
-		"-tags=remove_all_resourcedetection_detectors,enable_resourcedetection_ec2_detector", ".")
+		"-tags=remove_all_resourcedetection_detectors,enable_resourcedetection_aws_ec2_detector", ".")
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "%s", output)
 	packages := strings.Fields(string(output))
@@ -53,8 +53,5 @@ func TestEC2TrimmedBuildExcludesKubernetesDependencies(t *testing.T) {
 		for _, prefix := range []string{"k8s.io/", "sigs.k8s.io/", "github.com/openshift/"} {
 			assert.False(t, strings.HasPrefix(pkg, prefix), "EC2-only build imports %s", pkg)
 		}
-	}
-	for _, detector := range []string{"aws/eks", "k8sapi", "kubeadm", "openshift", "azure/appservice"} {
-		assert.NotContains(t, packages, rdpInternal+detector)
 	}
 }

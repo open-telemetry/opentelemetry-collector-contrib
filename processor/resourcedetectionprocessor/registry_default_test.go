@@ -16,7 +16,6 @@ import (
 
 func TestDefaultDetectorRegistry(t *testing.T) {
 	expectedTypes := []internal.DetectorType{
-		"metadata_test",
 		"akamai",
 		"alibaba_ecs",
 		"aks",
@@ -52,8 +51,8 @@ func TestDefaultDetectorRegistry(t *testing.T) {
 		"vultr",
 	}
 
-	actualTypes := make([]internal.DetectorType, 0, len(globalDetectorRegistry))
-	for detectorType, factory := range globalDetectorRegistry {
+	actualTypes := make([]internal.DetectorType, 0, len(availableDetectorFactories()))
+	for detectorType, factory := range availableDetectorFactories() {
 		require.NotNil(t, factory, "factory should not be nil for %q", detectorType)
 		actualTypes = append(actualTypes, detectorType)
 	}

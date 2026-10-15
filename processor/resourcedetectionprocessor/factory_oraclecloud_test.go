@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build remove_all_resourcedetection_detectors && enable_resourcedetection_oraclecloud_detector
+//go:build remove_all_resourcedetection_detectors && enable_resourcedetection_oraclecloud_detector && !omit_detector_oraclecloud
 
 package resourcedetectionprocessor
 
@@ -18,7 +18,7 @@ import (
 )
 
 func TestOracleCloudOnlyBuildCreatesConfiguredProcessor(t *testing.T) {
-	require.Contains(t, globalDetectorRegistry, internal.DetectorType("oraclecloud"))
+	require.Contains(t, availableDetectorFactories(), internal.DetectorType("oraclecloud"))
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -31,7 +31,7 @@ func TestOracleCloudOnlyBuildCreatesConfiguredProcessor(t *testing.T) {
 }
 
 func TestOracleCloudOnlyBuildRejectsDisabledDetector(t *testing.T) {
-	if _, ok := globalDetectorRegistry[internal.DetectorType("env")]; ok {
+	if _, ok := availableDetectorFactories()[internal.DetectorType("env")]; ok {
 		t.Skip("env is compiled in this detector combination")
 	}
 

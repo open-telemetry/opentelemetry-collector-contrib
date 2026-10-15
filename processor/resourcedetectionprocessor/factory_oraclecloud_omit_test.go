@@ -22,6 +22,6 @@ func TestOmittedOracleCloudDetectorRejectsConfiguration(t *testing.T) {
 	cfg.(*Config).Detectors = []string{"oraclecloud"}
 
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	require.ErrorContains(t, err, `detector "oraclecloud" is omitted from this binary`)
+	require.ErrorContains(t, err, `detector "oraclecloud" is not compiled into this binary`)
 	assert.Nil(t, tp)
 }

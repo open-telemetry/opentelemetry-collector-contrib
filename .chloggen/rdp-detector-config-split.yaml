@@ -15,12 +15,6 @@ issues: [47218]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Detector config types now live in dependency-light packages, so the always-compiled
-  config schema no longer imports detector implementations. Combined with detector build
-  tags, this allows custom distributions to omit dependencies used only by disabled
-  detectors. Dependencies needed by other enabled Collector components remain linked.
-  Default builds remain unchanged.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -94,8 +94,6 @@ telemetry:
         monotonic: true
 
 tests:
-  config:
-    detectors: [metadata_test]
   goleak:
     ignore:
       any:
