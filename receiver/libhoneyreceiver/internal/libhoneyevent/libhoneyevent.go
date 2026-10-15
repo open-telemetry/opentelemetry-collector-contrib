@@ -424,8 +424,8 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 	}
 	endTimestamp := timeNs + int64(durationMs*1000000)
 
-	if tid, ok := l.Data[cfg.Attributes.TraceID].(string); ok {
-		tid := strings.ReplaceAll(tid, "-", "")
+	if tidStr, ok := l.Data[cfg.Attributes.TraceID].(string); ok {
+		tid := strings.ReplaceAll(tidStr, "-", "")
 		tidByteArray, err := hex.DecodeString(tid)
 		if err == nil && len(tidByteArray) == 16 {
 			// Convert slice to [16]byte array
@@ -439,8 +439,8 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		newSpan.SetTraceID(pcommon.TraceID(generateAnID(16)))
 	}
 
-	if sid, ok := l.Data[cfg.Attributes.SpanID].(string); ok {
-		sid := strings.ReplaceAll(sid, "-", "")
+	if sidStr, ok := l.Data[cfg.Attributes.SpanID].(string); ok {
+		sid := strings.ReplaceAll(sidStr, "-", "")
 		sidByteArray, err := hex.DecodeString(sid)
 		if err == nil && len(sidByteArray) == 8 {
 			// Convert slice to [8]byte array
