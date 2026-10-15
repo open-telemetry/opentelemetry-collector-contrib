@@ -53,7 +53,6 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled = enabled
-	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbDataFilesCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbContentionWaitersCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbAllocationWaitersCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDeadlockRate.Enabled = enabled
@@ -2757,7 +2756,6 @@ func TestRecordTempDBMetrics(t *testing.T) {
 	cfg.Port = 1433
 	assert.NoError(t, cfg.Validate())
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbDataFilesCount.Enabled = true
 
 	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
@@ -2784,7 +2782,6 @@ func TestRecordTempDBMetrics(t *testing.T) {
 	assert.NoError(t, err)
 
 	// 5 tempdb.space states (user_objects, internal_objects, version_store, free, mixed_extents)
-	// + 1 data-file count = 6 data points
 	var totalDP int
 	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
 		rm := actualMetrics.ResourceMetrics().At(i)
@@ -2792,16 +2789,13 @@ func TestRecordTempDBMetrics(t *testing.T) {
 			sm := rm.ScopeMetrics().At(j)
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				m := sm.Metrics().At(k)
-				switch m.Name() {
-				case metadata.MetricsInfo.SqlserverDatabaseTempdbSpace.Name:
+				if m.Name() == metadata.MetricsInfo.SqlserverDatabaseTempdbSpace.Name {
 					totalDP += m.Sum().DataPoints().Len()
-				case metadata.MetricsInfo.SqlserverTempdbDataFilesCount.Name:
-					totalDP += m.Gauge().DataPoints().Len()
 				}
 			}
 		}
 	}
-	assert.Equal(t, 6, totalDP)
+	assert.Equal(t, 5, totalDP)
 }
 
 func TestRecordTempDBContentionMetrics(t *testing.T) {
@@ -2915,10 +2909,6 @@ func TestIsTempDBQueryEnabled(t *testing.T) {
 	assert.False(t, isTempDBQueryEnabled(metrics))
 
 	metrics.SqlserverDatabaseTempdbSpace.Enabled = true
-	assert.True(t, isTempDBQueryEnabled(metrics))
-
-	metrics.SqlserverDatabaseTempdbSpace.Enabled = false
-	metrics.SqlserverTempdbDataFilesCount.Enabled = true
 	assert.True(t, isTempDBQueryEnabled(metrics))
 }
 

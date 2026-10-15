@@ -2825,7 +2825,6 @@ func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error 
 		kbVersionStore    = "kb_version_store"
 		kbFree            = "kb_free"
 		kbMixedExtents    = "kb_mixed_extents"
-		dataFileCount     = "data_file_count"
 	)
 
 	rows, err := s.client.QueryRows(ctx)
@@ -2840,8 +2839,6 @@ func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
-
-		errs = append(errs, s.mb.RecordSqlserverTempdbDataFilesCountDataPoint(now, row[dataFileCount]))
 
 		for _, w := range []struct {
 			col   string

@@ -1203,16 +1203,6 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | --------- |
 | {waiters} | Gauge | Int | Development |
 
-### sqlserver.tempdb.data_files.count
-
-Number of tempdb data files configured on the instance.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {files} | Gauge | Int | Development |
-
 ### sqlserver.tempdb.file.size
 
 Size of each tempdb data or log file.

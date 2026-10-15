@@ -568,9 +568,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverTempdbContentionWaitersCountDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordSqlserverTempdbDataFilesCountDataPoint(ts, "1")
-
-			allMetricsCount++
 			mb.RecordSqlserverTempdbFileSizeDataPoint(ts, "1", "file_type-val", 24)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverTempdbFileSizeDataPoint(ts, "3", "file_type-val-2", 25)
@@ -2951,18 +2948,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of tasks currently waiting on a tempdb allocation page.", mi.Description())
 					assert.Equal(t, "{waiters}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "sqlserver.tempdb.data_files.count":
-					assert.False(t, validatedMetrics["sqlserver.tempdb.data_files.count"], "Found a duplicate in the metrics slice: sqlserver.tempdb.data_files.count")
-					validatedMetrics["sqlserver.tempdb.data_files.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of tempdb data files configured on the instance.", mi.Description())
-					assert.Equal(t, "{files}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

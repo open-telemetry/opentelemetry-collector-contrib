@@ -641,8 +641,7 @@ func isTempDBQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	return metrics.SqlserverDatabaseTempdbSpace.Enabled ||
-		metrics.SqlserverTempdbDataFilesCount.Enabled
+	return metrics.SqlserverDatabaseTempdbSpace.Enabled
 }
 
 func isTempDBContentionQueryEnabled(metrics *metadata.MetricsConfig) bool {

@@ -65,14 +65,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: kBy
-          - description: Number of tempdb data files configured on the instance.
-            gauge:
-              dataPoints:
-                - asInt: "4"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: sqlserver.tempdb.data_files.count
-            unit: '{files}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

@@ -2,10 +2,10 @@ change_type: enhancement
 
 component: receiver/sql_server
 
-note: "Add `sqlserver.tempdb.file.size`, `sqlserver.tempdb.data_files.count`, `sqlserver.tempdb.contention.waiters.count`, and `sqlserver.tempdb.allocation.waiters.count` metrics, and extend `sqlserver.database.tempdb.space`."
+note: "Add `sqlserver.tempdb.file.size`, `sqlserver.tempdb.contention.waiters.count`, and `sqlserver.tempdb.allocation.waiters.count` metrics, and extend `sqlserver.database.tempdb.space`."
 
 issues: [52057]
 
-subtext: The four new metrics are disabled by default.
+subtext: The three new metrics are disabled by default.
 
 change_logs: [user]

@@ -1403,31 +1403,15 @@ IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
 	RETURN
 END
 ;
-WITH
-file_space AS (
-	SELECT
-		CAST(SUM(user_object_reserved_page_count)     AS BIGINT) * 8 AS kb_user_objects,
-		CAST(SUM(internal_object_reserved_page_count) AS BIGINT) * 8 AS kb_internal_objects,
-		CAST(SUM(version_store_reserved_page_count)   AS BIGINT) * 8 AS kb_version_store,
-		CAST(SUM(unallocated_extent_page_count)       AS BIGINT) * 8 AS kb_free,
-		CAST(SUM(mixed_extent_page_count)             AS BIGINT) * 8 AS kb_mixed_extents
-	FROM tempdb.sys.dm_db_file_space_usage WITH (NOLOCK)
-),
-files AS (
-	SELECT CAST(COUNT(*) AS BIGINT) AS data_file_count
-	FROM sys.master_files WITH (NOLOCK)
-	WHERE database_id = 2 AND type = 0
-)
 SELECT
 	'sqlserver_tempdb' AS [measurement],
 	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
-	file_space.kb_user_objects,
-	file_space.kb_internal_objects,
-	file_space.kb_version_store,
-	file_space.kb_free,
-	file_space.kb_mixed_extents,
-	files.data_file_count
-FROM file_space, files
+	CAST(SUM(user_object_reserved_page_count)     AS BIGINT) * 8 AS kb_user_objects,
+	CAST(SUM(internal_object_reserved_page_count) AS BIGINT) * 8 AS kb_internal_objects,
+	CAST(SUM(version_store_reserved_page_count)   AS BIGINT) * 8 AS kb_version_store,
+	CAST(SUM(unallocated_extent_page_count)       AS BIGINT) * 8 AS kb_free,
+	CAST(SUM(mixed_extent_page_count)             AS BIGINT) * 8 AS kb_mixed_extents
+FROM tempdb.sys.dm_db_file_space_usage WITH (NOLOCK)
 `
 
 func getSQLServerTempDBQuery() string {

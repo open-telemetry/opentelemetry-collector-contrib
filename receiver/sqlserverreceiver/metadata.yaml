@@ -1393,16 +1393,6 @@ metrics:
       input_type: string
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.tempdb.data_files.count:
-    enabled: false
-    description: Number of tempdb data files configured on the instance.
-    stability: development
-    unit: "{files}"
-    gauge:
-      value_type: int
-      input_type: string
-    attributes: []
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.tempdb.file.size:
     enabled: false
     description: Size of each tempdb data or log file.

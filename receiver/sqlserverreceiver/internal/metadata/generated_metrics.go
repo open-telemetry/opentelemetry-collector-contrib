@@ -1206,9 +1206,6 @@ var MetricsInfo = metricsInfo{
 	SqlserverTempdbContentionWaitersCount: metricInfo{
 		Name: "sqlserver.tempdb.contention.waiters.count",
 	},
-	SqlserverTempdbDataFilesCount: metricInfo{
-		Name: "sqlserver.tempdb.data_files.count",
-	},
 	SqlserverTempdbFileSize: metricInfo{
 		Name:       "sqlserver.tempdb.file.size",
 		Attributes: []string{"file_type", "sqlserver.tempdb.file.id"},
@@ -1348,7 +1345,6 @@ type metricsInfo struct {
 	SqlserverTaskRate                                     metricInfo
 	SqlserverTempdbAllocationWaitersCount                 metricInfo
 	SqlserverTempdbContentionWaitersCount                 metricInfo
-	SqlserverTempdbDataFilesCount                         metricInfo
 	SqlserverTempdbFileSize                               metricInfo
 	SqlserverTransactionDelay                             metricInfo
 	SqlserverTransactionMirrorWriteRate                   metricInfo
@@ -7224,56 +7220,6 @@ func newMetricSqlserverTempdbContentionWaitersCount(cfg SqlserverTempdbContentio
 	return m
 }
 
-type metricSqlserverTempdbDataFilesCount struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   SqlserverTempdbDataFilesCountMetricConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
-}
-
-// init fills sqlserver.tempdb.data_files.count metric with initial data.
-func (m *metricSqlserverTempdbDataFilesCount) init() {
-	m.data.SetName("sqlserver.tempdb.data_files.count")
-	m.data.SetDescription("Number of tempdb data files configured on the instance.")
-	m.data.SetUnit("{files}")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricSqlserverTempdbDataFilesCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverTempdbDataFilesCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverTempdbDataFilesCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSqlserverTempdbDataFilesCount(cfg SqlserverTempdbDataFilesCountMetricConfig) metricSqlserverTempdbDataFilesCount {
-	m := metricSqlserverTempdbDataFilesCount{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSqlserverTempdbFileSize struct {
 	data          pmetric.Metric                      // data buffer for generated metric.
 	config        SqlserverTempdbFileSizeMetricConfig // metric config provided by user.
@@ -8254,7 +8200,6 @@ type MetricsBuilder struct {
 	metricSqlserverTaskRate                                     metricSqlserverTaskRate
 	metricSqlserverTempdbAllocationWaitersCount                 metricSqlserverTempdbAllocationWaitersCount
 	metricSqlserverTempdbContentionWaitersCount                 metricSqlserverTempdbContentionWaitersCount
-	metricSqlserverTempdbDataFilesCount                         metricSqlserverTempdbDataFilesCount
 	metricSqlserverTempdbFileSize                               metricSqlserverTempdbFileSize
 	metricSqlserverTransactionDelay                             metricSqlserverTransactionDelay
 	metricSqlserverTransactionMirrorWriteRate                   metricSqlserverTransactionMirrorWriteRate
@@ -8383,7 +8328,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTaskRate:                                     newMetricSqlserverTaskRate(mbc.Metrics.SqlserverTaskRate),
 		metricSqlserverTempdbAllocationWaitersCount:                 newMetricSqlserverTempdbAllocationWaitersCount(mbc.Metrics.SqlserverTempdbAllocationWaitersCount),
 		metricSqlserverTempdbContentionWaitersCount:                 newMetricSqlserverTempdbContentionWaitersCount(mbc.Metrics.SqlserverTempdbContentionWaitersCount),
-		metricSqlserverTempdbDataFilesCount:                         newMetricSqlserverTempdbDataFilesCount(mbc.Metrics.SqlserverTempdbDataFilesCount),
 		metricSqlserverTempdbFileSize:                               newMetricSqlserverTempdbFileSize(mbc.Metrics.SqlserverTempdbFileSize),
 		metricSqlserverTransactionDelay:                             newMetricSqlserverTransactionDelay(mbc.Metrics.SqlserverTransactionDelay),
 		metricSqlserverTransactionMirrorWriteRate:                   newMetricSqlserverTransactionMirrorWriteRate(mbc.Metrics.SqlserverTransactionMirrorWriteRate),
@@ -8625,7 +8569,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTaskRate.emit(ils.Metrics())
 	mb.metricSqlserverTempdbAllocationWaitersCount.emit(ils.Metrics())
 	mb.metricSqlserverTempdbContentionWaitersCount.emit(ils.Metrics())
-	mb.metricSqlserverTempdbDataFilesCount.emit(ils.Metrics())
 	mb.metricSqlserverTempdbFileSize.emit(ils.Metrics())
 	mb.metricSqlserverTransactionDelay.emit(ils.Metrics())
 	mb.metricSqlserverTransactionMirrorWriteRate.emit(ils.Metrics())
@@ -9174,16 +9117,6 @@ func (mb *MetricsBuilder) RecordSqlserverTempdbContentionWaitersCountDataPoint(t
 		return fmt.Errorf("failed to parse int64 for SqlserverTempdbContentionWaitersCount, value was %s: %w", inputVal, err)
 	}
 	mb.metricSqlserverTempdbContentionWaitersCount.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
-// RecordSqlserverTempdbDataFilesCountDataPoint adds a data point to sqlserver.tempdb.data_files.count metric.
-func (mb *MetricsBuilder) RecordSqlserverTempdbDataFilesCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for SqlserverTempdbDataFilesCount, value was %s: %w", inputVal, err)
-	}
-	mb.metricSqlserverTempdbDataFilesCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
