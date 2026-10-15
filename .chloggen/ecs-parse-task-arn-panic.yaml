@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: processor/resource_detection
+note: Fix a panic in the ECS detector when the task ARN has only 5 colon-separated parts
+issues: [52074]
+subtext: |
+  `parseTaskARN` checked for at least 5 parts but read the 6th one, so a task ARN without a resource part
+  caused an index out of range panic during detection.
+change_logs: [user]

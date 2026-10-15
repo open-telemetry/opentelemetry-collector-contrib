@@ -164,6 +164,9 @@ The number of index scans on a table.
 
 The size of the index on disk.
 
+No data point is reported for an index that is dropped while the receiver is collecting,
+because its size is no longer measurable.
+
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
@@ -253,6 +256,9 @@ Number of user tables in a database.
 ### postgresql.table.size
 
 Total disk space used by a table, including its indexes and TOAST data.
+
+No data point is reported for a table that is dropped while the receiver is collecting,
+because its size is no longer measurable. The table's other metrics are still reported.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -672,6 +678,7 @@ The execution plan for a query.
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` | - |
 | postgresql.queryid | Hash code to identify identical normalized queries. | Any Str | - |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | - |
+| postgresql.userid | OID of the role that executed the statement. Stays set even after the role is dropped. | Any Str | - |
 | postgresql.rolname | The name of the PostgreSQL role that executed the query. | Any Str | - |
 | postgresql.query_plan | The execution plan used by PostgreSQL for the query. | Any Str | - |
 
@@ -727,6 +734,7 @@ top query
 | postgresql.temp_blks_read | Total number of temp blocks read by the statement, reported in delta value. | Any Int | - |
 | postgresql.temp_blks_written | Total number of temp blocks written by the statement, reported in delta value. | Any Int | - |
 | postgresql.queryid | Hash code to identify identical normalized queries. | Any Str | - |
+| postgresql.userid | OID of the role that executed the statement. Stays set even after the role is dropped. | Any Str | - |
 | postgresql.rolname | The name of the PostgreSQL role that executed the query. | Any Str | - |
 | postgresql.total_exec_time | Total time spent executing the statement, in delta seconds. | Any Double | - |
 | postgresql.total_plan_time | Total time spent planning the statement, in delta seconds. | Any Double | - |

@@ -341,6 +341,10 @@ func commonOpts(
 	if clientCfg.ConnIdleTimeout > 0 {
 		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
 	}
+	// Configure dial timeout
+	if clientCfg.DialTimeout > 0 {
+		opts = append(opts, kgo.DialTimeout(clientCfg.DialTimeout))
+	}
 	// Configure the min/max protocol version if provided
 	if clientCfg.ProtocolVersion != "" {
 		keyVersions := make(map[string]any)
