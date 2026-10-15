@@ -35,6 +35,7 @@ The following settings can be optionally configured:
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
 - `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with. The client ID will be used for all produce requests.
 - `conn_idle_timeout` (default = `9m`): The time after which idle connections to Kafka brokers are not reused and may be closed.
+- `dial_timeout` (default = `10s`): The time allowed to establish a connection to a Kafka broker.
 - `logs`
   - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
