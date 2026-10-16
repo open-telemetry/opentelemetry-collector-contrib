@@ -155,6 +155,11 @@ type TelemetrySettings struct {
 	LogFailedDocsInput          bool          `mapstructure:"log_failed_docs_input"`
 	LogFailedDocsInputRateLimit time.Duration `mapstructure:"log_failed_docs_input_rate_limit"`
 
+	// IncludeDestinationIndex adds the destination index, as reported by
+	// Elasticsearch, as an attribute to the `otelcol.elasticsearch.docs.processed`
+	// metric. It can have high cardinality, so it is disabled by default.
+	IncludeDestinationIndex bool `mapstructure:"include_destination_index"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
