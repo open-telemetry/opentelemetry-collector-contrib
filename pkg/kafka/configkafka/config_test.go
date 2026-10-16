@@ -198,6 +198,20 @@ func TestConsumerConfig(t *testing.T) {
 				MaxDecompressBatchBytes: 1073741824, // 1 GiB default
 			},
 		},
+		"min_valid_max_decompress_batch_bytes": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.MaxDecompressBatchBytes = 1
+				return cfg
+			}(),
+		},
+		"max_valid_max_decompress_batch_bytes": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.MaxDecompressBatchBytes = math.MaxInt32
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"invalid_initial_offset": {
@@ -210,7 +224,10 @@ func TestConsumerConfig(t *testing.T) {
 			expectedErr: "min_fetch_size (-100) must be non-negative",
 		},
 		"negative_max_decompress_batch_bytes": {
-			expectedErr: "max_decompress_batch_bytes (-100) must be non-negative",
+			expectedErr: "max_decompress_batch_bytes (-100) must be between 1 and 2147483647",
+		},
+		"zero_max_decompress_batch_bytes": {
+			expectedErr: "max_decompress_batch_bytes (0) must be between 1 and 2147483647",
 		},
 		"empty_group_rebalance_strategies_entry": {
 			expectedErr: "group_rebalance_strategies entries cannot be empty",
@@ -354,6 +371,27 @@ func TestProducerConfigInt32Overflow(t *testing.T) {
 		cfg.MaxBrokerWriteBytes = overflow
 		require.EqualError(t, cfg.Validate(),
 			fmt.Sprintf("max_broker_write_bytes (%d) must not exceed %d", overflow, math.MaxInt32))
+	})
+}
+
+// TestConsumerConfigInt32Overflow verifies that max_decompress_batch_bytes
+// exceeding the int32 range used by franz-go is rejected. Values above
+// math.MaxInt32 are only representable on platforms where int is 64-bit,
+// so this is skipped elsewhere.
+func TestConsumerConfigInt32Overflow(t *testing.T) {
+	if strconv.IntSize < 64 {
+		t.Skip("int is not wide enough to exceed math.MaxInt32 on this architecture")
+	}
+	// Use a runtime int64 value so the conversion to int is not a compile-time
+	// constant (which would overflow int and fail to build on 32-bit platforms).
+	maxInt32 := int64(math.MaxInt32)
+	overflow := int(maxInt32 + 1)
+
+	t.Run("max_decompress_batch_bytes", func(t *testing.T) {
+		cfg := NewDefaultConsumerConfig()
+		cfg.MaxDecompressBatchBytes = overflow
+		require.EqualError(t, cfg.Validate(),
+			fmt.Sprintf("max_decompress_batch_bytes (%d) must be between 1 and %d", overflow, math.MaxInt32))
 	})
 }
 

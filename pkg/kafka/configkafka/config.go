@@ -146,8 +146,8 @@ type ConsumerConfig struct {
 
 	// MaxDecompressBatchBytes defines the maximum number of bytes to allow
 	// for decompressing a single Kafka record batch. This limit is applied
-	// after compression, so it bounds the memory required to decompress highly
-	// compressible batches. The default is 1 GiB (1073741824 bytes).
+	// after decompression, so it bounds the memory required for a decompressed
+	// record batch. The default is 1 GiB (1073741824 bytes).
 	// This setting is independent of MaxFetchSize and MaxPartitionFetchSize,
 	// which limit compressed bytes on the wire.
 	MaxDecompressBatchBytes int `mapstructure:"max_decompress_batch_bytes"`
@@ -214,8 +214,8 @@ func (c ConsumerConfig) Validate() error {
 	if c.MaxPartitionFetchSize < 0 {
 		return fmt.Errorf("max_partition_fetch_size (%d) must be non-negative", c.MaxPartitionFetchSize)
 	}
-	if c.MaxDecompressBatchBytes < 0 {
-		return fmt.Errorf("max_decompress_batch_bytes (%d) must be non-negative", c.MaxDecompressBatchBytes)
+	if c.MaxDecompressBatchBytes < 1 || c.MaxDecompressBatchBytes > math.MaxInt32 {
+		return fmt.Errorf("max_decompress_batch_bytes (%d) must be between 1 and %d", c.MaxDecompressBatchBytes, math.MaxInt32)
 	}
 	if c.MaxFetchSize < c.MinFetchSize {
 		return fmt.Errorf(

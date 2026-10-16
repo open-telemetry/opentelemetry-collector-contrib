@@ -32,6 +32,12 @@ kafka/negative_min_fetch_size:
   max_fetch_size: 1048576
 kafka/negative_max_decompress_batch_bytes:
   max_decompress_batch_bytes: -100
+kafka/zero_max_decompress_batch_bytes:
+  max_decompress_batch_bytes: 0
+kafka/min_valid_max_decompress_batch_bytes:
+  max_decompress_batch_bytes: 1
+kafka/max_valid_max_decompress_batch_bytes:
+  max_decompress_batch_bytes: 2147483647
 kafka/conflicting_group_rebalance_strategies:
   group_rebalance_strategies:
     - my_balancer
