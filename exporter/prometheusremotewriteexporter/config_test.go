@@ -287,6 +287,7 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 		wantEndpoint        string
 		wantTimeout         time.Duration
 		wantExporterTimeout time.Duration
+		checkExporterZero   bool
 		checkDefaults       bool
 	}{
 		{
@@ -300,11 +301,91 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 				},
 			},
 			wantEndpoint: httpEndpoint,
-			// This also ensures that if http.timeout is not set, we fallback to correct defaults
-			wantTimeout: getDefaultHTTPClientConfig().Timeout,
-			// Top-level timeout still configures the exporter helper; http owns the client timeout.
+			// The top-level timeout configures the exporter timeout of each attempt, and http.timeout
+			// follows it when it is not set.
+			wantTimeout:         flatTimeout,
 			wantExporterTimeout: flatTimeout,
 			checkDefaults:       true,
+		},
+		{
+			name:               "gate disabled, http.timeout set without timeout",
+			featureGateEnabled: false,
+			conf: map[string]any{
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+					"timeout":  httpTimeout.String(),
+				},
+			},
+			wantEndpoint: httpEndpoint,
+			wantTimeout:  httpTimeout,
+			// The exporter timeout follows http.timeout when only http.timeout is set.
+			wantExporterTimeout: httpTimeout,
+		},
+		{
+			name:               "gate disabled, timeout and http.timeout both set",
+			featureGateEnabled: false,
+			conf: map[string]any{
+				"timeout": flatTimeout.String(),
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+					"timeout":  httpTimeout.String(),
+				},
+			},
+			wantEndpoint:        httpEndpoint,
+			wantTimeout:         httpTimeout,
+			wantExporterTimeout: flatTimeout,
+		},
+		{
+			name:               "gate disabled, neither timeout set",
+			featureGateEnabled: false,
+			conf: map[string]any{
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+				},
+			},
+			wantEndpoint:        httpEndpoint,
+			wantTimeout:         getDefaultHTTPClientConfig().Timeout,
+			wantExporterTimeout: exporterhelper.NewDefaultTimeoutConfig().Timeout,
+		},
+		{
+			name:               "gate disabled, timeout 0 leaves http.timeout at its default",
+			featureGateEnabled: false,
+			conf: map[string]any{
+				"timeout": "0s",
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+				},
+			},
+			wantEndpoint:        httpEndpoint,
+			wantTimeout:         getDefaultHTTPClientConfig().Timeout,
+			wantExporterTimeout: 0,
+			checkExporterZero:   true,
+		},
+		{
+			name:               "gate disabled, http.timeout 0 leaves timeout at its default",
+			featureGateEnabled: false,
+			conf: map[string]any{
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+					"timeout":  "0s",
+				},
+			},
+			wantEndpoint:        httpEndpoint,
+			wantTimeout:         0,
+			wantExporterTimeout: exporterhelper.NewDefaultTimeoutConfig().Timeout,
+		},
+		{
+			name:               "gate enabled, timeout is not a flat HTTP setting",
+			featureGateEnabled: true,
+			conf: map[string]any{
+				"timeout": flatTimeout.String(),
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+				},
+			},
+			wantEndpoint:        httpEndpoint,
+			wantTimeout:         flatTimeout,
+			wantExporterTimeout: flatTimeout,
 		},
 		{
 			name:               "gate disabled, http block unset keeps flat",
@@ -356,7 +437,7 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.wantEndpoint, cfg.HTTP.Endpoint)
 			require.Equal(t, tc.wantTimeout, cfg.HTTP.Timeout)
-			if tc.wantExporterTimeout != 0 {
+			if tc.wantExporterTimeout != 0 || tc.checkExporterZero {
 				require.Equal(t, tc.wantExporterTimeout, cfg.TimeoutSettings.Timeout)
 			}
 			if tc.checkDefaults {

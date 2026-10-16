@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -530,4 +531,37 @@ func TestWAL_IdleFlush(t *testing.T) {
 	assert.EventuallyWithT(t, func(t *assert.CollectT) {
 		assert.GreaterOrEqual(t, requestsReceived.Load(), int64(1))
 	}, 5*time.Second, 10*time.Millisecond, "buffered WAL entry was not flushed while idle")
+}
+
+// TestWAL_NoFlushAfterExportError verifies that, when the export of the buffered entries fails,
+// the entries are not exported a second time by the flush that runs when the read loop returns.
+// The entries are not truncated from the WAL, so they are read again when the loop restarts.
+func TestWAL_NoFlushAfterExportError(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir(), BufferSize: 1, TruncateFrequency: time.Second}
+	set := exportertest.NewNopSettings(metadata.Type)
+	errExport := errors.New("export failed")
+	var exports atomic.Int64
+	pwal, err := newWAL(config, set, func(context.Context, []*prompb.WriteRequest) error {
+		exports.Add(1)
+		return errExport
+	})
+	require.NoError(t, err)
+	require.NoError(t, pwal.retrieveWALIndices())
+	t.Cleanup(func() { assert.NoError(t, pwal.stop()) })
+
+	require.NoError(t, pwal.persistToWAL(t.Context(), []*prompb.WriteRequest{{
+		Timeseries: []prompb.TimeSeries{{
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+		}},
+	}}))
+
+	err = pwal.continuallyPopWALThenExport(t.Context(), func() {})
+	require.ErrorIs(t, err, errExport)
+	assert.Equal(t, int64(1), exports.Load(), "the failed entries must not be exported again by the final flush")
+	first, err := pwal.wal.FirstIndex()
+	require.NoError(t, err)
+	last, err := pwal.wal.LastIndex()
+	require.NoError(t, err)
+	assert.Equal(t, first, last, "the failed entries must stay in the WAL")
 }
