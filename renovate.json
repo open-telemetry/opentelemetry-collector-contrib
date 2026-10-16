@@ -44,6 +44,13 @@
   ],
   "packageRules": [
     {
+      "description": "Ensure source compatibility with Go version used by this project",
+      "matchManagers": [
+        "gomod"
+      ],
+      "constraintsFiltering": "strict"
+    },
+    {
       "matchManagers": [
         "gomod"
       ],
@@ -290,5 +297,9 @@
     "github.com/DataDog/datadog-api-client-go"
   ],
   "prConcurrentLimit": 200,
-  "prHourlyLimit": 5
+  "prHourlyLimit": 5,
+  "postUpdateOptions": [
+    "gomodTidyAll",
+    "gomodUpdateImportPaths"
+  ]
 }

@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -26,9 +27,15 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
+
+	queueSettings := exporterhelper.NewDefaultQueueConfig()
+	batchCfg := *queueSettings.Batch.GetOrInsertDefault()
+	queueSettings.Batch = configoptional.Default(batchCfg)
+
 	return &Config{
-		ClientConfig: clientConfig,
-		APIURL:       "https://api.honeycomb.io",
+		ClientConfig:  clientConfig,
+		APIURL:        "https://api.honeycomb.io",
+		QueueSettings: configoptional.Default(queueSettings),
 	}
 }
 

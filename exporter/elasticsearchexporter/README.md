@@ -2,8 +2,8 @@
 # Elasticsearch Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: metrics, profiles   |
-|               | [beta]: traces, logs   |
+| Stability     | [development]: profiles   |
+|               | [beta]: traces, logs, metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Felasticsearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Felasticsearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Felasticsearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Felasticsearch) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_elasticsearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_elasticsearch&displayType=list) |
@@ -355,10 +355,14 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (DEPRECATED, use `sending_queue::num_consumers` instead): This config is deprecated and will be used to configure `sending_queue::num_consumers` if `sending_queue::num_consumers` is not explicitly defined. Number of workers publishing bulk requests concurrently.
-- `flush` (DEPRECATED, use `sending_queue` instead): This config is deprecated and will be used to configure different options for `sending_queue` if `sending_queue` options are not explicitly defined. Event bulk indexer buffer flush settings
-  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if `sending_queue::batch::max_size` is not explicitly defined. See the `sending_queue::batch::max_size` for more details.
-  - `interval` (DEPRECATED, use `sending_queue::batch::flush_timeout` instead): This config is deprecated and will be used to configure `sending_queue::batch::flush_timeout` if `sending_queue::batch::flush_timeout` is not explicitly defined. See the `sending_queue::batch::flush_timeout` for more details.
+The deprecated `num_workers` and `flush` settings have been removed. Existing configurations should use these replacements:
+
+| Removed setting | Replacement |
+| --- | --- |
+| `num_workers` | `sending_queue::num_consumers` |
+| `flush::interval` | `sending_queue::batch::flush_timeout` |
+| `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
+
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
@@ -404,6 +408,24 @@ Settings related to node discovery are:
 
 Node discovery can be disabled by setting `discover.interval` to 0.
 
+### Elasticsearch version detection
+
+On startup, the Elasticsearch Exporter queries each configured endpoint for its
+version and build flavor and logs the result. This information is used to
+automatically enable features supported by the connected Elasticsearch version,
+so no per-feature configuration is required.
+
+- `version_detection`:
+  - `enabled` (default `true`): If enabled, the exporter queries Elasticsearch
+    at startup to detect its version and build flavor. When disabled, the
+    exporter does not query Elasticsearch and assumes only the baseline
+    capability set is available.
+
+The query is best-effort: if it fails (for example, when Elasticsearch is
+temporarily unreachable), startup is not blocked. Version detection cannot be
+performed when the endpoint is resolved at request time (for example, when a
+routing middleware rewrites the destination per request).
+
 ### Telemetry settings
 
 The Elasticsearch Exporter's own telemetry settings for testing and debugging purposes.
@@ -442,6 +464,25 @@ The metric types supported are:
 - Exponential histogram (Delta temporality only)
 - Summary
 
+### Histogram storage
+
+In OTel mapping mode, OTLP exponential histograms are stored in Elasticsearch's
+native [`exponential_histogram`](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/exponential-histogram)
+field when connected to Elasticsearch 9.3.0 or later. This preserves the
+exponential bucket layout (scale, zero bucket, positive/negative buckets, sum,
+min, max) losslessly.
+
+This is enabled automatically via [version detection](#elasticsearch-version-detection): when
+version detection is disabled (`version_detection.enabled: false`) or the
+connected Elasticsearch is older than 9.3.0, exponential histograms fall back to
+a T-Digest `histogram` field. Explicit-bucket histograms are always stored as a
+`histogram` field.
+
+Per-data-point mapping hints still apply and take precedence: `histogram:raw`
+stores a `histogram` field using raw bucket bounds, and `aggregate_metric_double`
+stores a `{sum, value_count}` summary. The native `exponential_histogram` field
+is only used in OTel mapping mode.
+
 ### Metrics dynamic templates
 
 For metrics, the exporter sends **per-document `dynamic_templates`** with each bulk index action so that Elasticsearch can apply the correct mapping to metric fields. It uses the [bulk API `dynamic_templates` parameter](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk):
@@ -452,7 +493,7 @@ The index template must define dynamic templates whose names match the values se
 
 | Mapping mode | Field path in document | Template names sent | Notes |
 | ------------ | ---------------------- | -------------------- | ----- |
-| **OTel**     | `metrics.<metric name>` | `histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. |
+| **OTel**     | `metrics.<metric name>` | `histogram`, `exponential_histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. `exponential_histogram` requires Elasticsearch 9.3.0 or later. |
 | **ECS**      | `metric.<metric name>`  | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
 
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
