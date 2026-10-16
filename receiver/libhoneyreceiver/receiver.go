@@ -32,8 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
 
-const maxDecodedBodySize = 20 * 1024 * 1024
-
 type libhoneyReceiver struct {
 	cfg        *Config
 	server     *http.Server
@@ -188,28 +186,38 @@ func writeLibhoneyError(resp http.ResponseWriter, enc codec.Encoder, errorMsg st
 
 // decompressBody handles decompression based on Content-Encoding header
 // Returns an io.ReadCloser that must be closed by the caller
-func decompressBody(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
-	switch contentEncoding {
-	case "", "identity":
-		// No compression
-		return body, nil
-	case "gzip":
-		gzipReader, err := gzip.NewReader(body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
-		}
-		return gzipReader, nil
-	case "deflate":
-		return flate.NewReader(body), nil
-	case "zstd":
-		zstdReader, err := zstd.NewReader(body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create zstd reader: %w", err)
-		}
-		return zstdReader.IOReadCloser(), nil
-	default:
-		return nil, fmt.Errorf("unsupported content encoding: %s", contentEncoding)
-	}
+// Added maxSize int64 to the arguments
+func decompressBody(body io.ReadCloser, contentEncoding string, maxSize int64) (io.ReadCloser, error) {
+    switch contentEncoding {
+    case "", "identity":
+        // No compression
+        return body, nil
+    case "gzip":
+        gzipReader, err := gzip.NewReader(body)
+        if err != nil {
+            return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+        }
+        return gzipReader, nil
+    case "deflate":
+        return flate.NewReader(body), nil
+    case "zstd":
+        // Pass the maxSize to WithDecoderMaxMemory
+        zstdReader, err := zstd.NewReader(body, zstd.WithDecoderMaxMemory(uint64(maxSize)))
+        if err != nil {
+            return nil, fmt.Errorf("failed to create zstd reader: %w", err)
+        }
+        
+        rc := zstdReader.IOReadCloser()
+        
+        // Wrap the output in a LimitReader, but keep the Close() method intact
+        return struct {
+            io.Reader
+            io.Closer
+        }{io.LimitReader(rc, maxSize), rc}, nil
+        
+    default:
+        return nil, fmt.Errorf("unsupported content encoding: %s", contentEncoding)
+    }
 }
 
 func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Request) {
@@ -264,9 +272,14 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		writeLibhoneyError(resp, enc, "failed to read request body")
 		return
 	}
+	
+	maxDecodedBodySize := int64(r.cfg.HTTP.Get().ServerConfig.MaxRequestBodySize)
+	if maxDecodedBodySize == 0 {
+		maxDecodedBodySize = 20 * 1024 * 1024
+	}
 
-	// Now decompress from the complete buffered data
-	bodyReader, err := decompressBody(io.NopCloser(bytes.NewReader(compressedBody)), contentEncoding)
+	// Now decompress from the complete buffered data.
+	bodyReader, err := decompressBody(io.NopCloser(bytes.NewReader(compressedBody)), contentEncoding, maxDecodedBodySize)
 	if err != nil {
 		r.settings.Logger.Error("Failed to decompress request body",
 			zap.Error(err),
@@ -300,10 +313,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			}
 		}()
 
-		// Wrap the reader
 		limitedReader := io.LimitReader(bodyReader, maxDecodedBodySize+1)
-
-		// Pass the limitedReader to io.ReadAll!
 		body, err = io.ReadAll(limitedReader)
 
 		if err == nil && int64(len(body)) > maxDecodedBodySize {

@@ -1345,68 +1345,72 @@ func makeZstd(t *testing.T, size int64) []byte {
 // TestReceiverDecompressionLimits ensures that decompressed payloads exceeding
 // the maxDecodedBodySize limit are rejected to prevent OOM vulnerabilities.
 func TestReceiverDecompressionLimits(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	getOrInsertDefault(t, &cfg.HTTP)
+    cfg := createDefaultConfig().(*Config)
+    getOrInsertDefault(t, &cfg.HTTP)
+    
+    // EXPLICITLY set the config limit to 1MB for the test
+    cfg.HTTP.Get().ServerConfig.MaxRequestBodySize = 1024 * 1024
 
-	set := receivertest.NewNopSettings(metadata.Type)
-	r, err := newLibhoneyReceiver(cfg, &set)
-	require.NoError(t, err)
+    set := receivertest.NewNopSettings(metadata.Type)
+    r, err := newLibhoneyReceiver(cfg, &set)
+    require.NoError(t, err)
 
-	sink := &consumertest.LogsSink{}
-	r.registerLogConsumer(sink)
+    sink := &consumertest.LogsSink{}
+    r.registerLogConsumer(sink)
 
-	limit := int64(maxDecodedBodySize)
+    // Now the limit dynamically picks up your 1MB config!
+    limit := int64(cfg.HTTP.Get().ServerConfig.MaxRequestBodySize)
 
-	tests := []struct {
-		name             string
-		encoding         string
-		payload          []byte
-		expectedStatus   int
-		expectedErrMatch string
-	}{
-		{
-			name:             "gzip_exact_limit",
-			encoding:         "gzip",
-			payload:          makeGzip(t, limit),
-			expectedStatus:   http.StatusBadRequest,
-			expectedErrMatch: "failed to decode events",
-		},
-		{
-			name:             "gzip_one_byte_over",
-			encoding:         "gzip",
-			payload:          makeGzip(t, limit+1),
-			expectedStatus:   http.StatusBadRequest,
-			expectedErrMatch: "exceeds limit",
-		},
-		{
-			name:             "deflate_exact_limit",
-			encoding:         "deflate",
-			payload:          makeDeflate(t, limit),
-			expectedStatus:   http.StatusBadRequest,
-			expectedErrMatch: "failed to decode events",
-		},
-		{
-			name:             "deflate_one_byte_over",
-			encoding:         "deflate",
-			payload:          makeDeflate(t, limit+1),
-			expectedStatus:   http.StatusBadRequest,
-			expectedErrMatch: "exceeds limit",
-		},
-		{
-			name:             "zstd_exact_limit",
-			encoding:         "zstd",
-			payload:          makeZstd(t, limit),
-			expectedStatus:   http.StatusBadRequest,
-			expectedErrMatch: "failed to decode events",
-		},
-		{
-			name:             "zstd_one_byte_over",
-			encoding:         "zstd",
-			payload:          makeZstd(t, limit+1),
-			expectedStatus:   http.StatusBadRequest,
-			expectedErrMatch: "exceeds limit",
-		},
-	}
+    tests := []struct {
+        name             string
+        encoding         string
+        payload          []byte
+        expectedStatus   int
+        expectedErrMatch string
+    }{
+        {
+            name:             "gzip_exact_limit",
+            encoding:         "gzip",
+            payload:          makeGzip(t, limit),
+            expectedStatus:   http.StatusBadRequest,
+            expectedErrMatch: "failed to decode events", 
+        },
+        {
+            name:             "gzip_one_byte_over",
+            encoding:         "gzip",
+            payload:          makeGzip(t, limit+1),
+            expectedStatus:   http.StatusBadRequest,
+            expectedErrMatch: "exceeds limit", 
+        },
+        {
+            name:             "deflate_exact_limit",
+            encoding:         "deflate",
+            payload:          makeDeflate(t, limit),
+            expectedStatus:   http.StatusBadRequest,
+            expectedErrMatch: "failed to decode events", 
+        },
+        {
+            name:             "deflate_one_byte_over",
+            encoding:         "deflate",
+            payload:          makeDeflate(t, limit+1),
+            expectedStatus:   http.StatusBadRequest,
+            expectedErrMatch: "exceeds limit", 
+        },
+        {
+            name:             "zstd_exact_limit",
+            encoding:         "zstd",
+            payload:          makeZstd(t, limit),
+            expectedStatus:   http.StatusBadRequest,
+            expectedErrMatch: "window size exceeded", 
+        },
+        {
+            name:             "zstd_one_byte_over",
+            encoding:         "zstd",
+            payload:          makeZstd(t, limit+1),
+            expectedStatus:   http.StatusBadRequest,
+            expectedErrMatch: "window size exceeded", 
+        },
+    }
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
