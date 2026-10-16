@@ -65,6 +65,7 @@ components:
         - asapclient
         - aws_iam_db_auth
         - aws_logs_encoding
+        - aws_secrets_manager
         - awscloudwatchmetricstreams_encoding
         - awsproxy
         - azure_auth
