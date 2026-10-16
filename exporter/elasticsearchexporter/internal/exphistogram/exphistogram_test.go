@@ -314,3 +314,102 @@ func TestToNativeExponentialHistogram(t *testing.T) {
 		})
 	}
 }
+
+func TestExplicitToNativeExponentialHistogram(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		explicitBounds []float64
+		bucketCounts   []uint64
+		temporality    pmetric.AggregationTemporality
+		min            float64
+		max            float64
+		sum            float64
+
+		expected map[string]any
+	}{
+		{
+			name:           "empty",
+			explicitBounds: nil,
+			bucketCounts:   nil,
+			expected:       map[string]any{"scale": MaxScale},
+		},
+		{
+			name:           "converted (delta)",
+			explicitBounds: []float64{1, 2, 3},
+			bucketCounts:   []uint64{1, 2, 3, 4},
+			min:            0.5, max: 5, sum: 22,
+			temporality: pmetric.AggregationTemporalityDelta,
+			expected: map[string]any{
+				"scale": MaxScale,
+				"min":   0.5, "max": 5.0, "sum": 22.0,
+				"positive": map[string]any{
+					"indices": []any{int64(-274877906945), int64(160793267838), int64(363368827853), int64(435671174782), int64(638246734797)},
+					"counts":  []any{1, 2, 3, 3, 1},
+				},
+			},
+		},
+		{
+			name:           "zeros dropped (delta)",
+			explicitBounds: []float64{1, 2, 3},
+			bucketCounts:   []uint64{0, 2, 0, 4},
+			min:            1.2, max: 6, sum: 28,
+			temporality: pmetric.AggregationTemporalityDelta,
+			expected: map[string]any{
+				"scale": MaxScale,
+				"min":   1.2, "max": 6.0, "sum": 28.0,
+				"positive": map[string]any{
+					"indices": []any{int64(72302346929), int64(160793267838), int64(435671174782), int64(710549081726)},
+					"counts":  []any{1, 1, 3, 1},
+				},
+			},
+		},
+		{
+			name:           "negative and positive (delta)",
+			explicitBounds: []float64{-4, -2, 0, 2},
+			bucketCounts:   []uint64{1, 2, 3, 4, 5},
+			min:            -6, max: 5, sum: 5,
+			temporality: pmetric.AggregationTemporalityDelta,
+			expected: map[string]any{
+				"scale": MaxScale,
+				"min":   -6.0, "max": 5.0, "sum": 5.0,
+				"negative": map[string]any{
+					"indices": []any{int64(-1), int64(435671174782), int64(710549081726)},
+					"counts":  []any{3, 2, 1},
+				},
+				"positive": map[string]any{
+					"indices": []any{int64(-1), int64(274877906943), int64(638246734797)},
+					"counts":  []any{4, 4, 1},
+				},
+			},
+		},
+		{
+			name:           "cumulative (no injection)",
+			explicitBounds: []float64{1, 2, 3},
+			bucketCounts:   []uint64{1, 2, 3, 4},
+			min:            0.5, max: 5, sum: 22,
+			temporality: pmetric.AggregationTemporalityCumulative,
+			expected: map[string]any{
+				"scale": MaxScale,
+				"min":   0.5, "max": 5.0, "sum": 22.0,
+				"positive": map[string]any{
+					"indices": []any{int64(-274877906945), int64(160793267838), int64(363368827853), int64(435671174782)},
+					"counts":  []any{1, 2, 3, 4},
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dp := pmetric.NewHistogramDataPoint()
+			dp.ExplicitBounds().FromRaw(tc.explicitBounds)
+			dp.BucketCounts().FromRaw(tc.bucketCounts)
+			dp.SetMin(tc.min)
+			dp.SetMax(tc.max)
+			dp.SetSum(tc.sum)
+
+			actual := ExplicitToNativeExponentialHistogram(dp, tc.temporality)
+			expected := pcommon.NewValueMap()
+			require.NoError(t, expected.FromRaw(tc.expected))
+			assert.True(t, expected.Equal(actual), "expected %v, got %v", tc.expected, actual.AsRaw())
+		})
+	}
+}
