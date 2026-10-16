@@ -1,43 +1,10 @@
 # Experimental OTTL Functions
 
-The functions in this package are experimental. They are not covered by OTTL's stability guarantees, so their
+The converters in this package are experimental. They are not covered by OTTL's stability guarantees, so their
 names, arguments, and behavior may change, and they may be removed, in any release. They are not part of the
 [standard functions](../../ottlfuncs/README.md) returned by `StandardFuncs` and `StandardConverters`. Components make
-them available by merging `ExperimentalConverters` and `ExperimentalEditors` into their function set, for example with
-`WithExperimentalConverters` and `WithExperimentalEditors`.
-
-## Editors
-
-Available Editors:
-
-- [sanitize](#sanitize)
-
-### sanitize
-
-> [!IMPORTANT]
-> This function is experimental and may change in future releases. It requires the [`pkg.ottl.functions.enableExperimental`](../../documentation.md#feature-gates) feature gate to be enabled.
-
-`sanitize(target, format, Optional[replacement])`
-
-The `sanitize` function replaces every sequence in the target that is invalid in the given `format` with a replacement string, so the target only contains valid data for that format afterwards.
-
-`target` is a path expression to a string, a `pcommon.Value`, a `pcommon.Map` or a `pcommon.Slice` field.
-
-`format` is the format to sanitize for. The only supported value today is `utf-8` (also accepted as `utf8`, case-insensitive). With `utf-8`, every run of invalid UTF-8 bytes is replaced. Other values return an error; when `format` is a literal the error is returned at parse time, otherwise when the statement runs.
-
-`replacement` is an optional string (default: the Unicode replacement character `U+FFFD`, rendered as `�`) that is inserted in place of each invalid sequence. An empty `replacement` removes the invalid bytes. The function returns an error at parse time when `replacement` itself is not valid UTF-8.
-
-When `target` is a map or a slice, all nested string values are sanitized, including the values of nested maps and slices. Map keys that are invalid are moved to the sanitized key. If the sanitized key already exists in the map, its value is overwritten. Non-string values, such as integers, booleans and byte arrays, are left untouched. When `target` is a string that is already valid, nothing is written back.
-
-Examples:
-
-- `sanitize(log.body, "utf-8")`
-- `sanitize(log.attributes, "utf-8")`
-- `sanitize(resource.attributes, "utf-8")`
-- `sanitize(span.name, "utf-8")`
-- `sanitize(log.attributes["message"], "utf-8", "?")`
-- `sanitize(log.attributes, "utf-8", replacement = "")`
-
+them available by merging `ExperimentalConverters` into their function set, for example with
+`WithExperimentalConverters`.
 
 ## Converters
 
@@ -50,6 +17,7 @@ Available Converters:
 - [MapEach](#mapeach)
 - [MapKeys](#mapkeys)
 - [Reduce](#reduce)
+- [Sanitize](#sanitize)
 - [When](#when)
 
 ### All
@@ -303,6 +271,28 @@ Build a semicolon-separated key=value string:
 Store the result:
 
 - `set(log.attributes["total"], Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v)))`
+
+### Sanitize
+
+> [!IMPORTANT]
+> This function is experimental and may change in future releases. It requires the [`pkg.ottl.functions.enableExperimental`](../../documentation.md#feature-gates) feature gate to be enabled.
+
+`Sanitize(target, format, Optional[replacement])`
+
+The `Sanitize` converter returns `target` with every sequence that is invalid in the given `format` replaced by `replacement`, so the result is valid for that format. When `target` is already valid it is returned unchanged.
+
+`target` is a string. `format` is the format to sanitize for. The only supported value today is `utf-8`, where every run of invalid UTF-8 bytes is replaced. Other values return an error, at parse time when `format` is a literal and when the statement runs otherwise.
+
+`replacement` is an optional string (default: the Unicode replacement character `U+FFFD`, rendered as `�`) that is inserted in place of each invalid sequence. An empty `replacement` removes the invalid bytes. The replacement must itself be valid in `format`; with a literal `format` this is checked at parse time, with a dynamic one when the statement runs.
+
+To sanitize every string in a list or map, combine it with the lambda converters such as `MapEach`.
+
+Examples:
+
+- `set(log.body, Sanitize(log.body, "utf-8"))`
+- `set(span.name, Sanitize(span.name, "utf-8", "?"))`
+- `set(log.attributes["message"], Sanitize(log.attributes["message"], log.attributes["encoding"]))`
+- `set(log.attributes["tags"], MapEach(log.attributes["tags"], (_, v) => Sanitize(v, "utf-8")))`
 
 ### When
 

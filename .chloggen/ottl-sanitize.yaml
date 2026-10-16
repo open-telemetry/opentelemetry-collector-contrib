@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl/xottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the experimental `sanitize` editor to replace byte sequences that are invalid in a given format, currently `utf-8`, in strings, maps and slices with a replacement string
+note: Add the experimental `Sanitize` converter to replace byte sequences that are invalid in a given format, currently `utf-8`, with a replacement string
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51717]
@@ -16,8 +16,8 @@ issues: [51717]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The replacement defaults to the Unicode replacement character `U+FFFD`. Nested map and slice values are sanitized,
-  and map keys with invalid UTF-8 are moved to the sanitized key.
+  The replacement defaults to the Unicode replacement character `U+FFFD`. Combine it with the lambda converters,
+  for example `MapEach`, to sanitize every string in a list or map.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

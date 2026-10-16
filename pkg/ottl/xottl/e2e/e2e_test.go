@@ -220,68 +220,48 @@ func Test_e2e_converters(t *testing.T) {
 	}
 }
 
-func Test_e2e_editors(t *testing.T) {
+func Test_e2e_sanitize(t *testing.T) {
 	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 
 	tests := []struct {
 		statement string
 		want      func(tCtx *ottllog.TransformContext)
 	}{
 		{
-			statement: `sanitize(body, "utf-8")`,
+			statement: `set(body, Sanitize(body, "utf-8"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
 			},
 		},
 		{
-			statement: `sanitize(body, "utf-8", "?")`,
+			statement: `set(body, Sanitize(body, "utf-8", "?"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Body().SetStr("operation?A")
 			},
 		},
 		{
-			statement: `sanitize(attributes["invalid"], "utf-8")`,
+			statement: `set(attributes["invalid"], Sanitize(attributes["invalid"], "utf-8"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("invalid", "bad\uFFFDvalue")
 			},
 		},
 		{
-			statement: `sanitize(attributes, "utf-8")`,
+			statement: `set(body, Sanitize(body, attributes["format"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
-				attrs := tCtx.GetLogRecord().Attributes()
-				attrs.PutStr("invalid", "bad\uFFFDvalue")
-				attrs.Remove("bad\xffkey")
-				attrs.PutStr("bad\uFFFDkey", "value")
-				nested, _ := attrs.Get("nested")
-				nested.Map().PutStr("inner", "nested\uFFFD")
+				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
 			},
 		},
 		{
-			statement: `sanitize(resource.attributes, "utf-8")`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetResource().Attributes().PutStr("resource.invalid", "res\uFFFD")
-			},
-		},
-		{
-			statement: `sanitize(instrumentation_scope.name, "utf-8")`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetInstrumentationScope().SetName("scope\uFFFD")
-			},
-		},
-		{
-			statement: `sanitize(attributes["http.method"], "utf-8")`,
+			statement: `set(attributes["http.method"], Sanitize(attributes["http.method"], "utf-8"))`,
 			want:      func(*ottllog.TransformContext) {},
 		},
 		{
-			statement: `sanitize(body, "UTF8")`,
+			statement: `set(attributes["bad_list"], MapEach(attributes["bad_list"], (_, v) => Sanitize(v, "utf-8")))`,
 			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
-			},
-		},
-		{
-			statement: `sanitize(body, attributes["format"])`,
-			want: func(tCtx *ottllog.TransformContext) {
-				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
+				list := tCtx.GetLogRecord().Attributes().PutEmptySlice("bad_list")
+				list.AppendEmpty().SetStr("one\uFFFD")
+				list.AppendEmpty().SetStr("two")
 			},
 		},
 	}
@@ -291,10 +271,9 @@ func Test_e2e_editors(t *testing.T) {
 		tCtx.GetLogRecord().Body().SetStr("operation\xffA")
 		tCtx.GetLogRecord().Attributes().PutStr("invalid", "bad\xffvalue")
 		tCtx.GetLogRecord().Attributes().PutStr("format", "utf-8")
-		tCtx.GetLogRecord().Attributes().PutStr("bad\xffkey", "value")
-		tCtx.GetLogRecord().Attributes().PutEmptyMap("nested").PutStr("inner", "nested\xff")
-		tCtx.GetResource().Attributes().PutStr("resource.invalid", "res\xff")
-		tCtx.GetInstrumentationScope().SetName("scope\xff")
+		list := tCtx.GetLogRecord().Attributes().PutEmptySlice("bad_list")
+		list.AppendEmpty().SetStr("one\xff")
+		list.AppendEmpty().SetStr("two")
 		return tCtx
 	}
 
@@ -322,8 +301,8 @@ func Test_e2e_editors(t *testing.T) {
 func Test_e2e_experimental_gate_disabled(t *testing.T) {
 	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, false))
 
-	_, err := parseStatementWithAndWithoutPathContext(`sanitize(body, "utf-8")`)
-	require.ErrorContains(t, err, "function \"sanitize\" is experimental and requires the `pkg.ottl.functions.enableExperimental` feature gate to be enabled")
+	_, err := parseStatementWithAndWithoutPathContext(`set(body, Sanitize(body, "utf-8"))`)
+	require.ErrorContains(t, err, "function \"Sanitize\" is experimental and requires the `pkg.ottl.functions.enableExperimental` feature gate to be enabled")
 }
 
 func Test_e2e_lambda_gate_disabled(t *testing.T) {
@@ -335,7 +314,7 @@ func Test_e2e_lambda_gate_disabled(t *testing.T) {
 
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[*ottllog.TransformContext], error) {
 	settings := componenttest.NewNopTelemetrySettings()
-	functions := xottlfuncs.WithExperimentalEditors(xottlfuncs.WithExperimentalConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]()))
+	functions := xottlfuncs.WithExperimentalConverters(ottlfuncs.StandardFuncs[*ottllog.TransformContext]())
 	parserWithoutPathCtx, err := ottllog.NewParser(functions, settings)
 	if err != nil {
 		return nil, err
