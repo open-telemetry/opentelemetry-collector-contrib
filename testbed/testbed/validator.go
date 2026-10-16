@@ -456,11 +456,37 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan, recdSpan ptrace.Span
 	}
 }
 
+// semconvEquivalentKeys maps a semantic-convention attribute key to the
+// equivalent key from an in-progress semconv migration. When a translator in
+// the pipeline is on a different migration stage than the golden dataset, the
+// same value is emitted under a different-but-equivalent key (for example,
+// a translator still on the alpha HTTP gates emits the deprecated
+// http.status_code where the golden data carries http.response.status_code).
+// The correctness check treats these as the same attribute. The mapping is
+// bidirectional so it holds regardless of which side is ahead.
+var semconvEquivalentKeys = map[string]string{
+	"http.status_code":          "http.response.status_code",
+	"http.response.status_code": "http.status_code",
+}
+
+// getRecdAttr looks up a sent attribute key in the received attributes,
+// falling back to its semconv-migration equivalent when the exact key is
+// absent.
+func getRecdAttr(recdAttrs pcommon.Map, sentKey string) (pcommon.Value, bool) {
+	if recdVal, ok := recdAttrs.Get(sentKey); ok {
+		return recdVal, true
+	}
+	if altKey, ok := semconvEquivalentKeys[sentKey]; ok {
+		return recdAttrs.Get(altKey)
+	}
+	return pcommon.Value{}, false
+}
+
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	sentAttrs, recdAttrs pcommon.Map, fmtStr string,
 ) {
 	for sentKey, sentVal := range sentAttrs.All() {
-		recdVal, ok := recdAttrs.Get(sentKey)
+		recdVal, ok := getRecdAttr(recdAttrs, sentKey)
 		if !ok {
 			af := &TraceAssertionFailure{
 				typeName:      "Span",
