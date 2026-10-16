@@ -100,6 +100,12 @@ processors:
     # decision-delay phase without waiting for trace_timeout. Defaults to
     # IsRootSpan() when unset.
     # root_span_condition: 'IsRootSpan() or span.attributes["otelcol.adaptive_tail_sampling.root_span"] == true'
+
+    # Optional. Divides every adaptive_throughput rule's goal_throughput by the
+    # fleet's live member count, so the goal is a fleet-wide budget rather than a
+    # per-instance one. Names the extension that reports that count. See
+    # Fleet-wide throughput budget below.
+    # fleet_tracker: redis_fleet_tracker
 ```
 
 ### Root-span detection
@@ -354,7 +360,7 @@ sampler:
 ```
 
 > [!IMPORTANT]
-> `goal_throughput` is enforced **per collector instance**. Each instance targets the goal against the traffic it sees, so a fleet of N instances emits up to N times the configured throughput. Divide the backend budget by the instance count when sizing this value. See [Deployment considerations](#deployment-considerations).
+> `goal_throughput` is enforced **per collector instance** by default. Each instance targets the goal against the traffic it sees, so a fleet of N instances emits up to N times the configured throughput. Divide the backend budget by the instance count when sizing this value, or set `fleet_tracker` to have the processor do the division live from the fleet's actual member count. See [Fleet-wide throughput budget](#fleet-wide-throughput-budget-fleet_tracker) under [Deployment considerations](#deployment-considerations).
 
 With `algorithm: windowed`, rate recalculation (`update_frequency`) is
 decoupled from the historical window used for the calculation
@@ -479,7 +485,7 @@ processors:
           lookback_frequency: 30s
 ```
 
-The goal is enforced per collector instance: a fleet of N instances emits up to N times the configured throughput, so divide the backend budget by the instance count. Keying by `service.name` means each service's share adapts to its share of total traffic rather than being fixed.
+The goal is enforced per collector instance by default: a fleet of N instances emits up to N times the configured throughput, so divide the backend budget by the instance count, or set `fleet_tracker` to have the processor divide it live (see [Fleet-wide throughput budget](#fleet-wide-throughput-budget-fleet_tracker) below). Keying by `service.name` means each service's share adapts to its share of total traffic rather than being fixed.
 
 ## Decision cache
 
@@ -549,7 +555,43 @@ SDKs → Collectors (loadbalancing exporter, hash by traceID)
            → Backend
 ```
 
-Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances. For `adaptive_throughput` (with either algorithm) this means `goal_throughput` is a **per-instance** target: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it. The percentage-based samplers (`adaptive_percentage`, `probabilistic`) are unaffected, since a target percentage composes across instances. Automatic cluster-size awareness for the throughput goal is not currently implemented.
+Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances. For `adaptive_throughput` (with either algorithm) this means `goal_throughput` is a **per-instance** target by default: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it, or set `fleet_tracker` (below) to have the processor do that division live. The percentage-based samplers (`adaptive_percentage`, `probabilistic`) are unaffected, since a target percentage composes across instances.
+
+### Fleet-wide throughput budget (`fleet_tracker`)
+
+`fleet_tracker` names an extension that satisfies a structural contract, a single method `SubscribeMemberCount(callback func(count int)) (cancel func(), err error)`. The processor resolves it by method shape, so an extension does not import this package and there is no exported interface to depend on. The extension calls back with the fleet's live member count once on subscribe and again on every change; the processor divides each `adaptive_throughput` rule's configured `goal_throughput` by the latest count, so `goal_throughput` reads as a fleet-wide budget rather than a per-instance one:
+
+```yaml
+processors:
+  adaptive_tail_sampling:
+    fleet_tracker: redis_fleet_tracker
+    rules:
+      - name: throughput-cap
+        sampler:
+          type: adaptive_throughput
+          goal_throughput: 1000   # fleet-wide budget; divided by the live member count
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
+```
+
+Behaviour:
+
+- The effective per-instance goal is `max(goal_throughput / N, 1)`, where N is the last-reported member count.
+- N starts at 1 (equivalent to the per-instance default) until the first callback arrives.
+- A non-positive reported count is ignored and the last good count is kept; each occurrence increments `processor_adaptive_tail_sampling_fleet_tracker_errors`.
+- The underlying sampler is never reconstructed when the goal changes, so its learned per-key state carries over.
+- `adaptive_percentage` and `probabilistic` samplers are unaffected; a target percentage already composes across instances without division.
+- One collector process counts as one fleet member regardless of how many pipelines or rules it runs. However, each pipeline running `adaptive_tail_sampling` has its own independent samplers, each targeting `goal_throughput / N`, so a collector with the processor configured in two pipelines emits a multiple of the configured budget. Run the fleet budget in one pipeline only.
+- Scoping the fleet (e.g. keeping dev, staging, and prod counted separately on a shared backend) is the extension's concern, not the processor's.
+- Division is sound under the standard `loadbalancing`-by-`traceID` deployment pattern: each instance sees an even share of trace-ID-hashed load, so the same fixed fraction of the fleet-wide budget is the right per-instance target for every instance.
+
+Caveats:
+
+- During a rolling deploy, instances briefly disagree on N as they join or leave, so the fleet under-samples until the member count converges across the fleet.
+- The division is integer, so a goal that does not divide evenly under-delivers slightly (e.g. `goal_throughput: 10` across 4 instances yields an effective goal of `2`, not `2.5`, for a fleet total of `8`); see [honeycombio/dynsampler-go#112](https://github.com/honeycombio/dynsampler-go/issues/112).
+- When N is larger than `goal_throughput`, the per-instance goal floors at 1 span/s (it is never divided below 1), so the fleet emits up to N, more than the configured budget (e.g. `goal_throughput: 10` with `N: 40` emits up to 40 total).
+
+No `fleet_tracker` extension ships in this repository yet. The method signature above is the whole contract an implementation has to satisfy (a `redis_fleet_tracker` extension that heartbeats fleet membership into Redis is maintained separately).
 
 ## Known limitations
 
@@ -686,6 +728,8 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_adaptive_tail_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer under pressure. Each still receives a decision per the eviction policy. |
 | `otelcol_processor_adaptive_tail_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 | `otelcol_processor_adaptive_tail_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |
+| `otelcol_processor_adaptive_tail_sampling_fleet_member_count` | Gauge |  | Current fleet member count reported by the `fleet_tracker` extension. Not emitted when `fleet_tracker` is unset. The effective per-instance goal is derivable as `max(goal_throughput / member count, 1)`. |
+| `otelcol_processor_adaptive_tail_sampling_fleet_tracker_errors` | Counter |  | Non-positive member counts received from the fleet tracker; the last good count is kept. |
 
 The `rule` label carries the matched rule's name from the config. Values
 prefixed with `_` are processor-owned sentinels rather than user rules:

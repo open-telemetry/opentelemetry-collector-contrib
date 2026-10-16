@@ -11,5 +11,13 @@ status:
     active: [robbkidd]
     emeritus: [TylerHelmuth, fchikwekwe, codeboten, VinozzZ]
 
+sending_queue:
+  support: has_overrides
+  rationale: "Sending queue is disabled by default."
+  overrides:
+    enabled: false
+    batch:
+      enabled: false
+
 tests:
   expect_consumer_error: true
