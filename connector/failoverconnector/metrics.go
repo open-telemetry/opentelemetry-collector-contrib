@@ -17,8 +17,8 @@ type metricsRouter struct {
 	*baseFailoverRouter[consumer.Metrics]
 }
 
-func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config) (*metricsRouter, error) {
-	failover, err := newBaseFailoverRouter(provider, cfg)
+func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config, logger *zap.Logger) (*metricsRouter, error) {
+	failover, err := newBaseFailoverRouter(provider, cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (f *metricsRouter) consumeByHealthyPipeline(ctx context.Context, md pmetric
 
 		if err := tc.ConsumeMetrics(ctx, md); err != nil {
 			if f.shouldFailoverOnError(err) {
-				f.reportConsumerError(idx)
+				f.reportConsumerError(idx, err)
 				continue
 			}
 			return err
@@ -110,7 +110,7 @@ func newMetricsToMetrics(set connector.Settings, cfg component.Config, metrics c
 		return nil, errors.New("consumer is not of type MetricsRouter")
 	}
 
-	failover, err := newMetricsRouter(mr.Consumer, config)
+	failover, err := newMetricsRouter(mr.Consumer, config, set.Logger)
 	if err != nil {
 		return nil, err
 	}

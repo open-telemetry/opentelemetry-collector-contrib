@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -19,6 +20,15 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+	)
+}
 
 // AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
@@ -172,6 +182,7 @@ type metricRiakNodeOperationCount struct {
 	config        RiakNodeOperationCountMetricConfig // metric config provided by user.
 	capacity      int                                // max observed number of data points added to the metric.
 	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                     // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills riak.node.operation.count metric with initial data.
@@ -184,6 +195,7 @@ func (m *metricRiakNodeOperationCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricRiakNodeOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestAttributeValue string) {
@@ -199,31 +211,31 @@ func (m *metricRiakNodeOperationCount) recordDataPoint(start pcommon.Timestamp, 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -263,6 +275,7 @@ type metricRiakNodeOperationTimeMean struct {
 	config        RiakNodeOperationTimeMeanMetricConfig // metric config provided by user.
 	capacity      int                                   // max observed number of data points added to the metric.
 	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                        // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills riak.node.operation.time.mean metric with initial data.
@@ -273,6 +286,7 @@ func (m *metricRiakNodeOperationTimeMean) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricRiakNodeOperationTimeMean) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestAttributeValue string) {
@@ -288,31 +302,31 @@ func (m *metricRiakNodeOperationTimeMean) recordDataPoint(start pcommon.Timestam
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -404,6 +418,7 @@ type metricRiakVnodeIndexOperationCount struct {
 	config        RiakVnodeIndexOperationCountMetricConfig // metric config provided by user.
 	capacity      int                                      // max observed number of data points added to the metric.
 	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills riak.vnode.index.operation.count metric with initial data.
@@ -416,6 +431,7 @@ func (m *metricRiakVnodeIndexOperationCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricRiakVnodeIndexOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
@@ -431,31 +447,31 @@ func (m *metricRiakVnodeIndexOperationCount) recordDataPoint(start pcommon.Times
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -495,6 +511,7 @@ type metricRiakVnodeOperationCount struct {
 	config        RiakVnodeOperationCountMetricConfig // metric config provided by user.
 	capacity      int                                 // max observed number of data points added to the metric.
 	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills riak.vnode.operation.count metric with initial data.
@@ -507,6 +524,7 @@ func (m *metricRiakVnodeOperationCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricRiakVnodeOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestAttributeValue string) {
@@ -522,31 +540,31 @@ func (m *metricRiakVnodeOperationCount) recordDataPoint(start pcommon.Timestamp,
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 

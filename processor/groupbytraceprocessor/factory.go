@@ -47,6 +47,8 @@ func createDefaultConfig() component.Config {
 		// not supported for now
 		DiscardOrphans: defaultDiscardOrphans,
 		StoreOnDisk:    defaultStoreOnDisk,
+
+		EmitStrategy: EmitStrategyTrace,
 	}
 }
 
@@ -59,7 +61,7 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	var st storage
+	var st traceStorage
 	if oCfg.StoreOnDisk {
 		return nil, errDiskStorageNotSupported
 	}
@@ -71,5 +73,18 @@ func createTracesProcessor(
 	// the only supported storage for now
 	st = newMemoryStorage(processor.telemetryBuilder)
 	processor.st = st
+
+	if oCfg.EmitStrategy == EmitStrategyService {
+		processor.eventMachine.onSubtraceTick = processor.onSubtraceTick
+
+		// Each worker gets its own ring buffer, deadlines and span storage. Traces
+		// are routed to a worker by trace ID, so nothing is shared between them.
+		for _, w := range processor.eventMachine.workers {
+			w.subtraceBuffer = newSubtraceRingBuffer(max(1, oCfg.NumTraces/oCfg.NumWorkers))
+			w.deadlines = newSubtraceDeadlines()
+			w.subSt = newSubtraceMemoryStorage(processor.telemetryBuilder)
+		}
+	}
+
 	return processor, nil
 }

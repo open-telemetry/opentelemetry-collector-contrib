@@ -186,6 +186,53 @@ func Test_extractBrowserBrandsFromKeyVal(t *testing.T) {
 				return brands
 			}(t),
 		},
+		{
+			name: "brand key without field suffix",
+			kv: map[string]string{
+				"browser_brand_0": "foo",
+			},
+			wantErr: assert.Error,
+			wantBrands: func(_ *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				return brands
+			}(t),
+		},
+		{
+			name: "brand key without index",
+			kv: map[string]string{
+				"browser_brand_brand": "foo",
+			},
+			wantErr: assert.Error,
+			wantBrands: func(_ *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				return brands
+			}(t),
+		},
+		{
+			name: "brands as array with non-contiguous indexes",
+			kv: map[string]string{
+				"browser_brand_3_brand":   "brand1",
+				"browser_brand_3_version": "0.1.0",
+				"browser_brand_7_brand":   "brand2",
+				"browser_brand_7_version": "0.2.0",
+			},
+			wantErr: assert.NoError,
+			wantBrands: func(t *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				err := brands.FromBrandsArray(faroTypes.BrandsArray{
+					{
+						Brand:   "brand1",
+						Version: "0.1.0",
+					},
+					{
+						Brand:   "brand2",
+						Version: "0.2.0",
+					},
+				})
+				require.NoError(t, err)
+				return brands
+			}(t),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -500,6 +547,31 @@ func Test_parseFrameFromString(t *testing.T) {
 			wantErr:  assert.NoError,
 		},
 		{
+			name:     "Unparseable frame",
+			frameStr: "invalid",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Whitespace frame",
+			frameStr: " ",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Native frame",
+			frameStr: "foo (native)",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Missing closing parenthesis",
+			frameStr: "foo (file.js:1:2",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Non-numeric line",
+			frameStr: "foo (file.js:line:2)",
+			wantErr:  assert.Error,
+		},
+		{
 			name:     "All the frame fields are present in the frame string",
 			frameStr: "? (http://fe:3002/static/js/vendors~main.chunk.js:8639:42)",
 			frame: &faroTypes.Frame{
@@ -576,6 +648,34 @@ func Test_parseFrameFromString(t *testing.T) {
 			frame, err := parseFrameFromString(tt.frameStr)
 			tt.wantErr(t, err, fmt.Sprintf("parseFrameFromString(%s)", tt.frameStr))
 			assert.Equal(t, tt.frame, frame)
+		})
+	}
+}
+
+func Test_parseStacktraceFromString(t *testing.T) {
+	validFrame := "foo (file.js:1:2)"
+	for _, tt := range []struct {
+		name       string
+		stacktrace string
+		wantErr    bool
+		wantFrames int
+	}{
+		{name: "empty"},
+		{name: "exception header only", stacktrace: "Error: failure"},
+		{name: "valid frame", stacktrace: "Error: failure\n  at " + validFrame, wantFrames: 1},
+		{name: "unparseable frame", stacktrace: "Error: failure\n  at invalid", wantErr: true},
+		{name: "unparseable frame after valid frame", stacktrace: "Error: failure\n  at " + validFrame + "\n  at invalid", wantErr: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			stacktrace, err := parseStacktraceFromString(tt.stacktrace, "Error", "failure")
+			if tt.wantErr {
+				require.EqualError(t, err, "invalid stack trace frame")
+				assert.Nil(t, stacktrace)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, stacktrace)
+			assert.Len(t, stacktrace.Frames, tt.wantFrames)
 		})
 	}
 }
@@ -827,13 +927,70 @@ func Test_parseIntegrationsFromString(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:               "Integration without a version separator is skipped",
+			integrationsString: "foo",
+			want:               []faroTypes.SDKIntegration{},
+		},
+		{
+			name:               "Malformed integration among valid ones is skipped",
+			integrationsString: "foo:1.2,bar,example:3.4.5",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2",
+				},
+				{
+					Name:    "example",
+					Version: "3.4.5",
+				},
+			},
+		},
+		{
+			name:               "Trailing comma is ignored",
+			integrationsString: "foo:1.2,",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2",
+				},
+			},
+		},
+		{
+			name:               "Version containing a colon is kept intact",
+			integrationsString: "foo:1.2:beta",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2:beta",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseIntegrationsFromString(tt.integrationsString)
+			var got []faroTypes.SDKIntegration
+			require.NotPanics(t, func() {
+				got = parseIntegrationsFromString(tt.integrationsString)
+			})
 			assert.Equalf(t, tt.want, got, "parseIntegrationsFromString(%v)", tt.integrationsString)
 		})
 	}
+}
+
+func TestTranslateFromLogsMalformedSDKIntegrations(t *testing.T) {
+	logs := plog.NewLogs()
+	lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Body().SetStr("kind=log message=hello sdk_integrations=foo:1.2,bar,")
+
+	var payloads []faroTypes.Payload
+	var err error
+	require.NotPanics(t, func() {
+		payloads, err = TranslateFromLogs(t.Context(), logs)
+	})
+	require.NoError(t, err)
+	require.Len(t, payloads, 1)
+	assert.Equal(t, []faroTypes.SDKIntegration{{Name: "foo", Version: "1.2"}}, payloads[0].Meta.SDK.Integrations)
 }
 
 func Test_mergePayloads(t *testing.T) {
