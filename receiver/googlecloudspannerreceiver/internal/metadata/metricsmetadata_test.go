@@ -70,6 +70,7 @@ func TestToLabelValue(t *testing.T) {
 		"Int64 label value metadata":              {IntValueType, int64LabelValue{}, int64Value, nil},
 		"Bool label value metadata":               {BoolValueType, boolLabelValue{}, boolValue, nil},
 		"String slice label value metadata":       {StringSliceValueType, stringSliceLabelValue{}, []string{stringValue, stringValue}, stringValue + "," + stringValue},
+		"Int slice label value metadata":          {IntSliceValueType, intSliceLabelValue{}, []int64{1, 2}, "1,2"},
 		"Byte slice label value metadata":         {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
 		"Lock request slice label value metadata": {LockRequestSliceValueType, lockRequestSliceLabelValue{}, []*lockRequest{{"lockMode", "column", "transactionTag"}}, "{lockMode,column,transactionTag}"},
 		"Date label value metadata":               {DateValueType, dateLabelValue{}, spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true}, "2023-10-01"},
@@ -99,6 +100,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 	boolLabelValueMetadata, _ := NewLabelValueMetadata("boolLabelName", "boolLabelColumnName", BoolValueType)
 	int64LabelValueMetadata, _ := NewLabelValueMetadata("int64LabelName", "int64LabelColumnName", IntValueType)
 	stringSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringSliceValueType)
+	intSliceLabelValueMetadata, _ := NewLabelValueMetadata("intSliceLabelName", "intSliceLabelColumnName", IntSliceValueType)
 	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType)
 	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
 	dateLabelValueMetadata, _ := NewLabelValueMetadata("dateLabelName", "dateLabelColumnName", DateValueType)
@@ -107,6 +109,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		boolLabelValueMetadata,
 		int64LabelValueMetadata,
 		stringSliceLabelValueMetadata,
+		intSliceLabelValueMetadata,
 		byteSliceLabelValueMetadata,
 		lockRequestSliceLabelValueMetadata,
 		dateLabelValueMetadata,
@@ -118,6 +121,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			boolLabelValueMetadata.ColumnName(),
 			int64LabelValueMetadata.ColumnName(),
 			stringSliceLabelValueMetadata.ColumnName(),
+			intSliceLabelValueMetadata.ColumnName(),
 			byteSliceLabelValueMetadata.ColumnName(),
 			lockRequestSliceLabelValueMetadata.ColumnName(),
 			dateLabelValueMetadata.ColumnName(),
@@ -127,6 +131,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			boolValue,
 			int64Value,
 			[]string{stringValue, stringValue},
+			[]int64{1, 2},
 			[]byte(stringValue),
 			[]*lockRequest{{}},
 			spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true},
@@ -142,6 +147,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		boolLabelValue{},
 		int64LabelValue{},
 		stringSliceLabelValue{},
+		intSliceLabelValue{},
 		byteSliceLabelValue{},
 		lockRequestSliceLabelValue{},
 		dateLabelValue{},

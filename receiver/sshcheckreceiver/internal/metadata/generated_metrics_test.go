@@ -85,6 +85,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSshcheckErrorDataPoint(ts, 1, "error.message-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSshcheckErrorDataPoint(ts, 3, "error.message-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSshcheckErrorDataPoint(ts+1, 3, "error.message-val-2")
+				assert.Equal(t, 2, mb.metricSshcheckError.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -94,6 +97,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSshcheckSftpErrorDataPoint(ts, 1, "error.message-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSshcheckSftpErrorDataPoint(ts, 3, "error.message-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSshcheckSftpErrorDataPoint(ts+1, 3, "error.message-val-2")
+				assert.Equal(t, 2, mb.metricSshcheckSftpError.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -170,7 +176,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sshcheck.error"], "Found a duplicate in the metrics slice: sshcheck.error")
 						validatedMetrics["sshcheck.error"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Records errors occurring during SSH check.", mi.Description())
 						assert.Equal(t, "{error}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -226,7 +234,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sshcheck.sftp_error"], "Found a duplicate in the metrics slice: sshcheck.sftp_error")
 						validatedMetrics["sshcheck.sftp_error"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Records errors occurring during SFTP check.", mi.Description())
 						assert.Equal(t, "{error}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
