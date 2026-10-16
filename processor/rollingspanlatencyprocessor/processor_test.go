@@ -150,10 +150,11 @@ func makeTracesBatch(resAttrs map[string]string, spanName string, durationsNs []
 	return td
 }
 
-// makeKindTraces builds a single-span ptrace.Traces like makeTraces, but also
-// sets the span's kind and, when root is false, a non-empty parent span ID.
-func makeKindTraces(resAttrs map[string]string, spanName string, durationNs int64, now time.Time, kind ptrace.SpanKind, root bool) ptrace.Traces {
-	td := makeTraces(resAttrs, spanName, durationNs, now)
+// makeKindTraces builds a single-span, 100ms-duration ptrace.Traces named
+// "op" for baseAttrs, like makeTraces, but also sets the span's kind and,
+// when root is false, a non-empty parent span ID.
+func makeKindTraces(now time.Time, kind ptrace.SpanKind, root bool) ptrace.Traces {
+	td := makeTraces(baseAttrs, "op", int64(100e6), now)
 	sp := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	sp.SetKind(kind)
 	if !root {
@@ -847,7 +848,7 @@ func TestShouldEvaluate_NoFilterEvaluatesEverything(t *testing.T) {
 	}
 	for _, kind := range kinds {
 		for _, root := range []bool{true, false} {
-			td := makeKindTraces(baseAttrs, "op", int64(100e6), time.Unix(1_000_000, 0), kind, root)
+			td := makeKindTraces(time.Unix(1_000_000, 0), kind, root)
 			sp := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 			assert.True(t, p.shouldEvaluate(sp), "kind=%v root=%v", kind, root)
 		}
@@ -871,7 +872,7 @@ func TestShouldEvaluate_SpanKindsRestrictsToListedKinds(t *testing.T) {
 		{ptrace.SpanKindInternal, true, false},
 	}
 	for _, tt := range tests {
-		td := makeKindTraces(baseAttrs, "op", int64(100e6), time.Unix(1_000_000, 0), tt.kind, tt.root)
+		td := makeKindTraces(time.Unix(1_000_000, 0), tt.kind, tt.root)
 		sp := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 		assert.Equal(t, tt.want, p.shouldEvaluate(sp), "kind=%v root=%v", tt.kind, tt.root)
 	}
@@ -883,8 +884,8 @@ func TestShouldEvaluate_IncludeRootSpansEvaluatesRootRegardlessOfKind(t *testing
 	cfg.IncludeRootSpans = true
 	p, _ := newTestProcessor(t, cfg)
 
-	root := makeKindTraces(baseAttrs, "op", int64(100e6), time.Unix(1_000_000, 0), ptrace.SpanKindInternal, true)
-	nonRoot := makeKindTraces(baseAttrs, "op", int64(100e6), time.Unix(1_000_000, 0), ptrace.SpanKindInternal, false)
+	root := makeKindTraces(time.Unix(1_000_000, 0), ptrace.SpanKindInternal, true)
+	nonRoot := makeKindTraces(time.Unix(1_000_000, 0), ptrace.SpanKindInternal, false)
 	rootSpan := root.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	nonRootSpan := nonRoot.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
@@ -902,7 +903,7 @@ func TestProcessor_FilteredOutSpanNotLabeledOrTracked(t *testing.T) {
 
 	for range cfg.WarmupCount + 5 {
 		now := clock.Advance(time.Second)
-		require.NoError(t, p.ConsumeTraces(t.Context(), makeKindTraces(baseAttrs, "op", int64(100e6), now, ptrace.SpanKindClient, false)))
+		require.NoError(t, p.ConsumeTraces(t.Context(), makeKindTraces(now, ptrace.SpanKindClient, false)))
 	}
 
 	assert.Empty(t, collectLabels(sink, cfg.AttributeKey), "client spans should never be labeled when span_kinds=[SERVER]")
