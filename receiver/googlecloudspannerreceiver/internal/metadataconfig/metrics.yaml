@@ -468,7 +468,7 @@ metadata:
 # -------------------------------------------- Row Deletion Policies ---------------------------------------------------
 #
   - name: "row deletion policies"
-    query: "SELECT TABLE_NAME, PROCESSED_WATERMARK, UNDELETABLE_ROWS, MIN_UNDELETABLE_TIMESTAMP FROM SPANNER_SYS.ROW_DELETION_POLICIES"
+    query: "SELECT TABLE_NAME, PROCESSED_WATERMARK, UNDELETABLE_ROWS, MIN_UNDELETABLE_TIMESTAMP FROM SPANNER_SYS.ROW_DELETION_POLICIES ORDER BY UNDELETABLE_ROWS DESC, PROCESSED_WATERMARK ASC"
     metric_name_prefix: "database/spanner/row_deletion_policies/"
     high_cardinality: true
     labels:
