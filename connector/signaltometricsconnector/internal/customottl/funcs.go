@@ -11,6 +11,7 @@ import (
 	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
 
 func SpanFuncs() map[string]ottl.Factory[*ottlspan.TransformContext] {
@@ -33,5 +34,5 @@ func ProfileFuncs() map[string]ottl.Factory[*ottlprofile.TransformContext] {
 }
 
 func commonFuncs[K any]() map[string]ottl.Factory[K] {
-	return xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[K]())
+	return xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[K]()))
 }

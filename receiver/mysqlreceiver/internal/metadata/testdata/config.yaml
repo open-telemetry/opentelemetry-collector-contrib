@@ -186,6 +186,8 @@ all_set:
     mysql.uptime:
       enabled: true
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.top_query:
@@ -394,6 +396,8 @@ reaggregate_set:
     mysql.uptime:
       enabled: true
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.top_query:
@@ -602,6 +606,8 @@ none_set:
     mysql.uptime:
       enabled: false
   events:
+    db.server.query_plan:
+      enabled: false
     db.server.query_sample:
       enabled: false
     db.server.top_query:
