@@ -75,7 +75,7 @@ Count of documents flushed to Elasticsearch.
 | http.response.status_code | HTTP status code. | Any Int | - |
 | failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` | - |
 | error.type | The type of error that occurred when processing the documents. | Any Str | - |
-| elasticsearch.destination_index | The index documents were written to, without the rollover prefix and suffix of backing indices. Only set when `telemetry::include_destination_index` is enabled. | Any Str | - |
+| db.collection.name | The index or data stream documents were written to, as reported in the bulk response `_index`, with backing and failure store indices folded into their data stream name. Only set when `telemetry::include_destination_index` is enabled. | Any Str | - |
 
 ### otelcol.elasticsearch.docs.received
 

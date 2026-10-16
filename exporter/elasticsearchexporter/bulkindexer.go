@@ -381,18 +381,25 @@ func flushBulkIndexer(
 		tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, successAttrSet)
 	}
 
+	addDocsProcessed := func(count int64, index string, attrs ...attribute.KeyValue) {
+		if count == 0 {
+			return
+		}
+		// Concat always copies, so the attributes of a series never share the
+		// backing array of defaultMetaAttrs, which is used by all of them.
+		kvs := slices.Concat(defaultMetaAttrs, attrs)
+		if includeDestinationIndex {
+			kvs = appendDestinationIndex(kvs, index)
+		}
+		tb.ElasticsearchDocsProcessed.Add(ctx, count, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+	}
 	for _, resp := range stat.FailedDocs {
 		// Collect telemetry
-		outcome := statusToOutcome(resp.Status)
-		failedAttrs := append(slices.Clone(defaultMetaAttrs),
-			withOutcome(outcome),
+		addDocsProcessed(1, resp.Index,
+			withOutcome(statusToOutcome(resp.Status)),
 			conventions.HTTPResponseStatusCode(resp.Status),
 			attribute.String("error.type", resp.Error.Type),
 		)
-		if includeDestinationIndex {
-			failedAttrs = appendDestinationIndex(failedAttrs, resp.Index)
-		}
-		tb.ElasticsearchDocsProcessed.Add(ctx, int64(1), metric.WithAttributeSet(attribute.NewSet(failedAttrs...)))
 
 		if resp.Error.Type == "version_conflict_engine_exception" {
 			if suppressConflictErrors ||
@@ -424,16 +431,6 @@ func flushBulkIndexer(
 			fields = append(fields, zap.String("input", resp.Input))
 		}
 		failedDocsInputLogger.Debug("failed to index document; input may contain sensitive data", fields...)
-	}
-	addDocsProcessed := func(count int64, index string, attrs ...attribute.KeyValue) {
-		if count == 0 {
-			return
-		}
-		kvs := slices.Concat(defaultMetaAttrs, attrs)
-		if includeDestinationIndex {
-			kvs = appendDestinationIndex(kvs, index)
-		}
-		tb.ElasticsearchDocsProcessed.Add(ctx, count, metric.WithAttributeSet(attribute.NewSet(kvs...)))
 	}
 	addIndexedAndFailureStoreDocs := func(index string, indexed int64, failureStore docappender.FailureStoreDocsStat) {
 		addDocsProcessed(indexed, index,
@@ -678,7 +675,7 @@ func appendDestinationIndex(attrs []attribute.KeyValue, index string) []attribut
 	if m := backingIndexRE.FindStringSubmatch(index); m != nil {
 		index = m[1]
 	}
-	return append(attrs, attribute.String("elasticsearch.destination_index", index))
+	return append(attrs, conventions.DBCollectionName(index))
 }
 
 func withOutcome(outcome string) attribute.KeyValue {

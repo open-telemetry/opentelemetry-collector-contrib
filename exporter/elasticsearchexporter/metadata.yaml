@@ -11,8 +11,8 @@ status:
     active: [JaredTan95, blakerouse, carsonip, lahsivjar]
 
 attributes:
-  elasticsearch.destination_index:
-    description: The index documents were written to, without the rollover prefix and suffix of backing indices. Only set when `telemetry::include_destination_index` is enabled.
+  db.collection.name:
+    description: The index or data stream documents were written to, as reported in the bulk response `_index`, with backing and failure store indices folded into their data stream name. Only set when `telemetry::include_destination_index` is enabled.
     type: string
   error.type:
     description: The type of error that occurred when processing the documents.
@@ -60,7 +60,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [outcome, http.response.status_code, failure_store, error.type, elasticsearch.destination_index]
+      attributes: [outcome, http.response.status_code, failure_store, error.type, db.collection.name]
     elasticsearch.docs.received:
       prefix: otelcol.
       stability: alpha

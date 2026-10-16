@@ -752,7 +752,7 @@ func TestAppendDestinationIndex(t *testing.T) {
 	} {
 		t.Run(index, func(t *testing.T) {
 			attrs := appendDestinationIndex(nil, index)
-			require.Equal(t, []attribute.KeyValue{attribute.String("elasticsearch.destination_index", want)}, attrs)
+			require.Equal(t, []attribute.KeyValue{attribute.String("db.collection.name", want)}, attrs)
 		})
 	}
 
@@ -814,7 +814,7 @@ func TestSyncBulkIndexerDestinationIndex(t *testing.T) {
 					attribute.Int("http.response.status_code", http.StatusOK),
 				}
 				if index != "" {
-					attrs = append(attrs, attribute.String("elasticsearch.destination_index", index))
+					attrs = append(attrs, attribute.String("db.collection.name", index))
 				}
 				return metricdata.DataPoint[int64]{Value: count, Attributes: attribute.NewSet(attrs...)}
 			}
@@ -825,7 +825,7 @@ func TestSyncBulkIndexerDestinationIndex(t *testing.T) {
 					attribute.String("failure_store", "used"),
 				}
 				if index != "" {
-					attrs = append(attrs, attribute.String("elasticsearch.destination_index", index))
+					attrs = append(attrs, attribute.String("db.collection.name", index))
 				}
 				return metricdata.DataPoint[int64]{Value: 1, Attributes: attribute.NewSet(attrs...)}
 			}
@@ -835,7 +835,7 @@ func TestSyncBulkIndexerDestinationIndex(t *testing.T) {
 				attribute.Int("http.response.status_code", http.StatusBadRequest),
 				attribute.String("error.type", "mapper_parsing_exception"),
 			)
-			failedWithIndex := attribute.NewSet(append(failed.ToSlice(), attribute.String("elasticsearch.destination_index", "logs-bad-default"))...)
+			failedWithIndex := attribute.NewSet(append(failed.ToSlice(), attribute.String("db.collection.name", "logs-bad-default"))...)
 
 			want := []metricdata.DataPoint[int64]{
 				success(4, ""), // includes the document indexed to the failure store
