@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"hash/fnv"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
@@ -256,6 +257,46 @@ func parseAndHashSplitStatsKey(val string) string {
 	flushToken(bracketLevel > 0)
 
 	return result.String()
+}
+
+func isValidIPAddressOrPort(ip string) bool {
+	if _, err := netip.ParseAddr(ip); err == nil {
+		return true
+	}
+	if _, err := netip.ParseAddrPort(ip); err == nil {
+		return true
+	}
+	return false
+}
+
+func hashClientIPAddress(ip string) string {
+	if strings.EqualFold(ip, "NULL") {
+		return ""
+	}
+	if !isValidIPAddressOrPort(ip) {
+		if strings.ContainsAny(ip, "0123456789.:") {
+			return ""
+		}
+		return ip
+	}
+
+	hash := sha256.Sum256([]byte(ip))
+	hashUint := binary.BigEndian.Uint32(hash[:4])
+	return strconv.FormatUint(uint64(hashUint), 10)
+}
+
+func (mdp *MetricsDataPoint) HideClientIPAddressPII() {
+	for index, labelValue := range mdp.labelValues {
+		if labelValue.Metadata().Name() != "client_ip_address" {
+			continue
+		}
+		ip := labelValue.Value().(string)
+		hashedIP := hashClientIPAddress(ip)
+		v := mdp.labelValues[index].(stringLabelValue)
+		p := &v
+		p.ModifyValue(hashedIP)
+		mdp.labelValues[index] = v
+	}
 }
 
 func TruncateString(str string, length int) string {
