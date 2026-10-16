@@ -151,7 +151,10 @@ func TestFileWatcher_RetryUnlimitedPicksUpFileAfterManyIntervals(t *testing.T) {
 
 	// Delay well beyond several retry intervals before the file appears.
 	time.Sleep(300 * time.Millisecond)
-	require.NoError(t, os.WriteFile(f, []byte("secret"), 0o600))
+
+	tmp := filepath.Join(dir, "secret.tmp")
+	require.NoError(t, os.WriteFile(tmp, []byte("secret"), 0o600))
+	require.NoError(t, os.Rename(tmp, f))
 
 	select {
 	case err := <-errCh:
