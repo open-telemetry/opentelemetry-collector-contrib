@@ -97,3 +97,43 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr string
+	}{
+		{
+			name:   "default config is valid",
+			mutate: func(*Config) {},
+		},
+		{
+			name:    "missing endpoint",
+			mutate:  func(cfg *Config) { cfg.ClientConfig.Endpoint = "" },
+			wantErr: "endpoint must be specified",
+		},
+		{
+			name:    "zero collection_interval",
+			mutate:  func(cfg *Config) { cfg.CollectionInterval = 0 },
+			wantErr: "collection_interval must be positive",
+		},
+		{
+			name:    "negative collection_interval",
+			mutate:  func(cfg *Config) { cfg.CollectionInterval = -5 * time.Second },
+			wantErr: "collection_interval must be positive",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			tt.mutate(cfg)
+			err := cfg.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}

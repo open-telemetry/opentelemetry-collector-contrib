@@ -12,12 +12,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/xpdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type filterArguments[K any] struct {
 	Source    ottl.Getter[K]
-	Predicate *ottl.LambdaExpression[K]
+	Predicate *xottl.LambdaExpression[K]
 }
 
 // NewFilterFactory returns a factory for the Filter OTTL function.
@@ -36,7 +37,7 @@ func createFilterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	return filter(args.Source, args.Predicate)
 }
 
-func filter[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
+func filter[K any](source ottl.Getter[K], predicate *xottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
 	err := predicate.ValidateArity(2)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func filter[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K]) (
 	}, nil
 }
 
-func filterSliceValues[K any](tCtx K, source pcommon.Slice, lambda *ottl.LambdaActivation[K]) (pcommon.Slice, error) {
+func filterSliceValues[K any](tCtx K, source pcommon.Slice, lambda *xottl.LambdaActivation[K]) (pcommon.Slice, error) {
 	res := pcommon.NewSlice()
 	res.EnsureCapacity(source.Len())
 	for i, v := range source.All() {
@@ -80,7 +81,7 @@ func filterSliceValues[K any](tCtx K, source pcommon.Slice, lambda *ottl.LambdaA
 	return res, nil
 }
 
-func filterMapValues[K any](tCtx K, source pcommon.Map, lambda *ottl.LambdaActivation[K]) (pcommon.Map, error) {
+func filterMapValues[K any](tCtx K, source pcommon.Map, lambda *xottl.LambdaActivation[K]) (pcommon.Map, error) {
 	var builder xpdata.MapBuilder
 	builder.EnsureCapacity(source.Len())
 	for k, v := range source.All() {

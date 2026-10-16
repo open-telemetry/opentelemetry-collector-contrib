@@ -42,6 +42,24 @@ telemetry:
         value_type: int
         monotonic: true
 
+    extension_pebble_tail_storage_read_error_partial_returns:
+      description: Count of traces returned with partial data by Take because of a read-path error while on_read_error is return_partial
+      stability: development
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+
+    extension_pebble_tail_storage_read_error_trace_drops:
+      description: Count of traces dropped by Take because of a read-path error while on_read_error is drop_trace
+      stability: development
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+
     extension_pebble_tail_storage_read_errors:
       description: Count of Pebble tail storage read-path iterator creation, value read, payload decode, and iterator terminal errors
       stability: development

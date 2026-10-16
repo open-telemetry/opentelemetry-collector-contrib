@@ -21,6 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
+const DefaultScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza"
+
 type receiver struct {
 	set component.TelemetrySettings
 	id  component.ID
@@ -30,6 +32,8 @@ type receiver struct {
 	consumer consumer.Logs
 	obsrecv  *receiverhelper.ObsReport
 
+	scopeName     string
+	buildInfo     component.BuildInfo
 	storageID     *component.ID
 	storageClient storage.Client
 }
@@ -63,7 +67,11 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 
 func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
 	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
-	pLogs := ConvertEntries(entries)
+	scope := r.scopeName
+	if scope == "" {
+		scope = DefaultScopeName
+	}
+	pLogs := ConvertEntries(entries, scope, r.buildInfo.Version)
 	for _, e := range entries {
 		entry.Put(e)
 	}

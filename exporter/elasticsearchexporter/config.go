@@ -126,6 +126,26 @@ type Config struct {
 	// BulkResponseFilterPath defaults to
 	// "items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason"
 	BulkResponseFilterPath string `mapstructure:"bulk_response_filter_path"`
+
+	// VersionDetection configures whether the exporter queries Elasticsearch
+	// at startup for its version and build flavor.
+	VersionDetection VersionDetectionSettings `mapstructure:"version_detection"`
+}
+
+// VersionDetectionSettings defines settings controlling whether the exporter
+// queries Elasticsearch at startup for its version and build flavor. This
+// information is used to automatically enable features supported by the
+// connected Elasticsearch version, so no per-feature configuration is required.
+//
+// When disabled, the exporter does not query Elasticsearch and assumes only the
+// baseline capability set is available.
+type VersionDetectionSettings struct {
+	// Enabled controls whether version detection is performed at startup.
+	// It defaults to true.
+	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type TelemetrySettings struct {

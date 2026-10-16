@@ -97,6 +97,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordZookeeperFollowerCountDataPoint(ts, 1, AttributeStateSynced)
 			if tt.name == "reaggregate_set" {
 				mb.RecordZookeeperFollowerCountDataPoint(ts, 3, AttributeStateUnsynced)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordZookeeperFollowerCountDataPoint(ts+1, 3, AttributeStateUnsynced)
+				assert.Equal(t, 2, mb.metricZookeeperFollowerCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -115,6 +118,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordZookeeperPacketCountDataPoint(ts, 1, AttributeDirectionReceived)
 			if tt.name == "reaggregate_set" {
 				mb.RecordZookeeperPacketCountDataPoint(ts, 3, AttributeDirectionSent)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordZookeeperPacketCountDataPoint(ts+1, 3, AttributeDirectionSent)
+				assert.Equal(t, 2, mb.metricZookeeperPacketCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -257,7 +263,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["zookeeper.follower.count"], "Found a duplicate in the metrics slice: zookeeper.follower.count")
 						validatedMetrics["zookeeper.follower.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of followers. Only exposed by the leader.", mi.Description())
 						assert.Equal(t, "{followers}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -351,7 +359,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["zookeeper.packet.count"], "Found a duplicate in the metrics slice: zookeeper.packet.count")
 						validatedMetrics["zookeeper.packet.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of ZooKeeper packets received or sent by a server.", mi.Description())
 						assert.Equal(t, "{packets}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
