@@ -95,8 +95,7 @@ func (p *persistentState) GetLastRemoteConfigStatus() *protobufs.RemoteConfigSta
 	}
 
 	// Stably parse the plain text YAML string back to the native protobuf integer enum
-	var protobufStatus protobufs.RemoteConfigStatuses
-	protobufStatus = remoteConfigStatusFromString(
+	protobufStatus := remoteConfigStatusFromString(
 		p.LastRemoteConfigStatus.Status,
 	)
 
