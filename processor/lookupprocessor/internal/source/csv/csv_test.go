@@ -254,12 +254,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestMakeParse_ShortRowsSkipped(t *testing.T) {
-	intPtr := func(v int) *int { return &v }
-
 	t.Run("skips row when key index is out of bounds", func(t *testing.T) {
 		cfg := &Config{
 			HasHeader:      false,
-			KeyColumnIndex: intPtr(2),
+			KeyColumnIndex: new(2),
 		}
 		parse := makeParse(cfg)
 
@@ -273,8 +271,8 @@ func TestMakeParse_ShortRowsSkipped(t *testing.T) {
 	t.Run("skips row when value index is out of bounds", func(t *testing.T) {
 		cfg := &Config{
 			HasHeader:        false,
-			KeyColumnIndex:   intPtr(0),
-			ValueColumnIndex: intPtr(2),
+			KeyColumnIndex:   new(0),
+			ValueColumnIndex: new(2),
 		}
 		parse := makeParse(cfg)
 
