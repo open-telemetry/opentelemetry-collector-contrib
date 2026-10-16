@@ -82,6 +82,30 @@ Number of cronjob update events received
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
+### otelcol.k8s.watcher.hpa.added
+
+Number of horizontalpodautoscaler add events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.hpa.deleted
+
+Number of horizontalpodautoscaler delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.hpa.updated
+
+Number of horizontalpodautoscaler update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
 ### otelcol.k8s.watcher.job.added
 
 Number of job add events received
