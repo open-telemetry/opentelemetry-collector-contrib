@@ -4,6 +4,9 @@ status:
   class: pkg
   stability:
     beta: [logs]
+  codeowners:
+    active: [VihasMakwana]
+
 
 telemetry:
   metrics:
