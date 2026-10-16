@@ -1,0 +1,41 @@
+type: redis_fleet_tracker
+display_name: Redis Fleet Tracker Extension
+
+description: Reports a collector fleet's live member count, backed by Redis, so components can scale a per-instance budget by fleet size.
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [MikeGoldsmith, jmacd]
+
+tests:
+  config:
+    endpoint: "localhost:6379"
+  goleak:
+    ignore:
+      any:
+        # go-redis retries failed dials on a 1s backoff; Close stops the loop
+        # but a goroutine mid-sleep (time.Sleep on top) can outlive goleak's
+        # retry window, so match tryDial anywhere in the stack.
+        - "github.com/redis/go-redis/v9/internal/pool.(*ConnPool).tryDial"
+
+telemetry:
+  metrics:
+    extension_redis_fleet_tracker_heartbeat_failures:
+      description: Number of heartbeat or observe errors.
+      unit: "1"
+      enabled: true
+      stability: development
+      sum:
+        value_type: int
+        monotonic: true
+    extension_redis_fleet_tracker_member_count:
+      description: Current live member count observed for the fleet.
+      unit: "1"
+      enabled: true
+      stability: development
+      gauge:
+        value_type: int
