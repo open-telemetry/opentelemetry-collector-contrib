@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -853,6 +854,9 @@ func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 	}
 
 	matches := stacktraceRegexp.FindStringSubmatch(frameStr)
+	if matches == nil {
+		return nil, errors.New("invalid stack trace frame")
+	}
 
 	frame.Function = matches[stacktraceRegexp.SubexpIndex(faroStacktraceFunction)]
 	frame.Module = matches[stacktraceRegexp.SubexpIndex(faroStackTraceModule)]
