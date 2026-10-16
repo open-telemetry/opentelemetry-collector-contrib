@@ -1297,8 +1297,8 @@ func TestAzureScraperDefinitionsDiscoveryAvoidsInvalidProbes(t *testing.T) {
 	}
 
 	s.loadResources(t.Context(), fakeSubID)
-	for resID := range s.resources[fakeSubID] {
-		s.loadMetricsDefinitions(t.Context(), fakeSubID, resID)
+	for resID, res := range s.resources[fakeSubID] {
+		s.loadMetricsDefinitions(t.Context(), fakeSubID, resID, res.resourceType)
 	}
 
 	// Verify that NO incompatible namespace probes were made across any resources.
