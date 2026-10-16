@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_aws_eks
+//go:build (!remove_all_resourcedetection_detectors || enable_resourcedetection_aws_eks_detector) && !omit_detector_aws_eks
 
 package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
 

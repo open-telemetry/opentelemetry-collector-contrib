@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !remove_all_resourcedetection_detectors
+
 package resourcedetectionprocessor
 
 import (
@@ -25,6 +27,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
@@ -79,6 +82,33 @@ func TestCreateConfigProcessors(t *testing.T) {
 			assert.NotNil(t, tt)
 		})
 	}
+}
+
+func TestGetResourceProviderLogsDetectorConfiguration(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	factory := &factory{
+		resourceProviderFactory: internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
+			"mock": func(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
+				return &mockDetector{}, nil
+			},
+		}),
+		compiledDetectors: []string{"mock"},
+		providers:         map[component.ID]*internal.ResourceProvider{},
+	}
+	settings := processortest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	cfg := detectorCreateDefaultConfig()
+
+	provider, err := factory.getResourceProvider(settings, defaultRetryConfig(), []string{" mock "}, cfg, false)
+	require.NoError(t, err)
+	require.NotNil(t, provider)
+
+	logs := observedLogs.FilterMessage("resource detection processor detector configuration").All()
+	require.Len(t, logs, 1)
+	assert.Equal(t, map[string]any{
+		"compiled_detectors":   []any{"mock"},
+		"configured_detectors": []any{"mock"},
+	}, logs[0].ContextMap())
 }
 
 func TestInvalidConfig(t *testing.T) {
@@ -248,6 +278,8 @@ func TestLifecycle(t *testing.T) {
 
 			// Configure with system detector (always available)
 			oCfg.Detectors = []string{"system"}
+			// Lifecycle coverage does not require DNS resolution of the test host.
+			oCfg.DetectorConfig.SystemConfig.HostnameSources = []string{"os"}
 			oCfg.Override = false
 
 			// Run the signal-specific test
@@ -265,6 +297,8 @@ func TestLifecycleWithAllDetectors(t *testing.T) {
 
 	// Test with multiple detectors that are always available
 	oCfg.Detectors = []string{"env", "system"}
+	// Lifecycle coverage does not require DNS resolution of the test host.
+	oCfg.DetectorConfig.SystemConfig.HostnameSources = []string{"os"}
 	oCfg.Override = true
 
 	ctx := t.Context()

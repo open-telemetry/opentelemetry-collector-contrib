@@ -1,16 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build omit_detector_docker
+//go:build (remove_all_resourcedetection_detectors && !enable_resourcedetection_docker_detector) || omit_detector_docker
 
 package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 
-import (
-	"go.opentelemetry.io/collector/processor"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-)
-
-func NewDetector(p processor.Settings, cfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
-	return nil, nil
-}
+// NewDetector is unavailable when this detector is excluded at build time.
+var NewDetector internal.DetectorFactory

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_digitalocean
+//go:build (!remove_all_resourcedetection_detectors || enable_resourcedetection_digitalocean_detector) && !omit_detector_digitalocean
 
 package digitalocean // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 

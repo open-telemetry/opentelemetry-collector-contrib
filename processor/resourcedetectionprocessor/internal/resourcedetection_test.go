@@ -50,6 +50,20 @@ func (p *mockDetector) Detect(_ context.Context) (pcommon.Resource, string, erro
 
 type mockDetectorConfig struct{}
 
+func TestProviderFactoryExcludesUnavailableDetectors(t *testing.T) {
+	detectors := map[DetectorType]DetectorFactory{
+		"enabled": func(processor.Settings, DetectorConfig, bool) (Detector, error) {
+			return &mockDetector{}, nil
+		},
+		"omitted": nil,
+	}
+	factory := NewProviderFactory(detectors)
+	assert.Equal(t, []string{"enabled"}, factory.CompiledDetectorTypes())
+	assert.Contains(t, detectors, DetectorType("omitted"), "construction must not mutate the caller's map")
+	_, err := factory.getDetectors(processortest.NewNopSettings(metadata.Type), &mockDetectorConfig{}, []DetectorType{"omitted"}, false)
+	require.ErrorContains(t, err, `detector "omitted" is not compiled into this binary; compiled detectors: [enabled]`)
+}
+
 func (*mockDetectorConfig) GetConfigFromType(_ DetectorType) DetectorConfig {
 	return nil
 }
@@ -126,7 +140,7 @@ func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
 	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), fastRetryConfig, false, &mockDetectorConfig{}, mockDetectorKey)
-	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
+	require.EqualError(t, err, fmt.Sprintf("detector %q is not compiled into this binary; compiled detectors: []", mockDetectorKey))
 }
 
 func TestDetectResource_DetectorFactoryError(t *testing.T) {
@@ -138,6 +152,17 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 	})
 	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), fastRetryConfig, false, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
+}
+
+func TestDetectResource_OmittedDetector(t *testing.T) {
+	mockDetectorKey := DetectorType("mock")
+	p := NewProviderFactory(map[DetectorType]DetectorFactory{
+		mockDetectorKey: func(processor.Settings, DetectorConfig, bool) (Detector, error) {
+			return nil, nil
+		},
+	})
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), fastRetryConfig, false, &mockDetectorConfig{}, mockDetectorKey)
+	require.EqualError(t, err, `detector "mock" is omitted from this binary`)
 }
 
 func TestDetectResource_Error_ContextDeadline(t *testing.T) {

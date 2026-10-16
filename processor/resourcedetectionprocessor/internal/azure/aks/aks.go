@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_azure_aks
+//go:build (!remove_all_resourcedetection_detectors || enable_resourcedetection_azure_aks_detector) && !omit_detector_azure_aks
 
 package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 
