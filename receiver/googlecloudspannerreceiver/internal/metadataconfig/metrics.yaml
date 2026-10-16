@@ -468,9 +468,9 @@ metadata:
 # -------------------------------------------- Supported Optimizer Versions ------------------------------------------------------
 #
   - name: "supported optimizer versions"
-    query: "SELECT COUNT(*) AS VERSION_COUNT, VERSION, RELEASE_DATE, IS_DEFAULT FROM SPANNER_SYS.SUPPORTED_OPTIMIZER_VERSIONS GROUP BY VERSION, RELEASE_DATE, IS_DEFAULT ORDER BY RELEASE_DATE DESC"
+    query: "SELECT 1 AS VERSION_COUNT, VERSION, RELEASE_DATE, IS_DEFAULT FROM SPANNER_SYS.SUPPORTED_OPTIMIZER_VERSIONS ORDER BY IS_DEFAULT DESC, RELEASE_DATE DESC"
     metric_name_prefix: "database/spanner/supported_optimizer_versions/"
-    high_cardinality: false
+    high_cardinality: true
     labels:
       - name: "version"
         column_name: "VERSION"
