@@ -67,7 +67,7 @@ func newUploadManager(
 
 	if arn := conf.S3Uploader.RoleArn; arn != "" {
 		s3Opts = append(s3Opts, func(o *s3.Options) {
-			o.Credentials = stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), arn)
+			o.Credentials = aws.NewCredentialsCache(stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), arn))
 		})
 	}
 
