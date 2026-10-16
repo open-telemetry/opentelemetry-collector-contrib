@@ -31,6 +31,9 @@ The following settings are optional:
 
 - `collection_interval` (default = `10s`): The internal at which metrics should
 be emitted by this receiver.
+- `timeout` (default = `0`): The scrape timeout. It is capped at
+`collection_interval`; a larger value logs a warning and `collection_interval`
+is used. When unset, the scrape timeout is `collection_interval`.
 - `job_name` (default = `prometheus_simple/${endpoint}`): Prometheus scrape job name.
 - `labels` (default = `{}`): Static prometheus labels to assign to all metrics scraped from this endpoint.
 - `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
