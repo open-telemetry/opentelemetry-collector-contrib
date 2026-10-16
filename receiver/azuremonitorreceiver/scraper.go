@@ -183,8 +183,8 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		resourcesIDsWithDefinitions := make(chan string)
 		go func(subscriptionID string) {
 			defer close(resourcesIDsWithDefinitions)
-			for resourceID := range s.resources[subscriptionID] {
-				s.loadMetricsDefinitions(ctx, subscriptionID, resourceID)
+			for resourceID, res := range s.resources[subscriptionID] {
+				s.loadMetricsDefinitions(ctx, subscriptionID, resourceID, res.resourceType)
 				resourcesIDsWithDefinitions <- resourceID
 			}
 		}(subscriptionID)
@@ -467,7 +467,7 @@ func (s *azureScraper) getResourcesFilter() string {
 	return fmt.Sprintf("(resourceType eq '%s')%s", resourcesTypeFilter, resourcesGroupFilterString)
 }
 
-func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionID, resourceID string) {
+func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionID, resourceID string, resourceType *string) {
 	s.settings.Logger.Debug("Loading the list of Azure Metrics Definitions",
 		zap.String("resource_id", resourceID),
 		zap.String("subscription_id", subscriptionID))
@@ -494,13 +494,9 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 
 	s.collectMetricDefinitions(ctx, subscriptionID, resourceID, clientMetricsDefinitions, nil, discoveredNamespaces)
 
-	var resourceType string
-	if res := s.resources[subscriptionID][resourceID]; res != nil {
-		if res.resourceType != nil {
-			resourceType = *res.resourceType
-		} else if t, ok := res.attributes[attributeResourceType]; ok && t != nil {
-			resourceType = *t
-		}
+	var resType string
+	if resourceType != nil {
+		resType = *resourceType
 	}
 
 	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
@@ -508,7 +504,7 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 	// when the metricnamespace query parameter is set explicitly. Make additional calls
 	// only for namespaces applicable to this resource that were not already returned
 	// by the default call above.
-	for _, configNamespace := range dedupAlreadyCollectedNamespaces(s.cfg.Metrics, discoveredNamespaces, resourceType) {
+	for _, configNamespace := range dedupAlreadyCollectedNamespaces(s.cfg.Metrics, discoveredNamespaces, resType) {
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
 			Metricnamespace: new(configNamespace),
 		}
