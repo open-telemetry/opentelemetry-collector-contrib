@@ -1,7 +1,16 @@
 type: resourcedetectionprocessor/openshift
-sem_conv_version: 1.40.0
+sem_conv_version: 1.43.0
 
 parent: resourcedetection
+
+feature_gates:
+  - id: processor.resourcedetection.openshift.removeCloudNameRegion
+    stage: alpha
+    description: >-
+      When enabled, the detector no longer sets `cloud.region` from the Azure or OpenStack `cloudName`,
+      which names a cloud environment or a `clouds.yaml` entry rather than a region.
+    from_version: v0.163.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159
 
 resource_attributes:
   cloud.platform:
