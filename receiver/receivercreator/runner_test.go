@@ -221,4 +221,39 @@ func TestReceiverRunner_ReportsSubReceiverStatus(t *testing.T) {
 		assert.Contains(t, subID.AsString(), run.idNamespace.String())
 		assert.Contains(t, subID.AsString(), "endpoint.id")
 	})
+
+	t.Run("does not report StatusOK for one receiver while a sibling is still failing", func(t *testing.T) {
+		var events []*componentstatus.Event
+		host := newReportingMockHost(t, func(ev *componentstatus.Event) { events = append(events, ev) })
+		host.factories.Receivers[component.MustNewType("erroring")] = &erroringFactory{Factory: receivertest.NewNopFactory()}
+		run := &receiverRunner{
+			params:      receivertest.NewNopSettings(metadata.Type),
+			idNamespace: component.NewIDWithName(metadata.Type, "1"),
+			host:        host,
+		}
+
+		erroringTemplate, err := newReceiverTemplate("erroring/1", nil)
+		require.NoError(t, err)
+		_, err = run.start(erroringTemplate.receiverConfig, userConfigMap{
+			tmpSetEndpointConfigKey: struct{}{},
+			endpointConfigKey:       "localhost:12345",
+		}, &enhancingConsumer{metrics: consumertest.NewNop()})
+		require.Error(t, err)
+
+		okTemplate, err := newReceiverTemplate("with_endpoint/1", nil)
+		require.NoError(t, err)
+		comp, err := run.start(okTemplate.receiverConfig, userConfigMap{
+			tmpSetEndpointConfigKey: struct{}{},
+			endpointConfigKey:       "localhost:23456",
+		}, &enhancingConsumer{metrics: consumertest.NewNop()})
+		require.NoError(t, err)
+		require.NotNil(t, comp)
+
+		// Only the erroring receiver's own StatusRecoverableError is reported.
+		// The with_endpoint receiver's successful start must not surface as
+		// StatusOK, since that would hide the erroring receiver's failure on
+		// the InstanceID they share.
+		require.Len(t, events, 1)
+		assert.Equal(t, componentstatus.StatusRecoverableError, events[0].Status())
+	})
 }
