@@ -364,14 +364,17 @@ func (e *datadogExtension) GetSerializer() agentcomponents.SerializerWithForward
 	return e.serializer
 }
 
-// buildAgentConfig constructs the Datadog agent config component from the extension config.
-// Extracted to allow unit testing of option propagation independently of the full extension lifecycle.
-func buildAgentConfig(cfg *Config) coreconfig.Component {
+// buildAgentConfig builds the Agent config component backing this extension's serializer
+// and forwarder. Extracted so option propagation can be unit tested on its own.
+//
+// extraOptions are host-supplied (see WithConfigOptions) and applied last, so they can
+// override anything set below.
+func buildAgentConfig(cfg *Config, extraOptions ...agentcomponents.ConfigOption) coreconfig.Component {
 	ddConfig := &datadogconfig.Config{
 		API:          cfg.API,
 		ClientConfig: cfg.ClientConfig,
 	}
-	return agentcomponents.NewConfigComponent(
+	options := []agentcomponents.ConfigOption{
 		agentcomponents.WithAPIConfig(ddConfig),
 		agentcomponents.WithForwarderConfig(),
 		agentcomponents.WithPayloadsConfig(),
@@ -380,7 +383,8 @@ func buildAgentConfig(cfg *Config) coreconfig.Component {
 		agentcomponents.WithTLSSetting(ddConfig),
 		// logging_frequency required to be set to avoid "divide by zero" error
 		agentcomponents.WithLoggingConfig(),
-	)
+	}
+	return agentcomponents.NewConfigComponent(append(options, extraOptions...)...)
 }
 
 func newExtension(
@@ -389,6 +393,7 @@ func newExtension(
 	set extension.Settings,
 	hostProvider source.Provider,
 	uuidProvider uuidProvider,
+	configOptions ...agentcomponents.ConfigOption,
 ) (*datadogExtension, error) {
 	var host source.Source
 	var hostnameSource string
@@ -407,7 +412,7 @@ func newExtension(
 	}
 
 	// Create agent components
-	configComponent := buildAgentConfig(cfg)
+	configComponent := buildAgentConfig(cfg, configOptions...)
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.SourceIdentifier.Primary)
 
