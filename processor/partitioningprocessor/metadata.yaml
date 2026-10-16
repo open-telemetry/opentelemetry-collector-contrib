@@ -33,7 +33,7 @@ attributes:
 
 telemetry:
   metrics:
-    partitioning.key_evaluation.errors:
+    processor.partitioning.key_evaluation.errors:
       prefix: otelcol.
       enabled: true
       description: Number of batches rejected because a key expression failed to evaluate or returned a non-string value.
@@ -43,7 +43,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    partitioning.partitions:
+    processor.partitioning.partitions:
       prefix: otelcol.
       enabled: true
       description: Number of partitions each incoming batch was split into.

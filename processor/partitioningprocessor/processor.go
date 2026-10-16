@@ -71,7 +71,7 @@ func (p *partitioningProcessor) ConsumeMetrics(ctx context.Context, md pmetric.M
 	return consumePartitions(ctx, p.keyNames, parts, p.nextMetrics.ConsumeMetrics)
 }
 
-// error.type values for otelcol.partitioning.key_evaluation.errors, built once
+// error.type values for otelcol.processor.partitioning.key_evaluation.errors, built once
 // so that recording an error does not allocate.
 var (
 	evaluationFailedAttrs = metric.WithAttributeSet(attribute.NewSet(attribute.String("error.type", "evaluation_failed")))
@@ -85,7 +85,7 @@ func (p *partitioningProcessor) keyEvaluationError(ctx context.Context, err erro
 	if errors.Is(err, errInvalidValueType) {
 		attrs = invalidValueTypeAttrs
 	}
-	p.telemetry.PartitioningKeyEvaluationErrors.Add(ctx, 1, attrs)
+	p.telemetry.ProcessorPartitioningKeyEvaluationErrors.Add(ctx, 1, attrs)
 	// Key evaluation depends only on the data, so a retry would fail the same way.
 	return consumererror.NewPermanent(err)
 }
@@ -93,7 +93,7 @@ func (p *partitioningProcessor) keyEvaluationError(ctx context.Context, err erro
 // recordPartitions records how many partitions an incoming batch was split into.
 func (p *partitioningProcessor) recordPartitions(ctx context.Context, partitions int) {
 	if partitions > 0 {
-		p.telemetry.PartitioningPartitions.Record(ctx, int64(partitions))
+		p.telemetry.ProcessorPartitioningPartitions.Record(ctx, int64(partitions))
 	}
 }
 

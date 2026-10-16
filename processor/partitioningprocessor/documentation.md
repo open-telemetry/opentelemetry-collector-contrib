@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol.partitioning.key_evaluation.errors
+### otelcol.processor.partitioning.key_evaluation.errors
 
 Number of batches rejected because a key expression failed to evaluate or returned a non-string value.
 
@@ -20,7 +20,7 @@ Number of batches rejected because a key expression failed to evaluate or return
 | ---- | ----------- | ------ | ------------------- |
 | error.type | Why key evaluation failed. | Str: ``evaluation_failed``, ``invalid_value_type`` | - |
 
-### otelcol.partitioning.partitions
+### otelcol.processor.partitioning.partitions
 
 Number of partitions each incoming batch was split into.
 

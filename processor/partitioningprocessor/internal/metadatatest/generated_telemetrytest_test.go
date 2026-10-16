@@ -19,12 +19,12 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.PartitioningKeyEvaluationErrors.Add(context.Background(), 1)
-	tb.PartitioningPartitions.Record(context.Background(), 1)
-	AssertEqualPartitioningKeyEvaluationErrors(t, testTel,
+	tb.ProcessorPartitioningKeyEvaluationErrors.Add(context.Background(), 1)
+	tb.ProcessorPartitioningPartitions.Record(context.Background(), 1)
+	AssertEqualProcessorPartitioningKeyEvaluationErrors(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualPartitioningPartitions(t, testTel,
+	AssertEqualProcessorPartitioningPartitions(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 

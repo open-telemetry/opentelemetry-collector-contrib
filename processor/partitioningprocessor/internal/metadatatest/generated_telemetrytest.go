@@ -21,9 +21,9 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	return set
 }
 
-func AssertEqualPartitioningKeyEvaluationErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorPartitioningKeyEvaluationErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.partitioning.key_evaluation.errors",
+		Name:        "otelcol.processor.partitioning.key_evaluation.errors",
 		Description: "Number of batches rejected because a key expression failed to evaluate or returned a non-string value. [Development]",
 		Unit:        "{batch}",
 		Data: metricdata.Sum[int64]{
@@ -32,14 +32,14 @@ func AssertEqualPartitioningKeyEvaluationErrors(t *testing.T, tt *componenttest.
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.partitioning.key_evaluation.errors")
+	got, err := tt.GetMetric("otelcol.processor.partitioning.key_evaluation.errors")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualPartitioningPartitions(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorPartitioningPartitions(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.partitioning.partitions",
+		Name:        "otelcol.processor.partitioning.partitions",
 		Description: "Number of partitions each incoming batch was split into. [Development]",
 		Unit:        "{partition}",
 		Data: metricdata.Histogram[int64]{
@@ -47,7 +47,7 @@ func AssertEqualPartitioningPartitions(t *testing.T, tt *componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.partitioning.partitions")
+	got, err := tt.GetMetric("otelcol.processor.partitioning.partitions")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
