@@ -774,11 +774,11 @@ func TestProcessor_RootSpanConditionMultipleMatches(t *testing.T) {
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Count:        1,
-				Sum:          6,
-				Min:          metricdata.NewExtrema(int64(6)),
-				Max:          metricdata.NewExtrema(int64(6)),
+				Sum:          3,
+				Min:          metricdata.NewExtrema(int64(3)),
+				Max:          metricdata.NewExtrema(int64(3)),
 				Bounds:       []float64{2, 3, 5, 10, 25, 100},
-				BucketCounts: []uint64{0, 0, 0, 1, 0, 0, 0},
+				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0},
 			},
 		},
 		metricdatatest.IgnoreTimestamp(),

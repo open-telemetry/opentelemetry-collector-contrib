@@ -41,7 +41,6 @@ telemetry:
       histogram:
         value_type: int
       stability: development
-
     processor_adaptive_tail_sampling_fleet_member_count:
       enabled: true
       description: Current fleet member count reported by the fleet_tracker extension; the processor divides each rule's goal_throughput by this value. Not emitted when fleet_tracker is unset.
@@ -49,7 +48,6 @@ telemetry:
       gauge:
         value_type: int
       stability: development
-
     processor_adaptive_tail_sampling_fleet_tracker_errors:
       enabled: true
       description: Number of non-positive member counts received from the fleet tracker; the last good count is kept.
@@ -58,7 +56,6 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
-
     processor_adaptive_tail_sampling_incoming_tracestate_unparseable:
       enabled: true
       description: Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold.

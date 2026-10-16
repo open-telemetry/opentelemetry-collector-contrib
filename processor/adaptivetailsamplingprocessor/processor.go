@@ -579,10 +579,6 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 				pt.spanCount++
 				if p.evalRootSpanCondition(ctx, rs, ss, span) {
 					pt.rootSpanConditionMatches++
-
-					if p.evalRootSpanCondition(ctx, rs, ss, span) {
-						pt.rootSpanConditionMatches++
-					}
 				}
 				b, ok := pendingBuckets[id]
 				if !ok {
