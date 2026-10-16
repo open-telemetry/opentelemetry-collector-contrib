@@ -341,3 +341,56 @@ func TestGetPrometheusConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestGetPrometheusConfigScheme(t *testing.T) {
+	tests := []struct {
+		name       string
+		tls        configtls.ClientConfig
+		wantScheme string
+		wantTLS    configutil.TLSConfig
+	}{
+		{
+			name:       "default insecure",
+			tls:        configtls.ClientConfig{Insecure: true},
+			wantScheme: "http",
+		},
+		{
+			name:       "insecure false",
+			tls:        configtls.ClientConfig{Insecure: false},
+			wantScheme: "https",
+		},
+		{
+			name: "ca_file with default insecure",
+			tls: configtls.ClientConfig{
+				Config:   configtls.Config{CAFile: "./testdata/test_cert.pem"},
+				Insecure: true,
+			},
+			wantScheme: "https",
+			wantTLS:    configutil.TLSConfig{CAFile: "./testdata/test_cert.pem"},
+		},
+		{
+			name: "cert_file and key_file without ca_file are not used with default insecure",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{
+					CertFile: "./testdata/test_cert.pem",
+					KeyFile:  "./testdata/test_cert.pem",
+				},
+				Insecure:           true,
+				InsecureSkipVerify: true,
+			},
+			wantScheme: "http",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.ClientConfig.TLS = tt.tls
+			got, err := getPrometheusConfig(cfg, zap.NewNop())
+			require.NoError(t, err)
+			sc := got.PrometheusConfig.ScrapeConfigs[0]
+			assert.Equal(t, tt.wantScheme, sc.Scheme)
+			assert.Equal(t, tt.wantTLS, sc.HTTPClientConfig.TLSConfig)
+			assert.Equal(t, sc.ScrapeInterval, sc.ScrapeTimeout)
+		})
+	}
+}
