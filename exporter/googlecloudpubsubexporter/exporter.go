@@ -266,6 +266,9 @@ func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces ptrace.Trace
 	}
 
 	for key, tracesForKey := range tracesByOrderingKey {
+		if tracesForKey.SpanCount() == 0 {
+			continue
+		}
 		if err := ex.publishTraces(ctx, tracesForKey, key); err != nil {
 			return err
 		}
@@ -274,6 +277,9 @@ func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces ptrace.Trace
 }
 
 func (ex *pubsubExporter) publishTraces(ctx context.Context, tracesForKey ptrace.Traces, orderingKey string) error {
+	if tracesForKey.SpanCount() == 0 {
+		return nil
+	}
 	watermark := ex.tracesWatermarkFunc(tracesForKey, time.Now(), ex.config.Watermark.AllowedDrift).UTC()
 	attributes, attributesErr := ex.getMessageAttributes(signalTrace, watermark)
 	if attributesErr != nil {
@@ -321,6 +327,9 @@ func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pmetric.Me
 	}
 
 	for key, metricsForKey := range metricsByOrderingKey {
+		if metricsForKey.DataPointCount() == 0 {
+			continue
+		}
 		if err := ex.publishMetrics(ctx, metricsForKey, key); err != nil {
 			return err
 		}
@@ -329,6 +338,9 @@ func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pmetric.Me
 }
 
 func (ex *pubsubExporter) publishMetrics(ctx context.Context, metricsForKey pmetric.Metrics, orderingKey string) error {
+	if metricsForKey.DataPointCount() == 0 {
+		return nil
+	}
 	watermark := ex.metricsWatermarkFunc(metricsForKey, time.Now(), ex.config.Watermark.AllowedDrift).UTC()
 	attributes, attributesErr := ex.getMessageAttributes(signalMetric, watermark)
 	if attributesErr != nil {
@@ -378,6 +390,9 @@ func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs plog.Logs) error
 	}
 
 	for key, logsForKey := range logsByOrderingKey {
+		if logsForKey.LogRecordCount() == 0 {
+			continue
+		}
 		if err := ex.publishLogs(ctx, logsForKey, key); err != nil {
 			return err
 		}
@@ -386,6 +401,9 @@ func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs plog.Logs) error
 }
 
 func (ex *pubsubExporter) publishLogs(ctx context.Context, logs plog.Logs, orderingKey string) error {
+	if logs.LogRecordCount() == 0 {
+		return nil
+	}
 	watermark := ex.logsWatermarkFunc(logs, time.Now(), ex.config.Watermark.AllowedDrift).UTC()
 	attributes, attributesErr := ex.getMessageAttributes(signalLog, watermark)
 	if attributesErr != nil {
