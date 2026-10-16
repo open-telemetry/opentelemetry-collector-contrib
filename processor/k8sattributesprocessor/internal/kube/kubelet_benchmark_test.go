@@ -81,7 +81,7 @@ func makeBenchmarkKubeletPods(n, uidOffset int) []api_v1.Pod {
 }
 
 func BenchmarkKubeletReconcilePods(b *testing.B) {
-	for _, n := range []int{1000, 5000, 10000} {
+	for _, n := range []int{110, 1000, 5000, 10000} {
 		b.Run(fmt.Sprintf("steady_state_%d", n), func(b *testing.B) {
 			c := newBenchmarkKubeletClient(b, Filters{Node: "node-a"})
 			pods := makeBenchmarkKubeletPods(n, 0)
@@ -97,7 +97,7 @@ func BenchmarkKubeletReconcilePods(b *testing.B) {
 }
 
 func BenchmarkKubeletReconcilePodsWithChurn(b *testing.B) {
-	for _, n := range []int{1000, 5000, 10000} {
+	for _, n := range []int{110, 1000, 5000, 10000} {
 		b.Run(fmt.Sprintf("ten_percent_churn_%d", n), func(b *testing.B) {
 			c := newBenchmarkKubeletClient(b, Filters{Node: "node-a"})
 			base := makeBenchmarkKubeletPods(n, 0)

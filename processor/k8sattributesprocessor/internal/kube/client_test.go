@@ -3191,17 +3191,17 @@ func TestReconcileKubeletPodsFiltersLocally(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestReconcileKubeletPodsInvalidFilter(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
-	c.Filters = Filters{
-		Labels: []LabelFilter{{Op: selection.Exists}},
-	}
-	c.kubeletPods = map[string]*api_v1.Pod{}
-
-	c.reconcileKubeletPods([]api_v1.Pod{
-		kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil),
+func TestNewKubeletRejectsInvalidFilter(t *testing.T) {
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, ExtractionRules{}, Filters{
+		Node:   "node-a",
+		Labels: []LabelFilter{{Key: "app", Op: selection.In}},
+	}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second, KubeletConfig{
+		Enabled:           true,
+		Endpoint:          "http://node-a:10250",
+		AllowInsecureHTTP: true,
 	})
-	assert.Empty(t, c.kubeletPods)
+	require.ErrorContains(t, err, "label filters don't support operator")
+	assert.Nil(t, c)
 }
 
 type fakePodLister struct {
@@ -3536,9 +3536,12 @@ func TestKubeletPodStartTimeUsesStatusStartTime(t *testing.T) {
 		PodName:   true,
 		StartTime: true,
 	}
+	c.kubeletPods = map[string]*api_v1.Pod{}
 
+	// Static pods listed from kubelet carry no metadata.creationTimestamp.
 	pod := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
-	c.addOrUpdatePodFromKubelet(&pod)
+	require.True(t, pod.CreationTimestamp.IsZero())
+	c.reconcileKubeletPods([]api_v1.Pod{pod})
 
 	got, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
 	require.True(t, ok)
@@ -3546,6 +3549,37 @@ func TestKubeletPodStartTimeUsesStatusStartTime(t *testing.T) {
 	want, err := pod.Status.StartTime.MarshalText()
 	require.NoError(t, err)
 	assert.Equal(t, string(want), got.Attributes["k8s.pod.start_time"])
+}
+
+func TestKubeletPodStartTimePrefersCreationTimestamp(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{StartTime: true}
+	c.kubeletPods = map[string]*api_v1.Pod{}
+
+	pod := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	created := meta_v1.NewTime(time.Unix(100, 0))
+	pod.CreationTimestamp = created
+	c.reconcileKubeletPods([]api_v1.Pod{pod})
+
+	got, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+	require.True(t, ok)
+	want, err := created.MarshalText()
+	require.NoError(t, err)
+	assert.Equal(t, string(want), got.Attributes["k8s.pod.start_time"])
+}
+
+func TestInformerPodStartTimeDoesNotFallBackToStatusStartTime(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{StartTime: true}
+
+	// Default (informer) behavior is unchanged: no creationTimestamp means no k8s.pod.start_time.
+	pod := kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	c.handlePodAdd(&pod)
+
+	got, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+	require.True(t, ok)
+	_, hasStartTime := got.Attributes["k8s.pod.start_time"]
+	assert.False(t, hasStartTime)
 }
 
 func kubeletTestPod(uid, name, namespace, node, ip string, labels map[string]string) api_v1.Pod {

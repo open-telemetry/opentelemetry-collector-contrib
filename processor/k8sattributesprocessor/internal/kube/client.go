@@ -60,6 +60,8 @@ type WatchClient struct {
 	kubelet                KubeletConfig
 	kubeletPods            map[string]*api_v1.Pod
 	kubeletPodLister       podLister
+	podLabelSelector       labels.Selector
+	podFieldSelector       fields.Selector
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -183,6 +185,8 @@ func New(
 	if err != nil {
 		return nil, err
 	}
+	c.podLabelSelector = labelSelector
+	c.podFieldSelector = fieldSelector
 	set.Logger.Info(
 		"k8s filtering",
 		zap.String("labelSelector", labelSelector.String()),
@@ -528,15 +532,16 @@ func (c *WatchClient) listKubeletPods(ctx context.Context) error {
 }
 
 func (c *WatchClient) reconcileKubeletPods(pods []api_v1.Pod) {
-	labelSelector, fieldSelector, err := selectorsFromFilters(Filters{Labels: c.Filters.Labels, Fields: c.Filters.Fields})
-	if err != nil {
-		c.logger.Warn("failed to build kubelet pod filter", zap.Error(err))
-		return
-	}
 	current := make(map[string]*api_v1.Pod, len(pods))
 	for i := range pods {
-		if !c.matchesPodFilters(&pods[i], labelSelector, fieldSelector) {
+		if !c.matchesPodFilters(&pods[i]) {
 			continue
+		}
+		// Static pods served by kubelet /pods come from the node's manifest files, not the API
+		// server, so they carry no metadata.creationTimestamp. Fall back to status.startTime so
+		// k8s.pod.start_time and the creation-time heuristics behave like the informer source.
+		if pods[i].CreationTimestamp.IsZero() && pods[i].Status.StartTime != nil {
+			pods[i].CreationTimestamp = *pods[i].Status.StartTime
 		}
 		pod := removeUnnecessaryPodData(&pods[i], c.Rules)
 		uid := string(pod.UID)
@@ -562,14 +567,14 @@ func (c *WatchClient) reconcileKubeletPods(pods []api_v1.Pod) {
 	c.kubeletPods = current
 }
 
-func (c *WatchClient) matchesPodFilters(pod *api_v1.Pod, labelSelector labels.Selector, fieldSelector fields.Selector) bool {
+// matchesPodFilters applies the configured filters to a pod listed from kubelet. The namespace
+// filter is checked directly (the informer scopes it via the list namespace); label and field
+// filters, including filter.node as spec.nodeName, use the selectors built once in New.
+func (c *WatchClient) matchesPodFilters(pod *api_v1.Pod) bool {
 	if c.Filters.Namespace != "" && pod.Namespace != c.Filters.Namespace {
 		return false
 	}
-	if c.Filters.Node != "" && pod.Spec.NodeName != c.Filters.Node {
-		return false
-	}
-	return labelSelector.Matches(labels.Set(pod.Labels)) && fieldSelector.Matches(podFieldsSet(pod))
+	return c.podLabelSelector.Matches(labels.Set(pod.Labels)) && c.podFieldSelector.Matches(podFieldsSet(pod))
 }
 
 func podFieldsSet(pod *api_v1.Pod) fields.Set {
@@ -1167,9 +1172,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
-		if ts.IsZero() && pod.Status.StartTime != nil {
-			ts = *pod.Status.StartTime
-		}
 		if !ts.IsZero() {
 			if rfc3339ts, err := ts.MarshalText(); err != nil {
 				c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
@@ -1922,10 +1924,6 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	c.m.Unlock()
 
 	c.appendDeleteRequests(staleRequests)
-}
-
-func (c *WatchClient) addOrUpdatePodFromKubelet(pod *api_v1.Pod) {
-	c.addOrUpdatePod(pod)
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
