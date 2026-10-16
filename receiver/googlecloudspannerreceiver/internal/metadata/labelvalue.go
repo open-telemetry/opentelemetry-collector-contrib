@@ -382,7 +382,7 @@ func (v *dateLabelValue) ModifyValue(s string) {
 func newDateLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
 	nullDate := *valueHolder.(*spanner.NullDate)
 	var val string
-	if nullDate.Valid {
+	if nullDate.Valid && nullDate.Date.IsValid() {
 		val = nullDate.Date.String()
 	}
 	return dateLabelValue{
