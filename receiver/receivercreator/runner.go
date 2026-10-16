@@ -44,7 +44,10 @@ type receiverRunner struct {
 	idNamespace component.ID
 	host        host
 	receivers   map[string]*wrappedReceiver
-	lock        *sync.Mutex
+	lock        sync.Mutex
+	// failedSubReceivers tracks dynamically started receivers that failed to
+	// start and haven't reported StatusOK since. Guarded by lock.
+	failedSubReceivers map[component.ID]struct{}
 }
 
 func newReceiverRunner(params rcvr.Settings, host host) *receiverRunner {
@@ -54,7 +57,6 @@ func newReceiverRunner(params rcvr.Settings, host host) *receiverRunner {
 		idNamespace: params.ID,
 		host:        host,
 		receivers:   map[string]*wrappedReceiver{},
-		lock:        &sync.Mutex{},
 	}
 }
 
@@ -129,13 +131,45 @@ func (run *receiverRunner) start(
 	}
 
 	if err = wr.Start(context.Background(), run.host); err != nil {
-		run.reportSubReceiverStatus(id, componentstatus.StatusRecoverableError, err)
+		run.recordSubReceiverFailure(id, err)
 		return nil, fmt.Errorf("failed starting endpoint-derived receiver: %w", err)
 	}
 
-	run.reportSubReceiverStatus(id, componentstatus.StatusOK, nil)
+	run.recordSubReceiverRecovered(id)
 
 	return wr, nil
+}
+
+// recordSubReceiverFailure reports a dynamically started receiver's start
+// failure and remembers it so a sibling receiver's later success doesn't
+// mask it (see recordSubReceiverRecovered).
+func (run *receiverRunner) recordSubReceiverFailure(id component.ID, err error) {
+	run.lock.Lock()
+	if run.failedSubReceivers == nil {
+		run.failedSubReceivers = map[component.ID]struct{}{}
+	}
+	run.failedSubReceivers[id] = struct{}{}
+	run.lock.Unlock()
+
+	run.reportSubReceiverStatus(id, componentstatus.StatusRecoverableError, err)
+}
+
+// recordSubReceiverRecovered reports a dynamically started receiver's
+// successful start, unless another dynamically started receiver is still
+// known to have failed. The status FSM tracks one state per InstanceID,
+// shared by every receiver this receiver_creator instance starts, so
+// reporting StatusOK while a sibling receiver hasn't recovered would hide
+// that sibling's failure.
+func (run *receiverRunner) recordSubReceiverRecovered(id component.ID) {
+	run.lock.Lock()
+	delete(run.failedSubReceivers, id)
+	otherFailuresRemain := len(run.failedSubReceivers) > 0
+	run.lock.Unlock()
+
+	if otherFailuresRemain {
+		return
+	}
+	run.reportSubReceiverStatus(id, componentstatus.StatusOK, nil)
 }
 
 // reportSubReceiverStatus reports the status of a receiver started by
