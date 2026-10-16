@@ -27,6 +27,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	clientConfig := confighttp.NewDefaultClientConfig()
+	defaultQueueSettings := createDefaultConfig().(*Config).QueueSettings
 
 	tests := []struct {
 		id       component.ID
@@ -35,9 +36,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				ClientConfig: clientConfig,
-				APIKey:       "test-apikey",
-				APIURL:       "https://api.honeycomb.io",
+				ClientConfig:  clientConfig,
+				QueueSettings: defaultQueueSettings,
+				APIKey:        "test-apikey",
+				APIURL:        "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",
@@ -54,11 +56,13 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "all_fields"),
 			expected: &Config{
 				ClientConfig: clientConfig,
-				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers: 10,
-					QueueSize:    1000,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				}),
+				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+					queue := *createDefaultConfig().(*Config).QueueSettings.GetOrInsertDefault()
+					queue.NumConsumers = 10
+					queue.QueueSize = 1000
+					queue.Sizer = exporterhelper.RequestSizerTypeRequests
+					return configoptional.Some(queue)
+				}(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				APIKey:        "test-apikey",
 				APIURL:        "https://api.testhost.io",
@@ -92,9 +96,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "path_context_log"),
 			expected: &Config{
-				ClientConfig: clientConfig,
-				APIKey:       "test-apikey",
-				APIURL:       "https://api.honeycomb.io",
+				ClientConfig:  clientConfig,
+				QueueSettings: defaultQueueSettings,
+				APIKey:        "test-apikey",
+				APIURL:        "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",
@@ -111,9 +116,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "path_context_mixed"),
 			expected: &Config{
-				ClientConfig: clientConfig,
-				APIKey:       "test-apikey",
-				APIURL:       "https://api.honeycomb.io",
+				ClientConfig:  clientConfig,
+				QueueSettings: defaultQueueSettings,
+				APIKey:        "test-apikey",
+				APIURL:        "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",

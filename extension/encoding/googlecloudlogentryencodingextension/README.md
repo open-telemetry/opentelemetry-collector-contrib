@@ -8,7 +8,7 @@ This extension can be used to unmarshall a [Cloud Logging LogEntry](https://clou
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fgooglecloudlogentryencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fgooglecloudlogentryencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fgooglecloudlogentryencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fgooglecloudlogentryencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://www.github.com/constanca-m) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://www.github.com/constanca-m) \| Seeking more code owners! |
 | Emeritus      | [@alexvanboxel](https://www.github.com/alexvanboxel) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -51,8 +51,8 @@ The [log entry](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEn
 | `insertId`                                   | Log record attribute: `log.record.uid`                                                                                                                                             |
 | `logName`                                    | Parse it and place it in the resource log attributes, if present:<br>1.`gcp.project`<br>2.`gcp.organization`<br>3.`gcp.billing_account`<br>4.`gcp.folder`<br>5.`cloud.resource_id` |
 | `severity`                                   | Parse it and place in log record fields:<br>1.`severityNumber`<br>2.`severityText`                                                                                                 |
-| `trace`                                      | Log record field: `traceId`                                                                                                                                                        |
-| `spanId`                                     | Log record field: `spanId`                                                                                                                                                         |
+| `trace`                                      | Log record field: `traceId`. Accepts `projects/<project>/traces/<id>` or a bare `<id>`.<br>If it can't be parsed, log record attribute: `gcp.trace`                                |
+| `spanId`                                     | Log record field: `spanId`.<br>If it can't be parsed, log record attribute: `gcp.span_id`                                                                                          |
 | `traceSampled`                               | Log record field: `flags`                                                                                                                                                          |
 | `labels`                                     | Log record attribute: `gcp.label.<label_key>`                                                                                                                                      |
 | `httpRequest.requestMethod`                  | Log record attribute: `http.request.method`                                                                                                                                        |
@@ -472,7 +472,7 @@ Application Load Balancer logs (both [Global External](https://docs.cloud.google
 | `healthyIps` | `gcp.dns.healthy.ips` |
 | `unhealthyIps` | `gcp.dns.unhealthy.ips` |
 | `dns64Translated` | `gcp.dns.dns64.translated` |
-| `vmInstanceId` | `host.id` |
+| `vmInstanceIdString` | `host.id` |
 | `vmInstanceName` | `host.name` |
 | `vmProjectId` | `gcp.project.id` |
 | `vmZoneName` | `cloud.availability_zone` |

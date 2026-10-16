@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"net/url"
 	"reflect"
 	"slices"
@@ -50,6 +51,28 @@ func defaultNewVcenterClient(l *zap.Logger, c *Config) *vcenterClient {
 	}
 }
 
+// applyProxy points the transport at the configured proxy. When proxy_url is
+// unset the transport keeps govmomi's default of http.ProxyFromEnvironment.
+func applyProxy(transport *http.Transport, proxyURL string) error {
+	if proxyURL == "" {
+		return nil
+	}
+
+	parsed, err := url.Parse(proxyURL)
+	if err != nil {
+		return fmt.Errorf("unable to parse proxy_url %s: %w", proxyURL, err)
+	}
+	transport.Proxy = http.ProxyURL(parsed)
+
+	// net/http hands govmomi's DialTLSContext the proxy's address when the proxy
+	// speaks https, and that hook reuses TLSClientConfig as-is, so the vCenter
+	// tls settings would be verified against the proxy's certificate. It only
+	// adds a thumbprint fallback this receiver never configures.
+	transport.DialTLSContext = nil
+
+	return nil
+}
+
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.sessionManager != nil {
@@ -65,6 +88,11 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	}
 
 	soapClient := soap.NewClient(sdkURL, vc.cfg.ClientConfig.Insecure)
+	// The vSAN client below reuses this transport, so both drivers are covered.
+	if proxyErr := applyProxy(soapClient.DefaultTransport(), vc.cfg.ProxyURL); proxyErr != nil {
+		return proxyErr
+	}
+
 	tlsCfg, err := vc.cfg.ClientConfig.LoadTLSConfig(ctx)
 	if err != nil {
 		return err

@@ -17,8 +17,8 @@ type logsRouter struct {
 	*baseFailoverRouter[consumer.Logs]
 }
 
-func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config) (*logsRouter, error) {
-	failover, err := newBaseFailoverRouter(provider, cfg)
+func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config, logger *zap.Logger) (*logsRouter, error) {
+	failover, err := newBaseFailoverRouter(provider, cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (f *logsRouter) consumeByHealthyPipeline(ctx context.Context, ld plog.Logs)
 
 		if err := tc.ConsumeLogs(ctx, ld); err != nil {
 			if f.shouldFailoverOnError(err) {
-				f.reportConsumerError(idx)
+				f.reportConsumerError(idx, err)
 				continue
 			}
 			return err
@@ -111,7 +111,7 @@ func newLogsToLogs(set connector.Settings, cfg component.Config, logs consumer.L
 		return nil, errors.New("consumer is not of type LogsRouter")
 	}
 
-	failover, err := newLogsRouter(lr.Consumer, config)
+	failover, err := newLogsRouter(lr.Consumer, config, set.Logger)
 	if err != nil {
 		return nil, err
 	}

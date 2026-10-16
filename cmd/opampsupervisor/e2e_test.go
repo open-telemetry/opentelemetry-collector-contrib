@@ -1424,7 +1424,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
 			var healthReport atomic.Value
-			var agentConfig atomic.Value
+			var remoteConfigStatus atomic.Value
 			server := newOpAMPServer(
 				t,
 				defaultConnectingHandler,
@@ -1433,11 +1433,8 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 						if message.Health != nil {
 							healthReport.Store(message.Health)
 						}
-						if message.EffectiveConfig != nil {
-							config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
-							if config != nil {
-								agentConfig.Store(string(config.Body))
-							}
+						if message.RemoteConfigStatus != nil {
+							remoteConfigStatus.Store(message.RemoteConfigStatus)
 						}
 
 						return &protobufs.ServerToAgent{}
@@ -1473,18 +1470,12 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				},
 			})
 
-			require.Eventually(t, func() bool {
-				cfg, ok := agentConfig.Load().(string)
-				if ok {
-					// The effective config may be structurally different compared to what was sent,
-					// so just check that it includes some strings we know to be unique to the remote config.
-					return strings.Contains(cfg, "doesntexist")
-				}
-
-				return false
-			}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
-
 			unhealthyTimeout := supervisorCfg.Agent.BootstrapTimeout + 2*time.Second
+			require.Eventually(t, func() bool {
+				status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+				return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED && bytes.Equal(status.LastRemoteConfigHash, hash)
+			}, unhealthyTimeout, 250*time.Millisecond, "Supervisor never reported that the bad remote config failed")
+
 			require.Eventually(t, func() bool {
 				health := healthReport.Load().(*protobufs.ComponentHealth)
 
@@ -2380,10 +2371,21 @@ func TestSupervisorRestartCommand(t *testing.T) {
 
 func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	var connectedToNewServer atomic.Bool
+	var healthOnInitialServer atomic.Pointer[protobufs.ComponentHealth]
+	// Only the first health the new server is told matters: the Collector does not
+	// restate unchanged health, so a false report there would stand.
+	var firstHealthOnNewServer atomic.Pointer[protobufs.ComponentHealth]
 	initialServer := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
-		types.ConnectionCallbacks{},
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.Health != nil {
+					healthOnInitialServer.Store(message.Health)
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		},
 	)
 
 	s, _ := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
@@ -2393,6 +2395,11 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
 
+	require.Eventually(t, func() bool {
+		health := healthOnInitialServer.Load()
+		return health != nil && health.Healthy
+	}, 30*time.Second, 250*time.Millisecond, "Supervisor never reported that the Collector was healthy")
+
 	newServer := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -2400,7 +2407,10 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 			OnConnected: func(context.Context, types.Connection) {
 				connectedToNewServer.Store(true)
 			},
-			OnMessage: func(context.Context, types.Connection, *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.Health != nil {
+					firstHealthOnNewServer.CompareAndSwap(nil, message.Health)
+				}
 				return &protobufs.ServerToAgent{}
 			},
 		},
@@ -2426,6 +2436,13 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return connectedToNewServer.Load() == true
 	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
+
+	require.Eventually(t, func() bool {
+		return firstHealthOnNewServer.Load() != nil
+	}, 30*time.Second, 250*time.Millisecond, "Supervisor never reported health to the new OpAMP server")
+
+	assert.True(t, firstHealthOnNewServer.Load().Healthy,
+		"accepting an OpAMP connection settings offer must not report a running Collector as unhealthy")
 }
 
 func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {

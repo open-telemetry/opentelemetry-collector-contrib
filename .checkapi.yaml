@@ -3,7 +3,6 @@ ignored_paths:
   - cmd/telemetrygen
   - cmd/opampsupervisor
   - config/configdbauth
-  - exporter/datadogexporter/integrationtest
   - extension/observer
   - extension/encoding
   - extension/dbauth
@@ -17,7 +16,6 @@ ignored_paths:
   - pkg/golden
   - pkg/kafka/configkafka
   - pkg/kafka/topic
-  - pkg/ottl
   - pkg/resourcetotelemetry
   - pkg/sampling
   - pkg/status
@@ -44,8 +42,10 @@ ignored_paths:
   - testbed/mockdatasenders/mockdatadogagentexporter
   - extension/sumologicextension # 40655
   - extension/k8sleaderelector # 43992
+  - extension/datadogextension # 51877
   - processor/filterprocessor # 43994
   - processor/transformprocessor # 43994
+  - connector/routingconnector # 43994
   - receiver/aerospikereceiver # 43995
   - receiver/carbonreceiver
   - receiver/statsdreceiver

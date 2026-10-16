@@ -272,3 +272,48 @@ func createTestContainer(isV4 bool) ecsutil.ContainerMetadata {
 
 	return c
 }
+
+func Test_parseTaskARN(t *testing.T) {
+	tests := []struct {
+		name        string
+		taskARN     string
+		wantRegion  string
+		wantAccount string
+		wantTaskID  string
+	}{
+		{
+			name:        "old format",
+			taskARN:     "arn:aws:ecs:us-west-2:123456789123:task/123",
+			wantRegion:  "us-west-2",
+			wantAccount: "123456789123",
+			wantTaskID:  "123",
+		},
+		{
+			name:        "new format",
+			taskARN:     "arn:aws:ecs:us-west-2:123456789123:task/my-cluster/123",
+			wantRegion:  "us-west-2",
+			wantAccount: "123456789123",
+			wantTaskID:  "123",
+		},
+		{
+			name:    "missing resource part",
+			taskARN: "arn:aws:ecs:us-west-2:123456789123",
+		},
+		{
+			name:    "empty",
+			taskARN: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var region, account, taskID string
+			require.NotPanics(t, func() {
+				region, account, taskID = parseTaskARN(tt.taskARN)
+			})
+			assert.Equal(t, tt.wantRegion, region)
+			assert.Equal(t, tt.wantAccount, account)
+			assert.Equal(t, tt.wantTaskID, taskID)
+		})
+	}
+}

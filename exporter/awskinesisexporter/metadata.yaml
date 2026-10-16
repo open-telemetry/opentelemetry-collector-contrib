@@ -8,3 +8,6 @@ status:
   distributions: [contrib]
   codeowners:
     active: [Aneurysm9, MovieStoreGuy]
+
+sending_queue:
+  support: default

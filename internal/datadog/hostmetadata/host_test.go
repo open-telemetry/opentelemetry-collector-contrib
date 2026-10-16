@@ -18,5 +18,5 @@ func TestHost(t *testing.T) {
 	require.NoError(t, err)
 	src, err := p.Source(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, source.Source{Kind: source.HostnameKind, Identifier: "test-host"}, src)
+	assert.Equal(t, source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}, src) //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 }

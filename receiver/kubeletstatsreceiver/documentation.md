@@ -400,7 +400,7 @@ Container cpu utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.container.cpu_limit_utilization
 
@@ -438,7 +438,7 @@ Container memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.container.memory_limit_utilization
 
@@ -471,6 +471,22 @@ Number of free inodes in the node's root filesystem.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.pid.limit
+
+Total number of processes/threads allowed by the operating system on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the system-wide task limit (the lower of kernel.pid_max and kernel.threads-max).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.pid.usage
+
+Total number of existing processes and threads on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Development |
 
 ### k8s.node.system_container.cpu.time
 
@@ -518,7 +534,7 @@ Pod cpu utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.pod.cpu_limit_utilization
 
@@ -542,7 +558,7 @@ Pod memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.pod.memory_limit_utilization
 
