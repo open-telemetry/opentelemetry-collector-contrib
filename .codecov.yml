@@ -337,6 +337,10 @@ component_management:
     name: extension_filetelemetrypolicy
     paths:
     - extension/filetelemetrypolicyextension/**
+  - component_id: extension_fleettracker_redisfleettracker
+    name: extension_fleettracker_redisfleettracker
+    paths:
+    - extension/fleettracker/redisfleettrackerextension/**
   - component_id: extension_googleclientauth
     name: extension_googleclientauth
     paths:
@@ -997,6 +1001,10 @@ component_management:
     name: receiver_namedpipe
     paths:
     - receiver/namedpipereceiver/**
+  - component_id: receiver_nats
+    name: receiver_nats
+    paths:
+    - receiver/natsreceiver/**
   - component_id: receiver_netflow
     name: receiver_netflow
     paths:
