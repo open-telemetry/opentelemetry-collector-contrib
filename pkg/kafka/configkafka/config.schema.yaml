@@ -87,7 +87,7 @@ $defs:
         description: InitialOffset specifies the initial offset to use if no offset was previously committed. Must be `latest` or `earliest` (default "latest").
         type: string
       max_decompress_batch_bytes:
-        description: MaxDecompressBatchBytes defines the maximum number of bytes to allow for decompressing a single Kafka record batch. This limit is applied after compression, so it bounds the memory required to decompress highly compressible batches. The default is 1 GiB (1073741824 bytes). This setting is independent of MaxFetchSize and MaxPartitionFetchSize, which limit compressed bytes on the wire.
+        description: MaxDecompressBatchBytes defines the maximum number of bytes to allow for decompressing a single Kafka record batch. This limit is applied after decompression, so it bounds the memory required for a decompressed record batch. The default is 1 GiB (1073741824 bytes). This setting is independent of MaxFetchSize and MaxPartitionFetchSize, which limit compressed bytes on the wire.
         type: integer
       max_fetch_size:
         description: The maximum bytes per fetch from Kafka (default "1048576")
