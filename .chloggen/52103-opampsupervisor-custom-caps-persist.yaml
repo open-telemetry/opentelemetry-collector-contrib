@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: cmd/opampsupervisor
+
+note: Keep the Collector's custom capabilities across an OpAMP client replacement, so custom messages keep flowing after the server offers new OpAMPConnectionSettings.
+
+issues: [52103]
+
+change_logs: [user]

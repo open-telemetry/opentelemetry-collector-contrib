@@ -172,6 +172,12 @@ type Supervisor struct {
 	// lastHealthFromClient is the last health status of the agent received from the client.
 	lastHealthFromClient atomic.Pointer[protobufs.ComponentHealth]
 
+	// Custom capabilities reported by the Collector. Kept so they survive an
+	// OpAMP client replacement: the Collector reports them only once, in its
+	// first message. See
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52103.
+	customCapabilities atomic.Pointer[protobufs.CustomCapabilities]
+
 	// healthMu guards lastReportedHealth and its publication, so that a health
 	// update and an OpAMP client replacement cannot interleave and lose the
 	// newer value.
@@ -776,6 +782,16 @@ func (s *Supervisor) startOpAMPClient() error {
 		}
 	}
 
+	// Re-apply the Collector's custom capabilities so they survive the client
+	// replacement: the Collector reports them only in its first message, and a
+	// fresh client would otherwise reject every custom message with
+	// ErrCustomCapabilityNotSupported.
+	if cc := s.customCapabilities.Load(); cc != nil {
+		if err := s.opampClient.SetCustomCapabilities(cc); err != nil {
+			return err
+		}
+	}
+
 	supportedCapabilities := s.config.Capabilities.SupportedCapabilities()
 	if err := s.opampClient.SetCapabilities(&supportedCapabilities); err != nil {
 		return err
@@ -931,13 +947,15 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 		}
 	}
 
-	// Proxy client capabilities to server
+	// Proxy client capabilities to server, and keep a copy so they survive an
+	// OpAMP client replacement (the struct field comment explains why).
 	if message.CustomCapabilities != nil {
 		span.AddEvent("Received customCapabilities")
+		s.customCapabilities.Store(message.CustomCapabilities)
 		err := s.opampClient.SetCustomCapabilities(message.CustomCapabilities)
 		if err != nil {
 			span.SetStatus(codes.Error, fmt.Sprintf("Failed to send custom capabilities to OpAMP server: %s", err.Error()))
-			s.telemetrySettings.Logger.Error("Failed to send custom capabilities to OpAMP server")
+			s.telemetrySettings.Logger.Error("Failed to send custom capabilities to OpAMP server", zap.Error(err))
 		}
 	}
 
@@ -988,7 +1006,11 @@ func (s *Supervisor) forwardCustomMessagesToServerLoop() {
 				case err == nil: // OK
 					s.telemetrySettings.Logger.Debug("Custom message forwarded to server.")
 				default:
-					s.telemetrySettings.Logger.Error("Failed to send custom message to OpAMP server")
+					s.telemetrySettings.Logger.Error("Failed to send custom message to OpAMP server",
+						zap.Error(err),
+						zap.String("capability", cm.Capability),
+						zap.String("type", cm.Type),
+					)
 				}
 				break
 			}
