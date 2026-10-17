@@ -71,6 +71,10 @@ func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer co
 		return nil, errMissingEndpoint
 	}
 
+	if cfg.WebHook.IncludeUserAttributes {
+		settings.Logger.Warn("webhook.include_user_attributes is deprecated and will be removed in a future release, use resource_attributes.<name>.enabled instead")
+	}
+
 	transport := "http"
 	if cfg.WebHook.ServerConfig.TLS.HasValue() {
 		transport = "https"

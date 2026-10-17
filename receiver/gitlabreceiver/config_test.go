@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
@@ -50,6 +51,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			},
 			IncludeUserAttributes: false,
 		},
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}
 
 	assert.Equal(t, expectedConfig, cfg, "failed to create default config")
@@ -98,6 +100,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}
 
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
@@ -128,4 +131,22 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 
 	assert.Equal(t, expectedConfig, r1)
+}
+
+func TestIncludeUserAttributesEnablesResourceAttributes(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	require.False(t, cfg.ResourceAttributes.CicdPipelineRunActorName.Enabled)
+
+	conf := confmap.NewFromStringMap(map[string]any{
+		"webhook": map[string]any{"include_user_attributes": true},
+	})
+	require.NoError(t, cfg.Unmarshal(conf))
+
+	ra := cfg.ResourceAttributes
+	assert.True(t, ra.VcsRefHeadRevisionAuthorName.Enabled)
+	assert.True(t, ra.VcsRefHeadRevisionAuthorEmail.Enabled)
+	assert.True(t, ra.VcsRefHeadRevisionMessage.Enabled)
+	assert.True(t, ra.CicdPipelineRunActorID.Enabled)
+	assert.True(t, ra.CicdPipelineRunActorName.Enabled)
+	assert.True(t, ra.GitlabPipelineRunActorUsername.Enabled)
 }
