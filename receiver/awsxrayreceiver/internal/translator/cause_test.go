@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -109,4 +110,32 @@ func TestConvertStackFramesToStackTraceStrNoErrorMessage(t *testing.T) {
 	}
 	actual := convertStackFramesToStackTraceStr(excp)
 	assert.Equal(t, ": \n\tat label0(path0: 10)\n\tat (path1: 11)\n", actual)
+}
+
+func TestAddCauseExceptionWithoutID(t *testing.T) {
+	seg := &awsxray.Segment{
+		Cause: &awsxray.CauseData{
+			Type: awsxray.CauseTypeObject,
+			CauseObject: awsxray.CauseObject{
+				Exceptions: []awsxray.Exception{
+					{
+						Message: awsxray.String("exceptionMessage"),
+						Type:    awsxray.String("exceptionType"),
+					},
+				},
+			},
+		},
+	}
+	span := ptrace.NewSpan()
+
+	assert.NotPanics(t, func() { addCause(seg, span) })
+
+	assert.Equal(t, 1, span.Events().Len())
+	attrs := span.Events().At(0).Attributes()
+	_, ok := attrs.Get(awsxray.AWSXrayExceptionIDAttribute)
+	assert.False(t, ok, "exception.id attribute should not be set when the id is missing")
+
+	msg, ok := attrs.Get("exception.message")
+	assert.True(t, ok)
+	assert.Equal(t, "exceptionMessage", msg.Str())
 }
