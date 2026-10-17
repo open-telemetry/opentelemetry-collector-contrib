@@ -50,6 +50,7 @@ func TestFactory(t *testing.T) {
 						MaxQuerySampleCount: 1000,
 						TopQueryCount:       250,
 						CollectionInterval:  time.Minute,
+						QueryPlanCache:      QueryPlanCache{Enabled: true},
 					},
 					QuerySample: QuerySample{
 						MaxRowsPerQuery: 100,
@@ -282,6 +283,27 @@ func TestFactory(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestTopQueryPlanCacheEnabled(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Server = "localhost"
+		cfg.Username = "sa"
+		cfg.Password = "password"
+		cfg.Port = 1433
+		cfg.TopQueryCollection.QueryPlanCache.Enabled = enabled
+		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+		require.NoError(t, cfg.Validate())
+
+		scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		require.Len(t, scrapers, 1)
+		if !enabled {
+			require.Nil(t, scrapers[0].obfuscator.xmlPlanCache)
+		} else {
+			require.NotNil(t, scrapers[0].obfuscator.xmlPlanCache)
+		}
 	}
 }
 

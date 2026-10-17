@@ -20,6 +20,18 @@ status:
     emeritus: [StefanKurek]
     seeking_new: true
 
+telemetry:
+  metrics:
+    sqlserver_xml_plan_cache_requests:
+      enabled: true
+      description: Number of XML query plans presented to the receiver-side cache decision.
+      stability: development
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [outcome, receiver]
+
 resource_attributes:
   db.system.version:
     description: The database version of the instance. Examples include "15.0.4261.1".
@@ -136,6 +148,10 @@ attributes:
     description: TCP port used by the peer client.
     type: int
     requirement_level: recommended
+  outcome:
+    description: The result of a receiver-side XML-plan cache request.
+    type: string
+    enum: [hit, miss, bypass]
   page.operations:
     name_override: type
     description: The page operation types.
@@ -155,6 +171,9 @@ attributes:
     description: The physical filename of the file being monitored.
     type: string
     requirement_level: recommended
+  receiver:
+    description: The configured SQL Server receiver instance.
+    type: string
   replica.direction:
     description: The direction of flow of bytes for replica.
     type: string

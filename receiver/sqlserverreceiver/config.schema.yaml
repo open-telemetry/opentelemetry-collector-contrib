@@ -21,6 +21,12 @@ $defs:
         description: MaxOpen is the maximum number of open connections to the database. Zero means unlimited.
         x-pointer: true
         type: integer
+  query_plan_cache:
+    description: QueryPlanCache controls the receiver's in-memory cache of obfuscated XML plans.
+    type: object
+    properties:
+      enabled:
+        type: boolean
   query_sample:
     type: object
     properties:
@@ -54,6 +60,8 @@ $defs:
       max_query_sample_count:
         type: integer
         x-customType: uint
+      query_plan_cache:
+        $ref: query_plan_cache
       top_query_count:
         type: integer
         x-customType: uint

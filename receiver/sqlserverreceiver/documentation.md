@@ -1384,3 +1384,22 @@ top query
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true | - | - |
 | sqlserver.db.edition | The edition of the SQL Server instance (e.g. "standard", "enterprise", "express"). | Str: ``standard``, ``enterprise``, ``express``, ``azure_sql_database``, ``managed_instance``, ``unknown`` | false | - | - |
 | sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
+
+## Internal Telemetry
+
+The following telemetry is emitted by this component.
+
+### otelcol_sqlserver_xml_plan_cache_requests
+
+Number of XML query plans presented to the receiver-side cache decision.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The result of a receiver-side XML-plan cache request. | Str: ``hit``, ``miss``, ``bypass`` | - |
+| receiver | The configured SQL Server receiver instance. | Any Str | - |

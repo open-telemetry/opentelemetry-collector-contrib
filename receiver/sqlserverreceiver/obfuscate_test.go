@@ -4,6 +4,9 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"context"
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +14,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 )
 
@@ -22,13 +29,13 @@ func TestObfuscateSQL(t *testing.T) {
 	input, err := os.ReadFile(filepath.Join("testdata", "inputSQL.sql"))
 	assert.NoError(t, err)
 
-	result, err := newObfuscator(zap.NewNop()).obfuscateSQLString(string(input))
+	result, err := newObfuscator(zap.NewNop(), false).obfuscateSQLString(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSQL, result)
 }
 
 func TestObfuscateInvalidSQL(t *testing.T) {
-	obf := newObfuscator(zap.NewNop())
+	obf := newObfuscator(zap.NewNop(), false)
 
 	// The go-sqllexer engine (ObfuscateAndNormalize) is tolerant of malformed
 	// SQL: instead of failing, it obfuscates what it can. An unclosed bracket
@@ -48,7 +55,7 @@ func TestObfuscateInvalidSQL(t *testing.T) {
 }
 
 func TestObfuscateCommentOnlyStatement(t *testing.T) {
-	obf := newObfuscator(zap.NewNop())
+	obf := newObfuscator(zap.NewNop(), false)
 
 	// Comment-only statements (e.g. Blue Prism banners captured in
 	// sys.dm_exec_sql_text) have no obfuscatable content. The legacy tokenizer
@@ -76,13 +83,125 @@ func TestObfuscateQueryPlan(t *testing.T) {
 	input, err := os.ReadFile(filepath.Join("testdata", "inputQueryPlan.xml"))
 	assert.NoError(t, err)
 
-	result, err := newObfuscator(zap.NewNop()).obfuscateXMLPlan(string(input))
+	result, err := newObfuscator(zap.NewNop(), false).obfuscateXMLPlan(string(input))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedQueryPlan, result)
 }
 
+func TestObfuscateQueryPlanRepeatedSensitiveValue(t *testing.T) {
+	plan := `<ShowPlanXML><Const ConstValue="42"/><Const ConstValue="42"/></ShowPlanXML>`
+
+	result, err := newObfuscator(zap.NewNop(), false).obfuscateXMLPlan(plan)
+
+	assert.NoError(t, err)
+	assert.NotContains(t, result, "42")
+	assert.Equal(t, 2, strings.Count(result, `ConstValue="?"`))
+}
+
+func TestObfuscateQueryPlanCacheUsesExactXMLAndKeepsOnlyRedactedOutput(t *testing.T) {
+	obf := newObfuscator(zap.NewNop(), true)
+	plan := `<ShowPlanXML Id="one" StatementText="SELECT 42"></ShowPlanXML>`
+
+	first, err := obf.obfuscateXMLPlan(plan)
+	assert.NoError(t, err)
+	second, err := obf.obfuscateXMLPlan(plan)
+	assert.NoError(t, err)
+	assert.Equal(t, first, second)
+	assert.Equal(t, 1, obf.xmlPlanCache.Len())
+
+	changed, err := obf.obfuscateXMLPlan(strings.Replace(plan, `Id="one"`, `Id="two"`, 1))
+	assert.NoError(t, err)
+	assert.NotEqual(t, first, changed)
+	assert.Equal(t, 2, obf.xmlPlanCache.Len())
+	for _, cached := range obf.xmlPlanCache.Values() {
+		assert.NotContains(t, cached, "42")
+	}
+}
+
+func TestObfuscateQueryPlanCacheIsBoundedAndDoesNotCacheErrors(t *testing.T) {
+	obf := newObfuscator(zap.NewNop(), true)
+	_, err := obf.obfuscateXMLPlan(`<ShowPlanXML>`)
+	assert.Error(t, err)
+	assert.Zero(t, obf.xmlPlanCache.Len())
+
+	for i := range 301 {
+		plan := fmt.Sprintf(`<ShowPlanXML Id="%d" StatementText="SELECT 42"></ShowPlanXML>`, i)
+		_, err = obf.obfuscateXMLPlan(plan)
+		assert.NoError(t, err)
+	}
+	assert.Equal(t, 300, obf.xmlPlanCache.Len())
+	first := sha256.Sum256([]byte(`<ShowPlanXML Id="0" StatementText="SELECT 42"></ShowPlanXML>`))
+	second := sha256.Sum256([]byte(`<ShowPlanXML Id="1" StatementText="SELECT 42"></ShowPlanXML>`))
+	assert.False(t, obf.xmlPlanCache.Contains(first))
+	assert.True(t, obf.xmlPlanCache.Contains(second))
+
+	oversized := `<ShowPlanXML Data="` + strings.Repeat("x", maxCachedXMLPlanBytes) + `"></ShowPlanXML>`
+	_, err = obf.obfuscateXMLPlan(oversized)
+	assert.NoError(t, err)
+	assert.Equal(t, 300, obf.xmlPlanCache.Len())
+}
+
+func TestObfuscateQueryPlanCacheRefreshesRecentlyUsedPlan(t *testing.T) {
+	obf := newObfuscator(zap.NewNop(), true)
+	for i := range xmlPlanCacheEntries {
+		plan := fmt.Sprintf(`<ShowPlanXML Id="%d" StatementText="SELECT 42"></ShowPlanXML>`, i)
+		_, err := obf.obfuscateXMLPlan(plan)
+		require.NoError(t, err)
+	}
+	firstPlan := `<ShowPlanXML Id="0" StatementText="SELECT 42"></ShowPlanXML>`
+	_, err := obf.obfuscateXMLPlan(firstPlan)
+	require.NoError(t, err)
+	_, err = obf.obfuscateXMLPlan(`<ShowPlanXML Id="new" StatementText="SELECT 42"></ShowPlanXML>`)
+	require.NoError(t, err)
+
+	first := sha256.Sum256([]byte(firstPlan))
+	second := sha256.Sum256([]byte(`<ShowPlanXML Id="1" StatementText="SELECT 42"></ShowPlanXML>`))
+	assert.True(t, obf.xmlPlanCache.Contains(first))
+	assert.False(t, obf.xmlPlanCache.Contains(second))
+}
+
+func TestObfuscateQueryPlanCacheReportsOutcomes(t *testing.T) {
+	telemetry := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.WithoutCancel(t.Context()))) })
+	obf := newObfuscator(zap.NewNop(), true)
+	obf.initCacheMetrics(telemetry.NewTelemetrySettings(), component.MustNewIDWithName("sql_server", "cache-test"))
+	plan := `<ShowPlanXML StatementText="SELECT 42"></ShowPlanXML>`
+	for range 2 {
+		_, err := obf.obfuscateXMLPlan(plan)
+		require.NoError(t, err)
+	}
+	_, err := obf.obfuscateXMLPlan(`<ShowPlanXML Data="` + strings.Repeat("x", maxCachedXMLPlanBytes) + `"/>`)
+	require.NoError(t, err)
+
+	got, err := telemetry.GetMetric("otelcol_sqlserver_xml_plan_cache_requests")
+	require.NoError(t, err)
+	points := got.Data.(metricdata.Sum[int64]).DataPoints
+	require.Len(t, points, 3)
+	counts := make(map[string]int64, len(points))
+	for _, point := range points {
+		outcome, ok := point.Attributes.Value(attribute.Key("outcome"))
+		require.True(t, ok)
+		receiver, ok := point.Attributes.Value(attribute.Key("receiver"))
+		require.True(t, ok)
+		assert.Equal(t, "sql_server/cache-test", receiver.AsString())
+		counts[outcome.AsString()] = point.Value
+	}
+	assert.Equal(t, map[string]int64{"hit": 1, "miss": 1, "bypass": 1}, counts)
+}
+
+func TestObfuscateQueryPlanCacheDisabled(t *testing.T) {
+	obf := newObfuscator(zap.NewNop(), false)
+	plan := `<ShowPlanXML StatementText="SELECT 42"/>`
+	first, err := obf.obfuscateXMLPlan(plan)
+	require.NoError(t, err)
+	second, err := obf.obfuscateXMLPlan(plan)
+	require.NoError(t, err)
+	assert.Equal(t, first, second)
+	assert.Nil(t, obf.xmlPlanCache)
+}
+
 func TestInvalidQueryPlans(t *testing.T) {
-	obf := newObfuscator(zap.NewNop())
+	obf := newObfuscator(zap.NewNop(), false)
 
 	plan := `<ShowPlanXml</ShowPlanXML>`
 	result, err := obf.obfuscateXMLPlan(plan)
@@ -110,7 +229,7 @@ func TestInvalidQueryPlans(t *testing.T) {
 }
 
 func TestValidQueryPlans(t *testing.T) {
-	obf := newObfuscator(zap.NewNop())
+	obf := newObfuscator(zap.NewNop(), false)
 
 	plan := `<ShowPlanXML value="abc"></ShowPlanXML>`
 	_, err := obf.obfuscateXMLPlan(plan)
@@ -126,7 +245,7 @@ func TestValidQueryPlans(t *testing.T) {
 }
 
 func TestSanitizeSQL(t *testing.T) {
-	obf := newObfuscator(zap.NewNop())
+	obf := newObfuscator(zap.NewNop(), false)
 
 	tests := []struct {
 		name     string
@@ -185,7 +304,7 @@ func TestSanitizeSQL(t *testing.T) {
 }
 
 func TestObfuscateQueryPlanWithZeroWidthSpace(t *testing.T) {
-	obf := newObfuscator(zap.NewNop())
+	obf := newObfuscator(zap.NewNop(), false)
 
 	plan := "<ShowPlanXML StatementText=\"SELECT \u200b* FROM table\"></ShowPlanXML>"
 	result, err := obf.obfuscateXMLPlan(plan)
@@ -194,7 +313,7 @@ func TestObfuscateQueryPlanWithZeroWidthSpace(t *testing.T) {
 }
 
 func TestObfuscateSQLServerBackslashLiteral(t *testing.T) {
-	obf := newObfuscator(zap.NewNop())
+	obf := newObfuscator(zap.NewNop(), false)
 
 	result, err := obf.obfuscateSQLString(
 		`SELECT REPLACE(@@SERVERNAME, '\', ':'), HOST_NAME(), 42`,

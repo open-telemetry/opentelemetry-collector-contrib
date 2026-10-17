@@ -1,6 +1,10 @@
 sql_server:
   collection_interval: 10s
 
+sql_server/omitted_cache:
+  top_query_collection:
+    collection_interval: 30s
+
 sql_server/named:
   collection_interval: 10s
   computer_name: CustomServer
@@ -23,6 +27,8 @@ sql_server/named:
     max_query_sample_count: 1000
     top_query_count: 200
     collection_interval: 80s
+    query_plan_cache:
+      enabled: false
   query_sample_collection:
     max_rows_per_query: 1450
   events:
