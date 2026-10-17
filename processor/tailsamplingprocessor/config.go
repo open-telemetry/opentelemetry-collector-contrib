@@ -12,6 +12,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
 // PolicyType indicates the type of sampling policy.
@@ -307,6 +308,20 @@ type OTTLConditionCfg struct {
 	_ struct{}
 }
 
+func applyOTTLErrorModeDefault(p *sharedPolicyCfg) {
+	if p.Type != OTTLCondition {
+		return
+	}
+	if p.OTTLConditionCfg.ErrorMode != "" {
+		return
+	}
+	if telemetry.IsDefaultErrorModeIgnoreEnabled() {
+		p.OTTLConditionCfg.ErrorMode = ottl.IgnoreError
+	} else {
+		p.OTTLConditionCfg.ErrorMode = ottl.PropagateError
+	}
+}
+
 type DecisionCacheConfig struct {
 	// SampledCacheSize specifies the size of the cache that holds the sampled trace IDs.
 	// This value will be the maximum amount of trace IDs that the cache can hold before overwriting previous IDs.
@@ -389,6 +404,16 @@ type Config struct {
 const maxNumShards = 256
 
 func (cfg *Config) Validate() error {
+	for i := range cfg.PolicyCfgs {
+		applyOTTLErrorModeDefault(&cfg.PolicyCfgs[i].sharedPolicyCfg)
+		for j := range cfg.PolicyCfgs[i].CompositeCfg.SubPolicyCfg {
+			applyOTTLErrorModeDefault(&cfg.PolicyCfgs[i].CompositeCfg.SubPolicyCfg[j].sharedPolicyCfg)
+		}
+		for j := range cfg.PolicyCfgs[i].AndCfg.SubPolicyCfg {
+			applyOTTLErrorModeDefault(&cfg.PolicyCfgs[i].AndCfg.SubPolicyCfg[j].sharedPolicyCfg)
+		}
+	}
+
 	switch cfg.SamplingStrategy {
 	case samplingStrategyTraceComplete, samplingStrategySpanIngest:
 		// valid sampling strategies
