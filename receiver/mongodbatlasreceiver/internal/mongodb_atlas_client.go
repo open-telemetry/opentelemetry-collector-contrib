@@ -619,16 +619,20 @@ func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, log
 	return buf, nil
 }
 
-// GetClusters retrieves the clusters from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
-func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error) {
-	options := mongodbatlas.ListOptions{}
-
-	clusters, _, err := s.client.Clusters.List(ctx, groupID, &options)
-	if err != nil {
-		return nil, err
+// GetClusters retrieves the clusters from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/cluster-advanced/get-all-cluster-advanced/
+func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([]*mongodbatlas.AdvancedCluster, error) {
+	var allClusters []*mongodbatlas.AdvancedCluster
+	for page := 1; ; page++ {
+		clusters, response, err := s.client.AdvancedClusters.List(ctx, groupID, &mongodbatlas.ListOptions{PageNum: page})
+		err = checkMongoDBClientErr(err, response)
+		if err != nil {
+			return nil, err
+		}
+		allClusters = append(allClusters, clusters.Results...)
+		if !hasNext(clusters.Links) {
+			return allClusters, nil
+		}
 	}
-
-	return clusters, nil
 }
 
 type AlertPollOptions struct {
