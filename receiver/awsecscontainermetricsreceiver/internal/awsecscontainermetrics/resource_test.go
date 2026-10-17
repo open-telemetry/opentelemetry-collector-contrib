@@ -299,3 +299,10 @@ func TestGetNameFromCluster(t *testing.T) {
 	clusterName = getNameFromCluster("")
 	require.Empty(t, clusterName)
 }
+
+func TestGetResourceFromARNMalformed(t *testing.T) {
+	region, accountID, taskID := getResourceFromARN("arn:aws:ecs:us-east-1/task-abc")
+	require.Empty(t, region)
+	require.Empty(t, accountID)
+	require.Equal(t, "task-abc", taskID)
+}

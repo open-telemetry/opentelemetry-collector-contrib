@@ -93,6 +93,9 @@ func getResourceFromARN(arn string) (string, string, string) {
 	taskID := splits[len(splits)-1]
 
 	subSplits := strings.Split(splits[0], ":")
+	if len(subSplits) < 5 {
+		return "", "", taskID
+	}
 	region := subSplits[3]
 	accountID := subSplits[4]
 
