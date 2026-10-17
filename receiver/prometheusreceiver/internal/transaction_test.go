@@ -2344,3 +2344,64 @@ func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "connection refused", errField)
 }
+
+func TestGetOrCreateMetricFamily_StandaloneSuffixMetricAfterHistogram(t *testing.T) {
+	tr := newTxn(t, true)
+	metaMap := map[string]scrape.MetricMetadata{
+		"foo": {MetricFamily: "foo", Type: model.MetricTypeHistogram},
+	}
+	tr.mc = testMetadataStore(metaMap)
+
+	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
+
+	// 1. Scrape foo_bucket as part of histogram foo (no standalone foo_bucket metadata yet)
+	mfBucketHist := tr.getOrCreateMetricFamily(rk, emptyScopeID, "foo_bucket")
+	require.NotNil(t, mfBucketHist)
+	require.Equal(t, "foo", mfBucketHist.name)
+	require.Equal(t, pmetric.MetricTypeHistogram, mfBucketHist.mtype)
+
+	// 2. Now foo_bucket has its own standalone gauge metadata
+	metaMap["foo_bucket"] = scrape.MetricMetadata{
+		MetricFamily: "foo_bucket",
+		Type:         model.MetricTypeGauge,
+	}
+
+	mfStandalone := tr.getOrCreateMetricFamily(rk, emptyScopeID, "foo_bucket")
+	require.NotNil(t, mfStandalone)
+	require.Equal(t, "foo_bucket", mfStandalone.name)
+	require.Equal(t, pmetric.MetricTypeGauge, mfStandalone.mtype)
+	require.NotEqual(t, mfBucketHist, mfStandalone)
+}
+
+func newSuffixLookupTransaction(t *testing.T, meta testMetadataStore) *transaction {
+	tr := newTxn(t, true)
+	tr.ctx = scrape.ContextWithMetricMetadataStore(tr.ctx, meta)
+	tr.mc = meta
+	return tr
+}
+
+func appendSuffixLookupSample(t *testing.T, tr *transaction, name, series string, value float64) {
+	_, err := tr.Append(0, labels.FromStrings("__name__", name, "job", "job-a", "instance", "localhost:1234", "series", series), 0, ts, value, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+}
+
+func TestTransactionSuffixLookupAfterCanonicalReplacement(t *testing.T) {
+	tr := newSuffixLookupTransaction(t, testMetadataStore{"foo": {MetricFamily: "foo", Type: model.MetricTypeGauge}})
+	appendSuffixLookupSample(t, tr, "foo_sum", "first", 1)
+	appendSuffixLookupSample(t, tr, "foo_count", "middle", 2)
+	appendSuffixLookupSample(t, tr, "foo_sum", "last", 3)
+	metrics, err := tr.getMetrics()
+	require.NoError(t, err)
+	ms := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	require.Equal(t, 1, ms.Len())
+	metric := ms.At(0)
+	require.Equal(t, "foo", metric.Name())
+	require.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+	points := metric.Gauge().DataPoints()
+	require.Equal(t, 1, points.Len())
+	point := points.At(0)
+	series, ok := point.Attributes().Get("series")
+	require.True(t, ok)
+	require.Equal(t, "last", series.Str())
+	require.Equal(t, float64(3), point.DoubleValue())
+}
