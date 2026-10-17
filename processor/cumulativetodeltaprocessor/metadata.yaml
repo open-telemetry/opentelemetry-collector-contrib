@@ -12,7 +12,7 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, k8s]
-  warnings: [Statefulness]
+  warnings: [Statefulness, Unsound Transformations]
   codeowners:
     active: [TylerHelmuth]
 tests:
