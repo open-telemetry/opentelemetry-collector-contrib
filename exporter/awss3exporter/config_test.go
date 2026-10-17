@@ -230,6 +230,44 @@ func TestConfigS3ACLDefined(t *testing.T) {
 	)
 }
 
+func TestConfigS3ExternalID(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_external_id.yaml"), factories,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
+
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			RoleArn:           "arn:aws:iam::123456789012:role/my_role",
+			ExternalID:        "my-external-id",
+			StorageClass:      "STANDARD",
+			RetryMode:         DefaultRetryMode,
+			RetryMaxAttempts:  DefaultRetryMaxAttempts,
+			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+		},
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		MarshalerName:   "otlp_json",
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+	}, e,
+	)
+}
+
 func TestConfigForS3CompatibleSystems(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
@@ -384,6 +422,29 @@ func TestConfig_Validate(t *testing.T) {
 				return c
 			}(),
 			errExpected: errors.New("invalid StorageClass"),
+		},
+		{
+			name: "valid external_id with role_arn",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.RoleArn = "arn:aws:iam::123456789012:role/my_role"
+				c.S3Uploader.ExternalID = "my-external-id"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "external_id without role_arn",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.ExternalID = "my-external-id"
+				return c
+			}(),
+			errExpected: errors.New("external_id requires role_arn"),
 		},
 	}
 
