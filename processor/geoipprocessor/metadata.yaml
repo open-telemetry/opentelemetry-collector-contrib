@@ -13,3 +13,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [andrzej-stencel, michalpristas, rogercoll]
+
+tests:
+  config:
+    error_mode: ignore
