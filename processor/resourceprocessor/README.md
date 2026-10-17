@@ -5,6 +5,7 @@
 | Stability     | [development]: profiles   |
 |               | [beta]: traces, metrics, logs   |
 | Distributions | [core], [contrib], [k8s] |
+| Warnings      | [Identity Conflict](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fresource%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fresource) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fresource%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fresource) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_resource)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_resource&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
@@ -73,3 +74,25 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
+
+## Warnings
+
+In general, the Resource processor is a very safe processor to use. Care only needs to be taken when modifying resource attributes of metrics:
+- [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Resource attributes are part of a metric stream's identity. Deleting or changing existing resource attributes (e.g., with the `delete`, `update` or `upsert` actions) has the potential to create an identity conflict, since the Resource processor does not perform any re-aggregation of the data points. Adding new resource attributes is safe.
+
+  For example, two pods of the same service send the same counter. Their resources differ only by `k8s.pod.name`:
+
+  ```yaml
+  processors:
+    resource:
+      attributes:
+        - key: k8s.pod.name
+          action: delete
+  ```
+
+  | Pod | Resource before | Resource after | Metric (cumulative) |
+  |-----|-----------------|----------------|---------------------|
+  | A   | `service.name=checkout`, `k8s.pod.name=checkout-a` | `service.name=checkout` | `http.server.requests` = 1000, 1010, 1020 |
+  | B   | `service.name=checkout`, `k8s.pod.name=checkout-b` | `service.name=checkout` | `http.server.requests` = 50, 60, 70 |
+
+  Before the processor these are two separate streams. After it, both pods report `http.server.requests` with the same resource, so the backend merges them into one stream and receives `1000, 50, 1010, 60, 1020, 70`. Every drop (e.g. `1000` to `50`) looks like a counter reset, so rates and totals become wrong.
