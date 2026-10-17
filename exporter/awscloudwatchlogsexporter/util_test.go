@@ -57,6 +57,22 @@ func TestReplacePatternValidClusterName(t *testing.T) {
 	assert.True(t, success)
 }
 
+func TestReplacePatternValidKubernetesClusterName(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "/aws/eks/{ClusterName}/cluster"
+
+	attrMap := map[string]any{
+		"k8s.cluster.name": "test-cluster-name",
+		"k8s.pod.name":      "test-pod-name",
+	}
+
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
+
+	assert.Equal(t, "/aws/eks/test-cluster-name/cluster", s)
+	assert.True(t, success)
+}
+
 func TestReplacePatternMissingAttribute(t *testing.T) {
 	logger := zap.NewNop()
 
