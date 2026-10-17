@@ -1072,3 +1072,19 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 		assert.NoError(b, p.ConsumeMetrics(b.Context(), metrics))
 	}
 }
+
+func TestNewProcessorInvalidRegexp(t *testing.T) {
+	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	invalid := MatchMetrics{
+		Config:  filterset.Config{MatchType: filterset.Regexp},
+		Metrics: []string{"[invalid_regexp"},
+	}
+
+	_, err = newCumulativeToDeltaProcessor(&Config{Include: invalid}, zap.NewNop(), tb)
+	require.ErrorContains(t, err, "invalid include filter")
+
+	_, err = newCumulativeToDeltaProcessor(&Config{Exclude: invalid}, zap.NewNop(), tb)
+	require.ErrorContains(t, err, "invalid exclude filter")
+}

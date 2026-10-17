@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/cumulative_to_delta
+
+note: Return an error when an invalid regexp is configured in `include` or `exclude` instead of panicking on the first metric batch
+
+issues: [51963]
+
+subtext:
+
+change_logs: [user]
