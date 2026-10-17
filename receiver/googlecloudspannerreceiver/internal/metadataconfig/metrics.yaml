@@ -606,6 +606,30 @@ metadata:
           type: "gauge"
         unit: "one"
 #
+# -------------------------------------------- Row Deletion Policies ---------------------------------------------------
+#
+  - name: "row deletion policies"
+    query: "SELECT TABLE_NAME, PROCESSED_WATERMARK, UNDELETABLE_ROWS, MIN_UNDELETABLE_TIMESTAMP FROM SPANNER_SYS.ROW_DELETION_POLICIES ORDER BY UNDELETABLE_ROWS DESC, PROCESSED_WATERMARK ASC"
+    metric_name_prefix: "database/spanner/row_deletion_policies/"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "processed_watermark"
+        column_name: "PROCESSED_WATERMARK"
+        value_type: "timestamp"
+      - name: "min_undeletable_timestamp"
+        column_name: "MIN_UNDELETABLE_TIMESTAMP"
+        value_type: "timestamp"
+    metrics:
+      - name: "undeletable_rows"
+        column_name: "UNDELETABLE_ROWS"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Transactions Stats ------------------------------------------------------
 #
   - name: "top minute transaction stats"
