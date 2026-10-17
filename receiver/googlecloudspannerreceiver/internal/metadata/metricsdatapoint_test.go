@@ -481,84 +481,84 @@ func TestMetricsDataPoint_HideClientIPAddressPII(t *testing.T) {
 		{
 			name:          "ipv4 private address",
 			originalValue: "192.168.1.1",
-			expectedValue: "3320535628",
+			expectedValue: "14261591930808458459",
 		},
 		{
 			name:          "ipv4 loopback address",
 			originalValue: "127.0.0.1",
-			expectedValue: "315234228",
+			expectedValue: "1353920702439368852",
 		},
 		{
 			name:          "ipv4 all zeros boundary",
 			originalValue: "0.0.0.0",
-			expectedValue: "434332245",
+			expectedValue: "1865442790408783828",
 		},
 		{
 			name:          "ipv4 broadcast max boundary",
 			originalValue: "255.255.255.255",
-			expectedValue: "4099171007",
+			expectedValue: "17605805416796728994",
 		},
 		{
 			name:          "ipv4 address with port",
 			originalValue: "10.128.0.5:54321",
-			expectedValue: "1553158656",
+			expectedValue: "6670765634391460772",
 		},
 
 		// IPv6 standard, compressed, bracketed & boundary cases
 		{
 			name:          "ipv6 full address",
 			originalValue: "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-			expectedValue: "1346794086",
+			expectedValue: "5784436558048342182",
 		},
 		{
 			name:          "ipv6 unique local address",
 			originalValue: "fda3:e722:ac3:10:138:587f:ac11:5469",
-			expectedValue: "4133282899",
+			expectedValue: "17752314877368136085",
 		},
 		{
 			name:          "ipv6 compressed middle zeros",
 			originalValue: "2001:db8::1",
-			expectedValue: "1526536680",
+			expectedValue: "6556425118201004429",
 		},
 		{
 			name:          "ipv6 loopback leading double colon",
 			originalValue: "::1",
-			expectedValue: "4026066890",
+			expectedValue: "17291825625407301630",
 		},
 		{
 			name:          "ipv6 trailing double colon",
 			originalValue: "fe80::",
-			expectedValue: "2750259041",
+			expectedValue: "11812272640781785914",
 		},
 		{
 			name:          "ipv6 unspecified all zeros double colon",
 			originalValue: "::",
-			expectedValue: "1901357141",
+			expectedValue: "8166266742203981559",
 		},
 		{
 			name:          "ipv6 uppercase hex",
 			originalValue: "2001:DB8:ABCD:EF01::F",
-			expectedValue: "4093974660",
+			expectedValue: "17583487279216968028",
 		},
 		{
 			name:          "ipv4-mapped ipv6 address",
 			originalValue: "::ffff:192.168.1.1",
-			expectedValue: "1606868455",
+			expectedValue: "6901447465218037910",
 		},
 		{
 			name:          "ipv6 nat64 embedded ipv4 address",
 			originalValue: "64:ff9b::192.0.2.33",
-			expectedValue: "714886331",
+			expectedValue: "3070413415546920759",
 		},
 		{
 			name:          "bracketed ipv6 with port",
 			originalValue: "[2001:db8::1]:8080",
-			expectedValue: "2653596171",
+			expectedValue: "11397108773292763715",
 		},
 		{
 			name:          "bracketed ipv6 loopback with port",
 			originalValue: "[::1]:443",
-			expectedValue: "3572435447",
+			expectedValue: "15343493414107352352",
 		},
 
 		// Invalid IP / port / degenerate delimiter edge cases (should return empty string)

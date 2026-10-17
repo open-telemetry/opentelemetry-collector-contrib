@@ -281,8 +281,8 @@ func hashClientIPAddress(ip string) string {
 	}
 
 	hash := sha256.Sum256([]byte(ip))
-	hashUint := binary.BigEndian.Uint32(hash[:4])
-	return strconv.FormatUint(uint64(hashUint), 10)
+	hashUint := binary.BigEndian.Uint64(hash[:8])
+	return strconv.FormatUint(hashUint, 10)
 }
 
 func (mdp *MetricsDataPoint) HideClientIPAddressPII() {
