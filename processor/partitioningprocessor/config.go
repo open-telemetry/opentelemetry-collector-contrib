@@ -7,6 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 )
 
 // Config is the configuration for the partitioning processor.
@@ -36,5 +39,30 @@ func (c *Config) Validate() error {
 		}
 		lower[l] = name
 	}
-	return nil
+	return validateExpressions(c.Keys)
+}
+
+// validateExpressions reports an error only if no signal can parse all key
+// expressions together. The same keys apply to every pipeline the processor is
+// used in, so processor creation still enforces each pipeline's signal.
+func validateExpressions(keys map[string]string) error {
+	_, expressions := sortedPartitionKeys(keys)
+	set := component.TelemetrySettings{Logger: zap.NewNop()}
+	parsers := []struct {
+		signal string
+		parse  func() error
+	}{
+		{"logs", func() error { _, err := newLogsPartitioner(expressions, set); return err }},
+		{"traces", func() error { _, err := newTracesPartitioner(expressions, set); return err }},
+		{"metrics", func() error { _, err := newMetricsPartitioner(expressions, set); return err }},
+	}
+	errs := make([]error, 0, len(parsers))
+	for _, p := range parsers {
+		err := p.parse()
+		if err == nil {
+			return nil
+		}
+		errs = append(errs, fmt.Errorf("%s: %w", p.signal, err))
+	}
+	return fmt.Errorf("key expressions cannot be used with any signal: %w", errors.Join(errs...))
 }

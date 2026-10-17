@@ -62,6 +62,14 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "case_collision"),
 			expectedErr: "key names are case-insensitive",
 		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_expression"),
+			expectedErr: "key expressions cannot be used with any signal",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "mixed_signals"),
+			expectedErr: "key expressions cannot be used with any signal",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -86,4 +94,10 @@ func TestConfig_Validate_CaseInsensitiveKeyCollision(t *testing.T) {
 		"tenant": `resource.attributes["b"]`,
 	}}
 	assert.ErrorContains(t, cfg.Validate(), "case-insensitive")
+}
+
+func TestConfig_Validate_SignalSpecificKeyIsValid(t *testing.T) {
+	// span.name only parses for traces, which is enough at config time.
+	cfg := &Config{Keys: map[string]string{"span_name": `span.name`}}
+	assert.NoError(t, cfg.Validate())
 }
