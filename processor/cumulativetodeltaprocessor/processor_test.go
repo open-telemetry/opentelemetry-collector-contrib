@@ -997,6 +997,62 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 	}
 }
 
+// TestCumulativeToDeltaExponentialHistogramNaNSum mirrors cumulative_to_delta_histogram_nan_sum for
+// exponential histograms. It is a separate test because pmetrictest.CompareMetric cannot compare NaN sums.
+func TestCumulativeToDeltaExponentialHistogramNaNSum(t *testing.T) {
+	now := time.Now()
+
+	point := func(ts int64, count uint64, sum float64) testExponentialHistogramPoint {
+		return testExponentialHistogramPoint{
+			startTs:         1,
+			ts:              ts,
+			count:           count,
+			sum:             &sum,
+			positiveBuckets: []uint64{count},
+		}
+	}
+
+	next := new(consumertest.MetricsSink)
+	mgp, err := NewFactory().CreateMetrics(
+		t.Context(),
+		processortest.NewNopSettings(metadata.Type),
+		&Config{},
+		next,
+	)
+	require.NoError(t, err)
+	require.NoError(t, mgp.Start(t.Context(), componenttest.NewNopHost()))
+
+	require.NoError(t, mgp.ConsumeMetrics(t.Context(), testExponentialHistogramMetrics{
+		metrics: []testExponentialHistogramMetric{{
+			name:       "metric_1",
+			cumulative: true,
+			points: []testExponentialHistogramPoint{
+				point(2, 10, 1000),
+				point(3, 20, math.NaN()),
+				point(4, 30, 1200),
+				point(5, 40, 1300),
+			},
+		}},
+	}.generateMetrics(now)))
+
+	got := next.AllMetrics()
+	require.Len(t, got, 1)
+	dps := got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints()
+	require.Equal(t, 4, dps.Len())
+
+	// The point without a sum is passed through untouched, and the following sum is diffed against
+	// the last sum seen before it, so the sums of the deltas add up to the growth of the cumulative sum.
+	assert.InDelta(t, 1000.0, dps.At(0).Sum(), 1e-9)
+	assert.True(t, math.IsNaN(dps.At(1).Sum()))
+	assert.InDelta(t, 200.0, dps.At(2).Sum(), 1e-9)
+	assert.InDelta(t, 100.0, dps.At(3).Sum(), 1e-9)
+	for i := range 4 {
+		assert.Equal(t, uint64(10), dps.At(i).Count())
+	}
+
+	require.NoError(t, mgp.Shutdown(t.Context()))
+}
+
 func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()
