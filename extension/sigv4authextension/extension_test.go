@@ -5,8 +5,10 @@ package sigv4authextension
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -24,6 +26,69 @@ func TestNewSigv4Extension(t *testing.T) {
 	assert.Equal(t, cfg.Region, sa.cfg.Region)
 	assert.Equal(t, cfg.Service, sa.cfg.Service)
 	assert.Equal(t, cfg.AssumeRole.ARN, sa.cfg.AssumeRole.ARN)
+}
+
+func TestToken(t *testing.T) {
+	expiry := time.Date(2027, time.January, 2, 3, 4, 5, 0, time.UTC)
+	expectedToken := "generated-msk-token"
+
+	tests := []struct {
+		name       string
+		generator  mskTokenGenerator
+		wantToken  string
+		wantExpiry time.Time
+		wantErr    string
+	}{
+		{
+			name: "success",
+			generator: func(
+				context.Context,
+				string,
+				aws.CredentialsProvider,
+			) (string, int64, error) {
+				return expectedToken, expiry.UnixMilli(), nil
+			},
+			wantToken:  expectedToken,
+			wantExpiry: expiry,
+		},
+		{
+			name: "generation failure",
+			generator: func(
+				context.Context,
+				string,
+				aws.CredentialsProvider,
+			) (string, int64, error) {
+				return "", 0, errors.New("signing failed")
+			},
+			wantErr: "failed to generate AWS MSK IAM token: signing failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			creds := mockCredentials()
+			cfg := &Config{
+				Region:        "us-east-1",
+				credsProvider: creds,
+			}
+			sa := newSigv4Extension(cfg, "", zap.NewNop())
+			sa.tokenGenerator = tt.generator
+
+			token, err := sa.Token(t.Context())
+
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr)
+				assert.Nil(t, token)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, token)
+			assert.Equal(t, tt.wantToken, token.AccessToken)
+			assert.True(t, tt.wantExpiry.Equal(token.Expiry))
+		})
+	}
 }
 
 func TestRoundTripper(t *testing.T) {
