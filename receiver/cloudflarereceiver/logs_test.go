@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -29,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
@@ -838,6 +840,100 @@ func TestMaxRequestBodySizeGzip(t *testing.T) {
 			r.handleRequest(w, req)
 
 			require.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+// TestMaxRequestBodySizeServer sends requests through the real HTTP server.
+// The confighttp middleware applies its own body limit before handleRequest
+// runs, so tests that call handleRequest directly do not see that limit.
+func TestMaxRequestBodySizeServer(t *testing.T) {
+	// confighttp applies 20MiB when the server config has no limit, so use
+	// bodies on both sides of that value.
+	const defaultLimit = 20 * 1024 * 1024
+
+	tests := []struct {
+		name               string
+		maxRequestBodySize int64
+		bodySize           int
+		gzip               bool
+		expectedStatus     int
+	}{
+		{
+			name:               "plain_above_confighttp_default_within_limit",
+			maxRequestBodySize: 2 * defaultLimit,
+			bodySize:           defaultLimit + 1024*1024,
+			expectedStatus:     http.StatusOK,
+		},
+		{
+			name:               "gzip_above_confighttp_default_within_limit",
+			maxRequestBodySize: 2 * defaultLimit,
+			bodySize:           defaultLimit + 1024*1024,
+			gzip:               true,
+			expectedStatus:     http.StatusOK,
+		},
+		{
+			name:               "plain_exceeds_limit",
+			maxRequestBodySize: 1024,
+			bodySize:           4096,
+			expectedStatus:     http.StatusUnprocessableEntity,
+		},
+		{
+			name:               "gzip_decompressed_exceeds_limit",
+			maxRequestBodySize: 1024,
+			bodySize:           512 * 1024,
+			gzip:               true,
+			expectedStatus:     http.StatusUnprocessableEntity,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logEntry := map[string]any{
+				"ClientIP":           "127.0.0.1",
+				"EdgeStartTimestamp": "2023-03-03T05:29:05Z",
+				"padding":            strings.Repeat("a", tt.bodySize),
+			}
+			body, err := json.Marshal(logEntry)
+			require.NoError(t, err)
+
+			if tt.gzip {
+				body = []byte(gzippedMessage(string(body)))
+				require.Less(t, int64(len(body)), tt.maxRequestBodySize,
+					"compressed body must fit under the limit for this test to exercise decompression")
+			}
+
+			addr := testutil.GetAvailableLocalAddress(t)
+			fact := NewFactory()
+			recv, err := fact.CreateLogs(
+				t.Context(),
+				receivertest.NewNopSettings(metadata.Type),
+				&Config{
+					Logs: LogsConfig{
+						Endpoint:           addr,
+						MaxRequestBodySize: tt.maxRequestBodySize,
+						TimestampField:     "EdgeStartTimestamp",
+						TimestampFormat:    "rfc3339",
+					},
+				},
+				consumertest.NewNop(),
+			)
+			require.NoError(t, err)
+			require.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, recv.Shutdown(t.Context()))
+			}()
+
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "http://"+addr, bytes.NewReader(body))
+			require.NoError(t, err)
+			if tt.gzip {
+				req.Header.Set("Content-Encoding", "gzip")
+			}
+
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
+			require.Equal(t, tt.expectedStatus, resp.StatusCode)
 		})
 	}
 }
