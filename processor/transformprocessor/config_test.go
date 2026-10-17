@@ -178,9 +178,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
 			errors: []error{
-				errors.New("invalid syntax at 1:18 near `where attr`"),
-				errors.New("invalid syntax at 1:18 near `attributes`"),
-				errors.New("invalid syntax at 1:18 near `none"),
+				errors.New("1:18: statement has invalid syntax near `where attr`"),
+				errors.New("1:18: statement has invalid syntax near `attributes`"),
+				errors.New("1:18: statement has invalid syntax near `none"),
 			},
 		},
 		{

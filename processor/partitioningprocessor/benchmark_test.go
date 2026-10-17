@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Batch shape shared by all benchmarks: benchResources x benchScopes scopes,
@@ -87,6 +89,95 @@ func genBenchLogs(lvl level, parts, items int) plog.Logs {
 	return ld
 }
 
+func genBenchTraces(parts int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	si := 0
+	for range benchResources {
+		rs := td.ResourceSpans().AppendEmpty()
+		putBenchAttrs(rs.Resource().Attributes())
+		for range benchScopes {
+			ss := rs.ScopeSpans().AppendEmpty()
+			ss.Scope().SetName("scope")
+			ss.Spans().EnsureCapacity(benchItems)
+			for range benchItems {
+				span := ss.Spans().AppendEmpty()
+				span.SetName("span-name")
+				span.SetTraceID(pcommon.TraceID{1, 2, 3})
+				span.SetSpanID(pcommon.SpanID{4, 5, 6})
+				putBenchAttrs(span.Attributes())
+				span.Attributes().PutStr("part", partValue(si, parts))
+				si++
+			}
+		}
+	}
+	return td
+}
+
+// genBenchMetrics builds benchMetricsPerScope metrics per scope, each with
+// benchDatapoints datapoints, rotating gauge/sum/histogram. If dpLevel is
+// true the partition value is set per datapoint, otherwise per metric
+// (via the description).
+const (
+	benchMetricsPerScope = 50
+	benchDatapoints      = 10
+)
+
+func genBenchMetrics(dpLevel bool, parts int) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	mi, di := 0, 0
+	for range benchResources {
+		rm := md.ResourceMetrics().AppendEmpty()
+		putBenchAttrs(rm.Resource().Attributes())
+		for range benchScopes {
+			sm := rm.ScopeMetrics().AppendEmpty()
+			sm.Scope().SetName("scope")
+			for k := range benchMetricsPerScope {
+				m := sm.Metrics().AppendEmpty()
+				m.SetName(fmt.Sprintf("metric.%d", k))
+				m.SetUnit("1")
+				m.SetDescription("d")
+				if !dpLevel {
+					m.SetDescription(partValue(mi, parts))
+				}
+				mi++
+				switch k % 3 {
+				case 0:
+					m.SetEmptyGauge()
+				case 1:
+					m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				case 2:
+					m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				}
+				for range benchDatapoints {
+					var attrs pcommon.Map
+					switch m.Type() {
+					case pmetric.MetricTypeGauge:
+						dp := m.Gauge().DataPoints().AppendEmpty()
+						dp.SetDoubleValue(1)
+						attrs = dp.Attributes()
+					case pmetric.MetricTypeSum:
+						dp := m.Sum().DataPoints().AppendEmpty()
+						dp.SetIntValue(1)
+						attrs = dp.Attributes()
+					case pmetric.MetricTypeHistogram:
+						dp := m.Histogram().DataPoints().AppendEmpty()
+						dp.SetCount(10)
+						dp.ExplicitBounds().FromRaw([]float64{1, 5, 10})
+						dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+						attrs = dp.Attributes()
+					}
+					putBenchAttrs(attrs)
+					if dpLevel {
+						attrs.PutStr("part", partValue(di, parts))
+					}
+					di++
+				}
+			}
+		}
+	}
+	return md
+}
+
 // cloneable is implemented by the top-level pdata containers.
 type cloneable[T any] interface{ CopyTo(T) }
 
@@ -138,4 +229,38 @@ func BenchmarkLogs(b *testing.B) {
 		ctx := benchCtx(1)
 		runBench(b, ld, plog.NewLogs, func(in plog.Logs) error { return p.ConsumeLogs(ctx, in) })
 	})
+}
+
+func BenchmarkTraces(b *testing.B) {
+	for _, parts := range []int{1, 10, 1000} {
+		b.Run(fmt.Sprintf("span/%dpartitions", parts), func(b *testing.B) {
+			p, err := createTracesProcessor(b.Context(), nopSettings(),
+				newBenchConfig(`span.attributes["part"]`), consumertest.NewNop())
+			require.NoError(b, err)
+			td := genBenchTraces(parts)
+			runBench(b, td, ptrace.NewTraces, func(in ptrace.Traces) error { return p.ConsumeTraces(b.Context(), in) })
+		})
+	}
+}
+
+func BenchmarkMetrics(b *testing.B) {
+	cases := []struct {
+		name    string
+		dpLevel bool
+		expr    string
+		parts   []int
+	}{
+		{"metric", false, `metric.description`, []int{1, 10, 100}},
+		{"datapoint", true, `datapoint.attributes["part"]`, []int{1, 10, 1000}},
+	}
+	for _, tc := range cases {
+		for _, parts := range tc.parts {
+			b.Run(fmt.Sprintf("%s/%dpartitions", tc.name, parts), func(b *testing.B) {
+				p, err := createMetricsProcessor(b.Context(), nopSettings(), newBenchConfig(tc.expr), consumertest.NewNop())
+				require.NoError(b, err)
+				md := genBenchMetrics(tc.dpLevel, parts)
+				runBench(b, md, pmetric.NewMetrics, func(in pmetric.Metrics) error { return p.ConsumeMetrics(b.Context(), in) })
+			})
+		}
+	}
 }

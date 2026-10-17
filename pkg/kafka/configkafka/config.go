@@ -76,6 +76,9 @@ type ClientConfig struct {
 
 	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
 	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
+
+	// DialTimeout specifies the time allowed to establish a connection to a broker (default 10s).
+	DialTimeout time.Duration `mapstructure:"dial_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
@@ -85,6 +88,7 @@ func NewDefaultClientConfig() ClientConfig {
 		Metadata:        NewDefaultMetadataConfig(),
 		UseLeaderEpoch:  true,
 		ConnIdleTimeout: 9 * time.Minute,
+		DialTimeout:     10 * time.Second,
 	}
 }
 
@@ -99,6 +103,9 @@ func (c ClientConfig) Validate() error {
 	}
 	if c.ConnIdleTimeout <= 0 {
 		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
+	}
+	if c.DialTimeout <= 0 {
+		return fmt.Errorf("dial_timeout (%s) must be positive", c.DialTimeout)
 	}
 	if c.Metadata.Retry.Max < 0 {
 		return fmt.Errorf("metadata::retry::max (%d) must be non-negative", c.Metadata.Retry.Max)

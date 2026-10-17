@@ -603,7 +603,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -1995,7 +1995,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -2029,7 +2029,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -2090,7 +2090,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -2156,7 +2156,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"value", "value"},
+								Params: []localIdentifierDecl{{Identifier: "value"}, {Identifier: "value"}},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
@@ -2190,7 +2190,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"_", "_"},
+								Params: []localIdentifierDecl{{Identifier: "_"}, {Identifier: "_"}},
 								Body: lambdaBody{
 									Value: &value{
 										String: new("ok"),
@@ -2225,7 +2225,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"a", "b"},
+								Params: []localIdentifierDecl{{Identifier: "a"}, {Identifier: "b"}},
 								Body: lambdaBody{
 									Expr: &booleanExpression{
 										Left: &term{
@@ -3513,7 +3513,7 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 			{
 				Value: value{
 					Lambda: &lambdaExpr{
-						Params: []localIdentifierDecl{"value"},
+						Params: []localIdentifierDecl{{Identifier: "value"}},
 						Body: lambdaBody{
 							Value: &value{
 								Literal: &mathExprLiteral{

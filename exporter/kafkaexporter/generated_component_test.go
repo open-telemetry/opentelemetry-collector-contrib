@@ -3,11 +3,19 @@
 package kafkaexporter
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
+
+	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
 var typ = component.MustNewType("kafka")
@@ -18,4 +26,49 @@ func TestComponentFactoryType(t *testing.T) {
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+func TestComponentDefaultQueueBatchSender(t *testing.T) {
+	optionalQueueType := reflect.TypeOf(configoptional.None[exporterhelper.QueueBatchConfig]())
+
+	checkConfig := func(t *testing.T) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+		cfg := reflect.Indirect(reflect.ValueOf(NewFactory().CreateDefaultConfig()))
+		require.Equal(t, reflect.Struct, cfg.Kind(), "exporter default config must be a struct or pointer to a struct")
+
+		var queueConfig configoptional.Optional[exporterhelper.QueueBatchConfig]
+		found := false
+		for i := 0; i < cfg.NumField(); i++ {
+			fieldType := cfg.Type().Field(i)
+			tag := strings.Split(fieldType.Tag.Get("mapstructure"), ",")[0]
+			if tag != "sending_queue" {
+				continue
+			}
+			require.False(t, found, "exporter default config must define sending_queue exactly once")
+			require.Equal(t, optionalQueueType, fieldType.Type, "sending_queue must have type configoptional.Optional[exporterhelper.QueueBatchConfig]")
+			queueConfig = cfg.Field(i).Interface().(configoptional.Optional[exporterhelper.QueueBatchConfig])
+			found = true
+		}
+		require.True(t, found, "exporter default config must define sending_queue")
+		return queueConfig
+	}
+	const queueBatchFeatureGate = "pkg.exporterhelper.queueBatchEnabled"
+
+	var queueBatchGate *featuregate.Gate
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == queueBatchFeatureGate {
+			queueBatchGate = gate
+		}
+	})
+	require.NotNil(t, queueBatchGate)
+	initialValue := queueBatchGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, initialValue))
+	})
+
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("batch-feature-gate-%v", enabled), func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, enabled))
+			require.Equal(t, internalmetadata.NewDefaultSendingQueueConfig(), checkConfig(t))
+		})
+	}
 }

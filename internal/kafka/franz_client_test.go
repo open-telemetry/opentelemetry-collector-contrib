@@ -959,6 +959,27 @@ func TestConfigureKgoSASL_UnsupportedMechanism(t *testing.T) {
 	require.ErrorContains(t, err, "unsupported SASL mechanism")
 }
 
+func TestFranzClient_DialTimeout(t *testing.T) {
+	_, clientCfg := kafkatest.NewCluster(t)
+	tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+
+	t.Run("default", func(t *testing.T) {
+		cl, err := NewFranzClient(t.Context(), componenttest.NewNopHost(), clientCfg, tl)
+		require.NoError(t, err)
+		t.Cleanup(cl.Close)
+		assert.Equal(t, 10*time.Second, cl.OptValue(kgo.DialTimeout))
+	})
+
+	t.Run("custom", func(t *testing.T) {
+		cfg := clientCfg
+		cfg.DialTimeout = 25 * time.Second
+		cl, err := NewFranzClient(t.Context(), componenttest.NewNopHost(), cfg, tl)
+		require.NoError(t, err)
+		t.Cleanup(cl.Close)
+		assert.Equal(t, 25*time.Second, cl.OptValue(kgo.DialTimeout))
+	})
+}
+
 // mockHost is a minimal component.Host that returns a fixed extension map.
 type mockHost struct {
 	extensions map[component.ID]component.Component

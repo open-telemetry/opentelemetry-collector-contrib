@@ -29,6 +29,9 @@ telemetry:
         value_type: int
         monotonic: true
 
+sending_queue:
+  support: default
+
 tests:
   config:
     token: "my_fake_token"
