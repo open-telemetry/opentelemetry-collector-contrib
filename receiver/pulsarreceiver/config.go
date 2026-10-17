@@ -7,6 +7,7 @@ package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
@@ -73,10 +74,50 @@ type OAuth2 struct {
 	Scope      string `mapstructure:"scope"`
 }
 
+var (
+	errMissingEndpoint        = errors.New("endpoint cannot be empty")
+	errMissingTopic           = errors.New("topic cannot be empty")
+	errMissingSubscription    = errors.New("subscription cannot be empty")
+	errUnsupportedEncoding    = errors.New("unsupported encoding")
+	errMultipleAuthMechanisms = errors.New("cannot configure multiple auth mechanisms")
+)
+
 var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
-func (*Config) Validate() error {
+func (cfg *Config) Validate() error {
+	if cfg.Endpoint == "" {
+		return errMissingEndpoint
+	}
+	if cfg.Topic == "" {
+		return errMissingTopic
+	}
+	if cfg.Subscription == "" {
+		return errMissingSubscription
+	}
+	switch cfg.Encoding {
+	case defaultEncoding, "jaeger_proto", "jaeger_json", "zipkin_proto", "zipkin_json", "zipkin_thrift":
+	default:
+		return fmt.Errorf("%w: %q", errUnsupportedEncoding, cfg.Encoding)
+	}
+
+	authCount := 0
+	if cfg.Authentication.TLS.HasValue() {
+		authCount++
+	}
+	if cfg.Authentication.Token.HasValue() {
+		authCount++
+	}
+	if cfg.Authentication.OAuth2.HasValue() {
+		authCount++
+	}
+	if cfg.Authentication.Athenz.HasValue() {
+		authCount++
+	}
+	if authCount > 1 {
+		return errMultipleAuthMechanisms
+	}
+
 	return nil
 }
 
@@ -118,12 +159,8 @@ func (cfg *Config) auth() pulsar.Authentication {
 }
 
 func (cfg *Config) clientOptions() pulsar.ClientOptions {
-	url := cfg.Endpoint
-	if url == "" {
-		url = defaultServiceURL
-	}
 	options := pulsar.ClientOptions{
-		URL: url,
+		URL: cfg.Endpoint,
 	}
 
 	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
