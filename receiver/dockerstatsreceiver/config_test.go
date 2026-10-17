@@ -80,6 +80,17 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 
+				ContainerLabelsToResourceAttributes: []LabelMatcher{
+					{
+						MatchType: strictMatchType,
+						Include:   "my.container.label",
+					},
+					{
+						MatchType: regexpMatchType,
+						Include:   "my.container.prefix.*",
+					},
+				},
+
 				ContainerLabelsToMetricLabels: map[string]string{
 					"my.container.label":       "my-metric-label",
 					"my.other.container.label": "my-other-metric-label",
@@ -94,6 +105,7 @@ func TestLoadConfig(t *testing.T) {
 					m.Metrics.ContainerCPUUsageSystem.Enabled = false
 					m.Metrics.ContainerMemoryTotalRss.Enabled = true
 					m.Metrics.ContainerStateHealthStatus.Enabled = true
+					m.ResourceAttributes.ContainerLabels.Enabled = true
 					return m
 				}(),
 			},
