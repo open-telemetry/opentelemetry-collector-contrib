@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: connector/failover
+note: Prevent data loss when a downstream pipeline changes data before returning an error.
+issues: [52119]
