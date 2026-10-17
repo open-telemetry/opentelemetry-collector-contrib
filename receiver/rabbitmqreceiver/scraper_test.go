@@ -101,13 +101,14 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetQueues", mock.Anything).Return(nil, errors.New("some api error"))
 				mockClient.On("GetNodes", mock.Anything).Return(nil, errors.New("some api error"))
 				mockClient.On("GetExchanges", mock.Anything).Return(nil, errors.New("some api error"))
+				mockClient.On("GetBindings", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
 			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: scrapererror.NewPartialScrapeError(
-				errors.New("failed to collect queue metrics: some api error; failed to collect node metrics: some api error; failed to collect exchange metrics: some api error"),
+				errors.New("failed to collect queue metrics: some api error; failed to collect node metrics: some api error; failed to collect exchange metrics: some api error; failed to collect binding metrics: some api error"),
 				0, // No metrics were collected
 			),
 		},
@@ -124,6 +125,7 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
 				mockClient.On("GetNodes", mock.Anything).Return(nil, nil)
 				mockClient.On("GetExchanges", mock.Anything).Return(nil, nil)
+				mockClient.On("GetBindings", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -156,6 +158,7 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
 				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
 				mockClient.On("GetExchanges", mock.Anything).Return(nil, nil)
+				mockClient.On("GetBindings", mock.Anything).Return(nil, nil)
 
 				return &mockClient
 			},
@@ -182,6 +185,7 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetQueues", mock.Anything).Return(nil, nil)
 				mockClient.On("GetNodes", mock.Anything).Return(nil, nil)
 				mockClient.On("GetExchanges", mock.Anything).Return(exchanges, nil)
+				mockClient.On("GetBindings", mock.Anything).Return(nil, nil)
 
 				return &mockClient
 			},
@@ -296,6 +300,9 @@ func TestScraperScrape(t *testing.T) {
 			cfg.MetricsBuilderConfig.Metrics.RabbitmqExchangeMessagesPublishedIn.Enabled = true
 			cfg.MetricsBuilderConfig.Metrics.RabbitmqExchangeMessagesPublishedOut.Enabled = true
 
+			// Enable binding metrics so the bindings API is queried
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqBinding.Enabled = true
+
 			scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 
@@ -385,5 +392,54 @@ func TestClusterNameResourceAttributeFailure(t *testing.T) {
 	require.Equal(t, 1, metrics.ResourceMetrics().Len())
 	_, ok := metrics.ResourceMetrics().At(0).Resource().Attributes().Get("rabbitmq.cluster.name")
 	require.False(t, ok)
+	mockClient.AssertExpectations(t)
+}
+
+func TestBindingMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.RabbitmqBinding.Enabled = true
+
+	bindings := []*models.Binding{
+		{Source: "", Vhost: "/", Destination: "queue", DestinationType: "queue", RoutingKey: "queue", PropertiesKey: "queue"},
+		{Source: "exchange", Vhost: "/", Destination: "queue", DestinationType: "queue", RoutingKey: "routing-key", PropertiesKey: "routing-key"},
+		// Same exchange, queue and routing key as above, distinguished only by properties_key (different arguments).
+		{Source: "exchange", Vhost: "/", Destination: "queue", DestinationType: "queue", RoutingKey: "routing-key", PropertiesKey: "routing-key~abc123"},
+		{Source: "exchange", Vhost: "/", Destination: "other-exchange", DestinationType: "exchange", RoutingKey: "routing-key"},
+	}
+
+	mockClient := mocks.MockClient{}
+	mockClient.On("GetQueues", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetNodes", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetExchanges", mock.Anything).Return(nil, nil).Once()
+	mockClient.On("GetBindings", mock.Anything).Return(bindings, nil).Once()
+
+	scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
+	scraper.client = &mockClient
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	// The exchange-to-exchange binding is skipped, leaving 3 binding resources.
+	require.Equal(t, 3, metrics.ResourceMetrics().Len())
+
+	// Bindings differing only by arguments must emit distinct series.
+	seen := map[string]struct{}{}
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		attrs := metrics.ResourceMetrics().At(i).Resource().Attributes()
+		queueName, ok := attrs.Get("rabbitmq.queue.name")
+		require.True(t, ok)
+		require.Equal(t, "queue", queueName.Str())
+		_, ok = attrs.Get("rabbitmq.exchange.name")
+		require.True(t, ok)
+
+		dp := metrics.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+		exchangeName, _ := attrs.Get("rabbitmq.exchange.name")
+		routingKey, _ := dp.Attributes().Get("routing_key")
+		propsKey, ok := dp.Attributes().Get("properties_key")
+		require.True(t, ok)
+		seen[exchangeName.Str()+"|"+routingKey.Str()+"|"+propsKey.Str()] = struct{}{}
+	}
+	require.Len(t, seen, 3)
 	mockClient.AssertExpectations(t)
 }
