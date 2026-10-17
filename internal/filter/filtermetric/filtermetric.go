@@ -51,7 +51,7 @@ func newExpr(mp *filterconfig.MetricMatchProperties) (expr.BoolExpr[*ottlmetric.
 		}
 		return newExprMatcher(mp.Expressions)
 	}
-	if len(mp.MetricNames) == 0 {
+	if len(mp.MetricNames) == 0 && len(mp.ResourceAttributes) == 0 {
 		return nil, nil
 	}
 	return newNameMatcher(mp)
