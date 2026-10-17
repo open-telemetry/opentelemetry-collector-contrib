@@ -739,10 +739,10 @@ github.com/moby/docker-image-spec v1.3.1 h1:jMKff3w6PgbfSa69GfNg+zN/XLhfXJGnEx3N
 github.com/moby/docker-image-spec v1.3.1/go.mod h1:eKmb5VW8vQEh/BAr2yvVNvuiJuY6UIocYsFu/DxxRpo=
 github.com/moby/go-archive v0.3.0 h1:nos4BtzzUIqB406BgQnWGMI4qib9BZ8XUHU+ucv/n1c=
 github.com/moby/go-archive v0.3.0/go.mod h1:Npdv43fFqlhZW7Xo8fbm3ZMYFvAGNviUPqX21VERbcE=
-github.com/moby/moby/api v1.56.0 h1:GQzua3NA599ASSIICx0iFgiJeO9YkdDARvQsm23ZZuQ=
-github.com/moby/moby/api v1.56.0/go.mod h1:sZ+THbVWkjOmBPPfbnzdD/G1LuIexWhqlSHHPTDQ1Uk=
-github.com/moby/moby/client v0.6.0 h1:AJjEB21QPbXSXjDsZorFBoDZPhMrfbpaPLgSMAW9Bgs=
-github.com/moby/moby/client v0.6.0/go.mod h1:OCo00wNRyA3m4lmJ228W3JbyCN4ZNNYjpOXiJydBdcQ=
+github.com/moby/moby/api v1.56.1 h1:PpWkvVPB7Fr/No8w+TfyJ/I6rWZ2YPZhT3JorIg+06c=
+github.com/moby/moby/api v1.56.1/go.mod h1:sZ+THbVWkjOmBPPfbnzdD/G1LuIexWhqlSHHPTDQ1Uk=
+github.com/moby/moby/client v0.6.1 h1:gvfKmdcWw+9MzXYP0vAUKQtBTGu1L8475K2nsmL7O98=
+github.com/moby/moby/client v0.6.1/go.mod h1:XHgTFqz9NCgS/VuoxXMmEDVmVgXQ4vFEc15wsCIwb24=
 github.com/moby/patternmatcher v0.6.1 h1:qlhtafmr6kgMIJjKJMDmMWq7WLkKIo23hsrpR3x084U=
 github.com/moby/patternmatcher v0.6.1/go.mod h1:hDPoyOpDY7OrrMDLaYoY3hf52gNCR/YOUYxkhApJIxc=
 github.com/moby/sys/sequential v0.7.0 h1:ASQNGNROJSuOO6LL6bPHbKvuZu6NU8P4ldPWk31zj/8=
@@ -1147,8 +1147,8 @@ go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.19.0 h1:Dn5+LcOW0q
 go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.19.0/go.mod h1:El4KDS9Hl9yQyTkypuHezFz2WenecSuImht7JSUsUNQ=
 go.opentelemetry.io/contrib/detectors/azure/azurevm v0.17.0 h1:ySRed/MgKSYjGWkrlR1KiSRUBpe3RovCbhk+w/RM8as=
 go.opentelemetry.io/contrib/detectors/azure/azurevm v0.17.0/go.mod h1:UUY5lMDJ3KcIuj/9GY2zLx8JUYx+Yrjh8t2igQJFh8E=
-go.opentelemetry.io/contrib/detectors/docker v0.18.0 h1:bCKBKMcmnkcHDLBkbswYtFbJiRQtQevkIkNA3MB0gAk=
-go.opentelemetry.io/contrib/detectors/docker v0.18.0/go.mod h1:LNWZjKiE3c876vr/kJovbzFRcBAd4LC9Yll8yVgoF4k=
+go.opentelemetry.io/contrib/detectors/docker v0.19.0 h1:icfMOzj7TwzxxKq819RxdeQcZvedaoo1iIwYIf2t9ew=
+go.opentelemetry.io/contrib/detectors/docker v0.19.0/go.mod h1:WfQ2UN1ELpdijdgeiZVTnYefkSo7sjYGn4txPnzDy60=
 go.opentelemetry.io/contrib/detectors/gcp v1.45.0 h1:9jR0ZPRok9ryaOQ2Wx8rg5F7Aon59mxrqbVI60/vlBk=
 go.opentelemetry.io/contrib/detectors/gcp v1.45.0/go.mod h1:VSme3o2fvSg5bVg0dRzyHaj4Z5EVhG+g2Fde6LKzmQA=
 go.opentelemetry.io/contrib/detectors/hetzner v0.19.0 h1:bt2D4vPOIxDjgvZiBQ69UhMmWR7+K7TbXwv9c25+lQ4=
