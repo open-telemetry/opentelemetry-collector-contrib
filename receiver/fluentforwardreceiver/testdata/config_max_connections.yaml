@@ -1,0 +1,2 @@
+fluent_forward:
+  max_connections: 5
