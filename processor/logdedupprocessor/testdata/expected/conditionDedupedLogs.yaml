@@ -21,6 +21,12 @@ resourceLogs:
               - key: last_observed_timestamp
                 value:
                   stringValue: "2024-10-04T19:40:31Z"
+              - key: first_event_timestamp
+                value:
+                  stringValue: "2024-10-04T19:16:25Z"
+              - key: last_event_timestamp
+                value:
+                  stringValue: "2024-10-04T19:21:25Z"
             body:
               stringValue: Body of the log1
             observedTimeUnixNano: "1728070831326144000"
