@@ -20,6 +20,8 @@ import (
 var (
 	api = windows.NewLazySystemDLL("wevtapi.dll")
 
+	openLogProc               = api.NewProc("EvtOpenLog")
+	getLogInfoProc            = api.NewProc("EvtGetLogInfo")
 	subscribeProc             = api.NewProc("EvtSubscribe")
 	queryProc                 = api.NewProc("EvtQuery")
 	nextProc                  = api.NewProc("EvtNext")
@@ -47,6 +49,20 @@ type EvtRPCLogin struct {
 }
 
 const (
+	// EvtOpenChannelPath is a flag indicating the path is a channel name (vs. log file path).
+	EvtOpenChannelPath uint32 = 1
+	// EvtLogNumberOfLogRecords is the EVT_LOG_PROPERTY_ID for the approximate record count.
+	EvtLogNumberOfLogRecords uint32 = 5
+)
+
+// evtVariant is a simplified EVT_VARIANT covering the 8-byte value union, Count, and Type fields.
+type evtVariant struct {
+	Value uint64
+	Count uint32
+	Type  uint32
+}
+
+const (
 	// EvtSubscribeToFutureEvents is a flag that will subscribe to only future events.
 	EvtSubscribeToFutureEvents uint32 = 1
 	// EvtSubscribeStartAtOldestRecord is a flag that will subscribe to all existing and future events.
@@ -68,6 +84,10 @@ const (
 	ErrorNoMoreItems syscall.Errno = 259
 	// ErrorInvalidOperation is an error code that indicates the operation identifier is not valid
 	ErrorInvalidOperation syscall.Errno = 4317
+	// ErrorEVTQueryResultStale is returned by EvtNext when the subscription bookmark has been
+	// invalidated because the events it referenced were overwritten in the ring buffer.
+	// Windows error 15011 (0x3AA3 / ERROR_EVT_QUERY_RESULT_STALE).
+	ErrorEVTQueryResultStale syscall.Errno = 15011
 )
 
 const (
@@ -209,4 +229,28 @@ var evtQuery = func(session uintptr, path, query *uint16, flags uint32) (uintptr
 	}
 
 	return handle, nil
+}
+
+// evtOpenLog is the direct syscall implementation of EvtOpenLog (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopenlog)
+var evtOpenLog = func(session uintptr, path *uint16, flags uint32) (uintptr, error) {
+	handle, _, err := openLogProc.Call(session, uintptr(unsafe.Pointer(path)), uintptr(flags))
+	if !errors.Is(err, ErrorSuccess) {
+		return 0, err
+	}
+	return handle, nil
+}
+
+// evtGetLogInfo is the direct syscall implementation of EvtGetLogInfo (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtgetloginfo)
+var evtGetLogInfo = func(log uintptr, propertyID uint32, variant *evtVariant, bufferUsed *uint32) error {
+	_, _, err := getLogInfoProc.Call(
+		log,
+		uintptr(propertyID),
+		unsafe.Sizeof(*variant),
+		uintptr(unsafe.Pointer(variant)),
+		uintptr(unsafe.Pointer(bufferUsed)),
+	)
+	if !errors.Is(err, ErrorSuccess) {
+		return err
+	}
+	return nil
 }

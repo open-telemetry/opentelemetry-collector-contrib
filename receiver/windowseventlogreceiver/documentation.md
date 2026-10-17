@@ -2,6 +2,10 @@
 
 # windows_event_log
 
+## Internal Telemetry
+
+The following telemetry is emitted by this component.
+
 ## Feature Gates
 
 This component has the following feature gates:
