@@ -1,0 +1,5 @@
+# Changes to the AWS X-Ray exporter feature gate metadata.
+change_type: enhancement
+component: awsxrayexporter
+note: Migrate the `exporter.xray.allowDot` feature gate to metadata.yaml.
+issues: [46116]
