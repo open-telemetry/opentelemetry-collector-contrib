@@ -350,8 +350,8 @@ receiver/pprofreceiver/                                          @open-telemetry
 receiver/prometheusreceiver/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @ArthurSens @krajorama
 receiver/prometheusremotewritereceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens @perebaj @himanshu130700
 receiver/pulsarreceiver/                                         @open-telemetry/collector-contrib-approvers @dao-jun
-receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
-receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
+receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @chrroberts-pure
+receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @chrroberts-pure
 receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers @VenuEmmadi
 receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 receiver/redfishreceiver/                                        @open-telemetry/collector-contrib-approvers @steven-freed @khushijain21
