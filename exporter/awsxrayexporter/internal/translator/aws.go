@@ -59,70 +59,70 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	filtered := make(map[string]pcommon.Value)
 	for key, value := range resource.Attributes().All() {
 		switch key {
-		case string(conventionsv112.CloudProviderKey):
+		case string(conventions.CloudProviderKey):
 			cloud = value.Str()
-		case string(conventionsv112.CloudPlatformKey):
+		case string(conventions.CloudPlatformKey):
 			service = value.Str()
-		case string(conventionsv112.CloudAccountIDKey):
+		case string(conventions.CloudAccountIDKey):
 			account = value.Str()
-		case string(conventionsv112.CloudAvailabilityZoneKey):
+		case string(conventions.CloudAvailabilityZoneKey):
 			zone = value.Str()
-		case string(conventionsv112.HostIDKey):
+		case string(conventions.HostIDKey):
 			hostID = value.Str()
-		case string(conventionsv112.HostTypeKey):
+		case string(conventions.HostTypeKey):
 			hostType = value.Str()
-		case string(conventionsv112.HostImageIDKey):
+		case string(conventions.HostImageIDKey):
 			amiID = value.Str()
-		case string(conventionsv112.ContainerNameKey):
+		case string(conventions.ContainerNameKey):
 			if container == "" {
 				container = value.Str()
 			}
-		case string(conventionsv112.K8SPodNameKey):
+		case string(conventions.K8SPodNameKey):
 			podUID = value.Str()
-		case string(conventionsv112.ServiceNamespaceKey):
+		case string(conventions.ServiceNamespaceKey):
 			namespace = value.Str()
-		case string(conventionsv112.ServiceInstanceIDKey):
+		case string(conventions.ServiceInstanceIDKey):
 			deployID = value.Str()
-		case string(conventionsv112.ServiceVersionKey):
+		case string(conventions.ServiceVersionKey):
 			versionLabel = value.Str()
-		case string(conventionsv112.TelemetrySDKNameKey):
+		case string(conventions.TelemetrySDKNameKey):
 			sdkName = value.Str()
-		case string(conventionsv112.TelemetrySDKLanguageKey):
+		case string(conventions.TelemetrySDKLanguageKey):
 			sdkLanguage = value.Str()
-		case string(conventionsv112.TelemetrySDKVersionKey):
+		case string(conventions.TelemetrySDKVersionKey):
 			sdkVersion = value.Str()
 		case string(conventionsv112.TelemetryAutoVersionKey), string(conventions.TelemetryDistroVersionKey):
 			autoVersion = value.Str()
-		case string(conventionsv112.ContainerIDKey):
+		case string(conventions.ContainerIDKey):
 			containerID = value.Str()
-		case string(conventionsv112.K8SClusterNameKey):
+		case string(conventions.K8SClusterNameKey):
 			clusterName = value.Str()
-		case string(conventionsv112.AWSECSClusterARNKey):
+		case string(conventions.AWSECSClusterARNKey):
 			clusterArn = value.Str()
-		case string(conventionsv112.AWSECSContainerARNKey):
+		case string(conventions.AWSECSContainerARNKey):
 			containerArn = value.Str()
-		case string(conventionsv112.AWSECSTaskARNKey):
+		case string(conventions.AWSECSTaskARNKey):
 			taskArn = value.Str()
-		case string(conventionsv112.AWSECSTaskFamilyKey):
+		case string(conventions.AWSECSTaskFamilyKey):
 			taskFamily = value.Str()
-		case string(conventionsv112.AWSECSLaunchtypeKey):
+		case string(conventions.AWSECSLaunchtypeKey):
 			launchType = value.Str()
-		case string(conventionsv112.AWSLogGroupNamesKey):
+		case string(conventions.AWSLogGroupNamesKey):
 			logGroups = normalizeToSlice(value)
-		case string(conventionsv112.AWSLogGroupARNsKey):
+		case string(conventions.AWSLogGroupARNsKey):
 			logGroupArns = normalizeToSlice(value)
 		}
 	}
 
 	if awsOperation, ok := attributes[awsxray.AWSOperationAttribute]; ok {
 		operation = awsOperation.Str()
-	} else if rpcMethod, ok := attributes[string(conventionsv112.RPCMethodKey)]; ok {
+	} else if rpcMethod, ok := attributes[string(conventions.RPCMethodKey)]; ok {
 		operation = rpcMethod.Str()
 	}
 
 	for key, value := range attributes {
 		switch key {
-		case string(conventionsv112.RPCMethodKey):
+		case string(conventions.RPCMethodKey):
 			// Deterministically handled with if else above
 		case awsxray.AWSOperationAttribute:
 			// Deterministically handled with if else above
@@ -145,7 +145,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 			filtered[key] = value
 		}
 	}
-	if cloud != conventionsv112.CloudProviderAWS.Value.AsString() && cloud != "" {
+	if cloud != conventions.CloudProviderAWS.Value.AsString() && cloud != "" {
 		return filtered, nil // not AWS so return nil
 	}
 
@@ -153,7 +153,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	if value, ok := attributes[string(conventionsv112.MessagingURLKey)]; ok {
 		queueURL = value.Str()
 	}
-	if value, ok := attributes[string(conventionsv112.AWSDynamoDBTableNamesKey)]; ok {
+	if value, ok := attributes[string(conventions.AWSDynamoDBTableNamesKey)]; ok {
 		switch value.Type() {
 		case pcommon.ValueTypeSlice:
 			if value.Slice().Len() == 1 {
@@ -173,7 +173,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	// EC2 - add ec2 metadata to xray request if
 	//       1. cloud.platfrom is set to "aws_ec2" or
 	//       2. there is an non-blank host/instance id found
-	if service == conventionsv112.CloudPlatformAWSEC2.Value.AsString() || hostID != "" {
+	if service == conventions.CloudPlatformAWSEC2.Value.AsString() || hostID != "" {
 		ec2 = &awsxray.EC2Metadata{
 			InstanceID:       awsxray.String(hostID),
 			AvailabilityZone: awsxray.String(zone),
@@ -183,7 +183,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	}
 
 	// ECS
-	if service == conventionsv112.CloudPlatformAWSECS.Value.AsString() {
+	if service == conventions.CloudPlatformAWSECS.Value.AsString() {
 		ecs = &awsxray.ECSMetadata{
 			ContainerName:    awsxray.String(container),
 			ContainerID:      awsxray.String(containerID),
@@ -197,7 +197,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	}
 
 	// Beanstalk
-	if service == conventionsv112.CloudPlatformAWSElasticBeanstalk.Value.AsString() && deployID != "" {
+	if service == conventions.CloudPlatformAWSElasticBeanstalk.Value.AsString() && deployID != "" {
 		deployNum, err := strconv.ParseInt(deployID, 10, 64)
 		if err != nil {
 			deployNum = 0
@@ -210,7 +210,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	}
 
 	// EKS or native Kubernetes
-	if service == conventionsv112.CloudPlatformAWSEKS.Value.AsString() || clusterName != "" {
+	if service == conventions.CloudPlatformAWSEKS.Value.AsString() || clusterName != "" {
 		eks = &awsxray.EKSMetadata{
 			ClusterName: awsxray.String(clusterName),
 			Pod:         awsxray.String(podUID),

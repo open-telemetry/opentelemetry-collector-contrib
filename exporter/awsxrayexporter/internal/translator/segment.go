@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -189,7 +190,7 @@ func MakeServiceSegmentForLocalRootDependencySpan(span ptrace.Span, resource pco
 	// Set the name: prefer aws.local.service, fall back to resource service name (mirrors Server span behavior).
 	if myAwsLocalService, ok := span.Attributes().Get(awsLocalService); ok {
 		serviceSegment.Name = awsxray.String(myAwsLocalService.Str())
-	} else if resourceServiceName, ok := resource.Attributes().Get(string(conventionsv112.ServiceNameKey)); ok {
+	} else if resourceServiceName, ok := resource.Attributes().Get(string(conventions.ServiceNameKey)); ok {
 		serviceSegment.Name = awsxray.String(resourceServiceName.Str())
 	}
 
@@ -391,7 +392,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	if namespace == "" {
 		if isAwsSdkSpan(span) {
-			namespace = conventionsv112.CloudProviderAWS.Value.AsString()
+			namespace = conventions.CloudProviderAWS.Value.AsString()
 		}
 	}
 
@@ -402,7 +403,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 			name = awsService.Str()
 
 			if namespace == "" {
-				namespace = conventionsv112.CloudProviderAWS.Value.AsString()
+				namespace = conventions.CloudProviderAWS.Value.AsString()
 			}
 		}
 	}
@@ -426,7 +427,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	if name == "" && span.Kind() == ptrace.SpanKindServer {
 		// Only for a server span, we can use the resource.
-		if service, ok := resource.Attributes().Get(string(conventionsv112.ServiceNameKey)); ok {
+		if service, ok := resource.Attributes().Get(string(conventions.ServiceNameKey)); ok {
 			name = service.Str()
 		}
 	}
@@ -497,34 +498,34 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 		return ""
 	}
 
-	if provider, ok := resource.Attributes().Get(string(conventionsv112.CloudProviderKey)); ok {
-		if provider.Str() != conventionsv112.CloudProviderAWS.Value.AsString() {
+	if provider, ok := resource.Attributes().Get(string(conventions.CloudProviderKey)); ok {
+		if provider.Str() != conventions.CloudProviderAWS.Value.AsString() {
 			return ""
 		}
 	}
 
-	if is, present := resource.Attributes().Get(string(conventionsv112.CloudPlatformKey)); present {
+	if is, present := resource.Attributes().Get(string(conventions.CloudPlatformKey)); present {
 		switch is.Str() {
-		case conventionsv112.CloudPlatformAWSAppRunner.Value.AsString():
+		case conventions.CloudPlatformAWSAppRunner.Value.AsString():
 			return OriginAppRunner
-		case conventionsv112.CloudPlatformAWSEKS.Value.AsString():
+		case conventions.CloudPlatformAWSEKS.Value.AsString():
 			return OriginEKS
-		case conventionsv112.CloudPlatformAWSElasticBeanstalk.Value.AsString():
+		case conventions.CloudPlatformAWSElasticBeanstalk.Value.AsString():
 			return OriginEB
-		case conventionsv112.CloudPlatformAWSECS.Value.AsString():
-			lt, present := resource.Attributes().Get(string(conventionsv112.AWSECSLaunchtypeKey))
+		case conventions.CloudPlatformAWSECS.Value.AsString():
+			lt, present := resource.Attributes().Get(string(conventions.AWSECSLaunchtypeKey))
 			if !present {
 				return OriginECS
 			}
 			switch lt.Str() {
-			case conventionsv112.AWSECSLaunchtypeEC2.Value.AsString():
+			case conventions.AWSECSLaunchtypeEC2.Value.AsString():
 				return OriginECSEC2
-			case conventionsv112.AWSECSLaunchtypeFargate.Value.AsString():
+			case conventions.AWSECSLaunchtypeFargate.Value.AsString():
 				return OriginECSFargate
 			default:
 				return OriginECS
 			}
-		case conventionsv112.CloudPlatformAWSEC2.Value.AsString():
+		case conventions.CloudPlatformAWSEC2.Value.AsString():
 			return OriginEC2
 
 		// If cloud_platform is defined with a non-AWS value, we should not assign it an AWS origin
@@ -618,10 +619,10 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		metadata    = map[string]map[string]any{}
 		user        string
 	)
-	userid, ok := attributes[string(conventionsv112.EnduserIDKey)]
+	userid, ok := attributes[string(conventions.EnduserIDKey)]
 	if ok {
 		user = userid.Str()
-		delete(attributes, string(conventionsv112.EnduserIDKey))
+		delete(attributes, string(conventions.EnduserIDKey))
 	}
 
 	if len(attributes) == 0 && (!storeResource || resource.Attributes().Len() == 0) {
