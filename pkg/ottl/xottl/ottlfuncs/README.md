@@ -17,6 +17,7 @@ Available Converters:
 - [MapEach](#mapeach)
 - [MapKeys](#mapkeys)
 - [Reduce](#reduce)
+- [Sanitize](#sanitize)
 - [When](#when)
 
 ### All
@@ -270,6 +271,28 @@ Build a semicolon-separated key=value string:
 Store the result:
 
 - `set(log.attributes["total"], Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v)))`
+
+### Sanitize
+
+> [!IMPORTANT]
+> This function is experimental and may change in future releases. It requires the [`pkg.ottl.functions.enableExperimental`](../../documentation.md#feature-gates) feature gate to be enabled.
+
+`Sanitize(target, format, Optional[replacement])`
+
+The `Sanitize` converter returns `target` with every sequence that is invalid in the given `format` replaced by `replacement`, so the result is valid for that format. When `target` is already valid it is returned unchanged.
+
+`target` is a string. `format` is the format to sanitize for. The only supported value today is `utf-8`, where every run of invalid UTF-8 bytes is replaced. Other values return an error, at parse time when `format` is a literal and when the statement runs otherwise.
+
+`replacement` is an optional string (default: the Unicode replacement character `U+FFFD`, rendered as `�`) that is inserted in place of each invalid sequence. An empty `replacement` removes the invalid bytes. The replacement must itself be valid in `format`; with a literal `format` this is checked at parse time, with a dynamic one when the statement runs.
+
+To sanitize every string in a list or map, combine it with the lambda converters such as `MapEach`.
+
+Examples:
+
+- `set(log.body, Sanitize(log.body, "utf-8"))`
+- `set(span.name, Sanitize(span.name, "utf-8", "?"))`
+- `set(log.attributes["message"], Sanitize(log.attributes["message"], log.attributes["encoding"]))`
+- `set(log.attributes["tags"], MapEach(log.attributes["tags"], (_, v) => Sanitize(v, "utf-8")))`
 
 ### When
 

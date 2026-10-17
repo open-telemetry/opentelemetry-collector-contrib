@@ -19,6 +19,7 @@ func ExperimentalConverters[K any]() []ottl.Factory[K] {
 		NewMapEachFactory[K](),
 		NewMapKeysFactory[K](),
 		NewReduceFactory[K](),
+		NewSanitizeFactory[K](),
 		NewWhenFactory[K](),
 	}
 }
