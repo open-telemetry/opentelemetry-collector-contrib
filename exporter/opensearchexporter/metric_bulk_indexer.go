@@ -23,6 +23,12 @@ type metricBulkIndexer struct {
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
+
+	// requestErr is set when a whole bulk request was rejected with a retryable status.
+	requestErr error
+	// retryErrs and retryMetrics hold the data points OpenSearch rejected one by one with a retryable status.
+	retryErrs    []error
+	retryMetrics pmetric.Metrics
 }
 
 func newMetricBulkIndexer(bulkAction string, model mappingModel, pipeline string) *metricBulkIndexer {
@@ -36,7 +42,9 @@ func (mbi *metricBulkIndexer) start(client *opensearchapi.Client) error {
 }
 
 func (mbi *metricBulkIndexer) joinedError() error {
-	return errors.Join(mbi.errs...)
+	return joinBulkErrors(mbi.errs, mbi.requestErr, mbi.retryErrs, func(err error) error {
+		return consumererror.NewMetrics(err, mbi.retryMetrics)
+	})
 }
 
 func (mbi *metricBulkIndexer) close(ctx context.Context) {
@@ -61,7 +69,11 @@ func (mbi *metricBulkIndexer) appendPermanentError(e error) {
 }
 
 func (mbi *metricBulkIndexer) appendRetryMetricError(err error, metrics pmetric.Metrics) {
-	mbi.errs = append(mbi.errs, consumererror.NewMetrics(err, metrics))
+	if len(mbi.retryErrs) == 0 {
+		mbi.retryMetrics = pmetric.NewMetrics()
+	}
+	mbi.retryErrs = append(mbi.retryErrs, err)
+	metrics.ResourceMetrics().MoveAndAppendTo(mbi.retryMetrics.ResourceMetrics())
 }
 
 func (mbi *metricBulkIndexer) submit(ctx context.Context, md pmetric.Metrics, ir *indexResolver, cfg *Config, timestamp time.Time) {
@@ -205,6 +217,11 @@ func (mbi *metricBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem
 	case shouldRetryEvent(resp.Status):
 		// Recoverable OpenSearch error
 		mbi.appendRetryMetricError(responseAsError(resp), metrics)
+	case resp.Status == 0 && isRetryableResponse(itemErr):
+		// The whole bulk request was rejected, and this is called for each of its items.
+		if mbi.requestErr == nil {
+			mbi.requestErr = itemErr
+		}
 	case resp.Status != 0 && itemErr == nil:
 		// Non-recoverable OpenSearch error while indexing document
 		mbi.appendPermanentError(responseAsError(resp))
