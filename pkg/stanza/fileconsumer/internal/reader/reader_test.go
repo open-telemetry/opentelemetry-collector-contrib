@@ -4,6 +4,8 @@
 package reader
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -15,6 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -361,6 +365,113 @@ func TestFileCacheAdvise(t *testing.T) {
 		sink.ExpectToken(t, fmt.Appendf(nil, "log line %d", i))
 	}
 	sink.ExpectNoCalls(t)
+}
+
+func TestReadGzipIncompleteStream(t *testing.T) {
+	t.Parallel()
+
+	f, sink := testFactory(t, withCompression("gzip"))
+	core, logs := observer.New(zap.WarnLevel)
+	f.Logger = zap.New(core)
+
+	temp := filetest.OpenTemp(t, t.TempDir())
+	writer := gzip.NewWriter(temp)
+	_, err := writer.Write([]byte("testlog1\ntest"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+	require.NoError(t, err)
+	defer reader.Close()
+
+	// The complete line of the incomplete gzip member is read, the offset stays at the start of the member,
+	// and the incomplete line is not read yet.
+	reader.ReadToEnd(t.Context())
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectNoCalls(t)
+	require.Zero(t, reader.Offset)
+	require.Equal(t, int64(len("testlog1\n")), reader.DecompressedBytesToSkip)
+	info, err := temp.Stat()
+	require.NoError(t, err)
+	require.Equal(t, info.Size(), reader.incompleteGzipSize)
+	require.Zero(t, logs.Len())
+
+	// While the file does not grow, it is not read again, and a warning is logged only once.
+	reader.incompleteGzipSince = time.Now().Add(-incompleteGzipWarnAfter)
+	reader.ReadToEnd(t.Context())
+	reader.ReadToEnd(t.Context())
+	sink.ExpectNoCalls(t)
+	require.Equal(t, 1, logs.FilterMessageSnippet("gzip member is incomplete").Len())
+
+	// The rest of the member is read without reading its first line again.
+	_, err = writer.Write([]byte("log2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	reader.ReadToEnd(t.Context())
+	sink.ExpectToken(t, []byte("testlog2"))
+	sink.ExpectNoCalls(t)
+	info, err = temp.Stat()
+	require.NoError(t, err)
+	require.Equal(t, info.Size(), reader.Offset)
+	require.Zero(t, reader.DecompressedBytesToSkip)
+	require.Zero(t, reader.incompleteGzipSize)
+}
+
+func TestReadGzipInvalidStream(t *testing.T) {
+	t.Parallel()
+
+	for name, corrupt := range map[string]func([]byte) []byte{
+		"zero padding": func(b []byte) []byte { return append(b, make([]byte, 16)...) },
+		"bad checksum": func(b []byte) []byte {
+			b[len(b)-8] ^= 0xff
+			return b
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			// The content is longer than the fingerprint, so the fingerprint can be read.
+			var buf bytes.Buffer
+			var lines [][]byte
+			writer := gzip.NewWriter(&buf)
+			for i := range 20 {
+				line := fmt.Appendf(nil, "testlog%02d %s", i, strings.Repeat("x", 100))
+				lines = append(lines, line)
+				_, err := writer.Write(append(line, '\n'))
+				require.NoError(t, err)
+			}
+			require.NoError(t, writer.Close())
+
+			f, sink := testFactory(t, withCompression("gzip"))
+			core, logs := observer.New(zap.ErrorLevel)
+			f.Logger = zap.New(core)
+			temp := filetest.OpenTemp(t, t.TempDir())
+			_, err := temp.Write(corrupt(buf.Bytes()))
+			require.NoError(t, err)
+
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			// The lines are read as before, and the offset moves to the end of the file,
+			// so the file is not decompressed again on the next poll.
+			reader.ReadToEnd(t.Context())
+			sink.ExpectTokens(t, lines...)
+			info, err := temp.Stat()
+			require.NoError(t, err)
+			require.Equal(t, info.Size(), reader.Offset)
+			require.Zero(t, reader.DecompressedBytesToSkip)
+
+			// The error says which part of the file was skipped.
+			invalid := logs.FilterMessageSnippet("invalid gzip data").All()
+			require.Len(t, invalid, 1)
+			require.Equal(t, info.Size(), invalid[0].ContextMap()["file_size"])
+		})
+	}
 }
 
 func BenchmarkFileRead(b *testing.B) {

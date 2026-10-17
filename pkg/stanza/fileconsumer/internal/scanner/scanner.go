@@ -35,8 +35,9 @@ func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc b
 		scanFunc = func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			advance, token, err = splitFunc(data, atEOF)
 			// flush data if there are no more tokens but there is still data left
-			// this is because gzip reader reads the entire compressed stream in one go
-			if advance == 0 && token == nil && atEOF && len(data) > 0 {
+			// this is because gzip reader reads the entire compressed stream in one go.
+			// A gzip member that is still being written does not end with a complete token, so it is not flushed.
+			if advance == 0 && token == nil && atEOF && len(data) > 0 && !errors.Is(s.Err(), io.ErrUnexpectedEOF) {
 				advance = len(data)
 				token = data
 			}
